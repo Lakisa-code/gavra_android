@@ -350,9 +350,16 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🌤️ KOMPAKTAN PRIKAZ TEMPERATURE ZA DATUM RED SA IKONOM
   Widget _buildWeatherCompact(String grad) {
-    return FutureBuilder<WeatherData?>(
-      future: WeatherService.getWeatherData(grad),
+    // Koristi StreamBuilder za real-time update temperature
+    final stream = grad == 'BC' ? WeatherService.bcWeatherStream : WeatherService.vsWeatherStream;
+    
+    return StreamBuilder<WeatherData?>(
+      stream: stream,
       builder: (context, snapshot) {
+        // Ako nema podataka iz stream-a, učitaj inicijalno
+        if (!snapshot.hasData) {
+          WeatherService.getWeatherData(grad);
+        }
         final data = snapshot.data;
         final temp = data?.temperature;
         final icon = data?.icon ?? '🌡️';
@@ -1305,6 +1312,9 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🎫 Učitaj kapacitet cache na startu
     KapacitetService.ensureCacheLoaded();
+
+    // 🌤️ Pokreni periodično osvežavanje vremenske prognoze
+    WeatherService.startPeriodicRefresh();
 
     // ✅ SETUP FILTERS FROM NOTIFICATION DATA
     if (widget.filterGrad != null) {

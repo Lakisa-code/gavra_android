@@ -499,11 +499,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       TextField(
                                         keyboardType: TextInputType.number,
                                         textAlign: TextAlign.center,
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                                        style: TextStyle(
+                                            fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                                         decoration: InputDecoration(
                                           isDense: true,
                                           contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                                          border: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.primary)),
+                                          border:
+                                              UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.primary)),
                                         ),
                                         controller: TextEditingController(text: dana.toString()),
                                         onChanged: (val) {
@@ -527,10 +529,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('UKUPNO:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
+                      Text('UKUPNO:',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.onSurface)),
                       Text(
                         '${ukupno.toStringAsFixed(0)} RSD',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.primary),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.primary),
                       ),
                     ],
                   ),
