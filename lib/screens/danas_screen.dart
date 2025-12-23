@@ -352,7 +352,7 @@ class _DanasScreenState extends State<DanasScreen> {
   Widget _buildWeatherCompact(String grad) {
     // Koristi StreamBuilder za real-time update temperature
     final stream = grad == 'BC' ? WeatherService.bcWeatherStream : WeatherService.vsWeatherStream;
-    
+
     return StreamBuilder<WeatherData?>(
       stream: stream,
       builder: (context, snapshot) {
@@ -515,16 +515,26 @@ class _DanasScreenState extends State<DanasScreen> {
                   _optimizeCurrentRoute(_currentPutnici, isAlreadyOptimized: false);
                 }
               },
-        child: Center(
-          child: Text(
-            _isRouteOptimized ? 'Reset' : 'Ruta',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.alt_route,
+              size: 16,
               color: textColor,
               shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
             ),
-          ),
+            const SizedBox(width: 2),
+            Text(
+              _isRouteOptimized ? 'Reset' : 'Ruta',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: textColor,
+                shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+              ),
+            ),
+          ],
         ),
       ),
     );
