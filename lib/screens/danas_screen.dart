@@ -519,7 +519,7 @@ class _DanasScreenState extends State<DanasScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.alt_route,
+              Icons.route,
               size: 16,
               color: textColor,
               shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
