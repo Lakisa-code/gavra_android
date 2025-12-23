@@ -6,6 +6,11 @@ on:
     branches: [ main ]
     tags: [ 'v*' ]
 
+# 🚀 Otkazuje prethodne buildove kad se pokrene novi (štedi minute)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FLUTTER_VERSION: '3.35.6'
 
