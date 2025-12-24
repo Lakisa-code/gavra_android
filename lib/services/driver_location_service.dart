@@ -103,8 +103,6 @@ class DriverLocationService {
     await _positionSubscription?.cancel();
     _positionSubscription = null;
 
-    await _setInactive();
-
     _isTracking = false;
     _currentVozacId = null;
     _currentVozacIme = null;
@@ -216,17 +214,6 @@ class DriverLocationService {
     }
   }
 
-  /// Označi vozača kao neaktivnog
-  Future<void> _setInactive() async {
-    if (_currentVozacId == null) return;
-
-    try {
-      await Supabase.instance.client.from('vozac_lokacije').update({'aktivan': false}).eq('vozac_id', _currentVozacId!);
-    } catch (e) {
-      // Error setting inactive
-    }
-  }
-
   /// Stream praćenje sa distance filterom (alternativa timer-u)
   // ignore: unused_element
   void _startStreamTracking() {
@@ -274,7 +261,7 @@ class DriverLocationService {
     String? smer,
   }) async {
     try {
-      var query = Supabase.instance.client.from('vozac_lokacije').select().eq('aktivan', true).eq('grad', grad);
+      var query = Supabase.instance.client.from('vozac_lokacije').select().eq('grad', grad);
 
       if (vremePolaska != null) {
         query = query.eq('vreme_polaska', vremePolaska);

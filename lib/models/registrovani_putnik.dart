@@ -12,7 +12,6 @@ class RegistrovaniPutnik {
     this.brojTelefonaMajke,
     required this.tip,
     this.tipSkole,
-    this.napomena,
     required this.polasciPoDanu,
     this.adresaBelaCrkvaId,
     this.adresaVrsacId,
@@ -31,7 +30,6 @@ class RegistrovaniPutnik {
     this.vremePlacanja,
     this.placeniMesec,
     this.placenaGodina,
-    this.statistics = const {},
     // Nova polja za database kompatibilnost
     this.tipPrikazivanja = 'standard',
     this.vozacId,
@@ -44,7 +42,6 @@ class RegistrovaniPutnik {
     // Tracking polja
     this.dodaliVozaci = const [],
     this.placeno = false,
-    this.datumPlacanja,
     this.pin,
     this.email, // 📧 Email za kontakt i Google Play testing
     this.cenaPoDanu, // 🆕 Custom cena po danu (ako je NULL, koristi default: 700 radnik, 600 učenik)
@@ -81,7 +78,6 @@ class RegistrovaniPutnik {
       brojTelefonaMajke: map['broj_telefona_majke'] as String?,
       tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
-      napomena: map['napomena'] as String?,
       polasciPoDanu: polasciPoDanu,
       adresaBelaCrkvaId: map['adresa_bela_crkva_id'] as String?,
       adresaVrsacId: map['adresa_vrsac_id'] as String?,
@@ -104,20 +100,18 @@ class RegistrovaniPutnik {
       vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
-      statistics: Map<String, dynamic>.from(map['statistics'] as Map? ?? {}),
       // Nova polja
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
       vozacId: map['vozac_id'] as String?,
-      pokupljen: map['pokupljen'] as bool? ?? false,
-      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
+      pokupljen: false,
+      vremePokupljenja: null, // ✅ UKLONJENO: kolona obrisana iz baze
       // Computed fields za UI display (dolaze iz JOIN-a)
       adresa: map['adresa'] as String?,
       grad: map['grad'] as String?,
-      actionLog: _parseActionLog(map['action_log']),
+      actionLog: const [], // ✅ UKLONJENO: action_log više ne koristimo
       // Tracking polja
       dodaliVozaci: _parseDodaliVozaci(map['dodali_vozaci']),
       placeno: map['placeno'] as bool? ?? false,
-      datumPlacanja: map['datum_placanja'] != null ? DateTime.parse(map['datum_placanja'] as String) : null,
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
       cenaPoDanu: (map['cena_po_danu'] as num?)?.toDouble(), // 🆕 Custom cena po danu
@@ -140,7 +134,6 @@ class RegistrovaniPutnik {
   final String? brojTelefonaMajke; // dodatni telefon majke (za učenike)
   final String tip; // direktno string umesto enum-a
   final String? tipSkole;
-  final String? napomena;
   final Map<String, List<String>> polasciPoDanu; // dan -> lista vremena polaska
   final String? adresaBelaCrkvaId; // UUID reference u tabelu adrese
   final String? adresaVrsacId; // UUID reference u tabelu adrese
@@ -160,7 +153,6 @@ class RegistrovaniPutnik {
   final DateTime? vremePlacanja;
   final int? placeniMesec;
   final int? placenaGodina;
-  final Map<String, dynamic> statistics;
 
   // Nova polja iz baze
   final String tipPrikazivanja;
@@ -176,7 +168,6 @@ class RegistrovaniPutnik {
   // Tracking polja
   final List<dynamic> dodaliVozaci;
   final bool placeno;
-  final DateTime? datumPlacanja;
   final String? pin; // 🔐 PIN za login
   final String? email; // 📧 Email za kontakt i Google Play testing
   final double? cenaPoDanu; // 🆕 Custom cena po danu (NULL = default 700/600)
@@ -205,14 +196,6 @@ class RegistrovaniPutnik {
       normalizedPolasci[day] = {'bc': bc, 'vs': vs};
     });
 
-    // Build statistics
-    Map<String, dynamic> stats = Map.from(statistics);
-    stats.addAll({
-      'trips_total': brojPutovanja,
-      'cancellations_total': brojOtkazivanja,
-      'last_trip': vremePokupljenja?.toIso8601String(),
-    });
-
     // ⚔️ BINARYBITCH CLEAN toMap() - SAMO kolone koje postoje u bazi!
     Map<String, dynamic> result = {
       'putnik_ime': putnikIme,
@@ -222,7 +205,6 @@ class RegistrovaniPutnik {
       'broj_telefona_majke': brojTelefonaMajke,
       'tip': tip,
       'tip_skole': tipSkole,
-      'napomena': napomena,
       'polasci_po_danu': normalizedPolasci,
       'adresa_bela_crkva_id': adresaBelaCrkvaId,
       'adresa_vrsac_id': adresaVrsacId,
@@ -237,19 +219,16 @@ class RegistrovaniPutnik {
       'cena': cena,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(),
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
       'placena_godina': placenaGodina,
-      'statistics': stats,
       'tip_prikazivanja': tipPrikazivanja,
       'vozac_id': vozacId,
       'pokupljen': pokupljen,
       'action_log': actionLog,
       'dodali_vozaci': dodaliVozaci,
       'placeno': placeno,
-      'datum_placanja': datumPlacanja?.toIso8601String(),
       'email': email, // 📧 Email
       'cena_po_danu': cenaPoDanu, // 🆕 Custom cena po danu
       // 🧾 Polja za račune
@@ -318,7 +297,6 @@ class RegistrovaniPutnik {
     String? brojTelefonaMajke,
     String? tip,
     String? tipSkole,
-    String? napomena,
     Map<String, List<String>>? polasciPoDanu,
     String? adresaBelaCrkvaId,
     String? adresaVrsacId,
@@ -335,7 +313,6 @@ class RegistrovaniPutnik {
     int? brojPutovanja,
     int? brojOtkazivanja,
     bool? obrisan,
-    Map<String, dynamic>? statistics,
     // Computed fields za UI
     String? adresa,
     String? grad,
@@ -343,7 +320,6 @@ class RegistrovaniPutnik {
     // Tracking
     List<dynamic>? dodaliVozaci,
     bool? placeno,
-    DateTime? datumPlacanja,
     // 🧾 Polja za račune
     bool? trebaRacun,
     String? firmaNaziv,
@@ -360,7 +336,6 @@ class RegistrovaniPutnik {
       brojTelefonaMajke: brojTelefonaMajke ?? this.brojTelefonaMajke,
       tip: tip ?? this.tip,
       tipSkole: tipSkole ?? this.tipSkole,
-      napomena: napomena ?? this.napomena,
       polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
       adresaBelaCrkvaId: adresaBelaCrkvaId ?? this.adresaBelaCrkvaId,
       adresaVrsacId: adresaVrsacId ?? this.adresaVrsacId,
@@ -379,7 +354,6 @@ class RegistrovaniPutnik {
       vremePlacanja: vremePlacanja ?? this.vremePlacanja,
       placeniMesec: placeniMesec ?? this.placeniMesec,
       placenaGodina: placenaGodina ?? this.placenaGodina,
-      statistics: statistics ?? this.statistics,
       // Computed fields za UI
       adresa: adresa ?? this.adresa,
       grad: grad ?? this.grad,
@@ -387,7 +361,6 @@ class RegistrovaniPutnik {
       // Tracking
       dodaliVozaci: dodaliVozaci ?? this.dodaliVozaci,
       placeno: placeno ?? this.placeno,
-      datumPlacanja: datumPlacanja ?? this.datumPlacanja,
       // 🧾 Polja za račune
       trebaRacun: trebaRacun ?? this.trebaRacun,
       firmaNaziv: firmaNaziv ?? this.firmaNaziv,
@@ -442,14 +415,6 @@ class RegistrovaniPutnik {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp * 1000 + (timestamp % 1000)).toRadixString(36);
     return 'fallback-uuid-$random';
-  }
-
-  /// ✅ HELPER: Parsira action_log - može biti List, Map ili null
-  static List<dynamic> _parseActionLog(dynamic value) {
-    if (value == null) return [];
-    if (value is List) return value;
-    if (value is Map) return [value]; // Wrap Map u List
-    return [];
   }
 
   /// ✅ HELPER: Parsira dodali_vozaci - može biti List, Map ili null

@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/gps_lokacija.dart';
 import '../services/permission_service.dart';
 import '../services/realtime/realtime_manager.dart';
-import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 
 class AdminMapScreen extends StatefulWidget {
@@ -104,9 +103,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       for (final json in response as List<dynamic>) {
         try {
           final data = json as Map<String, dynamic>;
+          // Koristi vozac_ime ako postoji, inače vozac_id (može biti ime ili UUID)
+          final vozacIme = data['vozac_ime'] as String? ?? data['vozac_id'] as String?;
           gpsLokacije.add(GPSLokacija(
             id: data['id'] as String,
-            vozacId: data['vozac_id'] as String?,
+            vozacId: vozacIme, // Sada sadrži ime vozača direktno
             latitude: (data['lat'] as num).toDouble(),
             longitude: (data['lng'] as num).toDouble(),
             vreme: data['updated_at'] != null ? DateTime.parse(data['updated_at'] as String) : DateTime.now(),
@@ -167,48 +168,27 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       }
 
       // Kreiraj markere za svakog vozača
-      najnovijeLokacije.forEach((vozacUuid, lokacija) {
-        // Konvertuj UUID u ime vozača
-        final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacUuid) ?? 'Nepoznat';
+      najnovijeLokacije.forEach((vozacIme, lokacija) {
+        // vozacIme je sada već ime vozača (ne UUID), koristi direktno
+        final displayName = vozacIme.isNotEmpty ? vozacIme : 'Nepoznat';
 
         markers.add(
           Marker(
             point: LatLng(lokacija.latitude, lokacija.longitude),
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: _getDriverColor(vozacIme),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 5,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.directions_car,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  Text(
-                    vozacIme.isNotEmpty ? vozacIme.substring(0, 1).toUpperCase() : '?',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      height: 1.0,
-                    ),
-                  ),
-                ],
-              ),
+            width: 40,
+            height: 50,
+            alignment: Alignment.topCenter,
+            child: Icon(
+              Icons.location_pin,
+              color: _getDriverColor(displayName),
+              size: 50,
+              shadows: const [
+                Shadow(
+                  color: Colors.black38,
+                  blurRadius: 4,
+                  offset: Offset(1, 2),
+                ),
+              ],
             ),
           ),
         );

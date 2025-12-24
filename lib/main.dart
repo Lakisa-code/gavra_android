@@ -14,13 +14,13 @@ import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
-import 'services/realtime/realtime_manager.dart'; // 🔄 DODATO za inicijalizaciju realtime-a
+import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
 import 'services/sms_service.dart'; // 📱 SMS podsetnici za plaćanje
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
+import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
 import 'supabase_client.dart';
-import 'utils/realtime_debugger.dart'; // 🔍 DEBUG: Dijagnostika realtime-a
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -111,18 +111,10 @@ void main() async {
       // Nastavi bez vozac mapping-a ako ne uspe
     }
 
-    // 🔄 INICIJALIZUJ REALTIME MANAGER - pretplati se na ključne tabele ODMAH
-    // Ovo osigurava da realtime radi čim se app pokrene
-    try {
-      // Pretplati se na registrovani_putnici - glavni stream za sve putnike
-      RealtimeManager.instance.subscribe('registrovani_putnici');
-      debugPrint('✅ [main] RealtimeManager initialized for registrovani_putnici');
-
-      // 🔍 DEBUG: Pokreni dijagnostiku realtime-a (ukloni posle testiranja)
-      RealtimeDebugger.runFullDiagnostics();
-    } catch (e) {
-      debugPrint('❌ [main] RealtimeManager init failed: $e');
-    }
+    // 🔄 REALTIME se inicijalizuje lazy kroz PutnikService
+    // Ne treba eksplicitna pretplata ovde - PutnikService.streamKombinovaniPutniciFiltered()
+    // će se pretplatiti kad neki ekran zatraži stream
+    debugPrint('✅ [main] RealtimeManager ready (lazy init through PutnikService)');
 
     // GPS Learn će naučiti prave koordinate kada vozač pokupi putnika
   } catch (e) {
@@ -187,6 +179,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // 🧹 CLEANUP: Zatvori stream controllere
+    WeatherService.dispose();
+    RealtimeGpsService.dispose();
     super.dispose();
   }
 

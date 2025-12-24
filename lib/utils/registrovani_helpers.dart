@@ -200,19 +200,315 @@ class RegistrovaniHelpers {
     // Ključ je npr. 'bc_otkazano' ili 'vs_otkazano'
     final otkazanoKey = '${place}_otkazano';
     final otkazanoTimestamp = dayData[otkazanoKey] as String?;
-    
+
     if (otkazanoTimestamp == null || otkazanoTimestamp.isEmpty) return false;
-    
+
     // Proveri da li je otkazano DANAS
     try {
       final otkazanoDate = DateTime.parse(otkazanoTimestamp).toLocal();
       final danas = DateTime.now();
-      return otkazanoDate.year == danas.year &&
-             otkazanoDate.month == danas.month &&
-             otkazanoDate.day == danas.day;
+      return otkazanoDate.year == danas.year && otkazanoDate.month == danas.month && otkazanoDate.day == danas.day;
     } catch (_) {
       return false;
     }
+  }
+
+  /// 🆕 Dobij vreme otkazivanja iz polasci_po_danu JSON-a za specifičan dan i grad
+  /// Vraća DateTime ako postoji timestamp otkazivanja za DANAS, inače null
+  static DateTime? getVremeOtkazivanjaForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Ključ je npr. 'bc_otkazano' ili 'vs_otkazano'
+    final otkazanoKey = '${place}_otkazano';
+    final otkazanoTimestamp = dayData[otkazanoKey] as String?;
+
+    if (otkazanoTimestamp == null || otkazanoTimestamp.isEmpty) return null;
+
+    try {
+      final otkazanoDate = DateTime.parse(otkazanoTimestamp).toLocal();
+      final danas = DateTime.now();
+      // Vrati samo ako je DANAS
+      if (otkazanoDate.year == danas.year && otkazanoDate.month == danas.month && otkazanoDate.day == danas.day) {
+        return otkazanoDate;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 🆕 Dobij ime vozača koji je otkazao iz polasci_po_danu JSON-a za specifičan dan i grad
+  static String? getOtkazaoVozacForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Prvo proveri da li je otkazano DANAS
+    final otkazanoKey = '${place}_otkazano';
+    final otkazanoTimestamp = dayData[otkazanoKey] as String?;
+    if (otkazanoTimestamp == null || otkazanoTimestamp.isEmpty) return null;
+
+    try {
+      final otkazanoDate = DateTime.parse(otkazanoTimestamp).toLocal();
+      final danas = DateTime.now();
+      if (otkazanoDate.year != danas.year || otkazanoDate.month != danas.month || otkazanoDate.day != danas.day) {
+        return null; // Nije otkazano danas
+      }
+    } catch (_) {
+      return null;
+    }
+
+    // Ključ je npr. 'bc_otkazao_vozac' ili 'vs_otkazao_vozac'
+    final vozacKey = '${place}_otkazao_vozac';
+    return dayData[vozacKey] as String?;
+  }
+
+  /// 🆕 Dobij vreme pokupljanja iz polasci_po_danu JSON-a za specifičan dan i grad
+  /// Vraća DateTime ako postoji timestamp pokupljanja za DANAS, inače null
+  static DateTime? getVremePokupljenjaForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Ključ je npr. 'bc_pokupljeno' ili 'vs_pokupljeno'
+    final pokupljenoKey = '${place}_pokupljeno';
+    final pokupljenoTimestamp = dayData[pokupljenoKey] as String?;
+
+    if (pokupljenoTimestamp == null || pokupljenoTimestamp.isEmpty) return null;
+
+    try {
+      final pokupljenoDate = DateTime.parse(pokupljenoTimestamp).toLocal();
+      final danas = DateTime.now();
+      // Vrati samo ako je DANAS
+      if (pokupljenoDate.year == danas.year && pokupljenoDate.month == danas.month && pokupljenoDate.day == danas.day) {
+        return pokupljenoDate;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 🆕 Dobij ime vozača koji je pokupio iz polasci_po_danu JSON-a za specifičan dan i grad
+  /// Vraća ime vozača samo ako je pokupljen DANAS
+  static String? getPokupioVozacForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Prvo proveri da li je pokupljen DANAS
+    final pokupljenoKey = '${place}_pokupljeno';
+    final pokupljenoTimestamp = dayData[pokupljenoKey] as String?;
+    if (pokupljenoTimestamp == null || pokupljenoTimestamp.isEmpty) return null;
+
+    try {
+      final pokupljenoDate = DateTime.parse(pokupljenoTimestamp).toLocal();
+      final danas = DateTime.now();
+      if (pokupljenoDate.year != danas.year || pokupljenoDate.month != danas.month || pokupljenoDate.day != danas.day) {
+        return null; // Nije pokupljen danas
+      }
+    } catch (_) {
+      return null;
+    }
+
+    // Ključ je npr. 'bc_pokupljeno_vozac' ili 'vs_pokupljeno_vozac'
+    final vozacKey = '${place}_pokupljeno_vozac';
+    return dayData[vozacKey] as String?;
+  }
+
+  /// 🆕 Dobij vreme plaćanja iz polasci_po_danu JSON-a za specifičan dan i grad
+  /// Vraća DateTime ako postoji timestamp plaćanja za DANAS, inače null
+  static DateTime? getVremePlacanjaForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Ključ je npr. 'bc_placeno' ili 'vs_placeno'
+    final placenoKey = '${place}_placeno';
+    final placenoTimestamp = dayData[placenoKey] as String?;
+
+    if (placenoTimestamp == null || placenoTimestamp.isEmpty) return null;
+
+    try {
+      final placenoDate = DateTime.parse(placenoTimestamp).toLocal();
+      final danas = DateTime.now();
+      // Vrati samo ako je DANAS
+      if (placenoDate.year == danas.year && placenoDate.month == danas.month && placenoDate.day == danas.day) {
+        return placenoDate;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 🆕 Dobij ime vozača koji je naplatio iz polasci_po_danu JSON-a za specifičan dan i grad
+  /// Vraća ime vozača samo ako je plaćeno DANAS
+  static String? getNaplatioVozacForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Prvo proveri da li je plaćeno DANAS
+    final placenoKey = '${place}_placeno';
+    final placenoTimestamp = dayData[placenoKey] as String?;
+    if (placenoTimestamp == null || placenoTimestamp.isEmpty) return null;
+
+    try {
+      final placenoDate = DateTime.parse(placenoTimestamp).toLocal();
+      final danas = DateTime.now();
+      if (placenoDate.year != danas.year || placenoDate.month != danas.month || placenoDate.day != danas.day) {
+        return null; // Nije plaćeno danas
+      }
+    } catch (_) {
+      return null;
+    }
+
+    // Ključ je npr. 'bc_placeno_vozac' ili 'vs_placeno_vozac'
+    final vozacKey = '${place}_placeno_vozac';
+    return dayData[vozacKey] as String?;
+  }
+
+  /// 🆕 Dobij iznos plaćanja iz polasci_po_danu JSON-a za specifičan dan i grad
+  static double? getIznosPlacanjaForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Ključ je npr. 'bc_placeno_iznos' ili 'vs_placeno_iznos'
+    final iznosKey = '${place}_placeno_iznos';
+    final iznos = dayData[iznosKey];
+    if (iznos == null) return null;
+    if (iznos is num) return iznos.toDouble();
+    return double.tryParse(iznos.toString());
   }
 
   // Is active (soft delete handling)

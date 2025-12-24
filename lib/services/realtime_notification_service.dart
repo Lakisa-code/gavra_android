@@ -33,7 +33,7 @@ class RealtimeNotificationService {
 
       final supabase = Supabase.instance.client;
       final response = await supabase.functions.invoke(
-        'send-push-notification',
+        'send_fcm',
         body: payload,
       );
 

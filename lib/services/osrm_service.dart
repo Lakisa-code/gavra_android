@@ -39,6 +39,7 @@ class OsrmService {
       final coordsList = <String>[];
 
       coordsList.add('${startPosition.longitude},${startPosition.latitude}');
+      print('📍 START: ${startPosition.latitude}, ${startPosition.longitude}');
 
       final putniciWithCoords = <Putnik>[];
       for (final putnik in putnici) {
@@ -46,6 +47,7 @@ class OsrmService {
           final pos = coordinates[putnik]!;
           coordsList.add('${pos.longitude},${pos.latitude}');
           putniciWithCoords.add(putnik);
+          print('📍 ${putnik.ime}: ${pos.latitude}, ${pos.longitude} (${putnik.adresa})');
         }
       }
 
@@ -57,6 +59,7 @@ class OsrmService {
       final hasEndDestination = endDestination != null;
       if (hasEndDestination) {
         coordsList.add('${endDestination.longitude},${endDestination.latitude}');
+        print('📍 END: ${endDestination.latitude}, ${endDestination.longitude}');
       }
 
       final coordsString = coordsList.join(';');
@@ -153,29 +156,38 @@ class OsrmService {
 
       final waypointsToProcess = hasEndDestination ? waypoints.length - 1 : waypoints.length;
 
-      final indexByWaypointIndex = <int, int>{};
+      // 🐛 DEBUG: Logiraj waypoints da vidimo šta OSRM vraća
+      print('🗺️ OSRM waypoints:');
+      for (int i = 0; i < waypoints.length; i++) {
+        final wp = waypoints[i] as Map<String, dynamic>;
+        final wpIndex = wp['waypoint_index'] as int;
+        final name = i == 0 ? 'START' : (i < putniciWithCoords.length + 1 ? putniciWithCoords[i - 1].ime : 'END');
+        print('  [$i] $name -> waypoint_index: $wpIndex');
+      }
+
+      // 🎯 ISPRAVLJEN ALGORITAM:
+      // waypoint_index govori: "ova tačka (iz originalne liste) treba biti na poziciji waypoint_index u optimizovanoj ruti"
+      // waypoints[0] je START, waypoints[1..n] su putnici, waypoints[n+1] je END (ako postoji)
+
+      // Kreiraj listu parova (putnik, waypoint_index) - preskačemo START (index 0)
+      final putniciWithWaypointIndex = <MapEntry<Putnik, int>>[];
       for (int i = 1; i < waypointsToProcess; i++) {
         final wp = waypoints[i] as Map<String, dynamic>;
         final waypointIndex = wp['waypoint_index'] as int;
-        indexByWaypointIndex[waypointIndex] = i - 1;
-      }
-
-      final sortedWaypointIndices = indexByWaypointIndex.keys.toList()..sort();
-
-      final orderedPutnici = <Putnik>[];
-      for (final wpIndex in sortedWaypointIndices) {
-        final putnikIndex = indexByWaypointIndex[wpIndex]!;
+        final putnikIndex = i - 1; // waypoints[1] = putnici[0], waypoints[2] = putnici[1], itd.
         if (putnikIndex >= 0 && putnikIndex < putniciWithCoords.length) {
-          orderedPutnici.add(putniciWithCoords[putnikIndex]);
+          putniciWithWaypointIndex.add(MapEntry(putniciWithCoords[putnikIndex], waypointIndex));
         }
       }
 
-      if (orderedPutnici.length != putniciWithCoords.length) {
-        for (final p in putniciWithCoords) {
-          if (!orderedPutnici.contains(p)) {
-            orderedPutnici.add(p);
-          }
-        }
+      // Sortiraj po waypoint_index da dobijemo optimalan redosled
+      putniciWithWaypointIndex.sort((a, b) => a.value.compareTo(b.value));
+
+      final orderedPutnici = putniciWithWaypointIndex.map((e) => e.key).toList();
+
+      print('🎯 Optimizovan redosled:');
+      for (int i = 0; i < orderedPutnici.length; i++) {
+        print('  ${i + 1}. ${orderedPutnici[i].ime}');
       }
 
       // 🆕 Izračunaj ETA za svakog putnika iz legs

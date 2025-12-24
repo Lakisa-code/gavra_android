@@ -9,18 +9,10 @@ class Vozac {
     this.brojTelefona,
     this.email,
     this.boja,
-    this.aktivan = true,
     this.kusur = 0.0,
-    this.obrisan = false,
-    this.deletedAt,
-    this.status = 'aktivan',
-    DateTime? createdAt,
-    DateTime? updatedAt,
   })  : assert(ime.trim().isNotEmpty, 'Ime vozača ne može biti prazno'),
         assert(kusur >= 0.0, 'Kusur ne može biti negativan'),
-        id = id ?? const Uuid().v4(),
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+        id = id ?? const Uuid().v4();
 
   factory Vozac.fromMap(Map<String, dynamic> map) {
     return Vozac(
@@ -29,13 +21,7 @@ class Vozac {
       brojTelefona: map['telefon'] as String?,
       email: map['email'] as String?,
       boja: map['boja'] as String?,
-      aktivan: map['aktivan'] as bool? ?? true,
       kusur: (map['kusur'] as num?)?.toDouble() ?? 0.0,
-      obrisan: map['obrisan'] as bool? ?? false,
-      deletedAt: map['deleted_at'] != null ? DateTime.parse(map['deleted_at'] as String) : null,
-      status: map['status'] as String? ?? 'aktivan',
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
   final String id;
@@ -43,13 +29,7 @@ class Vozac {
   final String? brojTelefona;
   final String? email;
   final String? boja;
-  final bool aktivan;
   final double kusur;
-  final bool obrisan;
-  final DateTime? deletedAt;
-  final String status;
-  final DateTime createdAt;
-  final DateTime updatedAt;
 
   Map<String, dynamic> toMap() {
     return {
@@ -58,13 +38,7 @@ class Vozac {
       'telefon': brojTelefona,
       'email': email,
       'boja': boja,
-      'aktivan': aktivan,
       'kusur': kusur,
-      'obrisan': obrisan,
-      'deleted_at': deletedAt?.toIso8601String(),
-      'status': status,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
@@ -155,11 +129,7 @@ class Vozac {
     String? brojTelefona,
     String? email,
     String? boja,
-    bool? aktivan,
     double? kusur,
-    bool? obrisan,
-    DateTime? deletedAt,
-    String? status,
   }) {
     return Vozac(
       id: id,
@@ -167,19 +137,13 @@ class Vozac {
       brojTelefona: brojTelefona ?? this.brojTelefona,
       email: email ?? this.email,
       boja: boja ?? this.boja,
-      aktivan: aktivan ?? this.aktivan,
       kusur: kusur ?? this.kusur,
-      obrisan: obrisan ?? this.obrisan,
-      deletedAt: deletedAt ?? this.deletedAt,
-      status: status ?? this.status,
-      createdAt: createdAt,
-      updatedAt: DateTime.now(),
     );
   }
 
   /// ToString metoda za debugging
   @override
   String toString() {
-    return 'Vozac{id: $id, ime: $ime, aktivan: $aktivan, kusur: $kusur}';
+    return 'Vozac{id: $id, ime: $ime, kusur: $kusur}';
   }
 }

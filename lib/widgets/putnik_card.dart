@@ -2021,9 +2021,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                 content: const Text(
                                                                   '✅ Otvaram navigaciju...',
                                                                 ),
-                                                                backgroundColor: Theme.of(
-                                                                  context,
-                                                                ).colorScheme.successPrimary,
+                                                                backgroundColor:
+                                                                    Theme.of(context).colorScheme.successPrimary,
                                                                 duration: const Duration(
                                                                   seconds: 1,
                                                                 ),
@@ -2051,9 +2050,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                     ),
                                                                   ],
                                                                 ),
-                                                                backgroundColor: Theme.of(
-                                                                  context,
-                                                                ).colorScheme.warningPrimary,
+                                                                backgroundColor:
+                                                                    Theme.of(context).colorScheme.warningPrimary,
                                                                 action: SnackBarAction(
                                                                   label: 'POKUŠAJ PONOVO',
                                                                   textColor: Colors.white,
@@ -2700,10 +2698,10 @@ class _PutnikCardState extends State<PutnikCard> {
               adresa: _putnik.adresa,
               adresaId: _putnik.adresaId,
               obrisan: _putnik.obrisan,
-              priority: _putnik.priority,
               brojTelefona: _putnik.brojTelefona,
-              datum: _putnik.datum,
-              otkazanZaPolazak: true, // 🆕 Otkazan za ovaj polazak
+              brojMesta: _putnik.brojMesta,
+              tipPutnika: _putnik.tipPutnika,
+              otkazanZaPolazak: true, // ✅ DODATO: Instant UI update
             );
           });
         }

@@ -9,11 +9,7 @@ class VozacService {
 
   /// Dohvata sve vozače
   Future<List<Vozac>> getAllVozaci() async {
-    final response = await _supabase
-        .from('vozaci')
-        .select('id, ime, kusur, aktivan, created_at, updated_at')
-        .eq('aktivan', true)
-        .order('ime');
+    final response = await _supabase.from('vozaci').select('id, ime, kusur').order('ime');
 
     return response.map((json) => Vozac.fromMap(json)).toList();
   }

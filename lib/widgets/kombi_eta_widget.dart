@@ -44,15 +44,14 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   Future<void> _loadGpsData() async {
     try {
       final supabase = Supabase.instance.client;
-      // Učitaj sve aktivne vozače, ne filtriraj po gradu
-      final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true);
+      // Učitaj sve vozače
+      final data = await supabase.from('vozac_lokacije').select();
 
       if (!mounted) return;
 
       final list = data as List<dynamic>;
-      final activeDrivers = list.where((l) => l['aktivan'] == true).toList();
 
-      if (activeDrivers.isEmpty) {
+      if (list.isEmpty) {
         setState(() {
           _isActive = false;
           _etaMinutes = null;
@@ -61,8 +60,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         return;
       }
 
-      // Uzmi prvog aktivnog vozača
-      final driver = activeDrivers.first;
+      // Uzmi prvog vozača
+      final driver = list.first;
       final putniciEta = driver['putnici_eta'] as Map<String, dynamic>?;
       final vozacIme = driver['vozac_ime'] as String?;
 

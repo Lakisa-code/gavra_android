@@ -1,7 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'vozac_mapping_service.dart';
+
 /// Servis za upravljanje istorijom vožnji
 /// MINIMALNA tabela: putnik_id, datum, tip (voznja/otkazivanje/uplata), iznos, vozac_id
+/// ✅ TRAJNO REŠENJE: Sve statistike se čitaju iz ove tabele
 class VoznjeLogService {
   static final _supabase = Supabase.instance.client;
 
@@ -19,5 +22,111 @@ class VoznjeLogService {
       'iznos': iznos,
       'vozac_id': vozacId,
     });
+  }
+
+  /// ✅ TRAJNO REŠENJE: Dohvati pazar po vozačima za period
+  /// Vraća mapu {vozacIme: iznos, '_ukupno': ukupno}
+  static Future<Map<String, double>> getPazarPoVozacima({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final Map<String, double> pazar = {};
+    double ukupno = 0;
+
+    try {
+      final response = await _supabase
+          .from('voznje_log')
+          .select('vozac_id, iznos')
+          .eq('tip', 'uplata')
+          .gte('datum', from.toIso8601String().split('T')[0])
+          .lte('datum', to.toIso8601String().split('T')[0]);
+
+      for (final record in response) {
+        final vozacId = record['vozac_id'] as String?;
+        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
+
+        if (iznos <= 0) continue;
+
+        // Konvertuj UUID u ime vozača
+        String vozacIme = 'Nepoznat';
+        if (vozacId != null && vozacId.isNotEmpty) {
+          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
+        }
+
+        pazar[vozacIme] = (pazar[vozacIme] ?? 0) + iznos;
+        ukupno += iznos;
+      }
+    } catch (e) {
+      // Greška pri čitanju - vrati praznu mapu
+    }
+
+    pazar['_ukupno'] = ukupno;
+    return pazar;
+  }
+
+  /// ✅ TRAJNO REŠENJE: Stream pazara po vozačima (realtime)
+  static Stream<Map<String, double>> streamPazarPoVozacima({
+    required DateTime from,
+    required DateTime to,
+  }) {
+    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((records) {
+      final Map<String, double> pazar = {};
+      double ukupno = 0;
+
+      final fromStr = from.toIso8601String().split('T')[0];
+      final toStr = to.toIso8601String().split('T')[0];
+
+      for (final record in records) {
+        // Filtriraj po tipu i datumu
+        if (record['tip'] != 'uplata') continue;
+        final datum = record['datum'] as String?;
+        if (datum == null) continue;
+        if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;
+
+        final vozacId = record['vozac_id'] as String?;
+        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
+
+        if (iznos <= 0) continue;
+
+        // Konvertuj UUID u ime vozača
+        String vozacIme = 'Nepoznat';
+        if (vozacId != null && vozacId.isNotEmpty) {
+          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
+        }
+
+        pazar[vozacIme] = (pazar[vozacIme] ?? 0) + iznos;
+        ukupno += iznos;
+      }
+
+      pazar['_ukupno'] = ukupno;
+      return pazar;
+    });
+  }
+
+  /// ✅ TRAJNO REŠENJE: Broj uplata za vozača u periodu
+  static Future<int> getBrojUplataZaVozaca({
+    required String vozacImeIliUuid,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    try {
+      // Dohvati UUID ako je prosleđeno ime
+      String? vozacUuid = vozacImeIliUuid;
+      if (!vozacImeIliUuid.contains('-')) {
+        vozacUuid = VozacMappingService.getVozacUuidSync(vozacImeIliUuid);
+      }
+
+      final response = await _supabase
+          .from('voznje_log')
+          .select('id')
+          .eq('tip', 'uplata')
+          .eq('vozac_id', vozacUuid ?? vozacImeIliUuid)
+          .gte('datum', from.toIso8601String().split('T')[0])
+          .lte('datum', to.toIso8601String().split('T')[0]);
+
+      return response.length;
+    } catch (e) {
+      return 0;
+    }
   }
 }

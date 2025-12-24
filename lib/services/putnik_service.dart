@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/action_log.dart';
 import '../models/putnik.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
@@ -74,6 +73,8 @@ class PutnikService {
     // Koristi centralizovani RealtimeManager
     _globalSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
       debugPrint('🔄 [PutnikService] Postgres change: ${payload.eventType}');
+      // 🔄 Vraćeno na full refresh jer partial payload (bez radni_dani)
+      // uzrokuje da putnici nestanu sa liste pri realtime ažuriranju.
       _refreshAllStreams();
     });
     _isSubscribed = true;
@@ -92,6 +93,7 @@ class PutnikService {
     }
   }
 
+  /// 🚀 PAYLOAD FILTERING: Primenjuje promene iz payload-a direktno na lokalni cache
   Stream<List<Putnik>> streamKombinovaniPutniciFiltered({
     String? isoDate,
     String? grad,
@@ -448,10 +450,8 @@ class PutnikService {
         case 'pickup':
           await supabase.from(tabela).update({
             'broj_putovanja': lastAction.oldData['broj_putovanja'],
-            'pokupljen': false,
-            'vreme_pokupljenja': null,
-            'vreme_pokupljenja_bc': null, // ✅ RESETUJ i BC kolonu
-            'vreme_pokupljenja_vs': null, // ✅ RESETUJ i VS kolonu
+            'vreme_pokupljenja_bc': null,
+            'vreme_pokupljenja_vs': null,
           }).eq('id', lastAction.putnikId as String);
           return 'Poni�teno pokupljanje';
 
@@ -706,21 +706,39 @@ class PutnikService {
       final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
 
-      // ? FIXED: Ažuriraj action_log umesto nepostojece kolone pokupljanje_vozac
-      final actionLog = ActionLog.fromDynamic(response['action_log']);
-      final updatedActionLog = actionLog.addAction(ActionType.picked, vozacUuid ?? currentDriver, 'Pokupljen');
-
-      // ✅ NOVO: Odredi koju kolonu ažurirati na osnovu grada
+      // ✅ NOVO: Odredi dan i place za polasci_po_danu JSON
+      const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final danKratica = daniKratice[now.weekday - 1];
       final bool jeBC = grad?.toLowerCase().contains('bela') ?? false;
+      final place = jeBC ? 'bc' : 'vs';
+
+      // ✅ NOVO: Ažuriraj polasci_po_danu JSON sa pokupljenjem
+      Map<String, dynamic> polasciPoDanu = {};
+      final rawPolasci = response['polasci_po_danu'];
+      if (rawPolasci != null) {
+        if (rawPolasci is String) {
+          try {
+            polasciPoDanu = Map<String, dynamic>.from(jsonDecode(rawPolasci));
+          } catch (_) {}
+        } else if (rawPolasci is Map) {
+          polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
+        }
+      }
+
+      // Ažuriraj dan sa pokupljenjem
+      final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
+      dayData['${place}_pokupljeno'] = now.toIso8601String();
+      dayData['${place}_pokupljeno_vozac'] = currentDriver; // Ime vozača, ne UUID
+      polasciPoDanu[danKratica] = dayData;
+
+      // ✅ Kolone za kompatibilnost (zadržavamo za sada)
       final String vremeKolona = jeBC ? 'vreme_pokupljenja_bc' : 'vreme_pokupljenja_vs';
 
       await supabase.from(tabela).update({
-        vremeKolona: now.toIso8601String(), // ✅ KORISTI odgovarajuću kolonu za grad
-        'vreme_pokupljenja': now.toIso8601String(), // Zadrži i staru kolonu za kompatibilnost
-        'pokupljen': true, // ? BOOLEAN flag
-        'vozac_id': vozacUuid, // ? FIXED: Samo UUID, null ako nema mapiranja
-        'action_log': updatedActionLog.toJson(), // ? FIXED: Ažuriraj action_log.picked_by
-        'updated_at': now.toIso8601String(), // ? AŽURIRAJ timestamp
+        vremeKolona: now.toIso8601String(),
+        'vozac_id': vozacUuid,
+        'polasci_po_danu': polasciPoDanu,
+        'updated_at': now.toIso8601String(),
       }).eq('id', id);
 
       // ?? DODAJ ZAPIS U voznje_log za pracenje vo�nji
@@ -783,14 +801,38 @@ class PutnikService {
     final now = DateTime.now();
     String? validVozacId = naplatioVozac.isEmpty ? null : VozacMappingService.getVozacUuidSync(naplatioVozac);
 
-    final actionLog = ActionLog.fromDynamic(undoPayment['action_log']);
-    final updatedActionLog = actionLog.addAction(ActionType.paid, validVozacId ?? naplatioVozac, 'Placeno $iznos');
+    // ✅ NOVO: Ažuriraj polasci_po_danu JSON sa plaćanjem
+    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final danKratica = daniKratice[now.weekday - 1];
+
+    // Odredi place iz response (grad putnika)
+    final gradPutnika = response['grad'] as String? ?? '';
+    final place = gradPutnika.toLowerCase().contains('vr') ? 'vs' : 'bc';
+
+    Map<String, dynamic> polasciPoDanu = {};
+    final rawPolasci = response['polasci_po_danu'];
+    if (rawPolasci != null) {
+      if (rawPolasci is String) {
+        try {
+          polasciPoDanu = Map<String, dynamic>.from(jsonDecode(rawPolasci));
+        } catch (_) {}
+      } else if (rawPolasci is Map) {
+        polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
+      }
+    }
+
+    // Ažuriraj dan sa plaćanjem
+    final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
+    dayData['${place}_placeno'] = now.toIso8601String();
+    dayData['${place}_placeno_vozac'] = naplatioVozac; // Ime vozača
+    dayData['${place}_placeno_iznos'] = iznos;
+    polasciPoDanu[danKratica] = dayData;
 
     await supabase.from(tabela).update({
       'cena': iznos,
       'vreme_placanja': now.toIso8601String(),
       'vozac_id': validVozacId,
-      'action_log': updatedActionLog.toJson(),
+      'polasci_po_danu': polasciPoDanu, // ✅ NOVO: Sačuvaj u JSON
       'updated_at': now.toIso8601String(),
     }).eq('id', id);
   }
@@ -817,20 +859,19 @@ class PutnikService {
       if (tabela == 'registrovani_putnici') {
         final danas = DateTime.now().toIso8601String().split('T')[0];
         final vozacUuid = await VozacMappingService.getVozacUuid(otkazaoVozac);
-        
+
         // 🆕 Odredi place (bc/vs) iz selectedGrad ili iz putnikovog grada
         String place = 'bc'; // default
         final gradZaOtkazivanje = selectedGrad ?? respMap['grad'] as String? ?? '';
-        if (gradZaOtkazivanje.toLowerCase().contains('vr') || 
-            gradZaOtkazivanje.toLowerCase().contains('vs')) {
+        if (gradZaOtkazivanje.toLowerCase().contains('vr') || gradZaOtkazivanje.toLowerCase().contains('vs')) {
           place = 'vs';
         }
-        
+
         // 🆕 Odredi dan kratica
         final weekday = DateTime.now().weekday;
         const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
         final danKratica = daniKratice[weekday - 1];
-        
+
         // 🆕 Učitaj postojeći polasci_po_danu JSON
         Map<String, dynamic> polasci = {};
         final polasciRaw = respMap['polasci_po_danu'];
@@ -843,7 +884,7 @@ class PutnikService {
             polasci = Map<String, dynamic>.from(polasciRaw);
           }
         }
-        
+
         // 🆕 Dodaj/ažuriraj otkazivanje za specifičan dan i grad
         if (!polasci.containsKey(danKratica)) {
           polasci[danKratica] = <String, dynamic>{};
@@ -855,7 +896,6 @@ class PutnikService {
 
         await supabase.from('registrovani_putnici').update({
           'polasci_po_danu': jsonEncode(polasci),
-          'otkazao_vozac': otkazaoVozac,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', id.toString());
 
@@ -923,15 +963,15 @@ class PutnikService {
     final undoOdsustvo = response;
     _addToUndoStack('odsustvo', id, undoOdsustvo);
 
-    // ?? FIX: Konvertuj 'godisnji' u 'godi�nji' za bazu (constraint zahteva dijakritiku)
+    // 🔧 FIX: Koristi 'godisnji' bez dijakritike jer tako zahteva DB constraint
     String statusZaBazu = tipOdsustva.toLowerCase();
-    if (statusZaBazu == 'godisnji') {
-      statusZaBazu = 'godi�nji';
+    if (statusZaBazu == 'godišnji') {
+      statusZaBazu = 'godisnji';
     }
 
     try {
       await supabase.from(tabela).update({
-        'status': statusZaBazu, // 'bolovanje' ili 'godi�nji'
+        'status': statusZaBazu, // 'bolovanje' ili 'godisnji'
         'aktivan': true, // Putnik ostaje aktivan, samo je na odsustvu
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
@@ -960,17 +1000,41 @@ class PutnikService {
             await supabase.from('registrovani_putnici').select().eq('putnik_ime', imePutnika).limit(1);
 
         if (registrovaniList.isNotEmpty) {
-          // ? FIX: Update SVE putnike sa istim imenom (ako ih ima vi�e)
+          final respMap = registrovaniList.first;
+
+          // 🆕 Resetuj i per-trip otkazivanja u polasci_po_danu JSON-u
+          Map<String, dynamic> polasci = {};
+          final polasciRaw = respMap['polasci_po_danu'];
+          if (polasciRaw != null) {
+            if (polasciRaw is String) {
+              try {
+                polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
+              } catch (_) {}
+            } else if (polasciRaw is Map) {
+              polasci = Map<String, dynamic>.from(polasciRaw);
+            }
+          }
+
+          // Očisti sva otkazivanja za sve dane
+          polasci.forEach((day, data) {
+            if (data is Map) {
+              data.remove('bc_otkazano');
+              data.remove('bc_otkazao_vozac');
+              data.remove('vs_otkazano');
+              data.remove('vs_otkazao_vozac');
+            }
+          });
+
+          // ? FIX: Update SVE putnike sa istim imenom (ako ih ima više)
           await supabase.from('registrovani_putnici').update({
-            'aktivan': true, // ? KRITICNO: VRATI na aktivan (jeOtkazan = false)
-            'status': 'radi', // ? VRATI na radi
-            'vreme_pokupljenja': null, // ? FIXED: Ukloni timestamp pokupljanja
-            'vreme_pokupljenja_bc': null, // ✅ RESETUJ i BC kolonu
-            'vreme_pokupljenja_vs': null, // ✅ RESETUJ i VS kolonu
-            'vreme_placanja': null, // ? UKLONI timestamp placanja
-            'pokupljen': false, // ? VRATI na false
-            'cena': null, // ? UKLONI placanje
-            'vozac_id': null, // ? UKLONI vozaca (UUID kolona)
+            'aktivan': true,
+            'status': 'radi',
+            'polasci_po_danu': jsonEncode(polasci),
+            'vreme_pokupljenja_bc': null,
+            'vreme_pokupljenja_vs': null,
+            'vreme_placanja': null,
+            'cena': null,
+            'vozac_id': null,
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('putnik_ime', imePutnika);
 

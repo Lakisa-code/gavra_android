@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme.dart';
 
@@ -17,9 +16,7 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   List<Map<String, dynamic>> _vozaci = [];
-  List<Map<String, dynamic>> _zahtevi = []; // Zahtevi za pristup
   bool _isLoading = true;
-  bool _zahteviLoading = false;
 
   // Forma za novog vozača
   final _formKey = GlobalKey<FormState>();
@@ -47,7 +44,6 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     _loadVozaci();
-    _loadZahtevi();
   }
 
   @override
@@ -118,112 +114,6 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _saveVozaci() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_vozaci', jsonEncode(_vozaci));
-  }
-
-  /// 📬 Učitaj zahteve za pristup iz Supabase
-  Future<void> _loadZahtevi() async {
-    setState(() => _zahteviLoading = true);
-    try {
-      final response = await Supabase.instance.client
-          .from('zahtevi_pristupa')
-          .select()
-          .eq('status', 'pending')
-          .order('created_at', ascending: false);
-
-      setState(() {
-        _zahtevi = List<Map<String, dynamic>>.from(response);
-        _zahteviLoading = false;
-      });
-    } catch (e) {
-      setState(() => _zahteviLoading = false);
-    }
-  }
-
-  /// ✅ Odobri zahtev - dodaj vozača
-  Future<void> _odobriZahtev(Map<String, dynamic> zahtev) async {
-    // Dodaj vozača u lokalnu listu
-    final noviVozac = {
-      'ime': zahtev['ime'],
-      'email': zahtev['email'],
-      'sifra': '', // Prazna šifra, može se dodati kasnije
-      'telefon': zahtev['telefon'] ?? '',
-      'boja': _availableColors[_vozaci.length % _availableColors.length].toARGB32(),
-    };
-
-    setState(() {
-      _vozaci.add(noviVozac);
-    });
-    await _saveVozaci();
-
-    // Ažuriraj status u Supabase
-    try {
-      await Supabase.instance.client.from('zahtevi_pristupa').update({
-        'status': 'approved',
-        'processed_at': DateTime.now().toIso8601String(),
-        'processed_by': 'admin',
-      }).eq('id', zahtev['id']);
-
-      await _loadZahtevi(); // Osveži listu
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${zahtev['ime']} odobren!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (_) {
-      // Greška pri odobravanju
-    }
-  }
-
-  /// ❌ Odbij zahtev
-  Future<void> _odbijZahtev(Map<String, dynamic> zahtev) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Odbij zahtev?', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Da li si siguran da želiš da odbiješ ${zahtev['ime']}?',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ne'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Da, odbij', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await Supabase.instance.client.from('zahtevi_pristupa').update({
-          'status': 'rejected',
-          'processed_at': DateTime.now().toIso8601String(),
-          'processed_by': 'admin',
-        }).eq('id', zahtev['id']);
-
-        await _loadZahtevi();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ ${zahtev['ime']} odbijen'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      } catch (_) {
-        // Greška pri odbijanju
-      }
-    }
   }
 
   /// Dodaj novog vozača
@@ -519,303 +409,153 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: () async {
-                  await _loadZahtevi();
-                },
-                child: ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: [
-                    // 📬 SEKCIJA ZAHTEVA
-                    if (_zahtevi.isNotEmpty || _zahteviLoading) ...[
-                      Row(
-                        children: [
-                          const Text(
-                            '📬 ZAHTEVI',
-                            style: TextStyle(
-                              color: Colors.amber,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${_zahtevi.length}',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            icon: const Icon(Icons.refresh, color: Colors.amber),
-                            onPressed: _loadZahtevi,
-                            iconSize: 20,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (_zahteviLoading)
-                        const Center(child: CircularProgressIndicator(color: Colors.amber))
-                      else
-                        ..._zahtevi.map((zahtev) => _buildZahtevCard(zahtev)),
-                      const SizedBox(height: 16),
-                      const Divider(color: Colors.white24),
-                      const SizedBox(height: 8),
-                    ],
-
-                    // 👥 SEKCIJA VOZAČA
-                    Row(
-                      children: [
-                        const Text(
-                          '👥 VOZAČI',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${_vozaci.length}',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    if (_vozaci.isEmpty)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Text(
-                            'Nema vozača.\nKlikni + da dodaš.',
-                            style: TextStyle(color: Colors.white70, fontSize: 18),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                    else
-                      ..._vozaci.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final vozac = entry.value;
-                        final boja = Color(vozac['boja'] ?? 0xFF2196F3);
-
-                        return Card(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          margin: const EdgeInsets.only(bottom: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: boja.withValues(alpha: 0.6), width: 1.5),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            child: Row(
-                              children: [
-                                // Avatar
-                                CircleAvatar(
-                                  backgroundColor: boja,
-                                  radius: 22,
-                                  child: Text(
-                                    (vozac['ime'] ?? '?')[0].toUpperCase(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Info
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Ime vozača + ikone u istom redu
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              vozac['ime'] ?? 'Nepoznat',
-                                              style: TextStyle(
-                                                color: boja,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ),
-                                          // Actions - olovka i kanta
-                                          IconButton(
-                                            icon: Icon(Icons.edit, color: boja, size: 20),
-                                            onPressed: () => _editVozac(index),
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                            visualDensity: VisualDensity.compact,
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                                            onPressed: () => _deleteVozac(index),
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                            visualDensity: VisualDensity.compact,
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.email, size: 14, color: Colors.white54),
-                                          const SizedBox(width: 6),
-                                          Flexible(
-                                            child: Text(
-                                              vozac['email'] ?? '-',
-                                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.phone, size: 14, color: Colors.white54),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            vozac['telefon'] ?? '-',
-                                            style: const TextStyle(color: Colors.white, fontSize: 13),
-                                          ),
-                                          if (vozac['sifra']?.isNotEmpty == true)
-                                            const Padding(
-                                              padding: EdgeInsets.only(left: 6),
-                                              child: Text('🔒', style: TextStyle(fontSize: 12)),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                  ],
-                ),
-              ),
-      ),
-    );
-  }
-
-  /// 📬 Kartica za zahtev
-  Widget _buildZahtevCard(Map<String, dynamic> zahtev) {
-    return Card(
-      color: Colors.amber.withValues(alpha: 0.15),
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.amber.withValues(alpha: 0.6), width: 1.5),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(
-                  backgroundColor: Colors.amber,
-                  radius: 18,
-                  child: Icon(Icons.person_add, color: Colors.white, size: 18),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        zahtev['ime'] ?? 'Nepoznat',
-                        style: const TextStyle(
-                          color: Colors.amber,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                      Text(
-                        zahtev['email'] ?? '-',
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (zahtev['telefon']?.isNotEmpty == true) ...[
-              const SizedBox(height: 6),
-              Row(
+            : ListView(
+                padding: const EdgeInsets.all(12),
                 children: [
-                  const Icon(Icons.phone, size: 12, color: Colors.white54),
-                  const SizedBox(width: 6),
-                  Text(
-                    zahtev['telefon'],
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  // 👥 SEKCIJA VOZAČA
+                  Row(
+                    children: [
+                      const Text(
+                        '👥 VOZAČI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${_vozaci.length}',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
+
+                  if (_vozaci.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text(
+                          'Nema vozača.\nKlikni + da dodaš.',
+                          style: TextStyle(color: Colors.white70, fontSize: 18),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  else
+                    ..._vozaci.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final vozac = entry.value;
+                      final boja = Color(vozac['boja'] ?? 0xFF2196F3);
+
+                      return Card(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: boja.withValues(alpha: 0.6), width: 1.5),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: [
+                              // Avatar
+                              CircleAvatar(
+                                backgroundColor: boja,
+                                radius: 22,
+                                child: Text(
+                                  (vozac['ime'] ?? '?')[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Ime vozača + ikone u istom redu
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            vozac['ime'] ?? 'Nepoznat',
+                                            style: TextStyle(
+                                              color: boja,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                        // Actions - olovka i kanta
+                                        IconButton(
+                                          icon: Icon(Icons.edit, color: boja, size: 20),
+                                          onPressed: () => _editVozac(index),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                          onPressed: () => _deleteVozac(index),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.email, size: 14, color: Colors.white54),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            vozac['email'] ?? '-',
+                                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.phone, size: 14, color: Colors.white54),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          vozac['telefon'] ?? '-',
+                                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        ),
+                                        if (vozac['sifra']?.isNotEmpty == true)
+                                          const Padding(
+                                            padding: EdgeInsets.only(left: 6),
+                                            child: Text('🔒', style: TextStyle(fontSize: 12)),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
                 ],
               ),
-            ],
-            if (zahtev['poruka']?.isNotEmpty == true) ...[
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '"${zahtev['poruka']}"',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic),
-                ),
-              ),
-            ],
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => _odbijZahtev(zahtev),
-                  icon: const Icon(Icons.close, size: 16),
-                  label: const Text('Odbij'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.withValues(alpha: 0.8),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () => _odobriZahtev(zahtev),
-                  icon: const Icon(Icons.check, size: 16),
-                  label: const Text('Odobri'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

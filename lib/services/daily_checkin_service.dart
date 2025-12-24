@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 // import 'dnevni_kusur_service.dart';
 import 'putnik_service.dart';
+import 'realtime/realtime_manager.dart';
 // import 'simplified_kusur_service.dart';
 import 'statistika_service.dart';
 
@@ -14,11 +15,12 @@ class DailyCheckInService {
   static const String _checkInPrefix = 'daily_checkin_';
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
 
-  // 🔧 SINGLETON PATTERN za kusur stream - sprečava kreiranje više channel-a
+  // 🔧 SINGLETON PATTERN za kusur stream - koristi JEDAN RealtimeManager channel za sve vozače
   static final Map<String, StreamController<double>> _kusurControllers = {};
-  static final Map<String, RealtimeChannel> _kusurChannels = {};
+  static StreamSubscription? _globalSubscription;
+  static bool _isSubscribed = false;
 
-  /// Stream za real-time ažuriranje kusura - SINGLETON po vozaču
+  /// Stream za real-time ažuriranje kusura - SINGLETON sa RealtimeManager
   static Stream<double> streamTodayAmount(String vozac) {
     // Ako već postoji aktivan controller za ovog vozača, koristi ga
     if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
@@ -30,94 +32,88 @@ class DailyCheckInService {
     _kusurControllers[vozac] = controller;
 
     final today = DateTime.now().toIso8601String().split('T')[0];
-    final supabase = Supabase.instance.client;
 
     // Učitaj inicijalne podatke
-    supabase
-        .from('daily_checkins')
-        .select('sitan_novac')
-        .eq('vozac', vozac)
-        .eq('datum', today)
-        .maybeSingle()
-        .then((data) {
-      if (!controller.isClosed) {
-        final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
-        controller.add(amount);
-      }
-    });
+    _fetchKusurForVozac(vozac, today, controller);
 
-    // Zatvori stari channel ako postoji
-    _kusurChannels[vozac]?.unsubscribe();
-
-    final channelName = 'kusur_$vozac';
-    final channel = supabase.channel(channelName);
-    _kusurChannels[vozac] = channel;
-
-    channel
-        .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'daily_checkins',
-      filter: PostgresChangeFilter(
-        type: PostgresChangeFilterType.eq,
-        column: 'vozac',
-        value: vozac,
-      ),
-      callback: (payload) {
-        debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
-        // Na promenu, ponovo učitaj
-        supabase
-            .from('daily_checkins')
-            .select('sitan_novac')
-            .eq('vozac', vozac)
-            .eq('datum', today)
-            .maybeSingle()
-            .then((data) {
-          if (!controller.isClosed) {
-            final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
-            controller.add(amount);
-          }
-        });
-      },
-    )
-        .subscribe((status, [error]) {
-      switch (status) {
-        case RealtimeSubscribeStatus.subscribed:
-          debugPrint('✅ [$channelName] Subscribed successfully');
-          break;
-        case RealtimeSubscribeStatus.channelError:
-          debugPrint('❌ [$channelName] Channel error: $error');
-          break;
-        case RealtimeSubscribeStatus.closed:
-          debugPrint('🔴 [$channelName] Channel closed');
-          break;
-        case RealtimeSubscribeStatus.timedOut:
-          debugPrint('⏰ [$channelName] Subscription timed out');
-          break;
-      }
-    });
+    // Osiguraj da postoji globalni subscription (deli se između svih vozača)
+    _ensureGlobalSubscription(today);
 
     return controller.stream;
   }
 
+  /// 🔧 Fetch kusur za vozača
+  static Future<void> _fetchKusurForVozac(
+    String vozac,
+    String today,
+    StreamController<double> controller,
+  ) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final data = await supabase
+          .from('daily_checkins')
+          .select('sitan_novac')
+          .eq('vozac', vozac)
+          .eq('datum', today)
+          .maybeSingle();
+
+      if (!controller.isClosed) {
+        final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
+        controller.add(amount);
+      }
+    } catch (e) {
+      debugPrint('❌ [DailyCheckInService] Fetch error for $vozac: $e');
+    }
+  }
+
+  /// 🔌 Osiguraj globalni subscription preko RealtimeManager
+  static void _ensureGlobalSubscription(String today) {
+    if (_isSubscribed && _globalSubscription != null) return;
+
+    // Koristi centralizovani RealtimeManager - JEDAN channel za sve vozače!
+    _globalSubscription = RealtimeManager.instance.subscribe('daily_checkins').listen((payload) {
+      debugPrint('🔄 [DailyCheckInService] Postgres change: ${payload.eventType}');
+
+      // Osvježi sve aktivne vozače
+      for (final entry in _kusurControllers.entries) {
+        final vozac = entry.key;
+        final controller = entry.value;
+        if (!controller.isClosed) {
+          _fetchKusurForVozac(vozac, today, controller);
+        }
+      }
+    });
+
+    _isSubscribed = true;
+    debugPrint('✅ [DailyCheckInService] Global subscription created via RealtimeManager');
+  }
+
   /// 🧹 Čisti kusur cache za vozača
   static void clearKusurCache(String vozac) {
-    _kusurChannels[vozac]?.unsubscribe();
-    _kusurChannels.remove(vozac);
     _kusurControllers[vozac]?.close();
     _kusurControllers.remove(vozac);
+
+    // Ako nema više aktivnih controllera, zatvori globalni subscription
+    if (_kusurControllers.isEmpty && _globalSubscription != null) {
+      _globalSubscription?.cancel();
+      RealtimeManager.instance.unsubscribe('daily_checkins');
+      _globalSubscription = null;
+      _isSubscribed = false;
+    }
   }
 
   /// 🧹 Čisti sve kusur cache-eve
   static void clearAllKusurCache() {
-    for (final channel in _kusurChannels.values) {
-      channel.unsubscribe();
-    }
     for (final controller in _kusurControllers.values) {
       controller.close();
     }
-    _kusurChannels.clear();
     _kusurControllers.clear();
+
+    // Zatvori globalni subscription
+    _globalSubscription?.cancel();
+    RealtimeManager.instance.unsubscribe('daily_checkins');
+    _globalSubscription = null;
+    _isSubscribed = false;
   }
 
   /// Initialize stream with current value from SharedPreferences

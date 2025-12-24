@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -259,14 +260,47 @@ class RegistrovaniPutnikService {
         vozacId: validVozacId,
       );
 
+      final now = DateTime.now();
+
+      // ✅ NOVO: Dohvati polasci_po_danu da bismo dodali plaćanje po danu
+      final currentData =
+          await _supabase.from('registrovani_putnici').select('polasci_po_danu, grad').eq('id', putnikId).single();
+
+      // Odredi dan i place
+      const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final danKratica = daniKratice[now.weekday - 1];
+      final gradPutnika = currentData['grad'] as String? ?? '';
+      final place = gradPutnika.toLowerCase().contains('vr') ? 'vs' : 'bc';
+
+      // Parsiraj postojeći polasci_po_danu
+      Map<String, dynamic> polasciPoDanu = {};
+      final rawPolasci = currentData['polasci_po_danu'];
+      if (rawPolasci != null) {
+        if (rawPolasci is String) {
+          try {
+            polasciPoDanu = Map<String, dynamic>.from(jsonDecode(rawPolasci));
+          } catch (_) {}
+        } else if (rawPolasci is Map) {
+          polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
+        }
+      }
+
+      // Ažuriraj dan sa plaćanjem
+      final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
+      dayData['${place}_placeno'] = now.toIso8601String();
+      dayData['${place}_placeno_vozac'] = vozacId; // Ime ili UUID vozača
+      dayData['${place}_placeno_iznos'] = iznos;
+      polasciPoDanu[danKratica] = dayData;
+
       await updateRegistrovaniPutnik(putnikId, {
-        'vreme_placanja': DateTime.now().toIso8601String(),
+        'vreme_placanja': now.toIso8601String(),
         'cena': iznos,
         'placeno': true,
         'placeni_mesec': pocetakMeseca.month,
         'placena_godina': pocetakMeseca.year,
         'ukupna_cena_meseca': iznos,
         'vozac_id': validVozacId,
+        'polasci_po_danu': polasciPoDanu, // ✅ NOVO: Sačuvaj plaćanje u JSON
       });
 
       return true;

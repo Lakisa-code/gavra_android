@@ -164,31 +164,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       return;
     }
 
-    // PROVERI FIREBASE AUTH STATE
-    final firebaseUser = AuthManager.getCurrentUser();
-    // 🔄 MAPIRANJE: email -> vozač ime umesto displayName
-    // Map only via email to a whitelisted driver; don't fall back to displayName
-    final driverFromFirebase = firebaseUser?.email != null ? VozacBoja.getVozacForEmail(firebaseUser!.email) : null;
-
-    // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
-    if (AuthManager.isEmailAuthenticated() && !AuthManager.isEmailVerified()) {
-      // Korisnik je ulogovan ali email nije verifikovan - odjavi ga
-      if (mounted) {
-        await AuthManager.logout(context);
-      }
-      return;
-    }
-
-    // Koristi novi AuthManager za session management
-    final savedDriver = await AuthManager.getCurrentDriver();
-
-    // Ako je neko ulogovan u Firebase, koristi to
-    if (driverFromFirebase != null && (savedDriver == null || savedDriver != driverFromFirebase)) {
-      await AuthManager.setCurrentDriver(driverFromFirebase);
-    }
-
-    // Koristi driver iz Firebase ako postoji, inače iz local storage
-    final activeDriver = driverFromFirebase ?? savedDriver;
+    // Koristi AuthManager za session management
+    final activeDriver = await AuthManager.getCurrentDriver();
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
       // Vozač je već logovan - PROVERI DAILY CHECK-IN

@@ -2,11 +2,11 @@
 class RealtimeConfig {
   RealtimeConfig._();
 
-  /// Delay pre reconnect-a (sekunde)
-  static const int reconnectDelaySeconds = 3;
+  /// Delay pre reconnect-a (sekunde) - povećano da smanji spam
+  static const int reconnectDelaySeconds = 10;
 
   /// Maksimalan broj pokušaja reconnect-a
-  static const int maxReconnectAttempts = 5;
+  static const int maxReconnectAttempts = 3;
 
   /// Interval za heartbeat proveru (sekunde)
   static const int heartbeatIntervalSeconds = 30;

@@ -84,6 +84,10 @@ class _DanasScreenState extends State<DanasScreen> {
   // 🔒 LOCK ZA KONKURENTNE REOPTIMIZACIJE
   bool _isReoptimizing = false;
 
+  // 🆕 SET ID-ova putnika koji su već uključeni u optimizovanu rutu
+  // Sprečava beskonačnu petlju reoptimizacije za iste putnike
+  Set<String> _optimizedPassengerIds = {};
+
   // 💓 HEARTBEAT MONITORING FUNCTIONS
   void _registerStreamHeartbeat(String streamName) {
     _streamHeartbeats[streamName] = DateTime.now();
@@ -475,14 +479,21 @@ class _DanasScreenState extends State<DanasScreen> {
           height: 24,
           child: GestureDetector(
             onTap: () => _showDjackiDialog(statistike),
-            child: Center(
-              child: Text(
-                '$ostalo/$ukupnoUjutro',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: textColor,
-                  shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Center(
+                child: Text(
+                  '$ostalo/$ukupnoUjutro',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                    shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+                  ),
                 ),
               ),
             ),
@@ -515,26 +526,35 @@ class _DanasScreenState extends State<DanasScreen> {
                   _optimizeCurrentRoute(_currentPutnici, isAlreadyOptimized: false);
                 }
               },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.route,
-              size: 16,
-              color: textColor,
-              shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
+              borderRadius: BorderRadius.circular(6),
             ),
-            const SizedBox(width: 2),
-            Text(
-              _isRouteOptimized ? 'Reset' : 'Ruta',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                color: textColor,
-                shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.route,
+                  size: 16,
+                  color: textColor,
+                  shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  _isRouteOptimized ? 'Reset' : 'Ruta',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: textColor,
+                    shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -906,6 +926,7 @@ class _DanasScreenState extends State<DanasScreen> {
         _isGpsTracking = false;
         // _lastGpsUpdate = null; // REMOVED - Google APIs disabled
         _navigationStatus = '';
+        _optimizedPassengerIds.clear(); // 🆕 Resetuj set obrađenih putnika
       });
     }
 
@@ -1058,10 +1079,16 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 2️⃣ Detektuj nove putnike koji nisu u optimizovanoj ruti
     // 🔧 FIX: Filtriraj nove putnike SAMO za trenutni grad i vreme
+    // 🔧 FIX 2: Koristi _optimizedPassengerIds da spreči beskonačnu petlju
     final newPassengers = <Putnik>[];
     final normFilterTime = GradAdresaValidator.normalizeTime(_selectedVreme);
     for (final streamPutnik in streamPutnici) {
-      if (!optimizedIds.contains(streamPutnik.id)) {
+      final putnikId = streamPutnik.id;
+      // ✅ Preskoči ako je već obrađen u ovoj optimizaciji
+      if (putnikId != null && _optimizedPassengerIds.contains(putnikId)) {
+        continue;
+      }
+      if (!optimizedIds.contains(putnikId)) {
         // ✅ Proveri da li putnik pripada trenutnom gradu i vremenu
         final normStreamTime = GradAdresaValidator.normalizeTime(streamPutnik.polazak);
         final vremeMatch = normStreamTime == normFilterTime;
@@ -1077,6 +1104,12 @@ class _DanasScreenState extends State<DanasScreen> {
         final isActive = !streamPutnik.jeOtkazan && !streamPutnik.jeOdsustvo && !streamPutnik.obrisan;
 
         if (vremeMatch && gradMatch && isActive) {
+          // 🆕 UVEK dodaj u set obrađenih čim detektujemo - sprečava beskonačnu petlju
+          // Ovo je bitno za putnike BEZ ADRESE koji se preskačaju u optimizaciji
+          if (putnikId != null) {
+            _optimizedPassengerIds.add(putnikId);
+          }
+
           hasNewPassengers = true;
           newPassengers.add(streamPutnik);
           newPassengerNames.add(streamPutnik.ime);
@@ -1571,7 +1604,12 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🎯 PRAVI FILTER - koristi putnike koji su već prikazani na ekranu
     // Mesečni putnici imaju adresaId koji pokazuje na pravu adresu
+    // ❌ Isključi otkazane i pokupljene putnike - samo bele kartice idu u optimizaciju
     final filtriraniPutnici = putnici.where((p) {
+      // Isključi otkazane putnike
+      if (p.jeOtkazan) return false;
+      // Isključi već pokupljene putnike
+      if (p.jePokupljen) return false;
       // Za mesečne putnike: imaju adresaId koji pokazuje na pravu adresu
       // Za dnevne putnike: imaju adresu direktno
       final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
@@ -1611,6 +1649,8 @@ class _DanasScreenState extends State<DanasScreen> {
             _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
             // NE postavljaj _isGpsTracking - aktivira se tek kad korisnik pritisne NAV
             _isLoading = false; // ✅ ZAUSTAVI LOADING
+            // 🆕 Inicijalizuj set obrađenih putnika sa svim iz optimizacije
+            _optimizedPassengerIds = optimizedPutnici.where((p) => p.id != null).map((p) => p.id! as String).toSet();
           });
         }
 

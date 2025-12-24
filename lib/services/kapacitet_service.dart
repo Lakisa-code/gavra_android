@@ -124,7 +124,26 @@ class KapacitetService {
     // Koristi centralizovani RealtimeManager
     subscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
       debugPrint('🔄 [KapacitetService] Postgres change: ${payload.eventType}');
-      // Na bilo koju promenu, ponovo učitaj sve
+
+      // 🚀 PAYLOAD FILTERING: Ažuriraj cache direktno ako je moguće
+      if (payload.eventType == PostgresChangeEvent.update || payload.eventType == PostgresChangeEvent.insert) {
+        final grad = payload.newRecord['grad'] as String?;
+        final vreme = payload.newRecord['vreme'] as String?;
+        final maxMesta = payload.newRecord['max_mesta'] as int?;
+
+        if (grad != null && vreme != null && maxMesta != null && _kapacitetCache != null) {
+          if (_kapacitetCache!.containsKey(grad)) {
+            _kapacitetCache![grad]![vreme] = maxMesta;
+            debugPrint('  📝 [PayloadFiltering] Updated capacity for $grad $vreme to $maxMesta');
+            if (!controller.isClosed) {
+              controller.add(Map.from(_kapacitetCache!));
+            }
+            return; // Uspešno ažurirano, preskoči full fetch
+          }
+        }
+      }
+
+      // Na bilo koju drugu promenu (DELETE) ili ako cache nije inicijalizovan, ponovo učitaj sve
       getKapacitet().then((data) {
         if (!controller.isClosed) {
           controller.add(data);
