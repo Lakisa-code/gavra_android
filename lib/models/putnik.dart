@@ -655,7 +655,9 @@ class Putnik {
         pokupljen == other.pokupljen &&
         placeno == other.placeno &&
         cena == other.cena &&
-        vremePokupljenja == other.vremePokupljenja;
+        vremePokupljenja == other.vremePokupljenja &&
+        vremeOtkazivanja == other.vremeOtkazivanja &&
+        otkazanZaPolazak == other.otkazanZaPolazak;
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
+import '../utils/putnik_helpers.dart';
 import 'putnik_card.dart';
 
 /// Widget koji prikazuje listu putnika koristeći PutnikCard za svaki element.
@@ -55,12 +56,13 @@ class PutnikList extends StatelessWidget {
     // Pokupljeni putnici
     if (p.jePokupljen) {
       // 🟢 ZELENE - Plaćeni ili mesečni
+      // SINHRONIZOVANO sa CardColorHelper: koristi isMesecniTip umesto mesecnaKarta
       final bool isPlaceno = (p.iznosPlacanja ?? 0) > 0;
-      final bool isMesecna = p.mesecnaKarta == true;
-      if (isPlaceno || isMesecna) {
+      final bool isMesecniTip = p.isMesecniTip; // radnik/ucenik → zelena
+      if (isPlaceno || isMesecniTip) {
         return 3; // zelene
       }
-      // 🔵 PLAVE - Pokupljeni neplaćeni
+      // 🔵 PLAVE - Pokupljeni neplaćeni (dnevni tip)
       return 2;
     }
 
@@ -69,8 +71,9 @@ class PutnikList extends StatelessWidget {
   }
 
   // Helper za proveru da li putnik treba da ima redni broj
+  // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
   bool _imaRedniBroj(Putnik p) {
-    return !p.jeOdsustvo && !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan');
+    return PutnikHelpers.shouldHaveOrdinalNumber(p);
   }
 
   // Vraća početni redni broj za putnika (prvi broj od njegovih mesta)

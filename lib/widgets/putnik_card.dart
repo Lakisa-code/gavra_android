@@ -14,7 +14,6 @@ import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart';
 import '../services/registrovani_putnik_service.dart';
-import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart';
 import '../utils/smart_colors.dart';
@@ -70,10 +69,10 @@ class _PutnikCardState extends State<PutnikCard> {
   @override
   void didUpdateWidget(PutnikCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Ažuriraj _putnik kada se promeni widget.putnik iz StreamBuilder-a
-    if (widget.putnik != oldWidget.putnik) {
-      _putnik = widget.putnik;
-    }
+    // 🔧 FIX: UVEK ažuriraj _putnik kada se widget promeni
+    // Ovo garantuje da realtime promene (pokupljenje, otkazivanje, reset)
+    // budu odmah vidljive bez obzira na == operator
+    _putnik = widget.putnik;
   }
 
   // ignore: unused_element
@@ -317,8 +316,11 @@ class _PutnikCardState extends State<PutnikCard> {
       // Malo sačekaj da se podaci propagiraju
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      // Refresh putnika iz baze
-      final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
+      // Refresh putnika iz baze - 🆕 prosleđujemo grad za tačan rezultat
+      final updatedPutnik = await PutnikService().getPutnikByName(
+        _putnik.ime,
+        grad: widget.selectedGrad ?? _putnik.grad,
+      );
       if (updatedPutnik != null && mounted) {
         setState(() {
           _putnik = updatedPutnik;
@@ -2457,25 +2459,14 @@ class _PutnikCardState extends State<PutnikCard> {
       final pocetakMeseca = DateTime(year, monthNumber);
       final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
-      // Konvertuj ime vozača u UUID - FIX ZA CONSTRAINT GREŠKU
-
-      String vozacUuid;
-      if (VozacMappingService.isValidVozacUuidSync(vozacIme)) {
-        // Već je UUID format
-        vozacUuid = vozacIme;
-      } else {
-        // Konvertuj ime u UUID
-        final uuid = VozacMappingService.getVozacUuidSync(vozacIme);
-
-        // FALLBACK sa pravim UUID-om vozača Bojan
-        vozacUuid = uuid ?? '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e'; // Bojan UUID iz baze
-      }
+      // 🔧 FIX: Prosleđuj IME vozača, ne UUID - konverzija se radi u servisu
+      // Ime vozača se koristi za prikaz boja u polasci_po_danu JSON
 
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
       final uspeh = await RegistrovaniPutnikService().azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
-        vozacUuid,
+        vozacIme, // 🔧 FIX: Šaljemo IME, ne UUID
         pocetakMeseca,
         krajMeseca,
       );
@@ -2492,14 +2483,8 @@ class _PutnikCardState extends State<PutnikCard> {
           );
         }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('❌ Greška pri čuvanju plaćanja'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
+        // 🔧 FIX: Baci exception da _executePayment ne prikaže uspešnu poruku
+        throw Exception('Greška pri čuvanju plaćanja u bazu');
       }
     } catch (e) {
       if (mounted) {

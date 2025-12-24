@@ -28,6 +28,7 @@ import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
+import '../utils/putnik_helpers.dart'; // 🔢 Za brojanje putnika
 import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
@@ -2288,7 +2289,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final countCandidates = uniqueForCounts.values.toList();
 
           for (final p in countCandidates) {
-            if (!TextUtils.isStatusActive(p.status)) continue;
+            // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
+            // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
+            if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
             final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
             // 🔧 ISPRAVKA: Koristi grad umesto adrese za klasifikaciju polazaka

@@ -27,6 +27,7 @@ import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
 import '../services/weather_service.dart'; // 🌤️ DODANO za vremensku prognozu
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
+import '../utils/putnik_helpers.dart'; // 🔢 Za brojanje putnika
 import '../utils/schedule_utils.dart'; // Za isZimski funkciju
 import '../utils/text_utils.dart'; // 🎯 DODANO za standardizovano filtriranje statusa
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
@@ -2503,7 +2504,9 @@ class _DanasScreenState extends State<DanasScreen> {
               };
 
               for (final p in allPutnici) {
-                if (!TextUtils.isStatusActive(p.status)) continue;
+                // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
+                // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
+                if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
                 // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN - filtriranje po datumu
                 final targetDateIso = DateTime.now().toIso8601String().split('T')[0];

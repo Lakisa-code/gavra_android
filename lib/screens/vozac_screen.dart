@@ -17,6 +17,7 @@ import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
+import '../utils/putnik_helpers.dart'; // 🔢 Za brojanje putnika
 import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart'; // 🎯 Za TextUtils.isStatusActive
 import '../utils/vozac_boja.dart'; // 🎯 Za validaciju vozača
@@ -1708,7 +1709,9 @@ class _VozacScreenState extends State<VozacScreen> {
             };
 
             for (final p in allPutnici) {
-              if (!TextUtils.isStatusActive(p.status)) continue;
+              // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
+              // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
+              if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
               // 🔧 Provera dana - samo danas
               final targetDateIso = DateTime.now().toIso8601String().split('T')[0];

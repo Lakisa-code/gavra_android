@@ -73,15 +73,18 @@ class PutnikService {
     // Koristi centralizovani RealtimeManager
     _globalSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
       debugPrint('🔄 [PutnikService] Postgres change: ${payload.eventType}');
-      // 🔄 Vraćeno na full refresh jer partial payload (bez radni_dani)
-      // uzrokuje da putnici nestanu sa liste pri realtime ažuriranju.
+
+      // 🔧 FIX: UVEK radi full refresh jer partial update ne može pravilno rekonstruisati
+      // polasci_po_danu JSON koji sadrži vremePokupljenja, otkazanZaPolazak itd.
+      // Partial update je previše kompleksan i error-prone za ovaj use case.
+      debugPrint('🔄 [PutnikService] Full refresh triggered');
       _refreshAllStreams();
     });
     _isSubscribed = true;
     debugPrint('✅ [PutnikService] Global subscription created via RealtimeManager');
   }
 
-  /// Osvežava SVE aktivne streamove
+  /// Osvežava SVE aktivne streamove (full refresh)
   void _refreshAllStreams() {
     for (final entry in _streamParams.entries) {
       final key = entry.key;
@@ -272,7 +275,8 @@ class PutnikService {
 
   // ?? UCITAJ PUTNIKA IZ BILO KOJE TABELE (po imenu)
   // ?? POJEDNOSTAVLJENO: Samo registrovani_putnici tabela
-  Future<Putnik?> getPutnikByName(String imePutnika) async {
+  // 🆕 DODATO: Opcioni parametar grad za precizniji rezultat
+  Future<Putnik?> getPutnikByName(String imePutnika, {String? grad}) async {
     try {
       final registrovaniResponse = await supabase
           .from('registrovani_putnici')
@@ -281,6 +285,19 @@ class PutnikService {
           .maybeSingle();
 
       if (registrovaniResponse != null) {
+        // 🆕 Ako je grad specificiran, vrati putnika za taj grad
+        if (grad != null) {
+          final weekday = DateTime.now().weekday;
+          const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          final danKratica = daniKratice[weekday - 1];
+
+          final putnici = Putnik.fromRegistrovaniPutniciMultipleForDay(registrovaniResponse, danKratica);
+          final matching = putnici.where((p) => p.grad == grad).toList();
+          if (matching.isNotEmpty) {
+            return matching.first;
+          }
+        }
+
         return Putnik.fromRegistrovaniPutnici(registrovaniResponse);
       }
 
@@ -890,13 +907,18 @@ class PutnikService {
           polasci[danKratica] = <String, dynamic>{};
         }
         final dayData = polasci[danKratica] as Map<String, dynamic>;
-        dayData['${place}_otkazano'] = DateTime.now().toIso8601String();
+        final now = DateTime.now();
+        dayData['${place}_otkazano'] = now.toIso8601String();
         dayData['${place}_otkazao_vozac'] = otkazaoVozac;
         polasci[danKratica] = dayData;
 
+        // Kolona za otkazivanje (triggeruje realtime)
+        final String vremeOtkazivanjaKolona = place == 'bc' ? 'vreme_otkazivanja_bc' : 'vreme_otkazivanja_vs';
+
         await supabase.from('registrovani_putnici').update({
-          'polasci_po_danu': jsonEncode(polasci),
-          'updated_at': DateTime.now().toIso8601String(),
+          'polasci_po_danu': polasci, // 🔧 FIX: Map direktno, ne jsonEncode!
+          vremeOtkazivanjaKolona: now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
         }).eq('id', id.toString());
 
         try {
@@ -1015,13 +1037,24 @@ class PutnikService {
             }
           }
 
-          // Očisti sva otkazivanja za sve dane
+          // Očisti SVA stanja za sve dane (otkazivanja, pokupljenja, plaćanja)
           polasci.forEach((day, data) {
             if (data is Map) {
+              // Otkazivanja
               data.remove('bc_otkazano');
               data.remove('bc_otkazao_vozac');
               data.remove('vs_otkazano');
               data.remove('vs_otkazao_vozac');
+              // Pokupljenja
+              data.remove('bc_pokupljeno');
+              data.remove('bc_pokupljeno_vozac');
+              data.remove('vs_pokupljeno');
+              data.remove('vs_pokupljeno_vozac');
+              // Plaćanja
+              data.remove('bc_placeno');
+              data.remove('bc_naplatilac');
+              data.remove('vs_placeno');
+              data.remove('vs_naplatilac');
             }
           });
 
@@ -1029,9 +1062,11 @@ class PutnikService {
           await supabase.from('registrovani_putnici').update({
             'aktivan': true,
             'status': 'radi',
-            'polasci_po_danu': jsonEncode(polasci),
+            'polasci_po_danu': polasci, // 🔧 FIX: Map direktno, ne jsonEncode!
             'vreme_pokupljenja_bc': null,
             'vreme_pokupljenja_vs': null,
+            'vreme_otkazivanja_bc': null,
+            'vreme_otkazivanja_vs': null,
             'vreme_placanja': null,
             'cena': null,
             'vozac_id': null,

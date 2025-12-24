@@ -38,7 +38,6 @@ class RegistrovaniPutnik {
     // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
     this.adresa,
     this.grad,
-    this.actionLog = const [],
     // Tracking polja
     this.dodaliVozaci = const [],
     this.placeno = false,
@@ -108,7 +107,6 @@ class RegistrovaniPutnik {
       // Computed fields za UI display (dolaze iz JOIN-a)
       adresa: map['adresa'] as String?,
       grad: map['grad'] as String?,
-      actionLog: const [], // ✅ UKLONJENO: action_log više ne koristimo
       // Tracking polja
       dodaliVozaci: _parseDodaliVozaci(map['dodali_vozaci']),
       placeno: map['placeno'] as bool? ?? false,
@@ -163,7 +161,6 @@ class RegistrovaniPutnik {
   // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
   final String? adresa;
   final String? grad;
-  final List<dynamic> actionLog;
 
   // Tracking polja
   final List<dynamic> dodaliVozaci;
@@ -226,7 +223,6 @@ class RegistrovaniPutnik {
       'tip_prikazivanja': tipPrikazivanja,
       'vozac_id': vozacId,
       'pokupljen': pokupljen,
-      'action_log': actionLog,
       'dodali_vozaci': dodaliVozaci,
       'placeno': placeno,
       'email': email, // 📧 Email
@@ -316,7 +312,6 @@ class RegistrovaniPutnik {
     // Computed fields za UI
     String? adresa,
     String? grad,
-    List<dynamic>? actionLog,
     // Tracking
     List<dynamic>? dodaliVozaci,
     bool? placeno,
@@ -357,7 +352,6 @@ class RegistrovaniPutnik {
       // Computed fields za UI
       adresa: adresa ?? this.adresa,
       grad: grad ?? this.grad,
-      actionLog: actionLog ?? this.actionLog,
       // Tracking
       dodaliVozaci: dodaliVozaci ?? this.dodaliVozaci,
       placeno: placeno ?? this.placeno,

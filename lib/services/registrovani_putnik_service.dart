@@ -232,20 +232,23 @@ class RegistrovaniPutnikService {
   Future<bool> azurirajPlacanjeZaMesec(
     String putnikId,
     double iznos,
-    String vozacId,
+    String vozacIme, // 🔧 FIX: Sada prima IME vozača, ne UUID
     DateTime pocetakMeseca,
     DateTime krajMeseca,
   ) async {
     String? validVozacId;
 
     try {
-      if (vozacId.isNotEmpty && vozacId != 'Nepoznat vozač') {
-        if (_isValidUuid(vozacId)) {
-          validVozacId = vozacId;
+      // Konvertuj ime vozača u UUID za foreign key kolonu
+      if (vozacIme.isNotEmpty && vozacIme != 'Nepoznat vozač') {
+        if (_isValidUuid(vozacIme)) {
+          // Ako je već UUID, koristi ga
+          validVozacId = vozacIme;
         } else {
+          // Konvertuj ime u UUID
           try {
             await VozacMappingService.initialize();
-            final converted = VozacMappingService.getVozacUuidSync(vozacId);
+            final converted = VozacMappingService.getVozacUuidSync(vozacIme);
             if (converted != null && _isValidUuid(converted)) {
               validVozacId = converted;
             }
@@ -262,15 +265,13 @@ class RegistrovaniPutnikService {
 
       final now = DateTime.now();
 
-      // ✅ NOVO: Dohvati polasci_po_danu da bismo dodali plaćanje po danu
+      // ✅ Dohvati polasci_po_danu da bismo dodali plaćanje po danu
       final currentData =
-          await _supabase.from('registrovani_putnici').select('polasci_po_danu, grad').eq('id', putnikId).single();
+          await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnikId).single();
 
-      // Odredi dan i place
+      // Odredi dan
       const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
       final danKratica = daniKratice[now.weekday - 1];
-      final gradPutnika = currentData['grad'] as String? ?? '';
-      final place = gradPutnika.toLowerCase().contains('vr') ? 'vs' : 'bc';
 
       // Parsiraj postojeći polasci_po_danu
       Map<String, dynamic> polasciPoDanu = {};
@@ -285,11 +286,14 @@ class RegistrovaniPutnikService {
         }
       }
 
-      // Ažuriraj dan sa plaćanjem
+      // Ažuriraj dan sa plaćanjem - snimi za oba grada (mesečna karta važi za oba)
       final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
-      dayData['${place}_placeno'] = now.toIso8601String();
-      dayData['${place}_placeno_vozac'] = vozacId; // Ime ili UUID vozača
-      dayData['${place}_placeno_iznos'] = iznos;
+      dayData['bc_placeno'] = now.toIso8601String();
+      dayData['bc_placeno_vozac'] = vozacIme; // 🔧 FIX: Čuvamo IME za prikaz boja
+      dayData['bc_placeno_iznos'] = iznos;
+      dayData['vs_placeno'] = now.toIso8601String();
+      dayData['vs_placeno_vozac'] = vozacIme; // 🔧 FIX: Čuvamo IME za prikaz boja
+      dayData['vs_placeno_iznos'] = iznos;
       polasciPoDanu[danKratica] = dayData;
 
       await updateRegistrovaniPutnik(putnikId, {
@@ -305,7 +309,9 @@ class RegistrovaniPutnikService {
 
       return true;
     } catch (e) {
-      return false;
+      debugPrint('❌ [RegistrovaniPutnikService] azurirajPlacanjeZaMesec error: $e');
+      // 🔧 FIX: Baci exception sa pravom greškom da korisnik vidi šta je problem
+      rethrow;
     }
   }
 

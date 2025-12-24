@@ -70,4 +70,10 @@ class TextUtils {
     return !otkazani.any((s) => normalizeText(s) == normalized) &&
         !neaktivni.any((s) => normalizeText(s) == normalized);
   }
+
+  /// 🆕 Proverava da li putnik treba da se RAČUNA u broju mesta
+  /// Ne računa: otkazane, bolovanje, godišnji, obrisane
+  /// KORISTI Putnik getters za potpunu proveru (uključujući polasci_po_danu)
+  /// Import: import '../models/putnik.dart';
+  // NOTE: Ova funkcija je definisana u putnik_helpers.dart jer zahteva import Putnik modela
 }

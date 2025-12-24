@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
-import '../utils/text_utils.dart';
+import '../utils/putnik_helpers.dart';
 import 'kapacitet_service.dart';
 import 'putnik_service.dart';
 
@@ -52,8 +52,9 @@ class SlobodnaMestaService {
 
     int count = 0;
     for (final p in putnici) {
-      // Preskoči neaktivne
-      if (!TextUtils.isStatusActive(p.status)) continue;
+      // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
+      // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
+      if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
       // Proveri datum/dan
       final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
