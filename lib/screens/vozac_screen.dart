@@ -551,8 +551,15 @@ class _VozacScreenState extends State<VozacScreen> {
       return;
     }
 
-    // Filter putnika sa validnim adresama
+    // Filter putnika sa validnim adresama i aktivnim statusom
     final filtriraniPutnici = putnici.where((p) {
+      // Isključi otkazane putnike
+      if (p.jeOtkazan) return false;
+      // Isključi već pokupljene putnike
+      if (p.jePokupljen) return false;
+      // Isključi odsutne putnike (bolovanje/godišnji)
+      if (p.jeOdsustvo) return false;
+      // Proveri validnu adresu
       final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
           (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
       return hasValidAddress;

@@ -17,11 +17,7 @@ class AdresaSupabaseService {
     }
 
     try {
-      final response = await supabase
-          .from('adrese')
-          .select('id, naziv, grad, koordinate, created_at, updated_at')
-          .eq('id', uuid)
-          .single();
+      final response = await supabase.from('adrese').select('id, naziv, grad, koordinate').eq('id', uuid).single();
 
       final adresa = Adresa.fromMap(response);
       _cache[uuid] = adresa;
@@ -56,7 +52,7 @@ class AdresaSupabaseService {
     try {
       final response = await supabase
           .from('adrese')
-          .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
+          .select('id, naziv, grad, ulica, broj, koordinate')
           .eq('naziv', naziv)
           .eq('grad', grad)
           .maybeSingle();
@@ -123,10 +119,9 @@ class AdresaSupabaseService {
                 .from('adrese')
                 .update({
                   'koordinate': {'lat': lat, 'lng': lng},
-                  'updated_at': DateTime.now().toIso8601String(),
                 })
                 .eq('id', adresa.id)
-                .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
+                .select('id, naziv, grad, ulica, broj, koordinate')
                 .single();
 
             final updatedAdresa = Adresa.fromMap(response);
@@ -223,7 +218,6 @@ class AdresaSupabaseService {
     try {
       await supabase.from('adrese').update({
         'koordinate': {'lat': lat, 'lng': lng},
-        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', uuid);
 
       if (_cache.containsKey(uuid)) {
@@ -263,7 +257,6 @@ class AdresaSupabaseService {
 
       await supabase.from('adrese').update({
         'koordinate': koordinate,
-        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', adresaId);
 
       _cache.remove(adresaId);

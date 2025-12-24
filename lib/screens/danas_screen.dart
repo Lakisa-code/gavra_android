@@ -361,10 +361,7 @@ class _DanasScreenState extends State<DanasScreen> {
     return StreamBuilder<WeatherData?>(
       stream: stream,
       builder: (context, snapshot) {
-        // Ako nema podataka iz stream-a, učitaj inicijalno
-        if (!snapshot.hasData) {
-          WeatherService.getWeatherData(grad);
-        }
+        // Stream sada automatski emituje cached vrednost, nema potrebe za dodatnim pozivom
         final data = snapshot.data;
         final temp = data?.temperature;
         final icon = data?.icon ?? '🌡️';
@@ -1605,12 +1602,14 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🎯 PRAVI FILTER - koristi putnike koji su već prikazani na ekranu
     // Mesečni putnici imaju adresaId koji pokazuje na pravu adresu
-    // ❌ Isključi otkazane i pokupljene putnike - samo bele kartice idu u optimizaciju
+    // ❌ Isključi otkazane, pokupljene i odsutne putnike - samo bele kartice idu u optimizaciju
     final filtriraniPutnici = putnici.where((p) {
       // Isključi otkazane putnike
       if (p.jeOtkazan) return false;
       // Isključi već pokupljene putnike
       if (p.jePokupljen) return false;
+      // 🆕 Isključi odsutne putnike (bolovanje/godišnji) - žute kartice ne idu u rutu
+      if (p.jeOdsustvo) return false;
       // Za mesečne putnike: imaju adresaId koji pokazuje na pravu adresu
       // Za dnevne putnike: imaju adresu direktno
       final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||

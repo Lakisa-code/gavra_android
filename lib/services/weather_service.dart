@@ -65,8 +65,25 @@ class WeatherService {
   static final _bcController = StreamController<WeatherData?>.broadcast();
   static final _vsController = StreamController<WeatherData?>.broadcast();
 
-  static Stream<WeatherData?> get bcWeatherStream => _bcController.stream;
-  static Stream<WeatherData?> get vsWeatherStream => _vsController.stream;
+  /// Stream za BC - odmah emituje cached vrednost ako postoji
+  static Stream<WeatherData?> get bcWeatherStream async* {
+    // Prvo emituj cached vrednost ako postoji
+    if (_dataCache.containsKey('BC')) {
+      yield _dataCache['BC'];
+    }
+    // Zatim slušaj nove podatke
+    yield* _bcController.stream;
+  }
+
+  /// Stream za VS - odmah emituje cached vrednost ako postoji
+  static Stream<WeatherData?> get vsWeatherStream async* {
+    // Prvo emituj cached vrednost ako postoji
+    if (_dataCache.containsKey('VS')) {
+      yield _dataCache['VS'];
+    }
+    // Zatim slušaj nove podatke
+    yield* _vsController.stream;
+  }
 
   /// Dohvati trenutnu temperaturu za grad (legacy - za kompatibilnost)
   static Future<double?> getTemperature(String grad) async {
