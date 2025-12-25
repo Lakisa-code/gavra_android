@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../globals.dart';
 import '../utils/schedule_utils.dart';
 import 'realtime/realtime_manager.dart';
 
@@ -17,25 +18,43 @@ class KapacitetService {
   static DateTime? _cacheTime;
   static const _cacheDuration = Duration(minutes: 5);
 
-  /// Vremena polazaka za Belu Crkvu (sezonski)
+  /// Vremena polazaka za Belu Crkvu (prema navBarType)
   static List<String> get bcVremena {
-    final jeZimski = isZimski(DateTime.now());
-    return jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.bcVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.bcVremenaZimski;
+      case 'letnji':
+        return RouteConfig.bcVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+    }
   }
 
-  /// Vremena polazaka za Vršac (sezonski)
+  /// Vremena polazaka za Vršac (prema navBarType)
   static List<String> get vsVremena {
-    final jeZimski = isZimski(DateTime.now());
-    return jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.vsVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.vsVremenaZimski;
+      case 'letnji':
+        return RouteConfig.vsVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    }
   }
 
-  /// Sva moguća vremena (zimska + letnja) - za kapacitet tabelu
+  /// Sva moguća vremena (zimska + letnja + praznična) - za kapacitet tabelu
   static List<String> get svaVremenaBc {
-    return {...RouteConfig.bcVremenaZimski, ...RouteConfig.bcVremenaLetnji}.toList();
+    return {...RouteConfig.bcVremenaZimski, ...RouteConfig.bcVremenaLetnji, ...RouteConfig.bcVremenaPraznici}.toList();
   }
 
   static List<String> get svaVremenaVs {
-    return {...RouteConfig.vsVremenaZimski, ...RouteConfig.vsVremenaLetnji}.toList();
+    return {...RouteConfig.vsVremenaZimski, ...RouteConfig.vsVremenaLetnji, ...RouteConfig.vsVremenaPraznici}.toList();
   }
 
   /// Dohvati vremena za grad (sezonski)

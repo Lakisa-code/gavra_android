@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'globals.dart';
 import 'screens/welcome_screen.dart';
+import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
 import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
@@ -109,6 +110,13 @@ void main() async {
       await VozacMappingService.initialize();
     } catch (e) {
       // Nastavi bez vozac mapping-a ako ne uspe
+    }
+
+    // 🔧 INICIJALIZUJ APP SETTINGS SERVICE (nav bar tip iz baze)
+    try {
+      await AppSettingsService.initialize();
+    } catch (e) {
+      // Nastavi bez app settings ako ne uspe - default je 'auto'
     }
 
     // 🔄 REALTIME se inicijalizuje lazy kroz PutnikService

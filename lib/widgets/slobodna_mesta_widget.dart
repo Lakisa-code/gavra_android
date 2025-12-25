@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/route_config.dart';
+import '../globals.dart';
 import '../services/slobodna_mesta_service.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
@@ -51,9 +52,29 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
   void _scrollToSelected() {
     const double itemWidth = 60.0;
 
-    final jeZimski = isZimski(DateTime.now());
-    final bcVremena = jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
-    final vsVremena = jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    // Koristi navBarType za određivanje vremena
+    final navType = navBarTypeNotifier.value;
+    List<String> bcVremena;
+    List<String> vsVremena;
+
+    switch (navType) {
+      case 'praznici':
+        bcVremena = RouteConfig.bcVremenaPraznici;
+        vsVremena = RouteConfig.vsVremenaPraznici;
+        break;
+      case 'zimski':
+        bcVremena = RouteConfig.bcVremenaZimski;
+        vsVremena = RouteConfig.vsVremenaZimski;
+        break;
+      case 'letnji':
+        bcVremena = RouteConfig.bcVremenaLetnji;
+        vsVremena = RouteConfig.vsVremenaLetnji;
+        break;
+      default: // 'auto'
+        final jeZimski = isZimski(DateTime.now());
+        bcVremena = jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+        vsVremena = jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    }
 
     final normalizedGrad = widget.putnikGrad?.toLowerCase() ?? '';
 

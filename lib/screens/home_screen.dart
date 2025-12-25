@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
@@ -33,6 +34,7 @@ import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
+import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/shimmer_widgets.dart';
@@ -2176,39 +2178,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: ShimmerWidgets.putnikListShimmer(itemCount: 8),
           ),
           // 🔧 DODAJ BOTTOM NAVIGATION BAR I U LOADING STANJU!
-          bottomNavigationBar: isZimski(DateTime.now())
-              ? BottomNavBarZimski(
-                  sviPolasci: _sviPolasci,
-                  selectedGrad: _selectedGrad,
-                  selectedVreme: _selectedVreme,
-                  getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
-                  getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                  onPolazakChanged: (grad, vreme) {
-                    if (mounted) {
-                      setState(() {
-                        _selectedGrad = grad;
-                        _selectedVreme = vreme;
-                        _selectedGradSubject.add(grad);
-                      });
-                    }
-                  },
-                )
-              : BottomNavBarLetnji(
-                  sviPolasci: _sviPolasci,
-                  selectedGrad: _selectedGrad,
-                  selectedVreme: _selectedVreme,
-                  getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
-                  getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                  onPolazakChanged: (grad, vreme) {
-                    if (mounted) {
-                      setState(() {
-                        _selectedGrad = grad;
-                        _selectedVreme = vreme;
-                        _selectedGradSubject.add(grad);
-                      });
-                    }
-                  },
-                ),
+          bottomNavigationBar: ValueListenableBuilder<String>(
+            valueListenable: navBarTypeNotifier,
+            builder: (context, navType, _) {
+              return _buildBottomNavBar(navType, (grad, vreme) => 0);
+            },
+          ),
         ),
       );
     }
@@ -2348,6 +2323,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             '12:00': 0,
             '13:00': 0,
             '14:00': 0,
+            '15:00': 0,
             '15:30': 0,
             '18:00': 0,
           };
@@ -3044,46 +3020,79 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ), // Zatvaranje Column
-              bottomNavigationBar: isZimski(DateTime.now())
-                  ? BottomNavBarZimski(
-                      sviPolasci: _sviPolasci,
-                      selectedGrad: _selectedGrad,
-                      selectedVreme: _selectedVreme,
-                      getPutnikCount: getPutnikCount,
-                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                      onPolazakChanged: (grad, vreme) {
-                        // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
-                        if (mounted) {
-                          setState(() {
-                            _selectedGrad = grad;
-                            _selectedVreme = vreme;
-                            _selectedGradSubject.add(grad); // Ažuriraj stream
-                          });
-                        }
-                      },
-                    )
-                  : BottomNavBarLetnji(
-                      sviPolasci: _sviPolasci,
-                      selectedGrad: _selectedGrad,
-                      selectedVreme: _selectedVreme,
-                      getPutnikCount: getPutnikCount,
-                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                      onPolazakChanged: (grad, vreme) async {
-                        if (mounted) {
-                          setState(() {
-                            _selectedGrad = grad;
-                            _selectedVreme = vreme;
-                            _selectedGradSubject.add(grad);
-                          });
-                        }
-                      },
-                    ),
+              bottomNavigationBar: ValueListenableBuilder<String>(
+                valueListenable: navBarTypeNotifier,
+                builder: (context, navType, _) {
+                  return _buildBottomNavBar(navType, getPutnikCount);
+                },
+              ),
             ), // Zatvaranje Container wrapper-a
           );
         }, // Zatvaranje StreamBuilder builder funkcije
       ), // Zatvaranje StreamBuilder widgeta
     ); // Zatvaranje AnnotatedRegion
   } // Zatvaranje build metode
+
+  /// Helper metoda za kreiranje bottom nav bar-a prema tipu
+  Widget _buildBottomNavBar(String navType, int Function(String, String) getPutnikCount) {
+    void onChanged(String grad, String vreme) {
+      if (mounted) {
+        setState(() {
+          _selectedGrad = grad;
+          _selectedVreme = vreme;
+          _selectedGradSubject.add(grad);
+        });
+      }
+    }
+
+    switch (navType) {
+      case 'praznici':
+        return BottomNavBarPraznici(
+          sviPolasci: _sviPolasci,
+          selectedGrad: _selectedGrad,
+          selectedVreme: _selectedVreme,
+          getPutnikCount: getPutnikCount,
+          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          onPolazakChanged: onChanged,
+        );
+      case 'zimski':
+        return BottomNavBarZimski(
+          sviPolasci: _sviPolasci,
+          selectedGrad: _selectedGrad,
+          selectedVreme: _selectedVreme,
+          getPutnikCount: getPutnikCount,
+          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          onPolazakChanged: onChanged,
+        );
+      case 'letnji':
+        return BottomNavBarLetnji(
+          sviPolasci: _sviPolasci,
+          selectedGrad: _selectedGrad,
+          selectedVreme: _selectedVreme,
+          getPutnikCount: getPutnikCount,
+          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          onPolazakChanged: onChanged,
+        );
+      default: // 'auto'
+        return isZimski(DateTime.now())
+            ? BottomNavBarZimski(
+                sviPolasci: _sviPolasci,
+                selectedGrad: _selectedGrad,
+                selectedVreme: _selectedVreme,
+                getPutnikCount: getPutnikCount,
+                getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                onPolazakChanged: onChanged,
+              )
+            : BottomNavBarLetnji(
+                sviPolasci: _sviPolasci,
+                selectedGrad: _selectedGrad,
+                selectedVreme: _selectedVreme,
+                getPutnikCount: getPutnikCount,
+                getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                onPolazakChanged: onChanged,
+              );
+    }
+  }
 
   @override
   void dispose() {

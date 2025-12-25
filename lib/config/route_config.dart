@@ -322,6 +322,24 @@ class RouteConfig {
     '19:00',
   ];
 
+  /// Praznici/Specijalni red vožnje - Bela Crkva polasci
+  static const List<String> bcVremenaPraznici = [
+    '5:00',
+    '6:00',
+    '12:00',
+    '13:00',
+    '15:00',
+  ];
+
+  /// Praznici/Specijalni red vožnje - Vršac polasci
+  static const List<String> vsVremenaPraznici = [
+    '6:00',
+    '7:00',
+    '13:00',
+    '14:00',
+    '15:30',
+  ];
+
   /// Dobij vremena polazaka za grad i sezonu
   static List<String> getVremenaPolazaka({
     required String grad,

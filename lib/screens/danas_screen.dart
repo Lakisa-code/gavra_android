@@ -5,6 +5,7 @@ import 'package:flutter/services.dart'; // 🎨 DODANO za SystemUiOverlayStyle
 import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 
+import '../globals.dart';
 import '../models/putnik.dart';
 // url_launcher unused here - navigacija delegirana SmartNavigationService
 
@@ -32,6 +33,7 @@ import '../utils/schedule_utils.dart'; // Za isZimski funkciju
 import '../utils/text_utils.dart'; // 🎯 DODANO za standardizovano filtriranje statusa
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
+import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
@@ -518,7 +520,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
-                                      'KIŠA${data.precipitationStartTime != null ? ' ~${data.precipitationStartTime}' : ''}',
+                                      'KIŠA${data.precipitationStartTime != null ? ' ~${data.precipitationStartTime}' : ''}${data.precipitationProbability != null ? ' (${data.precipitationProbability}%)' : ''}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -2696,6 +2698,7 @@ class _DanasScreenState extends State<DanasScreen> {
                 '12:00': 0,
                 '13:00': 0,
                 '14:00': 0,
+                '15:00': 0,
                 '15:30': 0,
                 '18:00': 0,
               };
@@ -2750,95 +2753,91 @@ class _DanasScreenState extends State<DanasScreen> {
                 return 0;
               }
 
-              // Return Widget
-              return isZimski(DateTime.now())
-                  ? BottomNavBarZimski(
+              // Return Widget - Helper funkcija za kreiranje nav bar-a
+              Widget buildNavBar(String navType) {
+                void onChanged(String grad, String vreme) {
+                  DriverLocationService.instance.stopTracking();
+                  if (mounted) {
+                    setState(() {
+                      _selectedGrad = grad;
+                      _selectedVreme = vreme;
+                      if (_isRouteOptimized) {
+                        _isRouteOptimized = false;
+                        _isListReordered = false;
+                        _optimizedRoute.clear();
+                        _currentPassengerIndex = 0;
+                      }
+                    });
+                  }
+                  TimerManager.debounce('danas_screen_reset_debounce', const Duration(milliseconds: 150), () async {
+                    final key = '$grad|$vreme';
+                    if (mounted) setState(() => _resettingSlots.add(key));
+                    try {
+                      await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
+                    } finally {
+                      if (mounted) setState(() => _resettingSlots.remove(key));
+                    }
+                  });
+                }
+
+                switch (navType) {
+                  case 'praznici':
+                    return BottomNavBarPraznici(
                       sviPolasci: _sviPolasci,
                       selectedGrad: _selectedGrad,
                       selectedVreme: _selectedVreme,
                       getPutnikCount: getPutnikCount,
                       getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                       isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
-                      onPolazakChanged: (grad, vreme) {
-                        // 🚐 ZAUSTAVI STARI TRACKING pre promene polaska
-                        DriverLocationService.instance.stopTracking();
-
-                        if (mounted) {
-                          setState(() {
-                            _selectedGrad = grad;
-                            _selectedVreme = vreme;
-
-                            // 🔄 Isključi optimizaciju jer se odnosi na prethodni polazak
-                            if (_isRouteOptimized) {
-                              _isRouteOptimized = false;
-                              _isListReordered = false;
-                              _optimizedRoute.clear();
-                              _currentPassengerIndex = 0;
-                            }
-                          });
-                        }
-
-                        // 🕐 KORISTI TIMER MANAGER za debounce - SPREČAVA MEMORY LEAK
-                        TimerManager.debounce('danas_screen_reset_debounce', const Duration(milliseconds: 150),
-                            () async {
-                          final key = '$grad|$vreme';
-                          if (mounted) setState(() => _resettingSlots.add(key));
-                          try {
-                            await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
-                          } finally {
-                            if (mounted) {
-                              setState(() => _resettingSlots.remove(key));
-                            }
-                          }
-                        });
-                      },
-                    )
-                  : BottomNavBarLetnji(
-                      sviPolasci: _sviPolasci,
-                      selectedGrad: _selectedGrad,
-                      selectedVreme: _selectedVreme,
-                      getPutnikCount: getPutnikCount,
-                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                      isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
-                      onPolazakChanged: (grad, vreme) async {
-                        // 🚐 ZAUSTAVI STARI TRACKING pre promene polaska
-                        DriverLocationService.instance.stopTracking();
-
-                        if (mounted) {
-                          setState(() {
-                            _selectedGrad = grad;
-                            _selectedVreme = vreme;
-
-                            // 🔄 Isključi optimizaciju jer se odnosi na prethodni polazak
-                            if (_isRouteOptimized) {
-                              _isRouteOptimized = false;
-                              _isListReordered = false;
-                              _optimizedRoute.clear();
-                              _currentPassengerIndex = 0;
-                            }
-                          });
-                        }
-
-                        // 🕐 KORISTI TIMER MANAGER za debounce - SPREČAVA MEMORY LEAK
-                        TimerManager.debounce(
-                          'danas_screen_reset_debounce_2',
-                          const Duration(milliseconds: 150),
-                          () async {
-                            final key = '$grad|$vreme';
-                            if (mounted) {
-                              setState(() => _resettingSlots.add(key));
-                            }
-                            try {
-                              await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
-                            } finally {
-                              if (mounted) {
-                                setState(() => _resettingSlots.remove(key));
-                              }
-                            }
-                          },
-                        );
-                      },
+                      onPolazakChanged: onChanged,
                     );
+                  case 'zimski':
+                    return BottomNavBarZimski(
+                      sviPolasci: _sviPolasci,
+                      selectedGrad: _selectedGrad,
+                      selectedVreme: _selectedVreme,
+                      getPutnikCount: getPutnikCount,
+                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                      isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+                      onPolazakChanged: onChanged,
+                    );
+                  case 'letnji':
+                    return BottomNavBarLetnji(
+                      sviPolasci: _sviPolasci,
+                      selectedGrad: _selectedGrad,
+                      selectedVreme: _selectedVreme,
+                      getPutnikCount: getPutnikCount,
+                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                      isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+                      onPolazakChanged: onChanged,
+                    );
+                  default: // 'auto'
+                    return isZimski(DateTime.now())
+                        ? BottomNavBarZimski(
+                            sviPolasci: _sviPolasci,
+                            selectedGrad: _selectedGrad,
+                            selectedVreme: _selectedVreme,
+                            getPutnikCount: getPutnikCount,
+                            getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                            isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+                            onPolazakChanged: onChanged,
+                          )
+                        : BottomNavBarLetnji(
+                            sviPolasci: _sviPolasci,
+                            selectedGrad: _selectedGrad,
+                            selectedVreme: _selectedVreme,
+                            getPutnikCount: getPutnikCount,
+                            getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                            isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+                            onPolazakChanged: onChanged,
+                          );
+                }
+              }
+
+              return ValueListenableBuilder<String>(
+                valueListenable: navBarTypeNotifier,
+                builder: (context, navType, _) => buildNavBar(navType),
+              );
             },
           ),
         ), // Zatvaranje Scaffold

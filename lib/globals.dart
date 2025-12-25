@@ -17,6 +17,25 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// Koristi se u svim servisima umesto kreiranja novih instanci
 final SupabaseClient supabase = Supabase.instance.client;
 
+/// 🚌 NAV BAR TYPE - tip bottom navigation bara
+/// 'auto' = automatski (zimski/letnji po datumu)
+/// 'zimski' = forsiran zimski
+/// 'letnji' = forsiran letnji
+/// 'praznici' = praznični
+final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('auto');
+
+/// Helper za dobijanje trenutnog tipa nav bara
+String get currentNavBarType => navBarTypeNotifier.value;
+
+/// 🎄 PRAZNIČNI MOD - specijalni red vožnje (DEPRECATED - koristi navBarTypeNotifier)
+/// Kada je true, koristi se BottomNavBarPraznici sa smanjenim brojem polazaka
+/// BC: 5:00, 6:00, 12:00, 13:00, 15:00
+/// VS: 6:00, 7:00, 13:00, 14:00, 15:30
+final ValueNotifier<bool> praznicniModNotifier = ValueNotifier<bool>(false);
+
+/// Helper za proveru prazničnog moda
+bool get isPraznicniMod => praznicniModNotifier.value;
+
 /// 🧪 DEBUG: Simulirani dan u nedelji za testiranje
 /// null = koristi pravi datum, 1-7 = ponedeljak-nedelja
 /// POSTAVI NA null PRE PRODUKCIJE!

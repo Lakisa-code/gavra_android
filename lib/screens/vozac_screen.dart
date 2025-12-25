@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; // 🗺️ Za GPS poziciju
 
+import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/auth_manager.dart';
 import '../services/daily_checkin_service.dart';
@@ -22,6 +23,7 @@ import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart'; // 🎯 Za TextUtils.isStatusActive
 import '../utils/vozac_boja.dart'; // 🎯 Za validaciju vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
+import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
@@ -1698,6 +1700,7 @@ class _VozacScreenState extends State<VozacScreen> {
               '12:00': 0,
               '13:00': 0,
               '14:00': 0,
+              '15:00': 0,
               '15:30': 0,
               '18:00': 0,
             };
@@ -1750,25 +1753,64 @@ class _VozacScreenState extends State<VozacScreen> {
               return 0;
             }
 
-            return isZimski(DateTime.now())
-                ? BottomNavBarZimski(
+            // Helper funkcija za kreiranje nav bar-a
+            Widget buildNavBar(String navType) {
+              switch (navType) {
+                case 'praznici':
+                  return BottomNavBarPraznici(
                     sviPolasci: _sviPolasci,
                     selectedGrad: _selectedGrad,
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
                     onPolazakChanged: _onPolazakChanged,
-                    bcVremena: _bcVremena, // ✅ Custom vremena za VozacScreen
-                    vsVremena: _vsVremena, // ✅ Custom vremena za VozacScreen
-                  )
-                : BottomNavBarLetnji(
-                    sviPolasci: _sviPolasci,
-                    selectedGrad: _selectedGrad,
-                    selectedVreme: _selectedVreme,
-                    getPutnikCount: getPutnikCount,
-                    onPolazakChanged: _onPolazakChanged,
-                    bcVremena: _bcVremena, // ✅ Custom vremena za VozacScreen
-                    vsVremena: _vsVremena, // ✅ Custom vremena za VozacScreen
                   );
+                case 'zimski':
+                  return BottomNavBarZimski(
+                    sviPolasci: _sviPolasci,
+                    selectedGrad: _selectedGrad,
+                    selectedVreme: _selectedVreme,
+                    getPutnikCount: getPutnikCount,
+                    onPolazakChanged: _onPolazakChanged,
+                    bcVremena: _bcVremena,
+                    vsVremena: _vsVremena,
+                  );
+                case 'letnji':
+                  return BottomNavBarLetnji(
+                    sviPolasci: _sviPolasci,
+                    selectedGrad: _selectedGrad,
+                    selectedVreme: _selectedVreme,
+                    getPutnikCount: getPutnikCount,
+                    onPolazakChanged: _onPolazakChanged,
+                    bcVremena: _bcVremena,
+                    vsVremena: _vsVremena,
+                  );
+                default: // 'auto'
+                  return isZimski(DateTime.now())
+                      ? BottomNavBarZimski(
+                          sviPolasci: _sviPolasci,
+                          selectedGrad: _selectedGrad,
+                          selectedVreme: _selectedVreme,
+                          getPutnikCount: getPutnikCount,
+                          onPolazakChanged: _onPolazakChanged,
+                          bcVremena: _bcVremena,
+                          vsVremena: _vsVremena,
+                        )
+                      : BottomNavBarLetnji(
+                          sviPolasci: _sviPolasci,
+                          selectedGrad: _selectedGrad,
+                          selectedVreme: _selectedVreme,
+                          getPutnikCount: getPutnikCount,
+                          onPolazakChanged: _onPolazakChanged,
+                          bcVremena: _bcVremena,
+                          vsVremena: _vsVremena,
+                        );
+              }
+            }
+
+            return ValueListenableBuilder<String>(
+              valueListenable: navBarTypeNotifier,
+              builder: (context, navType, _) => buildNavBar(navType),
+            );
           },
         ),
       ),

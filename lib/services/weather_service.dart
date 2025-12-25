@@ -13,6 +13,7 @@ class WeatherData {
   final double? tempMin;
   final double? tempMax;
   final double? precipitationSum; // mm padavina
+  final int? precipitationProbability; // procenat verovatnoće padavina (0-100%)
   final int? dailyWeatherCode;
   // Sat kad počinju padavine
   final String? precipitationStartTime;
@@ -25,6 +26,7 @@ class WeatherData {
     this.tempMin,
     this.tempMax,
     this.precipitationSum,
+    this.precipitationProbability,
     this.dailyWeatherCode,
     this.precipitationStartTime,
   });
@@ -130,7 +132,7 @@ class WeatherService {
         'https://api.open-meteo.com/v1/forecast?'
         'latitude=${coords['lat']}&longitude=${coords['lon']}'
         '&current=temperature_2m,weather_code,is_day'
-        '&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,weather_code'
+        '&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_max,weather_code'
         '&hourly=weather_code'
         '&timezone=Europe/Belgrade'
         '&forecast_days=1',
@@ -148,6 +150,7 @@ class WeatherService {
         double? tempMin;
         double? tempMax;
         double? precipSum;
+        int? precipProb;
         int? dailyCode;
         String? precipStartTime;
 
@@ -161,6 +164,10 @@ class WeatherService {
           }
           if (daily['precipitation_sum'] != null && (daily['precipitation_sum'] as List).isNotEmpty) {
             precipSum = (daily['precipitation_sum'][0] as num?)?.toDouble();
+          }
+          if (daily['precipitation_probability_max'] != null &&
+              (daily['precipitation_probability_max'] as List).isNotEmpty) {
+            precipProb = (daily['precipitation_probability_max'][0] as num?)?.toInt();
           }
           if (daily['weather_code'] != null && (daily['weather_code'] as List).isNotEmpty) {
             dailyCode = (daily['weather_code'][0] as num?)?.toInt();
@@ -199,6 +206,7 @@ class WeatherService {
           tempMin: tempMin,
           tempMax: tempMax,
           precipitationSum: precipSum,
+          precipitationProbability: precipProb,
           dailyWeatherCode: dailyCode,
           precipitationStartTime: precipStartTime,
         );
