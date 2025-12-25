@@ -22,7 +22,7 @@ class DateUtils {
       case DateTime.sunday:
         return 'nedelja';
       default:
-        return 'nepoznat';
+        return '';
     }
   }
 
@@ -56,7 +56,7 @@ class DateUtils {
       case 'ned':
         return 'ned';
       default:
-        // Ako je već kratica ili nepoznat format, vrati lowercase
+        // Ako je već kratica ili drugi format, vrati lowercase
         return fullDayName.toLowerCase().substring(0, fullDayName.length >= 3 ? 3 : fullDayName.length);
     }
   }

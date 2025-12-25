@@ -199,7 +199,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   Future<void> _showVozacPicker(Putnik putnik) async {
     final vozaci = VozacBoja.validDrivers;
-    final currentVozac = putnik.dodaoVozac ?? 'Nepoznat';
+    final currentVozac = putnik.dodaoVozac ?? 'Nedodeljen';
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -312,7 +312,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                           'Bez vozača',
                           style: TextStyle(color: Colors.grey),
                         ),
-                        trailing: currentVozac == 'Nepoznat' || currentVozac == 'Nedodeljen'
+                        trailing: currentVozac == 'Nedodeljen'
                             ? const Icon(Icons.check_circle, color: Colors.grey)
                             : const Icon(Icons.circle_outlined, color: Colors.grey),
                         onTap: () => Navigator.pop(context, '_NONE_'),

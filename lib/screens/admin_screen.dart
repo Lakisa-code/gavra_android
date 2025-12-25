@@ -1033,9 +1033,9 @@ class _AdminScreenState extends State<AdminScreen> {
 
                 // 👥 FILTER PO VOZAČU - Prikaži samo naplate trenutnog vozača ili sve za admin
                 // 🔐 KORISTI ADMIN SECURITY SERVICE za filtriranje privilegija
-                final bool isAdmin = AdminSecurityService.isAdmin(_currentDriver);
+                final bool isAdmin = AdminSecurityService.isAdmin(_currentDriver!);
                 final Map<String, double> filteredPazar = AdminSecurityService.filterPazarByPrivileges(
-                  _currentDriver,
+                  _currentDriver!,
                   pazar,
                 );
 
@@ -1051,7 +1051,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 // Filter vozače redosled na osnovu trenutnog vozača
                 // 🔐 KORISTI ADMIN SECURITY SERVICE za filtriranje vozača
                 final List<String> prikazaniVozaci = AdminSecurityService.getVisibleDrivers(
-                  _currentDriver,
+                  _currentDriver!,
                   vozaciRedosled,
                 );
                 return SingleChildScrollView(
@@ -1072,7 +1072,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             children: [
                               Text(
                                 AdminSecurityService.generateTitle(
-                                  _currentDriver,
+                                  _currentDriver!,
                                   'Dnevni pazar - $_selectedDan',
                                 ),
                                 style: const TextStyle(
@@ -1218,7 +1218,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               MaterialPageRoute<void>(
                                 builder: (context) => DugoviScreen(
                                   // duznici: filteredDuznici,
-                                  currentDriver: _currentDriver,
+                                  currentDriver: _currentDriver!,
                                 ),
                               ),
                             );

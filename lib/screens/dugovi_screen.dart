@@ -9,8 +9,8 @@ import '../widgets/custom_back_button.dart';
 import '../widgets/putnik_list.dart';
 
 class DugoviScreen extends StatefulWidget {
-  const DugoviScreen({Key? key, this.currentDriver}) : super(key: key);
-  final String? currentDriver;
+  const DugoviScreen({Key? key, required this.currentDriver}) : super(key: key);
+  final String currentDriver;
 
   @override
   State<DugoviScreen> createState() => _DugoviScreenState();

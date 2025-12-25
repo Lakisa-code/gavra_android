@@ -25,7 +25,7 @@ class AuthManager {
   static Future<void> setCurrentDriver(String driverName) async {
     // Validacija da je vozač prepoznat
     if (!VozacBoja.isValidDriver(driverName)) {
-      throw ArgumentError('Nepoznat vozač: $driverName');
+      throw ArgumentError('Vozač "$driverName" nije registrovan');
     }
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);

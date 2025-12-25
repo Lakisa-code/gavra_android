@@ -27,7 +27,7 @@ class PutnikCard extends StatefulWidget {
     Key? key,
     required this.putnik,
     this.showActions = true,
-    this.currentDriver,
+    required this.currentDriver,
     this.redniBroj,
     this.bcVremena,
     this.vsVremena,
@@ -38,7 +38,7 @@ class PutnikCard extends StatefulWidget {
   }) : super(key: key);
   final Putnik putnik;
   final bool showActions;
-  final String? currentDriver;
+  final String currentDriver;
   final int? redniBroj;
   final List<String>? bcVremena;
   final List<String>? vsVremena;
@@ -115,7 +115,7 @@ class _PutnikCardState extends State<PutnikCard> {
         HapticService.putnikPokupljen();
 
         try {
-          await PutnikService().oznaciPokupljen(_putnik.id!, widget.currentDriver!, grad: _putnik.grad);
+          await PutnikService().oznaciPokupljen(_putnik.id!, widget.currentDriver, grad: _putnik.grad);
 
           // GPS LEARN: Sačuvaj koordinate ako adresa nema koordinate
           _tryGpsLearn();
@@ -307,7 +307,7 @@ class _PutnikCardState extends State<PutnikCard> {
       // Prosleđuj selectedVreme i selectedGrad za tačan reset
       await PutnikService().resetPutnikCard(
         _putnik.ime,
-        widget.currentDriver ?? '',
+        widget.currentDriver,
         selectedVreme: widget.selectedVreme,
         selectedGrad: widget.selectedGrad,
       );
@@ -1321,9 +1321,6 @@ class _PutnikCardState extends State<PutnikCard> {
     String? mesec,
   }) async {
     try {
-      // Uklonjena validacija vozača - direktno koristi zadatog vozača
-      String finalDriver = widget.currentDriver ?? 'Nepoznat vozač';
-
       // Pozovi odgovarajući service za plaćanje
       if (isRegistrovani && mesec != null) {
         // Validacija da putnik ime nije prazno
@@ -1339,7 +1336,7 @@ class _PutnikCardState extends State<PutnikCard> {
             putnikId: registrovaniPutnik.id,
             iznos: iznos,
             mesec: mesec,
-            vozacIme: finalDriver,
+            vozacIme: widget.currentDriver,
           );
         } else {
           throw Exception('Mesečni putnik "${_putnik.ime}" nije pronađen u bazi');
@@ -1353,7 +1350,7 @@ class _PutnikCardState extends State<PutnikCard> {
         await PutnikService().oznaciPlaceno(
           _putnik.id!,
           iznos,
-          finalDriver,
+          widget.currentDriver,
         );
       }
 
@@ -1473,7 +1470,7 @@ class _PutnikCardState extends State<PutnikCard> {
       await PutnikService().oznaciBolovanjeGodisnji(
         putnikId,
         status,
-        widget.currentDriver ?? '',
+        widget.currentDriver,
       );
 
       if (mounted) {
@@ -1695,49 +1692,24 @@ class _PutnikCardState extends State<PutnikCard> {
     // Proverava uslove za prikazivanje X ikone
     if (_putnik.ime == 'Ljilla') {}
 
-    // 🔘 PROVERA: Da li je putnik dodeljen DRUGOM vozaču (tuđi putnik)?
-    // Tuđi = ima vozača + vozač nije trenutni + nije pokupljen + nije odsustvo/otkazan
-    final bool isTudjiPutnik = _putnik.dodaoVozac != null &&
-        _putnik.dodaoVozac!.isNotEmpty &&
-        _putnik.dodaoVozac != widget.currentDriver &&
-        !_putnik.jePokupljen &&
-        !_putnik.jeOdsustvo &&
-        !_putnik.jeOtkazan;
-
-    // Ako je tuđi putnik - koristi SIVU boju, inače standardnu
-    final BoxDecoration cardDecoration;
-    final Color textColor;
-    final Color secondaryTextColor;
-
-    if (isTudjiPutnik) {
-      // 🔘 SIVA kartica za tuđe putnike
-      cardDecoration = BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey[400]!, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      );
-      textColor = Colors.grey[600]!;
-      secondaryTextColor = Colors.grey[500]!;
-    } else {
-      // Standardne boje iz CardColorHelper
-      cardDecoration = CardColorHelper.getCardDecoration(_putnik);
-      textColor = CardColorHelper.getTextColorWithTheme(
-        _putnik,
-        context,
-        successPrimary: Theme.of(context).colorScheme.successPrimary,
-      );
-      secondaryTextColor = CardColorHelper.getSecondaryTextColor(_putnik);
-    }
+    // 🎨 BOJE KARTICE - koristi CardColorHelper sa proverom vozača
+    final BoxDecoration cardDecoration = CardColorHelper.getCardDecorationWithDriver(
+      _putnik,
+      widget.currentDriver,
+    );
+    final Color textColor = CardColorHelper.getTextColorWithDriver(
+      _putnik,
+      widget.currentDriver,
+      context,
+      successPrimary: Theme.of(context).colorScheme.successPrimary,
+    );
+    final Color secondaryTextColor = CardColorHelper.getSecondaryTextColorWithDriver(
+      _putnik,
+      widget.currentDriver,
+    );
 
     // Prava po vozaču
-    final String? driver = widget.currentDriver;
+    final String driver = widget.currentDriver;
     final bool isBojan = driver == 'Bojan';
     final bool isSvetlana = driver == 'Svetlana';
     final bool isAdmin = isBojan || isSvetlana; // Full admin prava
@@ -1844,7 +1816,7 @@ class _PutnikCardState extends State<PutnikCard> {
                   // OPTIMIZOVANE ACTION IKONE - koristi Flexible + Wrap umesto fiksne širine
                   // da spreči overflow na manjim ekranima ili kada ima više ikona
                   // Smanjen flex na 0 da ikone ne "kradu" prostor od imena
-                  if ((isAdmin || isVozac) && widget.showActions && (driver ?? '').isNotEmpty)
+                  if ((isAdmin || isVozac) && widget.showActions && driver.isNotEmpty)
                     Flexible(
                       flex: 0, // Ne uzimaj dodatni prostor - koristi samo minimalno potreban
                       child: Transform.translate(
@@ -2351,7 +2323,10 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.get(_putnik.naplatioVozac ?? ''),
+                            color: VozacBoja.getColorOrDefault(
+                              _putnik.naplatioVozac,
+                              Colors.green,
+                            ),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2680,7 +2655,7 @@ class _PutnikCardState extends State<PutnikCard> {
       try {
         await PutnikService().otkaziPutnika(
           _putnik.id!,
-          widget.currentDriver ?? '',
+          widget.currentDriver,
           selectedVreme: _putnik.polazak,
           selectedGrad: _putnik.grad,
           selectedDan: _putnik.dan,

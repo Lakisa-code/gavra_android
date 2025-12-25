@@ -161,7 +161,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       // Grupiši GPS lokacije po vozaču i uzmi najnoviju za svakog
       Map<String, GPSLokacija> najnovijeLokacije = {};
       for (final lokacija in _gpsLokacije) {
-        final vozacKey = lokacija.vozacId ?? 'nepoznat';
+        final vozacKey = lokacija.vozacId ?? '';
+        if (vozacKey.isEmpty) continue;
         if (!najnovijeLokacije.containsKey(vozacKey) || najnovijeLokacije[vozacKey]!.vreme.isBefore(lokacija.vreme)) {
           najnovijeLokacije[vozacKey] = lokacija;
         }
@@ -170,7 +171,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       // Kreiraj markere za svakog vozača
       najnovijeLokacije.forEach((vozacIme, lokacija) {
         // vozacIme je sada već ime vozača (ne UUID), koristi direktno
-        final displayName = vozacIme.isNotEmpty ? vozacIme : 'Nepoznat';
+        if (vozacIme.isEmpty) return;
+        final displayName = vozacIme;
 
         markers.add(
           Marker(

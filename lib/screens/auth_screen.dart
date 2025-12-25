@@ -491,7 +491,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       children: [
                                         Expanded(
                                           child: Text(
-                                            vozac['ime'] ?? 'Nepoznat',
+                                            vozac['ime'] ?? '',
                                             style: TextStyle(
                                               color: boja,
                                               fontWeight: FontWeight.bold,

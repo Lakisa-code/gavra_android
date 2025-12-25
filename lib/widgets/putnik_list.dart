@@ -12,7 +12,7 @@ class PutnikList extends StatelessWidget {
     this.putnici,
     this.putniciStream,
     this.showActions = true,
-    this.currentDriver,
+    required this.currentDriver,
     this.bcVremena,
     this.vsVremena,
     this.useProvidedOrder = false,
@@ -22,7 +22,7 @@ class PutnikList extends StatelessWidget {
     this.selectedVreme,
   }) : super(key: key);
   final bool showActions;
-  final String? currentDriver;
+  final String currentDriver;
   final Stream<List<Putnik>>? putniciStream;
   final List<Putnik>? putnici;
   final List<String>? bcVremena;
@@ -35,7 +35,7 @@ class PutnikList extends StatelessWidget {
 
   // Helper metoda za sortiranje putnika po grupama
   // Prioritet: Moji/Nedodeljeni (beli) → Tuđi (sivi) → Plavi → Zeleni → Crveni → Žuti
-  int _putnikSortKey(Putnik p, String? currentDriver) {
+  int _putnikSortKey(Putnik p, String currentDriver) {
     // 🟡 ŽUTE - Odsustvo ima najveći sort key (na dno)
     if (p.jeOdsustvo) {
       return 7; // žute na dno liste

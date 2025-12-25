@@ -85,7 +85,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
   Future<void> _odobriZahtev(Map<String, dynamic> zahtev) async {
     final zahtevId = zahtev['id'] as String;
     final putnik = zahtev['registrovani_putnici'] as Map<String, dynamic>?;
-    final ime = putnik?['putnik_ime'] ?? 'Nepoznato';
+    final ime = putnik?['putnik_ime'] ?? '';
     final brojTelefona = putnik?['broj_telefona'] as String? ?? zahtev['telefon'] as String? ?? '';
 
     final generisaniPin = _generatePin();
@@ -195,7 +195,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
   Future<void> _odbijZahtev(Map<String, dynamic> zahtev) async {
     final zahtevId = zahtev['id'] as String;
     final putnik = zahtev['registrovani_putnici'] as Map<String, dynamic>?;
-    final ime = putnik?['putnik_ime'] ?? 'Nepoznato';
+    final ime = putnik?['putnik_ime'] ?? '';
 
     final potvrda = await showDialog<bool>(
       context: context,
@@ -308,7 +308,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
         final zahtev = _zahtevi[index];
         final putnik = zahtev['registrovani_putnici'] as Map<String, dynamic>?;
 
-        final ime = putnik?['putnik_ime'] ?? 'Nepoznato';
+        final ime = putnik?['putnik_ime'] ?? '';
         final telefon = zahtev['telefon'] ?? putnik?['broj_telefona'] ?? '-';
         final email = zahtev['email'] ?? putnik?['email'] ?? '-';
         final tip = putnik?['tip'] ?? '-';

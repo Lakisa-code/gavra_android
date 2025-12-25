@@ -15,6 +15,7 @@ import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
+import 'services/putnik_service.dart'; // 🔄 DODATO za nedeljni reset
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
 import 'services/sms_service.dart'; // 📱 SMS podsetnici za plaćanje
@@ -126,6 +127,14 @@ void main() async {
       await AppSettingsService.initialize();
     } catch (e) {
       // Nastavi bez app settings ako ne uspe - default je 'auto'
+    }
+
+    // 🔄 NEDELJNI RESET - Proveri da li treba resetovati polasci_po_danu
+    // Izvršava se u subotu ujutru, NE resetuje bolovanje/godišnji
+    try {
+      await PutnikService().checkAndPerformWeeklyReset();
+    } catch (e) {
+      debugPrint('⚠️ [main] Weekly reset check failed: $e');
     }
 
     // 🔄 REALTIME se inicijalizuje lazy kroz PutnikService

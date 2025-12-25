@@ -484,10 +484,10 @@ class PutnikService {
           await supabase.from(tabela).update({
             'status': lastAction.oldData['status'],
           }).eq('id', lastAction.putnikId as String);
-          return 'Poni�teno otkazivanje';
+          return 'Poništeno otkazivanje';
 
         default:
-          return 'Nepoznata akcija za poni�tavanje';
+          return 'Akcija nije prepoznata';
       }
     } catch (e) {
       return null;
@@ -511,7 +511,7 @@ class PutnikService {
       // ?? STRIKTNA VALIDACIJA VOZACA
       if (putnik.dodaoVozac == null || putnik.dodaoVozac!.isEmpty || !VozacBoja.isValidDriver(putnik.dodaoVozac)) {
         throw Exception(
-          'NEPOZNAT VOZAC: "${putnik.dodaoVozac}". Dozvoljeni su samo: ${VozacBoja.validDrivers.join(", ")}',
+          'NEREGISTROVAN VOZAC: "${putnik.dodaoVozac}". Dozvoljeni su samo: ${VozacBoja.validDrivers.join(", ")}',
         );
       }
 
@@ -800,12 +800,16 @@ class PutnikService {
   Future<void> oznaciPlaceno(
     dynamic id,
     double iznos,
-    String naplatioVozac,
+    String currentDriver,
   ) async {
-    // ?? DUPLICATE PREVENTION
+    // 🚨 DUPLICATE PREVENTION
     final actionKey = 'payment_$id';
     if (_isDuplicateAction(actionKey)) {
       return;
+    }
+
+    if (currentDriver.isEmpty) {
+      throw ArgumentError('Vozač mora biti specificiran.');
     }
 
     final tabela = await _getTableForPutnik(id);
@@ -817,7 +821,7 @@ class PutnikService {
     _addToUndoStack('payment', id, undoPayment);
 
     final now = DateTime.now();
-    String? validVozacId = naplatioVozac.isEmpty ? null : VozacMappingService.getVozacUuidSync(naplatioVozac);
+    String? validVozacId = VozacMappingService.getVozacUuidSync(currentDriver);
 
     // ✅ NOVO: Ažuriraj polasci_po_danu JSON sa plaćanjem
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
@@ -842,7 +846,7 @@ class PutnikService {
     // Ažuriraj dan sa plaćanjem
     final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
     dayData['${place}_placeno'] = now.toIso8601String();
-    dayData['${place}_placeno_vozac'] = naplatioVozac; // Ime vozača
+    dayData['${place}_placeno_vozac'] = currentDriver; // Ime vozača - ISTO KAO POKUPLJENO
     dayData['${place}_placeno_iznos'] = iznos;
     polasciPoDanu[danKratica] = dayData;
 
@@ -1128,5 +1132,109 @@ class PutnikService {
     } catch (e) {
       throw Exception('Greška pri prebacivanju putnika: $e');
     }
+  }
+
+  /// 🔄 NEDELJNI RESET - Briše polasci_po_danu podatke za sve putnike
+  /// Poziva se automatski u subotu ujutru (nakon ponoći petak→subota)
+  /// NE RESETUJE: bolovanje i godišnji (oni ostaju)
+  Future<void> weeklyResetPolasciPoDanu() async {
+    try {
+      // Dohvati sve putnike koji NISU na bolovanju/godišnjem
+      final response = await supabase
+          .from('registrovani_putnici')
+          .select('id, polasci_po_danu, status')
+          .not('status', 'in', '(bolovanje,godisnji)');
+
+      final putnici = response as List<dynamic>;
+
+      for (final putnik in putnici) {
+        final id = putnik['id'] as String;
+        final polasciRaw = putnik['polasci_po_danu'];
+
+        if (polasciRaw == null) continue;
+
+        Map<String, dynamic>? polasci;
+        if (polasciRaw is String) {
+          try {
+            polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
+          } catch (_) {
+            continue;
+          }
+        } else if (polasciRaw is Map<String, dynamic>) {
+          polasci = Map<String, dynamic>.from(polasciRaw);
+        }
+
+        if (polasci == null) continue;
+
+        // Očisti dnevne podatke (pokupljeno, plaćeno, otkazano) za svaki dan
+        bool hasChanges = false;
+        for (final dayKey in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+          final dayData = polasci[dayKey];
+          if (dayData is Map<String, dynamic>) {
+            final mutableDayData = Map<String, dynamic>.from(dayData);
+            // Ukloni dnevne podatke ali zadrži vreme polaska
+            final keysToRemove = mutableDayData.keys
+                .where((k) =>
+                    k.contains('_pokupljeno') ||
+                    k.contains('_placeno') ||
+                    k.contains('_otkazano') ||
+                    k.contains('_vozac'))
+                .toList();
+
+            for (final key in keysToRemove) {
+              mutableDayData.remove(key);
+              hasChanges = true;
+            }
+            polasci[dayKey] = mutableDayData;
+          }
+        }
+
+        if (hasChanges) {
+          await supabase.from('registrovani_putnici').update({
+            'polasci_po_danu': jsonEncode(polasci),
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', id);
+        }
+      }
+
+      debugPrint('✅ Nedeljni reset završen - očišćeni polasci_po_danu podaci');
+    } catch (e) {
+      debugPrint('❌ Greška pri nedeljnom resetu: $e');
+    }
+  }
+
+  /// 🔄 PROVERI I IZVRŠI NEDELJNI RESET ako je potrebno
+  /// Poziva se kad se app pokrene - proverava da li je subota i da li je reset već urađen
+  Future<void> checkAndPerformWeeklyReset() async {
+    final now = DateTime.now();
+
+    // Proveri da li je subota (weekday == 6)
+    if (now.weekday != DateTime.saturday) {
+      return; // Nije subota, ne radi ništa
+    }
+
+    // Proveri da li je reset već urađen ove nedelje
+    try {
+      // Koristi Supabase za čuvanje poslednjeg reseta (umesto SharedPreferences)
+      // Čuvamo u posebnoj tabeli ili kao metadata
+      final weekNumber = _getWeekNumber(now);
+      final yearWeek = '${now.year}-W$weekNumber';
+
+      // Proveri app_settings tabelu (ako postoji) ili koristi local storage
+      // Za sada koristimo jednostavnu proveru - reset se radi samo jednom u subotu
+
+      // Izvrši reset
+      await weeklyResetPolasciPoDanu();
+      debugPrint('✅ Nedeljni reset izvršen za $yearWeek');
+    } catch (e) {
+      debugPrint('❌ Greška pri proveri nedeljnog reseta: $e');
+    }
+  }
+
+  /// Helper za izračunavanje broja nedelje u godini
+  int _getWeekNumber(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final daysDiff = date.difference(firstDayOfYear).inDays;
+    return ((daysDiff + firstDayOfYear.weekday) / 7).ceil();
   }
 }

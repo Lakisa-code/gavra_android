@@ -18,16 +18,12 @@ class NotificationNavigationService {
       // Dohvati sačuvane podatke putnika iz SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final putnikId = prefs.getString('registrovani_putnik_id');
-      
+
       if (putnikId == null) return;
-      
+
       // Dohvati putnikove podatke iz baze
-      final response = await Supabase.instance.client
-          .from('registrovani_putnici')
-          .select()
-          .eq('id', putnikId)
-          .single();
-      
+      final response = await Supabase.instance.client.from('registrovani_putnici').select().eq('id', putnikId).single();
+
       if (context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
@@ -50,7 +46,7 @@ class NotificationNavigationService {
     if (context == null) return;
 
     try {
-      final putnikIme = putnikData['ime'] ?? 'Nepoznat putnik';
+      final putnikIme = putnikData['ime'] ?? '';
       final putnikDan = putnikData['dan'] ?? '';
       final mesecnaKarta = putnikData['mesecnaKarta'] ?? false;
 

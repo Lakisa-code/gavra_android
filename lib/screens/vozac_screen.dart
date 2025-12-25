@@ -1589,7 +1589,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                 Expanded(
                                   child: StreamBuilder<double>(
                                     stream: StatistikaService.streamPazarZaVozaca(
-                                      vozac: _currentDriver ?? '',
+                                      vozac: _currentDriver!,
                                       from: dayStart,
                                       to: dayEnd,
                                     ),
@@ -1608,7 +1608,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                 Expanded(
                                   child: StreamBuilder<int>(
                                     stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
-                                      vozac: _currentDriver ?? '',
+                                      vozac: _currentDriver!,
                                     ),
                                     builder: (context, snapshot) {
                                       final mesecne = snapshot.data ?? 0;
@@ -1628,7 +1628,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute<void>(
-                                          builder: (context) => DugoviScreen(currentDriver: _currentDriver),
+                                          builder: (context) => DugoviScreen(currentDriver: _currentDriver!),
                                         ),
                                       );
                                     },
@@ -1643,7 +1643,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                 // KUSUR
                                 Expanded(
                                   child: StreamBuilder<double>(
-                                    stream: DailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
+                                    stream: DailyCheckInService.streamTodayAmount(_currentDriver!),
                                     builder: (context, snapshot) {
                                       final kusur = snapshot.data ?? 0.0;
                                       return _buildStatBox(
@@ -1687,7 +1687,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                 putnici: putnici,
                                 useProvidedOrder: _isListReordered,
                                 currentDriver:
-                                    _currentDriver, // ✅ FIX: Koristi dinamički _currentDriver umesto hardkodovanog _vozacIme
+                                    _currentDriver!, // ✅ FIX: Koristi dinamički _currentDriver umesto hardkodovanog _vozacIme
                                 selectedGrad: _selectedGrad,
                                 selectedVreme: _selectedVreme,
                                 onPutnikStatusChanged: _reoptimizeAfterStatusChange,

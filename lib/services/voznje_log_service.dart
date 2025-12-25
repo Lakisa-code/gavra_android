@@ -48,10 +48,11 @@ class VoznjeLogService {
         if (iznos <= 0) continue;
 
         // Konvertuj UUID u ime vozača
-        String vozacIme = 'Nepoznat';
+        String vozacIme = vozacId ?? '';
         if (vozacId != null && vozacId.isNotEmpty) {
           vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
         }
+        if (vozacIme.isEmpty) continue;
 
         pazar[vozacIme] = (pazar[vozacIme] ?? 0) + iznos;
         ukupno += iznos;
@@ -89,10 +90,11 @@ class VoznjeLogService {
         if (iznos <= 0) continue;
 
         // Konvertuj UUID u ime vozača
-        String vozacIme = 'Nepoznat';
+        String vozacIme = vozacId ?? '';
         if (vozacId != null && vozacId.isNotEmpty) {
           vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
         }
+        if (vozacIme.isEmpty) continue;
 
         pazar[vozacIme] = (pazar[vozacIme] ?? 0) + iznos;
         ukupno += iznos;

@@ -19,8 +19,8 @@ class AdminSecurityService {
   }
 
   /// 🛡️ Proveri da li vozač može da vidi podatke drugog vozača
-  static bool canViewDriverData(String? currentDriver, String targetDriver) {
-    if (currentDriver == null || currentDriver.isEmpty) {
+  static bool canViewDriverData(String currentDriver, String targetDriver) {
+    if (currentDriver.isEmpty) {
       return false;
     }
 
@@ -35,10 +35,10 @@ class AdminSecurityService {
 
   /// 🔒 Filtriraj pazar podatke na osnovu privilegija
   static Map<String, double> filterPazarByPrivileges(
-    String? currentDriver,
+    String currentDriver,
     Map<String, double> pazarData,
   ) {
-    if (currentDriver == null || currentDriver.isEmpty) {
+    if (currentDriver.isEmpty) {
       return {};
     }
 
@@ -55,10 +55,10 @@ class AdminSecurityService {
 
   /// 🎯 Dobij vozače koji treba da se prikažu na osnovu privilegija
   static List<String> getVisibleDrivers(
-    String? currentDriver,
+    String currentDriver,
     List<String> allDrivers,
   ) {
-    if (currentDriver == null || currentDriver.isEmpty) {
+    if (currentDriver.isEmpty) {
       return [];
     }
 
@@ -72,8 +72,8 @@ class AdminSecurityService {
   }
 
   /// 📊 Generiši naslov na osnovu privilegija
-  static String generateTitle(String? currentDriver, String baseTitle) {
-    if (currentDriver == null || currentDriver.isEmpty) {
+  static String generateTitle(String currentDriver, String baseTitle) {
+    if (currentDriver.isEmpty) {
       return baseTitle;
     }
 

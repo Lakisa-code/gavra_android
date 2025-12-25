@@ -618,7 +618,7 @@ class _DanasScreenState extends State<DanasScreen> {
     if (code >= 80 && code <= 82) return 'Pljuskovi';
     if (code >= 85 && code <= 86) return 'Snežni pljuskovi';
     if (code >= 95 && code <= 99) return 'Grmljavina';
-    return 'Nepoznato';
+    return '';
   }
 
   // 💓 REALTIME HEARTBEAT INDICATOR
@@ -2332,7 +2332,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
                     return StreamBuilder<double>(
                       stream: StatistikaService.streamPazarZaVozaca(
-                        vozac: _currentDriver ?? '',
+                        vozac: _currentDriver!,
                         from: dayStart,
                         to: dayEnd,
                       ),
@@ -2396,7 +2396,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                       ),
                                       child: StreamBuilder<int>(
                                         stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
-                                          vozac: _currentDriver ?? '',
+                                          vozac: _currentDriver!,
                                         ),
                                         builder: (context, registrovaniSnapshot) {
                                           final brojRegistrovanih = registrovaniSnapshot.data ?? 0;
@@ -2446,7 +2446,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute<void>(
-                                              builder: (context) => DugoviScreen(currentDriver: _currentDriver),
+                                              builder: (context) => DugoviScreen(currentDriver: _currentDriver!),
                                             ),
                                           );
                                         },
@@ -2492,7 +2492,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                         border: Border.all(color: Colors.orange[300]!),
                                       ),
                                       child: StreamBuilder<double>(
-                                        stream: DailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
+                                        stream: DailyCheckInService.streamTodayAmount(_currentDriver!),
                                         builder: (context, sitanSnapshot) {
                                           final sitanNovac = sitanSnapshot.data ?? 0.0;
                                           return FittedBox(
@@ -2636,7 +2636,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                           child: PutnikList(
                                             putnici: finalPutnici,
                                             useProvidedOrder: _isListReordered,
-                                            currentDriver: _currentDriver,
+                                            currentDriver: _currentDriver!,
                                             selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
                                             selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
                                             onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
@@ -2773,7 +2773,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     final key = '$grad|$vreme';
                     if (mounted) setState(() => _resettingSlots.add(key));
                     try {
-                      await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
+                      await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver!);
                     } finally {
                       if (mounted) setState(() => _resettingSlots.remove(key));
                     }

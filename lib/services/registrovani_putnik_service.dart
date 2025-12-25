@@ -240,7 +240,7 @@ class RegistrovaniPutnikService {
 
     try {
       // Konvertuj ime vozača u UUID za foreign key kolonu
-      if (vozacIme.isNotEmpty && vozacIme != 'Nepoznat vozač') {
+      if (vozacIme.isNotEmpty) {
         if (_isValidUuid(vozacIme)) {
           // Ako je već UUID, koristi ga
           validVozacId = vozacIme;

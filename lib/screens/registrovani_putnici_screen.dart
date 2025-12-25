@@ -12,7 +12,6 @@ import '../services/geocoding_service.dart'; // 🌍 Za geocoding adresa
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/registrovani_putnik_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
-import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
@@ -1926,26 +1925,18 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return '${datum.day}.${datum.month}.${datum.year}';
   }
 
-  // � DOBIJANJE TRENUTNOG VOZAČA (kao UUID)
-  Future<String> _getCurrentDriverUuid() async {
+  // 🔧 DOBIJANJE IMENA TRENUTNOG VOZAČA
+  Future<String> _getCurrentDriverName() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverName = prefs.getString('current_driver');
 
       if (driverName != null && driverName.isNotEmpty) {
-        // Ako je već UUID, vrati direktno
-        if (VozacMappingService.isValidVozacUuidSync(driverName)) {
-          return driverName;
-        }
-        // Inače konvertuj ime u UUID
-        final uuid = VozacMappingService.getVozacUuidSync(driverName);
-        if (uuid != null && uuid.isNotEmpty) {
-          return uuid;
-        }
+        return driverName;
       }
-      return ''; // Vraća prazan string ako nije poznat
+      throw Exception('Vozač nije ulogovan');
     } catch (e) {
-      return '';
+      throw Exception('Vozač nije ulogovan: $e');
     }
   }
 
@@ -2796,16 +2787,16 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     String mesec,
   ) async {
     try {
-      // � Učitaj trenutnog vozača kao UUID
-      final currentDriverUuid = await _getCurrentDriverUuid();
+      // 🔧 FIX: Koristi IME vozača, ne UUID
+      final currentDriverName = await _getCurrentDriverName();
 
-      // �📅 Konvertuj string meseca u datume
+      // 📅 Konvertuj string meseca u datume
       final Map<String, dynamic> datumi = _konvertujMesecUDatume(mesec);
 
       final uspeh = await _registrovaniPutnikService.azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
-        currentDriverUuid, // Koristi UUID trenutnog vozača
+        currentDriverName, // 🔧 FIX: Koristi IME vozača za prikaz boja
         datumi['pocetakMeseca'] as DateTime,
         datumi['krajMeseca'] as DateTime,
       );

@@ -642,7 +642,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     if (code >= 80 && code <= 82) return 'Pljuskovi';
     if (code >= 85 && code <= 86) return 'Snežni pljuskovi';
     if (code >= 95 && code <= 99) return 'Grmljavina';
-    return 'Nepoznato';
+    return '';
   }
 
   @override

@@ -73,7 +73,8 @@ class StatistikaService {
           // Proveri da li je plaćeno u traženom periodu (danas)
           if (placenoDate.isBefore(from) || placenoDate.isAfter(to)) continue;
 
-          final vozacIme = dayData[vozacKey] as String? ?? 'Nepoznat';
+          final vozacIme = dayData[vozacKey] as String?;
+          if (vozacIme == null || vozacIme.isEmpty) continue;
           final iznos = (dayData[iznosKey] as num?)?.toDouble() ?? 0;
 
           if (iznos > 0) {
@@ -134,7 +135,8 @@ class StatistikaService {
 
     for (final putnik in putnici) {
       if (putnik is! Map) continue;
-      final vozacId = putnik['vozac_id']?.toString() ?? 'nepoznat';
+      final vozacId = putnik['vozac_id']?.toString();
+      if (vozacId == null || vozacId.isEmpty) continue;
 
       stats.putIfAbsent(
           vozacId,

@@ -8,6 +8,7 @@ enum CardState {
   otkazano, // 🔴 Otkazano
   placeno, // 🟢 Plaćeno/mesečno
   pokupljeno, // 🔵 Pokupljeno neplaćeno
+  tudji, // 🔘 Tuđi putnik (dodeljen drugom vozaču)
   nepokupljeno, // ⚪ Nepokupljeno (default)
 }
 
@@ -18,7 +19,8 @@ enum CardState {
 /// 2. 🔴 CRVENO - Otkazani putnici - `CardState.otkazano`
 /// 3. 🟢 ZELENO - Pokupljeni plaćeni/mesečni - `CardState.placeno`
 /// 4. 🔵 PLAVO - Pokupljeni neplaćeni - `CardState.pokupljeno`
-/// 5. ⚪ BELO - Nepokupljeni (default) - `CardState.nepokupljeno`
+/// 5. 🔘 SIVO - Tuđi putnik (dodeljen drugom vozaču) - `CardState.tudji`
+/// 6. ⚪ BELO - Nepokupljeni (default) - `CardState.nepokupljeno`
 ///
 /// ## Cheat Sheet Boja:
 ///
@@ -78,7 +80,7 @@ class CardColorHelper {
   static const Color odsustvoText = Color(0xFFF57C00); // Colors.orange[700]
 
   // 🔴 OTKAZANO - DRUGI PRIORITET
-  static const Color otkazanoBackground = Color(0xFFFFE5E5);
+  static const Color otkazanoBackground = Color(0xFFEF9A9A); // Red[200] - tamnija crvena
   static const Color otkazanoBorder = Colors.red;
   static const Color otkazanoText = Color(0xFFEF5350); // Colors.red[400]
 
@@ -92,6 +94,11 @@ class CardColorHelper {
   static const Color pokupljenoBorder = Color(0xFF7FB3D3);
   static const Color pokupljenoText = Color(0xFF0D47A1);
 
+  // 🔘 TUĐI PUTNIK (dodeljen drugom vozaču)
+  static const Color tudjiBackground = Color(0xFF757575); // Grey[600]
+  static const Color tudjiBorder = Color(0xFFBDBDBD); // Grey[400]
+  static const Color tudjiText = Color(0xFF757575); // Grey[600]
+
   // ⚪ NEPOKUPLJENO - DEFAULT
   static const Color defaultBackground = Colors.white;
   static const Color defaultBorder = Colors.grey;
@@ -101,7 +108,7 @@ class CardColorHelper {
   // STANJE PUTNIKA
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Enum za stanje kartice putnika
+  /// Enum za stanje kartice putnika (bez provere vozača)
   static CardState getCardState(Putnik putnik) {
     // Provera po prioritetu
     if (putnik.jeOdsustvo) {
@@ -122,6 +129,31 @@ class CardColorHelper {
     return CardState.nepokupljeno;
   }
 
+  /// Enum za stanje kartice sa proverom vozača (za sivu boju)
+  /// [currentDriver] - ime trenutnog vozača koji gleda listu
+  static CardState getCardStateWithDriver(Putnik putnik, String currentDriver) {
+    // Provera po prioritetu - odsustvo i otkazano imaju najveći prioritet
+    if (putnik.jeOdsustvo) {
+      return CardState.odsustvo;
+    }
+    if (putnik.jeOtkazan) {
+      return CardState.otkazano;
+    }
+    if (putnik.jePokupljen) {
+      final bool isPlaceno = (putnik.iznosPlacanja ?? 0) > 0;
+      final bool isMesecniTip = putnik.isMesecniTip;
+      if (isPlaceno || isMesecniTip) {
+        return CardState.placeno;
+      }
+      return CardState.pokupljeno;
+    }
+    // 🔘 TUĐI PUTNIK: ima vozača, vozač nije trenutni
+    if (putnik.dodaoVozac != null && putnik.dodaoVozac!.isNotEmpty && putnik.dodaoVozac != currentDriver) {
+      return CardState.tudji;
+    }
+    return CardState.nepokupljeno;
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // POZADINA KARTICE
   // ═══════════════════════════════════════════════════════════════════════════
@@ -138,6 +170,8 @@ class CardColorHelper {
         return placenoBackground;
       case CardState.pokupljeno:
         return pokupljenoBackground;
+      case CardState.tudji:
+        return tudjiBackground;
       case CardState.nepokupljeno:
         return defaultBackground.withValues(alpha: 0.70);
     }
@@ -151,14 +185,21 @@ class CardColorHelper {
       case CardState.odsustvo:
         return LinearGradient(
           colors: [
-            odsustvoBackground.withValues(alpha: 0.85),
+            Colors.white.withValues(alpha: 0.98),
             odsustvoBackground,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
       case CardState.otkazano:
-        return null; // Bez gradijenta za otkazane
+        return LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.98),
+            otkazanoBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
       case CardState.placeno:
         return LinearGradient(
           colors: [
@@ -173,6 +214,15 @@ class CardColorHelper {
           colors: [
             Colors.white.withValues(alpha: 0.98),
             pokupljenoBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case CardState.tudji:
+        return LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.98),
+            tudjiBackground,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -205,6 +255,8 @@ class CardColorHelper {
         return placenoBorder.withValues(alpha: 0.4);
       case CardState.pokupljeno:
         return pokupljenoBorder.withValues(alpha: 0.4);
+      case CardState.tudji:
+        return tudjiBorder.withValues(alpha: 0.5);
       case CardState.nepokupljeno:
         return defaultBorder.withValues(alpha: 0.10);
     }
@@ -226,6 +278,8 @@ class CardColorHelper {
         return placenoBorder.withValues(alpha: 0.15);
       case CardState.pokupljeno:
         return pokupljenoBorder.withValues(alpha: 0.15);
+      case CardState.tudji:
+        return tudjiBorder.withValues(alpha: 0.15);
       case CardState.nepokupljeno:
         return Colors.black.withValues(alpha: 0.07);
     }
@@ -247,6 +301,8 @@ class CardColorHelper {
         return Theme.of(context).colorScheme.primary; // successPrimary
       case CardState.pokupljeno:
         return pokupljenoText;
+      case CardState.tudji:
+        return tudjiText;
       case CardState.nepokupljeno:
         return defaultText;
     }
@@ -268,6 +324,8 @@ class CardColorHelper {
         return successPrimary;
       case CardState.pokupljeno:
         return pokupljenoText;
+      case CardState.tudji:
+        return tudjiText;
       case CardState.nepokupljeno:
         return defaultText;
     }
@@ -289,6 +347,8 @@ class CardColorHelper {
         return const Color(0xFF4CAF50).withValues(alpha: 0.8); // Green[500]
       case CardState.pokupljeno:
         return pokupljenoText.withValues(alpha: 0.8);
+      case CardState.tudji:
+        return const Color(0xFF9E9E9E).withValues(alpha: 0.8); // Grey[500]
       case CardState.nepokupljeno:
         return const Color(0xFF757575).withValues(alpha: 0.8); // Grey[600]
     }
@@ -306,6 +366,8 @@ class CardColorHelper {
         return Colors.green;
       case CardState.pokupljeno:
         return Theme.of(context).colorScheme.primary;
+      case CardState.tudji:
+        return Colors.grey;
       case CardState.nepokupljeno:
         return Theme.of(context).colorScheme.primary;
     }
@@ -315,7 +377,7 @@ class CardColorHelper {
   // KOMPLETNA DEKORACIJA
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Vraća kompletnu BoxDecoration za karticu
+  /// Vraća kompletnu BoxDecoration za karticu (bez provere vozača)
   static BoxDecoration getCardDecoration(Putnik putnik) {
     final gradient = getBackgroundGradient(putnik);
 
@@ -335,6 +397,194 @@ class CardColorHelper {
         ),
       ],
     );
+  }
+
+  /// Vraća kompletnu BoxDecoration za karticu SA proverom vozača (za sivu boju)
+  static BoxDecoration getCardDecorationWithDriver(Putnik putnik, String currentDriver) {
+    final state = getCardStateWithDriver(putnik, currentDriver);
+    final gradient = _getGradientForState(state);
+
+    return BoxDecoration(
+      gradient: gradient,
+      color: gradient == null ? _getBackgroundForState(state) : null,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(
+        color: _getBorderForState(state),
+        width: 1.2,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: _getShadowForState(state),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  /// Vraća boju teksta SA proverom vozača
+  static Color getTextColorWithDriver(
+    Putnik putnik,
+    String currentDriver,
+    BuildContext context, {
+    required Color successPrimary,
+  }) {
+    final state = getCardStateWithDriver(putnik, currentDriver);
+    return _getTextForState(state, successPrimary);
+  }
+
+  /// Vraća sekundarnu boju teksta SA proverom vozača
+  static Color getSecondaryTextColorWithDriver(Putnik putnik, String currentDriver) {
+    final state = getCardStateWithDriver(putnik, currentDriver);
+    return _getSecondaryTextForState(state);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PRIVATNE HELPER METODE ZA STATE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  static Color _getBackgroundForState(CardState state) {
+    switch (state) {
+      case CardState.odsustvo:
+        return odsustvoBackground;
+      case CardState.otkazano:
+        return otkazanoBackground;
+      case CardState.placeno:
+        return placenoBackground;
+      case CardState.pokupljeno:
+        return pokupljenoBackground;
+      case CardState.tudji:
+        return tudjiBackground;
+      case CardState.nepokupljeno:
+        return defaultBackground.withValues(alpha: 0.70);
+    }
+  }
+
+  static Gradient? _getGradientForState(CardState state) {
+    switch (state) {
+      case CardState.odsustvo:
+        return LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.98),
+            odsustvoBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case CardState.otkazano:
+        return LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.98),
+            otkazanoBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case CardState.placeno:
+        return LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.98),
+            placenoBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case CardState.pokupljeno:
+        return LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.98),
+            pokupljenoBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case CardState.tudji:
+        return LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.98),
+            tudjiBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case CardState.nepokupljeno:
+        return LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.98),
+            Colors.white.withValues(alpha: 0.98),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+    }
+  }
+
+  static Color _getBorderForState(CardState state) {
+    switch (state) {
+      case CardState.odsustvo:
+        return odsustueBorder.withValues(alpha: 0.6);
+      case CardState.otkazano:
+        return otkazanoBorder.withValues(alpha: 0.25);
+      case CardState.placeno:
+        return placenoBorder.withValues(alpha: 0.4);
+      case CardState.pokupljeno:
+        return pokupljenoBorder.withValues(alpha: 0.4);
+      case CardState.tudji:
+        return tudjiBorder.withValues(alpha: 0.5);
+      case CardState.nepokupljeno:
+        return defaultBorder.withValues(alpha: 0.10);
+    }
+  }
+
+  static Color _getShadowForState(CardState state) {
+    switch (state) {
+      case CardState.odsustvo:
+        return odsustueBorder.withValues(alpha: 0.2);
+      case CardState.otkazano:
+        return otkazanoBorder.withValues(alpha: 0.08);
+      case CardState.placeno:
+        return placenoBorder.withValues(alpha: 0.15);
+      case CardState.pokupljeno:
+        return pokupljenoBorder.withValues(alpha: 0.15);
+      case CardState.tudji:
+        return tudjiBorder.withValues(alpha: 0.15);
+      case CardState.nepokupljeno:
+        return Colors.black.withValues(alpha: 0.07);
+    }
+  }
+
+  static Color _getTextForState(CardState state, Color successPrimary) {
+    switch (state) {
+      case CardState.odsustvo:
+        return odsustvoText;
+      case CardState.otkazano:
+        return otkazanoText;
+      case CardState.placeno:
+        return successPrimary;
+      case CardState.pokupljeno:
+        return pokupljenoText;
+      case CardState.tudji:
+        return tudjiText;
+      case CardState.nepokupljeno:
+        return defaultText;
+    }
+  }
+
+  static Color _getSecondaryTextForState(CardState state) {
+    switch (state) {
+      case CardState.odsustvo:
+        return const Color(0xFFFF9800).withValues(alpha: 0.8);
+      case CardState.otkazano:
+        return const Color(0xFFE57373).withValues(alpha: 0.8);
+      case CardState.placeno:
+        return const Color(0xFF4CAF50).withValues(alpha: 0.8);
+      case CardState.pokupljeno:
+        return pokupljenoText.withValues(alpha: 0.8);
+      case CardState.tudji:
+        return const Color(0xFF9E9E9E).withValues(alpha: 0.8);
+      case CardState.nepokupljeno:
+        return const Color(0xFF757575).withValues(alpha: 0.8);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

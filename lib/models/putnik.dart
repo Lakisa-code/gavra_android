@@ -82,9 +82,9 @@ class Putnik {
       return Putnik.fromRegistrovaniPutnici(map);
     }
 
-    // GREŠKA - Nepoznata struktura tabele
+    // GREŠKA - Struktura tabele nije prepoznata
     throw Exception(
-      'Nepoznata struktura podataka - očekuje se putnik_ime kolona iz registrovani_putnici',
+      'Struktura podataka nije prepoznata - očekuje se putnik_ime kolona iz registrovani_putnici',
     );
   }
 

@@ -302,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (mounted) {
       setState(() {
         // Inicijalizacija driver-a
-        _currentDriver = driver; // Ne postavljaj fallback 'Nepoznat'
+        _currentDriver = driver;
       });
     }
   }
@@ -1870,7 +1870,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                '❌ GREŠKA: Nepoznat vozač "$_currentDriver". Molimo ponovo se ulogujte.',
+                                                '❌ GREŠKA: Vozač "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.',
                                               ),
                                               backgroundColor: Colors.red,
                                             ),
@@ -2983,7 +2983,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           )
                         : PutnikList(
                             putnici: putniciZaPrikaz,
-                            currentDriver: _currentDriver,
+                            currentDriver: _currentDriver!,
                             selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
                             selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
                             onPutnikStatusChanged: () {

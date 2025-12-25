@@ -109,7 +109,7 @@ class VozacBoja {
     if (ime != null && currentBoje.containsKey(ime)) {
       return currentBoje[ime]!;
     }
-    throw ArgumentError('Nepoznat vozač: $ime. Validni vozači: ${currentBoje.keys.join(", ")}');
+    throw ArgumentError('Vozač "$ime" nije registrovan. Validni vozači: ${currentBoje.keys.join(", ")}');
   }
 
   /// Proverava da li je vozač prepoznat/valjan
@@ -120,7 +120,7 @@ class VozacBoja {
   /// Lista svih validnih vozača
   static List<String> get validDrivers => boje.keys.toList();
 
-  /// Vraća boju vozača ili default boju za nepoznate vozače
+  /// Vraća boju vozača ili default boju ako vozač nije registrovan
   /// FIX: Case-insensitive poređenje za robusnost
   static Color getColorOrDefault(String? ime, Color defaultColor) {
     if (ime == null || ime.isEmpty) return defaultColor;

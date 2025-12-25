@@ -323,7 +323,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
   }
 
   Widget _buildAdresaCard(Map<String, dynamic> adresa) {
-    final grad = adresa['grad'] ?? 'Nepoznat';
+    final grad = adresa['grad'] ?? '';
     final isVrsac = grad == 'Vršac' || grad == 'Vrsac';
 
     return Container(
