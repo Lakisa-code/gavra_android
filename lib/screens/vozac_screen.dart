@@ -16,7 +16,7 @@ import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
-import '../theme.dart';
+import '../services/theme_manager.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/putnik_helpers.dart'; // 🔢 Za brojanje putnika
 import '../utils/schedule_utils.dart';
@@ -1491,8 +1491,8 @@ class _VozacScreenState extends State<VozacScreen> {
     final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: tripleBlueFashionGradient,
+      decoration: BoxDecoration(
+        gradient: ThemeManager().currentGradient, // 🎨 Theme-aware gradijent
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,

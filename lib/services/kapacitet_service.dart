@@ -182,6 +182,8 @@ class KapacitetService {
   /// Admin: Promeni kapacitet za određeni polazak
   static Future<bool> setKapacitet(String grad, String vreme, int maxMesta, {String? napomena}) async {
     try {
+      debugPrint('🎫 setKapacitet: grad=$grad, vreme=$vreme, maxMesta=$maxMesta');
+
       await _supabase.from('kapacitet_polazaka').upsert({
         'grad': grad,
         'vreme': vreme,
@@ -193,8 +195,10 @@ class KapacitetService {
       // Invalidate cache
       _kapacitetCache = null;
 
+      debugPrint('🎫 setKapacitet: SUCCESS');
       return true;
     } catch (e) {
+      debugPrint('🎫 setKapacitet ERROR: $e');
       return false;
     }
   }

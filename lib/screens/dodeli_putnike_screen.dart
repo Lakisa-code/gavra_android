@@ -1,15 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../config/route_config.dart';
+import '../globals.dart';
 import '../models/putnik.dart';
+import '../services/kapacitet_service.dart';
 import '../services/putnik_service.dart';
+import '../services/theme_manager.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
 import '../utils/schedule_utils.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
+import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 
 /// 🎯 DODELI PUTNIKE SCREEN
@@ -80,15 +85,9 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     return app_date_utils.DateUtils.getTodayFullName();
   }
 
+  // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
   String _getDayAbbreviation(String fullDay) {
-    const Map<String, String> dayMap = {
-      'Ponedeljak': 'pon',
-      'Utorak': 'uto',
-      'Sreda': 'sre',
-      'Četvrtak': 'cet',
-      'Petak': 'pet',
-    };
-    return dayMap[fullDay] ?? 'pon';
+    return app_date_utils.DateUtils.getDayAbbreviation(fullDay);
   }
 
   // Konvertuj ime dana u ISO datum (identično kao HomeScreen)
@@ -159,6 +158,15 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           return vremeMatch && gradMatch;
         }).toList();
 
+        // 🔢 Sortiraj: aktivni prvi, odsustvo/otkazani na dno
+        filtered.sort((a, b) {
+          final aInactive = a.jeOdsustvo || a.jeOtkazan;
+          final bInactive = b.jeOdsustvo || b.jeOtkazan;
+          if (aInactive && !bInactive) return 1; // a ide dole
+          if (!aInactive && bInactive) return -1; // b ide dole
+          return 0; // isti status, zadrži redosled
+        });
+
         setState(() {
           _putnici = filtered;
           _isLoading = false;
@@ -167,13 +175,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     });
   }
 
-  // 📊 Broj putnika za BottomNavBar
+  // 📊 Broj putnika za BottomNavBar (ne računa odsustvo/otkazane)
   int _getPutnikCount(String grad, String vreme) {
     final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
     return _allPutnici.where((p) {
       final vremeMatch = GradAdresaValidator.normalizeTime(p.polazak) == normalizedVreme;
       final gradMatch = p.grad.toLowerCase().contains(grad.toLowerCase().substring(0, 4));
-      return vremeMatch && gradMatch;
+      final isActive = !p.jeOdsustvo && !p.jeOtkazan;
+      return vremeMatch && gradMatch && isActive;
     }).length;
   }
 
@@ -279,6 +288,30 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                   onTap: () => Navigator.pop(context, vozac),
                 );
               }),
+              // ➖ Opcija za uklanjanje vozača
+              const Divider(),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey, width: 2),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.person_off, color: Colors.grey, size: 20),
+                  ),
+                ),
+                title: const Text(
+                  'Bez vozača',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                trailing: currentVozac == 'Nepoznat' || currentVozac == 'Nedodeljen'
+                    ? const Icon(Icons.check_circle, color: Colors.grey)
+                    : const Icon(Icons.circle_outlined, color: Colors.grey),
+                onTap: () => Navigator.pop(context, '_NONE_'),
+              ),
               const SizedBox(height: 16),
             ],
           ),
@@ -288,12 +321,15 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     if (selected != null && selected != currentVozac && putnik.id != null) {
       try {
-        await _putnikService.prebacijPutnikaVozacu(putnik.id!, selected);
+        // ➖ Ako je izabrano "Bez vozača", postavi null
+        final noviVozac = selected == '_NONE_' ? null : selected;
+        await _putnikService.prebacijPutnikaVozacu(putnik.id!, noviVozac);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ ${putnik.ime} prebačen na $selected'),
-              backgroundColor: VozacBoja.get(selected),
+              content: Text(
+                  noviVozac == null ? '✅ ${putnik.ime} uklonjen sa vozača' : '✅ ${putnik.ime} prebačen na $noviVozac'),
+              backgroundColor: noviVozac == null ? Colors.grey : VozacBoja.get(noviVozac),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -313,314 +349,269 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isSelectionMode ? '${_selectedPutnici.length} selektovano' : 'Dodeli Putnike'),
-        centerTitle: true,
-        elevation: 0,
-        leading: _isSelectionMode
-            ? IconButton(
-                icon: const Icon(Icons.close),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light, // 🎨 Bele ikonice u status baru
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: ThemeManager().currentGradient, // 🎨 Theme-aware gradijent
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            title: Text(_isSelectionMode ? '${_selectedPutnici.length} selektovano' : 'Dodeli Putnike'),
+            centerTitle: true,
+            elevation: 0,
+            leading: _isSelectionMode
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _isSelectionMode = false;
+                        _selectedPutnici.clear();
+                      });
+                    },
+                  )
+                : null,
+            actions: [
+              // 🎯 Toggle selection mode
+              IconButton(
+                icon: Icon(_isSelectionMode ? Icons.check_circle : Icons.checklist),
+                tooltip: _isSelectionMode ? 'Završi selekciju' : 'Selektuj putnike',
                 onPressed: () {
                   setState(() {
-                    _isSelectionMode = false;
-                    _selectedPutnici.clear();
+                    _isSelectionMode = !_isSelectionMode;
+                    if (!_isSelectionMode) _selectedPutnici.clear();
                   });
                 },
-              )
-            : null,
-        actions: [
-          // 🎯 Toggle selection mode
-          IconButton(
-            icon: Icon(_isSelectionMode ? Icons.check_circle : Icons.checklist),
-            tooltip: _isSelectionMode ? 'Završi selekciju' : 'Selektuj putnike',
-            onPressed: () {
-              setState(() {
-                _isSelectionMode = !_isSelectionMode;
-                if (!_isSelectionMode) _selectedPutnici.clear();
-              });
-            },
-          ),
-          // Izbor dana
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.calendar_today),
-            tooltip: 'Izaberi dan',
-            onSelected: (day) {
-              setState(() => _selectedDay = day);
-              _setupStream();
-            },
-            itemBuilder: (context) => _dani.map((dan) {
-              final isSelected = dan == _selectedDay;
-              return PopupMenuItem<String>(
-                value: dan,
-                child: Row(
-                  children: [
-                    if (isSelected)
-                      const Icon(Icons.check, size: 18, color: Colors.green)
-                    else
-                      const SizedBox(width: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      dan,
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 📊 INFO BAR - Dan dropdown i broj putnika
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                ),
               ),
-            ),
-            child: Row(
-              children: [
-                // 📅 Dan DROPDOWN
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedDay,
-                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white, size: 20),
-                      dropdownColor: Theme.of(context).colorScheme.primary,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      items: _dani.map((dan) {
-                        return DropdownMenuItem<String>(
-                          value: dan,
-                          child: Text(
-                            dan.substring(0, 3).toUpperCase(),
-                            style: const TextStyle(color: Colors.white),
+              // Izbor dana
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.calendar_today),
+                tooltip: 'Izaberi dan',
+                onSelected: (day) {
+                  setState(() => _selectedDay = day);
+                  _setupStream();
+                },
+                itemBuilder: (context) => _dani.map((dan) {
+                  final isSelected = dan == _selectedDay;
+                  return PopupMenuItem<String>(
+                    value: dan,
+                    child: Row(
+                      children: [
+                        if (isSelected)
+                          const Icon(Icons.check, size: 18, color: Colors.green)
+                        else
+                          const SizedBox(width: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          dan,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _selectedDay = value);
-                          _setupStream();
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Icon(
-                  Icons.people,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${_putnici.length} putnika',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '$_selectedVreme - $_selectedGrad',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 📋 LISTA PUTNIKA
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _putnici.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.person_off,
-                              size: 64,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Nema putnika za $_selectedVreme',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: _putnici.length,
-                        itemBuilder: (context, index) {
-                          final putnik = _putnici[index];
-                          final vozacColor = VozacBoja.getColorOrDefault(putnik.dodaoVozac, Colors.grey);
-                          final isSelected = putnik.id != null && _selectedPutnici.contains(putnik.id);
-                          return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            color: isSelected ? vozacColor.withValues(alpha: 0.1) : null,
-                            child: ListTile(
-                              leading: _isSelectionMode
-                                  ? Checkbox(
-                                      value: isSelected,
-                                      activeColor: vozacColor,
-                                      onChanged: (value) {
-                                        if (putnik.id != null) {
-                                          setState(() {
-                                            if (value == true) {
-                                              _selectedPutnici.add(putnik.id!);
-                                            } else {
-                                              _selectedPutnici.remove(putnik.id);
-                                            }
-                                          });
-                                        }
-                                      },
-                                    )
-                                  : CircleAvatar(
-                                      backgroundColor: vozacColor.withValues(alpha: 0.2),
-                                      child: Text(
-                                        putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
-                                        style: TextStyle(
-                                          color: vozacColor,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                              title: Text(
-                                putnik.ime,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              subtitle: Text(
-                                '${putnik.adresa ?? putnik.grad} • ${putnik.dodaoVozac ?? "Nedodeljen"}',
-                                style: TextStyle(color: vozacColor),
-                              ),
-                              trailing: _isSelectionMode
-                                  ? CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: vozacColor.withValues(alpha: 0.2),
-                                      child: Text(
-                                        putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
-                                        style: TextStyle(color: vozacColor, fontSize: 12),
-                                      ),
-                                    )
-                                  : const Icon(Icons.swap_horiz),
-                              onTap: () {
-                                if (_isSelectionMode && putnik.id != null) {
-                                  setState(() {
-                                    if (_selectedPutnici.contains(putnik.id)) {
-                                      _selectedPutnici.remove(putnik.id);
-                                    } else {
-                                      _selectedPutnici.add(putnik.id!);
-                                    }
-                                  });
-                                } else {
-                                  _showVozacPicker(putnik);
-                                }
-                              },
-                              onLongPress: () {
-                                if (!_isSelectionMode && putnik.id != null) {
-                                  setState(() {
-                                    _isSelectionMode = true;
-                                    _selectedPutnici.add(putnik.id!);
-                                  });
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
-      ),
-      // 🎯 BOTTOM NAV BAR - identično kao HomeScreen
-      bottomNavigationBar: isZimski(DateTime.now())
-          ? BottomNavBarZimski(
-              sviPolasci: _sviPolasci,
-              selectedGrad: _selectedGrad,
-              selectedVreme: _selectedVreme,
-              getPutnikCount: _getPutnikCount,
-              onPolazakChanged: _onPolazakChanged,
-            )
-          : BottomNavBarLetnji(
-              sviPolasci: _sviPolasci,
-              selectedGrad: _selectedGrad,
-              selectedVreme: _selectedVreme,
-              getPutnikCount: _getPutnikCount,
-              onPolazakChanged: _onPolazakChanged,
-            ),
-      // 🎯 FAB ZA DODAVANJE PUTNIKA (samo kad nije selection mode)
-      floatingActionButton: _isSelectionMode
-          ? null
-          : FloatingActionButton(
-              onPressed: _showDodajPutnikaDialog,
-              tooltip: 'Dodaj putnika',
-              child: const Icon(Icons.person_add),
-            ),
-      // 🎯 PERSISTENT BOTTOM SHEET za bulk akcije (kad je selection mode aktivan)
-      persistentFooterButtons: _isSelectionMode && _selectedPutnici.isNotEmpty
-          ? [
+          body: Column(
+            children: [
+              // 📋 LISTA PUTNIKA
               Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      // Vozači dugmići
-                      ...VozacBoja.validDrivers.map((vozac) {
-                        final color = VozacBoja.get(vozac);
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: color.withValues(alpha: 0.2),
-                              foregroundColor: color,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _putnici.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.person_off,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Nema putnika za $_selectedVreme',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
                             ),
-                            icon: Text(vozac[0], style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-                            label: Text(vozac),
-                            onPressed: () => _bulkPrebaci(vozac),
+                          )
+                        : ListView.builder(
+                            itemCount: _putnici.length,
+                            itemBuilder: (context, index) {
+                              final putnik = _putnici[index];
+                              final vozacColor = VozacBoja.getColorOrDefault(putnik.dodaoVozac, Colors.grey);
+                              final isSelected = putnik.id != null && _selectedPutnici.contains(putnik.id);
+
+                              // 🎨 Boja kartice prema statusu putnika
+                              Color? cardColor;
+                              Color? borderColor;
+                              String? statusText;
+                              if (putnik.jeOtkazan) {
+                                cardColor = Colors.red.withValues(alpha: 0.15);
+                                borderColor = Colors.red;
+                                statusText = '❌ OTKAZAN';
+                              } else if (putnik.jeOdsustvo) {
+                                cardColor = Colors.amber.withValues(alpha: 0.15);
+                                borderColor = Colors.amber;
+                                statusText = '🏖️ ${putnik.status?.toUpperCase() ?? "ODSUSTVO"}';
+                              } else if (isSelected) {
+                                cardColor = vozacColor.withValues(alpha: 0.1);
+                              }
+
+                              return Card(
+                                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                color: cardColor,
+                                shape: borderColor != null
+                                    ? RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(color: borderColor, width: 2),
+                                      )
+                                    : null,
+                                child: ListTile(
+                                  leading: _isSelectionMode
+                                      ? Checkbox(
+                                          value: isSelected,
+                                          activeColor: vozacColor,
+                                          onChanged: (value) {
+                                            if (putnik.id != null) {
+                                              setState(() {
+                                                if (value == true) {
+                                                  _selectedPutnici.add(putnik.id!);
+                                                } else {
+                                                  _selectedPutnici.remove(putnik.id);
+                                                }
+                                              });
+                                            }
+                                          },
+                                        )
+                                      : CircleAvatar(
+                                          backgroundColor:
+                                              borderColor?.withValues(alpha: 0.3) ?? vozacColor.withValues(alpha: 0.2),
+                                          child: Text(
+                                            putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
+                                            style: TextStyle(
+                                              color: borderColor ?? vozacColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                  title: Text(
+                                    putnik.ime,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: borderColor,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${putnik.adresa ?? putnik.grad} • ${putnik.dodaoVozac ?? "Nedodeljen"}',
+                                        style: TextStyle(color: borderColor ?? vozacColor),
+                                      ),
+                                      if (statusText != null)
+                                        Text(
+                                          statusText,
+                                          style: TextStyle(
+                                            color: borderColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  trailing: _isSelectionMode
+                                      ? CircleAvatar(
+                                          radius: 16,
+                                          backgroundColor: vozacColor.withValues(alpha: 0.2),
+                                          child: Text(
+                                            putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
+                                            style: TextStyle(color: vozacColor, fontSize: 12),
+                                          ),
+                                        )
+                                      : const Icon(Icons.swap_horiz),
+                                  onTap: () {
+                                    if (_isSelectionMode && putnik.id != null) {
+                                      setState(() {
+                                        if (_selectedPutnici.contains(putnik.id)) {
+                                          _selectedPutnici.remove(putnik.id);
+                                        } else {
+                                          _selectedPutnici.add(putnik.id!);
+                                        }
+                                      });
+                                    } else {
+                                      _showVozacPicker(putnik);
+                                    }
+                                  },
+                                  onLongPress: () {
+                                    if (!_isSelectionMode && putnik.id != null) {
+                                      setState(() {
+                                        _isSelectionMode = true;
+                                        _selectedPutnici.add(putnik.id!);
+                                      });
+                                    }
+                                  },
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      }),
-                      const SizedBox(width: 8),
-                      // Obriši dugme
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.withValues(alpha: 0.2),
-                          foregroundColor: Colors.red,
-                        ),
-                        icon: const Icon(Icons.delete),
-                        label: const Text('Obriši'),
-                        onPressed: _bulkObrisi,
-                      ),
-                    ],
-                  ),
-                ),
               ),
-            ]
-          : null,
+            ],
+          ),
+          // 🎯 BOTTOM NAV BAR - identično kao HomeScreen (sa kapacitetom i praznicima)
+          bottomNavigationBar: _buildBottomNavBar(),
+          // 🎯 PERSISTENT BOTTOM SHEET za bulk akcije (kad je selection mode aktivan)
+          persistentFooterButtons: _isSelectionMode && _selectedPutnici.isNotEmpty
+              ? [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          // Vozači dugmići
+                          ...VozacBoja.validDrivers.map((vozac) {
+                            final color = VozacBoja.get(vozac);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: color.withValues(alpha: 0.2),
+                                  foregroundColor: color,
+                                ),
+                                icon: Text(vozac[0], style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+                                label: Text(vozac),
+                                onPressed: () => _bulkPrebaci(vozac),
+                              ),
+                            );
+                          }),
+                          const SizedBox(width: 8),
+                          // Obriši dugme
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.withValues(alpha: 0.2),
+                              foregroundColor: Colors.red,
+                            ),
+                            icon: const Icon(Icons.delete),
+                            label: const Text('Obriši'),
+                            onPressed: _bulkObrisi,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ]
+              : null,
+        ),
+      ),
     );
   }
 
@@ -731,18 +722,57 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  // ➕ DIJALOG ZA DODAVANJE REGISTROVANOG PUTNIKA
-  // 🚫 Ad-hoc putnici više ne postoje - samo registrovani iz registrovani_putnici
-  Future<void> _showDodajPutnikaDialog() async {
-    // Prikaži poruku da se koristi Mesečni putnici ekran
-    if (!mounted) return;
+  /// 🎯 Helper metoda za kreiranje bottom nav bar-a (identično kao HomeScreen)
+  Widget _buildBottomNavBar() {
+    final navType = navBarTypeNotifier.value;
+    final now = DateTime.now();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('ℹ️ Svi putnici moraju biti registrovani. Idite na Mesečni putnici da dodate novog putnika.'),
-        duration: Duration(seconds: 4),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    switch (navType) {
+      case 'praznici':
+        return BottomNavBarPraznici(
+          sviPolasci: _sviPolasci,
+          selectedGrad: _selectedGrad,
+          selectedVreme: _selectedVreme,
+          getPutnikCount: _getPutnikCount,
+          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          onPolazakChanged: _onPolazakChanged,
+        );
+      case 'zimski':
+        return BottomNavBarZimski(
+          sviPolasci: _sviPolasci,
+          selectedGrad: _selectedGrad,
+          selectedVreme: _selectedVreme,
+          getPutnikCount: _getPutnikCount,
+          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          onPolazakChanged: _onPolazakChanged,
+        );
+      case 'letnji':
+        return BottomNavBarLetnji(
+          sviPolasci: _sviPolasci,
+          selectedGrad: _selectedGrad,
+          selectedVreme: _selectedVreme,
+          getPutnikCount: _getPutnikCount,
+          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          onPolazakChanged: _onPolazakChanged,
+        );
+      default: // 'auto'
+        return isZimski(now)
+            ? BottomNavBarZimski(
+                sviPolasci: _sviPolasci,
+                selectedGrad: _selectedGrad,
+                selectedVreme: _selectedVreme,
+                getPutnikCount: _getPutnikCount,
+                getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                onPolazakChanged: _onPolazakChanged,
+              )
+            : BottomNavBarLetnji(
+                sviPolasci: _sviPolasci,
+                selectedGrad: _selectedGrad,
+                selectedVreme: _selectedVreme,
+                getPutnikCount: _getPutnikCount,
+                getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                onPolazakChanged: _onPolazakChanged,
+              );
+    }
   }
 }

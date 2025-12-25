@@ -47,63 +47,185 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
 
     final result = await showDialog<int>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).glassContainer,
-        title: Text(
-          '$grad - $vreme',
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Unesite maksimalan broj mesta:',
-              style: TextStyle(color: Colors.white70),
+      barrierColor: Colors.black54,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 320),
+          decoration: BoxDecoration(
+            gradient: Theme.of(context).backgroundGradient,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Theme.of(context).glassBorder,
+              width: 1.5,
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 2,
+                offset: const Offset(0, 10),
               ),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.black26,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 🎨 GLASSMORPHISM HEADER
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).glassContainer,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).glassBorder,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '🎫 $grad - $vreme',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(1, 1),
+                              blurRadius: 3,
+                              color: Colors.black54,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              // 📝 CONTENT
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Unesite maksimalan broj mesta:',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).glassContainer,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).glassBorder,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        autofocus: true,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // 🎯 BUTTONS
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: Colors.grey.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Otkaži',
+                              style: TextStyle(color: Colors.grey, fontSize: 16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final value = int.tryParse(controller.text);
+                              if (value != null && value > 0 && value <= 20) {
+                                Navigator.pop(ctx, value);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Unesite broj između 1 i 20'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Sačuvaj',
+                              style: TextStyle(fontSize: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Otkaži', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final value = int.tryParse(controller.text);
-              if (value != null && value > 0 && value <= 20) {
-                Navigator.pop(ctx, value);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Unesite broj između 1 i 20'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Sačuvaj'),
-          ),
-        ],
       ),
     );
 
@@ -133,12 +255,12 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: vremena.length,
-      itemBuilder: (context, index) {
+      itemBuilder: (ctx, index) {
         final vreme = vremena[index];
         final maxMesta = _kapacitet[grad]?[vreme] ?? 8;
 
         return Card(
-          color: Theme.of(context).glassContainer,
+          color: Theme.of(ctx).glassContainer,
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             title: Text(
@@ -162,11 +284,23 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                 IconButton(
                   onPressed: maxMesta > 1
                       ? () async {
-                          await KapacitetService.setKapacitet(grad, vreme, maxMesta - 1);
-                          _loadKapacitet();
+                          final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta - 1);
+                          if (!mounted) return;
+                          if (success) {
+                            setState(() {
+                              _kapacitet[grad]?[vreme] = maxMesta - 1;
+                            });
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('❌ Greška pri čuvanju'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       : null,
-                  icon: const Icon(Icons.remove_circle, color: Colors.red),
+                  icon: const Icon(Icons.remove_circle, color: Colors.red, size: 32),
                 ),
                 // Prikaz broja
                 Container(
@@ -191,11 +325,23 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                 IconButton(
                   onPressed: maxMesta < 20
                       ? () async {
-                          await KapacitetService.setKapacitet(grad, vreme, maxMesta + 1);
-                          _loadKapacitet();
+                          final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta + 1);
+                          if (!mounted) return;
+                          if (success) {
+                            setState(() {
+                              _kapacitet[grad]?[vreme] = maxMesta + 1;
+                            });
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('❌ Greška pri čuvanju'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       : null,
-                  icon: const Icon(Icons.add_circle, color: Colors.green),
+                  icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
                 ),
               ],
             ),

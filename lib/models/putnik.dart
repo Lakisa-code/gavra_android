@@ -135,11 +135,11 @@ class Putnik {
       cena: _parseDouble(map['cena']),
       // ✅ NOVO: Čitaj naplatioVozac iz polasci_po_danu (samo DANAS)
       naplatioVozac: RegistrovaniHelpers.getNaplatioVozacForDayAndPlace(map, danKratica, place) ??
-          _getVozacIme(map['vozac_id'] as String?) ??
-          _extractDodaoVozacFromArray(map['dodali_vozaci']),
+          _getVozacIme(map['vozac_id'] as String?),
       // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu (samo DANAS)
       pokupioVozac: RegistrovaniHelpers.getPokupioVozacForDayAndPlace(map, danKratica, place),
-      dodaoVozac: _extractDodaoVozacFromArray(map['dodali_vozaci']),
+      // ✅ FIX: dodaoVozac čita iz vozac_id (dodeljeni vozač)
+      dodaoVozac: _getVozacIme(map['vozac_id'] as String?),
       grad: grad,
       adresa: _determineAdresaFromRegistrovani(map, grad), // ✅ FIX: Prosleđujemo grad za konzistentnost
       adresaId: _determineAdresaIdFromRegistrovani(map, grad), // ✅ NOVO - UUID adrese
@@ -373,12 +373,10 @@ class Putnik {
           placeno: placeno,
           cena: iznosPlacanja,
           // ✅ NOVO: Čitaj naplatioVozac iz polasci_po_danu
-          naplatioVozac: naplatioVozacBC ??
-              _getVozacIme(map['vozac_id'] as String?) ??
-              _extractDodaoVozacFromArray(map['dodali_vozaci']),
+          naplatioVozac: naplatioVozacBC ?? _getVozacIme(map['vozac_id'] as String?),
           // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu
           pokupioVozac: pokupioVozacBC,
-          dodaoVozac: _extractDodaoVozacFromArray(map['dodali_vozaci']),
+          dodaoVozac: _getVozacIme(map['vozac_id'] as String?),
           vozac: vozac,
           grad: 'Bela Crkva',
           adresa: finalAdresaBc, // 🆕 PRIORITET: adresa_danas > stalna adresa
@@ -419,12 +417,10 @@ class Putnik {
           placeno: placeno,
           cena: iznosPlacanja,
           // ✅ NOVO: Čitaj naplatioVozac iz polasci_po_danu
-          naplatioVozac: naplatioVozacVS ??
-              _getVozacIme(map['vozac_id'] as String?) ??
-              _extractDodaoVozacFromArray(map['dodali_vozaci']),
+          naplatioVozac: naplatioVozacVS ?? _getVozacIme(map['vozac_id'] as String?),
           // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu
           pokupioVozac: pokupioVozacVS,
-          dodaoVozac: _extractDodaoVozacFromArray(map['dodali_vozaci']),
+          dodaoVozac: _getVozacIme(map['vozac_id'] as String?),
           vozac: vozac,
           grad: 'Vršac',
           adresa: finalAdresaVs, // 🆕 PRIORITET: adresa_danas > stalna adresa
@@ -586,33 +582,10 @@ class Putnik {
     return daniKratice[weekday - 1];
   }
 
-  // ✅ HELPER: Izvlači prvi element iz dodali_vozaci arraya
-  // 🔧 FIX: Konvertuje UUID u ime vozača ako je potrebno
-  static String? _extractDodaoVozacFromArray(dynamic dodaliVozaci) {
-    if (dodaliVozaci == null) return null;
-    if (dodaliVozaci is List && dodaliVozaci.isNotEmpty) {
-      final value = dodaliVozaci[0]?.toString();
-      // Konvertuj UUID u ime ako je potrebno
-      return _getVozacImeOrDirect(value);
-    }
-    return null;
-  }
-
   // ✅ CENTRALIZOVANO: Konvertuj UUID u ime vozača sa fallback-om
   static String? _getVozacIme(String? uuid) {
     if (uuid == null || uuid.isEmpty) return null;
     return VozacMappingService.getVozacImeWithFallbackSync(uuid) ?? _mapUuidToVozacHardcoded(uuid);
-  }
-
-  // ✅ NOVO: Ako je već ime vozača (ne UUID), vrati direktno; inače konvertuj UUID u ime
-  static String? _getVozacImeOrDirect(String? value) {
-    if (value == null || value.isEmpty) return null;
-    // Ako je kraće od 20 karaktera i nema '-', verovatno je već ime
-    if (value.length < 20 && !value.contains('-')) {
-      return value; // Već je ime (Bojan, Bruda, itd.)
-    }
-    // Inače je UUID - konvertuj u ime
-    return _getVozacIme(value);
   }
 
   // ✅ FALLBACK MAPIRANJE UUID -> VOZAČ IME

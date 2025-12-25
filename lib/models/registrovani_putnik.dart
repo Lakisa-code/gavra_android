@@ -39,7 +39,6 @@ class RegistrovaniPutnik {
     this.adresa,
     this.grad,
     // Tracking polja
-    this.dodaliVozaci = const [],
     this.placeno = false,
     this.pin,
     this.email, // 📧 Email za kontakt i Google Play testing
@@ -108,7 +107,6 @@ class RegistrovaniPutnik {
       adresa: map['adresa'] as String?,
       grad: map['grad'] as String?,
       // Tracking polja
-      dodaliVozaci: _parseDodaliVozaci(map['dodali_vozaci']),
       placeno: map['placeno'] as bool? ?? false,
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
@@ -163,7 +161,6 @@ class RegistrovaniPutnik {
   final String? grad;
 
   // Tracking polja
-  final List<dynamic> dodaliVozaci;
   final bool placeno;
   final String? pin; // 🔐 PIN za login
   final String? email; // 📧 Email za kontakt i Google Play testing
@@ -223,7 +220,6 @@ class RegistrovaniPutnik {
       'tip_prikazivanja': tipPrikazivanja,
       'vozac_id': vozacId,
       'pokupljen': pokupljen,
-      'dodali_vozaci': dodaliVozaci,
       'placeno': placeno,
       'email': email, // 📧 Email
       'cena_po_danu': cenaPoDanu, // 🆕 Custom cena po danu
@@ -313,7 +309,6 @@ class RegistrovaniPutnik {
     String? adresa,
     String? grad,
     // Tracking
-    List<dynamic>? dodaliVozaci,
     bool? placeno,
     // 🧾 Polja za račune
     bool? trebaRacun,
@@ -353,7 +348,6 @@ class RegistrovaniPutnik {
       adresa: adresa ?? this.adresa,
       grad: grad ?? this.grad,
       // Tracking
-      dodaliVozaci: dodaliVozaci ?? this.dodaliVozaci,
       placeno: placeno ?? this.placeno,
       // 🧾 Polja za račune
       trebaRacun: trebaRacun ?? this.trebaRacun,
@@ -409,14 +403,5 @@ class RegistrovaniPutnik {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp * 1000 + (timestamp % 1000)).toRadixString(36);
     return 'fallback-uuid-$random';
-  }
-
-  /// ✅ HELPER: Parsira dodali_vozaci - može biti List, Map ili null
-  static List<dynamic> _parseDodaliVozaci(dynamic value) {
-    if (value == null) return [];
-    if (value is List) return value;
-    if (value is Map) return [value]; // Wrap Map u List
-    if (value is String) return [value]; // Wrap String u List
-    return [];
   }
 }

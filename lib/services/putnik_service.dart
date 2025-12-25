@@ -1101,29 +1101,32 @@ class PutnikService {
     return;
   }
 
-  /// ?? PREBACI PUTNIKA DRUGOM VOZACU
-  /// A�urira `vozac_id` kolonu u registrovani_putnici tabeli
-  Future<void> prebacijPutnikaVozacu(String putnikId, String noviVozac) async {
-    if (!VozacBoja.isValidDriver(noviVozac)) {
-      throw Exception(
-        'Nevalidan vozac: "$noviVozac". Dozvoljeni: ${VozacBoja.validDrivers.join(", ")}',
-      );
-    }
-
+  /// 🔄 PREBACI PUTNIKA DRUGOM VOZACU (ili ukloni vozača)
+  /// Ažurira `vozac_id` kolonu u registrovani_putnici tabeli
+  /// Ako je noviVozac null, uklanja vozača sa putnika
+  Future<void> prebacijPutnikaVozacu(String putnikId, String? noviVozac) async {
     try {
-      final vozacUuid = await VozacMappingService.getVozacUuid(noviVozac);
+      String? vozacUuid;
 
-      if (vozacUuid == null) {
-        throw Exception('Vozac "$noviVozac" nije pronaden u bazi');
+      if (noviVozac != null) {
+        if (!VozacBoja.isValidDriver(noviVozac)) {
+          throw Exception(
+            'Nevalidan vozac: "$noviVozac". Dozvoljeni: ${VozacBoja.validDrivers.join(", ")}',
+          );
+        }
+        vozacUuid = await VozacMappingService.getVozacUuid(noviVozac);
+        if (vozacUuid == null) {
+          throw Exception('Vozac "$noviVozac" nije pronaden u bazi');
+        }
       }
 
-      // ?? POJEDNOSTAVLJENO: Svi putnici su sada u registrovani_putnici
+      // 🔄 POJEDNOSTAVLJENO: Svi putnici su sada u registrovani_putnici
       await supabase.from('registrovani_putnici').update({
-        'vozac_id': vozacUuid,
+        'vozac_id': vozacUuid, // null ako se uklanja vozač
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', putnikId);
     } catch (e) {
-      throw Exception('Gre�ka pri prebacivanju putnika: $e');
+      throw Exception('Greška pri prebacivanju putnika: $e');
     }
   }
 }
