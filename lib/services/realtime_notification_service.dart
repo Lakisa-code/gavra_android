@@ -9,6 +9,7 @@ import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
 
 class RealtimeNotificationService {
+  /// 📱 Pošalji push notifikaciju na specifične tokene
   static Future<bool> sendPushNotification({
     required String title,
     required String body,
@@ -18,14 +19,13 @@ class RealtimeNotificationService {
     List<Map<String, dynamic>>? tokens,
     String? topic,
     Map<String, dynamic>? data,
+    bool broadcast = false,
   }) async {
     try {
       final payload = {
-        if (playerId != null) 'player_id': playerId,
-        if (externalUserIds != null) 'external_user_ids': externalUserIds,
-        if (driverIds != null) 'driver_ids': driverIds,
-        if (tokens != null) 'tokens': tokens,
+        if (tokens != null && tokens.isNotEmpty) 'tokens': tokens,
         if (topic != null) 'topic': topic,
+        if (broadcast) 'broadcast': true,
         'title': title,
         'body': body,
         'data': data ?? {},
@@ -33,7 +33,7 @@ class RealtimeNotificationService {
 
       final supabase = Supabase.instance.client;
       final response = await supabase.functions.invoke(
-        'send_fcm',
+        'send-push-notification',
         body: payload,
       );
 
@@ -53,32 +53,32 @@ class RealtimeNotificationService {
     }
   }
 
-  /// 🎯 Pošalji notifikaciju svim vozačima
+  /// 🎯 Pošalji notifikaciju svim vozačima (broadcast)
   static Future<void> sendNotificationToAllDrivers({
     required String title,
     required String body,
     Map<String, dynamic>? data,
   }) async {
-    final List<Future<void>> notifications = [];
-
-    notifications.add(
-      sendPushNotification(
+    try {
+      // Šalje broadcast notifikaciju svim vozačima iz push_tokens tabele
+      await sendPushNotification(
         title: title,
         body: body,
-        topic: 'gavra_all_drivers',
+        broadcast: true,
         data: data,
-      ).then((_) {}),
-    );
+      );
+    } catch (e) {
+      // Ako broadcast ne uspe, prikaži lokalnu notifikaciju
+    }
 
-    notifications.add(
-      LocalNotificationService.showRealtimeNotification(
+    // Lokalna notifikacija za trenutni uređaj
+    try {
+      await LocalNotificationService.showRealtimeNotification(
         title: title,
         body: body,
         payload: jsonEncode(data ?? {}),
-      ),
-    );
-
-    await Future.wait(notifications);
+      );
+    } catch (_) {}
   }
 
   static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
