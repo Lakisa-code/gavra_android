@@ -34,40 +34,45 @@ class PutnikList extends StatelessWidget {
   final String? selectedVreme;
 
   // Helper metoda za sortiranje putnika po grupama
-  // SINHRONIZOVANO sa CardColorHelper.getCardState() prioritetom
-  int _putnikSortKey(Putnik p) {
-    // PRIORITET (isti kao CardColorHelper):
-    // 1. Odsustvo (žuto) - na dno
-    // 2. Otkazano (crveno) - pre žutih
-    // 3. Plaćeno/Mesečno (zeleno)
-    // 4. Pokupljeno neplaćeno (plavo)
-    // 5. Nepokupljeno (belo) - na vrh
-
+  // Prioritet: Moji/Nedodeljeni (beli) → Tuđi (sivi) → Plavi → Zeleni → Crveni → Žuti
+  int _putnikSortKey(Putnik p, String? currentDriver) {
     // 🟡 ŽUTE - Odsustvo ima najveći sort key (na dno)
     if (p.jeOdsustvo) {
-      return 5; // žute na dno liste
+      return 7; // žute na dno liste
     }
 
-    // 🔴 CRVENE - Otkazane (koristi jeOtkazan getter koji proverava i obrisan flag)
+    // 🔴 CRVENE - Otkazane
     if (p.jeOtkazan) {
-      return 4; // crvene pre žutih
+      return 6; // crvene pre žutih
     }
 
-    // Pokupljeni putnici
+    // Pokupljeni putnici (plavi/zeleni ostaju normalno)
     if (p.jePokupljen) {
       // 🟢 ZELENE - Plaćeni ili mesečni
-      // SINHRONIZOVANO sa CardColorHelper: koristi isMesecniTip umesto mesecnaKarta
       final bool isPlaceno = (p.iznosPlacanja ?? 0) > 0;
-      final bool isMesecniTip = p.isMesecniTip; // radnik/ucenik → zelena
+      final bool isMesecniTip = p.isMesecniTip;
       if (isPlaceno || isMesecniTip) {
-        return 3; // zelene
+        return 5; // zelene
       }
       // 🔵 PLAVE - Pokupljeni neplaćeni (dnevni tip)
-      return 2;
+      return 4;
     }
 
-    // ⚪ BELE - Nepokupljeni (na vrh liste)
-    return 1;
+    // 🔘 SIVI - Tuđi putnici (dodeljen DRUGOM vozaču) - NEPOKUPLJENI
+    final bool isTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != currentDriver;
+    if (isTudji) {
+      return 3; // sivi - tuđi putnici
+    }
+
+    // ⚪ BELI - Moji (dodeljen meni) ili Nedodeljeni (vozac_id = null)
+    // Moji idu prvi, pa nedodeljeni
+    final bool isMoj = p.dodaoVozac == currentDriver;
+    if (isMoj) {
+      return 1; // moji na vrh
+    }
+
+    // Nedodeljeni
+    return 2;
   }
 
   // Helper za proveru da li putnik treba da ima redni broj
@@ -121,11 +126,10 @@ class PutnikList extends StatelessWidget {
           }
           var filteredPutnici = snapshot.data!.where(prikaziPutnika).toList();
           filteredPutnici = deduplicatePutnici(filteredPutnici);
-          // UVEK KORISTI STANDARDNO GRUPNO SORTIRANJE: 1-BELI, 2-PLAVI, 3-ZELENI, 4-CRVENI, 5-ŽUTI
-          // Ovo je prioritet nad optimizovanom rutom jer korisnik želi striktne grupe
+          // SORTIRANJE: Moji → Nedodeljeni → Tuđi (sivi) → Plavi → Zeleni → Crveni → Žuti
           filteredPutnici.sort((a, b) {
-            final aSortKey = _putnikSortKey(a);
-            final bSortKey = _putnikSortKey(b);
+            final aSortKey = _putnikSortKey(a, currentDriver);
+            final bSortKey = _putnikSortKey(b, currentDriver);
 
             final cmp = aSortKey.compareTo(bSortKey);
             if (cmp != 0) return cmp;
@@ -182,35 +186,43 @@ class PutnikList extends StatelessWidget {
       // Plave/Zelene/Crvene/Žute → sortiraju se po grupama ispod belih
       if (useProvidedOrder) {
         // Razdvoji putnike po grupama
-        final beli = <Putnik>[]; // nepokupljeni - zadržavaju geografski redosled
+        final moji = <Putnik>[]; // moji putnici (dodeljen = ja)
+        final nedodeljeni = <Putnik>[]; // nedodeljeni (vozac_id = null)
+        final sivi = <Putnik>[]; // tuđi putnici (dodeljen drugom vozaču)
         final plavi = <Putnik>[]; // pokupljeni neplaćeni
         final zeleni = <Putnik>[]; // pokupljeni plaćeni/mesečni
         final crveni = <Putnik>[]; // otkazani
         final zuti = <Putnik>[]; // odsustvo
 
         for (final p in filteredPutnici) {
-          final sortKey = _putnikSortKey(p);
+          final sortKey = _putnikSortKey(p, currentDriver);
           switch (sortKey) {
             case 1:
-              beli.add(p); // beli zadržavaju originalni geografski redosled
+              moji.add(p); // moji zadržavaju originalni geografski redosled
               break;
             case 2:
-              plavi.add(p);
+              nedodeljeni.add(p);
               break;
             case 3:
-              zeleni.add(p);
+              sivi.add(p); // tuđi putnici
               break;
             case 4:
-              crveni.add(p);
+              plavi.add(p);
               break;
             case 5:
+              zeleni.add(p);
+              break;
+            case 6:
+              crveni.add(p);
+              break;
+            case 7:
               zuti.add(p);
               break;
           }
         }
 
-        // Spoji sve grupe: BELI (geografski) → PLAVI → ZELENI → CRVENI → ŽUTI
-        final prikaz = [...beli, ...plavi, ...zeleni, ...crveni, ...zuti];
+        // Spoji sve grupe: MOJI → NEDODELJENI → SIVI (tuđi) → PLAVI → ZELENI → CRVENI → ŽUTI
+        final prikaz = [...moji, ...nedodeljeni, ...sivi, ...plavi, ...zeleni, ...crveni, ...zuti];
 
         if (prikaz.isEmpty) {
           return const Center(child: Text('Nema putnika za prikaz.'));
@@ -240,10 +252,10 @@ class PutnikList extends StatelessWidget {
         );
       }
 
-      // SORTIRAJ PO GRUPAMA: 1-BELI, 2-PLAVI, 3-ZELENI, 4-CRVENI, 5-ŽUTI
+      // SORTIRAJ: Moji → Nedodeljeni → Tuđi (sivi) → Plavi → Zeleni → Crveni → Žuti
       filteredPutnici.sort((a, b) {
-        final aSortKey = _putnikSortKey(a);
-        final bSortKey = _putnikSortKey(b);
+        final aSortKey = _putnikSortKey(a, currentDriver);
+        final bSortKey = _putnikSortKey(b, currentDriver);
         final cmp = aSortKey.compareTo(bSortKey);
         if (cmp != 0) return cmp;
         return a.ime.compareTo(b.ime);

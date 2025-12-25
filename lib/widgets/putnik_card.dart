@@ -1695,14 +1695,46 @@ class _PutnikCardState extends State<PutnikCard> {
     // Proverava uslove za prikazivanje X ikone
     if (_putnik.ime == 'Ljilla') {}
 
-    // REFAKTORISANO: Koristi CardColorHelper za centralizovanu logiku boja
-    final cardDecoration = CardColorHelper.getCardDecoration(_putnik);
-    final textColor = CardColorHelper.getTextColorWithTheme(
-      _putnik,
-      context,
-      successPrimary: Theme.of(context).colorScheme.successPrimary,
-    );
-    final secondaryTextColor = CardColorHelper.getSecondaryTextColor(_putnik);
+    // 🔘 PROVERA: Da li je putnik dodeljen DRUGOM vozaču (tuđi putnik)?
+    // Tuđi = ima vozača + vozač nije trenutni + nije pokupljen + nije odsustvo/otkazan
+    final bool isTudjiPutnik = _putnik.dodaoVozac != null &&
+        _putnik.dodaoVozac!.isNotEmpty &&
+        _putnik.dodaoVozac != widget.currentDriver &&
+        !_putnik.jePokupljen &&
+        !_putnik.jeOdsustvo &&
+        !_putnik.jeOtkazan;
+
+    // Ako je tuđi putnik - koristi SIVU boju, inače standardnu
+    final BoxDecoration cardDecoration;
+    final Color textColor;
+    final Color secondaryTextColor;
+
+    if (isTudjiPutnik) {
+      // 🔘 SIVA kartica za tuđe putnike
+      cardDecoration = BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey[400]!, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      );
+      textColor = Colors.grey[600]!;
+      secondaryTextColor = Colors.grey[500]!;
+    } else {
+      // Standardne boje iz CardColorHelper
+      cardDecoration = CardColorHelper.getCardDecoration(_putnik);
+      textColor = CardColorHelper.getTextColorWithTheme(
+        _putnik,
+        context,
+        successPrimary: Theme.of(context).colorScheme.successPrimary,
+      );
+      secondaryTextColor = CardColorHelper.getSecondaryTextColor(_putnik);
+    }
 
     // Prava po vozaču
     final String? driver = widget.currentDriver;
@@ -2319,10 +2351,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.getColorOrDefault(
-                              _putnik.naplatioVozac,
-                              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
+                            color: VozacBoja.get(_putnik.naplatioVozac ?? ''),
                             fontWeight: FontWeight.w500,
                           ),
                         ),

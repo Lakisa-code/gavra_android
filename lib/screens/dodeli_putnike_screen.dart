@@ -251,68 +251,77 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                   ],
                 ),
               ),
-              // Lista vozača
-              ...vozaci.map((vozac) {
-                final isSelected = vozac == currentVozac;
-                final color = VozacBoja.get(vozac);
-                return ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: color, width: 2),
-                    ),
-                    child: Center(
-                      child: Text(
-                        vozac[0],
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+              // Lista vozača - scrollable
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ...vozaci.map((vozac) {
+                        final isSelected = vozac == currentVozac;
+                        final color = VozacBoja.get(vozac);
+                        return ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: color, width: 2),
+                            ),
+                            child: Center(
+                              child: Text(
+                                vozac[0],
+                                style: TextStyle(
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            vozac,
+                            style: TextStyle(
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? color : null,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? Icon(Icons.check_circle, color: color)
+                              : const Icon(Icons.circle_outlined, color: Colors.grey),
+                          onTap: () => Navigator.pop(context, vozac),
+                        );
+                      }),
+                      // ➖ Opcija za uklanjanje vozača
+                      const Divider(),
+                      ListTile(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey, width: 2),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.person_off, color: Colors.grey, size: 20),
+                          ),
                         ),
+                        title: const Text(
+                          'Bez vozača',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        trailing: currentVozac == 'Nepoznat' || currentVozac == 'Nedodeljen'
+                            ? const Icon(Icons.check_circle, color: Colors.grey)
+                            : const Icon(Icons.circle_outlined, color: Colors.grey),
+                        onTap: () => Navigator.pop(context, '_NONE_'),
                       ),
-                    ),
-                  ),
-                  title: Text(
-                    vozac,
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? color : null,
-                    ),
-                  ),
-                  trailing: isSelected
-                      ? Icon(Icons.check_circle, color: color)
-                      : const Icon(Icons.circle_outlined, color: Colors.grey),
-                  onTap: () => Navigator.pop(context, vozac),
-                );
-              }),
-              // ➖ Opcija za uklanjanje vozača
-              const Divider(),
-              ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey, width: 2),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.person_off, color: Colors.grey, size: 20),
+                      const SizedBox(height: 16),
+                    ],
                   ),
                 ),
-                title: const Text(
-                  'Bez vozača',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                trailing: currentVozac == 'Nepoznat' || currentVozac == 'Nedodeljen'
-                    ? const Icon(Icons.check_circle, color: Colors.grey)
-                    : const Icon(Icons.circle_outlined, color: Colors.grey),
-                onTap: () => Navigator.pop(context, '_NONE_'),
               ),
-              const SizedBox(height: 16),
             ],
           ),
         );
