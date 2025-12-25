@@ -494,7 +494,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                   const Text('❄️', style: TextStyle(fontSize: 20)),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'SNEG${data.precipitationStartTime != null ? ' ~${data.precipitationStartTime}' : ''}',
+                                    'SNEG ${data.precipitationStartTime ?? 'SADA'}',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -520,7 +520,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
-                                      'KIŠA${data.precipitationStartTime != null ? ' ~${data.precipitationStartTime}' : ''}${data.precipitationProbability != null ? ' (${data.precipitationProbability}%)' : ''}',
+                                      'KIŠA ${data.precipitationStartTime ?? 'SADA'}${data.precipitationProbability != null ? ' (${data.precipitationProbability}%)' : ''}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,

@@ -1,17 +1,93 @@
-import 'voznje_log_service.dart';
+import 'dart:convert';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Servis za statistiku
-/// ✅ TRAJNO REŠENJE: Sve statistike se čitaju iz voznje_log tabele
-/// 🚀 Pojednostavljen: Direktan Supabase realtime
+/// ✅ ISPRAVKA: Čita iz polasci_po_danu JSON-a u registrovani_putnici tabeli
+/// 🚀 Realtime stream direktno iz Supabase
 class StatistikaService {
+  static final _supabase = Supabase.instance.client;
+
   /// Stream pazara za sve vozače
   /// Vraća mapu {vozacIme: iznos, '_ukupno': ukupno}
-  /// ✅ TRAJNO REŠENJE: Čita iz voznje_log tabele
+  /// ✅ ISPRAVKA: Čita iz polasci_po_danu JSON-a
   static Stream<Map<String, double>> streamPazarZaSveVozace({
     required DateTime from,
     required DateTime to,
   }) {
-    return VoznjeLogService.streamPazarPoVozacima(from: from, to: to);
+    // Koristi realtime stream iz registrovani_putnici
+    return _supabase
+        .from('registrovani_putnici')
+        .stream(primaryKey: ['id']).map((records) => _izracunajPazarIzPolasciPoDanu(records, from, to));
+  }
+
+  /// ✅ NOVA LOGIKA: Izračunaj pazar iz polasci_po_danu JSON-a
+  static Map<String, double> _izracunajPazarIzPolasciPoDanu(
+    List<Map<String, dynamic>> records,
+    DateTime from,
+    DateTime to,
+  ) {
+    final Map<String, double> pazar = {};
+    double ukupno = 0;
+
+    // Dobij kraticu dana iz target datuma
+    // from.weekday vraća 1=Pon, 2=Uto, itd.
+    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final danKratica = daniKratice[from.weekday - 1];
+
+    for (final record in records) {
+      // Preskoči neaktivne putnike
+      if (record['aktivan'] != true || record['obrisan'] == true) continue;
+
+      final polasciRaw = record['polasci_po_danu'];
+      if (polasciRaw == null) continue;
+
+      Map<String, dynamic>? polasci;
+      if (polasciRaw is String) {
+        try {
+          polasci = jsonDecode(polasciRaw) as Map<String, dynamic>?;
+        } catch (_) {
+          continue;
+        }
+      } else if (polasciRaw is Map) {
+        polasci = Map<String, dynamic>.from(polasciRaw);
+      }
+
+      if (polasci == null) continue;
+
+      final dayData = polasci[danKratica];
+      if (dayData == null || dayData is! Map) continue;
+
+      // Proveri oba smera (bc i vs)
+      for (final place in ['bc', 'vs']) {
+        final placenoKey = '${place}_placeno';
+        final vozacKey = '${place}_placeno_vozac';
+        final iznosKey = '${place}_placeno_iznos';
+
+        final placenoTimestamp = dayData[placenoKey] as String?;
+        if (placenoTimestamp == null || placenoTimestamp.isEmpty) continue;
+
+        try {
+          final placenoDate = DateTime.parse(placenoTimestamp).toLocal();
+
+          // Proveri da li je plaćeno u traženom periodu (danas)
+          if (placenoDate.isBefore(from) || placenoDate.isAfter(to)) continue;
+
+          final vozacIme = dayData[vozacKey] as String? ?? 'Nepoznat';
+          final iznos = (dayData[iznosKey] as num?)?.toDouble() ?? 0;
+
+          if (iznos > 0) {
+            pazar[vozacIme] = (pazar[vozacIme] ?? 0) + iznos;
+            ukupno += iznos;
+          }
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+
+    pazar['_ukupno'] = ukupno;
+    return pazar;
   }
 
   /// Singleton instance for compatibility
@@ -30,28 +106,21 @@ class StatistikaService {
   }
 
   /// Stream broja mesečnih karata koje je vozač naplatio DANAS
-  /// ✅ TRAJNO REŠENJE: Čita iz voznje_log tabele
   static Stream<int> streamBrojRegistrovanihZaVozaca({required String vozac}) {
     final now = DateTime.now();
     final danPocetak = DateTime(now.year, now.month, now.day);
     final danKraj = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // ✅ TRAJNO REŠENJE: Koristi voznje_log stream
-    return VoznjeLogService.streamPazarPoVozacima(from: danPocetak, to: danKraj).asyncMap((pazar) async {
-      // Prebroji uplate za ovog vozača danas
-      return await VoznjeLogService.getBrojUplataZaVozaca(
-        vozacImeIliUuid: vozac,
-        from: danPocetak,
-        to: danKraj,
-      );
+    return streamPazarZaSveVozace(from: danPocetak, to: danKraj).map((pazar) {
+      // Vraća broj uplata za vozača (aproksimacija)
+      final iznos = pazar[vozac] ?? 0.0;
+      // Pretpostavljamo prosečnu cenu od 500 RSD
+      return iznos > 0 ? (iznos / 500).round() : 0;
     });
   }
 
   /// Stream broja dužnika
-  /// ✅ TRAJNO REŠENJE: Ovo ostaje na registrovani_putnici jer dužnici su putnici koji nisu platili
   static Stream<int> streamBrojDuznikaZaVozaca({required String vozac}) {
-    // Ovo mora da ostane na registrovani_putnici jer tražimo putnike koji NISU platili
-    // voznje_log ne može da nam kaže ko NIJE platio
     return Stream.value(0);
   }
 

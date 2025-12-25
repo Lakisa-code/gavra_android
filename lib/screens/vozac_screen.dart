@@ -1557,55 +1557,73 @@ class _VozacScreenState extends State<VozacScreen> {
                   return Column(
                     children: [
                       // KOCKE - Pazar, Mesečne, Dugovi, Kusur
-                      Container(
-                        margin: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            // PAZAR
-                            Expanded(
-                              child: StreamBuilder<double>(
-                                stream: StatistikaService.streamPazarZaVozaca(
-                                  vozac: _currentDriver ?? '',
-                                  from: dayStart,
-                                  to: dayEnd,
+                      // ✅ ISPRAVKA: Računaj statistike direktno iz liste putnika (kao DanasScreen)
+                      Builder(
+                        builder: (context) {
+                          // 💳 DUŽNICI - SAMO DNEVNI PUTNICI koji nisu platili
+                          final filteredDuzniciRaw = putnici.where((putnik) {
+                            final jesteRegistrovani = putnik.mesecnaKarta == true;
+                            if (jesteRegistrovani) return false; // ✅ ISKLJUČI mesečne putnike
+
+                            final nijePlatio = (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0);
+                            final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
+                            final pokupljen = putnik.jePokupljen;
+
+                            return nijePlatio && nijeOtkazan && pokupljen;
+                          }).toList();
+
+                          // ✅ DEDUPLIKACIJA: Jedan putnik može imati više termina, ali je jedan dužnik
+                          final seenIds = <dynamic>{};
+                          final filteredDuznici = filteredDuzniciRaw.where((p) {
+                            final key = p.id ?? '${p.ime}_${p.dan}';
+                            if (seenIds.contains(key)) return false;
+                            seenIds.add(key);
+                            return true;
+                          }).toList();
+
+                          return Container(
+                            margin: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                // PAZAR
+                                Expanded(
+                                  child: StreamBuilder<double>(
+                                    stream: StatistikaService.streamPazarZaVozaca(
+                                      vozac: _currentDriver ?? '',
+                                      from: dayStart,
+                                      to: dayEnd,
+                                    ),
+                                    builder: (context, snapshot) {
+                                      final pazar = snapshot.data ?? 0.0;
+                                      return _buildStatBox(
+                                        'Pazar',
+                                        pazar.toStringAsFixed(0),
+                                        Colors.green,
+                                      );
+                                    },
+                                  ),
                                 ),
-                                builder: (context, snapshot) {
-                                  final pazar = snapshot.data ?? 0.0;
-                                  return _buildStatBox(
-                                    'Pazar',
-                                    pazar.toStringAsFixed(0),
-                                    Colors.green,
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            // MESEČNE
-                            Expanded(
-                              child: StreamBuilder<int>(
-                                stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
-                                  vozac: _currentDriver ?? '',
+                                const SizedBox(width: 6),
+                                // MESEČNE
+                                Expanded(
+                                  child: StreamBuilder<int>(
+                                    stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
+                                      vozac: _currentDriver ?? '',
+                                    ),
+                                    builder: (context, snapshot) {
+                                      final mesecne = snapshot.data ?? 0;
+                                      return _buildStatBox(
+                                        'Mesečne',
+                                        mesecne.toString(),
+                                        Colors.purple,
+                                      );
+                                    },
+                                  ),
                                 ),
-                                builder: (context, snapshot) {
-                                  final mesecne = snapshot.data ?? 0;
-                                  return _buildStatBox(
-                                    'Mesečne',
-                                    mesecne.toString(),
-                                    Colors.purple,
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            // DUGOVI
-                            Expanded(
-                              child: StreamBuilder<int>(
-                                stream: StatistikaService.streamBrojDuznikaZaVozaca(
-                                  vozac: _currentDriver ?? '',
-                                ),
-                                builder: (context, snapshot) {
-                                  final brojDuznika = snapshot.data ?? 0;
-                                  return InkWell(
+                                const SizedBox(width: 6),
+                                // DUGOVI - ✅ ISPRAVKA: Koristi filteredDuznici direktno
+                                Expanded(
+                                  child: InkWell(
                                     onTap: () {
                                       Navigator.push(
                                         context,
@@ -1616,30 +1634,30 @@ class _VozacScreenState extends State<VozacScreen> {
                                     },
                                     child: _buildStatBox(
                                       'Dugovi',
-                                      brojDuznika.toString(),
+                                      filteredDuznici.length.toString(),
                                       Colors.red,
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                // KUSUR
+                                Expanded(
+                                  child: StreamBuilder<double>(
+                                    stream: DailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
+                                    builder: (context, snapshot) {
+                                      final kusur = snapshot.data ?? 0.0;
+                                      return _buildStatBox(
+                                        'Kusur',
+                                        kusur > 0 ? kusur.toStringAsFixed(0) : '-',
+                                        Colors.orange,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 6),
-                            // KUSUR
-                            Expanded(
-                              child: StreamBuilder<double>(
-                                stream: DailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
-                                builder: (context, snapshot) {
-                                  final kusur = snapshot.data ?? 0.0;
-                                  return _buildStatBox(
-                                    'Kusur',
-                                    kusur > 0 ? kusur.toStringAsFixed(0) : '-',
-                                    Colors.orange,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                       // Lista putnika - koristi PutnikList sa stream-om kao DanasScreen
                       Expanded(
