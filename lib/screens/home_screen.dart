@@ -411,184 +411,270 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
           }
 
-          return AlertDialog(
-            backgroundColor: Theme.of(dialogContext).colorScheme.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              children: [
-                Icon(Icons.receipt_long, color: Theme.of(dialogContext).colorScheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Računi za štampanje',
-                    style: TextStyle(color: Theme.of(dialogContext).colorScheme.onSurface),
-                  ),
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+              ),
+              decoration: BoxDecoration(
+                gradient: Theme.of(context).backgroundGradient,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Theme.of(context).glassBorder,
+                  width: 1.5,
                 ),
-              ],
-            ),
-            content: SizedBox(
-              width: double.maxFinite,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Lista putnika
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: putnici.length,
-                      itemBuilder: (context, index) {
-                        final p = putnici[index];
-                        final cena = p.cenaPoDanu ?? (p.tip == 'ucenik' ? 600.0 : 700.0);
-                        final dana = brojDana[p.id] ?? 22;
-                        final iznos = cena * dana;
-                        final colorScheme = Theme.of(context).colorScheme;
-
-                        return Card(
-                          color: selected[p.id] == true
-                              ? colorScheme.primary.withValues(alpha: 0.1)
-                              : colorScheme.surfaceContainerHighest,
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            child: Row(
-                              children: [
-                                // Checkbox
-                                Checkbox(
-                                  value: selected[p.id],
-                                  activeColor: colorScheme.primary,
-                                  onChanged: (val) {
-                                    setDialogState(() {
-                                      selected[p.id] = val ?? false;
-                                    });
-                                  },
-                                ),
-                                // Ime i detalji - fleksibilno
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        p.putnikIme,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      if (p.firmaNaziv != null && p.firmaNaziv!.isNotEmpty)
-                                        Text(
-                                          p.firmaNaziv!,
-                                          style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      Text(
-                                        '${cena.toStringAsFixed(0)} RSD × $dana dana = ${iznos.toStringAsFixed(0)} RSD',
-                                        style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Dana input - fiksna širina
-                                SizedBox(
-                                  width: 55,
-                                  child: Column(
-                                    children: [
-                                      Text('Dana', style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
-                                      TextField(
-                                        keyboardType: TextInputType.number,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                            fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-                                        decoration: InputDecoration(
-                                          isDense: true,
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                                          border:
-                                              UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.primary)),
-                                        ),
-                                        controller: TextEditingController(text: dana.toString()),
-                                        onChanged: (val) {
-                                          setDialogState(() {
-                                            brojDana[p.id] = int.tryParse(val) ?? 22;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                  // Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).glassContainer,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context).glassBorder,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.receipt_long, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Računi za štampanje',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        );
-                      },
+                        ),
+                      ],
                     ),
                   ),
-                  const Divider(),
-                  // Ukupno
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('UKUPNO:',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Theme.of(context).colorScheme.onSurface)),
-                      Text(
-                        '${ukupno.toStringAsFixed(0)} RSD',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.primary),
+                  // Content
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Lista putnika
+                          ...putnici.map((p) {
+                            final cena = p.cenaPoDanu ?? (p.tip == 'ucenik' ? 600.0 : 700.0);
+                            final dana = brojDana[p.id] ?? 22;
+                            final iznos = cena * dana;
+
+                            return Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    // Checkbox
+                                    Checkbox(
+                                      value: selected[p.id],
+                                      activeColor: Colors.white,
+                                      checkColor: Theme.of(context).colorScheme.primary,
+                                      side: BorderSide(color: Colors.white70),
+                                      onChanged: (val) {
+                                        setDialogState(() {
+                                          selected[p.id] = val ?? false;
+                                        });
+                                      },
+                                    ),
+                                    // Ime i detalji - fleksibilno
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            p.putnikIme,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                              color: Colors.white,
+                                              shadows: [
+                                                Shadow(
+                                                  offset: const Offset(1, 1),
+                                                  blurRadius: 2,
+                                                  color: Colors.black.withValues(alpha: 0.5),
+                                                ),
+                                                Shadow(
+                                                  offset: const Offset(-0.5, -0.5),
+                                                  blurRadius: 1,
+                                                  color: Colors.white.withValues(alpha: 0.3),
+                                                ),
+                                              ],
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          if (p.firmaNaziv != null && p.firmaNaziv!.isNotEmpty)
+                                            Text(
+                                              p.firmaNaziv!,
+                                              style: TextStyle(fontSize: 11, color: Colors.white70),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          Text(
+                                            '${cena.toStringAsFixed(0)} RSD × $dana dana = ${iznos.toStringAsFixed(0)} RSD',
+                                            style: TextStyle(fontSize: 11, color: Colors.white70),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Dana input - fiksna širina
+                                    SizedBox(
+                                      width: 55,
+                                      child: Column(
+                                        children: [
+                                          Text('Dana', style: TextStyle(fontSize: 10, color: Colors.white70)),
+                                          TextField(
+                                            keyboardType: TextInputType.number,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                                fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                                            decoration: InputDecoration(
+                                              isDense: true,
+                                              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                              border:
+                                                  UnderlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                                              enabledBorder:
+                                                  UnderlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                                              focusedBorder:
+                                                  UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                                            ),
+                                            controller: TextEditingController(text: dana.toString()),
+                                            onChanged: (val) {
+                                              setDialogState(() {
+                                                brojDana[p.id] = int.tryParse(val) ?? 22;
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                          const Divider(color: Colors.white30),
+                          // Ukupno
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('UKUPNO:',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                              Text(
+                                '${ukupno.toStringAsFixed(0)} RSD',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.greenAccent),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ),
+                  // Actions
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).glassContainer,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text('Otkaži', style: TextStyle(color: Colors.white70)),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.print),
+                          label: const Text('Štampaj sve'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () async {
+                            Navigator.pop(dialogContext);
+
+                            // Pripremi podatke za štampanje
+                            final List<Map<String, dynamic>> racuniPodaci = [];
+                            for (var p in putnici) {
+                              if (selected[p.id] == true) {
+                                final cena = p.cenaPoDanu ?? (p.tip == 'ucenik' ? 600.0 : 700.0);
+                                final dana = brojDana[p.id] ?? 22;
+                                racuniPodaci.add({
+                                  'putnik': p,
+                                  'brojDana': dana,
+                                  'cenaPoDanu': cena,
+                                  'ukupno': cena * dana,
+                                });
+                              }
+                            }
+
+                            if (racuniPodaci.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Izaberite bar jednog putnika'), backgroundColor: Colors.orange),
+                              );
+                              return;
+                            }
+
+                            await RacunService.stampajRacuneZaFirme(
+                              racuniPodaci: racuniPodaci,
+                              context: context,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text('Otkaži', style: TextStyle(color: Theme.of(dialogContext).colorScheme.onSurfaceVariant)),
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.print),
-                label: const Text('Štampaj sve'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(dialogContext).colorScheme.primary,
-                  foregroundColor: Theme.of(dialogContext).colorScheme.onPrimary,
-                ),
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
-
-                  // Pripremi podatke za štampanje
-                  final List<Map<String, dynamic>> racuniPodaci = [];
-                  for (var p in putnici) {
-                    if (selected[p.id] == true) {
-                      final cena = p.cenaPoDanu ?? (p.tip == 'ucenik' ? 600.0 : 700.0);
-                      final dana = brojDana[p.id] ?? 22;
-                      racuniPodaci.add({
-                        'putnik': p,
-                        'brojDana': dana,
-                        'cenaPoDanu': cena,
-                        'ukupno': cena * dana,
-                      });
-                    }
-                  }
-
-                  if (racuniPodaci.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Izaberite bar jednog putnika'), backgroundColor: Colors.orange),
-                    );
-                    return;
-                  }
-
-                  await RacunService.stampajRacuneZaFirme(
-                    racuniPodaci: racuniPodaci,
-                    context: context,
-                  );
-                },
-              ),
-            ],
           );
         },
       ),
