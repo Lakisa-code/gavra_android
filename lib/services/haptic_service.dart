@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:vibration/vibration.dart';
 
 /// 📳 HAPTIC FEEDBACK SERVICE
 /// Dodaje tactile response za bolje user experience
@@ -58,6 +59,27 @@ class HapticService {
       HapticFeedback.heavyImpact();
     } catch (e) {
       // 🔇 Ignore
+    }
+  }
+
+  /// 📳 POKUPLJEN VIBRACIJA - jača vibracija kad se putnik pokupi
+  /// Koristi Vibration paket za duže trajanje (200ms)
+  static Future<void> putnikPokupljen() async {
+    try {
+      // Proveri da li uređaj podržava vibraciju
+      final hasVibrator = await Vibration.hasVibrator();
+      if (hasVibrator == true) {
+        // Dva kratka pulsa - "bip-bip" efekat
+        await Vibration.vibrate(pattern: [0, 150, 100, 150], intensities: [0, 255, 0, 255]);
+      } else {
+        // Fallback na haptic feedback
+        HapticFeedback.heavyImpact();
+      }
+    } catch (e) {
+      // Fallback
+      try {
+        HapticFeedback.heavyImpact();
+      } catch (_) {}
     }
   }
 }

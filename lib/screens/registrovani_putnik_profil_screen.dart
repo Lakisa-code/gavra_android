@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/route_config.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Promena vremena
 import '../services/theme_manager.dart';
+import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
 import '../utils/schedule_utils.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
@@ -57,6 +58,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     _putnikData = Map<String, dynamic>.from(widget.putnikData);
     _refreshPutnikData(); // 🔄 Učitaj sveže podatke iz baze
     _loadStatistike();
+    WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
   }
 
   /// 🔄 Osvežava podatke putnika iz baze
@@ -379,6 +381,270 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
   }
 
+  // 🌤️ KOMPAKTAN PRIKAZ TEMPERATURE ZA GRAD (isti kao na danas_screen)
+  Widget _buildWeatherCompact(String grad) {
+    final stream = grad == 'BC' ? WeatherService.bcWeatherStream : WeatherService.vsWeatherStream;
+
+    return StreamBuilder<WeatherData?>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        final temp = data?.temperature;
+        final icon = data?.icon ?? '🌡️';
+        final tempStr = temp != null ? '${temp.round()}°' : '--';
+        final tempColor = temp != null
+            ? (temp < 0
+                ? Colors.lightBlue
+                : temp < 15
+                    ? Colors.cyan
+                    : temp < 25
+                        ? Colors.green
+                        : Colors.orange)
+            : Colors.grey;
+
+        // Widget za ikonu - slika ili emoji (usklađene veličine)
+        Widget iconWidget;
+        if (WeatherData.isAssetIcon(icon)) {
+          iconWidget = Image.asset(
+            WeatherData.getAssetPath(icon),
+            width: 32,
+            height: 32,
+          );
+        } else {
+          iconWidget = Text(icon, style: const TextStyle(fontSize: 14));
+        }
+
+        return GestureDetector(
+          onTap: () => _showWeatherDialog(grad, data),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              iconWidget,
+              const SizedBox(width: 2),
+              Text(
+                '$grad $tempStr',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: tempColor,
+                  shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 🌤️ DIJALOG ZA DETALJNU VREMENSKU PROGNOZU
+  void _showWeatherDialog(String grad, WeatherData? data) {
+    final gradPun = grad == 'BC' ? 'Bela Crkva' : 'Vršac';
+
+    showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+          ),
+          decoration: BoxDecoration(
+            gradient: Theme.of(context).backgroundGradient,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Theme.of(context).glassBorder,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).glassContainer,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '🌤️ Vreme - $gradPun',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.close, color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: data != null
+                    ? Column(
+                        children: [
+                          // Upozorenje za kišu/sneg
+                          if (data.willSnow)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.blue.shade200),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('❄️', style: TextStyle(fontSize: 20)),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'SNEG${data.precipitationStartTime != null ? ' ~${data.precipitationStartTime}' : ''}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (data.willRain)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.indigo.shade200),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('🌧️', style: TextStyle(fontSize: 20)),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      'KIŠA${data.precipitationStartTime != null ? ' ~${data.precipitationStartTime}' : ''}${data.precipitationProbability != null ? ' (${data.precipitationProbability}%)' : ''}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          // Velika ikona i temperatura
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (WeatherData.isAssetIcon(data.icon))
+                                Image.asset(
+                                  WeatherData.getAssetPath(data.icon),
+                                  width: 80,
+                                  height: 80,
+                                )
+                              else
+                                Text(data.icon, style: const TextStyle(fontSize: 60)),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${data.temperature.round()}°C',
+                                    style: TextStyle(
+                                      fontSize: 42,
+                                      fontWeight: FontWeight.bold,
+                                      color: data.temperature < 0
+                                          ? Colors.lightBlue
+                                          : data.temperature < 15
+                                              ? Colors.cyan
+                                              : data.temperature < 25
+                                                  ? Colors.white
+                                                  : Colors.orange,
+                                      shadows: const [
+                                        Shadow(offset: Offset(2, 2), blurRadius: 4, color: Colors.black54),
+                                      ],
+                                    ),
+                                  ),
+                                  if (data.tempMin != null && data.tempMax != null)
+                                    Text(
+                                      '${data.tempMin!.round()}° / ${data.tempMax!.round()}°',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Opis baziran na weather code
+                          Text(
+                            _getWeatherDescription(data.dailyWeatherCode ?? data.weatherCode),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      )
+                    : const Center(
+                        child: Text(
+                          'Podaci nisu dostupni',
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getWeatherDescription(int code) {
+    if (code == 0) return 'Vedro nebo';
+    if (code == 1) return 'Pretežno vedro';
+    if (code == 2) return 'Delimično oblačno';
+    if (code == 3) return 'Oblačno';
+    if (code >= 45 && code <= 48) return 'Magla';
+    if (code >= 51 && code <= 55) return 'Sitna kiša';
+    if (code >= 56 && code <= 57) return 'Ledena kiša';
+    if (code >= 61 && code <= 65) return 'Kiša';
+    if (code >= 66 && code <= 67) return 'Ledena kiša';
+    if (code >= 71 && code <= 77) return 'Sneg';
+    if (code >= 80 && code <= 82) return 'Pljuskovi';
+    if (code >= 85 && code <= 86) return 'Snežni pljuskovi';
+    if (code >= 95 && code <= 99) return 'Grmljavina';
+    return 'Nepoznato';
+  }
+
   @override
   Widget build(BuildContext context) {
     // Ime može biti u 'putnik_ime' ili odvojeno 'ime'/'prezime'
@@ -441,6 +707,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // 🌤️ VREMENSKA PROGNOZA - BC levo, VS desno
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildWeatherCompact('BC'),
+                            _buildWeatherCompact('VS'),
+                          ],
+                        ),
+                      ),
                       // Ime i status - Flow dizajn bez Card okvira
                       Padding(
                         padding: const EdgeInsets.all(20),

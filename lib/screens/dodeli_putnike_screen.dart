@@ -709,7 +709,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     for (final id in _selectedPutnici.toList()) {
       try {
-        await _putnikService.otkaziPutnika(id, 'Admin', selectedVreme: _selectedVreme, selectedGrad: _selectedGrad);
+        await _putnikService.otkaziPutnika(id, 'Admin',
+            selectedVreme: _selectedVreme, selectedGrad: _selectedGrad, selectedDan: _selectedDay);
         uspesno++;
       } catch (e) {
         greska++;

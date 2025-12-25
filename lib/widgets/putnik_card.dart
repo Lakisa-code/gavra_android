@@ -111,8 +111,8 @@ class _PutnikCardState extends State<PutnikCard> {
 
         // Uklonjena validacija vozača - prihvataju se svi vozači
 
-        // 📳 Haptic feedback za uspešnu akciju
-        HapticService.success();
+        // 📳 Jača vibracija za pokupljenog putnika - vozač lakše oseti
+        HapticService.putnikPokupljen();
 
         try {
           await PutnikService().oznaciPokupljen(_putnik.id!, widget.currentDriver!, grad: _putnik.grad);
@@ -2654,6 +2654,7 @@ class _PutnikCardState extends State<PutnikCard> {
           widget.currentDriver ?? '',
           selectedVreme: _putnik.polazak,
           selectedGrad: _putnik.grad,
+          selectedDan: _putnik.dan,
         );
 
         // Ažuriraj lokalni _putnik sa novim statusom

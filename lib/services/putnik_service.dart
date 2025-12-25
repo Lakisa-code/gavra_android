@@ -608,16 +608,17 @@ class PutnikService {
 
       await supabase.from('registrovani_putnici').update(updateData).eq('id', putnikId);
 
-      // ?? REAL-TIME NOTIFIKACIJA - Novi putnik dodat (samo za dana�nji dan)
+      // 📲 REAL-TIME NOTIFIKACIJA - Novi putnik dodat (samo za današnji dan)
       final now = DateTime.now();
       final dayNames = ['Pon', 'Uto', 'Sre', 'Cet', 'Pet', 'Sub', 'Ned'];
       final todayName = dayNames[now.weekday - 1];
 
       if (putnik.dan == todayName) {
-        // ?? �ALJI PUSH SVIM VOZACIMA (FCM + Huawei Push)
+        // 📲 ŠALJI PUSH SVIM VOZAČIMA (FCM + Huawei Push)
         RealtimeNotificationService.sendNotificationToAllDrivers(
           title: 'Novi putnik',
           body: 'Dodat je novi putnik ${putnik.ime} (${putnik.grad}, ${putnik.polazak})',
+          excludeSender: putnik.dodaoVozac,
           data: {
             'type': 'novi_putnik',
             'putnik': {
@@ -860,6 +861,7 @@ class PutnikService {
     String otkazaoVozac, {
     String? selectedVreme,
     String? selectedGrad,
+    String? selectedDan,
   }) async {
     try {
       final idStr = id.toString();
@@ -934,35 +936,39 @@ class PutnikService {
         }
       }
 
-      // ?? PO�ALJI NOTIFIKACIJU ZA OTKAZIVANJE (za tekuci dan)
+      // 📢 POŠALJI NOTIFIKACIJU ZA OTKAZIVANJE (samo za tekući dan)
       try {
         final now = DateTime.now();
         final dayNames = ['Pon', 'Uto', 'Sre', 'Cet', 'Pet', 'Sub', 'Ned'];
         final todayName = dayNames[now.weekday - 1];
 
-        final putnikDan = (respMap['dan'] ?? '') as String;
-        final danLowerCase = putnikDan.toLowerCase();
-        final todayLowerCase = todayName.toLowerCase();
+        // Odredi dan za koji se otkazuje
+        final putnikDan = selectedDan ?? (respMap['dan'] ?? '') as String;
+        final isToday = putnikDan.toLowerCase().contains(todayName.toLowerCase()) || putnikDan == todayName;
 
-        if (danLowerCase.contains(todayLowerCase) || putnikDan == todayName) {
-          // ?? �ALJI PUSH SVIM VOZACIMA (FCM + Huawei Push)
+        debugPrint('📢 OTKAZIVANJE: dan=$putnikDan, danas=$todayName, isToday=$isToday, ime=$cancelName');
+
+        if (isToday) {
           RealtimeNotificationService.sendNotificationToAllDrivers(
             title: 'Otkazan putnik',
             body:
                 'Otkazan je putnik $cancelName (${respMap['grad'] ?? ''}, ${respMap['vreme_polaska'] ?? respMap['polazak'] ?? ''})',
+            excludeSender: otkazaoVozac,
             data: {
               'type': 'otkazan_putnik',
               'putnik': {
-                'ime': respMap['putnik_ime'],
+                'ime': respMap['putnik_ime'] ?? respMap['ime'],
                 'grad': respMap['grad'],
                 'vreme': respMap['vreme_polaska'] ?? respMap['polazak'],
-                'dan': respMap['dan'],
               },
             },
           );
+          debugPrint('📢 NOTIFIKACIJA POSLATA za $cancelName');
+        } else {
+          debugPrint('📢 NOTIFIKACIJA PRESKOČENA - nije današnji dan');
         }
       } catch (notifError) {
-        // Notification not critical
+        debugPrint('📢 GREŠKA pri slanju notifikacije: $notifError');
       }
     } catch (e) {
       rethrow;

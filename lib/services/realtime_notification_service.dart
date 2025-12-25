@@ -20,12 +20,14 @@ class RealtimeNotificationService {
     String? topic,
     Map<String, dynamic>? data,
     bool broadcast = false,
+    String? excludeSender,
   }) async {
     try {
       final payload = {
         if (tokens != null && tokens.isNotEmpty) 'tokens': tokens,
         if (topic != null) 'topic': topic,
         if (broadcast) 'broadcast': true,
+        if (excludeSender != null) 'exclude_sender': excludeSender,
         'title': title,
         'body': body,
         'data': data ?? {},
@@ -58,6 +60,7 @@ class RealtimeNotificationService {
     required String title,
     required String body,
     Map<String, dynamic>? data,
+    String? excludeSender,
   }) async {
     try {
       // Šalje broadcast notifikaciju svim vozačima iz push_tokens tabele
@@ -66,6 +69,7 @@ class RealtimeNotificationService {
         body: body,
         broadcast: true,
         data: data,
+        excludeSender: excludeSender,
       );
     } catch (e) {
       // Ako broadcast ne uspe, prikaži lokalnu notifikaciju
