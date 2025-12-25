@@ -48,14 +48,16 @@ void main() async {
 
         await FirebaseService.initialize();
         FirebaseService.setupFCMListeners();
-        // firebaseAvailable = true; // used to reflect successful Firebase init
-        // Debug helper: dump FCM token to logs so testers can use it for E2E
-        if (kDebugMode) {
-          try {
-            await FirebaseService.getFCMToken();
-          } catch (e) {
-            // FCM token retrieval failed
+
+        // 📲 REGISTRUJ FCM TOKEN NA SERVER (push_tokens tabela)
+        // Ovo omogućava slanje push notifikacija na Samsung i druge GMS uređaje
+        try {
+          final fcmToken = await FirebaseService.initializeAndRegisterToken();
+          if (kDebugMode && fcmToken != null) {
+            debugPrint('📲 [FCM] Token registered: ${fcmToken.substring(0, 20)}...');
           }
+        } catch (e) {
+          if (kDebugMode) debugPrint('❌ [FCM] Token registration failed: $e');
         }
       } catch (e) {
         // If Firebase init fails, fall through to Huawei initialization
@@ -103,6 +105,13 @@ void main() async {
       await HuaweiPushService().tryRegisterPendingToken();
     } catch (e) {
       // Error registering pending Huawei token after Supabase init
+    }
+
+    // 📲 Pokušaj registrovati pending FCM token ako postoji
+    try {
+      await FirebaseService.tryRegisterPendingToken();
+    } catch (e) {
+      // Error registering pending FCM token after Supabase init
     }
 
     // 🗂️ INICIJALIZUJ VOZAC MAPPING CACHE

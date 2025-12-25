@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'auth_manager.dart';
 import 'local_notification_service.dart';
 import 'realtime_notification_service.dart';
 
@@ -58,6 +60,88 @@ class FirebaseService {
     } catch (e) {
       return null;
     }
+  }
+
+  /// 📲 Registruje FCM token na server (push_tokens tabela)
+  /// Ovo se mora pozvati pri pokretanju aplikacije
+  static Future<String?> initializeAndRegisterToken() async {
+    try {
+      if (Firebase.apps.isEmpty) return null;
+
+      final messaging = FirebaseMessaging.instance;
+
+      // Request permission
+      try {
+        await messaging.requestPermission();
+      } catch (_) {}
+
+      // Get token
+      final token = await messaging.getToken();
+      if (token != null && token.isNotEmpty) {
+        await _registerTokenWithServer(token);
+
+        // Listen for token refresh
+        messaging.onTokenRefresh.listen((newToken) async {
+          await _registerTokenWithServer(newToken);
+        });
+
+        return token;
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Registruje FCM token na Supabase (push_tokens tabela)
+  static Future<void> _registerTokenWithServer(String token) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      String? driverName;
+      try {
+        driverName = await AuthManager.getCurrentDriver();
+      } catch (_) {
+        driverName = null;
+      }
+
+      final payload = {
+        'provider': 'fcm',
+        'token': token,
+        'user_id': driverName,
+      };
+
+      try {
+        await supabase.functions.invoke('register-push-token', body: payload);
+      } on FunctionException catch (e) {
+        if (e.status == 404) {
+          // Edge Function ne postoji
+        }
+        await _savePendingToken(token);
+      }
+    } catch (e) {
+      await _savePendingToken(token);
+    }
+  }
+
+  /// Sačuvaj token lokalno za kasniju registraciju
+  static Future<void> _savePendingToken(String token) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_fcm_token', token);
+    } catch (_) {}
+  }
+
+  /// Pokušaj registrovati pending token
+  static Future<void> tryRegisterPendingToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('pending_fcm_token');
+      if (token == null) return;
+      await prefs.remove('pending_fcm_token');
+      await _registerTokenWithServer(token);
+    } catch (_) {}
   }
 
   /// 🔒 Flag da sprečimo višestruko registrovanje FCM listenera
