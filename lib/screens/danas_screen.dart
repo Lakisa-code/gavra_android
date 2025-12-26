@@ -1378,17 +1378,19 @@ class _DanasScreenState extends State<DanasScreen> {
     _isReoptimizing = true;
 
     try {
-      // 🔄 Razdvoji pokupljene/otkazane od aktivnih putnika
+      // 🔄 Razdvoji pokupljene/otkazane/tuđe od aktivnih putnika
       final pokupljeniIOtkazani = allPassengers.where((p) {
-        return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo;
+        final jeTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver;
+        return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || jeTudji;
       }).toList();
 
       // Filtriraj samo AKTIVNE putnike sa validnim adresama za optimizaciju
       final filtriraniPutnici = allPassengers.where((p) {
         final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
             (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
-        // Isključi pokupljene i otkazane
-        final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo;
+        // 🔘 Isključi pokupljene, otkazane i tuđe putnike
+        final jeTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver;
+        final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !jeTudji;
         return hasValidAddress && isActive;
       }).toList();
 
@@ -1815,7 +1817,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🎯 PRAVI FILTER - koristi putnike koji su već prikazani na ekranu
     // Mesečni putnici imaju adresaId koji pokazuje na pravu adresu
-    // ❌ Isključi otkazane, pokupljene i odsutne putnike - samo bele kartice idu u optimizaciju
+    // ❌ Isključi otkazane, pokupljene, odsutne i tuđe putnike - samo bele kartice idu u optimizaciju
     final filtriraniPutnici = putnici.where((p) {
       // Isključi otkazane putnike
       if (p.jeOtkazan) return false;
@@ -1823,6 +1825,10 @@ class _DanasScreenState extends State<DanasScreen> {
       if (p.jePokupljen) return false;
       // 🆕 Isključi odsutne putnike (bolovanje/godišnji) - žute kartice ne idu u rutu
       if (p.jeOdsustvo) return false;
+      // 🔘 Isključi tuđe putnike (dodeljeni drugom vozaču) - sive kartice ne idu u rutu
+      if (p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver) {
+        return false;
+      }
       // Za mesečne putnike: imaju adresaId koji pokazuje na pravu adresu
       // Za dnevne putnike: imaju adresu direktno
       final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
