@@ -77,3 +77,6 @@ huawei-appgallery-mcp/
 
 # Supabase credentials
 .supabase_credentials
+
+# Google Play Store Service Account Key
+play-store-key.json

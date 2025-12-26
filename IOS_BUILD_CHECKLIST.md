@@ -1,6 +1,6 @@
 # iOS Build na GitHub Actions - Checklist i Status
 
-**Poslednje ažuriranje:** 11. decembar 2025. (18:45)
+**Poslednje ažuriranje:** 26. decembar 2025.
 
 ---
 
@@ -93,6 +93,25 @@ Bazirano na Stack Overflow pitanjima:
 
 ---
 
+## 📊 BROJ KORISNIKA I TESTFLIGHT LIMITI
+
+**Trenutni broj korisnika u sistemu:**
+| Tip | Broj |
+|-----|------|
+| Registrovani putnici | 149 |
+| Vozači | 5 |
+| **UKUPNO** | ~154 |
+
+**Apple TestFlight limiti:**
+| Tip testiranja | Max testera | Za Gavra? | Apple Review? |
+|----------------|-------------|-----------|---------------|
+| Internal Testing | 100 | ❌ Premalo | Ne |
+| **External Testing** | 10,000 | ✅ **POTREBNO** | Da (1-2 dana) |
+
+**ZAKLJUČAK:** Za ~150 korisnika potrebno je koristiti **External TestFlight** testing.
+
+---
+
 ## 🏆 PREPORUKA ZA VAŠU SITUACIJU
 
 ### **GitHub Actions + Codemagic CLI Tools** je BOLJI izbor jer:
@@ -141,7 +160,7 @@ Sa 200 besplatnih minuta mesečno, imate otprilike **8-13 iOS buildova mesečno*
 ### 1. iOS Folder u Projektu
 - [ ] **STATUS:** ❌ NE POSTOJI
 - **Potrebna akcija:** Pokrenuti `flutter create .` 
-- **Pitanje:** Da li da kreiram iOS folder sada?
+
 
 ### 2. Apple Developer Account ✅ POTVRĐENO
 - [x] **STATUS:** ✅ AKTIVAN
@@ -206,6 +225,9 @@ API Key ID: Q95YKW2L9S
 API Issuer ID: d8b50e72-6330-401d-9aaf-4ead356495cb
 .p8 lokacija: C:\Users\Bojan\Desktop\GAVRA013\AuthKey_Q95YKW2L9S.p8
 Cert key lokacija: C:\Users\Bojan\Downloads\ios_cert_key
+
+Broj korisnika u sistemu: ~154 (149 putnika + 5 vozača)
+TestFlight tip: External Testing (do 10,000 testera)
 ```
 
 ---

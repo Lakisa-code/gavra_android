@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
@@ -1376,7 +1377,113 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     if (ime.length < 2) {
       return 'Ime putnika mora imati najmanje 2 karaktera';
     }
+
+    // 📱 Validacija broja telefona
+    final telefon = _brojTelefonaController.text.trim();
+    if (telefon.isEmpty) {
+      return 'Broj telefona je obavezan';
+    }
+
+    final telefonError = _validatePhoneNumber(telefon);
+    if (telefonError != null) {
+      return telefonError;
+    }
+
     return null;
+  }
+
+  /// 📱 Validacija formata srpskog broja telefona
+  String? _validatePhoneNumber(String telefon) {
+    // Ukloni razmake, crtice, zagrade
+    final cleaned = telefon.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+
+    // Dozvoljeni formati:
+    // 06x xxx xxxx (10 cifara)
+    // +381 6x xxx xxxx (12-13 cifara sa +381)
+    // 00381 6x xxx xxxx (13-14 cifara sa 00381)
+
+    if (cleaned.startsWith('+381')) {
+      final localPart = cleaned.substring(4);
+      if (localPart.length < 8 || localPart.length > 10) {
+        return 'Neispravan format broja (+381 6x xxx xxxx)';
+      }
+      if (!localPart.startsWith('6')) {
+        return 'Mobilni broj mora počinjati sa 6 posle +381';
+      }
+    } else if (cleaned.startsWith('00381')) {
+      final localPart = cleaned.substring(5);
+      if (localPart.length < 8 || localPart.length > 10) {
+        return 'Neispravan format broja (00381 6x xxx xxxx)';
+      }
+      if (!localPart.startsWith('6')) {
+        return 'Mobilni broj mora počinjati sa 6 posle 00381';
+      }
+    } else if (cleaned.startsWith('06')) {
+      if (cleaned.length < 9 || cleaned.length > 10) {
+        return 'Broj mora imati 9-10 cifara (06x xxx xxxx)';
+      }
+    } else {
+      return 'Broj mora počinjati sa 06, +381 ili 00381';
+    }
+
+    // Proveri da su sve ostale cifre
+    final digitsOnly = cleaned.replaceAll('+', '');
+    if (!RegExp(r'^\d+$').hasMatch(digitsOnly)) {
+      return 'Broj telefona može sadržati samo cifre';
+    }
+
+    return null;
+  }
+
+  /// 📱 Provera da li broj telefona već postoji u bazi
+  Future<String?> _checkDuplicatePhone() async {
+    final telefon = _brojTelefonaController.text.trim();
+    if (telefon.isEmpty) return null;
+
+    // Normalizuj broj za poređenje (ukloni +381, 00381, vodeću 0)
+    final normalized = _normalizePhoneNumber(telefon);
+
+    try {
+      final response = await Supabase.instance.client
+          .from('registrovani_putnici')
+          .select('id, putnik_ime, broj_telefona')
+          .eq('obrisan', false);
+
+      for (final row in response as List) {
+        final existingPhone = row['broj_telefona'] as String?;
+        if (existingPhone == null) continue;
+
+        final existingNormalized = _normalizePhoneNumber(existingPhone);
+
+        // Ako je isti broj, a nije isti putnik (za edit mode)
+        if (existingNormalized == normalized) {
+          final existingId = row['id'] as String;
+          if (widget.isEditing && widget.existingPutnik?.id == existingId) {
+            continue; // Isti putnik, OK
+          }
+          final existingName = row['putnik_ime'] as String? ?? 'Nepoznat';
+          return 'Broj telefona već koristi putnik: $existingName';
+        }
+      }
+    } catch (e) {
+      // Ako ne možemo proveriti, nastavi (bolje nego blokirati)
+    }
+
+    return null;
+  }
+
+  /// Normalizuje broj telefona za poređenje
+  String _normalizePhoneNumber(String telefon) {
+    var cleaned = telefon.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+
+    // Ukloni prefix i vrati samo lokalni deo
+    if (cleaned.startsWith('+381')) {
+      cleaned = '0${cleaned.substring(4)}';
+    } else if (cleaned.startsWith('00381')) {
+      cleaned = '0${cleaned.substring(5)}';
+    }
+
+    return cleaned;
   }
 
   Future<void> _savePutnik() async {
@@ -1394,6 +1501,20 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     setState(() => _isLoading = true);
 
     try {
+      // 📱 Provera duplikata broja telefona
+      final duplicateError = await _checkDuplicatePhone();
+      if (duplicateError != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ $duplicateError'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       if (widget.isEditing) {
         await _updateExistingPutnik();
       } else {
