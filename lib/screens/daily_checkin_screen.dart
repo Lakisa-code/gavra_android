@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ❌ DEPRECATED: Use daily_checkin_screen_v2.dart instead
-// import '../services/dnevni_kusur_service.dart';
 import '../services/daily_checkin_service.dart';
 import '../theme.dart';
 import '../utils/smart_colors.dart';

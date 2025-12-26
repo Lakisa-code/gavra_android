@@ -762,16 +762,9 @@ class PutnikService {
       } catch (logError) {
         // Log insert not critical
       }
-
-      // ?? AUTOMATSKA SINHRONIZACIJA - a�uriraj brojPutovanja iz istorije
-      try {
-        await RegistrovaniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(id);
-      } catch (e) {
-        // Sync not critical
-      }
     }
 
-    // ?? A�URIRAJ STATISTIKE ako je mesecni putnik i pokupljen je
+    // 📊 AŽURIRAJ STATISTIKE ako je mesečni putnik i pokupljen je
     if (putnik.mesecnaKarta == true) {
       // Statistike se racunaju dinamicki kroz StatistikaService
       // bez potrebe za dodatnim a�uriranjem

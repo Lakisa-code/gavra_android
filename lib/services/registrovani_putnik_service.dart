@@ -208,14 +208,6 @@ class RegistrovaniPutnikService {
     return await createRegistrovaniPutnik(putnik);
   }
 
-  /// Sinhronizacija broja putovanja sa istorijom - DEPRECATED
-  /// Sada se broj putovanja uvek računa iz voznje_log
-  static Future<bool> sinhronizujBrojPutovanjaSaIstorijom(String id) async {
-    // Više ne ažuriramo broj_putovanja u registrovani_putnici
-    // Uvek čitamo direktno iz voznje_log
-    return true;
-  }
-
   /// Ažurira plaćanje za mesec (vozacId je UUID)
   /// Koristi voznje_log za praćenje vožnji
   Future<bool> azurirajPlacanjeZaMesec(

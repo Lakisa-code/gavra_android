@@ -5,10 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// import 'dnevni_kusur_service.dart';
 import 'putnik_service.dart';
 import 'realtime/realtime_manager.dart';
-// import 'simplified_kusur_service.dart';
 import 'statistika_service.dart';
 
 class DailyCheckInService {

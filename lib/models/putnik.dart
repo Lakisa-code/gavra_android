@@ -332,9 +332,9 @@ class Putnik {
     final adresaBcJoin = map['adresa_bc'] as Map<String, dynamic>?;
     final adresaVsJoin = map['adresa_vs'] as Map<String, dynamic>?;
 
-    // Koristi naziv iz JOIN-a, fallback na staro TEXT polje, pa null ako nema
-    final adresaBelaCrkva = adresaBcJoin?['naziv'] as String? ?? map['adresa_bela_crkva'] as String?;
-    final adresaVrsac = adresaVsJoin?['naziv'] as String? ?? map['adresa_vrsac'] as String?;
+    // Koristi naziv iz JOIN-a (adresa_bc, adresa_vs su sada jedini izvor)
+    final adresaBelaCrkva = adresaBcJoin?['naziv'] as String?;
+    final adresaVrsac = adresaVsJoin?['naziv'] as String?;
 
     // 🆕 Čitaj "adresa danas" override iz polasci_po_danu JSON
     final adresaDanasBcId = RegistrovaniHelpers.getAdresaDanasIdForDay(map, normalizedTarget, 'bc');
@@ -472,9 +472,9 @@ class Putnik {
       return 'Vršac';
     }
 
-    // Fallback: proveri adrese ako nema polazaka danas
-    final adresaVS = map['adresa_vrsac'] as String?;
-    if (adresaVS != null && adresaVS.trim().isNotEmpty) {
+    // Fallback: proveri da li ima VS adresu u JOIN-u
+    final adresaVsObj = map['adresa_vs'] as Map<String, dynamic>?;
+    if (adresaVsObj != null && adresaVsObj['naziv'] != null) {
       return 'Vršac';
     }
 
@@ -495,8 +495,6 @@ class Putnik {
       adresaBC = adresaBcObj['naziv'] as String? ?? '${adresaBcObj['ulica'] ?? ''} ${adresaBcObj['broj'] ?? ''}'.trim();
       if (adresaBC.isEmpty) adresaBC = null;
     }
-    // Fallback na staru kolonu ako nema JOIN
-    adresaBC ??= map['adresa_bela_crkva'] as String?;
 
     // Proveri da li postoji JOIN objekat za VS adresu
     final adresaVsObj = map['adresa_vs'] as Map<String, dynamic>?;
@@ -504,8 +502,6 @@ class Putnik {
       adresaVS = adresaVsObj['naziv'] as String? ?? '${adresaVsObj['ulica'] ?? ''} ${adresaVsObj['broj'] ?? ''}'.trim();
       if (adresaVS.isEmpty) adresaVS = null;
     }
-    // Fallback na staru kolonu ako nema JOIN
-    adresaVS ??= map['adresa_vrsac'] as String?;
 
     // ✅ FIX: Koristi grad parametar za određivanje ispravne adrese
     // Ako je grad Bela Crkva, koristi BC adresu (gde pokupljaš putnika)
@@ -556,8 +552,6 @@ class Putnik {
           return map[dan] ?? dan.toLowerCase().substring(0, 3);
         })(): grad == 'Bela Crkva' ? {'bc': polazak} : {'vs': polazak},
       }),
-      'adresa_bela_crkva': grad == 'Bela Crkva' ? adresa : null,
-      'adresa_vrsac': grad == 'Vršac' ? adresa : null,
       'tip_prikazivanja': null,
       'radni_dani': dan,
       'aktivan': !obrisan,

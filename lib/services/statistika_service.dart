@@ -1,99 +1,21 @@
-import 'dart:convert';
-
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'voznje_log_service.dart';
 
 /// Servis za statistiku
-/// ✅ ISPRAVKA: Čita iz polasci_po_danu JSON-a u registrovani_putnici tabeli
-/// 🚀 Realtime stream direktno iz Supabase
+/// ✅ TRAJNO REŠENJE: Koristi VoznjeLogService kao source of truth
 class StatistikaService {
-  static final _supabase = Supabase.instance.client;
+  /// Singleton instance for compatibility
+  static final StatistikaService instance = StatistikaService._internal();
+  StatistikaService._internal();
 
   /// Stream pazara za sve vozače
   /// Vraća mapu {vozacIme: iznos, '_ukupno': ukupno}
-  /// ✅ ISPRAVKA: Čita iz polasci_po_danu JSON-a
+  /// ✅ DELEGIRA na VoznjeLogService
   static Stream<Map<String, double>> streamPazarZaSveVozace({
     required DateTime from,
     required DateTime to,
   }) {
-    // Koristi realtime stream iz registrovani_putnici
-    return _supabase
-        .from('registrovani_putnici')
-        .stream(primaryKey: ['id']).map((records) => _izracunajPazarIzPolasciPoDanu(records, from, to));
+    return VoznjeLogService.streamPazarPoVozacima(from: from, to: to);
   }
-
-  /// ✅ NOVA LOGIKA: Izračunaj pazar iz polasci_po_danu JSON-a
-  static Map<String, double> _izracunajPazarIzPolasciPoDanu(
-    List<Map<String, dynamic>> records,
-    DateTime from,
-    DateTime to,
-  ) {
-    final Map<String, double> pazar = {};
-    double ukupno = 0;
-
-    // Dobij kraticu dana iz target datuma
-    // from.weekday vraća 1=Pon, 2=Uto, itd.
-    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    final danKratica = daniKratice[from.weekday - 1];
-
-    for (final record in records) {
-      // Preskoči neaktivne putnike
-      if (record['aktivan'] != true || record['obrisan'] == true) continue;
-
-      final polasciRaw = record['polasci_po_danu'];
-      if (polasciRaw == null) continue;
-
-      Map<String, dynamic>? polasci;
-      if (polasciRaw is String) {
-        try {
-          polasci = jsonDecode(polasciRaw) as Map<String, dynamic>?;
-        } catch (_) {
-          continue;
-        }
-      } else if (polasciRaw is Map) {
-        polasci = Map<String, dynamic>.from(polasciRaw);
-      }
-
-      if (polasci == null) continue;
-
-      final dayData = polasci[danKratica];
-      if (dayData == null || dayData is! Map) continue;
-
-      // Proveri oba smera (bc i vs)
-      for (final place in ['bc', 'vs']) {
-        final placenoKey = '${place}_placeno';
-        final vozacKey = '${place}_placeno_vozac';
-        final iznosKey = '${place}_placeno_iznos';
-
-        final placenoTimestamp = dayData[placenoKey] as String?;
-        if (placenoTimestamp == null || placenoTimestamp.isEmpty) continue;
-
-        try {
-          final placenoDate = DateTime.parse(placenoTimestamp).toLocal();
-
-          // Proveri da li je plaćeno u traženom periodu (danas)
-          if (placenoDate.isBefore(from) || placenoDate.isAfter(to)) continue;
-
-          final vozacIme = dayData[vozacKey] as String?;
-          if (vozacIme == null || vozacIme.isEmpty) continue;
-          final iznos = (dayData[iznosKey] as num?)?.toDouble() ?? 0;
-
-          if (iznos > 0) {
-            pazar[vozacIme] = (pazar[vozacIme] ?? 0) + iznos;
-            ukupno += iznos;
-          }
-        } catch (_) {
-          continue;
-        }
-      }
-    }
-
-    pazar['_ukupno'] = ukupno;
-    return pazar;
-  }
-
-  /// Singleton instance for compatibility
-  static final StatistikaService instance = StatistikaService._internal();
-  StatistikaService._internal();
 
   /// Stream pazara za određenog vozača
   static Stream<double> streamPazarZaVozaca({

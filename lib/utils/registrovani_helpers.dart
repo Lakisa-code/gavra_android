@@ -548,15 +548,6 @@ class RegistrovaniHelpers {
     return false;
   }
 
-  // Build statistics - DEPRECATED, sada se računa iz voznje_log
-  static Map<String, dynamic> buildStatistics(Map<String, dynamic>? m) {
-    // Statistike se sada računaju direktno iz voznje_log tabele
-    return <String, dynamic>{
-      'trips_total': 0,
-      'trips_cancelled': 0,
-    };
-  }
-
   // Normalize polasci map into canonical structure for sending to DB.
   // Accepts either Map or JSON string; returns Map<String, Map<String,String?>>
   static Map<String, Map<String, String?>> normalizePolasciForSend(

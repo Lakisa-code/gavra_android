@@ -1693,10 +1693,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
             SnackBar(
               content: Text('${putnik.putnikIme} je uspešno obrisan'),
               backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: 'SINHRONIZUJ STATISTIKE',
-                onPressed: () => _sinhronizujStatistike(putnik.id),
-              ),
             ),
           );
         } else if (mounted) {
@@ -1716,32 +1712,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
             ),
           );
         }
-      }
-    }
-  }
-
-  void _sinhronizujStatistike(String putnikId) async {
-    try {
-      final success = await RegistrovaniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
-        putnikId,
-      );
-
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Statistike su uspešno sinhronizovane sa istorijom'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri sinhronizaciji: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     }
   }
