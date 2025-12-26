@@ -25,6 +25,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   bool _isLoading = true;
   bool _showDrivers = true;
   List<Marker> _markers = [];
+  List<Polyline> _polylines = [];
+  bool _showPolylines = false;
   DateTime? _lastGpsLoad;
   static const cacheDuration = Duration(seconds: 30);
 
@@ -199,11 +201,50 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
     // PUTNICI - funkcionalnost nije implementirana (geocoding potreban)
 
+    _updatePolylines();
+
     if (mounted) {
       setState(() {
         _markers = markers;
       });
     }
+  }
+
+  void _updatePolylines() {
+    if (!_showPolylines) {
+      _polylines = [];
+      return;
+    }
+
+    List<Polyline> polylines = [];
+
+    // Grupiši sve GPS lokacije po vozaču
+    Map<String, List<GPSLokacija>> lokacijePoVozacu = {};
+    for (final lokacija in _gpsLokacije) {
+      final vozacKey = lokacija.vozacId ?? '';
+      if (vozacKey.isEmpty) continue;
+      lokacijePoVozacu.putIfAbsent(vozacKey, () => []).add(lokacija);
+    }
+
+    // Kreiraj polyline za svakog vozača
+    lokacijePoVozacu.forEach((vozacIme, lokacije) {
+      if (lokacije.length < 2) return; // Treba minimum 2 tačke za liniju
+
+      // Sortiraj po vremenu
+      lokacije.sort((a, b) => a.vreme.compareTo(b.vreme));
+
+      final points = lokacije.map((l) => LatLng(l.latitude, l.longitude)).toList();
+
+      polylines.add(
+        Polyline(
+          points: points,
+          color: _getDriverColor(vozacIme).withValues(alpha: 0.7),
+          strokeWidth: 4.0,
+        ),
+      );
+    });
+
+    _polylines = polylines;
   }
 
   // Prima ime vozača umesto GPSLokacija
@@ -316,6 +357,22 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       },
                       tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
                     ),
+                    // 📍 Polyline toggle - prikaz putanja
+                    IconButton(
+                      icon: Icon(
+                        _showPolylines ? Icons.timeline : Icons.timeline_outlined,
+                        color: _showPolylines ? Colors.white : Colors.white54,
+                      ),
+                      onPressed: () {
+                        if (mounted) {
+                          setState(() {
+                            _showPolylines = !_showPolylines;
+                          });
+                        }
+                        _updateMarkers();
+                      },
+                      tooltip: _showPolylines ? 'Sakrij putanje' : 'Prikaži putanje',
+                    ),
                     // 👥 Putnici toggle - DISABLED (geocoding nije implementiran)
                     // Refresh dugme
                     TextButton(
@@ -364,6 +421,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                   userAgentPackageName: 'rs.gavra.transport',
                   maxZoom: 19,
                 ),
+                // Polyline putanje vozača
+                if (_showPolylines) PolylineLayer(polylines: _polylines),
                 // Markeri
                 MarkerLayer(markers: _markers),
               ],
