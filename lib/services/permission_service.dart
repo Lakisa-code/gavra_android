@@ -111,46 +111,65 @@ class PermissionService {
                           const SizedBox(height: 24),
                           Row(
                             children: [
-                              Expanded(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.3),
+                              // PRESKOČI dugme - crvenkasto
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.red.shade300.withValues(alpha: 0.6),
+                                      Colors.red.shade400.withValues(alpha: 0.6),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                  ),
+                                ),
+                                child: TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
                                     ),
                                   ),
-                                  child: TextButton(
-                                    onPressed: () => Navigator.of(context).pop(false),
-                                    child: const Text(
-                                      'PRESKOČI',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  child: const Text(
+                                    'PRESKOČI',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
                                     ),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
+                              // ODOBRI DOZVOLE dugme - zelena boja
                               Expanded(
-                                flex: 2,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.25),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.green.shade400,
+                                        Colors.green.shade600,
+                                      ],
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: Colors.white.withValues(alpha: 0.4),
+                                      width: 1.5,
                                     ),
                                   ),
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.transparent,
+                                  child: TextButton.icon(
+                                    style: TextButton.styleFrom(
                                       foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      shadowColor: Colors.transparent,
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
+                                        vertical: 14,
+                                        horizontal: 12,
                                       ),
                                     ),
                                     onPressed: () async {
@@ -159,11 +178,12 @@ class PermissionService {
                                         Navigator.of(context).pop(success);
                                       }
                                     },
-                                    icon: const Icon(Icons.check_circle_rounded),
+                                    icon: const Icon(Icons.check_circle_rounded, size: 18),
                                     label: const Text(
-                                      'ODOBRI DOZVOLE',
+                                      'ODOBRI',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ),

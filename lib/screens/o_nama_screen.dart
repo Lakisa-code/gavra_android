@@ -3,7 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/permission_service.dart';
-import '../theme.dart';
+import '../services/theme_manager.dart';
 
 /// 📖 O NAMA SCREEN
 /// Informacije o Gavra 013 timu i aplikaciji
@@ -78,8 +78,8 @@ class _ONamaScreenState extends State<ONamaScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: tripleBlueFashionGradient,
+      decoration: BoxDecoration(
+        gradient: ThemeManager().currentGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -287,10 +287,12 @@ class _ONamaScreenState extends State<ONamaScreen> {
               ),
             ],
           ),
-          child: const Center(
-            child: Text(
-              '🚐',
-              style: TextStyle(fontSize: 50),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/logo_transparent.png',
+              width: 90,
+              height: 90,
+              fit: BoxFit.cover,
             ),
           ),
         ),

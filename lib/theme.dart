@@ -128,11 +128,11 @@ const LinearGradient darkSteelGreyGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF000000), // Čisto crna
-    Color(0xFF2C2C2C), // Tamno siva
-    Color(0xFF404040), // Srednja siva
+    Color(0xFF4A4A4A), // Srednja siva - početak svetliji
+    Color(0xFF1A1A1A), // Tamna siva
+    Color(0xFF3A3A3A), // Srednja siva
     Color(0xFF6A6A6A), // Svetlija siva
-    Color(0xFF8A8A8A), // Najsvetlija siva
+    Color(0xFF9A9A9A), // Najsvetlija siva - neon efekat
   ],
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
@@ -142,9 +142,9 @@ const LinearGradient passionateRoseGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF8B0000), // Electric Red
+    Color(0xFFDC143C), // Crimson - početak svetliji
+    Color(0xFF8B0000), // Dark Red
     Color(0xFFB22222), // Ruby Metallic
-    Color(0xFFDC143C), // Crimson Metallic
     Color(0xFFFF69B4), // Pink Ice Glow
     Color(0xFFFFC0CB), // Neon Rose Shine
   ],
@@ -156,10 +156,10 @@ const LinearGradient darkPinkGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
+    Color(0xFF8B2F6B), // Rich pink - početak svetliji
     Color(0xFF1A0A14), // Skoro crna sa pink undertone
-    Color(0xFF2D1F2D), // Tamno ljubičasta
     Color(0xFF4A1942), // Deep magenta
-    Color(0xFF8B2F6B), // Rich pink
+    Color(0xFF9B4F8B), // Lighter pink
     Color(0xFFE91E8C), // Neon pink akcent
   ],
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
