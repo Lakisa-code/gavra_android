@@ -80,10 +80,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     // Inicijalizacija lokalnih notifikacija
     WidgetsBinding.instance.addPostFrameCallback((_) {
       LocalNotificationService.initialize(context);
-      // Ensure runtime notification permission on Android 13+
-      _ensureNotificationPermissions();
-      _checkAutoLogin(); // AUTO-LOGIN BEZ PESME - auto-login BEZ pesme
+      // 🔐 ZAHTEVAJ SVE DOZVOLE PRI PRVOM POKRETANJU - SVIMA!
+      _requestPermissionsAndCheckLogin();
     });
+  }
+
+  /// 🔐 PRVO DOZVOLE, PA ONDA AUTO-LOGIN
+  Future<void> _requestPermissionsAndCheckLogin() async {
+    // 1. Zahtevaj dozvole SVIMA pri prvom pokretanju
+    if (mounted) {
+      await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+    }
+    // 2. Zatim proveri auto-login
+    _ensureNotificationPermissions();
+    _checkAutoLogin();
   }
 
   Future<void> _ensureNotificationPermissions() async {
@@ -169,10 +179,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
       // Vozač je već logovan - PROVERI DAILY CHECK-IN
-      // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU (auto-login)
-      if (mounted) {
-        await PermissionService.requestAllPermissionsOnFirstLaunch(context);
-      }
+      // (dozvole su već zatražene u _requestPermissionsAndCheckLogin)
 
       // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
       final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(activeDriver);
