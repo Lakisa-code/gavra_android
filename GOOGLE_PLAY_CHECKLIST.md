@@ -191,10 +191,10 @@ Android Publisher API: ENABLED
 4. ✅ ~~Kreirati Google Cloud projekat~~
 5. ✅ ~~Omogućiti Google Play Android Developer API~~
 6. ✅ ~~Kreirati Service Account~~
-7. ❌ **POTREBNO:** Dodati Service Account u Play Console sa permisijama
+7. ⏳ **POTREBNO:** Dodati Service Account u Play Console sa permisijama
 8. ✅ ~~Dodati JSON ključ kao GitHub Secret~~ (`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`)
-9. ✅ ~~Ažurirati `apk-release.yml` workflow~~ (alpha track)
-10. ❌ Test push i verifikacija (nakon koraka 7)
+9. ✅ ~~Ažurirati `apk-release.yml` workflow~~ (production track)
+10. ⏳ Test push i verifikacija (nakon koraka 7)
 
 ---
 
