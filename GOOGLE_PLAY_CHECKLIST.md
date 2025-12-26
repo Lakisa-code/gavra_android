@@ -26,7 +26,7 @@ Automatski deploy APK/AAB na Google Play Store putem GitHub Actions nakon svakog
 | Workflow ažuriran | ✅ **DODATO** (production track) |
 | Aplikacija na Play Console | ✅ **POSTOJI** (Gavra013) |
 | Prvi ručni upload | ✅ **URAĐEN** (1. nov 2025.) |
-| Service Account povezan sa Play Console | ❌ **POTREBNO** |
+| Service Account pozvan u Play Console | ✅ **ZAVRŠENO** (26.12.2025) |
 
 ---
 
@@ -80,19 +80,20 @@ Automatski deploy APK/AAB na Google Play Store putem GitHub Actions nakon svakog
   4. ~~Kreirati Service Account~~ ✅ (`gavra-play-store@...`)
   5. ~~Kreirati JSON ključ~~ ✅ (`play-store-key.json`)
 
-### 4. Dodati Service Account u Play Console
+### 4. Pozvati Service Account u Play Console
 - [ ] **STATUS:** ❌ POTREBNO
+- **NAPOMENA:** Više NE TREBA povezivati Cloud projekat! Google je to ukinuo.
 - **Koraci:**
   1. Ići na https://play.google.com/console/
-  2. Settings → API access (ili Users and permissions)
-  3. Link postojeći Google Cloud projekat
-  4. Kliknuti "Invite new user"
-  5. Uneti **email adresu Service Account-a** (format: `ime@projekat.iam.gserviceaccount.com`)
-  6. Dodeliti permisije:
-     - ✅ **Release apps to testing tracks**
-     - ✅ **Release to production, exclude devices, and use Play App Signing**
-     - ✅ **Manage store presence**
-  7. Za specifičnu aplikaciju: App permissions → dodati `com.gavra013.gavra_android`
+  2. **Корисници и дозволе** (Users and permissions) u levom meniju
+  3. Kliknuti **"Позови нове кориснике"** (Invite new users)
+  4. Uneti email Service Account-a: `gavra-play-store@gavra-notif-20250920162521.iam.gserviceaccount.com`
+  5. Pod **Account permissions** omogućiti:
+     - ✅ **Admin (all permissions)** - ili pojedinačno:
+     - ✅ Release to production, exclude devices, and use Play App Signing
+     - ✅ Manage store presence
+  6. Kliknuti **"Позови корисника"** (Invite user)
+  7. Service Account će automatski prihvatiti poziv (ne treba ručno)
 
 ### 5. GitHub Secrets
 - [x] **STATUS:** ✅ DODATO
@@ -191,10 +192,10 @@ Android Publisher API: ENABLED
 4. ✅ ~~Kreirati Google Cloud projekat~~
 5. ✅ ~~Omogućiti Google Play Android Developer API~~
 6. ✅ ~~Kreirati Service Account~~
-7. ⏳ **POTREBNO:** Dodati Service Account u Play Console sa permisijama
-8. ✅ ~~Dodati JSON ključ kao GitHub Secret~~ (`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`)
-9. ✅ ~~Ažurirati `apk-release.yml` workflow~~ (production track)
-10. ⏳ Test push i verifikacija (nakon koraka 7)
+7. ✅ ~~Dodati JSON ključ kao GitHub Secret~~ (`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`)
+8. ✅ ~~Ažurirati `apk-release.yml` workflow~~ (production track)
+9. ✅ ~~Pozvati Service Account u Play Console~~ (26.12.2025 - Admin permisije)
+10. ⏳ **SLEDEĆE:** Test push sa tagom i verifikacija
 
 ---
 
