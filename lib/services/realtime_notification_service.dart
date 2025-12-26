@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'auth_manager.dart';
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
 
@@ -75,13 +76,20 @@ class RealtimeNotificationService {
       // Ako broadcast ne uspe, prikaži lokalnu notifikaciju
     }
 
-    // Lokalna notifikacija za trenutni uređaj
+    // 🛡️ Lokalna notifikacija SAMO ako trenutni vozač NIJE pošiljalac
     try {
-      await LocalNotificationService.showRealtimeNotification(
-        title: title,
-        body: body,
-        payload: jsonEncode(data ?? {}),
-      );
+      final currentDriver = await AuthManager.getCurrentDriver();
+      final shouldShowLocal = excludeSender == null ||
+          currentDriver == null ||
+          currentDriver.toLowerCase() != excludeSender.toLowerCase();
+
+      if (shouldShowLocal) {
+        await LocalNotificationService.showRealtimeNotification(
+          title: title,
+          body: body,
+          payload: jsonEncode(data ?? {}),
+        );
+      }
     } catch (_) {}
   }
 
