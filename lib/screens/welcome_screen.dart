@@ -606,38 +606,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                   _isAudioPlaying = true;
                                 } catch (_) {}
                               },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, // Reduced padding
-                                  vertical: 10, // Reduced padding
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      ThemeManager().currentGradient.colors[3],
-                                      ThemeManager().currentGradient.colors[2],
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(32),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: ThemeManager().currentGradient.colors[2].withValues(alpha: 0.4),
-                                      blurRadius: 20,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.4),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Image.asset(
-                                  'assets/logo_transparent.png',
-                                  height: 100,
-                                  fit: BoxFit.contain,
-                                ),
+                              child: Image.asset(
+                                'assets/logo_transparent.png',
+                                height: 120,
+                                fit: BoxFit.contain,
                               ),
                             ),
                           ),
