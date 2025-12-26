@@ -81,7 +81,7 @@ Automatski deploy APK/AAB na Google Play Store putem GitHub Actions nakon svakog
   5. ~~Kreirati JSON ključ~~ ✅ (`play-store-key.json`)
 
 ### 4. Pozvati Service Account u Play Console
-- [ ] **STATUS:** ❌ POTREBNO
+- [x] **STATUS:** ✅ ZAVRŠENO (26.12.2025)
 - **NAPOMENA:** Više NE TREBA povezivati Cloud projekat! Google je to ukinuo.
 - **Koraci:**
   1. Ići na https://play.google.com/console/
