@@ -868,10 +868,7 @@ class _PutnikCardState extends State<PutnikCard> {
         }
       }
     } catch (e) {
-      // Fallback na model ako ne možemo učitati iz baze
-      if (registrovaniPutnik.placeniMesec != null && registrovaniPutnik.placenaGodina != null) {
-        placeniMeseci.add('${registrovaniPutnik.placeniMesec}-${registrovaniPutnik.placenaGodina}');
-      }
+      // Ako ne možemo učitati, ostaje prazan set
     }
 
     // Računa za ceo trenutni mesec (1. do 30.)
@@ -895,9 +892,9 @@ class _PutnikCardState extends State<PutnikCard> {
         _putnik.id! as String,
       );
     } catch (e) {
-      // Fallback na podatke iz modela
-      brojPutovanja = registrovaniPutnik.brojPutovanja;
-      brojOtkazivanja = registrovaniPutnik.brojOtkazivanja;
+      // Greška pri čitanju - koristi 0
+      brojPutovanja = 0;
+      brojOtkazivanja = 0;
     }
 
     if (!mounted) return;
@@ -1031,8 +1028,8 @@ class _PutnikCardState extends State<PutnikCard> {
                             ),
                           ],
                         ),
-                        if (registrovaniPutnik.jePlacen) ...[
-                          // Koristi jePlacen umesto datumPlacanja
+                        if (placeniMeseci.isNotEmpty) ...[
+                          // Prikaži period ako ima plaćanja
                           const SizedBox(height: 6),
                           Text(
                             'Period: ${_formatDate(firstDayOfMonth)} - ${_formatDate(lastDayOfMonth)}',

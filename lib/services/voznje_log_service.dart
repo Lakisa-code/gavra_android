@@ -14,6 +14,8 @@ class VoznjeLogService {
     required DateTime datum,
     required double iznos,
     String? vozacId,
+    int? placeniMesec,
+    int? placenaGodina,
   }) async {
     await _supabase.from('voznje_log').insert({
       'putnik_id': putnikId,
@@ -21,6 +23,8 @@ class VoznjeLogService {
       'tip': 'uplata',
       'iznos': iznos,
       'vozac_id': vozacId,
+      'placeni_mesec': placeniMesec ?? datum.month,
+      'placena_godina': placenaGodina ?? datum.year,
     });
   }
 

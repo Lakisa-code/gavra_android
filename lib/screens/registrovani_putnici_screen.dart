@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -190,13 +189,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  // 💰 UČITAJ STVARNA PLAĆANJA iz registrovani_putnici direktno
+  // 💰 UČITAJ STVARNA PLAĆANJA iz voznje_log
   Future<void> _ucitajStvarnaPlacanja(List<RegistrovaniPutnik> putnici) async {
     try {
-      // Sada koristimo samo registrovani_putnici - cena je direktno u tabeli
+      // Sada koristimo voznje_log za plaćanja
       final Map<String, double> placanja = {};
       for (final putnik in putnici) {
-        placanja[putnik.id] = putnik.cena ?? 0.0;
+        // Koristi cena_po_danu kao default cenu
+        placanja[putnik.id] = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
       }
       if (mounted) {
         // 🔄 ANTI-REBUILD OPTIMIZATION: Samo update ako su se podaci stvarno promenili
@@ -1252,12 +1252,15 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                             color: Colors.green.shade700,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${putnik.brojPutovanja}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.green.shade700,
+                          FutureBuilder<int>(
+                            future: RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id),
+                            builder: (context, snapshot) => Text(
+                              '${snapshot.data ?? 0}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.green.shade700,
+                              ),
                             ),
                           ),
                         ],
@@ -1291,12 +1294,15 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                             color: Colors.red.shade700,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${putnik.brojOtkazivanja}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red.shade700,
+                          FutureBuilder<int>(
+                            future: RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id),
+                            builder: (context, snapshot) => Text(
+                              '${snapshot.data ?? 0}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red.shade700,
+                              ),
                             ),
                           ),
                         ],
@@ -1657,8 +1663,8 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   const SizedBox(height: 8),
                   const Text('• Putnik će biti označen kao obrisan'),
                   const Text('• Postojeća istorija putovanja se čuva'),
-                  Text('• Broj putovanja: ${putnik.brojPutovanja}'),
-                  const Text('• Možete kasnije da sinhronizujete statistike'),
+                  const Text('• Istorija vožnji ostaje u voznje_log'),
+                  const Text('• Možete kasnije ponovo aktivirati putnika'),
                 ],
               ),
             ),
@@ -2008,27 +2014,28 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                           color: Colors.green.shade700,
                                         ),
                                       ),
-                                      if (putnik.vremePlacanja != null)
-                                        Text(
-                                          'Poslednje plaćanje: ${_formatDatum(putnik.vremePlacanja!)}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.green.shade600,
-                                          ),
-                                        ),
-                                      // 🔍 Vozač poslednjeg plaćanja - 🔥 REALTIME
-                                      if (putnik.vremePlacanja != null)
-                                        StreamBuilder<String?>(
-                                          stream: RegistrovaniPutnikService.streamVozacPoslednjegPlacanja(
-                                            putnik.id,
-                                          ),
-                                          builder: (context, snapshot) {
-                                            final vozacIme = snapshot.data;
-                                            return Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
+                                      // 🔥 REALTIME: Vozač i datum poslednjeg plaćanja iz voznje_log
+                                      StreamBuilder<Map<String, dynamic>?>(
+                                        stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnik.id),
+                                        builder: (context, snapshot) {
+                                          final placanje = snapshot.data;
+                                          if (placanje == null) return const SizedBox.shrink();
+                                          final vozacIme = placanje['vozac_ime'] as String?;
+                                          final datum = placanje['datum'] as String?;
+                                          return Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              if (datum != null)
                                                 Text(
-                                                  'Plaćeno: ${DateFormat('dd.MM').format(putnik.vremePlacanja!)}',
+                                                  'Poslednje plaćanje: $datum',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.green.shade600,
+                                                  ),
+                                                ),
+                                              if (vozacIme != null)
+                                                Text(
+                                                  'Plaćeno: $datum',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     // Ako imamo ime vozača iz strema, koristimo njegovu boju
@@ -2039,21 +2046,21 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
-                                                if (vozacIme != null)
-                                                  Text(
-                                                    'Naplatio: $vozacIme',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: VozacBoja.get(
-                                                        vozacIme,
-                                                      ),
-                                                      fontWeight: FontWeight.w500,
+                                              if (vozacIme != null)
+                                                Text(
+                                                  'Naplatio: $vozacIme',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: VozacBoja.get(
+                                                      vozacIme,
                                                     ),
+                                                    fontWeight: FontWeight.w500,
                                                   ),
-                                              ],
-                                            );
-                                          },
-                                        ),
+                                                ),
+                                            ],
+                                          );
+                                        },
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -2516,17 +2523,23 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     ? '${(_stvarnaPlacanja[putnik.id]!).toStringAsFixed(0)} RSD'
                     : 'Nema podataka o ceni',
               ),
-              _buildStatRow(
-                '📅 Datum plaćanja:',
-                putnik.vremePlacanja != null ? _formatDatum(putnik.vremePlacanja!) : 'Nema podataka o datumu',
-              ),
-              // 🔍 Vozač koji je naplatio - async loading
-              // 🔥 REALTIME: Vozač poslednjeg plaćanja
-              StreamBuilder<String?>(
-                stream: RegistrovaniPutnikService.streamVozacPoslednjegPlacanja(putnik.id),
+              // 🔥 REALTIME: Datum i vozač poslednjeg plaćanja iz voznje_log
+              StreamBuilder<Map<String, dynamic>?>(
+                stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnik.id),
                 builder: (context, snapshot) {
-                  final vozacIme = snapshot.data ?? 'Učitava...';
-                  return _buildStatRow('🚗 Vozač (naplata):', vozacIme);
+                  final placanje = snapshot.data;
+                  final datum = placanje?['datum'] as String?;
+                  final vozacIme = placanje?['vozac_ime'] as String?;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStatRow(
+                        '📅 Datum plaćanja:',
+                        datum ?? 'Nema podataka o datumu',
+                      ),
+                      _buildStatRow('🚗 Vozač (naplata):', vozacIme ?? 'Nema podataka'),
+                    ],
+                  );
                 },
               ),
             ],
@@ -2934,25 +2947,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final monthNumber = _getMonthNumber(monthName);
     if (monthNumber == 0) return false;
 
-    // 1. PRIORITET: Proveri cache plaćenih meseci (sva plaćanja)
+    // Proveri cache plaćenih meseci (sva plaćanja iz voznje_log)
     final placeniZaPutnika = _placeniMeseci[putnik.id];
     if (placeniZaPutnika != null && placeniZaPutnika.contains('$monthNumber-$year')) {
       return true;
-    }
-
-    // 2. FALLBACK: Precizni podaci o plaćenom mesecu iz modela (poslednje plaćanje)
-    if (putnik.placeniMesec != null && putnik.placenaGodina != null) {
-      if (putnik.placeniMesec == monthNumber && putnik.placenaGodina == year) {
-        return true;
-      }
-    }
-
-    // 3. FALLBACK: Koristi vreme plaćanja ako postoji
-    if (putnik.vremePlacanja != null) {
-      final paymentDate = putnik.vremePlacanja!;
-      if (paymentDate.year == year && paymentDate.month == monthNumber) {
-        return true;
-      }
     }
 
     return false;
@@ -3398,7 +3396,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       // Kreiranje CSV sadržaja
       final csvData = StringBuffer();
       csvData.writeln(
-        'Ime,Tip,Škola/Ustanova,Broj Telefona,Adresa BC,Adresa VS,Radni Dani,Polasci BC,Polasci VS,Status,Cena',
+        'Ime,Tip,Škola/Ustanova,Broj Telefona,Adresa BC,Adresa VS,Radni Dani,Polasci BC,Polasci VS,Status',
       );
 
       for (final putnik in putnici) {
@@ -3428,7 +3426,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
             '"${polasciBc.join(';')}"',
             '"${polasciVs.join(';')}"',
             putnik.status,
-            putnik.cena?.toString() ?? '',
           ].join(','),
         );
       }

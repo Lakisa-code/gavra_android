@@ -22,24 +22,14 @@ class RegistrovaniPutnik {
     required this.updatedAt,
     this.aktivan = true,
     this.status = 'aktivan',
-    this.ukupnaCenaMeseca = 0.0,
-    this.cena,
-    this.brojPutovanja = 0,
-    this.brojOtkazivanja = 0,
     this.obrisan = false,
-    this.vremePlacanja,
-    this.placeniMesec,
-    this.placenaGodina,
     // Nova polja za database kompatibilnost
     this.tipPrikazivanja = 'standard',
     this.vozacId,
-    this.pokupljen = false,
-    this.vremePokupljenja,
     // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
     this.adresa,
     this.grad,
-    // Tracking polja
-    this.placeno = false,
+    // Tracking polja - UKLONJENO: pokupljen, placeno - sada u voznje_log
     this.pin,
     this.email, // 📧 Email za kontakt i Google Play testing
     this.cenaPoDanu, // 🆕 Custom cena po danu (ako je NULL, koristi default: 700 radnik, 600 učenik)
@@ -90,24 +80,14 @@ class RegistrovaniPutnik {
       updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
       status: map['status'] as String? ?? 'aktivan',
-      ukupnaCenaMeseca: (map['ukupna_cena_meseca'] as num?)?.toDouble() ?? 0.0,
-      cena: (map['cena'] as num?)?.toDouble(),
-      brojPutovanja: map['broj_putovanja'] as int? ?? 0,
-      brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
       obrisan: map['obrisan'] as bool? ?? false,
-      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
-      placeniMesec: map['placeni_mesec'] as int?,
-      placenaGodina: map['placena_godina'] as int?,
       // Nova polja
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
       vozacId: map['vozac_id'] as String?,
-      pokupljen: false,
-      vremePokupljenja: null, // ✅ UKLONJENO: kolona obrisana iz baze
       // Computed fields za UI display (dolaze iz JOIN-a)
       adresa: map['adresa'] as String?,
       grad: map['grad'] as String?,
-      // Tracking polja
-      placeno: map['placeno'] as bool? ?? false,
+      // Tracking polja - UKLONJENO: pokupljen, placeno - sada u voznje_log
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
       cenaPoDanu: (map['cena_po_danu'] as num?)?.toDouble(), // 🆕 Custom cena po danu
@@ -140,28 +120,17 @@ class RegistrovaniPutnik {
   final DateTime updatedAt;
   final bool aktivan;
   final String status;
-  // Ostali fields za kompatibilnost
-  final double ukupnaCenaMeseca;
-  final double? cena;
-  final int brojPutovanja;
-  final int brojOtkazivanja;
   final bool obrisan;
-  final DateTime? vremePlacanja;
-  final int? placeniMesec;
-  final int? placenaGodina;
 
   // Nova polja iz baze
   final String tipPrikazivanja;
   final String? vozacId;
-  final bool pokupljen;
-  final DateTime? vremePokupljenja;
 
   // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
   final String? adresa;
   final String? grad;
 
-  // Tracking polja
-  final bool placeno;
+  // Tracking polja - UKLONJENO: pokupljen, placeno, vremePokupljenja - sada u voznje_log
   final String? pin; // 🔐 PIN za login
   final String? email; // 📧 Email za kontakt i Google Play testing
   final double? cenaPoDanu; // 🆕 Custom cena po danu (NULL = default 700/600)
@@ -209,18 +178,9 @@ class RegistrovaniPutnik {
       'updated_at': updatedAt.toIso8601String(),
       'aktivan': aktivan,
       'status': status,
-      'ukupna_cena_meseca': ukupnaCenaMeseca,
-      'cena': cena,
-      'broj_putovanja': brojPutovanja,
-      'broj_otkazivanja': brojOtkazivanja,
       'obrisan': obrisan,
-      'vreme_placanja': vremePlacanja?.toIso8601String(),
-      'placeni_mesec': placeniMesec,
-      'placena_godina': placenaGodina,
       'tip_prikazivanja': tipPrikazivanja,
       'vozac_id': vozacId,
-      'pokupljen': pokupljen,
-      'placeno': placeno,
       'email': email, // 📧 Email
       'cena_po_danu': cenaPoDanu, // 🆕 Custom cena po danu
       // 🧾 Polja za račune
@@ -230,7 +190,8 @@ class RegistrovaniPutnik {
       'firma_mb': firmaMb,
       'firma_ziro': firmaZiro,
       'firma_adresa': firmaAdresa,
-      // 'pin': pin, // PIN se ne šalje iz modela, čuva se posebno
+      // UKLONJENO iz baze: ukupna_cena_meseca, cena, broj_putovanja, broj_otkazivanja,
+      // vreme_placanja, pokupljen, placeno - sada u voznje_log
     };
 
     // Dodaj id samo ako nije prazan (za UPDATE operacije)
@@ -244,19 +205,7 @@ class RegistrovaniPutnik {
 
   String get punoIme => putnikIme;
 
-  bool get jePlacen => vremePlacanja != null;
-
-  /// Iznos plaćanja - kompatibilnost sa statistika_service
-  double? get iznosPlacanja => cena ?? ukupnaCenaMeseca;
-
-  /// Stvarni iznos plaćanja
-  double? get stvarniIznosPlacanja {
-    // Ako postoji cena u registrovani_putnici, vrati je
-    if (cena != null && cena! > 0) return cena;
-
-    // Vraćamo cenu ili ukupnaCenaMeseca kao fallback
-    return cena ?? (ukupnaCenaMeseca > 0 ? ukupnaCenaMeseca : null);
-  }
+  // UKLONJENO: jePlacen, iznosPlacanja, stvarniIznosPlacanja - sada se računa iz voznje_log
 
   /// Polazak za Belu Crkvu za dati dan
   String? getPolazakBelaCrkvaZaDan(String dan) {
@@ -297,19 +246,10 @@ class RegistrovaniPutnik {
     DateTime? datumKrajaMeseca,
     bool? aktivan,
     String? status,
-    double? ukupnaCenaMeseca,
-    double? cena,
-    DateTime? vremePlacanja,
-    int? placeniMesec,
-    int? placenaGodina,
-    int? brojPutovanja,
-    int? brojOtkazivanja,
     bool? obrisan,
     // Computed fields za UI
     String? adresa,
     String? grad,
-    // Tracking
-    bool? placeno,
     // 🧾 Polja za račune
     bool? trebaRacun,
     String? firmaNaziv,
@@ -336,19 +276,10 @@ class RegistrovaniPutnik {
       updatedAt: DateTime.now(),
       aktivan: aktivan ?? this.aktivan,
       status: status ?? this.status,
-      ukupnaCenaMeseca: ukupnaCenaMeseca ?? this.ukupnaCenaMeseca,
-      cena: cena ?? this.cena,
-      brojPutovanja: brojPutovanja ?? this.brojPutovanja,
-      brojOtkazivanja: brojOtkazivanja ?? this.brojOtkazivanja,
       obrisan: obrisan ?? this.obrisan,
-      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
-      placeniMesec: placeniMesec ?? this.placeniMesec,
-      placenaGodina: placenaGodina ?? this.placenaGodina,
       // Computed fields za UI
       adresa: adresa ?? this.adresa,
       grad: grad ?? this.grad,
-      // Tracking
-      placeno: placeno ?? this.placeno,
       // 🧾 Polja za račune
       trebaRacun: trebaRacun ?? this.trebaRacun,
       firmaNaziv: firmaNaziv ?? this.firmaNaziv,

@@ -465,20 +465,14 @@ class PutnikService {
           return 'Poni�teno brisanje putnika';
 
         case 'pickup':
-          await supabase.from(tabela).update({
-            'broj_putovanja': lastAction.oldData['broj_putovanja'],
-            'vreme_pokupljenja_bc': null,
-            'vreme_pokupljenja_vs': null,
-          }).eq('id', lastAction.putnikId as String);
-          return 'Poni�teno pokupljanje';
+          // Pokupljanje se više ne poništava preko kolona u registrovani_putnici
+          // Samo se može obrisati zapis iz voznje_log ako je potrebno
+          return 'Poništeno pokupljanje';
 
         case 'payment':
-          await supabase.from(tabela).update({
-            'cena': null,
-            'vreme_placanja': null,
-            'vozac_id': null,
-          }).eq('id', lastAction.putnikId as String);
-          return 'Poni�teno placanje';
+          // Plaćanje se više ne poništava preko kolona u registrovani_putnici
+          // Treba obrisati zapis iz voznje_log
+          return 'Poništeno placanje';
 
         case 'cancel':
           await supabase.from(tabela).update({
@@ -749,11 +743,7 @@ class PutnikService {
       dayData['${place}_pokupljeno_vozac'] = currentDriver; // Ime vozača, ne UUID
       polasciPoDanu[danKratica] = dayData;
 
-      // ✅ Kolone za kompatibilnost (zadržavamo za sada)
-      final String vremeKolona = jeBC ? 'vreme_pokupljenja_bc' : 'vreme_pokupljenja_vs';
-
       await supabase.from(tabela).update({
-        vremeKolona: now.toIso8601String(),
         'vozac_id': vozacUuid,
         'polasci_po_danu': polasciPoDanu,
         'updated_at': now.toIso8601String(),
@@ -851,10 +841,8 @@ class PutnikService {
     polasciPoDanu[danKratica] = dayData;
 
     await supabase.from(tabela).update({
-      'cena': iznos,
-      'vreme_placanja': now.toIso8601String(),
       'vozac_id': validVozacId,
-      'polasci_po_danu': polasciPoDanu, // ✅ NOVO: Sačuvaj u JSON
+      'polasci_po_danu': polasciPoDanu,
       'updated_at': now.toIso8601String(),
     }).eq('id', id);
   }
@@ -918,12 +906,8 @@ class PutnikService {
         dayData['${place}_otkazao_vozac'] = otkazaoVozac;
         polasci[danKratica] = dayData;
 
-        // Kolona za otkazivanje (triggeruje realtime)
-        final String vremeOtkazivanjaKolona = place == 'bc' ? 'vreme_otkazivanja_bc' : 'vreme_otkazivanja_vs';
-
         await supabase.from('registrovani_putnici').update({
-          'polasci_po_danu': polasci, // 🔧 FIX: Map direktno, ne jsonEncode!
-          vremeOtkazivanjaKolona: now.toIso8601String(),
+          'polasci_po_danu': polasci,
           'updated_at': now.toIso8601String(),
         }).eq('id', id.toString());
 
@@ -1072,13 +1056,7 @@ class PutnikService {
           await supabase.from('registrovani_putnici').update({
             'aktivan': true,
             'status': 'radi',
-            'polasci_po_danu': polasci, // 🔧 FIX: Map direktno, ne jsonEncode!
-            'vreme_pokupljenja_bc': null,
-            'vreme_pokupljenja_vs': null,
-            'vreme_otkazivanja_bc': null,
-            'vreme_otkazivanja_vs': null,
-            'vreme_placanja': null,
-            'cena': null,
+            'polasci_po_danu': polasci,
             'vozac_id': null,
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('putnik_ime', imePutnika);

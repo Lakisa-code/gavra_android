@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/registrovani_putnik.dart';
 import 'firebase_service.dart';
+import 'registrovani_putnik_service.dart';
 
 class SMSService {
   static Timer? _monthlyTimer;
@@ -83,23 +84,27 @@ class SMSService {
       final List<RegistrovaniPutnik> allPassengers =
           (response as List).map((data) => RegistrovaniPutnik.fromMap(data as Map<String, dynamic>)).toList();
 
+      // Dohvati sva plaćanja za tekući mesec iz voznje_log
+      final placanjaResponse = await supabase
+          .from('voznje_log')
+          .select('putnik_id, placeni_mesec, placena_godina')
+          .eq('tip', 'uplata')
+          .eq('placeni_mesec', currentMonth)
+          .eq('placena_godina', currentYear);
+
+      final Set<String> placeniPutnici = {};
+      for (var p in placanjaResponse) {
+        if (p['putnik_id'] != null) {
+          placeniPutnici.add(p['putnik_id'] as String);
+        }
+      }
+
       final unpaidPassengers = allPassengers.where((putnik) {
         if (putnik.brojTelefona == null || putnik.brojTelefona!.isEmpty) {
           return false;
         }
-        final placeniMesec = putnik.placeniMesec;
-        final placenaGodina = putnik.placenaGodina;
-
-        if (placeniMesec == null || placenaGodina == null) {
-          return true;
-        }
-        if (placenaGodina < currentYear) {
-          return true;
-        }
-        if (placenaGodina == currentYear && placeniMesec < currentMonth) {
-          return true;
-        }
-        return false;
+        // Proveri da li je platio u voznje_log
+        return !placeniPutnici.contains(putnik.id);
       }).toList();
 
       debugPrint('📋 Pronađeno ${unpaidPassengers.length} putnika koji nisu platili za ${_getMonthName(currentMonth)}');
@@ -110,8 +115,9 @@ class SMSService {
       for (RegistrovaniPutnik putnik in unpaidPassengers) {
         try {
           final cenaPoDoanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
-          final brojPutovanja = putnik.brojPutovanja;
-          final brojOtkazivanja = putnik.brojOtkazivanja;
+          // Dohvati broj putovanja iz voznje_log
+          final brojPutovanja = await RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id);
+          final brojOtkazivanja = await RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id);
           final dugovanje = cenaPoDoanu * brojPutovanja;
 
           String message = _createReminderSMS(
@@ -171,23 +177,27 @@ class SMSService {
       final List<RegistrovaniPutnik> allPassengers =
           (response as List).map((data) => RegistrovaniPutnik.fromMap(data as Map<String, dynamic>)).toList();
 
+      // Dohvati sva plaćanja za prethodni mesec iz voznje_log
+      final placanjaResponse = await supabase
+          .from('voznje_log')
+          .select('putnik_id, placeni_mesec, placena_godina')
+          .eq('tip', 'uplata')
+          .eq('placeni_mesec', previousMonth)
+          .eq('placena_godina', previousYear);
+
+      final Set<String> placeniPutnici = {};
+      for (var p in placanjaResponse) {
+        if (p['putnik_id'] != null) {
+          placeniPutnici.add(p['putnik_id'] as String);
+        }
+      }
+
       final overduePassengers = allPassengers.where((putnik) {
         if (putnik.brojTelefona == null || putnik.brojTelefona!.isEmpty) {
           return false;
         }
-        final placeniMesec = putnik.placeniMesec;
-        final placenaGodina = putnik.placenaGodina;
-
-        if (placeniMesec == null || placenaGodina == null) {
-          return true;
-        }
-        if (placenaGodina > previousYear) {
-          return false;
-        }
-        if (placenaGodina == previousYear && placeniMesec >= previousMonth) {
-          return false;
-        }
-        return true;
+        // Proveri da li je platio u voznje_log
+        return !placeniPutnici.contains(putnik.id);
       }).toList();
 
       debugPrint(
@@ -199,8 +209,9 @@ class SMSService {
       for (RegistrovaniPutnik putnik in overduePassengers) {
         try {
           final cenaPoDoanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
-          final brojPutovanja = putnik.brojPutovanja;
-          final brojOtkazivanja = putnik.brojOtkazivanja;
+          // Dohvati broj putovanja iz voznje_log
+          final brojPutovanja = await RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id);
+          final brojOtkazivanja = await RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id);
           final dugovanje = cenaPoDoanu * brojPutovanja;
 
           String message = _createOverdueReminderSMS(

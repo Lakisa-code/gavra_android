@@ -281,21 +281,6 @@ class RegistrovaniHelpers {
     final dayData = decoded[dayKratica];
     if (dayData == null || dayData is! Map) return null;
 
-    // Prvo proveri da li je otkazano DANAS
-    final otkazanoKey = '${place}_otkazano';
-    final otkazanoTimestamp = dayData[otkazanoKey] as String?;
-    if (otkazanoTimestamp == null || otkazanoTimestamp.isEmpty) return null;
-
-    try {
-      final otkazanoDate = DateTime.parse(otkazanoTimestamp).toLocal();
-      final danas = DateTime.now();
-      if (otkazanoDate.year != danas.year || otkazanoDate.month != danas.month || otkazanoDate.day != danas.day) {
-        return null; // Nije otkazano danas
-      }
-    } catch (_) {
-      return null;
-    }
-
     // Ključ je npr. 'bc_otkazao_vozac' ili 'vs_otkazao_vozac'
     final vozacKey = '${place}_otkazao_vozac';
     return dayData[vozacKey] as String?;
@@ -370,21 +355,6 @@ class RegistrovaniHelpers {
     final dayData = decoded[dayKratica];
     if (dayData == null || dayData is! Map) return null;
 
-    // Prvo proveri da li je pokupljen DANAS
-    final pokupljenoKey = '${place}_pokupljeno';
-    final pokupljenoTimestamp = dayData[pokupljenoKey] as String?;
-    if (pokupljenoTimestamp == null || pokupljenoTimestamp.isEmpty) return null;
-
-    try {
-      final pokupljenoDate = DateTime.parse(pokupljenoTimestamp).toLocal();
-      final danas = DateTime.now();
-      if (pokupljenoDate.year != danas.year || pokupljenoDate.month != danas.month || pokupljenoDate.day != danas.day) {
-        return null; // Nije pokupljen danas
-      }
-    } catch (_) {
-      return null;
-    }
-
     // Ključ je npr. 'bc_pokupljeno_vozac' ili 'vs_pokupljeno_vozac'
     final vozacKey = '${place}_pokupljeno_vozac';
     return dayData[vozacKey] as String?;
@@ -434,8 +404,9 @@ class RegistrovaniHelpers {
     }
   }
 
-  /// 🆕 Dobij ime vozača koji je naplatio iz polasci_po_danu JSON-a za specifičan dan i grad
-  /// Vraća ime vozača samo ako je plaćeno DANAS
+  /// 🆕 Dobij ime vozača koji je naplatio iz polasci_po_danu JSON-a
+  /// NAPOMENA: Plaćanje važi za ceo mesec, pa tražimo vozača u SVIM danima
+  /// Koristi jednostavno polje 'placeno_vozac' (bez bc/vs prefiksa)
   static String? getNaplatioVozacForDayAndPlace(
     Map<String, dynamic> rawMap,
     String dayKratica,
@@ -456,27 +427,26 @@ class RegistrovaniHelpers {
     }
     if (decoded == null) return null;
 
-    final dayData = decoded[dayKratica];
-    if (dayData == null || dayData is! Map) return null;
-
-    // Prvo proveri da li je plaćeno DANAS
-    final placenoKey = '${place}_placeno';
-    final placenoTimestamp = dayData[placenoKey] as String?;
-    if (placenoTimestamp == null || placenoTimestamp.isEmpty) return null;
-
-    try {
-      final placenoDate = DateTime.parse(placenoTimestamp).toLocal();
-      final danas = DateTime.now();
-      if (placenoDate.year != danas.year || placenoDate.month != danas.month || placenoDate.day != danas.day) {
-        return null; // Nije plaćeno danas
+    // Traži u SVIM danima jer plaćanje važi za ceo mesec
+    const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    for (final dan in dani) {
+      final data = decoded[dan];
+      if (data != null && data is Map) {
+        // 1. Prvo probaj jednostavno 'placeno_vozac'
+        if (data['placeno_vozac'] != null) {
+          return data['placeno_vozac'] as String?;
+        }
+        // 2. Fallback na stare ključeve bc_placeno_vozac / vs_placeno_vozac
+        if (data['bc_placeno_vozac'] != null) {
+          return data['bc_placeno_vozac'] as String?;
+        }
+        if (data['vs_placeno_vozac'] != null) {
+          return data['vs_placeno_vozac'] as String?;
+        }
       }
-    } catch (_) {
-      return null;
     }
 
-    // Ključ je npr. 'bc_placeno_vozac' ili 'vs_placeno_vozac'
-    final vozacKey = '${place}_placeno_vozac';
-    return dayData[vozacKey] as String?;
+    return null;
   }
 
   /// 🆕 Dobij iznos plaćanja iz polasci_po_danu JSON-a za specifičan dan i grad
@@ -560,56 +530,31 @@ class RegistrovaniHelpers {
   }
 
   // Price paid check - flexible and safe
+  // NAPOMENA: Ovo se sada koristi samo za polasci_po_danu JSON polja
+  // Prava provera plaćanja se radi iz voznje_log tabele
   static bool priceIsPaid(Map<String, dynamic>? m) {
     if (m == null) return false;
 
+    // Provera placeno polja u polasci_po_danu JSON
     final placeno = m['placeno'];
     if (placeno != null) {
       if (placeno is bool) return placeno;
       final s = placeno.toString().toLowerCase();
       if (s == 'true' || s == '1' || s == 't') return true;
-      if (s == 'false' || s == '0' || s == 'f') return false;
+      // Ako je timestamp, znači da je plaćeno
+      if (s.contains('2025') || s.contains('2024') || s.contains('2026')) return true;
     }
-
-    final pm = m['placeni_mesec'] ?? m['placeniMesec'];
-    final pg = m['placena_godina'] ?? m['placenaGodina'];
-    if (pm != null || pg != null) {
-      if ((pm is String && pm.trim().isNotEmpty) || pm is num) return true;
-      if ((pg is String && pg.trim().isNotEmpty) || pg is num) return true;
-    }
-
-    double? tryParse(dynamic x) {
-      if (x == null) return null;
-      if (x is num) return x.toDouble();
-      final s = x.toString().replaceAll(',', '.').trim();
-      return double.tryParse(s);
-    }
-
-    final ukupna = tryParse(m['ukupnaCenaMeseca'] ?? m['ukupna_cena_meseca']);
-    if (ukupna != null && ukupna > 0) return true;
-
-    final cena = tryParse(m['cena']);
-    if (cena != null && cena > 0) return true;
 
     return false;
   }
 
-  // Build a simple statistics map from known fields.
-  // Example keys: trips_total, trips_cancelled, last_trip_at
+  // Build statistics - DEPRECATED, sada se računa iz voznje_log
   static Map<String, dynamic> buildStatistics(Map<String, dynamic>? m) {
-    if (m == null) return <String, dynamic>{};
-    final out = <String, dynamic>{};
-    try {
-      final trips = m['broj_putovanja'] ?? m['brojPutovanja'] ?? 0;
-      final cancelled = m['broj_otkazivanja'] ?? m['brojOtkazivanja'] ?? 0;
-      final last = m['poslednje_putovanje'] ?? m['poslednjePutovanje'];
-      out['trips_total'] = (trips is num) ? trips : int.tryParse(trips?.toString() ?? '0') ?? 0;
-      out['trips_cancelled'] = (cancelled is num) ? cancelled : int.tryParse(cancelled?.toString() ?? '0') ?? 0;
-      if (last != null) out['last_trip_at'] = last.toString();
-    } catch (_) {
-      // swallow parse errors and return minimal map
-    }
-    return out;
+    // Statistike se sada računaju direktno iz voznje_log tabele
+    return <String, dynamic>{
+      'trips_total': 0,
+      'trips_cancelled': 0,
+    };
   }
 
   // Normalize polasci map into canonical structure for sending to DB.

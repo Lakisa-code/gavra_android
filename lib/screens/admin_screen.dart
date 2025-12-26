@@ -26,6 +26,7 @@ import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
 import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'vozac_screen.dart'; // DODANO za vozac screen
+import 'vozaci_statistika_screen.dart'; // 📊 Statistika vozača
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({Key? key}) : super(key: key);
@@ -301,7 +302,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               const spacing = 1.0; // Minimal spacing
                               const padding = 8.0; // Safety padding
                               final availableWidth = screenWidth - padding;
-                              // 5 dugmeta: Putnici, Mesta, Dropdown, Praznici switch
+                              // 5 dugmeta: Putnici, Mesta, NAV BAR, Statistika, Dropdown dana
                               final buttonWidth = (availableWidth - (spacing * 4)) / 5; // 5 items with 4 spaces
 
                               return Row(
@@ -413,7 +414,121 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                   ),
 
-                                  // DROPDOWN - desno
+                                  // 🚌 NAV BAR DROPDOWN
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: ValueListenableBuilder<String>(
+                                      valueListenable: navBarTypeNotifier,
+                                      builder: (context, navType, _) {
+                                        return Container(
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).glassContainer,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Theme.of(context).glassBorder,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: DropdownButtonHideUnderline(
+                                            child: DropdownButton<String>(
+                                              value: navType,
+                                              isExpanded: true,
+                                              icon: const SizedBox.shrink(),
+                                              dropdownColor: Theme.of(context).colorScheme.primary,
+                                              style: const TextStyle(color: Colors.white, fontSize: 11),
+                                              selectedItemBuilder: (context) {
+                                                return ['auto', 'zimski', 'letnji', 'praznici'].map((t) {
+                                                  String label;
+                                                  bool useEmoji = false;
+                                                  switch (t) {
+                                                    case 'auto':
+                                                      label = 'Auto';
+                                                      break;
+                                                    case 'zimski':
+                                                      label = '❄️☃️';
+                                                      useEmoji = true;
+                                                      break;
+                                                    case 'letnji':
+                                                      label = '☀️🌴';
+                                                      useEmoji = true;
+                                                      break;
+                                                    case 'praznici':
+                                                      label = '🎄🎁';
+                                                      useEmoji = true;
+                                                      break;
+                                                    default:
+                                                      label = t;
+                                                  }
+                                                  return Center(
+                                                    child: Text(
+                                                      label,
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: useEmoji ? 14 : 11,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }).toList();
+                                              },
+                                              items: [
+                                                const DropdownMenuItem(
+                                                    value: 'auto', child: Center(child: Text('Auto'))),
+                                                const DropdownMenuItem(
+                                                    value: 'zimski', child: Center(child: Text('Zimski'))),
+                                                const DropdownMenuItem(
+                                                    value: 'letnji', child: Center(child: Text('Letnji'))),
+                                                const DropdownMenuItem(
+                                                    value: 'praznici', child: Center(child: Text('Praznici'))),
+                                              ],
+                                              onChanged: (value) {
+                                                if (value != null) {
+                                                  AppSettingsService.setNavBarType(value);
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+
+                                  // 📊 DUGME PAZAR/STATISTIKA
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => const VozaciStatistikaScreen(),
+                                        ),
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+                                        ),
+                                        child: const Center(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              '📈📊',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // DROPDOWN ZA DANE - skroz desno
                                   SizedBox(
                                     width: buttonWidth,
                                     child: Container(
@@ -524,84 +639,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                           },
                                         ),
                                       ),
-                                    ),
-                                  ),
-
-                                  // 🚌 NAV BAR DROPDOWN
-                                  SizedBox(
-                                    width: buttonWidth,
-                                    child: ValueListenableBuilder<String>(
-                                      valueListenable: navBarTypeNotifier,
-                                      builder: (context, navType, _) {
-                                        return Container(
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: navType != 'auto'
-                                                ? Colors.orange.withValues(alpha: 0.3)
-                                                : Theme.of(context).glassContainer,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: navType != 'auto' ? Colors.orange : Theme.of(context).glassBorder,
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                          child: DropdownButtonHideUnderline(
-                                            child: DropdownButton<String>(
-                                              value: navType,
-                                              isExpanded: true,
-                                              icon: const SizedBox.shrink(),
-                                              dropdownColor: Theme.of(context).colorScheme.primary,
-                                              style: const TextStyle(color: Colors.white, fontSize: 11),
-                                              selectedItemBuilder: (context) {
-                                                return ['auto', 'zimski', 'letnji', 'praznici'].map((t) {
-                                                  String label;
-                                                  switch (t) {
-                                                    case 'auto':
-                                                      label = 'Auto';
-                                                      break;
-                                                    case 'zimski':
-                                                      label = 'Zima';
-                                                      break;
-                                                    case 'letnji':
-                                                      label = 'Leto';
-                                                      break;
-                                                    case 'praznici':
-                                                      label = 'Praz';
-                                                      break;
-                                                    default:
-                                                      label = t;
-                                                  }
-                                                  return Center(
-                                                    child: Text(
-                                                      label,
-                                                      style: TextStyle(
-                                                        fontWeight: FontWeight.w600,
-                                                        fontSize: 11,
-                                                        color: navType != 'auto' ? Colors.orange : Colors.white,
-                                                      ),
-                                                    ),
-                                                  );
-                                                }).toList();
-                                              },
-                                              items: [
-                                                const DropdownMenuItem(
-                                                    value: 'auto', child: Center(child: Text('Auto'))),
-                                                const DropdownMenuItem(
-                                                    value: 'zimski', child: Center(child: Text('Zimski'))),
-                                                const DropdownMenuItem(
-                                                    value: 'letnji', child: Center(child: Text('Letnji'))),
-                                                const DropdownMenuItem(
-                                                    value: 'praznici', child: Center(child: Text('Praznici'))),
-                                              ],
-                                              onChanged: (value) {
-                                                if (value != null) {
-                                                  AppSettingsService.setNavBarType(value);
-                                                }
-                                              },
-                                            ),
-                                          ),
-                                        );
-                                      },
                                     ),
                                   ),
                                 ],

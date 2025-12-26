@@ -208,23 +208,12 @@ class RegistrovaniPutnikService {
     return await createRegistrovaniPutnik(putnik);
   }
 
-  /// Sinhronizacija broja putovanja sa istorijom
+  /// Sinhronizacija broja putovanja sa istorijom - DEPRECATED
+  /// Sada se broj putovanja uvek računa iz voznje_log
   static Future<bool> sinhronizujBrojPutovanjaSaIstorijom(String id) async {
-    try {
-      final brojIzIstorije = await izracunajBrojPutovanjaIzIstorije(id);
-
-      final supabase = Supabase.instance.client;
-      await supabase.from('registrovani_putnici').update({
-        'broj_putovanja': brojIzIstorije,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', id);
-
-      clearCache();
-
-      return true;
-    } catch (e) {
-      return false;
-    }
+    // Više ne ažuriramo broj_putovanja u registrovani_putnici
+    // Uvek čitamo direktno iz voznje_log
+    return true;
   }
 
   /// Ažurira plaćanje za mesec (vozacId je UUID)
@@ -261,6 +250,8 @@ class RegistrovaniPutnikService {
         datum: DateTime.now(),
         iznos: iznos,
         vozacId: validVozacId,
+        placeniMesec: pocetakMeseca.month,
+        placenaGodina: pocetakMeseca.year,
       );
 
       final now = DateTime.now();
@@ -286,25 +277,16 @@ class RegistrovaniPutnikService {
         }
       }
 
-      // Ažuriraj dan sa plaćanjem - snimi za oba grada (mesečna karta važi za oba)
+      // Ažuriraj dan sa plaćanjem - jednostavno polje placeno_vozac (važi za ceo mesec)
       final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
-      dayData['bc_placeno'] = now.toIso8601String();
-      dayData['bc_placeno_vozac'] = vozacIme; // 🔧 FIX: Čuvamo IME za prikaz boja
-      dayData['bc_placeno_iznos'] = iznos;
-      dayData['vs_placeno'] = now.toIso8601String();
-      dayData['vs_placeno_vozac'] = vozacIme; // 🔧 FIX: Čuvamo IME za prikaz boja
-      dayData['vs_placeno_iznos'] = iznos;
+      dayData['placeno'] = now.toIso8601String();
+      dayData['placeno_vozac'] = vozacIme; // Jedno polje za vozača
+      dayData['placeno_iznos'] = iznos;
       polasciPoDanu[danKratica] = dayData;
 
       await updateRegistrovaniPutnik(putnikId, {
-        'vreme_placanja': now.toIso8601String(),
-        'cena': iznos,
-        'placeno': true,
-        'placeni_mesec': pocetakMeseca.month,
-        'placena_godina': pocetakMeseca.year,
-        'ukupna_cena_meseca': iznos,
         'vozac_id': validVozacId,
-        'polasci_po_danu': polasciPoDanu, // ✅ NOVO: Sačuvaj plaćanje u JSON
+        'polasci_po_danu': polasciPoDanu, // ✅ Sačuvaj plaćanje u JSON
       });
 
       return true;
@@ -355,11 +337,8 @@ class RegistrovaniPutnikService {
     try {
       List<Map<String, dynamic>> svaPlacanja = [];
 
-      final putnik = await _supabase
-          .from('registrovani_putnici')
-          .select('id, cena, vreme_placanja, vozac_id, placeni_mesec, placena_godina')
-          .eq('putnik_ime', putnikIme)
-          .maybeSingle();
+      final putnik =
+          await _supabase.from('registrovani_putnici').select('id, vozac_id').eq('putnik_ime', putnikIme).maybeSingle();
 
       if (putnik == null) return [];
 
@@ -377,17 +356,8 @@ class RegistrovaniPutnikService {
           'vozac_ime': await _getVozacImeByUuid(placanje['vozac_id'] as String?),
           'putnik_ime': putnikIme,
           'datum': placanje['datum'],
-        });
-      }
-
-      if (svaPlacanja.isEmpty && putnik['vreme_placanja'] != null) {
-        svaPlacanja.add({
-          'cena': putnik['cena'],
-          'created_at': putnik['vreme_placanja'],
-          'vozac_ime': await _getVozacImeByUuid(putnik['vozac_id'] as String?),
-          'putnik_ime': putnikIme,
-          'placeniMesec': putnik['placeni_mesec'],
-          'placenaGodina': putnik['placena_godina'],
+          'placeniMesec': placanje['placeni_mesec'],
+          'placenaGodina': placanje['placena_godina'],
         });
       }
 
@@ -502,5 +472,41 @@ class RegistrovaniPutnikService {
         return null;
       }
     });
+  }
+
+  /// 🔥 Stream poslednjeg plaćanja za putnika (iz voznje_log)
+  /// Vraća Map sa 'vozac_ime' i 'datum'
+  static Stream<Map<String, dynamic>?> streamPoslednjePlacanje(String putnikId) async* {
+    final supabase = Supabase.instance.client;
+    try {
+      final response = await supabase
+          .from('voznje_log')
+          .select('datum, vozac_id')
+          .eq('putnik_id', putnikId)
+          .eq('tip', 'uplata')
+          .order('datum', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (response == null) {
+        yield null;
+        return;
+      }
+
+      final vozacId = response['vozac_id'] as String?;
+      final datum = response['datum'] as String?;
+      String? vozacIme;
+      if (vozacId != null && vozacId.isNotEmpty) {
+        vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+      }
+
+      yield {
+        'vozac_ime': vozacIme,
+        'datum': datum,
+      };
+    } catch (e) {
+      debugPrint('❌ Greška u streamPoslednjePlacanje: $e');
+      yield null;
+    }
   }
 }

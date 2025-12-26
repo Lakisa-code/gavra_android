@@ -256,13 +256,12 @@ class Putnik {
     final danString = map['radni_dani'] as String? ?? 'pon';
     final statusIzBaze = map['status'] as String? ?? 'radi';
     final vremeDodavanja = map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null;
-    final vremePlacanja = map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null;
 
-    // ✅ FIX: Status se određuje na osnovu otkazanZaPolazak koji se proverava u _createPutniciForDay
-    // Ovde samo prosleđujemo statusIzBaze, a stvarna provera je po gradu
+    // Status se određuje na osnovu otkazanZaPolazak koji se proverava u _createPutniciForDay
     String status = statusIzBaze;
-    final double iznosPlacanja = _parseDouble(map['cena']);
-    final bool placeno = iznosPlacanja > 0;
+    // Plaćanje se sada čita iz voznje_log, ne iz registrovani_putnici
+    final bool placeno = false; // Proverava se naknadno iz voznje_log
+    final double iznosPlacanja = 0.0;
     final vozac = (map['vozac'] as String?) ?? _getVozacIme(map['vozac_id'] as String?);
     final obrisan = map['aktivan'] == false;
     // 🆕 FIX: Čitaj tip putnika iz baze
@@ -274,7 +273,7 @@ class Putnik {
       danString,
       status,
       vremeDodavanja,
-      vremePlacanja,
+      null, // vremePlacanja - sada iz voznje_log
       placeno,
       iznosPlacanja,
       vozac,
@@ -559,15 +558,12 @@ class Putnik {
       }),
       'adresa_bela_crkva': grad == 'Bela Crkva' ? adresa : null,
       'adresa_vrsac': grad == 'Vršac' ? adresa : null,
-      'tip_prikazivanja': null, // ✅ NOVA KOLONA - možda treba logika
+      'tip_prikazivanja': null,
       'radni_dani': dan,
       'aktivan': !obrisan,
-      'status': status ?? 'radi', // ✅ JEDNOSTAVNO - jedna kolona
-      'datum_pocetka_meseca': startOfMonth.toIso8601String().split('T')[0], // OBAVEZNO
-      'datum_kraja_meseca': endOfMonth.toIso8601String().split('T')[0], // OBAVEZNO
-      'ukupna_cena_meseca': iznosPlacanja ?? 0.0,
-      'broj_putovanja': 0,
-      'broj_otkazivanja': 0,
+      'status': status ?? 'radi',
+      'datum_pocetka_meseca': startOfMonth.toIso8601String().split('T')[0],
+      'datum_kraja_meseca': endOfMonth.toIso8601String().split('T')[0],
       // UUID validacija za vozac_id
       'vozac_id': (vozac?.isEmpty ?? true) ? null : vozac,
       'created_at': vremeDodavanja?.toIso8601String(),
