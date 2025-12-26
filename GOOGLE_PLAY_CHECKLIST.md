@@ -23,7 +23,7 @@ Automatski deploy APK/AAB na Google Play Store putem GitHub Actions nakon svakog
 | Service Account kreiran | ✅ **POSTOJI** (`gavra-play-store@...`) |
 | JSON Key kreiran | ✅ **KREIRAN** (26.12.2025) |
 | GitHub Secrets dodati | ✅ **DODATO** |
-| Workflow ažuriran | ✅ **DODATO** (alpha track) |
+| Workflow ažuriran | ✅ **DODATO** (production track) |
 | Aplikacija na Play Console | ✅ **POSTOJI** (Gavra013) |
 | Prvi ručni upload | ✅ **URAĐEN** (1. nov 2025.) |
 | Service Account povezan sa Play Console | ❌ **POTREBNO** |
@@ -133,14 +133,14 @@ Automatski deploy APK/AAB na Google Play Store putem GitHub Actions nakon svakog
 # ✅ DODATO u apk-release.yml (26.12.2025)
 # Pokreće se samo na tag push (v*)
 
-- name: Upload to Google Play (Closed Testing)
+- name: Upload to Google Play (Production)
   if: startsWith(github.ref, 'refs/tags/v')
   uses: r0adkll/upload-google-play@v1
   with:
     serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
     packageName: com.gavra013.gavra_android
     releaseFiles: build/app/outputs/flutter-apk/app-release.apk
-    track: alpha
+    track: production
     status: completed
     releaseName: ${{ github.ref_name }}
 ```
@@ -149,7 +149,8 @@ Automatski deploy APK/AAB na Google Play Store putem GitHub Actions nakon svakog
 | Track | Opis | Max testera | Za Gavra? |
 |-------|------|-------------|------------|
 | `internal` | Interni testeri | 100 | ❌ Premalo (imate ~150 korisnika) |
-| `alpha` | Zatvoreno testiranje | 100,000 | ✅ **IZABRANO** |
+| `alpha` | Zatvoreno testiranje | 100,000 | - |
+| `production` | Svi korisnici | Svi | ✅ **IZABRANO** |
 | `beta` | Otvoreno testiranje | Neograničeno | Za javno testiranje |
 | `production` | Svi korisnici | Svi | Kada je stabilno |
 

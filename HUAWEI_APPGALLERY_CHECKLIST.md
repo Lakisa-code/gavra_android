@@ -23,9 +23,9 @@ Automatski deploy APK na Huawei AppGallery putem GitHub Actions nakon svakog pus
 | Tip Release-a | Max korisnika | Za Gavra (~154)? |
 |---------------|---------------|------------------|
 | Open Testing | Neograničeno | ✅ OK |
-| **Closed Testing** | 2,000 | ✅ **DOVOLJNO** |
+| Closed Testing | 2,000 | ✅ OK |
 | Phased Release | % svih korisnika | ✅ OK |
-| Full Release | Svi | ✅ OK |
+| **Full Release** | Svi | ✅ **IZABRANO** |
 
 **ZAKLJUČAK:** Huawei nema restriktivne limite - svih ~154 korisnika mogu koristiti bilo koji tip testiranja.
 
@@ -41,6 +41,7 @@ Automatski deploy APK na Huawei AppGallery putem GitHub Actions nakon svakog pus
 | AppGallery Connect pristup | ✅ **AKTIVAN** |
 | API Client kreiran | ✅ **KREIRAN** |
 | GitHub Secrets dodati | ✅ **DODATI** |
+| Workflow ažuriran | ✅ **DODATO** (production) |
 | Prvi ručni upload na AppGallery | ❌ **OBAVEZNO PRE AUTOMATIZACIJE** |
 | agconnect-services.json | ✅ Postoji (`assets/agconnect-services.json`) |
 
