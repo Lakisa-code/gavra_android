@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/slobodna_mesta_service.dart'; // 🎫 Promena vremena
 import '../services/theme_manager.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
@@ -377,6 +378,198 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       if (mounted) {
         Navigator.pop(context);
+      }
+    }
+  }
+
+  /// 🎫 Da li prikazati SlobodnaMestaWidget
+  /// - Učenici: 00:00 - 16:00
+  /// - Dnevni: posle 16:00
+  /// - Radnici: uvek
+  bool _prikaziSlobodnaMestaWidget() {
+    final tip = _putnikData['tip']?.toString().toLowerCase() ?? 'radnik';
+    final sat = DateTime.now().hour;
+
+    switch (tip) {
+      case 'ucenik':
+        return sat < 16; // 00:00 - 15:59
+      case 'dnevni':
+        return sat >= 16; // 16:00 - 23:59
+      case 'radnik':
+      default:
+        return true; // Uvek
+    }
+  }
+
+  /// 🏖️ Dugme za postavljanje bolovanja/godišnjeg - SAMO za radnike
+  Widget _buildOdsustvoButton() {
+    final status = _putnikData['status']?.toString().toLowerCase() ?? 'radi';
+    final jeNaOdsustvu = status == 'bolovanje' || status == 'godisnji';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        ),
+        child: ListTile(
+          leading: Icon(
+            jeNaOdsustvu ? Icons.work : Icons.beach_access,
+            color: jeNaOdsustvu ? Colors.green : Colors.orange,
+          ),
+          title: Text(
+            jeNaOdsustvu ? 'Vratite se na posao' : 'Godišnji / Bolovanje',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            jeNaOdsustvu
+                ? 'Trenutno ste na ${status == "godisnji" ? "godišnjem odmoru" : "bolovanju"}'
+                : 'Postavite se na odsustvo',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+          onTap: () => _pokaziOdsustvoDialog(jeNaOdsustvu),
+        ),
+      ),
+    );
+  }
+
+  /// 🏖️ Dialog za odabir tipa odsustva ili vraćanje na posao
+  Future<void> _pokaziOdsustvoDialog(bool jeNaOdsustvu) async {
+    if (jeNaOdsustvu) {
+      // Vraćanje na posao
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: const Row(
+            children: [
+              Icon(Icons.work, color: Colors.green),
+              SizedBox(width: 8),
+              Expanded(child: Text('Povratak na posao')),
+            ],
+          ),
+          content: const Text('Da li želite da se vratite na posao?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Ne'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Da, vraćam se'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        await _postaviStatus('radi');
+      }
+    } else {
+      // Odabir tipa odsustva
+      final odabraniStatus = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: const Row(
+            children: [
+              Icon(Icons.beach_access, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Odsustvo'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Izaberite tip odsustva:'),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(ctx, 'godisnji'),
+                  icon: const Icon(Icons.beach_access),
+                  label: const Text('🏖️ Godišnji odmor'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(ctx, 'bolovanje'),
+                  icon: const Icon(Icons.sick),
+                  label: const Text('🤒 Bolovanje'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Odustani'),
+            ),
+          ],
+        ),
+      );
+
+      if (odabraniStatus != null) {
+        await _postaviStatus(odabraniStatus);
+      }
+    }
+  }
+
+  /// 🔄 Postavi status putnika u bazu
+  Future<void> _postaviStatus(String noviStatus) async {
+    try {
+      final putnikId = _putnikData['id']?.toString();
+      if (putnikId == null) return;
+
+      await PutnikService().oznaciBolovanjeGodisnji(
+        putnikId,
+        noviStatus,
+        'self', // Radnik sam sebi menja status
+      );
+
+      // Ažuriraj lokalni state
+      setState(() {
+        _putnikData['status'] = noviStatus;
+      });
+
+      if (mounted) {
+        final poruka = noviStatus == 'radi'
+            ? '✅ Vraćeni ste na posao'
+            : noviStatus == 'godisnji'
+                ? '🏖️ Postavljeni ste na godišnji odmor'
+                : '🤒 Postavljeni ste na bolovanje';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(poruka),
+            backgroundColor: noviStatus == 'radi' ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Greška: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -891,43 +1084,48 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       ),
 
                       // 🎫 Slobodna mesta Widget - prikazuje slobodna mesta po terminima
-                      SlobodnaMestaWidget(
-                        putnikId: _putnikData['id']?.toString(),
-                        putnikGrad: grad,
-                        putnikVreme: _putnikData['polazak']?.toString(),
-                        onPromenaVremena: (novoVreme) async {
-                          // Format: 'GRAD|VREME' npr. 'BC|7:00'
-                          final parts = novoVreme.split('|');
-                          if (parts.length != 2) return;
+                      // 🎓 Učenici: 00:00 - 16:00
+                      // 🚌 Dnevni: posle 16:00
+                      // 👷 Radnici: uvek
+                      if (_prikaziSlobodnaMestaWidget()) ...[
+                        SlobodnaMestaWidget(
+                          putnikId: _putnikData['id']?.toString(),
+                          putnikGrad: grad,
+                          putnikVreme: _putnikData['polazak']?.toString(),
+                          onPromenaVremena: (novoVreme) async {
+                            // Format: 'GRAD|VREME' npr. 'BC|7:00'
+                            final parts = novoVreme.split('|');
+                            if (parts.length != 2) return;
 
-                          final noviGrad = parts[0];
-                          final novoVremeValue = parts[1];
+                            final noviGrad = parts[0];
+                            final novoVremeValue = parts[1];
 
-                          // Odredi dan
-                          final danas = DateTime.now();
-                          const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-                          final dan = dani[danas.weekday - 1];
+                            // Odredi dan
+                            final danas = DateTime.now();
+                            const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+                            final dan = dani[danas.weekday - 1];
 
-                          // Sačuvaj messenger pre async poziva
-                          final messenger = ScaffoldMessenger.of(context);
+                            // Sačuvaj messenger pre async poziva
+                            final messenger = ScaffoldMessenger.of(context);
 
-                          final result = await SlobodnaMestaService.promeniVremePutnika(
-                            putnikId: _putnikData['id']?.toString() ?? '',
-                            novoVreme: novoVremeValue,
-                            grad: noviGrad,
-                            dan: dan,
-                          );
-
-                          if (mounted) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(result['message'] as String),
-                                backgroundColor: result['success'] == true ? Colors.green : Colors.red,
-                              ),
+                            final result = await SlobodnaMestaService.promeniVremePutnika(
+                              putnikId: _putnikData['id']?.toString() ?? '',
+                              novoVreme: novoVremeValue,
+                              grad: noviGrad,
+                              dan: dan,
                             );
-                          }
-                        },
-                      ),
+
+                            if (mounted) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(result['message'] as String),
+                                  backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
 
                       // ─────────── Divider ───────────
                       Padding(
@@ -961,6 +1159,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         ],
                       ),
                       const SizedBox(height: 16),
+
+                      // 🏖️ Bolovanje/Godišnji dugme - SAMO za radnike
+                      if (_putnikData['tip']?.toString().toLowerCase() == 'radnik') ...[
+                        _buildOdsustvoButton(),
+                        const SizedBox(height: 16),
+                      ],
 
                       // 📊 Stanje računa i izvod
                       _buildStatistikePoMesecimaCard(),
