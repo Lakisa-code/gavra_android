@@ -79,9 +79,8 @@ class RealtimeNotificationService {
     // 🛡️ Lokalna notifikacija SAMO ako trenutni vozač NIJE pošiljalac
     try {
       final currentDriver = await AuthManager.getCurrentDriver();
-      final shouldShowLocal = excludeSender == null ||
-          currentDriver == null ||
-          currentDriver.toLowerCase() != excludeSender.toLowerCase();
+      final shouldShowLocal =
+          excludeSender == null || currentDriver == null || currentDriver.toLowerCase() != excludeSender.toLowerCase();
 
       if (shouldShowLocal) {
         await LocalNotificationService.showRealtimeNotification(

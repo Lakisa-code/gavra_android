@@ -932,8 +932,7 @@ class PutnikService {
         if (isToday) {
           RealtimeNotificationService.sendNotificationToAllDrivers(
             title: 'Otkazan putnik',
-            body:
-                'Otkazan je putnik $cancelName (${respMap['grad'] ?? ''}, ${respMap['vreme_polaska'] ?? respMap['polazak'] ?? ''})',
+            body: cancelName,
             excludeSender: otkazaoVozac,
             data: {
               'type': 'otkazan_putnik',
