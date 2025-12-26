@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
+import '../utils/grad_adresa_validator.dart';
 import '../utils/schedule_utils.dart';
 import 'realtime/realtime_manager.dart';
 
@@ -59,10 +60,9 @@ class KapacitetService {
 
   /// Dohvati vremena za grad (sezonski)
   static List<String> getVremenaZaGrad(String grad) {
-    final normalizedGrad = grad.toLowerCase();
-    if (normalizedGrad.contains('bela') || normalizedGrad == 'bc') {
+    if (GradAdresaValidator.isBelaCrkva(grad)) {
       return bcVremena;
-    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs') {
+    } else if (GradAdresaValidator.isVrsac(grad)) {
       return vsVremena;
     }
     return bcVremena; // default
@@ -70,10 +70,9 @@ class KapacitetService {
 
   /// Dohvati sva moguća vremena za grad (obe sezone) - za kapacitet tabelu
   static List<String> getSvaVremenaZaGrad(String grad) {
-    final normalizedGrad = grad.toLowerCase();
-    if (normalizedGrad.contains('bela') || normalizedGrad == 'bc') {
+    if (GradAdresaValidator.isBelaCrkva(grad)) {
       return svaVremenaBc;
-    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs') {
+    } else if (GradAdresaValidator.isVrsac(grad)) {
       return svaVremenaVs;
     }
     return svaVremenaBc; // default

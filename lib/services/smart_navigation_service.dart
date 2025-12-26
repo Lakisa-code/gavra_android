@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
+import '../utils/grad_adresa_validator.dart';
 import 'here_wego_navigation_service.dart';
 import 'osrm_service.dart';
 import 'permission_service.dart';
@@ -28,9 +29,7 @@ class SmartNavigationService {
   ///
   /// Dakle: endDestination je SUPROTNI grad od startCity
   static Position? _getEndDestination(String startCity) {
-    final normalized = startCity.toLowerCase().trim();
-
-    if (normalized.contains('bela') || normalized.contains('bc')) {
+    if (GradAdresaValidator.isBelaCrkva(startCity)) {
       // Putnici kreću IZ Bele Crkve -> vozač ih vozi U Vršac
       return Position(
         latitude: RouteConfig.vrsacLat,
@@ -46,7 +45,7 @@ class SmartNavigationService {
       );
     }
 
-    if (normalized.contains('vrsac') || normalized.contains('vršac') || normalized.contains('vs')) {
+    if (GradAdresaValidator.isVrsac(startCity)) {
       // Putnici kreću IZ Vršca -> vozač ih vozi U Belu Crkvu
       return Position(
         latitude: RouteConfig.belaCrkvaLat,

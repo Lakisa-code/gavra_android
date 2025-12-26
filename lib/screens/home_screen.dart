@@ -29,7 +29,7 @@ import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
-import '../utils/putnik_helpers.dart'; // 🔢 Za brojanje putnika
+import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
@@ -72,10 +72,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Real-time subscription variables
   StreamSubscription<dynamic>? _realtimeSubscription;
-
-  // Debug-only cache for last printed count values so we don't spam logs
-  int? _lastBc6Count;
-  int? _lastBcTotalCount;
 
   // 🚨 REALTIME MONITORING VARIABLES
   final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
@@ -2311,37 +2307,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final sviPutniciBezDuplikata = uniquePutnici.values.toList();
 
           // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN (deduplikovane)
-          // Koristimo `putniciZaDan` iznad kao izvor za brojače kako bismo
-          // računali broj jedinstvenih putnika po polasku za ceo dan.
-          final Map<String, int> brojPutnikaBC = {
-            '5:00': 0,
-            '6:00': 0,
-            '7:00': 0,
-            '8:00': 0,
-            '9:00': 0,
-            '11:00': 0,
-            '12:00': 0,
-            '13:00': 0,
-            '14:00': 0,
-            '15:00': 0,
-            '15:30': 0,
-            '18:00': 0,
-          };
-          final Map<String, int> brojPutnikaVS = {
-            '6:00': 0,
-            '7:00': 0,
-            '8:00': 0,
-            '10:00': 0,
-            '11:00': 0,
-            '12:00': 0,
-            '13:00': 0,
-            '14:00': 0,
-            '15:30': 0,
-            '17:00': 0,
-            '19:00': 0,
-          };
-
-          // Use the filtered, deduplicated list so counts match the displayed list
           // DEDUPLICIRAJ za računanje brojača (id + polazak + dan)
           final Map<String, Putnik> uniqueForCounts = {};
           for (final p in putniciZaDan) {
@@ -2350,51 +2315,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
           final countCandidates = uniqueForCounts.values.toList();
 
-          for (final p in countCandidates) {
-            // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
-            // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
-            if (!PutnikHelpers.shouldCountInSeats(p)) continue;
-
-            final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-            // 🔧 ISPRAVKA: Koristi grad umesto adrese za klasifikaciju polazaka
-            // Adresa može biti npr. "Bolnica" bez grada, ali p.grad je uvek postavljen
-            final putnikGrad = p.grad.toLowerCase();
-
-            final jeBelaCrkva = putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
-            final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
-
-            if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
-              brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
-            }
-            if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
-              brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;
-            }
-          }
-
-          if (kDebugMode) {
-            final bc600 = brojPutnikaBC['6:00'] ?? 0;
-            final ukupno = brojPutnikaBC.values.fold(0, (a, b) => a + b);
-            if (_lastBc6Count != bc600 || _lastBcTotalCount != ukupno) {
-              _lastBc6Count = bc600;
-              _lastBcTotalCount = ukupno;
-            }
-          }
+          // 🔧 REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
+          final countHelper = PutnikCountHelper.fromPutnici(
+            putnici: countCandidates,
+            targetDateIso: targetDateIso,
+            targetDayAbbr: targetDayAbbr,
+          );
 
           // 🔄 UKLONJEN DUPLI SORT - PutnikList sada sortira konzistentno sa DanasScreen i VozacScreen
           // Sortiranje se vrši u PutnikList widgetu sa istom logikom za sva tri ekrana
           final putniciZaPrikaz = sviPutniciBezDuplikata;
 
           // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
-          // Koristimo prekompjutovane mape `brojPutnikaBC` i `brojPutnikaVS`
-          // koje su izračunate iz `allPutnici` iznad. Ovo rešava slučaj kada
-          // je prikaz svuda 0.
           int getPutnikCount(String grad, String vreme) {
             try {
-              final normVreme = GradAdresaValidator.normalizeTime(vreme);
-              final count = grad == 'Bela Crkva'
-                  ? (brojPutnikaBC[normVreme] ?? brojPutnikaBC[vreme] ?? 0)
-                  : (brojPutnikaVS[normVreme] ?? brojPutnikaVS[vreme] ?? 0);
-              return count;
+              return countHelper.getCount(grad, vreme);
             } catch (e) {
               // Log error and continue to fallback
             }

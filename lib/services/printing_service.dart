@@ -11,6 +11,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../utils/date_utils.dart' as app_date_utils;
+import '../utils/grad_adresa_validator.dart';
 import '../utils/text_utils.dart';
 
 class PrintingService {
@@ -376,10 +377,9 @@ class PrintingService {
   }
 
   static String _odredjiRelaciju(String grad, String vreme) {
-    final normalizedGrad = grad.toLowerCase();
-    if (normalizedGrad.contains('bela crkva') || normalizedGrad.contains('bc')) {
+    if (GradAdresaValidator.isBelaCrkva(grad)) {
       return 'Bela Crkva - Vršac';
-    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vs')) {
+    } else if (GradAdresaValidator.isVrsac(grad)) {
       return 'Vršac - Bela Crkva';
     }
     return '$grad - ______';

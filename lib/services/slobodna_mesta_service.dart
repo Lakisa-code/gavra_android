@@ -65,9 +65,8 @@ class SlobodnaMestaService {
       if (normVreme != vreme) continue;
 
       // Proveri grad
-      final putnikGrad = p.grad.toLowerCase();
-      final jeBC = putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
-      final jeVS = putnikGrad.contains('vrsac') || putnikGrad.contains('vršac') || putnikGrad == 'vs';
+      final jeBC = GradAdresaValidator.isBelaCrkva(p.grad);
+      final jeVS = GradAdresaValidator.isVrsac(p.grad);
 
       if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
         // ✅ FIX: Broji broj mesta (brojMesta), ne samo broj putnika

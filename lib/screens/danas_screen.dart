@@ -28,7 +28,7 @@ import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
 import '../services/weather_service.dart'; // 🌤️ DODANO za vremensku prognozu
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
-import '../utils/putnik_helpers.dart'; // 🔢 Za brojanje putnika
+import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/schedule_utils.dart'; // Za isZimski funkciju
 import '../utils/text_utils.dart'; // 🎯 DODANO za standardizovano filtriranje statusa
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
@@ -2687,70 +2687,18 @@ class _DanasScreenState extends State<DanasScreen> {
               // Koristi prazan lista putnika ako nema podataka
               final allPutnici = snapshot.hasData ? snapshot.data! : <Putnik>[];
 
-              // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN ZA BROJANJE PUTNIKA
-              final Map<String, int> brojPutnikaBC = {
-                '5:00': 0,
-                '6:00': 0,
-                '7:00': 0,
-                '8:00': 0,
-                '9:00': 0,
-                '11:00': 0,
-                '12:00': 0,
-                '13:00': 0,
-                '14:00': 0,
-                '15:00': 0,
-                '15:30': 0,
-                '18:00': 0,
-              };
-              final Map<String, int> brojPutnikaVS = {
-                '6:00': 0,
-                '7:00': 0,
-                '8:00': 0,
-                '10:00': 0,
-                '11:00': 0,
-                '12:00': 0,
-                '13:00': 0,
-                '14:00': 0,
-                '15:30': 0,
-                '17:00': 0,
-                '19:00': 0,
-              };
-
-              for (final p in allPutnici) {
-                // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
-                // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
-                if (!PutnikHelpers.shouldCountInSeats(p)) continue;
-
-                // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN - filtriranje po datumu
-                final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
-                final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
-                final dayMatch = p.datum != null
-                    ? p.datum == targetDateIso
-                    : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
-                if (!dayMatch) continue;
-
-                final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-                // 🔧 ISPRAVKA: Koristi grad umesto adrese za klasifikaciju polazaka
-                final putnikGrad = p.grad.toLowerCase();
-
-                final jeBelaCrkva =
-                    putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
-                final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
-
-                if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
-                  brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
-                }
-                if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
-                  brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;
-                }
-              }
+              // 🔧 REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
+              final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
+              final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
+              final countHelper = PutnikCountHelper.fromPutnici(
+                putnici: allPutnici,
+                targetDateIso: targetDateIso,
+                targetDayAbbr: targetDayAbbr,
+              );
 
               // Helper funkcija za brojanje putnika
               int getPutnikCount(String grad, String vreme) {
-                final normVreme = GradAdresaValidator.normalizeTime(vreme);
-                if (grad == 'Bela Crkva') return brojPutnikaBC[normVreme] ?? brojPutnikaBC[vreme] ?? 0;
-                if (grad == 'Vršac') return brojPutnikaVS[normVreme] ?? brojPutnikaVS[vreme] ?? 0;
-                return 0;
+                return countHelper.getCount(grad, vreme);
               }
 
               // Return Widget - Helper funkcija za kreiranje nav bar-a

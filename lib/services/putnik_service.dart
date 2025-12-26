@@ -552,7 +552,7 @@ class PutnikService {
 
       final danKratica = putnik.dan.toLowerCase();
 
-      final gradKey = putnik.grad.toLowerCase().contains('bela') ? 'bc' : 'vs';
+      final gradKey = GradAdresaValidator.isBelaCrkva(putnik.grad) ? 'bc' : 'vs';
 
       final polazakVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
 
@@ -721,7 +721,7 @@ class PutnikService {
       // ✅ NOVO: Odredi dan i place za polasci_po_danu JSON
       const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
       final danKratica = daniKratice[now.weekday - 1];
-      final bool jeBC = grad?.toLowerCase().contains('bela') ?? false;
+      final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
       final place = jeBC ? 'bc' : 'vs';
 
       // ✅ NOVO: Ažuriraj polasci_po_danu JSON sa pokupljenjem

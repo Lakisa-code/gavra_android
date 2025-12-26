@@ -5,6 +5,7 @@ import '../globals.dart';
 import '../services/slobodna_mesta_service.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
+import '../utils/grad_adresa_validator.dart';
 import '../utils/schedule_utils.dart';
 
 /// 🎫 Widget za prikaz slobodnih mesta - BOTTOM NAV BAR STIL
@@ -78,7 +79,7 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
 
     final normalizedGrad = widget.putnikGrad?.toLowerCase() ?? '';
 
-    if (normalizedGrad.contains('bela') || normalizedGrad == 'bc') {
+    if (GradAdresaValidator.isBelaCrkva(normalizedGrad)) {
       final index = bcVremena.indexOf(widget.putnikVreme ?? '');
       if (index != -1 && _bcScrollController.hasClients) {
         final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
@@ -88,7 +89,7 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
           curve: Curves.easeInOut,
         );
       }
-    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs') {
+    } else if (GradAdresaValidator.isVrsac(normalizedGrad)) {
       final index = vsVremena.indexOf(widget.putnikVreme ?? '');
       if (index != -1 && _vsScrollController.hasClients) {
         final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
@@ -122,8 +123,8 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
 
     // Ako je isto vreme kao trenutno
     final normalizedGrad = widget.putnikGrad?.toLowerCase() ?? '';
-    final isBC = normalizedGrad.contains('bela') || normalizedGrad == 'bc';
-    final isVS = normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs';
+    final isBC = GradAdresaValidator.isBelaCrkva(normalizedGrad);
+    final isVS = GradAdresaValidator.isVrsac(normalizedGrad);
 
     if (sm.vreme == widget.putnikVreme && ((sm.grad == 'BC' && isBC) || (sm.grad == 'VS' && isVS))) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -303,9 +304,8 @@ class _SlobodnaRow extends StatelessWidget {
   final String currentThemeId;
 
   bool _isSelected(SlobodnaMesta sm) {
-    final normalizedGrad = putnikGrad?.toLowerCase() ?? '';
-    final isBC = normalizedGrad.contains('bela') || normalizedGrad == 'bc';
-    final isVS = normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs';
+    final isBC = GradAdresaValidator.isBelaCrkva(putnikGrad);
+    final isVS = GradAdresaValidator.isVrsac(putnikGrad);
 
     return sm.vreme == putnikVreme && ((sm.grad == 'BC' && isBC) || (sm.grad == 'VS' && isVS));
   }

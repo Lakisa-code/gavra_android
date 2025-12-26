@@ -1,3 +1,5 @@
+import 'grad_adresa_validator.dart';
+
 /// TIME VALIDATION UTILITY
 /// Standardizovane funkcije za validaciju i formatiranje vremena
 class TimeValidator {
@@ -105,7 +107,7 @@ class TimeValidator {
 
   /// Gets suggested times based on common departure patterns
   static List<String> getSuggestedTimes(String city) {
-    if (city.toLowerCase().contains('bela') || city.toLowerCase().contains('crkva')) {
+    if (GradAdresaValidator.isBelaCrkva(city)) {
       return [
         '05:00',
         '06:00',

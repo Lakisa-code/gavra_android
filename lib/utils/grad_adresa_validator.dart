@@ -1,8 +1,23 @@
 import 'text_utils.dart';
+import 'time_validator.dart';
 
 /// UTIL ZA VALIDACIJU GRADOVA I ADRESA
 /// Ograničava aplikaciju na opštine Bela Crkva i Vršac
 class GradAdresaValidator {
+  /// ✅ PROVERI DA LI JE GRAD BELA CRKVA (ili BC skraćenica)
+  static bool isBelaCrkva(String? grad) {
+    if (grad == null || grad.trim().isEmpty) return false;
+    final normalized = normalizeString(grad);
+    return normalized.contains('bela') || normalized == 'bc';
+  }
+
+  /// ✅ PROVERI DA LI JE GRAD VRŠAC (ili VS skraćenica)
+  static bool isVrsac(String? grad) {
+    if (grad == null || grad.trim().isEmpty) return false;
+    final normalized = normalizeString(grad);
+    return normalized.contains('vrsac') || normalized == 'vs';
+  }
+
   /// JEDNOSTAVNO GRAD POREĐENJE - samo 2 glavna grada
   /// LOGIKA: Bela Crkva ili Vršac - filtrira po gradu putnika
   static bool isGradMatch(
@@ -10,21 +25,11 @@ class GradAdresaValidator {
     String? putnikAdresa,
     String selectedGrad,
   ) {
-    final normalizedSelectedGrad = normalizeString(selectedGrad);
-    final normalizedPutnikGrad = normalizeString(putnikGrad);
-
-    // LOGIKA: Uporedi grad putnika sa selektovanim gradom
-    final selectedBelaCrkva = normalizedSelectedGrad.contains('bela');
-    final selectedVrsac = normalizedSelectedGrad.contains('vrsac');
-
-    final putnikBelaCrkva = normalizedPutnikGrad.contains('bela');
-    final putnikVrsac = normalizedPutnikGrad.contains('vrsac');
-
     // PROVERI DA LI SE GRAD PUTNIKA POKLAPA SA SELEKTOVANIM GRADOM
-    if (selectedBelaCrkva && putnikBelaCrkva) {
+    if (isBelaCrkva(selectedGrad) && isBelaCrkva(putnikGrad)) {
       return true; // Putnik je iz Bele Crkve i selektovana je Bela Crkva
     }
-    if (selectedVrsac && putnikVrsac) {
+    if (isVrsac(selectedGrad) && isVrsac(putnikGrad)) {
       return true; // Putnik je iz Vršca i selektovan je Vršac
     }
 
@@ -174,28 +179,15 @@ class GradAdresaValidator {
     );
   }
 
-  /// NORMALIZUJ VREME - konvertuj "05:00:00" u "5:00", osiguraj vodeću nulu za minute
+  /// NORMALIZUJ VREME - konvertuj "05:00:00" ili "5:00" u "05:00" (HH:MM format)
+  /// Delegira na TimeValidator.normalizeTimeFormat() za konzistentnost
   static String normalizeTime(String? time) {
     if (time == null || time.isEmpty) {
       return '';
     }
 
-    String normalized = time.trim();
-
-    // Ukloni sekunde ako postoje (05:00:00 -> 05:00)
-    if (normalized.contains(':') && normalized.split(':').length == 3) {
-      List<String> parts = normalized.split(':');
-      normalized = '${parts[0]}:${parts[1]}';
-    }
-
-    // Ensure minutes have leading zero, remove leading zero from hours
-    final parts = normalized.split(':');
-    if (parts.length == 2) {
-      final h = int.tryParse(parts[0])?.toString() ?? parts[0];
-      final m = parts[1].padLeft(2, '0');
-      normalized = '$h:$m';
-    }
-
-    return normalized;
+    // Koristi TimeValidator za standardizovan format
+    final normalized = TimeValidator.normalizeTimeFormat(time);
+    return normalized ?? '';
   }
 }
