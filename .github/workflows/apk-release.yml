@@ -3,6 +3,7 @@ name: Build Signed Release APK
 on:
   workflow_dispatch: {}
   push:
+    branches: [ main ]
     tags: [ 'v*' ]
 
 # 🚀 Otkazuje prethodne buildove kad se pokrene novi (štedi minute)
@@ -153,7 +154,6 @@ jobs:
       # 🏪 GOOGLE PLAY STORE - Automatski upload na PRODUCTION
       # ══════════════════════════════════════════════════════════════
       - name: Upload to Google Play (Production)
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
@@ -167,7 +167,6 @@ jobs:
       # 📱 HUAWEI APPGALLERY - Automatski upload na PRODUCTION
       # ══════════════════════════════════════════════════════════════
       - name: Upload to Huawei AppGallery
-        if: startsWith(github.ref, 'refs/tags/v')
         env:
           AGC_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
           AGC_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
