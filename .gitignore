@@ -80,3 +80,7 @@ huawei-appgallery-mcp/
 
 # Google Play Store Service Account Key
 play-store-key.json
+
+linux/
+macos/
+windows/
