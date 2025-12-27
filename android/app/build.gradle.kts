@@ -19,14 +19,25 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
-// 📦 Load local.properties for version info
+// 📦 Load local.properties for version info (CI writes flutter.versionCode here)
 val localPropertiesFile = rootProject.file("local.properties")
 val localProperties = Properties()
 if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
 }
-val flutterVersionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 1
-val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0.0"
+
+// Helper function to get versionCode as Int (handles both String and Int types)
+fun getFlutterVersionCode(): Int {
+    val versionCodeFromProps = localProperties.getProperty("flutter.versionCode")
+    if (versionCodeFromProps != null) {
+        return versionCodeFromProps.toIntOrNull() ?: 1
+    }
+    return 1
+}
+
+fun getFlutterVersionName(): String {
+    return localProperties.getProperty("flutter.versionName") ?: "1.0.0"
+}
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
@@ -87,8 +98,8 @@ android {
         applicationId = "com.gavra013.gavra_android"
         minSdk = flutter.minSdkVersion
         targetSdk = 35
-        versionCode = flutterVersionCode
-        versionName = flutterVersionName
+        versionCode = getFlutterVersionCode()
+        versionName = getFlutterVersionName()
         multiDexEnabled = true
     }
 
