@@ -44,9 +44,12 @@ dependencies {
         because("OneSignal requires firebase-messaging [21.0.0, 23.4.99]")
     }
 
-    // 🚀 Google Play Core for production features (R8 fix)
-    implementation("com.google.android.play:core:1.10.3") {
-        because("Required for Flutter Play Store integration and R8 compatibility")
+    // 🚀 Google Play Core - NEW MODULAR LIBRARIES (Android 14+ compatible)
+    implementation("com.google.android.play:app-update:2.1.0") {
+        because("Replaces deprecated play:core for in-app updates")
+    }
+    implementation("com.google.android.play:review:2.0.2") {
+        because("Replaces deprecated play:core for in-app reviews")
     }
 }
 
