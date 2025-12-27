@@ -174,7 +174,7 @@ jobs:
           packageName: com.gavra013.gavra_android
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: alpha
-          status: completed
+          status: draft
           releaseName: ${{ github.ref_name }}
 
       # ══════════════════════════════════════════════════════════════
