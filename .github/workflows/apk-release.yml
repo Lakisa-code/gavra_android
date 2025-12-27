@@ -3,7 +3,6 @@ name: Build Signed Release APK
 on:
   workflow_dispatch: {}
   push:
-    branches: [ main ]
     tags: [ 'v*' ]
 
 # 🚀 Otkazuje prethodne buildove kad se pokrene novi (štedi minute)
