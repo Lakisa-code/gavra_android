@@ -97,22 +97,26 @@ jobs:
       - name: Generate version info
         id: version
         run: |
+          # Offset mora biti veći od poslednjeg versionCode (2025122701)
+          # Koristimo 2025122800 + run_number da garantujemo veći broj
+          VERSION_CODE=$((2025122800 + ${{ github.run_number }}))
           VERSION_NAME=$(grep "^version:" pubspec.yaml | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\)+.*/\1/')
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "📦 Version: $VERSION_NAME+${{ github.run_number }}"
+          echo "📦 Version: $VERSION_NAME+$VERSION_CODE"
 
       - name: Build signed release APK
         run: |
           flutter build apk --release \
             --build-name=${{ steps.version.outputs.VERSION_NAME }} \
-            --build-number=${{ github.run_number }} \
+            --build-number=${{ steps.version.outputs.VERSION_CODE }} \
             --target-platform android-arm,android-arm64
 
       - name: Build signed release AAB (for Google Play)
         run: |
           flutter build appbundle --release \
             --build-name=${{ steps.version.outputs.VERSION_NAME }} \
-            --build-number=${{ github.run_number }}
+            --build-number=${{ steps.version.outputs.VERSION_CODE }}
 
       - name: Upload release APK artifact
         if: always()
