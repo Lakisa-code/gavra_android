@@ -127,6 +127,14 @@ jobs:
             build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
           retention-days: 90
 
+      - name: Upload release AAB artifact (for manual Google Play upload)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gavra-release-aab-${{ github.ref_name || github.sha }}
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
       - name: Create GitHub Release (tag runs)
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -165,17 +173,17 @@ jobs:
             --latest
 
       # ══════════════════════════════════════════════════════════════
-      # 🏪 GOOGLE PLAY STORE - Automatski upload na INTERNAL (dok je app draft)
+      # 🏪 GOOGLE PLAY STORE - DISABLED (manual upload required due to permissions)
       # ══════════════════════════════════════════════════════════════
-      - name: Upload to Google Play (Internal Testing)
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.gavra013.gavra_android
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: internal
-          status: draft
-          releaseName: ${{ github.ref_name }}
+      # - name: Upload to Google Play (Internal Testing)
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      #     packageName: com.gavra013.gavra_android
+      #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
+      #     track: internal
+      #     status: draft
+      #     releaseName: ${{ github.ref_name }}
 
       # ══════════════════════════════════════════════════════════════
       # 📱 HUAWEI APPGALLERY - Automatski upload na PRODUCTION
