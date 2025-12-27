@@ -165,15 +165,15 @@ jobs:
             --latest
 
       # ══════════════════════════════════════════════════════════════
-      # 🏪 GOOGLE PLAY STORE - Automatski upload na PRODUCTION
+      # 🏪 GOOGLE PLAY STORE - Automatski upload na CLOSED TESTING (alpha)
       # ══════════════════════════════════════════════════════════════
-      - name: Upload to Google Play (Production)
+      - name: Upload to Google Play (Closed Testing)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.gavra013.gavra_android
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: production
+          track: alpha
           status: completed
           releaseName: ${{ github.ref_name }}
 

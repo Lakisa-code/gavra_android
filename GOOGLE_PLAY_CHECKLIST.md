@@ -1,6 +1,6 @@
 # Google Play Store Deploy - Checklist i Status
 
-**Poslednje ažuriranje:** 26. decembar 2025.
+**Poslednje ažuriranje:** 27. decembar 2025.
 
 ---
 
@@ -27,6 +27,34 @@ Automatski deploy APK/AAB na Google Play Store putem GitHub Actions nakon svakog
 | Aplikacija na Play Console | ✅ **POSTOJI** (Gavra013) |
 | Prvi ručni upload | ✅ **URAĐEN** (1. nov 2025.) |
 | Service Account pozvan u Play Console | ✅ **ZAVRŠENO** (26.12.2025) |
+| **Automatski deploy testiran** | ✅ **v6.0.3** (27.12.2025) |
+
+---
+
+## 🖼️ STORE LISTING - Slike (RUČNO)
+
+> ⚠️ **NAPOMENA:** Google Play API NE podržava upload slika! Ovo se radi ručno.
+
+**URL:** https://play.google.com/console/ → Gavra013 → Store presence → Main store listing
+
+### Potrebne slike:
+
+| Tip | Dimenzije | Status | Fajl |
+|-----|-----------|--------|------|
+| App icon | 512 x 512 px | ⏳ Proveri | `ic_launcher_512.png` |
+| Feature graphic | 1024 x 500 px | ❌ Nedostaje | - |
+| Phone screenshots | min 2, 16:9 ili 9:16 | ✅ Spremno | `huawei_screenshots/gavra_01-06.jpg` |
+
+### Screenshot-ovi spremni za upload:
+```
+huawei_screenshots/
+├── gavra_01.jpg
+├── gavra_02.jpg
+├── gavra_03.jpg
+├── gavra_04.jpg
+├── gavra_05.jpg
+└── gavra_06.jpg
+```
 
 ---
 
