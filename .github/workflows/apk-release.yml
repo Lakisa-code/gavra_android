@@ -98,6 +98,10 @@ jobs:
         run: |
           flutter build apk --release --target-platform android-arm,android-arm64
 
+      - name: Build signed release AAB (for Google Play)
+        run: |
+          flutter build appbundle --release
+
       - name: Upload release APK artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -155,7 +159,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.gavra013.gavra_android
-          releaseFiles: build/app/outputs/flutter-apk/app-release.apk
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: production
           status: completed
           releaseName: ${{ github.ref_name }}
