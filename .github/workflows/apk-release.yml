@@ -97,9 +97,7 @@ jobs:
       - name: Generate version info
         id: version
         run: |
-          # Offset mora biti veći od poslednjeg versionCode (2025122701)
-          # Koristimo 2025122800 + run_number da garantujemo veći broj
-          VERSION_CODE=$((2025122800 + ${{ github.run_number }}))
+          VERSION_CODE=${{ github.run_number }}
           VERSION_NAME=$(grep "^version:" pubspec.yaml | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\)+.*/\1/')
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
