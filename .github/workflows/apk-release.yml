@@ -94,6 +94,13 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Auto-bump version code
+        run: |
+          VERSION_CODE=$(date +%Y%m%d%H%M)
+          sed -i "s/version: \([0-9]*\.[0-9]*\.[0-9]*\)+.*/version: \1+$VERSION_CODE/" pubspec.yaml
+          echo "New version code: $VERSION_CODE"
+          cat pubspec.yaml | grep version:
+
       - name: Build signed release APK
         run: |
           flutter build apk --release --target-platform android-arm,android-arm64
