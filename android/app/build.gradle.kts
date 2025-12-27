@@ -78,8 +78,8 @@ android {
         applicationId = "com.gavra013.gavra_android"
         minSdk = flutter.minSdkVersion
         targetSdk = 35
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = flutter.versionCode ?: 1
+        versionName = flutter.versionName ?: "1.0.0"
         multiDexEnabled = true
     }
 
