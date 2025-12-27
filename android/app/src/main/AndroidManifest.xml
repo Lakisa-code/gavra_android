@@ -22,10 +22,9 @@
   <uses-permission android:name="android.permission.CALL_PHONE" />
   <!-- READ_PHONE_STATE nije potreban - koristimo samo tel: URI za pozivanje -->
 
-  <!-- 🛰️ BACKGROUND GPS TRACKING PERMISSIONS -->
-  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+  <!-- 🛰️ GPS PERMISSIONS (foreground only - no background tracking) -->
+  <!-- ACCESS_BACKGROUND_LOCATION removed - not used, avoids Google Play video requirement -->
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-  <!-- FOREGROUND_SERVICE_LOCATION removed - requires video proof for Google Play -->
   <uses-permission android:name="android.permission.WAKE_LOCK" />
 
   <!-- 🔊 VOICE NAVIGATION PERMISSIONS -->

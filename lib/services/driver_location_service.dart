@@ -16,7 +16,7 @@ class DriverLocationService {
 
   static DriverLocationService get instance => _instance;
 
-  static const Duration _updateInterval = Duration(seconds: 15);
+  static const Duration _updateInterval = Duration(seconds: 30);
   static const Duration _etaUpdateInterval = Duration(minutes: 1);
   static const double _minDistanceMeters = 50;
 
