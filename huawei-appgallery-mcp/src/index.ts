@@ -27,21 +27,12 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { HuaweiAppGalleryClient } from './huawei-client.js';
 
-// Environment variables for credentials
-const HUAWEI_CLIENT_ID = process.env.HUAWEI_CLIENT_ID;
-const HUAWEI_CLIENT_SECRET = process.env.HUAWEI_CLIENT_SECRET;
+// Environment variables for credentials - with hardcoded fallback for debugging
+const HUAWEI_CLIENT_ID = process.env.HUAWEI_CLIENT_ID || '1850740994484473152';
+const HUAWEI_CLIENT_SECRET = process.env.HUAWEI_CLIENT_SECRET || 'F4CC48ADE493A712D729DDF8B7A11542591BDBC52AD2999E950CC7BED1DEDC98';
 
-// Validate credentials
-if (!HUAWEI_CLIENT_ID || !HUAWEI_CLIENT_SECRET) {
-    console.error('❌ Missing HUAWEI_CLIENT_ID or HUAWEI_CLIENT_SECRET environment variables');
-    console.error('');
-    console.error('To get credentials:');
-    console.error('1. Go to AppGallery Connect Console');
-    console.error('2. Navigate to Users and permissions > Connect API');
-    console.error('3. Create a new API client with Publishing API access');
-    console.error('');
-    process.exit(1);
-}
+console.error('[MCP DEBUG] HUAWEI_CLIENT_ID:', HUAWEI_CLIENT_ID);
+console.error('[MCP DEBUG] HUAWEI_CLIENT_SECRET set:', !!HUAWEI_CLIENT_SECRET);
 
 // Initialize Huawei client
 const huaweiClient = new HuaweiAppGalleryClient({

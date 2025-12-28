@@ -1,0 +1,390 @@
+name: 🚀 Release All Platforms
+
+# Jedan tag = Deploy na Google Play + Huawei + iOS TestFlight
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      skip_google:
+        description: 'Skip Google Play upload'
+        type: boolean
+        default: false
+      skip_huawei:
+        description: 'Skip Huawei AppGallery upload'
+        type: boolean
+        default: false
+      skip_ios:
+        description: 'Skip iOS TestFlight upload'
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-all-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+
+jobs:
+  # ══════════════════════════════════════════════════════════════
+  # 📱 ANDROID BUILD (APK + AAB)
+  # ══════════════════════════════════════════════════════════════
+  build-android:
+    name: 🤖 Build Android
+    runs-on: ubuntu-latest
+    outputs:
+      version_name: ${{ steps.version.outputs.VERSION_NAME }}
+      version_code: ${{ steps.version.outputs.VERSION_CODE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Prepare agconnect-services.json
+        env:
+          AGC_BASE64: ${{ secrets.AGC_BASE64 || '' }}
+        run: |
+          mkdir -p assets android/app
+          if [ -n "$AGC_BASE64" ]; then
+            echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
+            echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
+          else
+            echo '{"client":{"package_name":"com.gavra013.gavra_android"}}' > assets/agconnect-services.json
+            echo '{"client":{"package_name":"com.gavra013.gavra_android"}}' > android/app/agconnect-services.json
+          fi
+
+      - name: Restore keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > gavra-release-key-production.keystore
+          cp gavra-release-key-production.keystore android/
+
+      - name: Create key.properties
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=../gavra-release-key-production.keystore
+          EOF
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Get version info
+        id: version
+        run: |
+          VERSION_CODE=${{ github.run_number }}
+          VERSION_NAME=$(grep "^version:" pubspec.yaml | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\)+.*/\1/')
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "📦 Version: $VERSION_NAME+$VERSION_CODE"
+
+      - name: Build APK
+        run: |
+          flutter build apk --release \
+            --build-name=${{ steps.version.outputs.VERSION_NAME }} \
+            --build-number=${{ steps.version.outputs.VERSION_CODE }}
+
+      - name: Build AAB
+        run: |
+          flutter build appbundle --release \
+            --build-name=${{ steps.version.outputs.VERSION_NAME }} \
+            --build-number=${{ steps.version.outputs.VERSION_CODE }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 90
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+  # ══════════════════════════════════════════════════════════════
+  # 🍎 iOS BUILD
+  # ══════════════════════════════════════════════════════════════
+  build-ios:
+    name: 🍎 Build iOS
+    runs-on: macos-latest
+    if: ${{ github.event.inputs.skip_ios != 'true' }}
+    env:
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+      APP_STORE_APPLE_ID: ${{ secrets.APP_STORE_APPLE_ID }}
+    outputs:
+      build_number: ${{ steps.build_num.outputs.BUILD_NUMBER }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Install Codemagic CLI
+        run: pip install codemagic-cli-tools
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Setup keychain
+        run: keychain initialize
+
+      - name: Fetch signing files
+        run: |
+          app-store-connect fetch-signing-files "com.gavra013.gavra013ios" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Setup certificates
+        run: keychain add-certificates
+
+      - name: Setup code signing
+        run: xcode-project use-profiles
+
+      - name: Get version info
+        id: version
+        run: |
+          VERSION_NAME=$(grep "^version:" pubspec.yaml | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\)+.*/\1/')
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+
+      - name: Increment build number
+        id: build_num
+        run: |
+          cd ios
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo "0")
+          NEW_BUILD=$((LATEST_BUILD + 1))
+          echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
+          agvtool new-version -all $NEW_BUILD
+
+      - name: Build IPA
+        run: |
+          flutter build ipa --release \
+            --build-name=${{ steps.version.outputs.VERSION_NAME }} \
+            --export-options-plist=$HOME/export_options.plist
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: build/ios/ipa/*.ipa
+          retention-days: 90
+
+  # ══════════════════════════════════════════════════════════════
+  # 🏪 DEPLOY TO GOOGLE PLAY
+  # ══════════════════════════════════════════════════════════════
+  deploy-google:
+    name: 🏪 Deploy Google Play
+    runs-on: ubuntu-latest
+    needs: build-android
+    if: ${{ github.event.inputs.skip_google != 'true' }}
+    steps:
+      - name: Download AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: android-aab
+
+      - name: Upload to Google Play (Beta)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.gavra013.gavra_android
+          releaseFiles: app-release.aab
+          track: beta
+          status: completed
+          releaseName: ${{ github.ref_name }}
+
+      - name: Summary
+        run: |
+          echo "## ✅ Google Play Upload Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "**Track:** Beta (Closed Testing)" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.build-android.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+
+  # ══════════════════════════════════════════════════════════════
+  # 📱 DEPLOY TO HUAWEI APPGALLERY
+  # ══════════════════════════════════════════════════════════════
+  deploy-huawei:
+    name: 📱 Deploy Huawei
+    runs-on: ubuntu-latest
+    needs: build-android
+    if: ${{ github.event.inputs.skip_huawei != 'true' }}
+    env:
+      AGC_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
+      AGC_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
+      AGC_APP_ID: ${{ secrets.AGC_APP_ID }}
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+
+      - name: Upload to Huawei AppGallery
+        run: |
+          echo "🔐 Getting access token..."
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "grant_type": "client_credentials",
+              "client_id": "'"$AGC_CLIENT_ID"'",
+              "client_secret": "'"$AGC_CLIENT_SECRET"'"
+            }')
+          
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          
+          if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "❌ Failed to get access token"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+          echo "✅ Got access token"
+          
+          echo "📤 Getting upload URL..."
+          UPLOAD_URL_RESPONSE=$(curl -s -X GET \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs?appId=$AGC_APP_ID&releaseType=1&suffix=apk" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $AGC_CLIENT_ID")
+          
+          UPLOAD_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.uploadUrl')
+          AUTH_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.authCode')
+          
+          if [ "$UPLOAD_URL" == "null" ]; then
+            echo "❌ Failed to get upload URL"
+            echo "Response: $UPLOAD_URL_RESPONSE"
+            exit 1
+          fi
+          echo "✅ Got upload URL"
+          
+          echo "📤 Uploading APK..."
+          UPLOAD_RESPONSE=$(curl -s -X POST "$UPLOAD_URL" \
+            -H "Accept: application/json" \
+            -F "file=@app-release.apk" \
+            -F "authCode=$AUTH_CODE" \
+            -F "fileCount=1")
+          
+          FILE_DEST=$(echo $UPLOAD_RESPONSE | jq -r '.result.UploadFileRsp.fileInfoList[0].fileDestUlr')
+          
+          if [ "$FILE_DEST" == "null" ]; then
+            echo "❌ Failed to upload APK"
+            echo "Response: $UPLOAD_RESPONSE"
+            exit 1
+          fi
+          echo "✅ APK uploaded: $FILE_DEST"
+          
+          echo "📋 Updating app file info..."
+          curl -s -X PUT \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$AGC_APP_ID&releaseType=1" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $AGC_CLIENT_ID" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "fileType": 5,
+              "files": {
+                "fileName": "app-release.apk",
+                "fileDestUrl": "'"$FILE_DEST"'"
+              }
+            }'
+          
+          echo "✅ Huawei AppGallery upload complete!"
+
+      - name: Summary
+        run: |
+          echo "## ✅ Huawei AppGallery Upload Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "**App ID:** ${{ secrets.AGC_APP_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.build-android.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "⏳ Huawei will review (1-5 business days)" >> $GITHUB_STEP_SUMMARY
+
+  # ══════════════════════════════════════════════════════════════
+  # 🍎 DEPLOY TO TESTFLIGHT
+  # ══════════════════════════════════════════════════════════════
+  deploy-ios:
+    name: 🍎 Deploy TestFlight
+    runs-on: macos-latest
+    needs: build-ios
+    if: ${{ github.event.inputs.skip_ios != 'true' }}
+    env:
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+    steps:
+      - name: Download IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+
+      - name: Install Codemagic CLI
+        run: pip install codemagic-cli-tools
+
+      - name: Upload to TestFlight
+        run: |
+          APP_FILE=$(find . -name "*.ipa" | head -1)
+          echo "📤 Uploading: $APP_FILE"
+          app-store-connect publish --path "$APP_FILE"
+
+      - name: Summary
+        run: |
+          echo "## ✅ TestFlight Upload Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "**Build:** ${{ needs.build-ios.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "⏳ TestFlight processing (~10-30 min)" >> $GITHUB_STEP_SUMMARY
+
+  # ══════════════════════════════════════════════════════════════
+  # 📦 CREATE GITHUB RELEASE
+  # ══════════════════════════════════════════════════════════════
+  github-release:
+    name: 📦 GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-android, deploy-google, deploy-huawei]
+    if: always() && needs.build-android.result == 'success'
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF##*/}
+          gh release create "$TAG" app-release.apk \
+            --repo ${{ github.repository }} \
+            --title "🚀 Release $TAG" \
+            --notes "## 📱 Gavra 013 - $TAG
+
+          ### Platforme:
+          - 🏪 Google Play: Beta track
+          - 📱 Huawei AppGallery: Uploaded
+          - 🍎 iOS TestFlight: Uploaded
+
+          ### Download:
+          - APK: Attached below
+          
+          **Build:** ${{ github.run_number }}
+          **Datum:** $(date '+%d.%m.%Y %H:%M')"

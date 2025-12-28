@@ -1,6 +1,6 @@
 # Huawei AppGallery Deploy - Checklist i Status
 
-**Poslednje ažuriranje:** 26. decembar 2025.
+**Poslednje ažuriranje:** 28. decembar 2025.
 
 ---
 
@@ -61,8 +61,10 @@ Automatski deploy APK na Huawei AppGallery putem GitHub Actions nakon kreiranja 
 - [x] ✅ Package: `com.gavra013.gavra_android`
 - [x] ✅ App ID: `116046535`
 
-### 3. API Client
-- [x] ✅ Client ID: `1825559368939142080`
+### 3. API Client (Team-level)
+- [x] ✅ Client ID: `1850740994484473152` (Team-level, kreiran 28.12.2025)
+- [x] ✅ Tip: `team_client_id` (potrebno za Publishing API)
+- [x] ✅ Stari Project-level client zamenjen
 
 ### 4. GitHub Secrets
 - [x] ✅ `AGC_CLIENT_ID`
@@ -111,7 +113,8 @@ Play      AppGallery
 Package Name: com.gavra013.gavra_android
 App Name: Gavra 013
 App ID: 116046535
-Client ID: 1825559368939142080
+Client ID: 1850740994484473152 (Team-level)
+Client Type: team_client_id
 GitHub Repo: bojanbc83/gavra_android
 Workflow: .github/workflows/apk-release.yml
 Privacy Policy: https://bojanbc83.github.io/gavra_android/privacy-policy.html
@@ -139,4 +142,4 @@ Privacy Policy: https://bojanbc83.github.io/gavra_android/privacy-policy.html
 
 ---
 
-*Ažurirano: 26. decembar 2025.*
+*Ažurirano: 28. decembar 2025.*

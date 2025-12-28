@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSContactsUsageDescription</key>
+	<string>Aplikacija pristupa kontaktima kako biste mogli izabrati broj telefona putnika iz imenika.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aplikacija koristi vašu lokaciju za prikaz vremenske prognoze i lokalno relevantnih informacija.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Aplikacija koristi vašu lokaciju za prikaz vremenske prognoze i lokalno relevantnih informacija.</string>
 </dict>
 </plist>

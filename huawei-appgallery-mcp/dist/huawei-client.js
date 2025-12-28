@@ -12,12 +12,19 @@ import * as path from 'path';
 const AUTH_URL = 'https://connect-api.cloud.huawei.com/api/oauth2/v1/token';
 const API_BASE = 'https://connect-api.cloud.huawei.com/api';
 const PUBLISH_API = `${API_BASE}/publish/v2`;
+// Hardcoded fallback credentials (VS Code env vars don't work reliably)
+const FALLBACK_CLIENT_ID = '1850740994484473152';
+const FALLBACK_CLIENT_SECRET = 'F4CC48ADE493A712D729DDF8B7A11542591BDBC52AD2999E950CC7BED1DEDC98';
 export class HuaweiAppGalleryClient {
     credentials;
     accessToken = null;
     tokenExpiry = 0;
     constructor(credentials) {
-        this.credentials = credentials;
+        // Use fallback if credentials are empty
+        this.credentials = {
+            clientId: credentials.clientId || FALLBACK_CLIENT_ID,
+            clientSecret: credentials.clientSecret || FALLBACK_CLIENT_SECRET
+        };
     }
     /**
      * 🔐 Get Access Token
@@ -28,16 +35,17 @@ export class HuaweiAppGalleryClient {
         if (this.accessToken && Date.now() < this.tokenExpiry) {
             return this.accessToken;
         }
+        const body = JSON.stringify({
+            grant_type: 'client_credentials',
+            client_id: this.credentials.clientId,
+            client_secret: this.credentials.clientSecret
+        });
         const response = await fetch(AUTH_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                grant_type: 'client_credentials',
-                client_id: this.credentials.clientId,
-                client_secret: this.credentials.clientSecret,
-            }),
+            body: body,
         });
         if (!response.ok) {
             throw new Error(`Authentication failed: ${response.status} ${response.statusText}`);
@@ -54,14 +62,21 @@ export class HuaweiAppGalleryClient {
      */
     async getAppInfo(appId) {
         const token = await this.getAccessToken();
-        const response = await fetch(`${PUBLISH_API}/app-info?appId=${appId}`, {
+        const url = `${PUBLISH_API}/app-info?appId=${appId}`;
+        console.error('[DEBUG] getAppInfo URL:', url);
+        console.error('[DEBUG] client_id:', this.credentials.clientId);
+        console.error('[DEBUG] token length:', token?.length);
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'client_id': this.credentials.clientId,
             },
         });
+        console.error('[DEBUG] response status:', response.status);
         if (!response.ok) {
+            const text = await response.text();
+            console.error('[DEBUG] error body:', text);
             throw new Error(`Failed to get app info: ${response.status}`);
         }
         const data = await response.json();

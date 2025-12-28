@@ -56,13 +56,6 @@ dependencies:
   freezed_annotation: ^2.4.1
   json_annotation: ^4.8.1
 
-  # 🛰️ BACKGROUND GPS TRACKING (BESPLATNO)
-  flutter_background_service: ^5.0.8
-
-  # 🔊 VOICE NAVIGATION (BESPLATNO)
-  flutter_tts: ^4.0.2
-  audio_session: ^0.1.19
-
   # 🗺️ OFFLINE MAPS DATABASE
   sqflite: ^2.3.3
 

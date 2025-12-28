@@ -1,0 +1,21 @@
+{
+    "name": "appstore-mcp",
+    "version": "1.0.0",
+    "description": "MCP Server for App Store Connect API",
+    "main": "dist/index.js",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "jsonwebtoken": "^9.0.2",
+        "node-fetch": "^3.3.2"
+    },
+    "devDependencies": {
+        "@types/jsonwebtoken": "^9.0.5",
+        "@types/node": "^20.10.0",
+        "typescript": "^5.3.0"
+    }
+}
