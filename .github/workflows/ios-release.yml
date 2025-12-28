@@ -48,7 +48,7 @@ jobs:
 
       - name: Fetch signing files
         run: |
-          app-store-connect fetch-signing-files "com.gavra013.gavra-android" \
+          app-store-connect fetch-signing-files "com.gavra013.gavraAndroid" \
             --type IOS_APP_STORE \
             --create
 
