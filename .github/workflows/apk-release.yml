@@ -1,4 +1,4 @@
-name: Build Signed Release APK
+name: Build All Platforms (Android + iOS)
 
 on:
   workflow_dispatch: {}
@@ -268,3 +268,94 @@ jobs:
           echo "📋 Response: $UPDATE_RESPONSE"
           echo ""
           echo "⏳ Huawei will review this version (1-5 business days)"
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # 🍎 iOS BUILD - TestFlight
+  # ══════════════════════════════════════════════════════════════════════════════
+  build-ios:
+    name: Build iOS and Upload to TestFlight
+    runs-on: macos-latest
+    env:
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+      APP_STORE_APPLE_ID: ${{ secrets.APP_STORE_APPLE_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Install Codemagic CLI tools
+        run: pip install codemagic-cli-tools
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Set up keychain
+        run: keychain initialize
+
+      - name: Fetch signing files
+        run: |
+          app-store-connect fetch-signing-files "com.gavra013.gavra013ios" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Set up signing certificate
+        run: keychain add-certificates
+
+      - name: Set up code signing settings on Xcode project
+        run: xcode-project use-profiles
+
+      - name: Get version info
+        id: version
+        run: |
+          VERSION_NAME=$(grep "^version:" pubspec.yaml | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\)+.*/\1/')
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "📦 Version: $VERSION_NAME"
+
+      - name: Increment build number
+        run: |
+          cd ios
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo "0")
+          NEW_BUILD=$((LATEST_BUILD + 1))
+          echo "📦 New build number: $NEW_BUILD"
+          agvtool new-version -all $NEW_BUILD
+
+      - name: Build IPA for distribution
+        run: |
+          flutter build ipa --release \
+            --build-name=${{ steps.version.outputs.VERSION_NAME }} \
+            --export-options-plist=$HOME/export_options.plist
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-${{ github.run_number }}
+          path: build/ios/ipa/*.ipa
+          retention-days: 90
+
+      - name: Publish to App Store Connect (TestFlight)
+        run: |
+          APP_FILE=$(find $(pwd) -name "*.ipa")
+          echo "📤 Uploading: $APP_FILE"
+          app-store-connect publish \
+            --path "$APP_FILE"
+
+      - name: Summary
+        run: |
+          echo "## ✅ iOS Build Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.VERSION_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. ⏳ Wait for TestFlight processing (~10-30 min)" >> $GITHUB_STEP_SUMMARY
+          echo "2. 📱 Test on real iPhone via TestFlight app" >> $GITHUB_STEP_SUMMARY
+          echo "3. ✅ If working, submit for App Store review" >> $GITHUB_STEP_SUMMARY
