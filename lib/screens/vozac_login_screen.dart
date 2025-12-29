@@ -121,8 +121,10 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
         return;
       }
 
-      // Proveri telefon
-      if (vozac['telefon'].toString() != telefon) {
+      // Proveri telefon (sa normalizacijom)
+      final normalizedInput = _normalizePhone(telefon);
+      final normalizedStored = _normalizePhone(vozac['telefon'].toString());
+      if (normalizedInput != normalizedStored) {
         _showError('Pogrešan broj telefona.');
         return;
       }
@@ -184,6 +186,18 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
       return const VozacScreen();
     }
     return const HomeScreen();
+  }
+
+  /// 📱 Normalizuje broj telefona za poređenje
+  /// Uklanja razmake, crtice, zagrade i prefikse (+381, 00381)
+  String _normalizePhone(String telefon) {
+    var cleaned = telefon.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (cleaned.startsWith('+381')) {
+      cleaned = '0${cleaned.substring(4)}';
+    } else if (cleaned.startsWith('00381')) {
+      cleaned = '0${cleaned.substring(5)}';
+    }
+    return cleaned;
   }
 
   void _showError(String message) {

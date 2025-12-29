@@ -51,6 +51,17 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
     }
   }
 
+  /// 📱 Normalizuje broj telefona za poređenje
+  String _normalizePhone(String telefon) {
+    var cleaned = telefon.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (cleaned.startsWith('+381')) {
+      cleaned = '0${cleaned.substring(4)}';
+    } else if (cleaned.startsWith('00381')) {
+      cleaned = '0${cleaned.substring(5)}';
+    }
+    return cleaned;
+  }
+
   /// Korak 1: Proveri telefon
   Future<void> _checkTelefon() async {
     final telefon = _telefonController.text.trim();
@@ -67,11 +78,21 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
     });
 
     try {
-      // Traži putnika po telefonu (limit 1 za slučaj duplikata)
-      final results =
-          await Supabase.instance.client.from('registrovani_putnici').select().eq('broj_telefona', telefon).limit(1);
+      // Normalizuj uneti broj
+      final normalizedInput = _normalizePhone(telefon);
 
-      final response = (results as List).isNotEmpty ? results.first : null;
+      // Traži putnika - dohvati sve i uporedi normalizovane brojeve
+      final allPutnici = await Supabase.instance.client.from('registrovani_putnici').select().eq('obrisan', false);
+
+      // Pronađi putnika sa istim normalizovanim brojem
+      Map<String, dynamic>? response;
+      for (final p in allPutnici as List) {
+        final storedPhone = p['broj_telefona'] as String? ?? '';
+        if (_normalizePhone(storedPhone) == normalizedInput) {
+          response = Map<String, dynamic>.from(p);
+          break;
+        }
+      }
 
       if (response != null) {
         _putnikData = Map<String, dynamic>.from(response);
