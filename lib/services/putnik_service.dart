@@ -744,7 +744,6 @@ class PutnikService {
       polasciPoDanu[danKratica] = dayData;
 
       await supabase.from(tabela).update({
-        'vozac_id': vozacUuid,
         'polasci_po_danu': polasciPoDanu,
         'updated_at': now.toIso8601String(),
       }).eq('id', id);
@@ -804,7 +803,6 @@ class PutnikService {
     _addToUndoStack('payment', id, undoPayment);
 
     final now = DateTime.now();
-    String? validVozacId = VozacMappingService.getVozacUuidSync(currentDriver);
 
     // ✅ NOVO: Ažuriraj polasci_po_danu JSON sa plaćanjem
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
@@ -834,7 +832,6 @@ class PutnikService {
     polasciPoDanu[danKratica] = dayData;
 
     await supabase.from(tabela).update({
-      'vozac_id': validVozacId,
       'polasci_po_danu': polasciPoDanu,
       'updated_at': now.toIso8601String(),
     }).eq('id', id);
