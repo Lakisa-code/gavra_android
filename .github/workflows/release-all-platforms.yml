@@ -1,6 +1,6 @@
-name: 🚀 Release All Platforms
+name: 🚀 Release All Platforms (Production)
 
-# Jedan tag = Deploy na Google Play + Huawei + iOS TestFlight
+# Jedan tag = Deploy na Google Play Production + Huawei + iOS App Store
 on:
   push:
     tags: [ 'v*' ]
@@ -211,20 +211,20 @@ jobs:
         with:
           name: android-aab
 
-      - name: Upload to Google Play (Beta)
+      - name: Upload to Google Play (Production)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.gavra013.gavra_android
           releaseFiles: app-release.aab
-          track: beta
+          track: production
           status: completed
           releaseName: ${{ github.ref_name }}
 
       - name: Summary
         run: |
           echo "## ✅ Google Play Upload Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "**Track:** Beta (Closed Testing)" >> $GITHUB_STEP_SUMMARY
+          echo "**Track:** Production" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ needs.build-android.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
 
   # ══════════════════════════════════════════════════════════════
@@ -322,10 +322,10 @@ jobs:
           echo "⏳ Huawei will review (1-5 business days)" >> $GITHUB_STEP_SUMMARY
 
   # ══════════════════════════════════════════════════════════════
-  # 🍎 DEPLOY TO TESTFLIGHT
+  # 🍎 DEPLOY TO APP STORE
   # ══════════════════════════════════════════════════════════════
   deploy-ios:
-    name: 🍎 Deploy TestFlight
+    name: 🍎 Deploy App Store
     runs-on: macos-latest
     needs: build-ios
     if: ${{ github.event.inputs.skip_ios != 'true' }}
@@ -342,7 +342,7 @@ jobs:
       - name: Install Codemagic CLI
         run: pip install codemagic-cli-tools
 
-      - name: Upload to TestFlight
+      - name: Upload to App Store Connect
         run: |
           APP_FILE=$(find . -name "*.ipa" | head -1)
           echo "📤 Uploading: $APP_FILE"
@@ -350,9 +350,9 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## ✅ TestFlight Upload Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ App Store Upload Complete!" >> $GITHUB_STEP_SUMMARY
           echo "**Build:** ${{ needs.build-ios.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "⏳ TestFlight processing (~10-30 min)" >> $GITHUB_STEP_SUMMARY
+          echo "⏳ Waiting for App Store Review" >> $GITHUB_STEP_SUMMARY
 
   # ══════════════════════════════════════════════════════════════
   # 📦 CREATE GITHUB RELEASE
@@ -379,9 +379,9 @@ jobs:
             --notes "## 📱 Gavra 013 - $TAG
 
           ### Platforme:
-          - 🏪 Google Play: Beta track
-          - 📱 Huawei AppGallery: Uploaded
-          - 🍎 iOS TestFlight: Uploaded
+          - 🏪 Google Play: Production
+          - 📱 Huawei AppGallery: Production
+          - 🍎 iOS App Store: Submitted for Review
 
           ### Download:
           - APK: Attached below
