@@ -99,9 +99,9 @@ class _AuthScreenState extends State<AuthScreen> {
         },
         {
           'ime': 'Ivan',
-          'email': 'kadpitamkurac@gmail.com',
+          'email': 'bradvarevicivan99@gmail.com',
           'sifra': '333333',
-          'telefon': '0605073073',
+          'telefon': '0677662993',
           'boja': 0xFFFFD700, // žuta (Gold)
         },
       ];
