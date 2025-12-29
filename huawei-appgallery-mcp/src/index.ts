@@ -26,13 +26,24 @@ import {
     Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { HuaweiAppGalleryClient } from './huawei-client.js';
+import { Logger } from './logger.js';
 
-// Environment variables for credentials - with hardcoded fallback for debugging
-const HUAWEI_CLIENT_ID = process.env.HUAWEI_CLIENT_ID || '1850740994484473152';
-const HUAWEI_CLIENT_SECRET = process.env.HUAWEI_CLIENT_SECRET || 'F4CC48ADE493A712D729DDF8B7A11542591BDBC52AD2999E950CC7BED1DEDC98';
+const logger = new Logger('huawei-appgallery-mcp');
 
-console.error('[MCP DEBUG] HUAWEI_CLIENT_ID:', HUAWEI_CLIENT_ID);
-console.error('[MCP DEBUG] HUAWEI_CLIENT_SECRET set:', !!HUAWEI_CLIENT_SECRET);
+// Environment variables for credentials - REQUIRED
+const HUAWEI_CLIENT_ID = process.env.HUAWEI_CLIENT_ID;
+const HUAWEI_CLIENT_SECRET = process.env.HUAWEI_CLIENT_SECRET;
+
+// Validate required environment variables
+if (!HUAWEI_CLIENT_ID || !HUAWEI_CLIENT_SECRET) {
+    logger.error('Missing required environment variables: HUAWEI_CLIENT_ID and/or HUAWEI_CLIENT_SECRET');
+    logger.error('Please set these in your mcp.json or environment');
+    process.exit(1);
+}
+
+logger.info('Huawei credentials loaded successfully');
+logger.info(`Client ID: ${HUAWEI_CLIENT_ID}`);
+logger.info(`Client Secret: ${HUAWEI_CLIENT_SECRET?.substring(0, 8)}...`);
 
 // Initialize Huawei client
 const huaweiClient = new HuaweiAppGalleryClient({
@@ -328,17 +339,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
             case 'huawei_get_status': {
                 const { appId } = args as { appId: string };
-                const status = await huaweiClient.getCompilationStatus(appId);
                 const appInfo = await huaweiClient.getAppInfo(appId);
 
+                // Huawei AppGallery releaseState codes:
+                // https://developer.huawei.com/consumer/en/doc/harmonyos-references/appgallerykit-publishingapi-getappinfo-0000001861766669
                 const releaseStateDesc: Record<number, string> = {
                     1: 'Draft',
-                    2: 'Reviewing',
-                    3: 'Review Rejected',
-                    4: 'Released',
-                    5: 'Updating',
-                    6: 'Update Rejected',
-                    7: 'Removed',
+                    2: 'Released',
+                    3: 'Removed',
+                    4: 'Reviewing',
+                    5: 'Review Rejected',
+                    6: 'Updating',
+                    7: 'Update Rejected',
                 };
 
                 return {
@@ -352,7 +364,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                     appName: appInfo.appName,
                                     versionName: appInfo.versionName,
                                     releaseState: releaseStateDesc[appInfo.releaseState] || 'Unknown',
-                                    compilation: status,
                                 },
                                 null,
                                 2
@@ -367,6 +378,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorContext = {
+            tool: name,
+            arguments: args,
+            timestamp: new Date().toISOString(),
+        };
+
+        logger.exception(`Tool execution failed: ${name}`, error as Error, errorContext);
+
         return {
             content: [
                 {
@@ -375,6 +394,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         {
                             success: false,
                             error: errorMessage,
+                            tool: name,
+                            hint: getErrorHint(errorMessage),
                         },
                         null,
                         2
@@ -386,11 +407,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 });
 
+/**
+ * Get helpful hints based on common error messages
+ */
+function getErrorHint(errorMessage: string): string | undefined {
+    if (errorMessage.includes('Authentication failed') || errorMessage.includes('401')) {
+        return 'Check your HUAWEI_CLIENT_ID and HUAWEI_CLIENT_SECRET environment variables';
+    }
+    if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+        return 'Your API credentials may not have the required permissions. Check AppGallery Connect Console > Connect API';
+    }
+    if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        return 'The requested resource was not found. Verify the appId is correct';
+    }
+    if (errorMessage.includes('ENOENT') || errorMessage.includes('no such file')) {
+        return 'File not found. Check the file path is correct and the file exists';
+    }
+    return undefined;
+}
+
 // Start server
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error('🚀 Huawei AppGallery MCP Server running');
+    logger.info('🚀 Huawei AppGallery MCP Server started');
 }
 
-main().catch(console.error);
+main().catch((error) => {
+    logger.exception('Failed to start server', error);
+    process.exit(1);
+});
