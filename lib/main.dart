@@ -190,6 +190,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   String? _initError;
+  Timer? _cleanupTimer;
 
   @override
   void initState() {
@@ -216,6 +217,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _cleanupTimer?.cancel(); // 🧹 Cancel periodic timer
     WidgetsBinding.instance.removeObserver(this);
     // 🧹 CLEANUP: Zatvori stream controllere
     WeatherService.dispose();
@@ -247,7 +249,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       CacheService.performAutomaticCleanup();
 
       // 🔥 Kreiranje timer-a za automatski cleanup svakih 10 minuta
-      Timer.periodic(const Duration(minutes: 10), (_) {
+      _cleanupTimer = Timer.periodic(const Duration(minutes: 10), (_) {
         CacheService.performAutomaticCleanup();
       });
 

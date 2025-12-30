@@ -615,6 +615,7 @@ class PutnikService {
           excludeSender: putnik.dodaoVozac,
           data: {
             'type': 'novi_putnik',
+            'datum': now.toIso8601String(),
             'putnik': {
               'ime': putnik.ime,
               'grad': putnik.grad,
@@ -933,6 +934,7 @@ class PutnikService {
             excludeSender: otkazaoVozac,
             data: {
               'type': 'otkazan_putnik',
+              'datum': now.toIso8601String(),
               'putnik': {
                 'ime': respMap['putnik_ime'] ?? respMap['ime'],
                 'grad': respMap['grad'],
