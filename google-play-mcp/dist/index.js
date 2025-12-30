@@ -3,31 +3,23 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { google } from "googleapis";
-const PACKAGE_NAME = process.env.GOOGLE_PLAY_PACKAGE_NAME || "com.gavra013.gavra_android";
-// Fallback credentials for VS Code MCP (env vars don't work properly)
-const FALLBACK_SERVICE_ACCOUNT = {
-    type: "service_account",
-    project_id: "gavra-notif-20250920162521",
-    private_key_id: "f34bd23716033e3f6e5f9ebd5c14066183acc197",
-    private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCwtN+HZLoLWRXx\n4JpuRl9D0PSrj7akG6OKWebXsUlLHrMdq2gcL0riAN0Ux1usevDyg50fhvu0Fkg9\npKoKgjWUgIyaO3yGyEs+d6xboHSVJYGkOED+HuSw1XpAqpONACnw3va+YCYYv58W\nBUElL5Pkoct51lqoVaQxrfeKEkOLQOCGFVac8bj3u1Bv9It0c5ruZYkLJIAKXPgA\naCw7o6Pxlj/r2o0d5Ba7s566qWrY6nJUGkEjwkY8EyFSkWEgmJCAeh9aMpMO8Q6Q\nkYW72kdLk7sjgKRpYmhkXvkW6jM2SxhiCr/DR6PucdkdJB2c5hWqE9bNYLzFaSWE\nPJhASsE/AgMBAAECggEAUgglnN0N4SbCIT97caYJo5nle5+D0jtieF+z4n3S4KSn\n0iY4dp0dzj1IZNUHodKQ+IRQ9MndH4UYlEVVCvvXk9D5dMAY1xk0lRNJWF/svzBi\nNrJGubHtyInR7yNAzDw/PCrFsStBhEuwtrBJxdGIfqL9qtnvzCW1y7pPKDHCWWpE\n4cIUOcom154dErEFysNFPggP8WPwPO+BuqzDLbPA+OoUBC/fXzCe/ZwNQjY4SjWB\nEaukzujTNVwvB1r1bKFcCsYlFwE4u0yMzas+DQDk4OSA1g1+Ji/0sIgNjQwHbUzr\nbuwSMkKHmvPF68xvmwhOOzgRvRtdsfqxw1vF7w/IwQKBgQD5AkFKbCWlxya3JCIE\nVg6JfuYyuwD+hFoxMUEirMZWB1svpW1B5gN5L8R4ecmI+GwhhJ5knXr4+O7JxbDb\nMscRzXKkjNkrYsT3P4De+RaZ9o17HhzpvHp1lmrL0ZY9j5AE2L/5BGQ4tflZkxRA\nAjbI81/bbhgxhwJwcEOuv5Fi8wKBgQC1qvJ9uAwWIwImC6/bOyElnoGTWxQTuZOV\nPy2Ehbf0nZmq2HfmUhAnwoBTCF4lDdCulm2ad300GgR3BimWW3wzZ/RLxdL6hDW3\nX6wNE/SZdYasT1DYdxHclhwLKpcrfgkn5ocmFACeMw6amojNc/quoLSLyYf/p3oh\nRSIZI2CDhQKBgQD3YfMlkd2xHfJrnj0hW7Gjjev62Gg7c5f7KTjRzx5YF4TTCCFM\nh8xJmFgzbKL5LfyXLB8ETKQAN6db08hJbN/y4s4Thk622LBgBrnsS0DWAuk6OId2\n+yYaLi65gOYnELp+5iuKpH9BDCDGieVjVg/BgnBoGq90fPHCbPYA5Rb2WwKBgB7C\nCrxuZN16n+qBIA0mPb54z8d7LDMKwIoMYFCHs1WfOV1LuUEts76Hl+J3EDmF1Uc6\nAOSeRnyDyy27xV7Hroelmh8aJ1Zy/AVIFYFBV7CDzYFvDGkZ/9QxNh5N37plZHd0\n+Hzh9hjS3C4g6/idIlxeqTLhtDz8xhjL87H942FhAoGBAPQgTuPsnl1tufQdCq9F\n4FNeI6fkCc5NPBzYLffqF9h8Uo5mQtCoFxbOm01Ne80DMW6zqm6BWs9GgEEJKemB\npBBPtsYm8rdFY4yqFJeZ4GTLve/1UqtRf+zxmCIyyZTj81AzDmwwmZEnrGjFnU09\nXPck5T38KsfIwrua2HD3e2Dg\n-----END PRIVATE KEY-----\n",
-    client_email: "gavra-play-store@gavra-notif-20250920162521.iam.gserviceaccount.com",
-    client_id: "114763935157287009259",
-    auth_uri: "https://accounts.google.com/o/oauth2/auth",
-    token_uri: "https://oauth2.googleapis.com/token",
-    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-    client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/gavra-play-store%40gavra-notif-20250920162521.iam.gserviceaccount.com",
-    universe_domain: "googleapis.com"
-};
+import { Logger } from "./logger.js";
+const logger = new Logger('google-play-mcp');
+const PACKAGE_NAME = process.env.GOOGLE_PLAY_PACKAGE_NAME;
 const SERVICE_ACCOUNT_KEY = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY;
+// Validate required environment variables
+if (!PACKAGE_NAME) {
+    logger.error('Missing required environment variable: GOOGLE_PLAY_PACKAGE_NAME');
+    process.exit(1);
+}
+if (!SERVICE_ACCOUNT_KEY) {
+    logger.error('Missing required environment variable: GOOGLE_PLAY_SERVICE_ACCOUNT_KEY');
+    logger.error('Please set the service account JSON in your mcp.json');
+    process.exit(1);
+}
+logger.info('Google Play credentials loaded successfully');
 async function getAndroidPublisher() {
-    let credentials;
-    if (SERVICE_ACCOUNT_KEY) {
-        credentials = JSON.parse(SERVICE_ACCOUNT_KEY);
-    }
-    else {
-        // Use fallback credentials
-        credentials = FALLBACK_SERVICE_ACCOUNT;
-    }
+    const credentials = JSON.parse(SERVICE_ACCOUNT_KEY);
     const auth = new google.auth.GoogleAuth({
         credentials,
         scopes: ["https://www.googleapis.com/auth/androidpublisher"],
@@ -295,7 +287,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     content: [
                         {
                             type: "text",
-                            text: `Unknown tool: ${name}`,
+                            text: JSON.stringify({
+                                success: false,
+                                error: `Unknown tool: ${name}`,
+                            }, null, 2),
                         },
                     ],
                     isError: true,
@@ -304,20 +299,53 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorContext = {
+            tool: name,
+            packageName: PACKAGE_NAME,
+            timestamp: new Date().toISOString(),
+        };
+        logger.exception(`Tool execution failed: ${name}`, error, errorContext);
         return {
             content: [
                 {
                     type: "text",
-                    text: `Error: ${errorMessage}`,
+                    text: JSON.stringify({
+                        success: false,
+                        error: errorMessage,
+                        tool: name,
+                        packageName: PACKAGE_NAME,
+                        hint: getGooglePlayErrorHint(errorMessage),
+                    }, null, 2),
                 },
             ],
             isError: true,
         };
     }
 });
+/**
+ * Get helpful hints based on common Google Play API error messages
+ */
+function getGooglePlayErrorHint(errorMessage) {
+    if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        return 'Check your GOOGLE_PLAY_SERVICE_ACCOUNT_KEY environment variable';
+    }
+    if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+        return 'Service account may not have Android Publisher API access. Check Google Cloud Console permissions';
+    }
+    if (errorMessage.includes('404') || errorMessage.includes('applicationNotFound')) {
+        return 'Package name not found. Verify GOOGLE_PLAY_PACKAGE_NAME is correct and the app exists in Google Play Console';
+    }
+    if (errorMessage.includes('Invalid JSON')) {
+        return 'GOOGLE_PLAY_SERVICE_ACCOUNT_KEY contains invalid JSON. Ensure it is properly escaped';
+    }
+    return undefined;
+}
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Google Play MCP Server running on stdio");
+    logger.info("🚀 Google Play MCP Server started");
 }
-main().catch(console.error);
+main().catch((error) => {
+    logger.exception('Failed to start server', error);
+    process.exit(1);
+});

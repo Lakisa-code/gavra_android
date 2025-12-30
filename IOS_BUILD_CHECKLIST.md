@@ -1,6 +1,6 @@
 # iOS Build na GitHub Actions - Checklist i Status
 
-**Poslednje ažuriranje:** 28. decembar 2025.
+**Poslednje ažuriranje:** 28. decembar 2025. 09:49 AM
 
 ---
 
@@ -13,9 +13,20 @@
 
 ---
 
-## 🎯 TRENUTNI STATUS: ✅ TESTFLIGHT AKTIVAN
+## 🎯 TRENUTNI STATUS: ✅ SUBMITTED FOR APP STORE REVIEW
 
-iOS build radi! Aplikacija je dostupna na TestFlight za testiranje.
+**iOS aplikacija je submitovana za App Store review!**
+
+| Detalj | Vrednost |
+|--------|----------|
+| **App Name** | Gavra 013 |
+| **Version** | 1.0 |
+| **Build** | 6.0.3 (1) |
+| **Status** | ⏳ Waiting for Review |
+| **Date Submitted** | Dec 28, 2025 at 9:49 AM |
+| **Submission ID** | dd3aca6d-cb49-4674-a196-6ee3ad1b0df0 |
+
+**Očekivano vreme review-a:** 1-3 dana
 
 ---
 
@@ -29,11 +40,11 @@ iOS build radi! Aplikacija je dostupna na TestFlight za testiranje.
 - **Renewal date:** July 24, 2026
 
 ### 2. App Store Connect App ✅
-- **App Name:** Gavra Bus (treba promeniti na Gavra 013)
-- **App ID:** `6749899354`
-- **Bundle ID (iOS):** `com.gavra013.gavraAndroid`
+- **App Name:** Gavra 013
+- **App ID:** `6757114361`
+- **Bundle ID (iOS):** `com.gavra013.gavra013ios`
 - **SKU:** gavra-bus-001
-- **iOS verzija:** 1.0 (Prepare for Submission)
+- **iOS verzija:** 1.0 (Waiting for Review)
 
 ### 3. App Store Connect API Key ✅
 - **Key Name:** GitHub Actions iOS
@@ -86,9 +97,17 @@ iOS build radi! Aplikacija je dostupna na TestFlight za testiranje.
 
 ---
 
-## 🎉 TRENUTNI STATUS: TESTFLIGHT AKTIVAN
+## 🎉 TRENUTNI STATUS: APP STORE - WAITING FOR REVIEW
 
-iOS build radi! Aplikacija je dostupna na TestFlight za testiranje.
+**Verzija 6.0.0 je submitovana za App Store review!** (28. Dec 2025)
+
+- **Review Type:** APP_STORE (puna distribucija)
+- **Release Type:** AFTER_APPROVAL (automatski publish nakon odobrenja)
+- **Status:** Waiting for Review
+- **Očekivano vreme review-a:** 1-3 dana
+
+### Prethodne verzije:
+- TestFlight: ✅ Testiran i funkcionalan
 
 ---
 
@@ -112,7 +131,13 @@ iOS build radi! Aplikacija je dostupna na TestFlight za testiranje.
 | Platform | Bundle/Package ID |
 |----------|-------------------|
 | Android | `com.gavra013.gavra_android` (sa underscore) |
-| iOS | `com.gavra013.gavraAndroid` (camelCase) |
+| iOS | `com.gavra013.gavra013ios` |
+
+### Workflow struktura
+- **apk-release.yml:** Kombinovani workflow za Android + iOS
+  - Android build: ~7 minuta (ubuntu runner)
+  - iOS build: ~20 minuta (macos runner)
+  - Upload na App Store Connect automatski
 
 ### TestFlight distribucija
 - **Internal Testing:** max 100 testera (bez review-a)

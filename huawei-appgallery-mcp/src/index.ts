@@ -33,6 +33,7 @@ const logger = new Logger('huawei-appgallery-mcp');
 // Environment variables for credentials - REQUIRED
 const HUAWEI_CLIENT_ID = process.env.HUAWEI_CLIENT_ID;
 const HUAWEI_CLIENT_SECRET = process.env.HUAWEI_CLIENT_SECRET;
+const HUAWEI_APP_ID = process.env.HUAWEI_APP_ID; // Default App ID
 
 // Validate required environment variables
 if (!HUAWEI_CLIENT_ID || !HUAWEI_CLIENT_SECRET) {
@@ -44,6 +45,9 @@ if (!HUAWEI_CLIENT_ID || !HUAWEI_CLIENT_SECRET) {
 logger.info('Huawei credentials loaded successfully');
 logger.info(`Client ID: ${HUAWEI_CLIENT_ID}`);
 logger.info(`Client Secret: ${HUAWEI_CLIENT_SECRET?.substring(0, 8)}...`);
+if (HUAWEI_APP_ID) {
+    logger.info(`Default App ID: ${HUAWEI_APP_ID}`);
+}
 
 // Initialize Huawei client
 const huaweiClient = new HuaweiAppGalleryClient({
@@ -70,10 +74,10 @@ const TOOLS: Tool[] = [
             properties: {
                 appId: {
                     type: 'string',
-                    description: 'The App ID from AppGallery Connect',
+                    description: 'The App ID from AppGallery Connect (optional if HUAWEI_APP_ID env is set)',
                 },
             },
-            required: ['appId'],
+            required: [],
         },
     },
     {
@@ -84,7 +88,7 @@ const TOOLS: Tool[] = [
             properties: {
                 appId: {
                     type: 'string',
-                    description: 'The App ID from AppGallery Connect',
+                    description: 'The App ID from AppGallery Connect (optional if HUAWEI_APP_ID env is set)',
                 },
                 filePath: {
                     type: 'string',
@@ -97,7 +101,7 @@ const TOOLS: Tool[] = [
                     default: 'apk',
                 },
             },
-            required: ['appId', 'filePath'],
+            required: ['filePath'],
         },
     },
     {
@@ -108,7 +112,7 @@ const TOOLS: Tool[] = [
             properties: {
                 appId: {
                     type: 'string',
-                    description: 'The App ID from AppGallery Connect',
+                    description: 'The App ID from AppGallery Connect (optional if HUAWEI_APP_ID env is set)',
                 },
                 language: {
                     type: 'string',
@@ -132,7 +136,7 @@ const TOOLS: Tool[] = [
                     description: "What's new in this version (max 500 characters)",
                 },
             },
-            required: ['appId'],
+            required: [],
         },
     },
     {
@@ -143,14 +147,14 @@ const TOOLS: Tool[] = [
             properties: {
                 appId: {
                     type: 'string',
-                    description: 'The App ID from AppGallery Connect',
+                    description: 'The App ID from AppGallery Connect (optional if HUAWEI_APP_ID env is set)',
                 },
                 releaseTime: {
                     type: 'string',
                     description: 'Scheduled release time (ISO 8601 format, optional)',
                 },
             },
-            required: ['appId'],
+            required: [],
         },
     },
     {
@@ -161,10 +165,10 @@ const TOOLS: Tool[] = [
             properties: {
                 appId: {
                     type: 'string',
-                    description: 'The App ID from AppGallery Connect',
+                    description: 'The App ID from AppGallery Connect (optional if HUAWEI_APP_ID env is set)',
                 },
             },
-            required: ['appId'],
+            required: [],
         },
     },
 ];
@@ -220,7 +224,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case 'huawei_get_app_info': {
-                const { appId } = args as { appId: string };
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required. Set HUAWEI_APP_ID env or provide appId parameter.' }, null, 2) }],
+                    };
+                }
                 const appInfo = await huaweiClient.getAppInfo(appId);
                 return {
                     content: [
@@ -233,11 +242,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case 'huawei_upload_apk': {
-                const { appId, filePath, fileType = 'apk' } = args as {
-                    appId: string;
+                const { appId = HUAWEI_APP_ID, filePath, fileType = 'apk' } = args as {
+                    appId?: string;
                     filePath: string;
                     fileType?: 'apk' | 'aab';
                 };
+
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required. Set HUAWEI_APP_ID env or provide appId parameter.' }, null, 2) }],
+                    };
+                }
 
                 // Get upload URL
                 const uploadInfo = await huaweiClient.getUploadUrl(appId, fileType);
@@ -272,20 +287,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
             case 'huawei_update_app_info': {
                 const {
-                    appId,
+                    appId = HUAWEI_APP_ID,
                     language = 'en-US',
                     appName,
                     appDesc,
                     briefInfo,
                     newFeatures,
                 } = args as {
-                    appId: string;
+                    appId?: string;
                     language?: string;
                     appName?: string;
                     appDesc?: string;
                     briefInfo?: string;
                     newFeatures?: string;
                 };
+
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required. Set HUAWEI_APP_ID env or provide appId parameter.' }, null, 2) }],
+                    };
+                }
 
                 await huaweiClient.updateLanguageInfo(appId, language, {
                     appName,
@@ -312,10 +333,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case 'huawei_submit_for_review': {
-                const { appId, releaseTime } = args as {
-                    appId: string;
+                const { appId = HUAWEI_APP_ID, releaseTime } = args as {
+                    appId?: string;
                     releaseTime?: string;
                 };
+
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required. Set HUAWEI_APP_ID env or provide appId parameter.' }, null, 2) }],
+                    };
+                }
 
                 const result = await huaweiClient.submitForReview(appId, releaseTime);
 
@@ -338,7 +365,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case 'huawei_get_status': {
-                const { appId } = args as { appId: string };
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required. Set HUAWEI_APP_ID env or provide appId parameter.' }, null, 2) }],
+                    };
+                }
                 const appInfo = await huaweiClient.getAppInfo(appId);
 
                 // Huawei AppGallery releaseState codes:

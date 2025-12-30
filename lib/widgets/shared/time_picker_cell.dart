@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/route_config.dart';
+import '../../globals.dart';
 import '../../services/theme_manager.dart';
 import '../../utils/schedule_utils.dart';
 
@@ -65,11 +66,26 @@ class TimePickerCell extends StatelessWidget {
   }
 
   void _showTimePickerDialog(BuildContext context) {
-    // Automatska provera sezone
-    final jeZimski = isZimski(DateTime.now());
-    final vremena = isBC
-        ? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji)
-        : (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);
+    // Koristi navBarTypeNotifier za određivanje vremena (prati aktivan bottom nav bar)
+    final navType = navBarTypeNotifier.value;
+    List<String> vremena;
+
+    switch (navType) {
+      case 'praznici':
+        vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
+        break;
+      case 'zimski':
+        vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+        break;
+      case 'letnji':
+        vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
+        break;
+      default: // 'auto'
+        final jeZimski = isZimski(DateTime.now());
+        vremena = isBC
+            ? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji)
+            : (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);
+    }
 
     showDialog(
       context: context,

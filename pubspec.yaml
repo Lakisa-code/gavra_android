@@ -46,7 +46,6 @@ dependencies:
   # printing: ^5.14.2  # removed for Android-only build to avoid web dependency conflicts
   pdf: ^3.11.3
   geolocator: ^14.0.2
-  crypto: ^3.0.3
   graphql: ^5.1.2
   graphql_flutter: ^5.1.2
   uuid: ^4.4.0

@@ -49,21 +49,16 @@ export interface AppSubmitResult {
     };
 }
 
-// Hardcoded fallback credentials (VS Code env vars don't work reliably)
-const FALLBACK_CLIENT_ID = '1850740994484473152';
-const FALLBACK_CLIENT_SECRET = 'F4CC48ADE493A712D729DDF8B7A11542591BDBC52AD2999E950CC7BED1DEDC98';
-
 export class HuaweiAppGalleryClient {
     private credentials: HuaweiCredentials;
     private accessToken: string | null = null;
     private tokenExpiry: number = 0;
 
     constructor(credentials: HuaweiCredentials) {
-        // Use fallback if credentials are empty
-        this.credentials = {
-            clientId: credentials.clientId || FALLBACK_CLIENT_ID,
-            clientSecret: credentials.clientSecret || FALLBACK_CLIENT_SECRET
-        };
+        if (!credentials.clientId || !credentials.clientSecret) {
+            throw new Error('HuaweiAppGalleryClient: clientId and clientSecret are required');
+        }
+        this.credentials = credentials;
     }
 
     /**

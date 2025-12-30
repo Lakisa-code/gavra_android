@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // 📱 Za Edge-to-Edge prikaz (Android 15+)
 import 'package:google_api_availability/google_api_availability.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,6 +27,17 @@ import 'supabase_client.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 📱 EDGE-TO-EDGE PRIKAZ ZA ANDROID 15+ (SDK 35)
+  // Omogućava prikaz od ivice do ivice sa pravilnim insets-ima
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ),
+  );
 
   // 🌍 INICIJALIZACIJA LOCALE ZA FORMATIRANJE DATUMA
   await initializeDateFormatting('sr_RS', null);
