@@ -1,0 +1,25 @@
+﻿✅ ČIŠĆENJE ZAVRŠENO - 30. decembar 2025.
+
+Preostalo debugPrint statement-a: 4 (od početnih 87)
+Obrisano: 83 debugPrint statement-a
+
+═══════════════════════════════════════════════════════════════
+PREOSTALI (zaštićeni/zakomentarisani):
+═══════════════════════════════════════════════════════════════
+70|lib\main.dart|debugPrint('📲 [FCM] Token registered: ${fcmToken.substring(0, 20)}...');
+73|lib\main.dart|if (kDebugMode) debugPrint('❌ [FCM] Token registration failed: $e');
+24|lib\services\daily_checkin_service.dart|// debugPrint (zakomentarisan)
+80|lib\services\registrovani_putnik_service.dart|// debugPrint (zakomentarisan)
+
+═══════════════════════════════════════════════════════════════
+OBRISANI FAJLOVI:
+═══════════════════════════════════════════════════════════════
+✅ main.dart - 4 obrisano
+✅ admin_map_screen.dart - 1 obrisan
+✅ daily_checkin_service.dart - 3 obrisano
+✅ kapacitet_service.dart - 5 obrisano
+✅ putnik_service.dart - 12 obrisano
+✅ registrovani_putnik_service.dart - 6 obrisano
+✅ sms_service.dart - 24 obrisano
+✅ realtime_manager.dart - 25 obrisano (+ debugPrintState() funkcija)
+✅ kombi_eta_widget.dart - 3 obrisano

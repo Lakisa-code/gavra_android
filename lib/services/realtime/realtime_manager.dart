@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'realtime_config.dart';
@@ -61,7 +60,6 @@ class RealtimeManager {
   /// Više listenera može slušati isti stream - deli se isti channel.
   Stream<PostgresChangePayload> subscribe(String table) {
     _listenerCount[table] = (_listenerCount[table] ?? 0) + 1;
-    debugPrint('📡 [RealtimeManager] Subscribe to $table (listeners: ${_listenerCount[table]})');
 
     if (!_controllers.containsKey(table) || _controllers[table]!.isClosed) {
       _controllers[table] = StreamController<PostgresChangePayload>.broadcast();
@@ -76,7 +74,6 @@ class RealtimeManager {
   /// Channel se zatvara samo kad nema više listenera.
   void unsubscribe(String table) {
     _listenerCount[table] = (_listenerCount[table] ?? 1) - 1;
-    debugPrint('📡 [RealtimeManager] Unsubscribe from $table (listeners: ${_listenerCount[table]})');
 
     // Ugasi channel samo ako nema više listenera
     if (_listenerCount[table] != null && _listenerCount[table]! <= 0) {
@@ -86,7 +83,6 @@ class RealtimeManager {
 
   /// Forsiraj reconnect za tabelu
   void forceReconnect(String table) {
-    debugPrint('🔄 [RealtimeManager] Force reconnect for $table');
     _reconnectAttempts[table] = 0;
     _closeChannel(table);
     if (_listenerCount[table] != null && _listenerCount[table]! > 0) {
@@ -96,7 +92,6 @@ class RealtimeManager {
 
   /// Forsiraj reconnect za sve tabele
   void forceReconnectAll() {
-    debugPrint('🔄 [RealtimeManager] Force reconnect ALL');
     for (final table in _channels.keys.toList()) {
       forceReconnect(table);
     }
@@ -122,10 +117,6 @@ class RealtimeManager {
     // "The channel name can be any string except 'realtime'."
     final channelName = 'db-changes:$table';
 
-    // DEBUG: Провери колико канала већ постоји у SDK-у
-    final existingChannelsCount = _supabase.getChannels().length;
-    debugPrint('📡 [RealtimeManager] Creating channel for $table (SDK has $existingChannelsCount channels)');
-
     final channel = _supabase.channel(channelName);
 
     channel
@@ -134,7 +125,6 @@ class RealtimeManager {
       schema: 'public',
       table: table,
       callback: (payload) {
-        debugPrint('🔔 [RealtimeManager] Change in $table: ${payload.eventType}');
         if (_controllers.containsKey(table) && !_controllers[table]!.isClosed) {
           _controllers[table]!.add(payload);
         }
@@ -145,7 +135,6 @@ class RealtimeManager {
     });
 
     _channels[table] = channel;
-    debugPrint('   SDK now has ${_supabase.getChannels().length} channels');
   }
 
   /// Handle status promene od Supabase
@@ -154,21 +143,17 @@ class RealtimeManager {
       case RealtimeSubscribeStatus.subscribed:
         _reconnectAttempts[table] = 0;
         _updateStatus(table, RealtimeStatus.connected);
-        debugPrint('✅ [RealtimeManager] $table connected');
         break;
 
       case RealtimeSubscribeStatus.channelError:
-        debugPrint('❌ [RealtimeManager] $table channel error: $error');
         _scheduleReconnect(table);
         break;
 
       case RealtimeSubscribeStatus.closed:
-        debugPrint('🔴 [RealtimeManager] $table closed');
         _scheduleReconnect(table);
         break;
 
       case RealtimeSubscribeStatus.timedOut:
-        debugPrint('⏰ [RealtimeManager] $table timed out');
         _scheduleReconnect(table);
         break;
     }
@@ -180,7 +165,6 @@ class RealtimeManager {
 
     if (attempts >= RealtimeConfig.maxReconnectAttempts) {
       _updateStatus(table, RealtimeStatus.error);
-      debugPrint('🔴 [RealtimeManager] Max reconnect attempts reached for $table');
       return;
     }
 
@@ -191,7 +175,6 @@ class RealtimeManager {
     // https://supabase.com/docs/guides/realtime/troubleshooting - preporučuje kraće intervale
     final delays = [3, 6, 10]; // sekunde za attempt 0, 1, 2
     final delay = delays[attempts.clamp(0, delays.length - 1)];
-    debugPrint('🔄 [RealtimeManager] Reconnecting $table in ${delay}s (attempt ${attempts + 1})');
 
     Future.delayed(Duration(seconds: delay), () async {
       // Proveri da li još uvek ima listenera
@@ -208,9 +191,8 @@ class RealtimeManager {
             // https://pub.dev/documentation/supabase_flutter/latest/supabase_flutter/SupabaseClient/removeChannel.html
             // Ово потпуно уклања канал из SDK и спречава race conditions
             await _supabase.removeChannel(existingChannel);
-            debugPrint('🧹 [RealtimeManager] Removed old channel for $table');
-          } catch (e) {
-            debugPrint('⚠️ [RealtimeManager] Error removing channel for $table: $e');
+          } catch (_) {
+            // Error removing channel - silent
           }
           _channels.remove(table);
         }
@@ -225,16 +207,11 @@ class RealtimeManager {
 
           // Ako se broj kanala smanjio, SDK je očistio kanal
           if (currentChannelCount < initialChannelCount) {
-            debugPrint('✅ [RealtimeManager] SDK cleaned up $table channel after ${retries * 50}ms');
             break;
           }
 
           await Future.delayed(const Duration(milliseconds: 50));
           retries++;
-        }
-
-        if (retries >= maxRetries) {
-          debugPrint('⚠️ [RealtimeManager] SDK cleanup timeout for $table - proceeding anyway');
         }
 
         // Сада безбедно креирај нови канал
@@ -253,7 +230,6 @@ class RealtimeManager {
 
   /// Ugasi sve channel-e i očisti resurse
   void dispose() {
-    debugPrint('🧹 [RealtimeManager] Disposing all channels');
     for (final channel in _channels.values) {
       channel.unsubscribe();
     }
@@ -266,15 +242,5 @@ class RealtimeManager {
     _reconnectAttempts.clear();
     _statusMap.clear();
     _statusController.close();
-  }
-
-  /// Debug: Prikaži trenutno stanje
-  void debugPrintState() {
-    debugPrint('═══════════════════════════════════════');
-    debugPrint('📡 [RealtimeManager] Current State:');
-    debugPrint('  Channels: ${_channels.keys.toList()}');
-    debugPrint('  Listeners: $_listenerCount');
-    debugPrint('  Status: $_statusMap');
-    debugPrint('═══════════════════════════════════════');
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
@@ -141,8 +140,6 @@ class KapacitetService {
 
     // Koristi centralizovani RealtimeManager
     subscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
-      debugPrint('🔄 [KapacitetService] Postgres change: ${payload.eventType}');
-
       // 🚀 PAYLOAD FILTERING: Ažuriraj cache direktno ako je moguće
       if (payload.eventType == PostgresChangeEvent.update || payload.eventType == PostgresChangeEvent.insert) {
         final grad = payload.newRecord['grad'] as String?;
@@ -152,7 +149,6 @@ class KapacitetService {
         if (grad != null && vreme != null && maxMesta != null && _kapacitetCache != null) {
           if (_kapacitetCache!.containsKey(grad)) {
             _kapacitetCache![grad]![vreme] = maxMesta;
-            debugPrint('  📝 [PayloadFiltering] Updated capacity for $grad $vreme to $maxMesta');
             if (!controller.isClosed) {
               controller.add(Map.from(_kapacitetCache!));
             }
@@ -181,8 +177,6 @@ class KapacitetService {
   /// Admin: Promeni kapacitet za određeni polazak
   static Future<bool> setKapacitet(String grad, String vreme, int maxMesta, {String? napomena}) async {
     try {
-      debugPrint('🎫 setKapacitet: grad=$grad, vreme=$vreme, maxMesta=$maxMesta');
-
       await _supabase.from('kapacitet_polazaka').upsert({
         'grad': grad,
         'vreme': vreme,
@@ -194,10 +188,8 @@ class KapacitetService {
       // Invalidate cache
       _kapacitetCache = null;
 
-      debugPrint('🎫 setKapacitet: SUCCESS');
       return true;
-    } catch (e) {
-      debugPrint('🎫 setKapacitet ERROR: $e');
+    } catch (_) {
       return false;
     }
   }

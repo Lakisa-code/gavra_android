@@ -48,7 +48,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
     // Koristi centralizovani RealtimeManager
     _gpsSubscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen((payload) {
-      debugPrint('🔄 [AdminMapScreen] GPS change: ${payload.eventType}');
       _loadGpsLokacije();
     });
   }

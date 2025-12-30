@@ -146,13 +146,12 @@ void main() async {
     try {
       await PutnikService().checkAndPerformWeeklyReset();
     } catch (e) {
-      debugPrint('⚠️ [main] Weekly reset check failed: $e');
+      // Weekly reset check failed - silent
     }
 
     // 🔄 REALTIME se inicijalizuje lazy kroz PutnikService
     // Ne treba eksplicitna pretplata ovde - PutnikService.streamKombinovaniPutniciFiltered()
     // će se pretplatiti kad neki ekran zatraži stream
-    debugPrint('✅ [main] RealtimeManager ready (lazy init through PutnikService)');
 
     // GPS Learn će naučiti prave koordinate kada vozač pokupi putnika
   } catch (e) {
@@ -189,7 +188,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  String? _initError;
   Timer? _cleanupTimer;
 
   @override
@@ -209,6 +207,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Future<void> _forceSubscribeToTopics() async {
     try {
       await Future.delayed(const Duration(seconds: 2)); // Wait for Firebase init
+      if (!mounted) return; // 🛡️ Zaštita od poziva nakon dispose
       await RealtimeNotificationService.subscribeToDriverTopics('test_driver');
     } catch (e) {
       // FORCE subscribe failed
@@ -254,13 +253,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       });
 
       // Inicijalizacija završena
-      debugPrint('✅ App inicijalizacija završena');
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _initError = e.toString();
-        });
-      }
+    } catch (_) {
+      // Init error - silent
     }
   }
 
@@ -283,11 +277,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Widget _buildHome() {
-    if (_initError != null) {
-      // Samo prikaži grešku u konzoli i idi na WelcomeScreen
-      debugPrint('Init error: $_initError');
-    }
-
     // Uvek idi direktno na WelcomeScreen - bez Loading ekrana
     return const WelcomeScreen();
   }

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -59,8 +58,8 @@ class DailyCheckInService {
         final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
         controller.add(amount);
       }
-    } catch (e) {
-      debugPrint('❌ [DailyCheckInService] Fetch error for $vozac: $e');
+    } catch (_) {
+      // Fetch error - silent
     }
   }
 
@@ -70,8 +69,6 @@ class DailyCheckInService {
 
     // Koristi centralizovani RealtimeManager - JEDAN channel za sve vozače!
     _globalSubscription = RealtimeManager.instance.subscribe('daily_checkins').listen((payload) {
-      debugPrint('🔄 [DailyCheckInService] Postgres change: ${payload.eventType}');
-
       // Osvježi sve aktivne vozače
       for (final entry in _kusurControllers.entries) {
         final vozac = entry.key;
@@ -83,7 +80,6 @@ class DailyCheckInService {
     });
 
     _isSubscribed = true;
-    debugPrint('✅ [DailyCheckInService] Global subscription created via RealtimeManager');
   }
 
   /// 🧹 Čisti kusur cache za vozača

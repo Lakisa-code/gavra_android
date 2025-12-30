@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -18,9 +17,6 @@ class SMSService {
     if (_isServiceRunning) return;
 
     _isServiceRunning = true;
-    debugPrint('🚀 SMS servis pokrenut - dupli sistem:\n'
-        '   📅 Predzadnji dan meseca u 20:00 - podsećaj da ističe sutra\n'
-        '   📅 Prvi dan meseca u 10:00 - krajnji rok za prethodni mesec');
 
     _monthlyTimer = Timer.periodic(const Duration(hours: 1), (timer) async {
       await _checkAndSendMonthlySMS();
@@ -32,7 +28,6 @@ class SMSService {
     _monthlyTimer?.cancel();
     _monthlyTimer = null;
     _isServiceRunning = false;
-    debugPrint('🛑 SMS servis zaustavljen');
   }
 
   /// Provera da li je vreme za slanje SMS-a
@@ -41,12 +36,10 @@ class SMSService {
     DateTime secondToLastDay = _getSecondToLastDayOfMonth(now);
 
     if (now.day == secondToLastDay.day && now.hour == 20 && now.minute >= 0 && now.minute < 5) {
-      debugPrint('📅 Predzadnji dan meseca u 20:00 - šaljem SMS podsetićaje...');
       await sendSMSToUnpaidMonthlyPassengers();
     }
 
     if (now.day == 1 && now.hour == 10 && now.minute >= 0 && now.minute < 5) {
-      debugPrint('📅 Prvi dan meseca u 10:00 - šaljem SMS krajnji rok...');
       await sendSMSToOverdueMonthlyPassengers();
     }
   }
@@ -64,11 +57,8 @@ class SMSService {
       final currentDriver = await FirebaseService.getCurrentDriver();
 
       if (currentDriver == null || currentDriver.toLowerCase() != 'bojan') {
-        debugPrint('🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver');
         return;
       }
-
-      debugPrint('📱 Učitavam neplaćene mesečne putnike... (Vozač: $currentDriver)');
 
       final now = DateTime.now();
       final currentMonth = now.month;
@@ -107,11 +97,6 @@ class SMSService {
         return !placeniPutnici.contains(putnik.id);
       }).toList();
 
-      debugPrint('📋 Pronađeno ${unpaidPassengers.length} putnika koji nisu platili za ${_getMonthName(currentMonth)}');
-
-      int successCount = 0;
-      int errorCount = 0;
-
       for (RegistrovaniPutnik putnik in unpaidPassengers) {
         try {
           final cenaPoDoanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
@@ -130,23 +115,18 @@ class SMSService {
           );
 
           await _sendSMS(putnik.brojTelefona!, message);
-          successCount++;
-          debugPrint('SMS poslat: ${putnik.putnikIme} (${putnik.brojTelefona})');
 
           if (putnik.tip == 'ucenik') {
             await _sendSMSToParents(putnik, message);
           }
 
           await Future<void>.delayed(const Duration(seconds: 2));
-        } catch (e) {
-          errorCount++;
-          debugPrint('Greška slanja SMS: ${putnik.putnikIme} - $e');
+        } catch (_) {
+          // SMS send error - silent
         }
       }
-
-      debugPrint('SMS rezultati: $successCount uspešno, $errorCount greška');
-    } catch (e) {
-      debugPrint('Greška u SMS servisu: $e');
+    } catch (_) {
+      // SMS service error - silent
     }
   }
 
@@ -157,11 +137,8 @@ class SMSService {
       final currentDriver = await FirebaseService.getCurrentDriver();
 
       if (currentDriver == null || currentDriver.toLowerCase() != 'bojan') {
-        debugPrint('🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver');
         return;
       }
-
-      debugPrint('📱 Učitavam putnike koji nisu platili za prethodni mesec... (Vozač: $currentDriver)');
 
       final now = DateTime.now();
       final previousMonth = now.month == 1 ? 12 : now.month - 1;
@@ -200,12 +177,6 @@ class SMSService {
         return !placeniPutnici.contains(putnik.id);
       }).toList();
 
-      debugPrint(
-          '📋 Pronađeno ${overduePassengers.length} putnika koji nisu platili za ${_getMonthName(previousMonth)}');
-
-      int successCount = 0;
-      int errorCount = 0;
-
       for (RegistrovaniPutnik putnik in overduePassengers) {
         try {
           final cenaPoDoanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
@@ -224,23 +195,18 @@ class SMSService {
           );
 
           await _sendSMS(putnik.brojTelefona!, message);
-          successCount++;
-          debugPrint('✅ Krajnji rok SMS poslat: ${putnik.putnikIme} (${putnik.brojTelefona})');
 
           if (putnik.tip == 'ucenik') {
             await _sendSMSToParents(putnik, message);
           }
 
           await Future<void>.delayed(const Duration(seconds: 2));
-        } catch (e) {
-          errorCount++;
-          debugPrint('❌ Greška slanja krajnji rok SMS: ${putnik.putnikIme} - $e');
+        } catch (_) {
+          // Overdue SMS send error - silent
         }
       }
-
-      debugPrint('📊 Krajnji rok SMS rezultati: $successCount uspešno, $errorCount greška');
-    } catch (e) {
-      debugPrint('💥 Greška u krajnji rok SMS servisu: $e');
+    } catch (_) {
+      // Overdue SMS service error - silent
     }
   }
 
@@ -327,22 +293,16 @@ class SMSService {
 
   /// Slanje SMS poruke
   static Future<void> _sendSMS(String phoneNumber, String message) async {
-    try {
-      final Uri smsUri = Uri(
-        scheme: 'sms',
-        path: phoneNumber,
-        queryParameters: {'body': message},
-      );
+    final Uri smsUri = Uri(
+      scheme: 'sms',
+      path: phoneNumber,
+      queryParameters: {'body': message},
+    );
 
-      if (await canLaunchUrl(smsUri)) {
-        await launchUrl(smsUri);
-        debugPrint('📤 SMS aplikacija otvorena za: $phoneNumber');
-      } else {
-        throw Exception('Ne mogu da pokrenemo SMS aplikaciju');
-      }
-    } catch (e) {
-      debugPrint('📵 Greška otvaranja SMS aplikacije za $phoneNumber: $e');
-      rethrow;
+    if (await canLaunchUrl(smsUri)) {
+      await launchUrl(smsUri);
+    } else {
+      throw Exception('Ne mogu da pokrenemo SMS aplikaciju');
     }
   }
 
@@ -369,7 +329,6 @@ class SMSService {
       }
 
       if (roditeljiBrojevi.isEmpty) {
-        debugPrint('⚠️ Nema brojeva telefona roditelja za učenika: ${putnik.putnikIme}');
         return;
       }
 
@@ -380,16 +339,15 @@ class SMSService {
           String roditeljskaPoruka = '📬 PORUKA O VAŠEM DETETU ${putnik.putnikIme.toUpperCase()}:\n\n$message';
 
           await _sendSMS(brojTelefona, roditeljskaPoruka);
-          debugPrint('✅ SMS poslat roditelju: $brojTelefona za učenika ${putnik.putnikIme}');
 
           // Pauza između SMS-ova roditeljima
           await Future<void>.delayed(const Duration(seconds: 1));
-        } catch (e) {
-          debugPrint('❌ Greška slanja SMS roditelju $brojTelefona: $e');
+        } catch (_) {
+          // Parent SMS error - silent
         }
       }
-    } catch (e) {
-      debugPrint('❌ Greška u _sendSMSToParents za ${putnik.putnikIme}: $e');
+    } catch (_) {
+      // _sendSMSToParents error - silent
     }
   }
 }

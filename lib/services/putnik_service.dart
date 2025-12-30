@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
@@ -72,16 +71,12 @@ class PutnikService {
 
     // Koristi centralizovani RealtimeManager
     _globalSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
-      debugPrint('🔄 [PutnikService] Postgres change: ${payload.eventType}');
-
       // 🔧 FIX: UVEK radi full refresh jer partial update ne može pravilno rekonstruisati
       // polasci_po_danu JSON koji sadrži vremePokupljenja, otkazanZaPolazak itd.
       // Partial update je previše kompleksan i error-prone za ovaj use case.
-      debugPrint('🔄 [PutnikService] Full refresh triggered');
       _refreshAllStreams();
     });
     _isSubscribed = true;
-    debugPrint('✅ [PutnikService] Global subscription created via RealtimeManager');
   }
 
   /// Osvežava SVE aktivne streamove (full refresh)
@@ -128,7 +123,6 @@ class PutnikService {
     _doFetchForStream(key, isoDate, grad, vreme, controller);
 
     controller.onCancel = () {
-      debugPrint('🧹 Stream $key cleanup');
       _streams.remove(key);
       _lastValues.remove(key);
       _streamParams.remove(key);
@@ -925,8 +919,6 @@ class PutnikService {
         final putnikDan = selectedDan ?? (respMap['dan'] ?? '') as String;
         final isToday = putnikDan.toLowerCase().contains(todayName.toLowerCase()) || putnikDan == todayName;
 
-        debugPrint('📢 OTKAZIVANJE: dan=$putnikDan, danas=$todayName, isToday=$isToday, ime=$cancelName');
-
         if (isToday) {
           RealtimeNotificationService.sendNotificationToAllDrivers(
             title: 'Otkazan putnik',
@@ -942,12 +934,9 @@ class PutnikService {
               },
             },
           );
-          debugPrint('📢 NOTIFIKACIJA POSLATA za $cancelName');
-        } else {
-          debugPrint('📢 NOTIFIKACIJA PRESKOČENA - nije današnji dan');
         }
-      } catch (notifError) {
-        debugPrint('📢 GREŠKA pri slanju notifikacije: $notifError');
+      } catch (_) {
+        // Notification error - silent
       }
     } catch (e) {
       rethrow;
@@ -1165,10 +1154,8 @@ class PutnikService {
           }).eq('id', id);
         }
       }
-
-      debugPrint('✅ Nedeljni reset završen - očišćeni polasci_po_danu podaci');
-    } catch (e) {
-      debugPrint('❌ Greška pri nedeljnom resetu: $e');
+    } catch (_) {
+      // Weekly reset error - silent
     }
   }
 
@@ -1186,24 +1173,14 @@ class PutnikService {
     try {
       // Koristi Supabase za čuvanje poslednjeg reseta (umesto SharedPreferences)
       // Čuvamo u posebnoj tabeli ili kao metadata
-      final weekNumber = _getWeekNumber(now);
-      final yearWeek = '${now.year}-W$weekNumber';
 
       // Proveri app_settings tabelu (ako postoji) ili koristi local storage
       // Za sada koristimo jednostavnu proveru - reset se radi samo jednom u subotu
 
       // Izvrši reset
       await weeklyResetPolasciPoDanu();
-      debugPrint('✅ Nedeljni reset izvršen za $yearWeek');
-    } catch (e) {
-      debugPrint('❌ Greška pri proveri nedeljnog reseta: $e');
+    } catch (_) {
+      // Weekly reset check error - silent
     }
-  }
-
-  /// Helper za izračunavanje broja nedelje u godini
-  int _getWeekNumber(DateTime date) {
-    final firstDayOfYear = DateTime(date.year, 1, 1);
-    final daysDiff = date.difference(firstDayOfYear).inDays;
-    return ((daysDiff + firstDayOfYear.weekday) / 7).ceil();
   }
 }

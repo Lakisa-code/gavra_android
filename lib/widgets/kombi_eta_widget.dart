@@ -86,14 +86,11 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
               final keyLower = entry.key.toLowerCase();
               if (keyLower.contains(putnikLower) || putnikLower.contains(keyLower)) {
                 eta = entry.value as int?;
-                debugPrint('🔍 [KombiEtaWidget] Partial match: "${entry.key}" ~ "${widget.putnikIme}"');
                 break;
               }
             }
           }
         }
-        debugPrint(
-            '🚐 [KombiEtaWidget] putnikIme="${widget.putnikIme}", eta=$eta, putniciEta keys: ${putniciEta.keys.toList()}');
       }
 
       setState(() {
@@ -121,7 +118,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
     // Koristi centralizovani RealtimeManager - deli channel sa drugim widgetima
     _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen((payload) {
-      debugPrint('🔄 [KombiEtaWidget] GPS change: ${payload.eventType}');
       _loadGpsData();
     });
   }

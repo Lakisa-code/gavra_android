@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
@@ -122,8 +121,8 @@ class RegistrovaniPutnikService {
       if (_sharedController != null && !_sharedController!.isClosed) {
         _sharedController!.add(putnici);
       }
-    } catch (e) {
-      debugPrint('❌ [RegistrovaniPutnikService] Fetch error: $e');
+    } catch (_) {
+      // Fetch error - silent
     }
   }
 
@@ -133,15 +132,12 @@ class RegistrovaniPutnikService {
 
     // Koristi centralizovani RealtimeManager
     _sharedSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
-      debugPrint('🔄 [RegistrovaniPutnikService] Postgres change: ${payload.eventType}');
       _fetchAndEmit(supabase);
     });
-    debugPrint('✅ [RegistrovaniPutnikService] Subscription created via RealtimeManager');
   }
 
   /// 🧹 Čisti singleton cache - pozovi kad treba resetovati sve
   static void clearRealtimeCache() {
-    debugPrint('🧹 [RegistrovaniPutnikService] Clearing realtime cache');
     _sharedSubscription?.cancel();
     RealtimeManager.instance.unsubscribe('registrovani_putnici');
     _sharedSubscription = null;
@@ -283,7 +279,6 @@ class RegistrovaniPutnikService {
 
       return true;
     } catch (e) {
-      debugPrint('❌ [RegistrovaniPutnikService] azurirajPlacanjeZaMesec error: $e');
       // 🔧 FIX: Baci exception sa pravom greškom da korisnik vidi šta je problem
       rethrow;
     }
@@ -496,8 +491,7 @@ class RegistrovaniPutnikService {
         'vozac_ime': vozacIme,
         'datum': datum,
       };
-    } catch (e) {
-      debugPrint('❌ Greška u streamPoslednjePlacanje: $e');
+    } catch (_) {
       yield null;
     }
   }
