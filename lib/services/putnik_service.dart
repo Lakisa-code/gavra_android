@@ -996,48 +996,11 @@ class PutnikService {
             await supabase.from('registrovani_putnici').select().eq('putnik_ime', imePutnika).limit(1);
 
         if (registrovaniList.isNotEmpty) {
-          final respMap = registrovaniList.first;
-
-          // 🆕 Resetuj i per-trip otkazivanja u polasci_po_danu JSON-u
-          Map<String, dynamic> polasci = {};
-          final polasciRaw = respMap['polasci_po_danu'];
-          if (polasciRaw != null) {
-            if (polasciRaw is String) {
-              try {
-                polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
-              } catch (_) {}
-            } else if (polasciRaw is Map) {
-              polasci = Map<String, dynamic>.from(polasciRaw);
-            }
-          }
-
-          // Očisti SVA stanja za sve dane (otkazivanja, pokupljenja, plaćanja)
-          polasci.forEach((day, data) {
-            if (data is Map) {
-              // Otkazivanja
-              data.remove('bc_otkazano');
-              data.remove('bc_otkazao_vozac');
-              data.remove('vs_otkazano');
-              data.remove('vs_otkazao_vozac');
-              // Pokupljenja
-              data.remove('bc_pokupljeno');
-              data.remove('bc_pokupljeno_vozac');
-              data.remove('vs_pokupljeno');
-              data.remove('vs_pokupljeno_vozac');
-              // Plaćanja
-              data.remove('bc_placeno');
-              data.remove('bc_naplatilac');
-              data.remove('vs_placeno');
-              data.remove('vs_naplatilac');
-            }
-          });
-
-          // ? FIX: Update SVE putnike sa istim imenom (ako ih ima više)
+          // ✅ FIX: Triple-tap samo menja STATUS, ne briše statistike ni vozača!
+          // Reset sa godišnjeg/bolovanja = samo vrati status na 'radi'
           await supabase.from('registrovani_putnici').update({
             'aktivan': true,
             'status': 'radi',
-            'polasci_po_danu': polasci,
-            'vozac_id': null,
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('putnik_ime', imePutnika);
 

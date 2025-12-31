@@ -272,8 +272,10 @@ class RegistrovaniPutnikService {
       dayData['placeno_iznos'] = iznos;
       polasciPoDanu[danKratica] = dayData;
 
+      // ✅ FIX: NE MENJAJ vozac_id pri plaćanju!
+      // Naplata i dodeljivanje putnika vozaču su dve RAZLIČITE stvari.
+      // vozac_id se menja SAMO kroz DodeliPutnike ekran.
       await updateRegistrovaniPutnik(putnikId, {
-        'vozac_id': validVozacId,
         'polasci_po_danu': polasciPoDanu, // ✅ Sačuvaj plaćanje u JSON
       });
 
