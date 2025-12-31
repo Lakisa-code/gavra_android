@@ -60,7 +60,7 @@ class Putnik {
     this.cena, // ✅ STANDARDIZOVANO: cena umesto iznosPlacanja
     this.naplatioVozac,
     this.pokupioVozac,
-    this.dodaoVozac,
+    this.dodeljenVozac,
     this.vozac,
     required this.grad,
     this.otkazaoVozac,
@@ -138,8 +138,8 @@ class Putnik {
           _getVozacIme(map['vozac_id'] as String?),
       // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu (samo DANAS)
       pokupioVozac: RegistrovaniHelpers.getPokupioVozacForDayAndPlace(map, danKratica, place),
-      // ✅ FIX: dodaoVozac čita iz vozac_id (dodeljeni vozač)
-      dodaoVozac: _getVozacIme(map['vozac_id'] as String?),
+      // ✅ FIX: dodeljenVozac čita iz vozac_id (dodeljeni vozač)
+      dodeljenVozac: _getVozacIme(map['vozac_id'] as String?),
       grad: grad,
       adresa: _determineAdresaFromRegistrovani(map, grad), // ✅ FIX: Prosleđujemo grad za konzistentnost
       adresaId: _determineAdresaIdFromRegistrovani(map, grad), // ✅ NOVO - UUID adrese
@@ -171,7 +171,7 @@ class Putnik {
   final double? cena; // ✅ STANDARDIZOVANO: cena umesto iznosPlacanja
   final String? naplatioVozac;
   final String? pokupioVozac; // NOVO - vozač koji je pokupljanje izvršio
-  final String? dodaoVozac;
+  final String? dodeljenVozac;
   final String? vozac;
   final String grad;
   final String? otkazaoVozac;
@@ -375,7 +375,7 @@ class Putnik {
           naplatioVozac: naplatioVozacBC ?? _getVozacIme(map['vozac_id'] as String?),
           // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu
           pokupioVozac: pokupioVozacBC,
-          dodaoVozac: _getVozacIme(map['vozac_id'] as String?),
+          dodeljenVozac: _getVozacIme(map['vozac_id'] as String?),
           vozac: vozac,
           grad: 'Bela Crkva',
           adresa: finalAdresaBc, // 🆕 PRIORITET: adresa_danas > stalna adresa
@@ -419,7 +419,7 @@ class Putnik {
           naplatioVozac: naplatioVozacVS ?? _getVozacIme(map['vozac_id'] as String?),
           // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu
           pokupioVozac: pokupioVozacVS,
-          dodaoVozac: _getVozacIme(map['vozac_id'] as String?),
+          dodeljenVozac: _getVozacIme(map['vozac_id'] as String?),
           vozac: vozac,
           grad: 'Vršac',
           adresa: finalAdresaVs, // 🆕 PRIORITET: adresa_danas > stalna adresa

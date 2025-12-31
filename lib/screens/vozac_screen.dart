@@ -208,12 +208,12 @@ class _VozacScreenState extends State<VozacScreen> {
 
     // 🔄 UJEDNAČENO SA DANAS_SCREEN: Razdvoji pokupljene/otkazane/tuđe od preostalih
     final pokupljeniIOtkazani = sveziPutnici.where((p) {
-      final jeTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver;
+      final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
       return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || jeTudji;
     }).toList();
 
     final preostaliPutnici = sveziPutnici.where((p) {
-      final jeTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver;
+      final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
       return !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !jeTudji;
     }).toList();
 
@@ -418,7 +418,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       // 🔄 Razdvoji pokupljene/otkazane/tuđe od aktivnih putnika
       final pokupljeniIOtkazani = allPassengers.where((p) {
-        final jeTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver;
+        final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
         return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || jeTudji;
       }).toList();
 
@@ -427,7 +427,7 @@ class _VozacScreenState extends State<VozacScreen> {
         final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
             (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
         // 🔘 Isključi pokupljene, otkazane i tuđe putnike
-        final jeTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver;
+        final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
         final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !jeTudji;
         return hasValidAddress && isActive;
       }).toList();
@@ -567,7 +567,7 @@ class _VozacScreenState extends State<VozacScreen> {
       // Isključi odsutne putnike (bolovanje/godišnji)
       if (p.jeOdsustvo) return false;
       // 🔘 Isključi tuđe putnike (dodeljeni drugom vozaču)
-      if (p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver) {
+      if (p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver) {
         return false;
       }
       // Proveri validnu adresu

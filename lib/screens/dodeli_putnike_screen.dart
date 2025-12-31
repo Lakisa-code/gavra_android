@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -199,7 +199,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   Future<void> _showVozacPicker(Putnik putnik) async {
     final vozaci = VozacBoja.validDrivers;
-    final currentVozac = putnik.dodaoVozac ?? 'Nedodeljen';
+    final currentVozac = putnik.dodeljenVozac ?? 'Nedodeljen';
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -457,7 +457,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                             itemCount: _putnici.length,
                             itemBuilder: (context, index) {
                               final putnik = _putnici[index];
-                              final vozacColor = VozacBoja.getColorOrDefault(putnik.dodaoVozac, Colors.grey);
+                              final vozacColor = VozacBoja.getColorOrDefault(putnik.dodeljenVozac, Colors.grey);
                               final isSelected = putnik.id != null && _selectedPutnici.contains(putnik.id);
 
                               // 🎨 Boja kartice prema statusu putnika
@@ -506,7 +506,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                           backgroundColor:
                                               borderColor?.withValues(alpha: 0.3) ?? vozacColor.withValues(alpha: 0.2),
                                           child: Text(
-                                            putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
+                                            putnik.dodeljenVozac?.isNotEmpty == true ? putnik.dodeljenVozac![0] : '?',
                                             style: TextStyle(
                                               color: borderColor ?? vozacColor,
                                               fontWeight: FontWeight.bold,
@@ -524,7 +524,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${putnik.adresa ?? putnik.grad} • ${putnik.dodaoVozac ?? "Nedodeljen"}',
+                                        '${putnik.adresa ?? putnik.grad} • ${putnik.dodeljenVozac ?? "Nedodeljen"}',
                                         style: TextStyle(color: borderColor ?? vozacColor),
                                       ),
                                       if (statusText != null)
@@ -543,7 +543,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                           radius: 16,
                                           backgroundColor: vozacColor.withValues(alpha: 0.2),
                                           child: Text(
-                                            putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
+                                            putnik.dodeljenVozac?.isNotEmpty == true ? putnik.dodeljenVozac![0] : '?',
                                             style: TextStyle(color: vozacColor, fontSize: 12),
                                           ),
                                         )

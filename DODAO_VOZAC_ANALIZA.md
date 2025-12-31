@@ -127,21 +127,22 @@ Kod koristi `dodaoVozac` (koje zapravo čita `vozac_id`) da odredi:
 
 ```dart
 // Primer iz vozac_screen.dart
-final jeTudji = p.dodaoVozac != null && 
-                p.dodaoVozac!.isNotEmpty && 
-                p.dodaoVozac != _currentDriver;
+final jeTudji = p.dodeljenVozac != null && 
+                p.dodeljenVozac!.isNotEmpty && 
+                p.dodeljenVozac != _currentDriver;
 ```
 
-**Logika je ISPRAVNA** - samo je ime polja konfuzno (`dodaoVozac` umesto `dodeljenVozac`).
+**Logika je ISPRAVNA** - ime polja sada odgovara značenju (`dodeljenVozac`).
 
 ---
 
 ## 🔧 PREPORUKE
 
-### Opcija 1: PREIMENUJ polje (VELIKI REFAKTOR)
+### Opcija 1: PREIMENUJ polje (VELIKI REFAKTOR) ✅ URAĐENO
 - Preimenuj `dodaoVozac` → `dodeljenVozac` ili `vozac`
 - 58 mesta za izmenu
 - Čistiji kod, jasnija semantika
+- **STATUS: ZAVRŠENO** - svih 9 fajlova ažurirano
 
 ### Opcija 2: OSTAVI ime, dokumentuj
 - Ostavi `dodaoVozac` kako jeste
@@ -199,7 +200,7 @@ final jeTudji = p.dodaoVozac != null &&
 
 ## 📌 ZAKLJUČAK
 
-**`dodaoVozac` u kodu = `vozac_id` u bazi = DODELJEN VOZAČ**
+**`dodeljenVozac` u kodu = `vozac_id` u bazi = DODELJEN VOZAČ**
 
 Koncept "dodao vozač" (ko je fizički dodao putnika na listu) **NE POSTOJI** u sistemu i **NE TREBA**.
 

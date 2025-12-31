@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -497,9 +497,9 @@ class PutnikService {
       }
 
       // ?? STRIKTNA VALIDACIJA VOZACA
-      if (putnik.dodaoVozac == null || putnik.dodaoVozac!.isEmpty || !VozacBoja.isValidDriver(putnik.dodaoVozac)) {
+      if (putnik.dodeljenVozac == null || putnik.dodeljenVozac!.isEmpty || !VozacBoja.isValidDriver(putnik.dodeljenVozac)) {
         throw Exception(
-          'NEREGISTROVAN VOZAC: "${putnik.dodaoVozac}". Dozvoljeni su samo: ${VozacBoja.validDrivers.join(", ")}',
+          'NEREGISTROVAN VOZAC: "${putnik.dodeljenVozac}". Dozvoljeni su samo: ${VozacBoja.validDrivers.join(", ")}',
         );
       }
 
@@ -581,7 +581,7 @@ class PutnikService {
 
       // A�uriraj mesecnog putnika u bazi
       // ? UKLONJENO: updated_by izaziva foreign key gre�ku jer UUID nije u tabeli users
-      // final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodaoVozac ?? '');
+      // final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodeljenVozac ?? '');
 
       // ?? Pripremi update mapu - BEZ updated_by (foreign key constraint)
       final updateData = <String, dynamic>{
@@ -606,7 +606,7 @@ class PutnikService {
         RealtimeNotificationService.sendNotificationToAllDrivers(
           title: 'Novi putnik',
           body: 'Dodat je novi putnik ${putnik.ime} (${putnik.grad}, ${putnik.polazak})',
-          excludeSender: putnik.dodaoVozac,
+          excludeSender: putnik.dodeljenVozac,
           data: {
             'type': 'novi_putnik',
             'datum': now.toIso8601String(),

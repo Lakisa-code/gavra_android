@@ -1667,7 +1667,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           dan: _getDayAbbreviation(_selectedDay),
                                           mesecnaKarta: isMesecnaKarta,
                                           vremeDodavanja: DateTime.now(),
-                                          dodaoVozac: _currentDriver!, // Safe non-null assertion nakon validacije
+                                          dodeljenVozac: _currentDriver!, // Safe non-null assertion nakon validacije
                                           adresa: adresaZaKoristiti,
                                           adresaId: adresaIdZaKoristiti, // 🆕 Za brži geocoding
                                           brojTelefona: selectedPutnik!.brojTelefona,

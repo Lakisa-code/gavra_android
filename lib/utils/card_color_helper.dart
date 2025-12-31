@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
 
@@ -148,7 +148,7 @@ class CardColorHelper {
       return CardState.pokupljeno;
     }
     // 🔘 TUĐI PUTNIK: ima vozača, vozač nije trenutni
-    if (putnik.dodaoVozac != null && putnik.dodaoVozac!.isNotEmpty && putnik.dodaoVozac != currentDriver) {
+    if (putnik.dodeljenVozac != null && putnik.dodeljenVozac!.isNotEmpty && putnik.dodeljenVozac != currentDriver) {
       return CardState.tudji;
     }
     return CardState.nepokupljeno;

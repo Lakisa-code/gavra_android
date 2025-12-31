@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+﻿// ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
 
@@ -339,7 +339,7 @@ class _PutnikCardState extends State<PutnikCard> {
             status: 'radi', // Uvek radi kao početno stanje
             placeno: false,
             cena: 0,
-            dodaoVozac: _putnik.dodaoVozac,
+            dodeljenVozac: _putnik.dodeljenVozac,
             grad: _putnik.grad,
             adresa: _putnik.adresa,
             priority: _putnik.priority,
@@ -2679,7 +2679,7 @@ class _PutnikCardState extends State<PutnikCard> {
               cena: _putnik.cena,
               naplatioVozac: _putnik.naplatioVozac,
               pokupioVozac: _putnik.pokupioVozac,
-              dodaoVozac: _putnik.dodaoVozac,
+              dodeljenVozac: _putnik.dodeljenVozac,
               vozac: _putnik.vozac,
               grad: _putnik.grad,
               otkazaoVozac: widget.currentDriver,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
 import '../utils/putnik_helpers.dart';
@@ -61,7 +61,7 @@ class PutnikList extends StatelessWidget {
     }
 
     // 🔘 SIVI - Tuđi putnici (dodeljen DRUGOM vozaču) - NEPOKUPLJENI
-    final bool isTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != currentDriver;
+    final bool isTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != currentDriver;
     if (isTudji) {
       return 3; // sivi - tuđi putnici
     }
@@ -70,7 +70,7 @@ class PutnikList extends StatelessWidget {
     // Ako ima sivih, razdvoji moje i nedodeljene
     // Ako nema sivih, svi beli zajedno (alfabetski)
     if (imaSivih) {
-      final bool isMoj = p.dodaoVozac == currentDriver;
+      final bool isMoj = p.dodeljenVozac == currentDriver;
       if (isMoj) {
         return 1; // moji na vrh
       }
@@ -87,9 +87,9 @@ class PutnikList extends StatelessWidget {
         !p.jeOdsustvo &&
         !p.jeOtkazan &&
         !p.jePokupljen &&
-        p.dodaoVozac != null &&
-        p.dodaoVozac!.isNotEmpty &&
-        p.dodaoVozac != currentDriver);
+        p.dodeljenVozac != null &&
+        p.dodeljenVozac!.isNotEmpty &&
+        p.dodeljenVozac != currentDriver);
   }
 
   // Helper za proveru da li putnik treba da ima redni broj

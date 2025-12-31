@@ -1380,7 +1380,7 @@ class _DanasScreenState extends State<DanasScreen> {
     try {
       // 🔄 Razdvoji pokupljene/otkazane/tuđe od aktivnih putnika
       final pokupljeniIOtkazani = allPassengers.where((p) {
-        final jeTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver;
+        final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
         return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || jeTudji;
       }).toList();
 
@@ -1389,7 +1389,7 @@ class _DanasScreenState extends State<DanasScreen> {
         final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
             (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
         // 🔘 Isključi pokupljene, otkazane i tuđe putnike
-        final jeTudji = p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver;
+        final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
         final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !jeTudji;
         return hasValidAddress && isActive;
       }).toList();
@@ -1826,7 +1826,7 @@ class _DanasScreenState extends State<DanasScreen> {
       // 🆕 Isključi odsutne putnike (bolovanje/godišnji) - žute kartice ne idu u rutu
       if (p.jeOdsustvo) return false;
       // 🔘 Isključi tuđe putnike (dodeljeni drugom vozaču) - sive kartice ne idu u rutu
-      if (p.dodaoVozac != null && p.dodaoVozac!.isNotEmpty && p.dodaoVozac != _currentDriver) {
+      if (p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver) {
         return false;
       }
       // Za mesečne putnike: imaju adresaId koji pokazuje na pravu adresu
