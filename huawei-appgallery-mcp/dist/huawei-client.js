@@ -284,4 +284,68 @@ export class HuaweiAppGalleryClient {
         }
         return data.appInfos || [];
     }
+    /**
+     * 🔐 Set Test Account Info for Reviewers
+     * PUT /publish/v2/app-info
+     *
+     * This sets the test account credentials that Huawei reviewers will use
+     * to test the app during the review process.
+     */
+    async setTestAccountInfo(appId, testAccount) {
+        const token = await this.getAccessToken();
+        const body = {
+            testAccount: testAccount.account,
+            testPassword: testAccount.password,
+            testRemark: testAccount.accountRemark || '',
+        };
+        console.error('[DEBUG] setTestAccountInfo request:', JSON.stringify(body, null, 2));
+        // appId must be in query string, not in body
+        const response = await fetch(`${PUBLISH_API}/app-info?appId=${appId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+        console.error('[DEBUG] setTestAccountInfo response status:', response.status);
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('[DEBUG] setTestAccountInfo error:', text);
+            throw new Error(`Failed to set test account info: ${response.status} - ${text}`);
+        }
+        const result = await response.json();
+        console.error('[DEBUG] setTestAccountInfo result:', JSON.stringify(result, null, 2));
+        if (result.ret.code !== 0) {
+            throw new Error(`API Error: ${result.ret.msg}`);
+        }
+    }
+    /**
+     * 📋 Get Test Account Info
+     * GET /publish/v2/app-info (includes test account in response)
+     */
+    async getTestAccountInfo(appId) {
+        const token = await this.getAccessToken();
+        const url = `${PUBLISH_API}/app-info?appId=${appId}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get test account info: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${JSON.stringify(data.ret)}`);
+        }
+        return {
+            testAccount: data.appInfo.testAccount,
+            testPassword: data.appInfo.testPassword,
+            testRemark: data.appInfo.testRemark,
+        };
+    }
 }

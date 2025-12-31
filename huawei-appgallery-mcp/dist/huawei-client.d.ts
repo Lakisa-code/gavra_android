@@ -96,4 +96,25 @@ export declare class HuaweiAppGalleryClient {
      * GET /publish/v2/app-list
      */
     listApps(): Promise<AppInfo[]>;
+    /**
+     * 🔐 Set Test Account Info for Reviewers
+     * PUT /publish/v2/app-info
+     *
+     * This sets the test account credentials that Huawei reviewers will use
+     * to test the app during the review process.
+     */
+    setTestAccountInfo(appId: string, testAccount: {
+        account: string;
+        password: string;
+        accountRemark?: string;
+    }): Promise<void>;
+    /**
+     * 📋 Get Test Account Info
+     * GET /publish/v2/app-info (includes test account in response)
+     */
+    getTestAccountInfo(appId: string): Promise<{
+        testAccount?: string;
+        testPassword?: string;
+        testRemark?: string;
+    }>;
 }

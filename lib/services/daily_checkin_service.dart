@@ -125,47 +125,68 @@ class DailyCheckInService {
 
   /// Proveri da li je vozač već uradio check-in danas
   /// Proverava LOKALNO I SUPABASE - za sinhronizaciju između uređaja!
+  /// 🔧 POBOLJŠANO: Povećan timeout, retry logika, bolje logovanje
   static Future<bool> hasCheckedInToday(String vozac) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
+    // 1️⃣ PRVO: Proveri lokalno
     final localCheckedIn = prefs.getBool(todayKey) ?? false;
     if (localCheckedIn) {
       return true;
     }
 
-    try {
-      final supabase = Supabase.instance.client;
-      final todayStr = today.toIso8601String().split('T')[0]; // YYYY-MM-DD
+    // 2️⃣ DRUGO: Proveri Supabase bazu (sa retry logikom)
+    final todayStr = today.toIso8601String().split('T')[0]; // YYYY-MM-DD
 
-      final response = await supabase
-          .from('daily_checkins')
-          .select('sitan_novac, dnevni_pazari')
-          .eq('vozac', vozac)
-          .eq('datum', todayStr)
-          .maybeSingle()
-          .timeout(const Duration(seconds: 3));
+    for (int attempt = 1; attempt <= 2; attempt++) {
+      try {
+        final supabase = Supabase.instance.client;
 
-      if (response != null) {
-        // 🔄 SINHRONIZUJ lokalno sa Supabase podacima!
-        final sitanNovac = (response['sitan_novac'] as num?)?.toDouble() ?? 0.0;
-        final dnevniPazari = (response['dnevni_pazari'] as num?)?.toDouble() ?? 0.0;
+        final response = await supabase
+            .from('daily_checkins')
+            .select('sitan_novac, dnevni_pazari, checkin_vreme')
+            .eq('vozac', vozac)
+            .eq('datum', todayStr)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 6)); // 🔧 Povećan timeout sa 3s na 6s
 
-        await prefs.setBool(todayKey, true);
-        await prefs.setDouble('${todayKey}_amount', sitanNovac);
-        await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
-        await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
+        if (response != null) {
+          // ✅ VOZAČ JE VEĆ URADIO CHECK-IN SA DRUGOG UREĐAJA!
+          // 🔄 Sinhronizuj lokalno sa Supabase podacima
+          final sitanNovac = (response['sitan_novac'] as num?)?.toDouble() ?? 0.0;
+          final dnevniPazari = (response['dnevni_pazari'] as num?)?.toDouble() ?? 0.0;
 
-        // Emituj update za stream
-        if (!_sitanNovacController.isClosed) {
-          _sitanNovacController.add(sitanNovac);
+          await prefs.setBool(todayKey, true);
+          await prefs.setDouble('${todayKey}_amount', sitanNovac);
+          await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
+          await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
+
+          // Emituj update za stream
+          if (!_sitanNovacController.isClosed) {
+            _sitanNovacController.add(sitanNovac);
+          }
+
+          // Ažuriraj i kusur controller ako postoji
+          if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
+            _kusurControllers[vozac]!.add(sitanNovac);
+          }
+
+          print(
+              '✅ [DailyCheckIn] Vozač $vozac već uradio check-in danas (kusur: $sitanNovac) - sinhronizovano sa drugog uređaja');
+          return true;
         }
 
-        return true;
+        // Ako nema zapisa, vozač nije uradio check-in
+        break;
+      } catch (e) {
+        print('⚠️ [DailyCheckIn] Pokušaj $attempt/2 - Greška pri proveri Supabase: $e');
+        if (attempt < 2) {
+          // Sačekaj pre retry-a
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
       }
-    } catch (e) {
-      // 🔇 Ignore
     }
 
     return false;

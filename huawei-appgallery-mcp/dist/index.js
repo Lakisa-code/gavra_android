@@ -159,6 +159,46 @@ const TOOLS = [
             required: [],
         },
     },
+    {
+        name: 'huawei_set_test_account',
+        description: 'Set test account credentials for Huawei reviewers. This is REQUIRED when submitting an app that has login functionality.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID from AppGallery Connect (optional if HUAWEI_APP_ID env is set)',
+                },
+                account: {
+                    type: 'string',
+                    description: 'Test account username, email, or phone number for reviewers to use',
+                },
+                password: {
+                    type: 'string',
+                    description: 'Test account password or verification code',
+                },
+                remark: {
+                    type: 'string',
+                    description: 'Additional instructions for reviewers (e.g., "This is a driver account. Login with phone number.")',
+                },
+            },
+            required: ['account', 'password'],
+        },
+    },
+    {
+        name: 'huawei_get_test_account',
+        description: 'Get the current test account info configured for reviewers',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID from AppGallery Connect (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
 ];
 // Create MCP Server
 const server = new Server({
@@ -317,6 +357,63 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                 appName: appInfo.appName,
                                 versionName: appInfo.versionName,
                                 releaseState: releaseStateDesc[appInfo.releaseState] || 'Unknown',
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'huawei_set_test_account': {
+                const { appId = HUAWEI_APP_ID, account, password, remark } = args;
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required. Set HUAWEI_APP_ID env or provide appId parameter.' }, null, 2) }],
+                    };
+                }
+                if (!account || !password) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'account and password are required' }, null, 2) }],
+                    };
+                }
+                await huaweiClient.setTestAccountInfo(appId, {
+                    account,
+                    password,
+                    accountRemark: remark,
+                });
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'Test account info set successfully for reviewers',
+                                testAccount: {
+                                    account,
+                                    password: '********',
+                                    remark: remark || '',
+                                },
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'huawei_get_test_account': {
+                const { appId = HUAWEI_APP_ID } = args;
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required. Set HUAWEI_APP_ID env or provide appId parameter.' }, null, 2) }],
+                    };
+                }
+                const testInfo = await huaweiClient.getTestAccountInfo(appId);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                testAccount: testInfo.testAccount || 'Not set',
+                                testPassword: testInfo.testPassword ? '********' : 'Not set',
+                                testRemark: testInfo.testRemark || 'Not set',
                             }, null, 2),
                         },
                     ],

@@ -192,11 +192,30 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   // 💰 UČITAJ STVARNA PLAĆANJA iz voznje_log
   Future<void> _ucitajStvarnaPlacanja(List<RegistrovaniPutnik> putnici) async {
     try {
-      // Sada koristimo voznje_log za plaćanja
+      // 🔧 FIX: Učitaj STVARNE uplate iz voznje_log tabele
       final Map<String, double> placanja = {};
+
+      // Dohvati poslednje plaćanje za svakog putnika
       for (final putnik in putnici) {
-        // Koristi cena_po_danu kao default cenu
-        placanja[putnik.id] = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
+        try {
+          final response = await supabase
+              .from('voznje_log')
+              .select('iznos')
+              .eq('putnik_id', putnik.id)
+              .eq('tip', 'uplata')
+              .order('datum', ascending: false)
+              .limit(1)
+              .maybeSingle();
+
+          if (response != null && response['iznos'] != null) {
+            placanja[putnik.id] = (response['iznos'] as num).toDouble();
+          } else {
+            // Ako nema uplate, stavi 0
+            placanja[putnik.id] = 0.0;
+          }
+        } catch (e) {
+          placanja[putnik.id] = 0.0;
+        }
       }
       if (mounted) {
         // 🔄 ANTI-REBUILD OPTIMIZATION: Samo update ako su se podaci stvarno promenili
@@ -1927,11 +1946,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final TextEditingController iznosController = TextEditingController();
     String selectedMonth = _getCurrentMonthYear(); // Default current month
 
-    // Ako je već plaćeno, prikaži postojeći iznos
-    final stvarniIznos = _stvarnaPlacanja[putnik.id] ?? 0;
-    if (stvarniIznos > 0) {
-      iznosController.text = stvarniIznos.toStringAsFixed(0);
-    }
+    // 🔧 FIX: Učitaj stvarni ukupni iznos iz baze
+    final ukupnoPlaceno = await RegistrovaniPutnikService.dohvatiUkupnoPlaceno(putnik.id);
+
+    // Default cena po danu za input field
+    final cenaPoDanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
+    iznosController.text = cenaPoDanu.toStringAsFixed(0);
+
+    if (!mounted) return;
 
     showDialog<void>(
       context: context,
@@ -1955,7 +1977,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (stvarniIznos > 0) ...[
+                    if (ukupnoPlaceno > 0) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -1978,7 +2000,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Ukupno plaćeno: ${stvarniIznos.toStringAsFixed(0)} RSD',
+                                        'Ukupno plaćeno: ${ukupnoPlaceno.toStringAsFixed(0)} RSD',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: Colors.green.shade700,
@@ -2182,8 +2204,8 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       );
                     }
                   },
-                  icon: Icon(stvarniIznos > 0 ? Icons.add : Icons.save),
-                  label: Text(stvarniIznos > 0 ? 'Dodaj plaćanje' : 'Sačuvaj'),
+                  icon: Icon(ukupnoPlaceno > 0 ? Icons.add : Icons.save),
+                  label: Text(ukupnoPlaceno > 0 ? 'Dodaj plaćanje' : 'Sačuvaj'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple.shade600,
                     foregroundColor: Colors.white,
@@ -2199,6 +2221,12 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
   // 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
   Future<void> _prikaziDetaljneStatistike(RegistrovaniPutnik putnik) async {
+    // 🔧 FIX: Učitaj plaćene mesece PRIJE otvaranja dijaloga
+    await _ucitajPlaceneMesece(putnik);
+
+    // 🛡️ Proveri da li je widget još uvek mountovan
+    if (!mounted) return;
+
     String selectedPeriod = _getCurrentMonthYear();
 
     showDialog<void>(
@@ -2456,7 +2484,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
               _buildStatRow('📊 Tip putnika:', putnik.tip),
               if (putnik.tipSkole != null)
                 _buildStatRow(
-                  putnik.tip == 'ucenik' ? '� Škola:' : '�🏢 Ustanova/Firma:',
+                  putnik.tip == 'ucenik' ? '🏫 Škola:' : '🏢 Ustanova/Firma:',
                   putnik.tipSkole!,
                 ),
               if (putnik.brojTelefona != null) _buildStatRow('📞 Telefon:', putnik.brojTelefona!),
@@ -2487,22 +2515,21 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              _buildStatRow(
-                '💵 Poslednje plaćanje:',
-                (_stvarnaPlacanja[putnik.id] ?? 0) > 0
-                    ? '${(_stvarnaPlacanja[putnik.id]!).toStringAsFixed(0)} RSD'
-                    : 'Nema podataka o ceni',
-              ),
-              // 🔥 REALTIME: Datum i vozač poslednjeg plaćanja iz voznje_log
+              // 🔥 REALTIME: Datum, iznos i vozač poslednjeg plaćanja iz voznje_log
               StreamBuilder<Map<String, dynamic>?>(
                 stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnik.id),
                 builder: (context, snapshot) {
                   final placanje = snapshot.data;
                   final datum = placanje?['datum'] as String?;
                   final vozacIme = placanje?['vozac_ime'] as String?;
+                  final iznos = (placanje?['iznos'] as num?)?.toDouble() ?? 0.0;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _buildStatRow(
+                        '💵 Poslednje plaćanje:',
+                        iznos > 0 ? '${iznos.toStringAsFixed(0)} RSD' : 'Nema podataka',
+                      ),
                       _buildStatRow(
                         '📅 Datum plaćanja:',
                         datum ?? 'Nema podataka o datumu',
@@ -2552,7 +2579,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 stats['poslednje'] as String? ?? 'Nema podataka',
               ),
               _buildStatRow('📊 Uspešnost:', '${stats['uspesnost'] ?? 0}%'),
-              if (period == 'all_time' && stats['ukupan_prihod'] != null)
+              if (period == 'Ukupno' && stats['ukupan_prihod'] != null)
                 _buildStatRow(
                   '💰 Ukupan prihod:',
                   '${stats['ukupan_prihod']} RSD',
@@ -2584,7 +2611,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              _buildStatRow('� Kreiran:', _formatDatum(putnik.createdAt)),
+              _buildStatRow('📅 Kreiran:', _formatDatum(putnik.createdAt)),
               _buildStatRow('🔄 Ažuriran:', _formatDatum(putnik.updatedAt)),
               _buildStatRow(
                 '✅ Status:',
@@ -2656,28 +2683,38 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         .lte('created_at', endOfYear.toIso8601String())
         .order('created_at', ascending: false);
 
-    int putovanja = 0;
-    int otkazivanja = 0;
+    // Jedno putovanje = jedan dan (bez obzira na broj vožnji tog dana)
+    List<String> daniSaVoznjom = [];
+    List<String> daniSamoOtkazivanje = [];
     String? poslednje;
     double ukupanPrihod = 0;
 
     for (final record in response) {
       final tip = record['tip'] as String?;
       final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
+      final String? datumStr = record['datum'] as String?;
+      final datum = datumStr ?? record['created_at']?.toString().split('T')[0];
 
-      if (tip == 'voznja') {
-        putovanja++;
+      if (tip == 'voznja' && datum != null) {
         ukupanPrihod += iznos;
-      } else if (tip == 'otkazivanje') {
-        otkazivanja++;
-      }
-
-      if (poslednje == null && record['created_at'] != null) {
-        final datum = DateTime.parse(record['created_at'] as String);
-        poslednje = '${datum.day}/${datum.month}/${datum.year}';
+        if (!daniSaVoznjom.contains(datum)) {
+          daniSaVoznjom.add(datum);
+        }
+        // Poslednje putovanje - samo za vožnje, ne otkazivanja
+        if (poslednje == null) {
+          final d = DateTime.parse(datum);
+          poslednje = '${d.day}/${d.month}/${d.year}';
+        }
+      } else if (tip == 'otkazivanje' && datum != null) {
+        // Otkazivanje se broji samo ako tog dana NIJE bilo vožnje
+        if (!daniSaVoznjom.contains(datum) && !daniSamoOtkazivanje.contains(datum)) {
+          daniSamoOtkazivanje.add(datum);
+        }
       }
     }
 
+    final int putovanja = daniSaVoznjom.length;
+    final int otkazivanja = daniSamoOtkazivanje.length;
     final ukupno = putovanja + otkazivanja;
     final uspesnost = ukupno > 0 ? ((putovanja / ukupno) * 100).round() : 0;
 
@@ -2696,7 +2733,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final response =
         await supabase.from('voznje_log').select().eq('putnik_id', putnikId).order('created_at', ascending: false);
 
-    int putovanja = 0;
+    // Jedno putovanje = jedan dan (bez obzira na broj vožnji tog dana)
+    // Otkazivanja se broje svako pojedinačno
+    List<String> daniSaVoznjom = [];
     int otkazivanja = 0;
     String? poslednje;
     double ukupanPrihod = 0;
@@ -2704,20 +2743,26 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     for (final record in response) {
       final tip = record['tip'] as String?;
       final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
+      final String? datumStr = record['datum'] as String?;
+      final datum = datumStr ?? record['created_at']?.toString().split('T')[0];
 
-      if (tip == 'voznja') {
-        putovanja++;
+      if (tip == 'voznja' && datum != null) {
         ukupanPrihod += iznos;
+        if (!daniSaVoznjom.contains(datum)) {
+          daniSaVoznjom.add(datum);
+        }
+        // Poslednje putovanje - samo za vožnje, ne otkazivanja
+        if (poslednje == null) {
+          final d = DateTime.parse(datum);
+          poslednje = '${d.day}/${d.month}/${d.year}';
+        }
       } else if (tip == 'otkazivanje') {
+        // Broji svako otkazivanje
         otkazivanja++;
-      }
-
-      if (poslednje == null && record['created_at'] != null) {
-        final datum = DateTime.parse(record['created_at'] as String);
-        poslednje = '${datum.day}/${datum.month}/${datum.year}';
       }
     }
 
+    final int putovanja = daniSaVoznjom.length;
     final ukupno = putovanja + otkazivanja;
     final uspesnost = ukupno > 0 ? ((putovanja / ukupno) * 100).round() : 0;
 
@@ -2842,8 +2887,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
       final zapisi = response as List<dynamic>;
 
+      // Jedno putovanje = jedan dan (bez obzira na broj vožnji tog dana)
+      // Otkazivanja se broje svako pojedinačno
       List<String> uspesniDatumi = [];
-      List<String> otkazaniDatumi = [];
+      int brojOtkazivanja = 0;
       String? poslednjiDatum;
 
       // Procesuiraj zapise po datumima
@@ -2851,21 +2898,19 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         final datum = zapis['datum'] as String;
         final tip = zapis['tip'] as String?;
 
-        poslednjiDatum ??= datum;
-
         if (tip == 'voznja') {
+          // Poslednje putovanje - samo za vožnje, ne otkazivanja
+          poslednjiDatum ??= datum;
           if (!uspesniDatumi.contains(datum)) {
             uspesniDatumi.add(datum);
           }
         } else if (tip == 'otkazivanje') {
-          if (!otkazaniDatumi.contains(datum) && !uspesniDatumi.contains(datum)) {
-            otkazaniDatumi.add(datum);
-          }
+          // Broji svako otkazivanje
+          brojOtkazivanja++;
         }
       }
 
       final int brojPutovanja = uspesniDatumi.length;
-      final int brojOtkazivanja = otkazaniDatumi.length;
       final int ukupno = brojPutovanja + brojOtkazivanja;
       final double uspesnost = ukupno > 0 ? ((brojPutovanja / ukupno) * 100).roundToDouble() : 0;
 

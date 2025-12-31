@@ -462,13 +462,13 @@ class RegistrovaniPutnikService {
   }
 
   /// 🔥 Stream poslednjeg plaćanja za putnika (iz voznje_log)
-  /// Vraća Map sa 'vozac_ime' i 'datum'
+  /// Vraća Map sa 'vozac_ime', 'datum' i 'iznos'
   static Stream<Map<String, dynamic>?> streamPoslednjePlacanje(String putnikId) async* {
     final supabase = Supabase.instance.client;
     try {
       final response = await supabase
           .from('voznje_log')
-          .select('datum, vozac_id')
+          .select('datum, vozac_id, iznos')
           .eq('putnik_id', putnikId)
           .eq('tip', 'uplata')
           .order('datum', ascending: false)
@@ -482,6 +482,7 @@ class RegistrovaniPutnikService {
 
       final vozacId = response['vozac_id'] as String?;
       final datum = response['datum'] as String?;
+      final iznos = (response['iznos'] as num?)?.toDouble() ?? 0.0;
       String? vozacIme;
       if (vozacId != null && vozacId.isNotEmpty) {
         vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
@@ -490,9 +491,26 @@ class RegistrovaniPutnikService {
       yield {
         'vozac_ime': vozacIme,
         'datum': datum,
+        'iznos': iznos,
       };
     } catch (_) {
       yield null;
+    }
+  }
+
+  /// 💰 Dohvati UKUPNO plaćeno za putnika (svi uplate)
+  static Future<double> dohvatiUkupnoPlaceno(String putnikId) async {
+    final supabase = Supabase.instance.client;
+    try {
+      final response = await supabase.from('voznje_log').select('iznos').eq('putnik_id', putnikId).eq('tip', 'uplata');
+
+      double ukupno = 0.0;
+      for (final row in response) {
+        ukupno += (row['iznos'] as num?)?.toDouble() ?? 0.0;
+      }
+      return ukupno;
+    } catch (_) {
+      return 0.0;
     }
   }
 }
