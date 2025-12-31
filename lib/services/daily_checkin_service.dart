@@ -379,6 +379,28 @@ class DailyCheckInService {
     return null;
   }
 
+  /// 📊 NOVI: Dohvati popis za specifičan datum
+  static Future<Map<String, dynamic>?> getDailyReportForDate(String vozac, DateTime datum) async {
+    final prefs = await SharedPreferences.getInstance();
+    final dateKey = '$_checkInPrefix${vozac}_${datum.year}_${datum.month}_${datum.day}';
+    final popisString = prefs.getString('${dateKey}_popis');
+    if (popisString != null) {
+      try {
+        final decoded = jsonDecode(popisString) as Map<String, dynamic>;
+        return {
+          'datum': datum,
+          'popis': decoded,
+        };
+      } catch (e) {
+        return {
+          'datum': datum,
+          'popis': popisString,
+        };
+      }
+    }
+    return null;
+  }
+
   /// 📊 AUTOMATSKO GENERISANJE POPISA ZA PRETHODNI DAN
   static Future<Map<String, dynamic>?> generateAutomaticReport(
     String vozac,
@@ -426,9 +448,7 @@ class DailyCheckInService {
       }
 
       // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
-      final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
       final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
-      final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
       final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
       final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
       final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
@@ -453,9 +473,7 @@ class DailyCheckInService {
         'datum': targetDate.toIso8601String(),
         'ukupanPazar': ukupanPazar,
         'sitanNovac': sitanNovac,
-        'dodatiPutnici': dodatiPutnici,
         'otkazaniPutnici': otkazaniPutnici,
-        'naplaceniPutnici': naplaceniPutnici,
         'pokupljeniPutnici': pokupljeniPutnici,
         'dugoviPutnici': dugoviPutnici,
         'mesecneKarte': mesecneKarte,
@@ -487,7 +505,6 @@ class DailyCheckInService {
         'dnevni_pazari': popisPodaci['ukupanPazar'] ?? 0.0, // Isti kao ukupan_pazar
         'ukupno': (popisPodaci['sitanNovac'] ?? 0.0) + (popisPodaci['ukupanPazar'] ?? 0.0),
         'checkin_vreme': DateTime.now().toIso8601String(),
-        'dodati_putnici': popisPodaci['dodatiPutnici'] ?? 0,
         'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,
         'naplaceni_putnici': popisPodaci['naplaceniPutnici'] ?? 0,
         'pokupljeni_putnici': popisPodaci['pokupljeniPutnici'] ?? 0,

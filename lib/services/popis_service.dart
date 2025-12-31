@@ -12,9 +12,7 @@ class PopisData {
   final DateTime datum;
   final double ukupanPazar;
   final double sitanNovac;
-  final int dodatiPutnici;
   final int otkazaniPutnici;
-  final int naplaceniPutnici;
   final int pokupljeniPutnici;
   final int dugoviPutnici;
   final int mesecneKarte;
@@ -25,9 +23,7 @@ class PopisData {
     required this.datum,
     required this.ukupanPazar,
     required this.sitanNovac,
-    required this.dodatiPutnici,
     required this.otkazaniPutnici,
-    required this.naplaceniPutnici,
     required this.pokupljeniPutnici,
     required this.dugoviPutnici,
     required this.mesecneKarte,
@@ -37,9 +33,7 @@ class PopisData {
   Map<String, dynamic> toMap() => {
         'ukupanPazar': ukupanPazar,
         'sitanNovac': sitanNovac,
-        'dodatiPutnici': dodatiPutnici,
         'otkazaniPutnici': otkazaniPutnici,
-        'naplaceniPutnici': naplaceniPutnici,
         'pokupljeniPutnici': pokupljeniPutnici,
         'dugoviPutnici': dugoviPutnici,
         'mesecneKarte': mesecneKarte,
@@ -96,9 +90,7 @@ class PopisService {
     final sitanNovac = await DailyCheckInService.getTodayAmount(vozac) ?? 0.0;
 
     // 5. MAPIRANJE PODATAKA
-    final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
     final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
-    final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
     final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
     final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
     final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
@@ -116,9 +108,7 @@ class PopisService {
       datum: today,
       ukupanPazar: ukupanPazar,
       sitanNovac: sitanNovac,
-      dodatiPutnici: dodatiPutnici,
       otkazaniPutnici: otkazaniPutnici,
-      naplaceniPutnici: naplaceniPutnici,
       pokupljeniPutnici: pokupljeniPutnici,
       dugoviPutnici: dugoviPutnici,
       mesecneKarte: mesecneKarte,
@@ -183,11 +173,9 @@ class PopisService {
                     const SizedBox(height: 12),
 
                     // DETALJNE STATISTIKE
-                    _buildStatRow('Dodati putnici', data.dodatiPutnici, Icons.add_circle, Colors.blue),
+                    _buildStatRow('Pokupljeni', data.pokupljeniPutnici, Icons.check_circle, Colors.teal),
                     _buildStatRow('Otkazani', data.otkazaniPutnici, Icons.cancel, Colors.red),
-                    _buildStatRow('Naplaćeni', data.naplaceniPutnici, Icons.payment, Colors.green),
-                    _buildStatRow('Pokupljeni', data.pokupljeniPutnici, Icons.check_circle, Colors.orange),
-                    _buildStatRow('Dugovi', data.dugoviPutnici, Icons.warning, Colors.redAccent),
+                    _buildStatRow('Dugovi', data.dugoviPutnici, Icons.warning, Colors.orange),
                     _buildStatRow('Mesečne karte', data.mesecneKarte, Icons.card_membership, Colors.purple),
                     _buildStatRow('Kilometraža', '${data.kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
 

@@ -497,23 +497,21 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         return;
       }
 
-      // Proveri da li postoji popis od juče
-      final lastReport = await DailyCheckInService.getLastDailyReport(widget.vozac);
+      // ✅ ISPRAVKA: Proveri da li postoji popis SPECIFIČNO od juče
+      final yesterdayReport = await DailyCheckInService.getDailyReportForDate(widget.vozac, yesterday);
 
-      if (lastReport != null && mounted) {
-        // Proveri da li je automatski generisan
-        final popis = lastReport['popis'] as Map<String, dynamic>;
+      if (yesterdayReport != null) {
+        // Postoji popis od juče - proveri da li je automatski ili ručni
+        final popis = yesterdayReport['popis'] as Map<String, dynamic>;
         final automatskiGenerisal = popis['automatskiGenerisal'] == true;
 
-        if (automatskiGenerisal) {
-          // AUTOMATSKI POPIS - Prikaži kao automatski
+        if (automatskiGenerisal && mounted) {
+          // AUTOMATSKI POPIS - Prikaži (vozač ga nije video)
           await _showAutomaticReportDialog(popis);
-        } else {
-          // RUČNI POPIS - Prikaži ga
-          await _showPreviousDayReportDialog(lastReport);
         }
+        // ✅ RUČNI POPIS - NE prikazuj, vozač ga je već video kada ga je sačuvao
       } else {
-        // NEMA RUČNOG POPISA - Generiši automatski
+        // NEMA POPISA OD JUČE - Generiši automatski
         final automatskiPopis = await DailyCheckInService.generateAutomaticReport(
           widget.vozac,
           yesterday,
@@ -527,149 +525,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     } catch (e) {
       // Silently ignore
     }
-  }
-
-  // 📊 DIALOG ZA PRIKAZ POPISA IZ PRETHODNOG DANA
-  Future<void> _showPreviousDayReportDialog(Map<String, dynamic> lastReport) async {
-    final datum = lastReport['datum'] as DateTime;
-    final vozacColor = VozacBoja.get(widget.vozac);
-    final popis = lastReport['popis'] as Map<String, dynamic>;
-
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Color.lerp(vozacColor, Colors.white, 0.95), // Koristi dinamičku svetlu boju
-        title: Row(
-          children: [
-            Icon(Icons.person, color: vozacColor, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              '� RUČNI POPIS - ${datum.day}.${datum.month}.${datum.year}',
-              style: TextStyle(
-                color: vozacColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Vozač header
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: vozacColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: vozacColor, width: 2),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '👤 VOZAČ: ${widget.vozac}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: vozacColor,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Statistike
-                _buildStatistikaRow(
-                  '💰 Ukupan pazar',
-                  '${popis['ukupanPazar']?.toStringAsFixed(0) ?? 0} din',
-                  Theme.of(context).colorScheme.successPrimary,
-                ),
-                _buildStatistikaRow(
-                  '👥 Dodati putnici',
-                  '${popis['dodatiPutnici'] ?? 0}',
-                  Theme.of(context).colorScheme.primary,
-                ),
-                _buildStatistikaRow(
-                  '✅ Pokupljeni putnici',
-                  '${popis['pokupljeniPutnici'] ?? 0}',
-                  Theme.of(context).colorScheme.successPrimary,
-                ),
-                _buildStatistikaRow(
-                  '💳 Naplaćeni putnici',
-                  '${popis['naplaceniPutnici'] ?? 0}',
-                  Theme.of(context).colorScheme.workerPrimary,
-                ),
-                _buildStatistikaRow(
-                  '❌ Otkazani putnici',
-                  '${popis['otkazaniPutnici'] ?? 0}',
-                  Theme.of(context).colorScheme.dangerPrimary,
-                ),
-                _buildStatistikaRow(
-                  '💸 Dugovi',
-                  '${popis['dugoviPutnici'] ?? 0}',
-                  Theme.of(context).colorScheme.studentPrimary,
-                ),
-                _buildStatistikaRow(
-                  '🎫 Mesečne karte',
-                  '${popis['mesecneKarte'] ?? 0}',
-                  Colors.purple,
-                ),
-                _buildStatistikaRow(
-                  '🛣️ Kilometraža',
-                  '${popis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
-                  Colors.indigo,
-                ),
-                if (popis['sitanNovac'] != null && (popis['sitanNovac'] as num) > 0)
-                  _buildStatistikaRow(
-                    '🪙 Sitan novac',
-                    '${popis['sitanNovac']?.toStringAsFixed(0) ?? 0} din',
-                    Colors.amber,
-                  ),
-
-                const SizedBox(height: 16),
-
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: vozacColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: vozacColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info, color: vozacColor, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '💡 Sada možete uneti sitan novac za današnji dan.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: vozacColor.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: vozacColor,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('👤 Razumem'),
-          ),
-        ],
-      ),
-    );
   }
 
   // 🤖 DIALOG ZA AUTOMATSKI GENERISAN POPIS
@@ -782,19 +637,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                       Theme.of(context).colorScheme.successPrimary,
                     ),
                     _buildStatistikaRow(
-                      '👥 Dodati putnici',
-                      '${automatskiPopis['dodatiPutnici'] ?? 0}',
-                      vozacColor, // PROMENJEN: Koristi boju vozača
-                    ),
-                    _buildStatistikaRow(
                       '✅ Pokupljeni putnici',
                       '${automatskiPopis['pokupljeniPutnici'] ?? 0}',
                       Theme.of(context).colorScheme.successPrimary,
-                    ),
-                    _buildStatistikaRow(
-                      '💳 Naplaćeni putnici',
-                      '${automatskiPopis['naplaceniPutnici'] ?? 0}',
-                      Theme.of(context).colorScheme.workerPrimary,
                     ),
                     _buildStatistikaRow(
                       '❌ Otkazani putnici',

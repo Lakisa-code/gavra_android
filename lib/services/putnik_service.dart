@@ -12,6 +12,7 @@ import 'realtime/realtime_manager.dart';
 import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
 import 'vozac_mapping_service.dart';
+import 'voznje_log_service.dart';
 
 // ?? UNDO STACK - Stack za cuvanje poslednih akcija
 class UndoAction {
@@ -157,6 +158,9 @@ class PutnikService {
 
       final todayDate = isoDate ?? DateTime.now().toIso8601String().split('T')[0];
 
+      // 🆕 Učitaj otkazivanja iz voznje_log za sve putnike
+      final otkazivanja = await VoznjeLogService.getOtkazivanjaZaSvePutnike();
+
       final registrovani = await supabase
           .from('registrovani_putnici')
           .select(registrovaniFields)
@@ -170,7 +174,7 @@ class PutnikService {
         // ?? Dohvati uklonjene termine za ovog putnika
         final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
 
-        for (final p in putniciZaDan) {
+        for (var p in putniciZaDan) {
           final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
           final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
@@ -193,6 +197,17 @@ class PutnikService {
           });
           if (jeUklonjen) {
             continue;
+          }
+
+          // 🆕 Dopuni otkazivanje iz voznje_log ako putnik nema vremeOtkazivanja
+          if (p.jeOtkazan && p.vremeOtkazivanja == null && p.id != null) {
+            final otkazivanjeData = otkazivanja[p.id];
+            if (otkazivanjeData != null) {
+              p = p.copyWith(
+                vremeOtkazivanja: otkazivanjeData['datum'] as DateTime?,
+                otkazaoVozac: otkazivanjeData['vozacIme'] as String?,
+              );
+            }
           }
 
           combined.add(p);
@@ -497,7 +512,9 @@ class PutnikService {
       }
 
       // ?? STRIKTNA VALIDACIJA VOZACA
-      if (putnik.dodeljenVozac == null || putnik.dodeljenVozac!.isEmpty || !VozacBoja.isValidDriver(putnik.dodeljenVozac)) {
+      if (putnik.dodeljenVozac == null ||
+          putnik.dodeljenVozac!.isEmpty ||
+          !VozacBoja.isValidDriver(putnik.dodeljenVozac)) {
         throw Exception(
           'NEREGISTROVAN VOZAC: "${putnik.dodeljenVozac}". Dozvoljeni su samo: ${VozacBoja.validDrivers.join(", ")}',
         );

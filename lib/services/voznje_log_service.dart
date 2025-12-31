@@ -8,6 +8,52 @@ import 'vozac_mapping_service.dart';
 class VoznjeLogService {
   static final _supabase = Supabase.instance.client;
 
+  /// 🆕 Dohvati poslednje otkazivanje za sve putnike
+  /// Vraća mapu {putnikId: {datum: DateTime, vozacIme: String}}
+  static Future<Map<String, Map<String, dynamic>>> getOtkazivanjaZaSvePutnike() async {
+    final Map<String, Map<String, dynamic>> result = {};
+
+    try {
+      final response = await _supabase
+          .from('voznje_log')
+          .select('putnik_id, created_at, vozac_id')
+          .eq('tip', 'otkazivanje')
+          .order('created_at', ascending: false);
+
+      for (final record in response) {
+        final putnikId = record['putnik_id'] as String?;
+        if (putnikId == null) continue;
+
+        // Uzmi samo poslednje otkazivanje za svakog putnika
+        if (result.containsKey(putnikId)) continue;
+
+        final createdAt = record['created_at'] as String?;
+        final vozacId = record['vozac_id'] as String?;
+
+        DateTime? datum;
+        if (createdAt != null) {
+          try {
+            datum = DateTime.parse(createdAt).toLocal();
+          } catch (_) {}
+        }
+
+        String? vozacIme;
+        if (vozacId != null && vozacId.isNotEmpty) {
+          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+        }
+
+        result[putnikId] = {
+          'datum': datum,
+          'vozacIme': vozacIme,
+        };
+      }
+    } catch (e) {
+      // Greška - vrati praznu mapu
+    }
+
+    return result;
+  }
+
   /// Dodaj uplatu za putnika
   static Future<void> dodajUplatu({
     required String putnikId,

@@ -599,6 +599,74 @@ class Putnik {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
+  // 🆕 COPY WITH - za ažuriranje putnika sa novim podacima
+  // ═══════════════════════════════════════════════════════════════════════
+
+  Putnik copyWith({
+    String? id,
+    String? ime,
+    String? polazak,
+    bool? pokupljen,
+    DateTime? vremeDodavanja,
+    bool? mesecnaKarta,
+    String? dan,
+    String? status,
+    String? statusVreme,
+    DateTime? vremePokupljenja,
+    DateTime? vremePlacanja,
+    bool? placeno,
+    double? cena,
+    String? naplatioVozac,
+    String? pokupioVozac,
+    String? dodeljenVozac,
+    String? vozac,
+    String? grad,
+    String? otkazaoVozac,
+    DateTime? vremeOtkazivanja,
+    String? adresa,
+    String? adresaId,
+    bool? obrisan,
+    int? priority,
+    String? brojTelefona,
+    String? datum,
+    int? brojMesta,
+    String? tipPutnika,
+    bool? otkazanZaPolazak,
+  }) {
+    return Putnik(
+      id: id ?? this.id,
+      ime: ime ?? this.ime,
+      polazak: polazak ?? this.polazak,
+      pokupljen: pokupljen ?? this.pokupljen,
+      vremeDodavanja: vremeDodavanja ?? this.vremeDodavanja,
+      mesecnaKarta: mesecnaKarta ?? this.mesecnaKarta,
+      dan: dan ?? this.dan,
+      status: status ?? this.status,
+      statusVreme: statusVreme ?? this.statusVreme,
+      vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
+      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
+      placeno: placeno ?? this.placeno,
+      cena: cena ?? this.cena,
+      naplatioVozac: naplatioVozac ?? this.naplatioVozac,
+      pokupioVozac: pokupioVozac ?? this.pokupioVozac,
+      dodeljenVozac: dodeljenVozac ?? this.dodeljenVozac,
+      vozac: vozac ?? this.vozac,
+      grad: grad ?? this.grad,
+      otkazaoVozac: otkazaoVozac ?? this.otkazaoVozac,
+      vremeOtkazivanja: vremeOtkazivanja ?? this.vremeOtkazivanja,
+      adresa: adresa ?? this.adresa,
+      adresaId: adresaId ?? this.adresaId,
+      obrisan: obrisan ?? this.obrisan,
+      priority: priority ?? this.priority,
+      brojTelefona: brojTelefona ?? this.brojTelefona,
+      datum: datum ?? this.datum,
+      brojMesta: brojMesta ?? this.brojMesta,
+      tipPutnika: tipPutnika ?? this.tipPutnika,
+      otkazanZaPolazak: otkazanZaPolazak ?? this.otkazanZaPolazak,
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // 🎯 EQUALITY OPERATORS - za stabilno mapiranje u Map<Putnik, Position>
   // 🔧 FIX: Uključi SVE relevantne atribute za detekciju promena iz realtime-a
   // ═══════════════════════════════════════════════════════════════════════

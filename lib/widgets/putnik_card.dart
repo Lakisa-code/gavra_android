@@ -81,9 +81,18 @@ class _PutnikCardState extends State<PutnikCard> {
         '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
   }
 
-  // Kraći format za kompaktan prikaz (bez godine)
-  String _formatVremeDodavanjaKratko(DateTime vreme) {
-    return '${vreme.day}.${vreme.month}. ${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
+  // Format za otkazivanje - prikazuje vreme ako je danas, inače datum
+  String _formatOtkazivanje(DateTime vreme) {
+    final danas = DateTime.now();
+    final jeDanas = vreme.year == danas.year && vreme.month == danas.month && vreme.day == danas.day;
+
+    if (jeDanas) {
+      // Danas - prikaži samo vreme
+      return '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
+    } else {
+      // Ranije - prikaži datum
+      return '${vreme.day}.${vreme.month}.${vreme.year}';
+    }
   }
 
   String _formatVreme(DateTime vreme) {
@@ -2329,12 +2338,12 @@ class _PutnikCardState extends State<PutnikCard> {
                         ),
                       ],
                       // Otkazano info
-                      if (_putnik.jeOtkazan) ...[
+                      if (_putnik.jeOtkazan && _putnik.vremeOtkazivanja != null) ...[
                         if (_putnik.vremePokupljenja != null ||
                             (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0))
                           const SizedBox(width: 12),
                         Text(
-                          'Otkazao: ${_putnik.vremeOtkazivanja != null ? _formatVremeDodavanjaKratko(_putnik.vremeOtkazivanja!) : 'ranije'}',
+                          'Otkazao: ${_formatOtkazivanje(_putnik.vremeOtkazivanja!)}',
                           style: TextStyle(
                             fontSize: 13,
                             color: VozacBoja.getColorOrDefault(

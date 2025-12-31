@@ -158,13 +158,22 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           return vremeMatch && gradMatch;
         }).toList();
 
-        // 🔢 Sortiraj: aktivni prvi, odsustvo/otkazani na dno
+        // 🔢 Sortiraj konzistentno sa PutnikList:
+        // 1. Aktivni (alfabetski)
+        // 2. Crveni (otkazani)
+        // 3. Žuti (odsustvo - bolovanje/godišnji) na dno
         filtered.sort((a, b) {
-          final aInactive = a.jeOdsustvo || a.jeOtkazan;
-          final bInactive = b.jeOdsustvo || b.jeOtkazan;
-          if (aInactive && !bInactive) return 1; // a ide dole
-          if (!aInactive && bInactive) return -1; // b ide dole
-          return 0; // isti status, zadrži redosled
+          // Prioritet: aktivni=0, otkazani=1, odsustvo=2
+          int getPriority(Putnik p) {
+            if (p.jeOdsustvo) return 2; // žuti na dno
+            if (p.jeOtkazan) return 1; // crveni iznad žutih
+            return 0; // aktivni na vrh
+          }
+
+          final priorityCompare = getPriority(a).compareTo(getPriority(b));
+          if (priorityCompare != 0) return priorityCompare;
+          // Unutar iste grupe - alfabetski
+          return a.ime.toLowerCase().compareTo(b.ime.toLowerCase());
         });
 
         setState(() {
@@ -206,6 +215,9 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -215,7 +227,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
