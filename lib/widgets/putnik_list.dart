@@ -34,8 +34,10 @@ class PutnikList extends StatelessWidget {
   final String? selectedVreme;
 
   // Helper metoda za sortiranje putnika po grupama
-  // Prioritet: Moji/Nedodeljeni (beli) → Tuđi (sivi) → Plavi → Zeleni → Crveni → Žuti
-  int _putnikSortKey(Putnik p, String currentDriver) {
+  // Prioritet zavisi od toga da li ima sivih kartica:
+  // - Ako ima sivih: Moji → Nedodeljeni → Sivi → Plavi → Zeleni → Crveni → Žuti
+  // - Ako nema sivih: Svi beli alfabetski → Plavi → Zeleni → Crveni → Žuti
+  int _putnikSortKey(Putnik p, String currentDriver, {bool imaSivih = false}) {
     // 🟡 ŽUTE - Odsustvo ima najveći sort key (na dno)
     if (p.jeOdsustvo) {
       return 7; // žute na dno liste
@@ -64,15 +66,30 @@ class PutnikList extends StatelessWidget {
       return 3; // sivi - tuđi putnici
     }
 
-    // ⚪ BELI - Moji (dodeljen meni) ili Nedodeljeni (vozac_id = null)
-    // Moji idu prvi, pa nedodeljeni
-    final bool isMoj = p.dodaoVozac == currentDriver;
-    if (isMoj) {
-      return 1; // moji na vrh
+    // ⚪ BELI - Moji ili Nedodeljeni
+    // Ako ima sivih, razdvoji moje i nedodeljene
+    // Ako nema sivih, svi beli zajedno (alfabetski)
+    if (imaSivih) {
+      final bool isMoj = p.dodaoVozac == currentDriver;
+      if (isMoj) {
+        return 1; // moji na vrh
+      }
+      return 2; // nedodeljeni
     }
 
-    // Nedodeljeni
-    return 2;
+    // Nema sivih - svi beli zajedno
+    return 1;
+  }
+
+  // Helper za proveru da li ima sivih kartica u listi
+  bool _imaSivihKartica(List<Putnik> putnici, String currentDriver) {
+    return putnici.any((p) =>
+        !p.jeOdsustvo &&
+        !p.jeOtkazan &&
+        !p.jePokupljen &&
+        p.dodaoVozac != null &&
+        p.dodaoVozac!.isNotEmpty &&
+        p.dodaoVozac != currentDriver);
   }
 
   // Helper za proveru da li putnik treba da ima redni broj
@@ -126,10 +143,15 @@ class PutnikList extends StatelessWidget {
           }
           var filteredPutnici = snapshot.data!.where(prikaziPutnika).toList();
           filteredPutnici = deduplicatePutnici(filteredPutnici);
-          // SORTIRANJE: Moji → Nedodeljeni → Tuđi (sivi) → Plavi → Zeleni → Crveni → Žuti
+
+          // Proveri da li ima sivih kartica
+          final imaSivih = _imaSivihKartica(filteredPutnici, currentDriver);
+
+          // SORTIRANJE: Ako ima sivih: Moji → Nedodeljeni → Sivi → ostali
+          // Ako nema sivih: Svi beli alfabetski → ostali
           filteredPutnici.sort((a, b) {
-            final aSortKey = _putnikSortKey(a, currentDriver);
-            final bSortKey = _putnikSortKey(b, currentDriver);
+            final aSortKey = _putnikSortKey(a, currentDriver, imaSivih: imaSivih);
+            final bSortKey = _putnikSortKey(b, currentDriver, imaSivih: imaSivih);
 
             final cmp = aSortKey.compareTo(bSortKey);
             if (cmp != 0) return cmp;
@@ -252,10 +274,14 @@ class PutnikList extends StatelessWidget {
         );
       }
 
-      // SORTIRAJ: Moji → Nedodeljeni → Tuđi (sivi) → Plavi → Zeleni → Crveni → Žuti
+      // Proveri da li ima sivih kartica
+      final imaSivih = _imaSivihKartica(filteredPutnici, currentDriver);
+
+      // SORTIRAJ: Ako ima sivih: Moji → Nedodeljeni → Sivi → ostali
+      // Ako nema sivih: Svi beli alfabetski → ostali
       filteredPutnici.sort((a, b) {
-        final aSortKey = _putnikSortKey(a, currentDriver);
-        final bSortKey = _putnikSortKey(b, currentDriver);
+        final aSortKey = _putnikSortKey(a, currentDriver, imaSivih: imaSivih);
+        final bSortKey = _putnikSortKey(b, currentDriver, imaSivih: imaSivih);
         final cmp = aSortKey.compareTo(bSortKey);
         if (cmp != 0) return cmp;
         return a.ime.compareTo(b.ime);

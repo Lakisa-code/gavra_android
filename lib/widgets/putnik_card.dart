@@ -2504,79 +2504,81 @@ class _PutnikCardState extends State<PutnikCard> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.delete_outline,
-                    color: Colors.red,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Admin opcije - ${_putnik.ime}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+      builder: (context) => SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.delete_outline,
                       color: Colors.red,
+                      size: 20,
                     ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Admin opcije - ${_putnik.ime}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Opcije
+              Column(
+                children: [
+                  // Otkaži
+                  if (!_putnik.jeOtkazan)
+                    ListTile(
+                      leading: const Icon(Icons.close, color: Colors.orange),
+                      title: const Text('Otkaži putnika'),
+                      subtitle: const Text('Otkaži za trenutno vreme i datum'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _handleOtkazivanje();
+                      },
+                    ),
+                  // Ukloni iz termina
+                  ListTile(
+                    leading: const Icon(Icons.remove_circle_outline, color: Colors.orange),
+                    title: const Text('Ukloni iz termina'),
+                    subtitle: const Text('Samo za ovaj datum i vreme'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _handleBrisanje();
+                    },
                   ),
+                  // Godišnji/Bolovanje
+                  if (_putnik.mesecnaKarta == true && !_putnik.jeOtkazan && !_putnik.jeOdsustvo)
+                    ListTile(
+                      leading: const Icon(Icons.beach_access, color: Colors.orange),
+                      title: const Text('Godišnji/Bolovanje'),
+                      subtitle: const Text('Postavi odsustvo'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pokaziOdsustvoPicker();
+                      },
+                    ),
                 ],
               ),
-            ),
-            // Opcije
-            Column(
-              children: [
-                // Otkaži
-                if (!_putnik.jeOtkazan)
-                  ListTile(
-                    leading: const Icon(Icons.close, color: Colors.orange),
-                    title: const Text('Otkaži putnika'),
-                    subtitle: const Text('Otkaži za trenutno vreme i datum'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _handleOtkazivanje();
-                    },
-                  ),
-                // Obriši
-                ListTile(
-                  leading: const Icon(Icons.delete_outline, color: Colors.red),
-                  title: const Text('Obriši putnika'),
-                  subtitle: const Text('Ukloni sa liste rezervacija'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _handleBrisanje();
-                  },
-                ),
-                // Godišnji/Bolovanje
-                if (_putnik.mesecnaKarta == true && !_putnik.jeOtkazan && !_putnik.jeOdsustvo)
-                  ListTile(
-                    leading: const Icon(Icons.beach_access, color: Colors.orange),
-                    title: const Text('Godišnji/Bolovanje'),
-                    subtitle: const Text('Postavi odsustvo'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pokaziOdsustvoPicker();
-                    },
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );

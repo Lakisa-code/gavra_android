@@ -29,16 +29,14 @@ class StatistikaService {
   }
 
   /// Stream broja mesečnih karata koje je vozač naplatio DANAS
+  /// ✅ ISPRAVKA: Broji stvaran broj uplata, ne aproksimaciju
   static Stream<int> streamBrojRegistrovanihZaVozaca({required String vozac}) {
     final now = DateTime.now();
     final danPocetak = DateTime(now.year, now.month, now.day);
     final danKraj = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    return streamPazarZaSveVozace(from: danPocetak, to: danKraj).map((pazar) {
-      // Vraća broj uplata za vozača (aproksimacija)
-      final iznos = pazar[vozac] ?? 0.0;
-      // Pretpostavljamo prosečnu cenu od 500 RSD
-      return iznos > 0 ? (iznos / 500).round() : 0;
+    return VoznjeLogService.streamBrojUplataPoVozacima(from: danPocetak, to: danKraj).map((brojUplata) {
+      return brojUplata[vozac] ?? 0;
     });
   }
 

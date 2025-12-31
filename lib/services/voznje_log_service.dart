@@ -135,4 +135,41 @@ class VoznjeLogService {
       return 0;
     }
   }
+
+  /// ✅ Stream broja uplata po vozačima (realtime) - za kocku "Mesečne"
+  static Stream<Map<String, int>> streamBrojUplataPoVozacima({
+    required DateTime from,
+    required DateTime to,
+  }) {
+    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((records) {
+      final Map<String, int> brojUplata = {};
+      int ukupno = 0;
+
+      final fromStr = from.toIso8601String().split('T')[0];
+      final toStr = to.toIso8601String().split('T')[0];
+
+      for (final record in records) {
+        // Filtriraj po tipu i datumu
+        if (record['tip'] != 'uplata') continue;
+        final datum = record['datum'] as String?;
+        if (datum == null) continue;
+        if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;
+
+        final vozacId = record['vozac_id'] as String?;
+
+        // Konvertuj UUID u ime vozača
+        String vozacIme = vozacId ?? '';
+        if (vozacId != null && vozacId.isNotEmpty) {
+          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
+        }
+        if (vozacIme.isEmpty) continue;
+
+        brojUplata[vozacIme] = (brojUplata[vozacIme] ?? 0) + 1;
+        ukupno++;
+      }
+
+      brojUplata['_ukupno'] = ukupno;
+      return brojUplata;
+    });
+  }
 }
