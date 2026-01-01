@@ -269,8 +269,9 @@ jobs:
           echo "✅ Got access token"
           
           echo "📤 Getting upload URL..."
+          APK_SIZE=$(stat -c%s app-release.apk)
           UPLOAD_URL_RESPONSE=$(curl -s -X GET \
-            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs?appId=$AGC_APP_ID&releaseType=1&suffix=apk&fileName=app-release.apk" \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs?appId=$AGC_APP_ID&releaseType=1&suffix=apk&fileName=app-release.apk&contentLength=$APK_SIZE" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $AGC_CLIENT_ID")
           
