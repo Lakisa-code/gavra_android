@@ -93,11 +93,21 @@ jobs:
           
           echo "✅ Got access token"
           
-          # Get upload URL
+          # Get upload URL (using correct endpoint without /for-obs)
           UPLOAD_URL_RESPONSE=$(curl -s -X GET \
-            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs?appId=$HUAWEI_APP_ID&suffix=apk" \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=$HUAWEI_APP_ID&suffix=apk" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $HUAWEI_CLIENT_ID")
+          
+          echo "📋 Upload URL Response: $UPLOAD_URL_RESPONSE"
+          
+          # Check API return code
+          RET_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.ret.code')
+          if [ "$RET_CODE" != "0" ]; then
+            echo "❌ API Error getting upload URL"
+            echo "$UPLOAD_URL_RESPONSE"
+            exit 1
+          fi
           
           UPLOAD_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.uploadUrl')
           AUTH_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.authCode')
@@ -110,35 +120,53 @@ jobs:
           
           echo "✅ Got upload URL"
           
-          # Upload APK
+          # Upload APK using multipart form data (POST, not PUT)
           APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
           
-          UPLOAD_RESPONSE=$(curl -s -X PUT \
+          UPLOAD_RESPONSE=$(curl -s -X POST \
             "$UPLOAD_URL" \
-            -H "Authorization: Bearer $AUTH_CODE" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary "@$APK_PATH")
+            -F "file=@$APK_PATH" \
+            -F "authCode=$AUTH_CODE" \
+            -F "fileCount=1")
           
-          echo "✅ APK uploaded"
+          echo "📋 Upload Response: $UPLOAD_RESPONSE"
           
-          # Update app file info
-          FILE_DEST_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.fileDestUrl // empty')
+          # Extract fileDestUrl from upload response
+          # Response format: {"result":{"UploadFileRsp":{"fileInfoList":[{"fileDestUlr":"..."}]}}}
+          FILE_DEST_URL=$(echo $UPLOAD_RESPONSE | jq -r '.result.UploadFileRsp.fileInfoList[0].fileDestUlr // empty')
           
+          if [ -z "$FILE_DEST_URL" ]; then
+            echo "❌ Failed to get fileDestUrl from upload response"
+            echo "$UPLOAD_RESPONSE"
+            exit 1
+          fi
+          
+          echo "✅ APK uploaded, fileDestUrl: $FILE_DEST_URL"
+          
+          # Update app file info (include appId in body, not just query param)
           UPDATE_RESPONSE=$(curl -s -X PUT \
-            "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$HUAWEI_APP_ID" \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $HUAWEI_CLIENT_ID" \
             -H "Content-Type: application/json" \
             -d "{
-              \"fileType\": 5,
+              \"appId\": \"$HUAWEI_APP_ID\",
               \"files\": [{
                 \"fileName\": \"app-release.apk\",
                 \"fileDestUrl\": \"$FILE_DEST_URL\"
               }]
             }")
           
-          echo "✅ File info updated"
-          echo "$UPDATE_RESPONSE"
+          echo "📋 Update Response: $UPDATE_RESPONSE"
+          
+          # Check update response
+          UPDATE_RET_CODE=$(echo $UPDATE_RESPONSE | jq -r '.ret.code')
+          if [ "$UPDATE_RET_CODE" != "0" ]; then
+            echo "⚠️ Warning: File info update returned code $UPDATE_RET_CODE"
+            echo "$UPDATE_RESPONSE"
+          else
+            echo "✅ File info updated successfully"
+          fi
           
           echo ""
           echo "🎉 APK uploaded to Huawei AppGallery!"
