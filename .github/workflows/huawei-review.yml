@@ -1,0 +1,152 @@
+name: 📱 Huawei Review Upload
+
+# Samo za upload na Huawei AppGallery za review
+# Ručno pokretanje kada treba poslati novu verziju na review
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g., 6.0.7)'
+        required: true
+        default: '6.0.7'
+      release_notes:
+        description: 'Release notes for reviewer'
+        required: false
+        default: 'Bug fixes and improvements'
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+
+jobs:
+  build-and-upload-huawei:
+    name: 🚀 Build & Upload to Huawei
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Prepare agconnect-services.json
+        env:
+          AGC_BASE64: ${{ secrets.AGC_BASE64 }}
+        run: |
+          mkdir -p assets
+          mkdir -p android/app
+          echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
+          echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
+
+      - name: Create key.properties
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          echo "storePassword=$STORE_PASSWORD" > android/key.properties
+          echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+          echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Upload to Huawei AppGallery
+        env:
+          HUAWEI_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
+          HUAWEI_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
+          HUAWEI_APP_ID: ${{ secrets.AGC_APP_ID }}
+        run: |
+          echo "📦 Uploading APK to Huawei AppGallery..."
+          
+          # Get access token
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"client_id\": \"$HUAWEI_CLIENT_ID\",
+              \"client_secret\": \"$HUAWEI_CLIENT_SECRET\",
+              \"grant_type\": \"client_credentials\"
+            }")
+          
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          
+          if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "❌ Failed to get access token"
+            echo "$TOKEN_RESPONSE"
+            exit 1
+          fi
+          
+          echo "✅ Got access token"
+          
+          # Get upload URL
+          UPLOAD_URL_RESPONSE=$(curl -s -X GET \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs?appId=$HUAWEI_APP_ID&suffix=apk" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID")
+          
+          UPLOAD_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.uploadUrl')
+          AUTH_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.authCode')
+          
+          if [ "$UPLOAD_URL" == "null" ] || [ -z "$UPLOAD_URL" ]; then
+            echo "❌ Failed to get upload URL"
+            echo "$UPLOAD_URL_RESPONSE"
+            exit 1
+          fi
+          
+          echo "✅ Got upload URL"
+          
+          # Upload APK
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          
+          UPLOAD_RESPONSE=$(curl -s -X PUT \
+            "$UPLOAD_URL" \
+            -H "Authorization: Bearer $AUTH_CODE" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$APK_PATH")
+          
+          echo "✅ APK uploaded"
+          
+          # Update app file info
+          FILE_DEST_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.fileDestUrl // empty')
+          
+          UPDATE_RESPONSE=$(curl -s -X PUT \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$HUAWEI_APP_ID" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"fileType\": 5,
+              \"files\": [{
+                \"fileName\": \"app-release.apk\",
+                \"fileDestUrl\": \"$FILE_DEST_URL\"
+              }]
+            }")
+          
+          echo "✅ File info updated"
+          echo "$UPDATE_RESPONSE"
+          
+          echo ""
+          echo "🎉 APK uploaded to Huawei AppGallery!"
+          echo "📋 Now go to AppGallery Connect and submit for review manually."
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: huawei-review-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
