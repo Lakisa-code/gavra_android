@@ -5,6 +5,7 @@ import 'package:flutter/services.dart'; // 🎨 DODANO za SystemUiOverlayStyle
 import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 
+import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 // url_launcher unused here - navigacija delegirana SmartNavigationService
@@ -57,6 +58,35 @@ class _DanasScreenState extends State<DanasScreen> {
   final _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final Set<String> _resettingSlots = {};
   Set<String> _lastMatchingIds = {};
+
+  // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
+  List<String> _getBcVremena() {
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.bcVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.bcVremenaZimski;
+      case 'letnji':
+        return RouteConfig.bcVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+    }
+  }
+
+  List<String> _getVsVremena() {
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.vsVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.vsVremenaZimski;
+      case 'letnji':
+        return RouteConfig.vsVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    }
+  }
 
   bool _setEquals(Set<String> a, Set<String> b) {
     if (a.length != b.length) return false;
@@ -2646,32 +2676,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                             selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
                                             selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
                                             onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
-                                            bcVremena: const [
-                                              '5:00',
-                                              '6:00',
-                                              '7:00',
-                                              '8:00',
-                                              '9:00',
-                                              '11:00',
-                                              '12:00',
-                                              '13:00',
-                                              '14:00',
-                                              '15:30',
-                                              '18:00',
-                                            ],
-                                            vsVremena: const [
-                                              '6:00',
-                                              '7:00',
-                                              '8:00',
-                                              '10:00',
-                                              '11:00',
-                                              '12:00',
-                                              '13:00',
-                                              '14:00',
-                                              '15:30',
-                                              '17:00',
-                                              '19:00',
-                                            ],
+                                            bcVremena: _getBcVremena(),
+                                            vsVremena: _getVsVremena(),
                                           ),
                                         ),
                                       ],

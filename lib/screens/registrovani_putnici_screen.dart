@@ -2299,17 +2299,17 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                           }).toList()
                             ..addAll([
                               // 📊 CELA GODINA I UKUPNO
-                              const DropdownMenuItem(
-                                value: 'Cela 2025',
+                              DropdownMenuItem(
+                                value: 'Cela ${DateTime.now().year}',
                                 child: Row(
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.event_note,
                                       size: 16,
                                       color: Colors.blue,
                                     ),
-                                    SizedBox(width: 8),
-                                    Text('Cela 2025'),
+                                    const SizedBox(width: 8),
+                                    Text('Cela ${DateTime.now().year}'),
                                   ],
                                 ),
                               ),
@@ -2443,7 +2443,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     IconData periodIcon = Icons.calendar_today;
 
     // Posebni slučajevi
-    if (period == 'Cela 2025') {
+    if (period.startsWith('Cela ')) {
       periodColor = Colors.blue;
       periodIcon = Icons.event_note;
     } else if (period == 'Ukupno') {
@@ -2635,7 +2635,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   Future<Map<String, dynamic>> _getStatistikeForPeriod(String putnikId, String period) async {
     try {
       // Posebni slučajevi
-      if (period == 'Cela 2025') {
+      if (period.startsWith('Cela ')) {
         return await _getGodisnjeStatistike(putnikId);
       }
       if (period == 'Ukupno') {
@@ -2669,11 +2669,12 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     }
   }
 
-  // 📅 GODIŠNJE STATISTIKE (2025)
+  // 📅 GODIŠNJE STATISTIKE (dinamička godina)
   // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
   Future<Map<String, dynamic>> _getGodisnjeStatistike(String putnikId) async {
-    final startOfYear = DateTime(2025);
-    final endOfYear = DateTime(2025, 12, 31);
+    final currentYear = DateTime.now().year;
+    final startOfYear = DateTime(currentYear);
+    final endOfYear = DateTime(currentYear, 12, 31);
 
     final response = await supabase
         .from('voznje_log')
@@ -3006,17 +3007,18 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return months[month];
   }
 
-  // 📊 DOBIJ MESEČNE STATISTIKE ZA SEPTEMBAR 2025
+  // 📊 DOBIJ MESEČNE STATISTIKE ZA TRENUTNI MESEC
   // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
   Future<Map<String, dynamic>> _getMesecneStatistike(String putnikId) async {
     try {
-      final DateTime septembarStart = DateTime(2025, 9);
-      final DateTime septembarEnd = DateTime(2025, 9, 30, 23, 59, 59);
+      final now = DateTime.now();
+      final DateTime mesecStart = DateTime(now.year, now.month);
+      final DateTime mesecEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
-      final String startStr = septembarStart.toIso8601String().split('T')[0];
-      final String endStr = septembarEnd.toIso8601String().split('T')[0];
+      final String startStr = mesecStart.toIso8601String().split('T')[0];
+      final String endStr = mesecEnd.toIso8601String().split('T')[0];
 
-      // Dohvati sve zapise iz voznje_log za septembar 2025
+      // Dohvati sve zapise iz voznje_log za trenutni mesec
       final response = await Supabase.instance.client
           .from('voznje_log')
           .select('datum, tip, created_at')

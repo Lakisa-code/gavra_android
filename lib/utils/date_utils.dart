@@ -111,4 +111,30 @@ class DateUtils {
       'to': DateTime(date.year, date.month, date.day, 23, 59, 59),
     };
   }
+
+  /// CENTRALNA FUNKCIJA: Konvertuj pun naziv dana u ISO datum string
+  /// Uvek ide u budućnost - ako je dan prošao ove nedelje, koristi sledeću nedelju
+  /// Podržava sve varijante: pune nazive, kratice, sa/bez dijakritika
+  static String getIsoDateForDay(String fullDay, [DateTime? referenceDate]) {
+    final now = referenceDate ?? DateTime.now();
+
+    // Koristi getDayWeekdayNumber za konverziju (1=Pon, 7=Ned)
+    final targetWeekday = getDayWeekdayNumber(fullDay);
+    final currentWeekday = now.weekday;
+
+    // Ako je odabrani dan isto što i današnji dan, koristi današnji datum
+    if (targetWeekday == currentWeekday) {
+      return now.toIso8601String().split('T')[0];
+    }
+
+    int daysToAdd = targetWeekday - currentWeekday;
+
+    // UVEK U BUDUĆNOST: Ako je dan već prošao ove nedelje, idi na sledeću nedelju
+    if (daysToAdd < 0) {
+      daysToAdd += 7;
+    }
+
+    final targetDate = now.add(Duration(days: daysToAdd));
+    return targetDate.toIso8601String().split('T')[0];
+  }
 }

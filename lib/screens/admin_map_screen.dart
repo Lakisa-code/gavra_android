@@ -10,6 +10,7 @@ import '../models/gps_lokacija.dart';
 import '../services/permission_service.dart';
 import '../services/realtime/realtime_manager.dart';
 import '../theme.dart';
+import '../utils/vozac_boja.dart';
 
 class AdminMapScreen extends StatefulWidget {
   const AdminMapScreen({Key? key}) : super(key: key);
@@ -246,24 +247,9 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     _polylines = polylines;
   }
 
-  // Prima ime vozača umesto GPSLokacija
+  // Prima ime vozača - koristi centralizovanu VozacBoja klasu
   Color _getDriverColor(String vozacIme) {
-    final ime = vozacIme.toLowerCase();
-
-    switch (ime) {
-      case 'bojan':
-        return const Color(0xFF00E5FF); // svetla cyan plava
-      case 'svetlana':
-        return const Color(0xFFFF1493); // deep pink
-      case 'bruda':
-        return const Color(0xFF7C4DFF); // ljubičasta
-      case 'bilevski':
-        return const Color(0xFFFF9800); // narandžasta
-      case 'ivan':
-        return const Color(0xFFFFD700); // žuta (Gold)
-      default:
-        return const Color(0xFF607D8B); // Siva
-    }
+    return VozacBoja.getColorOrDefault(vozacIme, const Color(0xFF607D8B));
   }
 
   void _fitAllMarkers() {

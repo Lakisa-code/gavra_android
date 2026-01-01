@@ -56,10 +56,34 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     'Petak',
   ];
 
-  // 🕐 Koristi RouteConfig za vremena
-  List<String> get bcVremena => isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+  // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
+  List<String> get bcVremena {
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.bcVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.bcVremenaZimski;
+      case 'letnji':
+        return RouteConfig.bcVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+    }
+  }
 
-  List<String> get vsVremena => isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+  List<String> get vsVremena {
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.vsVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.vsVremenaZimski;
+      case 'letnji':
+        return RouteConfig.vsVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    }
+  }
 
   // 📋 Svi polasci za BottomNavBar
   List<String> get _sviPolasci {
@@ -86,53 +110,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   }
 
   // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
-  String _getDayAbbreviation(String fullDay) {
-    return app_date_utils.DateUtils.getDayAbbreviation(fullDay);
-  }
-
-  // Konvertuj ime dana u ISO datum (identično kao HomeScreen)
-  String _getIsoDateForDay(String fullDay) {
-    final now = DateTime.now();
-
-    final dayNamesMap = {
-      'Ponedeljak': 0,
-      'ponedeljak': 0,
-      'Utorak': 1,
-      'utorak': 1,
-      'Sreda': 2,
-      'sreda': 2,
-      'Četvrtak': 3,
-      'četvrtak': 3,
-      'Petak': 4,
-      'petak': 4,
-      'Subota': 5,
-      'subota': 5,
-      'Nedelja': 6,
-      'nedelja': 6,
-    };
-
-    int? targetDayIndex = dayNamesMap[fullDay];
-    if (targetDayIndex == null) return now.toIso8601String().split('T')[0];
-
-    final currentDayIndex = now.weekday - 1;
-
-    if (targetDayIndex == currentDayIndex) {
-      return now.toIso8601String().split('T')[0];
-    }
-
-    int daysToAdd = targetDayIndex - currentDayIndex;
-    if (daysToAdd < 0) {
-      daysToAdd += 7;
-    }
-
-    final targetDate = now.add(Duration(days: daysToAdd));
-    return targetDate.toIso8601String().split('T')[0];
-  }
 
   void _setupStream() {
     _putnikSubscription?.cancel();
 
-    final isoDate = _getIsoDateForDay(_selectedDay);
+    final isoDate = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
     final normalizedVreme = GradAdresaValidator.normalizeTime(_selectedVreme);
 
     setState(() => _isLoading = true);
@@ -144,7 +126,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     )
         .listen((putnici) {
       if (mounted) {
-        final danAbbrev = _getDayAbbreviation(_selectedDay);
+        final danAbbrev = app_date_utils.DateUtils.getDayAbbreviation(_selectedDay);
 
         // Sačuvaj sve putnike za dan (za BottomNavBar count)
         _allPutnici = putnici.where((p) {
@@ -154,7 +136,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         // Filtriraj za prikaz po vremenu i gradu
         final filtered = _allPutnici.where((p) {
           final vremeMatch = GradAdresaValidator.normalizeTime(p.polazak) == normalizedVreme;
-          final gradMatch = p.grad.toLowerCase().contains(_selectedGrad.toLowerCase().substring(0, 4));
+          final gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
           return vremeMatch && gradMatch;
         }).toList();
 
@@ -189,7 +171,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
     return _allPutnici.where((p) {
       final vremeMatch = GradAdresaValidator.normalizeTime(p.polazak) == normalizedVreme;
-      final gradMatch = p.grad.toLowerCase().contains(grad.toLowerCase().substring(0, 4));
+      final gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad);
       final isActive = !p.jeOdsustvo && !p.jeOtkazan;
       return vremeMatch && gradMatch && isActive;
     }).length;

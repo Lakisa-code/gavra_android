@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
@@ -59,8 +60,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
 
-  // Stream kontroleri za reaktivno ažuriranje
-  final StreamController<String> _selectedGradSubject = StreamController<String>.broadcast();
   // Key and overlay entry for custom days dropdown
   // (removed overlay support for now) - will use DropdownButton2 built-in overlay
 
@@ -83,59 +82,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     'Petak',
   ];
 
-  // 🕐 VREMENA ZA DROPDOWN
-  final List<String> bcVremena = [
-    '5:00',
-    '6:00',
-    '7:00',
-    '8:00',
-    '9:00',
-    '11:00',
-    '12:00',
-    '13:00',
-    '14:00',
-    '15:30',
-    '18:00'
-  ];
+  // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
+  List<String> get bcVremena {
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.bcVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.bcVremenaZimski;
+      case 'letnji':
+        return RouteConfig.bcVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+    }
+  }
 
-  final List<String> vsVremena = [
-    '6:00',
-    '7:00',
-    '8:00',
-    '10:00',
-    '11:00',
-    '12:00',
-    '13:00',
-    '14:00',
-    '15:30',
-    '17:00',
-    '19:00'
-  ];
+  List<String> get vsVremena {
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.vsVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.vsVremenaZimski;
+      case 'letnji':
+        return RouteConfig.vsVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    }
+  }
 
-// Kompletna lista polazaka za BottomNavBar (bez "Svi polasci") - ZIMSKI RASPORED
-  final List<String> _sviPolasci = [
-    '5:00 Bela Crkva',
-    '6:00 Bela Crkva',
-    '7:00 Bela Crkva',
-    '8:00 Bela Crkva',
-    '9:00 Bela Crkva',
-    '11:00 Bela Crkva',
-    '12:00 Bela Crkva',
-    '13:00 Bela Crkva',
-    '14:00 Bela Crkva',
-    '15:30 Bela Crkva',
-    '18:00 Bela Crkva',
-    '6:00 Vršac',
-    '7:00 Vršac',
-    '8:00 Vršac',
-    '10:00 Vršac',
-    '11:00 Vršac',
-    '13:00 Vršac',
-    '14:00 Vršac',
-    '15:30 Vršac',
-    '16:15 Vršac',
-    '19:00 Vršac',
-  ];
+  // 📝 DINAMIČKA LISTA POLAZAKA za BottomNavBar
+  List<String> get _sviPolasci {
+    final bcList = bcVremena.map((v) => '$v Bela Crkva').toList();
+    final vsList = vsVremena.map((v) => '$v Vršac').toList();
+    return [...bcList, ...vsList];
+  }
 
   // ✅ KORISTI UTILS FUNKCIJU ZA DROPDOWN DAN
   String _getTodayName() {
@@ -392,6 +373,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final Map<String, bool> selected = {for (var p in putnici) p.id: true};
     // Map za broj dana (default 22)
     final Map<String, int> brojDana = {for (var p in putnici) p.id: 22};
+    // Map za TextEditingController-e (da se ne kreiraju ponovo pri svakom rebuild-u)
+    final Map<String, TextEditingController> danaControllers = {
+      for (var p in putnici) p.id: TextEditingController(text: '22')
+    };
 
     if (!mounted) return;
 
@@ -576,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                               focusedBorder:
                                                   UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
                                             ),
-                                            controller: TextEditingController(text: dana.toString()),
+                                            controller: danaControllers[p.id],
                                             onChanged: (val) {
                                               setDialogState(() {
                                                 brojDana[p.id] = int.tryParse(val) ?? 22;
@@ -2716,7 +2701,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _selectedGrad = grad;
           _selectedVreme = vreme;
-          _selectedGradSubject.add(grad);
         });
       }
     }
@@ -2774,15 +2758,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     // 🕐 KORISTI TIMER MANAGER za cleanup - SPREČAVA MEMORY LEAK
     TimerManager.cancelTimer('home_screen_realtime_health');
-
-    // 🧹 KOMPLETNO ZATVARANJE STREAM CONTROLLER-A
-    try {
-      if (!_selectedGradSubject.isClosed) {
-        _selectedGradSubject.close();
-      }
-    } catch (e) {
-      // Silently ignore
-    }
 
     // 🧹 CLEANUP REAL-TIME SUBSCRIPTIONS
     try {

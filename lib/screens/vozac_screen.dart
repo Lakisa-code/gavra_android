@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; // 🗺️ Za GPS poziciju
 
+import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/auth_manager.dart';
@@ -74,20 +75,34 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🔒 LOCK ZA KONKURENTNE REOPTIMIZACIJE
   bool _isReoptimizing = false;
 
-  // Hardkodovana vremena za vozač screen
-  static const List<String> _bcVremena = [
-    '5:00',
-    '7:00',
-    '15:30',
-    '18:00',
-  ];
+  // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
+  List<String> get _bcVremena {
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.bcVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.bcVremenaZimski;
+      case 'letnji':
+        return RouteConfig.bcVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+    }
+  }
 
-  static const List<String> _vsVremena = [
-    '6:00',
-    '8:00',
-    '17:00',
-    '19:00',
-  ];
+  List<String> get _vsVremena {
+    final navType = navBarTypeNotifier.value;
+    switch (navType) {
+      case 'praznici':
+        return RouteConfig.vsVremenaPraznici;
+      case 'zimski':
+        return RouteConfig.vsVremenaZimski;
+      case 'letnji':
+        return RouteConfig.vsVremenaLetnji;
+      default: // 'auto'
+        return isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    }
+  }
 
   List<String> get _sviPolasci {
     final bcList = _bcVremena.map((v) => '$v Bela Crkva').toList();
