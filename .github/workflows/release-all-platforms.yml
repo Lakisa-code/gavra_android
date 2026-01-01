@@ -211,20 +211,20 @@ jobs:
         with:
           name: android-aab
 
-      - name: Upload to Google Play (Production)
+      - name: Upload to Google Play (Alpha - Closed Testing)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.gavra013.gavra_android
           releaseFiles: app-release.aab
-          track: production
+          track: alpha
           status: completed
           releaseName: ${{ github.ref_name }}
 
       - name: Summary
         run: |
           echo "## ✅ Google Play Upload Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "**Track:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**Track:** Alpha (Closed Testing)" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ needs.build-android.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
 
   # ══════════════════════════════════════════════════════════════
