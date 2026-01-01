@@ -111,11 +111,12 @@ jobs:
             --build-number=${{ steps.version.outputs.VERSION_CODE }} \
             --target-platform android-arm,android-arm64
 
-      - name: Build signed release AAB (for Google Play)
-        run: |
-          flutter build appbundle --release \
-            --build-name=${{ steps.version.outputs.VERSION_NAME }} \
-            --build-number=${{ steps.version.outputs.VERSION_CODE }}
+      # AAB disabled - not needed without store upload
+      # - name: Build signed release AAB (for Google Play)
+      #   run: |
+      #     flutter build appbundle --release \
+      #       --build-name=${{ steps.version.outputs.VERSION_NAME }} \
+      #       --build-number=${{ steps.version.outputs.VERSION_CODE }}
 
       - name: Upload release APK artifact
         if: always()
@@ -128,13 +129,14 @@ jobs:
             build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
           retention-days: 90
 
-      - name: Upload release AAB artifact (for manual Google Play upload)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gavra-release-aab-${{ github.ref_name || github.sha }}
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 90
+      # AAB artifact disabled - not needed without store upload
+      # - name: Upload release AAB artifact (for manual Google Play upload)
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: gavra-release-aab-${{ github.ref_name || github.sha }}
+      #     path: build/app/outputs/bundle/release/app-release.aab
+      #     retention-days: 90
 
       - name: Create GitHub Release (tag runs)
         if: false  # Disabled - use release-all-platforms.yml for uploads
