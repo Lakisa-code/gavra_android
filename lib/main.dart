@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'globals.dart';
 import 'screens/welcome_screen.dart';
 import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
+import 'services/battery_optimization_service.dart'; // 🔋 Huawei/Xiaomi battery warning
 import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
@@ -202,6 +203,24 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     // 🔔 FORCE SUBSCRIBE to FCM topics on app start (for testing)
     _forceSubscribeToTopics();
+
+    // 🔋 Check for battery optimization warning (Huawei/Xiaomi/etc)
+    _checkBatteryOptimization();
+  }
+
+  /// 🔋 Show battery optimization warning for Huawei/Xiaomi phones
+  Future<void> _checkBatteryOptimization() async {
+    try {
+      await Future.delayed(const Duration(seconds: 3)); // Wait for app to fully load
+      if (!mounted) return;
+
+      final shouldShow = await BatteryOptimizationService.shouldShowWarning();
+      if (shouldShow && mounted) {
+        await BatteryOptimizationService.showWarningDialog(context);
+      }
+    } catch (_) {
+      // Battery optimization check failed - silent
+    }
   }
 
   Future<void> _forceSubscribeToTopics() async {

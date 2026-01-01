@@ -1,0 +1,346 @@
+import 'dart:io';
+
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Service that handles battery optimization warnings for phones that
+/// aggressively kill background apps (Huawei, Xiaomi, Oppo, Vivo, etc.)
+///
+/// These manufacturers have custom battery optimization that kills apps
+/// even when they're on Android's battery whitelist. Users must manually
+/// enable background running in device-specific settings.
+class BatteryOptimizationService {
+  static const String _shownKey = 'battery_optimization_warning_shown';
+  static const String _dismissedKey = 'battery_optimization_dismissed';
+
+  /// Check if we should show the battery optimization warning
+  /// Returns true for Huawei, Xiaomi, Oppo, Vivo, OnePlus, Samsung
+  static Future<bool> shouldShowWarning() async {
+    if (!Platform.isAndroid) return false;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // Check if user has permanently dismissed the warning
+    if (prefs.getBool(_dismissedKey) ?? false) {
+      return false;
+    }
+
+    // Check if already shown in this session
+    if (prefs.getBool(_shownKey) ?? false) {
+      return false;
+    }
+
+    // Check device manufacturer
+    final deviceInfo = DeviceInfoPlugin();
+    final androidInfo = await deviceInfo.androidInfo;
+    final manufacturer = androidInfo.manufacturer.toLowerCase();
+
+    // List of manufacturers with aggressive battery optimization
+    final problematicManufacturers = [
+      'huawei',
+      'honor',
+      'xiaomi',
+      'redmi',
+      'poco',
+      'oppo',
+      'realme',
+      'vivo',
+      'oneplus',
+      'meizu',
+      'asus',
+      'lenovo',
+      'zte',
+      'nubia',
+      'tecno',
+      'infinix',
+    ];
+
+    return problematicManufacturers.any((m) => manufacturer.contains(m));
+  }
+
+  /// Mark that we've shown the warning this session
+  static Future<void> markShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_shownKey, true);
+  }
+
+  /// Mark that user has dismissed the warning permanently
+  static Future<void> markDismissedPermanently() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_dismissedKey, true);
+  }
+
+  /// Reset the warning (for testing or if user wants to see it again)
+  static Future<void> resetWarning() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_shownKey);
+    await prefs.remove(_dismissedKey);
+  }
+
+  /// Get manufacturer-specific settings intent
+  static Future<String?> getManufacturer() async {
+    if (!Platform.isAndroid) return null;
+
+    final deviceInfo = DeviceInfoPlugin();
+    final androidInfo = await deviceInfo.androidInfo;
+    return androidInfo.manufacturer.toLowerCase();
+  }
+
+  /// Open battery optimization settings
+  /// Tries manufacturer-specific settings first, then falls back to Android default
+  static Future<void> openBatterySettings() async {
+    if (!Platform.isAndroid) return;
+
+    final manufacturer = await getManufacturer();
+
+    try {
+      // Try manufacturer-specific intents first
+      if (manufacturer?.contains('huawei') == true || manufacturer?.contains('honor') == true) {
+        await _openHuaweiBatterySettings();
+      } else if (manufacturer?.contains('xiaomi') == true ||
+          manufacturer?.contains('redmi') == true ||
+          manufacturer?.contains('poco') == true) {
+        await _openXiaomiBatterySettings();
+      } else if (manufacturer?.contains('oppo') == true || manufacturer?.contains('realme') == true) {
+        await _openOppoBatterySettings();
+      } else if (manufacturer?.contains('vivo') == true) {
+        await _openVivoBatterySettings();
+      } else if (manufacturer?.contains('oneplus') == true) {
+        await _openOnePlusBatterySettings();
+      } else if (manufacturer?.contains('samsung') == true) {
+        await _openSamsungBatterySettings();
+      } else {
+        await _openDefaultBatterySettings();
+      }
+    } catch (e) {
+      // Fallback to default Android battery settings
+      await _openDefaultBatterySettings();
+    }
+  }
+
+  static Future<void> _openHuaweiBatterySettings() async {
+    // Try Huawei App Launch (power management) first
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.huawei.systemmanager',
+        componentName: 'com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (_) {}
+
+    // Try alternative Huawei activity
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.huawei.systemmanager',
+        componentName: 'com.huawei.systemmanager.optimize.process.ProtectActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (_) {}
+
+    // Fallback to general battery settings
+    await _openDefaultBatterySettings();
+  }
+
+  static Future<void> _openXiaomiBatterySettings() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.miui.powerkeeper',
+        componentName: 'com.miui.powerkeeper.ui.HiddenAppsConfigActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (_) {}
+
+    // Try Security app
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.miui.securitycenter',
+        componentName: 'com.miui.permcenter.autostart.AutoStartManagementActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (_) {}
+
+    await _openDefaultBatterySettings();
+  }
+
+  static Future<void> _openOppoBatterySettings() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.coloros.safecenter',
+        componentName: 'com.coloros.safecenter.startupapp.StartupAppListActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (_) {}
+
+    await _openDefaultBatterySettings();
+  }
+
+  static Future<void> _openVivoBatterySettings() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.vivo.permissionmanager',
+        componentName: 'com.vivo.permissionmanager.activity.BgStartUpManagerActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (_) {}
+
+    await _openDefaultBatterySettings();
+  }
+
+  static Future<void> _openOnePlusBatterySettings() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.oneplus.security',
+        componentName: 'com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (_) {}
+
+    await _openDefaultBatterySettings();
+  }
+
+  static Future<void> _openSamsungBatterySettings() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.samsung.android.lool',
+        componentName: 'com.samsung.android.sm.battery.ui.BatteryActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (_) {}
+
+    await _openDefaultBatterySettings();
+  }
+
+  static Future<void> _openDefaultBatterySettings() async {
+    const intent = AndroidIntent(
+      action: 'android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS',
+    );
+    await intent.launch();
+  }
+
+  /// Show the battery optimization warning dialog
+  static Future<void> showWarningDialog(BuildContext context) async {
+    final manufacturer = await getManufacturer() ?? 'your phone';
+    final manufacturerName = manufacturer[0].toUpperCase() + manufacturer.substring(1);
+
+    if (!context.mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.battery_alert, color: Colors.orange[700], size: 28),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Omogući notifikacije',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$manufacturerName telefoni automatski blokiraju pozadinske notifikacije radi uštede baterije.',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Da biste primali notifikacije kada je aplikacija zatvorena:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            _buildStep('1', 'Kliknite "Otvori podešavanja"'),
+            _buildStep('2', 'Nađite Gavra 013'),
+            _buildStep('3', 'Isključite "Upravljaj automatski"'),
+            _buildStep('4', 'Uključite SVE opcije'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await markDismissedPermanently();
+              if (context.mounted) Navigator.of(context).pop();
+            },
+            child: const Text('Ne prikazuj više'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await markShown();
+              if (context.mounted) Navigator.of(context).pop();
+            },
+            child: const Text('Kasnije'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await markShown();
+              if (context.mounted) Navigator.of(context).pop();
+              await openBatterySettings();
+            },
+            icon: const Icon(Icons.settings, size: 18),
+            label: const Text('Otvori podešavanja'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildStep(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+}

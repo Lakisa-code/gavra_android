@@ -100,6 +100,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: [],
                 },
             },
+            {
+                name: "google_delete_track_release",
+                description: "Delete/clear releases from a specific track (removes all releases from that track)",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        track: {
+                            type: "string",
+                            description: "Track name to clear: production, beta, alpha, internal, or custom track name",
+                        },
+                    },
+                    required: ["track"],
+                },
+            },
         ],
     };
 });
@@ -277,6 +291,71 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                 summary: pendingReleases.length > 0
                                     ? `${pendingReleases.length} release(s) pending or in progress`
                                     : "No pending releases - all releases are live or completed",
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            case "google_delete_track_release": {
+                const track = args.track;
+                const editResponse = await androidPublisher.edits.insert({
+                    packageName: PACKAGE_NAME,
+                });
+                const editId = editResponse.data.id;
+                // Get current track info first
+                let currentTrack;
+                try {
+                    const trackResponse = await androidPublisher.edits.tracks.get({
+                        packageName: PACKAGE_NAME,
+                        editId,
+                        track,
+                    });
+                    currentTrack = trackResponse.data;
+                }
+                catch {
+                    await androidPublisher.edits.delete({
+                        packageName: PACKAGE_NAME,
+                        editId,
+                    });
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: false,
+                                    error: `Track '${track}' not found`,
+                                }, null, 2),
+                            },
+                        ],
+                    };
+                }
+                // Clear the track by setting empty releases
+                await androidPublisher.edits.tracks.update({
+                    packageName: PACKAGE_NAME,
+                    editId,
+                    track,
+                    requestBody: {
+                        track,
+                        releases: [],
+                    },
+                });
+                // Commit the edit
+                await androidPublisher.edits.commit({
+                    packageName: PACKAGE_NAME,
+                    editId,
+                });
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Track '${track}' cleared successfully`,
+                                previousReleases: currentTrack?.releases?.map((r) => ({
+                                    name: r.name,
+                                    versionCodes: r.versionCodes,
+                                    status: r.status,
+                                })) || [],
                             }, null, 2),
                         },
                     ],

@@ -1,22 +1,27 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:huawei_push/huawei_push.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth_manager.dart';
+import 'local_notification_service.dart';
 
 /// Lightweight wrapper around the `huawei_push` plugin.
 ///
 /// Responsibilities:
 /// - initialize HMS runtime hooks
 /// - obtain device token (HMS) and register it with the backend (via Supabase function)
+/// - listen for incoming push messages and display local notifications
 class HuaweiPushService {
   static final HuaweiPushService _instance = HuaweiPushService._internal();
   factory HuaweiPushService() => _instance;
   HuaweiPushService._internal();
 
   StreamSubscription<String?>? _tokenSub;
+  StreamSubscription<RemoteMessage>? _messageSub;
+  bool _messageListenerRegistered = false;
 
   /// Initialize and request token. This method is safe to call even when
   /// HMS is not available on the device — it will simply return null.
@@ -29,6 +34,9 @@ class HuaweiPushService {
       _tokenSub = Push.getTokenStream.listen((String? newToken) async {
         if (newToken != null) await _registerTokenWithServer(newToken);
       });
+
+      // 🔔 SUBSCRIBE TO MESSAGE STREAM - slušaj dolazne push notifikacije
+      _setupMessageListener();
 
       // The plugin can return a token synchronously via `Push.getToken()` or
       // asynchronously via the `getTokenStream` — call both paths explicitly so
@@ -84,9 +92,53 @@ class HuaweiPushService {
     }
   }
 
+  /// 🔔 SETUP MESSAGE LISTENER - sluša dolazne Huawei push poruke
+  void _setupMessageListener() {
+    if (_messageListenerRegistered) return;
+    _messageListenerRegistered = true;
+
+    try {
+      // Listen for data messages (foreground + background when app is running)
+      _messageSub?.cancel();
+      _messageSub = Push.onMessageReceivedStream.listen((RemoteMessage message) async {
+        try {
+          if (kDebugMode) {
+            debugPrint('📱 [HuaweiPush] Primljena poruka: ${message.data}');
+          }
+
+          // Izvuci title i body iz poruke
+          final data = message.dataOfMap ?? {};
+          final title = (data['title'] ?? 'Gavra Notification').toString();
+          final body = (data['body'] ?? data['message'] ?? 'Nova notifikacija').toString();
+
+          // Prikaži lokalnu notifikaciju
+          await LocalNotificationService.showRealtimeNotification(
+            title: title,
+            body: body,
+            payload: data.toString(),
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('❌ [HuaweiPush] Greška pri obradi poruke: $e');
+          }
+        }
+      });
+
+      if (kDebugMode) {
+        debugPrint('✅ [HuaweiPush] Message listener registrovan');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [HuaweiPush] Greška pri registraciji listenera: $e');
+      }
+    }
+  }
+
   Future<void> dispose() async {
     await _tokenSub?.cancel();
     _tokenSub = null;
+    await _messageSub?.cancel();
+    _messageSub = null;
   }
 
   /// Calls a Supabase Edge Function (register-push-token) to store token.
