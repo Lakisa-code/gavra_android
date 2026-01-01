@@ -993,8 +993,9 @@ class PutnikService {
     }
   }
 
-  /// ?? RESETUJ KARTICU U POCETNO STANJE (samo za validne vozace)
-  /// ? KONZISTENTNO: Prima selectedVreme i selectedGrad za tacan reset po polasku
+  /// 🔄 RESETUJ KARTICU U POCETNO STANJE (samo za validne vozace)
+  /// ✅ KONZISTENTNO: Prima selectedVreme i selectedGrad za tacan reset po polasku
+  /// ✅ FIX: Briše SVE markere za današnji dan iz polasci_po_danu JSON-a
   Future<void> resetPutnikCard(
     String imePutnika,
     String currentDriver, {
@@ -1006,18 +1007,65 @@ class PutnikService {
         throw Exception('Funkcija zahteva specificiranje vozaca');
       }
 
-      // ?? POJEDNOSTAVLJENO: Reset samo u registrovani_putnici tabeli
+      // 🔄 POJEDNOSTAVLJENO: Reset samo u registrovani_putnici tabeli
       try {
-        // ? FIX: Koristi limit(1) umesto maybeSingle() jer mo�e postojati vi�e putnika sa istim imenom
+        // ✅ FIX: Koristi limit(1) umesto maybeSingle() jer može postojati više putnika sa istim imenom
         final registrovaniList =
             await supabase.from('registrovani_putnici').select().eq('putnik_ime', imePutnika).limit(1);
 
         if (registrovaniList.isNotEmpty) {
-          // ✅ FIX: Triple-tap samo menja STATUS, ne briše statistike ni vozača!
-          // Reset sa godišnjeg/bolovanja = samo vrati status na 'radi'
+          final putnikData = registrovaniList.first;
+
+          // 🆕 Učitaj polasci_po_danu JSON
+          Map<String, dynamic> polasci = {};
+          final polasciRaw = putnikData['polasci_po_danu'];
+          if (polasciRaw != null) {
+            if (polasciRaw is String) {
+              try {
+                polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
+              } catch (_) {}
+            } else if (polasciRaw is Map) {
+              polasci = jsonDecode(jsonEncode(polasciRaw)) as Map<String, dynamic>;
+            }
+          }
+
+          // 🆕 Odredi place (bc/vs) iz selectedGrad
+          String place = 'bc';
+          final gradZaReset = selectedGrad ?? '';
+          if (gradZaReset.toLowerCase().contains('vr') || gradZaReset.toLowerCase().contains('vs')) {
+            place = 'vs';
+          }
+
+          // 🆕 Odredi dan kratica
+          final weekday = DateTime.now().weekday;
+          const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          final danKratica = daniKratice[weekday - 1];
+
+          // 🆕 Obriši SVE markere za današnji dan i taj grad
+          if (polasci.containsKey(danKratica)) {
+            final dayDataRaw = polasci[danKratica];
+            if (dayDataRaw != null && dayDataRaw is Map) {
+              final dayData = Map<String, dynamic>.from(dayDataRaw);
+              // Briši otkazivanje
+              dayData.remove('${place}_otkazano');
+              dayData.remove('${place}_otkazao_vozac');
+              // Briši pokupljenje
+              dayData.remove('${place}_pokupljeno');
+              dayData.remove('${place}_pokupljeno_vozac');
+              // Briši plaćanje (nije per-place)
+              dayData.remove('placeno');
+              dayData.remove('placeno_iznos');
+              dayData.remove('placeno_vozac');
+              polasci[danKratica] = dayData;
+            }
+          }
+
+          // ✅ Triple-tap resetuje karticu u belo stanje
+          // Statistika u voznje_log OSTAJE NETAKNUTA
           await supabase.from('registrovani_putnici').update({
             'aktivan': true,
             'status': 'radi',
+            'polasci_po_danu': polasci,
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('putnik_ime', imePutnika);
 
@@ -1027,7 +1075,7 @@ class PutnikService {
         // Putnik not found
       }
     } catch (e) {
-      // Gre�ka pri resetovanju kartice
+      // Greška pri resetovanju kartice
       rethrow;
     }
   }
