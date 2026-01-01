@@ -11,6 +11,7 @@ import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/auth_manager.dart';
+import '../services/biometric_service.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
@@ -37,7 +38,6 @@ import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/shimmer_widgets.dart';
-import '../services/biometric_service.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
 import 'promena_sifre_screen.dart';
@@ -293,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _checkBiometricStatus() async {
     final available = await BiometricService.isBiometricAvailable();
     final enabled = await BiometricService.isBiometricEnabled();
-    
+
     if (mounted) {
       setState(() {
         _biometricAvailable = available;
@@ -315,28 +315,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     final newValue = !_biometricEnabled;
-    
+
     if (newValue) {
       // Uključuje se - zahtevaj potvrdu otiskom
       final authenticated = await BiometricService.authenticate(
         reason: 'Potvrdi identitet da omogućiš prijavu otiskom prsta',
       );
-      
+
       if (!authenticated) return;
     }
-    
+
     await BiometricService.setBiometricEnabled(newValue);
-    
+
     if (mounted) {
       setState(() {
         _biometricEnabled = newValue;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(newValue 
-            ? '✅ Prijava otiskom prsta je UKLJUČENA' 
-            : '❌ Prijava otiskom prsta je ISKLJUČENA'),
+          content: Text(newValue ? '✅ Prijava otiskom prsta je UKLJUČENA' : '❌ Prijava otiskom prsta je ISKLJUČENA'),
           backgroundColor: newValue ? Colors.green : Colors.grey,
         ),
       );
@@ -2608,7 +2606,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   child: Row(
                                     children: [
                                       Icon(
-                                        Icons.fingerprint, 
+                                        Icons.fingerprint,
                                         color: _biometricEnabled ? Colors.green : Colors.grey,
                                       ),
                                       const SizedBox(width: 8),
@@ -2617,7 +2615,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       Switch(
                                         value: _biometricEnabled,
                                         onChanged: null, // Handled by menu selection
-                                        activeColor: Colors.green,
+                                        activeThumbColor: Colors.green,
                                       ),
                                     ],
                                   ),

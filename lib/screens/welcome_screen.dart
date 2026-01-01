@@ -43,6 +43,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
 
+  // 🥚 Easter egg za vozače - 5x tap
+  int _vozaciTapCount = 0;
+  DateTime? _lastVozaciTap;
+
   // Lista vozača za email sistem - koristi VozacBoja utility
   final List<Map<String, dynamic>> _drivers = [
     {
@@ -283,6 +287,127 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     }
   }
 
+  /// 🥚 Easter egg - handle tap na "Vozači" dugme
+  void _handleVozaciTap() {
+    final now = DateTime.now();
+    
+    // Reset ako je prošlo više od 2 sekunde od poslednjeg tapa
+    if (_lastVozaciTap != null && now.difference(_lastVozaciTap!).inMilliseconds > 2000) {
+      _vozaciTapCount = 0;
+    }
+    
+    _lastVozaciTap = now;
+    _vozaciTapCount++;
+    
+    if (_vozaciTapCount >= 5) {
+      // 🎉 Easter egg aktiviran - prikaži PIN dijalog
+      _vozaciTapCount = 0;
+      _showPinDialog();
+    } else {
+      // Prikaži poruku "Nemate pristup"
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('🔒 Pristup samo za ovlašćene vozače'),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  /// 🔢 Prikaži PIN dijalog
+  void _showPinDialog() {
+    final pinController = TextEditingController();
+    const correctPin = '0013';
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey.shade900,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock, color: Colors.cyan),
+            SizedBox(width: 10),
+            Text('Unesi PIN', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: TextField(
+          controller: pinController,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          obscureText: true,
+          autofocus: true,
+          style: const TextStyle(
+            color: Colors.white, 
+            fontSize: 24, 
+            letterSpacing: 8,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: '••••',
+            hintStyle: TextStyle(color: Colors.grey.shade600, letterSpacing: 8),
+            filled: true,
+            fillColor: Colors.grey.shade800,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          onSubmitted: (value) {
+            if (value == correctPin) {
+              Navigator.pop(context);
+              _showDriverSelectionDialog();
+            } else {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('❌ Pogrešan PIN'),
+                  backgroundColor: Colors.red.shade700,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Otkaži', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.cyan,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              if (pinController.text == correctPin) {
+                Navigator.pop(context);
+                _showDriverSelectionDialog();
+              } else {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('❌ Pogrešan PIN'),
+                    backgroundColor: Colors.red.shade700,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Potvrdi', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _loginAsDriver(String driverName) async {
     // 🎵 PREKINI PESMU kada korisnik počne login
     await _stopAudio();
@@ -302,12 +427,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         // 👆 BIOMETRIJA: Ako je UKLJUČENA i dostupna, zahtevaj potvrdu pre auto-logina
         final biometricAvailable = await BiometricService.isBiometricAvailable();
         final biometricEnabled = await BiometricService.isBiometricEnabled();
-        
+
         if (biometricAvailable && biometricEnabled) {
           final authenticated = await BiometricService.authenticate(
             reason: 'Potvrdi identitet za prijavu kao $correctName',
           );
-          
+
           if (!authenticated) {
             // Korisnik je otkazao ili nije uspeo - idi na manual login
             if (!mounted) return;
@@ -578,11 +703,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // 🚗 "Vozači" dugme
+                      // 🚗 "Vozači" dugme - Easter egg: 5x tap za pristup
                       FadeTransition(
                         opacity: _fadeAnimation,
                         child: GestureDetector(
-                          onTap: () => _showDriverSelectionDialog(),
+                          onTap: () => _handleVozaciTap(),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             decoration: BoxDecoration(
