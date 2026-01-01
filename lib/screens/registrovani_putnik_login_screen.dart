@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/biometric_service.dart';
 import '../services/pin_zahtev_service.dart';
 import '../services/putnik_push_service.dart';
 import '../theme.dart';
@@ -31,14 +32,54 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
   // Podaci o pronađenom putniku
   Map<String, dynamic>? _putnikData;
 
+  // 🔐 Biometrija
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
+  String _biometricTypeText = 'otisak prsta';
+
   @override
   void initState() {
     super.initState();
+    _checkBiometric();
     _checkSavedLogin();
+  }
+
+  /// 🔐 Proveri dostupnost biometrije
+  Future<void> _checkBiometric() async {
+    final available = await BiometricService.isBiometricAvailable();
+    final enabled = await BiometricService.isBiometricEnabled();
+    final typeText = await BiometricService.getBiometricTypeText();
+
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled = enabled;
+        _biometricTypeText = typeText;
+      });
+    }
   }
 
   /// Proveri da li je putnik već ulogovan
   Future<void> _checkSavedLogin() async {
+    // 🔐 Prvo proveri biometrijsku prijavu
+    if (_biometricAvailable && _biometricEnabled) {
+      final credentials = await BiometricService.getSavedCredentials();
+      if (credentials != null) {
+        // Pokušaj biometrijsku autentifikaciju
+        final authenticated = await BiometricService.authenticate(
+          reason: 'Prijavite se pomoću $_biometricTypeText',
+        );
+
+        if (authenticated && mounted) {
+          _telefonController.text = credentials['phone']!;
+          _pinController.text = credentials['pin']!;
+          await _loginWithPin(showBiometricPrompt: false);
+          return;
+        }
+      }
+    }
+
+    // Fallback na SharedPreferences auto-login
     final prefs = await SharedPreferences.getInstance();
     final savedPhone = prefs.getString('registrovani_putnik_telefon');
     final savedPin = prefs.getString('registrovani_putnik_pin');
@@ -47,7 +88,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       // Automatski probaj login
       _telefonController.text = savedPhone;
       _pinController.text = savedPin;
-      await _loginWithPin();
+      await _loginWithPin(showBiometricPrompt: true);
     }
   }
 
@@ -298,7 +339,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
   }
 
   /// Korak 3: Login sa PIN-om
-  Future<void> _loginWithPin() async {
+  Future<void> _loginWithPin({bool showBiometricPrompt = true}) async {
     final telefon = _telefonController.text.trim();
     final pin = _pinController.text.trim();
 
@@ -338,6 +379,11 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
           await PutnikPushService.registerPutnikToken(putnikId);
         }
 
+        // 🔐 Ponudi biometrijsku prijavu ako je dostupna i nije već uključena
+        if (showBiometricPrompt && _biometricAvailable && !_biometricEnabled && mounted) {
+          await _showBiometricSetupDialog(telefon, pin);
+        }
+
         if (mounted) {
           // Idi na profil ekran
           Navigator.pushReplacement(
@@ -356,6 +402,8 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         });
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('registrovani_putnik_pin');
+        // Takođe očisti biometrijske kredencijale
+        await BiometricService.clearCredentials();
       }
     } catch (e) {
       setState(() {
@@ -365,6 +413,54 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  /// 🔐 Ponudi setup biometrijske prijave
+  Future<void> _showBiometricSetupDialog(String phone, String pin) async {
+    final biometricIcon = await BiometricService.getBiometricIcon();
+
+    if (!mounted) return;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Text(biometricIcon, style: const TextStyle(fontSize: 28)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Brža prijava?',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Želite li ubuduće da se prijavljujete pomoću $_biometricTypeText?\n\nNećete morati da unosite PIN svaki put.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Ne, hvala', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            child: Text('Uključi $_biometricTypeText', style: const TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      await BiometricService.saveCredentials(phone: phone, pin: pin);
+      _biometricEnabled = true;
     }
   }
 
@@ -706,7 +802,27 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
             onSubmitted: (_) => _loginWithPin(),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+
+        // 🔐 Dugme za biometrijsku prijavu
+        if (_biometricAvailable && _biometricEnabled)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: OutlinedButton.icon(
+              onPressed: _loginWithBiometric,
+              icon: const Icon(Icons.fingerprint, size: 28),
+              label: Text('Prijavi se pomoću $_biometricTypeText'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.amber,
+                side: const BorderSide(color: Colors.amber),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+
         // 🔑 Link za zaboravljen PIN
         GestureDetector(
           onTap: _showForgotPinDialog,
@@ -722,6 +838,25 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         ),
       ],
     );
+  }
+
+  /// 🔐 Login sa biometrijom
+  Future<void> _loginWithBiometric() async {
+    final credentials = await BiometricService.getSavedCredentials();
+    if (credentials == null) {
+      setState(() => _errorMessage = 'Nema sačuvanih podataka za biometrijsku prijavu');
+      return;
+    }
+
+    final authenticated = await BiometricService.authenticate(
+      reason: 'Prijavite se pomoću $_biometricTypeText',
+    );
+
+    if (authenticated && mounted) {
+      _telefonController.text = credentials['phone']!;
+      _pinController.text = credentials['pin']!;
+      await _loginWithPin(showBiometricPrompt: false);
+    }
   }
 
   /// 🔑 Dialog za zaboravljen PIN
