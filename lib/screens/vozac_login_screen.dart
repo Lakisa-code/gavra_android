@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_manager.dart';
+import '../services/biometric_service.dart';
 import '../services/daily_checkin_service.dart';
 import '../services/theme_manager.dart';
 import 'daily_checkin_screen.dart';
@@ -29,6 +30,80 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
   bool _isLoading = false;
   bool _sifraVisible = false;
+  
+  // 👆 Biometrija
+  bool _biometricAvailable = false;
+  bool _hasSavedCredentials = false;
+  String _biometricIcon = '👆';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometric();
+  }
+
+  /// 👆 Proveri biometriju i sačuvane kredencijale
+  Future<void> _checkBiometric() async {
+    final available = await BiometricService.isBiometricAvailable();
+    final hasCreds = await _hasBiometricCredentials();
+    final icon = await BiometricService.getBiometricIcon();
+    
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _hasSavedCredentials = hasCreds;
+        _biometricIcon = icon;
+      });
+      
+      // Auto-login sa biometrijom ako ima sačuvane kredencijale
+      if (available && hasCreds) {
+        _loginWithBiometric();
+      }
+    }
+  }
+
+  /// Proveri da li ima sačuvane kredencijale za ovog vozača
+  Future<bool> _hasBiometricCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedVozac = prefs.getString('biometric_vozac_${widget.vozacIme}');
+    return savedVozac != null;
+  }
+
+  /// 👆 Login sa biometrijom
+  Future<void> _loginWithBiometric() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedData = prefs.getString('biometric_vozac_${widget.vozacIme}');
+    
+    if (savedData == null) return;
+    
+    final authenticated = await BiometricService.authenticate(
+      reason: 'Potvrdi identitet za prijavu kao ${widget.vozacIme}',
+    );
+    
+    if (!authenticated) return;
+    
+    // Dekoduj sačuvane podatke
+    final data = jsonDecode(savedData);
+    _emailController.text = data['email'] ?? '';
+    _telefonController.text = data['telefon'] ?? '';
+    _sifraController.text = data['sifra'] ?? '';
+    
+    // Login
+    await _login(saveBiometric: false);
+  }
+
+  /// 👆 Sačuvaj kredencijale za biometriju
+  Future<void> _saveBiometricCredentials() async {
+    if (!_biometricAvailable) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    final data = jsonEncode({
+      'email': _emailController.text.trim(),
+      'telefon': _telefonController.text.trim(),
+      'sifra': _sifraController.text,
+    });
+    await prefs.setString('biometric_vozac_${widget.vozacIme}', data);
+  }
 
   @override
   void dispose() {
@@ -92,7 +167,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
   }
 
   /// Proveri login
-  Future<void> _login() async {
+  Future<void> _login({bool saveBiometric = true}) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -141,6 +216,11 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
       // Zapamti uređaj
       await AuthManager.rememberDevice(email, widget.vozacIme);
+
+      // 👆 Sačuvaj za biometriju
+      if (saveBiometric && _biometricAvailable) {
+        await _saveBiometricCredentials();
+      }
 
       if (!mounted) return;
 
@@ -358,6 +438,27 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                 ),
+                
+                // 👆 Biometrija dugme
+                if (_biometricAvailable && _hasSavedCredentials) ...[
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _loginWithBiometric,
+                    icon: Text(_biometricIcon, style: const TextStyle(fontSize: 24)),
+                    label: const Text(
+                      'Prijava otiskom prsta',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: isDark ? currentTheme.colorScheme.primary : Colors.amber),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 // Info
