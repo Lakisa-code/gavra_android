@@ -91,8 +91,10 @@ jobs:
       - name: Get version info
         id: version
         run: |
-          VERSION_CODE=${{ github.run_number }}
-          VERSION_NAME=$(grep "^version:" pubspec.yaml | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\)+.*/\1/')
+          # Extract version from pubspec.yaml (e.g., 6.0.4+346 -> VERSION_NAME=6.0.4, VERSION_CODE=346)
+          FULL_VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //')
+          VERSION_NAME=$(echo $FULL_VERSION | sed 's/+.*//')
+          VERSION_CODE=$(echo $FULL_VERSION | sed 's/.*+//')
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "📦 Version: $VERSION_NAME+$VERSION_CODE"
@@ -268,7 +270,7 @@ jobs:
           
           echo "📤 Getting upload URL..."
           UPLOAD_URL_RESPONSE=$(curl -s -X GET \
-            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs?appId=$AGC_APP_ID&releaseType=1&suffix=apk" \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs?appId=$AGC_APP_ID&releaseType=1&suffix=apk&fileName=app-release.apk" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $AGC_CLIENT_ID")
           
