@@ -143,9 +143,9 @@ jobs:
           
           echo "✅ APK uploaded, fileDestUrl: $FILE_DEST_URL"
           
-          # Update app file info (include appId in body, not just query param)
+          # Update app file info (appId required both in query param AND body)
           UPDATE_RESPONSE=$(curl -s -X PUT \
-            "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info" \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$HUAWEI_APP_ID" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $HUAWEI_CLIENT_ID" \
             -H "Content-Type: application/json" \
