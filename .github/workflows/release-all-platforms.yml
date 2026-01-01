@@ -275,45 +275,49 @@ jobs:
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $AGC_CLIENT_ID")
           
-          UPLOAD_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.uploadUrl')
-          AUTH_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.authCode')
+          # Parse new API response format
+          UPLOAD_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.urlInfo.url')
+          UPLOAD_METHOD=$(echo $UPLOAD_URL_RESPONSE | jq -r '.urlInfo.method')
+          OBJECT_ID=$(echo $UPLOAD_URL_RESPONSE | jq -r '.urlInfo.objectId')
+          AUTH_HEADER=$(echo $UPLOAD_URL_RESPONSE | jq -r '.urlInfo.headers.Authorization')
+          AMZ_CONTENT=$(echo $UPLOAD_URL_RESPONSE | jq -r '.urlInfo.headers["x-amz-content-sha256"]')
+          AMZ_DATE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.urlInfo.headers["x-amz-date"]')
           
-          if [ "$UPLOAD_URL" == "null" ]; then
+          if [ "$UPLOAD_URL" == "null" ] || [ -z "$UPLOAD_URL" ]; then
             echo "❌ Failed to get upload URL"
             echo "Response: $UPLOAD_URL_RESPONSE"
             exit 1
           fi
-          echo "✅ Got upload URL"
+          echo "✅ Got upload URL: $OBJECT_ID"
           
-          echo "📤 Uploading APK..."
-          UPLOAD_RESPONSE=$(curl -s -X POST "$UPLOAD_URL" \
-            -H "Accept: application/json" \
-            -F "file=@app-release.apk" \
-            -F "authCode=$AUTH_CODE" \
-            -F "fileCount=1")
+          echo "📤 Uploading APK via OBS..."
+          UPLOAD_RESPONSE=$(curl -s -X PUT "$UPLOAD_URL" \
+            -H "Authorization: $AUTH_HEADER" \
+            -H "x-amz-content-sha256: $AMZ_CONTENT" \
+            -H "x-amz-date: $AMZ_DATE" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @app-release.apk)
           
-          FILE_DEST=$(echo $UPLOAD_RESPONSE | jq -r '.result.UploadFileRsp.fileInfoList[0].fileDestUlr')
+          echo "✅ APK uploaded to OBS"
           
-          if [ "$FILE_DEST" == "null" ]; then
-            echo "❌ Failed to upload APK"
-            echo "Response: $UPLOAD_RESPONSE"
-            exit 1
-          fi
-          echo "✅ APK uploaded: $FILE_DEST"
+          # Use objectId as fileDestUrl
+          FILE_DEST="$OBJECT_ID"
+          echo "✅ File destination: $FILE_DEST"
           
           echo "📋 Updating app file info..."
-          curl -s -X PUT \
+          UPDATE_RESPONSE=$(curl -s -X PUT \
             "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$AGC_APP_ID&releaseType=1" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $AGC_CLIENT_ID" \
             -H "Content-Type: application/json" \
             -d '{
               "fileType": 5,
-              "files": {
+              "files": [{
                 "fileName": "app-release.apk",
                 "fileDestUrl": "'"$FILE_DEST"'"
-              }
-            }'
+              }]
+            }')
+          echo "Update response: $UPDATE_RESPONSE"
           
           echo "✅ Huawei AppGallery upload complete!"
 
