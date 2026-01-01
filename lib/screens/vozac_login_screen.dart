@@ -30,7 +30,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
   bool _isLoading = false;
   bool _sifraVisible = false;
-  
+
   // 👆 Biometrija
   bool _biometricAvailable = false;
   bool _hasSavedCredentials = false;
@@ -47,14 +47,14 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     final available = await BiometricService.isBiometricAvailable();
     final hasCreds = await _hasBiometricCredentials();
     final icon = await BiometricService.getBiometricIcon();
-    
+
     if (mounted) {
       setState(() {
         _biometricAvailable = available;
         _hasSavedCredentials = hasCreds;
         _biometricIcon = icon;
       });
-      
+
       // Auto-login sa biometrijom ako ima sačuvane kredencijale
       if (available && hasCreds) {
         _loginWithBiometric();
@@ -65,7 +65,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
   /// Proveri da li ima sačuvane kredencijale za ovog vozača
   Future<bool> _hasBiometricCredentials() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedVozac = prefs.getString('biometric_vozac_${widget.vozacIme}');
+    final key = 'biometric_vozac_${widget.vozacIme}';
+    final savedVozac = prefs.getString(key);
     return savedVozac != null;
   }
 
@@ -73,21 +74,21 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
   Future<void> _loginWithBiometric() async {
     final prefs = await SharedPreferences.getInstance();
     final savedData = prefs.getString('biometric_vozac_${widget.vozacIme}');
-    
+
     if (savedData == null) return;
-    
+
     final authenticated = await BiometricService.authenticate(
       reason: 'Potvrdi identitet za prijavu kao ${widget.vozacIme}',
     );
-    
+
     if (!authenticated) return;
-    
+
     // Dekoduj sačuvane podatke
     final data = jsonDecode(savedData);
     _emailController.text = data['email'] ?? '';
     _telefonController.text = data['telefon'] ?? '';
     _sifraController.text = data['sifra'] ?? '';
-    
+
     // Login
     await _login(saveBiometric: false);
   }
@@ -95,7 +96,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
   /// 👆 Sačuvaj kredencijale za biometriju
   Future<void> _saveBiometricCredentials() async {
     if (!_biometricAvailable) return;
-    
+
     final prefs = await SharedPreferences.getInstance();
     final data = jsonEncode({
       'email': _emailController.text.trim(),
@@ -438,7 +439,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                 ),
-                
+
                 // 👆 Biometrija dugme
                 if (_biometricAvailable && _hasSavedCredentials) ...[
                   const SizedBox(height: 16),

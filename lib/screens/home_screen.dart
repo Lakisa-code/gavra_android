@@ -37,6 +37,7 @@ import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/shimmer_widgets.dart';
+import '../services/biometric_service.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
 import 'promena_sifre_screen.dart';
@@ -66,6 +67,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String? _currentDriver;
 
   bool _isPopisLoading = false; // 📊 Loading state za POPIS dugme
+
+  // 👆 Biometrija
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
 
   // Real-time subscription variables
   StreamSubscription<dynamic>? _realtimeSubscription;
@@ -215,6 +220,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       await _initializeCurrentDriver();
       // 🎫 Učitaj kapacitet cache na startu
       await KapacitetService.ensureCacheLoaded();
+      // 👆 Proveri biometriju
+      await _checkBiometricStatus();
       // 🔒 If the current driver is missing or invalid, redirect to welcome/login
       if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
         if (mounted) {
@@ -279,6 +286,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // Inicijalizacija driver-a
         _currentDriver = driver;
       });
+    }
+  }
+
+  /// 👆 Proveri status biometrije
+  Future<void> _checkBiometricStatus() async {
+    final available = await BiometricService.isBiometricAvailable();
+    final enabled = await BiometricService.isBiometricEnabled();
+    
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled = enabled;
+      });
+    }
+  }
+
+  /// 👆 Toggle biometrija ON/OFF
+  Future<void> _toggleBiometric() async {
+    if (!_biometricAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Biometrija nije dostupna na ovom uređaju'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final newValue = !_biometricEnabled;
+    
+    if (newValue) {
+      // Uključuje se - zahtevaj potvrdu otiskom
+      final authenticated = await BiometricService.authenticate(
+        reason: 'Potvrdi identitet da omogućiš prijavu otiskom prsta',
+      );
+      
+      if (!authenticated) return;
+    }
+    
+    await BiometricService.setBiometricEnabled(newValue);
+    
+    if (mounted) {
+      setState(() {
+        _biometricEnabled = newValue;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(newValue 
+            ? '✅ Prijava otiskom prsta je UKLJUČENA' 
+            : '❌ Prijava otiskom prsta je ISKLJUČENA'),
+          backgroundColor: newValue ? Colors.green : Colors.grey,
+        ),
+      );
     }
   }
 
@@ -2508,6 +2569,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 );
                               } else if (value == 'popis') {
                                 _showPopisDana();
+                              } else if (value == 'biometric') {
+                                _toggleBiometric();
                               }
                             },
                             itemBuilder: (context) => [
@@ -2538,6 +2601,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ],
                                 ),
                               ),
+                              // 👆 Biometrija opcija
+                              if (_biometricAvailable)
+                                PopupMenuItem(
+                                  value: 'biometric',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.fingerprint, 
+                                        color: _biometricEnabled ? Colors.green : Colors.grey,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(_biometricEnabled ? 'Otisak: ON' : 'Otisak: OFF'),
+                                      const Spacer(),
+                                      Switch(
+                                        value: _biometricEnabled,
+                                        onChanged: null, // Handled by menu selection
+                                        activeColor: Colors.green,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               const PopupMenuItem(
                                 value: 'logout',
                                 child: Row(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../services/auth_manager.dart';
+import '../services/biometric_service.dart';
 import '../services/daily_checkin_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
@@ -298,6 +299,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       final correctName = VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
 
       if (correctName == driverName) {
+        // 👆 BIOMETRIJA: Ako je UKLJUČENA i dostupna, zahtevaj potvrdu pre auto-logina
+        final biometricAvailable = await BiometricService.isBiometricAvailable();
+        final biometricEnabled = await BiometricService.isBiometricEnabled();
+        
+        if (biometricAvailable && biometricEnabled) {
+          final authenticated = await BiometricService.authenticate(
+            reason: 'Potvrdi identitet za prijavu kao $correctName',
+          );
+          
+          if (!authenticated) {
+            // Korisnik je otkazao ili nije uspeo - idi na manual login
+            if (!mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (context) => VozacLoginScreen(vozacIme: driverName),
+              ),
+            );
+            return;
+          }
+        }
+
         // Ovaj vozač je zapamćen na ovom uređaju - DIREKTNO AUTO-LOGIN
         await AuthManager.setCurrentDriver(correctName);
 
