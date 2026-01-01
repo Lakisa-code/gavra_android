@@ -680,30 +680,129 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
   }
 
   Widget _buildPinInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-      ),
-      child: TextField(
-        controller: _pinController,
-        style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 8),
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        maxLength: 4,
-        obscureText: true,
-        decoration: InputDecoration(
-          hintText: '• • • •',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), letterSpacing: 8),
-          prefixIcon: const Icon(Icons.lock, color: Colors.amber),
-          border: InputBorder.none,
-          counterText: '',
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+          ),
+          child: TextField(
+            controller: _pinController,
+            style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 8),
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            maxLength: 4,
+            obscureText: true,
+            decoration: InputDecoration(
+              hintText: '• • • •',
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), letterSpacing: 8),
+              prefixIcon: const Icon(Icons.lock, color: Colors.amber),
+              border: InputBorder.none,
+              counterText: '',
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            onSubmitted: (_) => _loginWithPin(),
+          ),
         ),
-        onSubmitted: (_) => _loginWithPin(),
+        const SizedBox(height: 12),
+        // 🔑 Link za zaboravljen PIN
+        GestureDetector(
+          onTap: _showForgotPinDialog,
+          child: Text(
+            'Zaboravio/la sam PIN',
+            style: TextStyle(
+              color: Colors.amber.withValues(alpha: 0.9),
+              fontSize: 14,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.amber.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 🔑 Dialog za zaboravljen PIN
+  void _showForgotPinDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.help_outline, color: Colors.amber),
+            SizedBox(width: 8),
+            Text('Zaboravili ste PIN?', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: const Text(
+          'Možemo poslati zahtev adminu da vam dodeli novi PIN.\n\nNakon što admin odobri zahtev, moći ćete da se prijavite sa novim PIN-om.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Odustani', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _sendPinResetRequest();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            child: const Text('Zatraži novi PIN', style: TextStyle(color: Colors.black)),
+          ),
+        ],
       ),
     );
+  }
+
+  /// 🔑 Pošalji zahtev za reset PIN-a
+  Future<void> _sendPinResetRequest() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final putnikId = _putnikData!['id'] as String;
+      final email = _putnikData!['email'] as String? ?? '';
+      final telefon = _putnikData!['broj_telefona'] as String? ?? _telefonController.text.trim();
+
+      // Proveri da li već ima zahtev koji čeka
+      final imaZahtev = await PinZahtevService.imaZahtevKojiCeka(putnikId);
+      if (imaZahtev) {
+        setState(() {
+          _currentStep = _LoginStep.zahtevPoslat;
+          _infoMessage = 'Već ste poslali zahtev za PIN. Molimo sačekajte da admin odobri.';
+        });
+        return;
+      }
+
+      final success = await PinZahtevService.posaljiZahtev(
+        putnikId: putnikId,
+        email: email,
+        telefon: telefon,
+      );
+
+      if (success) {
+        setState(() {
+          _currentStep = _LoginStep.zahtevPoslat;
+          _infoMessage = 'Zahtev za novi PIN je uspešno poslat! Admin će vam dodeliti novi PIN.';
+        });
+      } else {
+        setState(() => _errorMessage = 'Greška pri slanju zahteva. Pokušajte ponovo.');
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Greška: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Widget _buildZahtevPoslatContent() {
