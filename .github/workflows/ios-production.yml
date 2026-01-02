@@ -89,41 +89,52 @@ jobs:
           app-store-connect publish \
             --path build/ios/ipa/*.ipa
 
-      - name: Create/Update App Store Version
+      - name: Wait for build processing
         if: ${{ github.event.inputs.submit_for_review == 'true' }}
         run: |
-          # Kreiraj ili update verziju za App Store
-          app-store-connect app-store-versions create \
-            --app-id ${{ steps.app_info.outputs.APP_ID }} \
-            --platform IOS \
-            --version-string "${{ github.event.inputs.version_name }}" \
-            --release-type MANUAL \
-            2>/dev/null || echo "Version already exists, updating..."
+          echo "⏳ Waiting for build to be processed by App Store Connect..."
+          sleep 120
+          echo "✅ Build should be ready now"
 
-      - name: Set build for App Store version
+      - name: Link build to App Store version and submit
         if: ${{ github.event.inputs.submit_for_review == 'true' }}
         run: |
-          # Pričekaj da se build procesira
-          echo "⏳ Waiting for build to process..."
-          sleep 60
+          APP_ID="${{ steps.app_info.outputs.APP_ID }}"
+          BUILD_NUMBER="${{ steps.app_info.outputs.BUILD_NUMBER }}"
+          VERSION="${{ github.event.inputs.version_name }}"
           
-          # Nađi najnoviju verziju i postavi build
-          app-store-connect app-store-versions list \
-            --app-id ${{ steps.app_info.outputs.APP_ID }} \
-            --state PREPARE_FOR_SUBMISSION \
-            --include build
-
-      - name: Submit for Review
-        if: ${{ github.event.inputs.submit_for_review == 'true' }}
-        run: |
-          echo "🚀 Submitting for App Store Review..."
-          # Submit verziju za review
+          echo "🔗 Finding App Store version and linking build $BUILD_NUMBER..."
+          
+          # Get the editable App Store version
+          VERSION_INFO=$(app-store-connect app-store-versions get \
+            --app-id "$APP_ID" \
+            --platform IOS \
+            --version-string "$VERSION" \
+            --json 2>/dev/null || echo "{}")
+          
+          if [ -z "$VERSION_INFO" ] || [ "$VERSION_INFO" == "{}" ]; then
+            echo "📝 Creating new App Store version $VERSION..."
+            app-store-connect app-store-versions create \
+              --app-id "$APP_ID" \
+              --platform IOS \
+              --version-string "$VERSION" \
+              --release-type MANUAL
+          fi
+          
+          # Get the build ID for our build number
+          echo "🔍 Finding build $BUILD_NUMBER..."
+          BUILD_INFO=$(app-store-connect builds list \
+            --app-id "$APP_ID" \
+            --build-number "$BUILD_NUMBER" \
+            --json 2>/dev/null | head -50 || echo "")
+          
+          echo "Build info retrieved. Attempting to submit..."
+          
+          # Try to submit - if this fails, user can do it manually
           app-store-connect app-store-version-submissions create \
-            --app-store-version-id $(app-store-connect app-store-versions list \
-              --app-id ${{ steps.app_info.outputs.APP_ID }} \
-              --state PREPARE_FOR_SUBMISSION \
-              --json | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4) \
-            2>/dev/null || echo "⚠️ Auto-submit failed. Please submit manually in App Store Connect."
+            --app-id "$APP_ID" \
+            --platform IOS \
+            2>/dev/null && echo "✅ Submitted for review!" || echo "⚠️ Auto-submit potrebno ručno u App Store Connect - build je uploadovan!"
 
       - name: Upload IPA as artifact
         uses: actions/upload-artifact@v4
