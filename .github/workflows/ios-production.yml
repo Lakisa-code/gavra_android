@@ -54,16 +54,10 @@ jobs:
       - name: Get latest build number
         id: build_info
         run: |
-          # Get latest build number from API and increment
-          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "13")
-          # If no builds found or error, start from 14
-          if [ -z "$LATEST" ] || [ "$LATEST" = "0" ]; then
-            NEW_BUILD=14
-          else
-            NEW_BUILD=$((LATEST + 1))
-          fi
+          # Hardcoded to 14 - previous builds were 1-13
+          NEW_BUILD=14
           echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
-          echo "📱 Latest build: $LATEST, New build number: $NEW_BUILD"
+          echo "📱 New build number: $NEW_BUILD"
 
       - name: Build iOS App
         run: |
