@@ -29,16 +29,11 @@ import 'supabase_client.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 📱 EDGE-TO-EDGE PRIKAZ ZA ANDROID 15+ (SDK 35)
-  // Omogućava prikaz od ivice do ivice sa pravilnim insets-ima
+  // 📱 EDGE-TO-EDGE PRIKAZ
+  // Za Android 15 (SDK 35+): edge-to-edge je automatski primenjen, boje system bar-a su ignorisane
+  // Za starije verzije: ovo postavlja transparentne system bar-ove
+  // NAPOMENA: statusBarColor/navigationBarColor su DEPRECATED u SDK 35, ali još uvek rade za SDK < 35
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarDividerColor: Colors.transparent,
-    ),
-  );
 
   // 🌍 INICIJALIZACIJA LOCALE ZA FORMATIRANJE DATUMA
   await initializeDateFormatting('sr_RS', null);
