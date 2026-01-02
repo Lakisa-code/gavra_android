@@ -14,6 +14,11 @@ on:
         required: false
         default: 'Bug fixes and improvements'
 
+# Cancel prethodni workflow ako je aktivan
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FLUTTER_VERSION: '3.35.6'
 

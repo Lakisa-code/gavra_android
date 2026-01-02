@@ -4,6 +4,11 @@ name: 🔒 Google Play Closed Testing
 on:
   workflow_dispatch:  # Ručno pokretanje
 
+# Cancel prethodni workflow ako je aktivan
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FLUTTER_VERSION: '3.35.6'
 

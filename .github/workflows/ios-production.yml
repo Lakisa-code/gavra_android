@@ -3,6 +3,11 @@ name: 🍎 iOS Production Release
 on:
   workflow_dispatch:
 
+# Cancel prethodni workflow ako je aktivan
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FLUTTER_VERSION: '3.35.6'
   BUNDLE_ID: 'com.gavra013.gavra013ios'
