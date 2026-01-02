@@ -198,6 +198,40 @@ export class HuaweiAppGalleryClient {
     }
 
     /**
+     * 🗑️ Delete App Files (APK/AAB)
+     * DELETE /publish/v2/app-file-info
+     * 
+     * Deletes uploaded package files from the draft version.
+     * fileType: 5 = APK, 3 = RPK
+     */
+    async deleteAppFiles(appId: string, fileType: number = 5): Promise<void> {
+        const token = await this.getAccessToken();
+
+        const response = await fetch(
+            `${PUBLISH_API}/app-file-info?appId=${appId}&fileType=${fileType}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'client_id': this.credentials.clientId,
+                },
+            }
+        );
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('[DEBUG] deleteAppFiles error:', text);
+            throw new Error(`Failed to delete app files: ${response.status} - ${text}`);
+        }
+
+        const data = await response.json() as { ret: { code: number; msg: string } };
+
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${data.ret.msg}`);
+        }
+    }
+
+    /**
      * 📝 Update App File Info (after upload)
      * PUT /publish/v2/app-file-info
      */
@@ -240,23 +274,25 @@ export class HuaweiAppGalleryClient {
     async submitForReview(appId: string, releaseTime?: string): Promise<AppSubmitResult> {
         const token = await this.getAccessToken();
 
-        const body: Record<string, string> = { appId };
+        // Build query params - appId is required in query string
+        let url = `${PUBLISH_API}/app-submit?appId=${appId}`;
         if (releaseTime) {
-            body.releaseTime = releaseTime;
+            url += `&releaseTime=${encodeURIComponent(releaseTime)}`;
         }
 
-        const response = await fetch(`${PUBLISH_API}/app-submit`, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'client_id': this.credentials.clientId,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(body),
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to submit app: ${response.status}`);
+            const text = await response.text();
+            console.error('[DEBUG] submitForReview error:', text);
+            throw new Error(`Failed to submit app: ${response.status} - ${text}`);
         }
 
         return await response.json() as AppSubmitResult;

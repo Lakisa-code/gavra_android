@@ -96,6 +96,25 @@ async function apiRequest<T>(endpoint: string): Promise<T> {
     return response.json() as Promise<T>;
 }
 
+async function apiPatchRequest<T>(endpoint: string, body: object): Promise<T> {
+    const token = generateToken();
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`App Store Connect API error: ${response.status} - ${errorText}`);
+    }
+
+    return response.json() as Promise<T>;
+}
+
 // Status descriptions for App Store
 function getAppStoreStateDescription(state: string): string {
     const stateMap: Record<string, string> = {
@@ -204,6 +223,34 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 inputSchema: {
                     type: "object",
                     properties: {},
+                    required: [],
+                },
+            },
+            {
+                name: "ios_expire_build",
+                description: "Expire a TestFlight build so it's no longer available for testing",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        buildId: {
+                            type: "string",
+                            description: "The build ID to expire (get from ios_get_testflight_builds)",
+                        },
+                    },
+                    required: ["buildId"],
+                },
+            },
+            {
+                name: "ios_expire_old_builds",
+                description: "Expire all TestFlight builds except the latest one",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        keepCount: {
+                            type: "number",
+                            description: "Number of recent builds to keep (default: 1)",
+                        },
+                    },
                     required: [],
                 },
             },
@@ -395,6 +442,89 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                             text: JSON.stringify({
                                 totalApps: apps.length,
                                 apps,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case "ios_expire_build": {
+                const { buildId } = args as { buildId: string };
+
+                if (!buildId) {
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ success: false, error: "buildId is required" }, null, 2) }],
+                        isError: true,
+                    };
+                }
+
+                // PATCH /v1/builds/{id} with expired: true
+                await apiPatchRequest(`/builds/${buildId}`, {
+                    data: {
+                        type: "builds",
+                        id: buildId,
+                        attributes: {
+                            expired: true,
+                        },
+                    },
+                });
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Build ${buildId} has been expired`,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case "ios_expire_old_builds": {
+                const { keepCount = 1 } = args as { keepCount?: number };
+
+                // Get all builds
+                const buildsResponse = await apiRequest<AppStoreResponse<{ id: string; attributes: BuildAttributes }[]>>(
+                    `/builds?filter[app]=${APP_ID}&sort=-uploadedDate&limit=50`
+                );
+
+                const allBuilds = buildsResponse.data;
+                const buildsToExpire = allBuilds
+                    .filter((b) => !b.attributes.expired)
+                    .slice(keepCount); // Skip the first 'keepCount' builds
+
+                const expiredBuilds: string[] = [];
+                const failedBuilds: string[] = [];
+
+                for (const build of buildsToExpire) {
+                    try {
+                        await apiPatchRequest(`/builds/${build.id}`, {
+                            data: {
+                                type: "builds",
+                                id: build.id,
+                                attributes: {
+                                    expired: true,
+                                },
+                            },
+                        });
+                        expiredBuilds.push(build.attributes.version);
+                    } catch (e) {
+                        failedBuilds.push(build.attributes.version);
+                    }
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Expired ${expiredBuilds.length} builds, kept ${keepCount} latest`,
+                                expiredBuilds,
+                                failedBuilds: failedBuilds.length > 0 ? failedBuilds : undefined,
+                                keptBuilds: allBuilds.slice(0, keepCount).map((b) => b.attributes.version),
                             }, null, 2),
                         },
                     ],

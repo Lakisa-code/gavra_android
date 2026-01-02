@@ -59,6 +59,14 @@ export declare class HuaweiAppGalleryClient {
      */
     uploadFile(uploadUrl: string, authCode: string, filePath: string): Promise<string>;
     /**
+     * 🗑️ Delete App Files (APK/AAB)
+     * DELETE /publish/v2/app-file-info
+     *
+     * Deletes uploaded package files from the draft version.
+     * fileType: 5 = APK, 3 = RPK
+     */
+    deleteAppFiles(appId: string, fileType?: number): Promise<void>;
+    /**
      * 📝 Update App File Info (after upload)
      * PUT /publish/v2/app-file-info
      */

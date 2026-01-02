@@ -211,6 +211,25 @@ const TOOLS: Tool[] = [
             required: [],
         },
     },
+    {
+        name: 'huawei_delete_app_files',
+        description: 'Delete uploaded APK/AAB files from the draft version. Use this to remove old packages before uploading new ones.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID from AppGallery Connect (optional if HUAWEI_APP_ID env is set)',
+                },
+                fileType: {
+                    type: 'number',
+                    description: 'File type to delete: 5 = APK (default), 3 = RPK',
+                    default: 5,
+                },
+            },
+            required: [],
+        },
+    },
 ];
 
 // Create MCP Server
@@ -515,6 +534,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                     testAccount: testInfo.testAccount || 'Not set',
                                     testPassword: testInfo.testPassword ? '********' : 'Not set',
                                     testRemark: testInfo.testRemark || 'Not set',
+                                },
+                                null,
+                                2
+                            ),
+                        },
+                    ],
+                };
+            }
+
+            case 'huawei_delete_app_files': {
+                const { appId = HUAWEI_APP_ID, fileType = 5 } = args as { appId?: string; fileType?: number };
+
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required. Set HUAWEI_APP_ID env or provide appId parameter.' }, null, 2) }],
+                    };
+                }
+
+                await huaweiClient.deleteAppFiles(appId, fileType);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(
+                                {
+                                    success: true,
+                                    appId,
+                                    message: `Successfully deleted app files (fileType: ${fileType})`,
                                 },
                                 null,
                                 2

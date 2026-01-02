@@ -53,5 +53,7 @@
 	<string>Aplikacija koristi vašu lokaciju za prikaz vremenske prognoze i lokalno relevantnih informacija.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Koristite Face ID za brzu prijavu u aplikaciju umesto unosa PIN-a.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

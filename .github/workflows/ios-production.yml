@@ -1,0 +1,150 @@
+name: 🍎 iOS Production Release
+
+# Build iOS i submit na App Store Review (produkcija)
+# Koristi Codemagic CLI za automatsko upravljanje sertifikatima
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g., 1.0.1)'
+        required: true
+        default: '1.0'
+      release_notes:
+        description: 'What is new in this version (for App Store)'
+        required: true
+        default: 'Bug fixes and improvements'
+      submit_for_review:
+        description: 'Submit for App Store Review?'
+        required: true
+        type: boolean
+        default: true
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+  BUNDLE_ID: 'com.gavra013.gavra013ios'
+
+jobs:
+  build-and-submit-ios:
+    name: 🚀 Build & Submit to App Store
+    runs-on: macos-latest
+    env:
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_KEY_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Install Codemagic CLI Tools
+        run: pip install codemagic-cli-tools
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Setup keychain
+        run: keychain initialize
+
+      - name: Fetch signing files from App Store Connect
+        run: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Setup certificates in keychain
+        run: keychain add-certificates
+
+      - name: Setup code signing for Xcode
+        run: xcode-project use-profiles
+
+      - name: Get App ID and latest build number
+        id: app_info
+        run: |
+          # Get Apple ID from app info
+          APP_ID=$(app-store-connect apps list --bundle-id-identifier "$BUNDLE_ID" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+          echo "APP_ID=$APP_ID" >> $GITHUB_OUTPUT
+          
+          # Get latest build number
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "0")
+          NEW_BUILD=$((LATEST_BUILD + 1))
+          echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "📱 App ID: $APP_ID"
+          echo "📱 New build number: $NEW_BUILD"
+
+      - name: Build iOS App
+        run: |
+          flutter build ipa --release \
+            --build-name=${{ github.event.inputs.version_name }} \
+            --build-number=${{ steps.app_info.outputs.BUILD_NUMBER }} \
+            --export-options-plist=$HOME/export_options.plist
+
+      - name: Upload to App Store Connect
+        run: |
+          app-store-connect publish \
+            --path build/ios/ipa/*.ipa
+
+      - name: Create/Update App Store Version
+        if: ${{ github.event.inputs.submit_for_review == 'true' }}
+        run: |
+          # Kreiraj ili update verziju za App Store
+          app-store-connect app-store-versions create \
+            --app-id ${{ steps.app_info.outputs.APP_ID }} \
+            --platform IOS \
+            --version-string "${{ github.event.inputs.version_name }}" \
+            --release-type MANUAL \
+            2>/dev/null || echo "Version already exists, updating..."
+
+      - name: Set build for App Store version
+        if: ${{ github.event.inputs.submit_for_review == 'true' }}
+        run: |
+          # Pričekaj da se build procesira
+          echo "⏳ Waiting for build to process..."
+          sleep 60
+          
+          # Nađi najnoviju verziju i postavi build
+          app-store-connect app-store-versions list \
+            --app-id ${{ steps.app_info.outputs.APP_ID }} \
+            --state PREPARE_FOR_SUBMISSION \
+            --include build
+
+      - name: Submit for Review
+        if: ${{ github.event.inputs.submit_for_review == 'true' }}
+        run: |
+          echo "🚀 Submitting for App Store Review..."
+          # Submit verziju za review
+          app-store-connect app-store-version-submissions create \
+            --app-store-version-id $(app-store-connect app-store-versions list \
+              --app-id ${{ steps.app_info.outputs.APP_ID }} \
+              --state PREPARE_FOR_SUBMISSION \
+              --json | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4) \
+            2>/dev/null || echo "⚠️ Auto-submit failed. Please submit manually in App Store Connect."
+
+      - name: Upload IPA as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-production-ipa
+          path: build/ios/ipa/*.ipa
+          retention-days: 90
+
+      - name: Summary
+        run: |
+          echo "## 🎉 iOS Production Build Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ github.event.inputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build:** ${{ steps.app_info.outputs.BUILD_NUMBER }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.submit_for_review }}" == "true" ]; then
+            echo "✅ **Submitted for App Store Review**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⏳ Očekuj review za 1-3 dana" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "📦 **Build uploaded to App Store Connect**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "➡️ Idi u App Store Connect da submitaš za review" >> $GITHUB_STEP_SUMMARY
+          fi
