@@ -254,6 +254,52 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: [],
                 },
             },
+            {
+                name: "ios_reject_submission",
+                description: "Cancel/reject the current App Store submission (Developer Reject). Use this to change the build before resubmitting.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        versionId: {
+                            type: "string",
+                            description: "The App Store version ID to reject (get from ios_get_app_store_versions)",
+                        },
+                    },
+                    required: ["versionId"],
+                },
+            },
+            {
+                name: "ios_set_build_for_version",
+                description: "Set/change the build for an App Store version. The version must be in PREPARE_FOR_SUBMISSION state.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        versionId: {
+                            type: "string",
+                            description: "The App Store version ID",
+                        },
+                        buildId: {
+                            type: "string",
+                            description: "The build ID to attach to this version",
+                        },
+                    },
+                    required: ["versionId", "buildId"],
+                },
+            },
+            {
+                name: "ios_submit_for_review",
+                description: "Submit an App Store version for review. The version must have a build attached.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        versionId: {
+                            type: "string",
+                            description: "The App Store version ID to submit",
+                        },
+                    },
+                    required: ["versionId"],
+                },
+            },
         ],
     };
 });
@@ -525,6 +571,174 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                 expiredBuilds,
                                 failedBuilds: failedBuilds.length > 0 ? failedBuilds : undefined,
                                 keptBuilds: allBuilds.slice(0, keepCount).map((b) => b.attributes.version),
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case "ios_reject_submission": {
+                const { versionId } = args as { versionId: string };
+
+                if (!versionId) {
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ success: false, error: "versionId is required" }, null, 2) }],
+                        isError: true,
+                    };
+                }
+
+                const token = generateToken();
+
+                // First, find the reviewSubmission for this app that's in WAITING_FOR_REVIEW state
+                const reviewSubmissionsResponse = await fetch(
+                    `${BASE_URL}/reviewSubmissions?filter[app]=${APP_ID}&filter[state]=WAITING_FOR_REVIEW`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (!reviewSubmissionsResponse.ok) {
+                    const errorText = await reviewSubmissionsResponse.text();
+                    throw new Error(`Failed to get review submissions: ${reviewSubmissionsResponse.status} - ${errorText}`);
+                }
+
+                const reviewSubmissions = await reviewSubmissionsResponse.json() as { data: { id: string; attributes: { state: string } }[] };
+
+                if (!reviewSubmissions.data || reviewSubmissions.data.length === 0) {
+                    throw new Error("No pending review submission found. The app might not be in review.");
+                }
+
+                const submissionId = reviewSubmissions.data[0].id;
+
+                // PATCH the reviewSubmission to CANCELING state
+                const cancelResponse = await fetch(`${BASE_URL}/reviewSubmissions/${submissionId}`, {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            type: "reviewSubmissions",
+                            id: submissionId,
+                            attributes: {
+                                canceled: true,
+                            },
+                        },
+                    }),
+                });
+
+                if (!cancelResponse.ok) {
+                    const errorText = await cancelResponse.text();
+                    throw new Error(`Failed to cancel submission: ${cancelResponse.status} - ${errorText}`);
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Review submission ${submissionId} has been cancelled. Version is now back to PREPARE_FOR_SUBMISSION state. You can now change the build.`,
+                                submissionId: submissionId,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case "ios_set_build_for_version": {
+                const { versionId, buildId } = args as { versionId: string; buildId: string };
+
+                if (!versionId || !buildId) {
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ success: false, error: "versionId and buildId are required" }, null, 2) }],
+                        isError: true,
+                    };
+                }
+
+                // PATCH /v1/appStoreVersions/{id}/relationships/build
+                const token = generateToken();
+                const response = await fetch(`${BASE_URL}/appStoreVersions/${versionId}/relationships/build`, {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            type: "builds",
+                            id: buildId,
+                        },
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to set build: ${response.status} - ${errorText}`);
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Build ${buildId} has been set for version ${versionId}`,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case "ios_submit_for_review": {
+                const { versionId } = args as { versionId: string };
+
+                if (!versionId) {
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ success: false, error: "versionId is required" }, null, 2) }],
+                        isError: true,
+                    };
+                }
+
+                // POST /v1/appStoreVersionSubmissions
+                const token = generateToken();
+                const response = await fetch(`${BASE_URL}/appStoreVersionSubmissions`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            type: "appStoreVersionSubmissions",
+                            relationships: {
+                                appStoreVersion: {
+                                    data: {
+                                        type: "appStoreVersions",
+                                        id: versionId,
+                                    },
+                                },
+                            },
+                        },
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to submit for review: ${response.status} - ${errorText}`);
+                }
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Version ${versionId} has been submitted for App Store review!`,
                             }, null, 2),
                         },
                     ],
