@@ -3,9 +3,9 @@ name: 📱 Build APK Only (No Stores)
 # Samo build APK - za testiranje sa vozačima
 # Nema automatski upload na Google Play, Huawei ili iOS
 on:
-  workflow_dispatch:  # Ručno pokretanje
-  push:
-    branches: [ main ]  # Automatski na svaki push
+  workflow_dispatch:  # Samo ručno pokretanje
+  # push:
+  #   branches: [ main ]  # Isključen automatski build
 
 # 🚀 Otkazuje prethodne buildove kad se pokrene novi (štedi minute)
 concurrency:
