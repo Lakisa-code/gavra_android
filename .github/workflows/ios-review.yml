@@ -1,0 +1,101 @@
+name: 🍎 iOS App Store Upload
+
+# Samo za upload na App Store Connect (TestFlight) za review
+# Koristi Codemagic CLI za automatsko upravljanje sertifikatima
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g., 1.0.1)'
+        required: true
+        default: '1.0'
+      release_notes:
+        description: 'What to Test notes for TestFlight'
+        required: false
+        default: 'Bug fixes and improvements'
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+  BUNDLE_ID: 'com.gavra013.gavra013ios'
+
+jobs:
+  build-and-upload-ios:
+    name: 🚀 Build & Upload to App Store
+    runs-on: macos-latest
+    env:
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_KEY_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Install Codemagic CLI Tools
+        run: pip install codemagic-cli-tools
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Setup keychain
+        run: keychain initialize
+
+      - name: Fetch signing files from App Store Connect
+        run: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Setup certificates in keychain
+        run: keychain add-certificates
+
+      - name: Setup code signing for Xcode
+        run: xcode-project use-profiles
+
+      - name: Get latest TestFlight build number
+        id: build_number
+        run: |
+          # Get Apple ID from app info
+          APP_ID=$(app-store-connect apps list --bundle-id-identifier "$BUNDLE_ID" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+          echo "APP_ID=$APP_ID" >> $GITHUB_OUTPUT
+          
+          # Get latest build number
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "0")
+          NEW_BUILD=$((LATEST_BUILD + 1))
+          echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "📱 New build number: $NEW_BUILD"
+
+      - name: Build iOS App
+        run: |
+          flutter build ipa --release \
+            --build-name=${{ github.event.inputs.version_name }} \
+            --build-number=${{ steps.build_number.outputs.BUILD_NUMBER }} \
+            --export-options-plist=$HOME/export_options.plist
+
+      - name: Upload to App Store Connect (TestFlight)
+        run: |
+          app-store-connect publish \
+            --path build/ios/ipa/*.ipa \
+            --testflight \
+            --beta-group "External Testers" || true
+
+      - name: Upload IPA as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: build/ios/ipa/*.ipa
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo "## 🎉 iOS Build Uploaded!" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ github.event.inputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build:** ${{ steps.build_number.outputs.BUILD_NUMBER }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Uploaded to TestFlight" >> $GITHUB_STEP_SUMMARY
+          echo "📋 Check TestFlight in App Store Connect for the new build."
