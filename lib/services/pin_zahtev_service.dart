@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'realtime_notification_service.dart';
+
 /// 📨 Servis za upravljanje PIN zahtevima putnika
 class PinZahtevService {
   static final _supabase = Supabase.instance.client;
@@ -23,6 +25,13 @@ class PinZahtevService {
         'telefon': telefon,
         'status': 'ceka',
       });
+
+      // 🔔 Pošalji notifikaciju adminima
+      await RealtimeNotificationService.sendNotificationToAdmins(
+        title: '🔔 Novi zahtev za PIN',
+        body: 'Putnik traži PIN za pristup aplikaciji',
+        data: {'type': 'pin_zahtev', 'putnik_id': putnikId},
+      );
 
       return true;
     } catch (e) {

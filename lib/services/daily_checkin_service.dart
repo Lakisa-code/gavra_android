@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'putnik_service.dart';
@@ -9,7 +7,6 @@ import 'realtime/realtime_manager.dart';
 import 'statistika_service.dart';
 
 class DailyCheckInService {
-  static const String _checkInPrefix = 'daily_checkin_';
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
 
   // 🔧 SINGLETON PATTERN za kusur stream - koristi JEDAN RealtimeManager channel za sve vozače
@@ -124,69 +121,32 @@ class DailyCheckInService {
   }
 
   /// Proveri da li je vozač već uradio check-in danas
-  /// Proverava LOKALNO I SUPABASE - za sinhronizaciju između uređaja!
-  /// 🔧 POBOLJŠANO: Povećan timeout, retry logika, bolje logovanje
+  /// Proverava DIREKTNO BAZU - source of truth
   static Future<bool> hasCheckedInToday(String vozac) async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final todayStr = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
 
-    // 1️⃣ PRVO: Proveri lokalno
-    final localCheckedIn = prefs.getBool(todayKey) ?? false;
-    if (localCheckedIn) {
-      return true;
-    }
+    try {
+      final response = await Supabase.instance.client
+          .from('daily_checkins')
+          .select('sitan_novac')
+          .eq('vozac', vozac)
+          .eq('datum', todayStr)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 6));
 
-    // 2️⃣ DRUGO: Proveri Supabase bazu (sa retry logikom)
-    final todayStr = today.toIso8601String().split('T')[0]; // YYYY-MM-DD
-
-    for (int attempt = 1; attempt <= 2; attempt++) {
-      try {
-        final supabase = Supabase.instance.client;
-
-        final response = await supabase
-            .from('daily_checkins')
-            .select('sitan_novac, dnevni_pazari, checkin_vreme')
-            .eq('vozac', vozac)
-            .eq('datum', todayStr)
-            .maybeSingle()
-            .timeout(const Duration(seconds: 6)); // 🔧 Povećan timeout sa 3s na 6s
-
-        if (response != null) {
-          // ✅ VOZAČ JE VEĆ URADIO CHECK-IN SA DRUGOG UREĐAJA!
-          // 🔄 Sinhronizuj lokalno sa Supabase podacima
-          final sitanNovac = (response['sitan_novac'] as num?)?.toDouble() ?? 0.0;
-          final dnevniPazari = (response['dnevni_pazari'] as num?)?.toDouble() ?? 0.0;
-
-          await prefs.setBool(todayKey, true);
-          await prefs.setDouble('${todayKey}_amount', sitanNovac);
-          await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
-          await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
-
-          // Emituj update za stream
-          if (!_sitanNovacController.isClosed) {
-            _sitanNovacController.add(sitanNovac);
-          }
-
-          // Ažuriraj i kusur controller ako postoji
-          if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
-            _kusurControllers[vozac]!.add(sitanNovac);
-          }
-
-          print(
-              '✅ [DailyCheckIn] Vozač $vozac već uradio check-in danas (kusur: $sitanNovac) - sinhronizovano sa drugog uređaja');
-          return true;
+      if (response != null) {
+        // Emituj update za stream
+        final sitanNovac = (response['sitan_novac'] as num?)?.toDouble() ?? 0.0;
+        if (!_sitanNovacController.isClosed) {
+          _sitanNovacController.add(sitanNovac);
         }
-
-        // Ako nema zapisa, vozač nije uradio check-in
-        break;
-      } catch (e) {
-        print('⚠️ [DailyCheckIn] Pokušaj $attempt/2 - Greška pri proveri Supabase: $e');
-        if (attempt < 2) {
-          // Sačekaj pre retry-a
-          await Future.delayed(const Duration(milliseconds: 500));
+        if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
+          _kusurControllers[vozac]!.add(sitanNovac);
         }
+        return true;
       }
+    } catch (e) {
+      print('⚠️ [DailyCheckIn] Greška pri proveri baze: $e');
     }
 
     return false;
@@ -199,65 +159,65 @@ class DailyCheckInService {
     double dnevniPazari = 0.0,
   }) async {
     final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
-    // 🚫 JEDNOSTAVNA VALIDACIJA - vozač može uneti kusur samo jednom dnevno
-    final prefs = await SharedPreferences.getInstance();
-    final alreadyChecked = prefs.getBool(todayKey) ?? false;
-
-    // 📥 LOKALNO ČUVANJE - UVEK (i prvi put i ako je već čekiran)
+    // 🌐 DIREKTNO U BAZU - upsert će ažurirati ako već postoji za danas
     try {
-      await prefs.setBool(todayKey, true);
-      await prefs.setDouble('${todayKey}_amount', sitanNovac);
-      await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
-      await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
+      await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 8));
 
+      // Ažuriraj stream za UI
       if (!_sitanNovacController.isClosed) {
         _sitanNovacController.add(sitanNovac);
       }
     } catch (e) {
-      rethrow;
-    }
-
-    // 🛑 Ako je već čekiran danas, ne čuvaj ponovo u bazu (samo lokalno)
-    if (alreadyChecked) {
-      return;
-    }
-
-    // 🌐 REMOTE ČUVANJE - samo prvi put danas
-    try {
-      await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 5));
-      // Ažuriraj kusur u vozaci tabeli
-      await Supabase.instance.client.from('vozaci').update({'kusur': sitanNovac}).eq('ime', vozac);
-    } catch (e) {
       print('❌ DailyCheckInService: Greška pri čuvanju u Supabase: $e');
+      rethrow; // Propagiraj grešku da UI zna da nije uspelo
     }
   }
 
-  /// Dohvati iznos za danas
+  /// Dohvati iznos za danas - DIREKTNO IZ BAZE
   static Future<double?> getTodayAmount(String vozac) async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
-    return prefs.getDouble('${todayKey}_amount');
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final data = await Supabase.instance.client
+          .from('daily_checkins')
+          .select('sitan_novac')
+          .eq('vozac', vozac)
+          .eq('datum', today)
+          .maybeSingle();
+      return (data?['sitan_novac'] as num?)?.toDouble();
+    } catch (e) {
+      return null;
+    }
   }
 
-  /// Dohvati kompletne podatke za danas kao Map<String, dynamic> (za kompatibilnost)
+  /// Dohvati kompletne podatke za danas - DIREKTNO IZ BAZE
   static Future<Map<String, dynamic>> getTodayCheckIn(String vozac) async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final data = await Supabase.instance.client
+          .from('daily_checkins')
+          .select()
+          .eq('vozac', vozac)
+          .eq('datum', today)
+          .maybeSingle();
 
-    final sitanNovac = prefs.getDouble('${todayKey}_amount') ?? 0.0;
-    final dnevniPazari = prefs.getDouble('${todayKey}_pazari') ?? 0.0;
-    final hasCheckedIn = prefs.getBool(todayKey) ?? false;
-    final timestampStr = prefs.getString('${todayKey}_timestamp');
+      if (data != null) {
+        return {
+          'sitan_novac': (data['sitan_novac'] as num?)?.toDouble() ?? 0.0,
+          'dnevni_pazari': (data['dnevni_pazari'] as num?)?.toDouble() ?? 0.0,
+          'has_checked_in': true,
+          'timestamp': data['checkin_vreme'] != null ? DateTime.parse(data['checkin_vreme']) : null,
+        };
+      }
+    } catch (e) {
+      // Greška - vrati prazno
+    }
 
     return {
-      'sitan_novac': sitanNovac,
-      'dnevni_pazari': dnevniPazari,
-      'has_checked_in': hasCheckedIn,
-      'timestamp': timestampStr != null ? DateTime.parse(timestampStr) : null,
+      'sitan_novac': 0.0,
+      'dnevni_pazari': 0.0,
+      'has_checked_in': false,
+      'timestamp': null,
     };
   }
 
@@ -329,76 +289,79 @@ class DailyCheckInService {
     }
   }
 
-  /// 📊 NOVI: Sačuvaj kompletan dnevni popis
+  /// 📊 NOVI: Sačuvaj kompletan dnevni popis - DIREKTNO U BAZU
   static Future<void> saveDailyReport(
     String vozac,
     DateTime datum,
     Map<String, dynamic> popisPodaci,
   ) async {
-    final dateKey = '$_checkInPrefix${vozac}_${datum.year}_${datum.month}_${datum.day}';
     try {
-      // Sačuvaj u Supabase (ako postoji tabela)
       await _savePopisToSupabase(vozac, popisPodaci, datum);
     } catch (e) {
-      // 🔇 Ignore
+      print('❌ DailyCheckInService: Greška pri čuvanju popisa: $e');
+      rethrow;
     }
-    // Sačuvaj lokalno u SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    // Sačuvaj `popis` kao JSON string da bismo ga kasnije pouzdano parsirali
-    final popisJsonString = jsonEncode(popisPodaci);
-    await prefs.setString('${dateKey}_popis', popisJsonString);
-    await prefs.setString(
-      '${dateKey}_popis_timestamp',
-      datum.toIso8601String(),
-    );
   }
 
-  /// 📊 NOVI: Dohvati poslednji popis za vozača
+  /// 📊 NOVI: Dohvati poslednji popis za vozača - DIREKTNO IZ BAZE
   static Future<Map<String, dynamic>?> getLastDailyReport(String vozac) async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    for (int i = 1; i <= 7; i++) {
-      final checkDate = today.subtract(Duration(days: i));
-      final dateKey = '$_checkInPrefix${vozac}_${checkDate.year}_${checkDate.month}_${checkDate.day}';
-      final popisString = prefs.getString('${dateKey}_popis');
-      if (popisString != null) {
-        try {
-          final decoded = jsonDecode(popisString) as Map<String, dynamic>;
-          return {
-            'datum': checkDate,
-            'popis': decoded,
-          };
-        } catch (e) {
-          return {
-            'datum': checkDate,
-            'popis': popisString,
-          };
-        }
+    try {
+      final data = await Supabase.instance.client
+          .from('daily_reports')
+          .select()
+          .eq('vozac', vozac)
+          .order('datum', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (data != null) {
+        return {
+          'datum': DateTime.parse(data['datum']),
+          'popis': _convertDbToPopis(data),
+        };
       }
+    } catch (e) {
+      print('⚠️ [DailyCheckIn] Greška pri dohvatanju popisa: $e');
     }
     return null;
   }
 
-  /// 📊 NOVI: Dohvati popis za specifičan datum
+  /// 📊 NOVI: Dohvati popis za specifičan datum - DIREKTNO IZ BAZE
   static Future<Map<String, dynamic>?> getDailyReportForDate(String vozac, DateTime datum) async {
-    final prefs = await SharedPreferences.getInstance();
-    final dateKey = '$_checkInPrefix${vozac}_${datum.year}_${datum.month}_${datum.day}';
-    final popisString = prefs.getString('${dateKey}_popis');
-    if (popisString != null) {
-      try {
-        final decoded = jsonDecode(popisString) as Map<String, dynamic>;
+    try {
+      final datumStr = datum.toIso8601String().split('T')[0];
+      final data = await Supabase.instance.client
+          .from('daily_reports')
+          .select()
+          .eq('vozac', vozac)
+          .eq('datum', datumStr)
+          .maybeSingle();
+
+      if (data != null) {
         return {
           'datum': datum,
-          'popis': decoded,
-        };
-      } catch (e) {
-        return {
-          'datum': datum,
-          'popis': popisString,
+          'popis': _convertDbToPopis(data),
         };
       }
+    } catch (e) {
+      print('⚠️ [DailyCheckIn] Greška pri dohvatanju popisa za datum: $e');
     }
     return null;
+  }
+
+  /// Helper: Konvertuj DB red u popis format
+  static Map<String, dynamic> _convertDbToPopis(Map<String, dynamic> data) {
+    return {
+      'ukupanPazar': (data['ukupan_pazar'] as num?)?.toDouble() ?? 0.0,
+      'sitanNovac': (data['sitan_novac'] as num?)?.toDouble() ?? 0.0,
+      'otkazaniPutnici': data['otkazani_putnici'] ?? 0,
+      'naplaceniPutnici': data['naplaceni_putnici'] ?? 0,
+      'pokupljeniPutnici': data['pokupljeni_putnici'] ?? 0,
+      'dugoviPutnici': data['dugovi_putnici'] ?? 0,
+      'mesecneKarte': data['mesecne_karte'] ?? 0,
+      'kilometraza': (data['kilometraza'] as num?)?.toDouble() ?? 0.0,
+      'automatskiGenerisan': data['automatski_generisan'] ?? false,
+    };
   }
 
   /// 📊 AUTOMATSKO GENERISANJE POPISA ZA PRETHODNI DAN

@@ -56,6 +56,40 @@ class RealtimeNotificationService {
     }
   }
 
+  /// 🔐 Pošalji notifikaciju samo adminima (Bojan, Svetlana)
+  static Future<void> sendNotificationToAdmins({
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Dohvati tokene admina
+      final response =
+          await supabase.from('push_tokens').select('token, provider').inFilter('user_id', ['Bojan', 'Svetlana']);
+
+      if ((response as List).isEmpty) return;
+
+      // Formatiraj tokene za slanje
+      final tokens = (response)
+          .map<Map<String, dynamic>>((t) => {
+                'token': t['token'] as String,
+                'provider': t['provider'] as String,
+              })
+          .toList();
+
+      await sendPushNotification(
+        title: title,
+        body: body,
+        tokens: tokens,
+        data: data,
+      );
+    } catch (e) {
+      // Ignoriši greške - notifikacija nije kritična
+    }
+  }
+
   /// 🎯 Pošalji notifikaciju svim vozačima (broadcast)
   static Future<void> sendNotificationToAllDrivers({
     required String title,
