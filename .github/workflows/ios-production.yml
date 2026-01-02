@@ -54,11 +54,10 @@ jobs:
       - name: Get latest build number
         id: build_info
         run: |
-          # Get latest build number from TestFlight
-          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "12")
-          NEW_BUILD=$((LATEST_BUILD + 1))
+          # Force build number 13 since all previous builds are expired
+          # and get-latest-testflight-build-number doesn't count expired builds correctly
+          NEW_BUILD=13
           echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
-          echo "📱 Latest build: $LATEST_BUILD"
           echo "📱 New build number: $NEW_BUILD"
 
       - name: Build iOS App
