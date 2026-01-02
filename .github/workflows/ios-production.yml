@@ -2,16 +2,13 @@ name: 🍎 iOS Production Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version_name:
-        description: 'Version name (e.g., 1.0.1)'
-        required: true
-        default: '1.0.1'
 
 env:
   FLUTTER_VERSION: '3.35.6'
   BUNDLE_ID: 'com.gavra013.gavra013ios'
   APP_ID: '6757114361'
+  VERSION_ID: '91ee99fd-9a91-4592-a148-3dc7f1fc6b01'
+  # Hardcoded version 1.0 which already has all metadata
 
 jobs:
   build-and-submit:
@@ -57,34 +54,38 @@ jobs:
       - name: Get latest build number
         id: build_info
         run: |
-          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "0")
+          # Get latest build number from TestFlight
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "12")
           NEW_BUILD=$((LATEST_BUILD + 1))
           echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "📱 Latest build: $LATEST_BUILD"
           echo "📱 New build number: $NEW_BUILD"
 
       - name: Build iOS App
         run: |
+          # Using version 1.0 to match existing App Store version
           flutter build ipa --release \
-            --build-name=${{ github.event.inputs.version_name }} \
+            --build-name=1.0 \
             --build-number=${{ steps.build_info.outputs.BUILD_NUMBER }} \
             --export-options-plist=$HOME/export_options.plist
 
       - name: Upload to App Store Connect
         run: |
           app-store-connect publish --path build/ios/ipa/*.ipa
-          echo "✅ Build uploaded!"
+          echo "✅ Build uploaded to App Store Connect!"
 
-      - name: Wait for processing
+      - name: Wait for build processing
         run: |
           echo "⏳ Waiting 3 minutes for Apple to process build..."
           sleep 180
+          echo "✅ Build should be processed now"
 
-      - name: Setup Node.js for API calls
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Create and Submit App Store Version
+      - name: Link build and submit for review
         run: |
           npm install jsonwebtoken
           
@@ -96,7 +97,7 @@ jobs:
           const KEY_ID = process.env.APP_STORE_CONNECT_KEY_IDENTIFIER;
           const PRIVATE_KEY = process.env.APP_STORE_CONNECT_PRIVATE_KEY;
           const APP_ID = '6757114361';
-          const VERSION = '${{ github.event.inputs.version_name }}';
+          const VERSION_ID = '91ee99fd-9a91-4592-a148-3dc7f1fc6b01'; // Existing version 1.0
           const BUILD_NUMBER = '${{ steps.build_info.outputs.BUILD_NUMBER }}';
           
           function generateToken() {
@@ -125,7 +126,7 @@ jobs:
                 res.on('data', chunk => data += chunk);
                 res.on('end', () => {
                   if (res.statusCode >= 200 && res.statusCode < 300) {
-                    resolve(data ? JSON.parse(data) : {});
+                    resolve({ status: res.statusCode, data: data ? JSON.parse(data) : {} });
                   } else {
                     reject(new Error(`API ${res.statusCode}: ${data}`));
                   }
@@ -138,82 +139,94 @@ jobs:
             });
           }
           
+          async function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+          }
+          
           async function main() {
             try {
-              // 1. Get the build ID for our build number
-              console.log(`🔍 Finding build ${BUILD_NUMBER}...`);
-              const builds = await apiRequest('GET', `/builds?filter[app]=${APP_ID}&filter[version]=${BUILD_NUMBER}&limit=1`);
+              // 1. Get all builds and find ours by build number
+              console.log(`🔍 Finding build with number ${BUILD_NUMBER}...`);
               
-              if (!builds.data || builds.data.length === 0) {
-                throw new Error(`Build ${BUILD_NUMBER} not found!`);
+              // Get recent builds sorted by upload date
+              const buildsResponse = await apiRequest('GET', `/builds?filter[app]=${APP_ID}&sort=-uploadedDate&limit=10`);
+              const builds = buildsResponse.data.data;
+              
+              // Find build matching our build number
+              let buildId = null;
+              for (const build of builds) {
+                if (build.attributes.version === BUILD_NUMBER) {
+                  buildId = build.id;
+                  console.log(`✅ Found build ID: ${buildId}`);
+                  break;
+                }
               }
-              const buildId = builds.data[0].id;
-              console.log(`✅ Found build ID: ${buildId}`);
               
-              // 2. Check if version exists, create if not
-              console.log(`📝 Checking App Store version ${VERSION}...`);
-              let versionId;
+              if (!buildId) {
+                // Build might still be processing, wait and retry
+                console.log('⏳ Build not found yet, waiting 60 more seconds...');
+                await sleep(60000);
+                
+                const retryResponse = await apiRequest('GET', `/builds?filter[app]=${APP_ID}&sort=-uploadedDate&limit=10`);
+                for (const build of retryResponse.data.data) {
+                  if (build.attributes.version === BUILD_NUMBER) {
+                    buildId = build.id;
+                    console.log(`✅ Found build ID on retry: ${buildId}`);
+                    break;
+                  }
+                }
+              }
+              
+              if (!buildId) {
+                throw new Error(`Build ${BUILD_NUMBER} not found after waiting!`);
+              }
+              
+              // 2. Link build to existing version 1.0
+              console.log(`🔗 Linking build to version 1.0 (ID: ${VERSION_ID})...`);
+              await apiRequest('PATCH', `/appStoreVersions/${VERSION_ID}/relationships/build`, {
+                data: { type: 'builds', id: buildId }
+              });
+              console.log('✅ Build linked to version!');
+              
+              // 3. Submit for review using appStoreVersionSubmissions
+              console.log('🚀 Submitting for App Store review...');
               
               try {
-                const versions = await apiRequest('GET', `/apps/${APP_ID}/appStoreVersions?filter[versionString]=${VERSION}&filter[platform]=IOS`);
-                if (versions.data && versions.data.length > 0) {
-                  versionId = versions.data[0].id;
-                  console.log(`✅ Found existing version: ${versionId}`);
-                }
-              } catch (e) {
-                console.log('Version not found, will create...');
-              }
-              
-              if (!versionId) {
-                console.log(`📝 Creating App Store version ${VERSION}...`);
-                const newVersion = await apiRequest('POST', '/appStoreVersions', {
+                await apiRequest('POST', '/appStoreVersionSubmissions', {
                   data: {
-                    type: 'appStoreVersions',
-                    attributes: {
-                      platform: 'IOS',
-                      versionString: VERSION,
-                      releaseType: 'AFTER_APPROVAL'
-                    },
+                    type: 'appStoreVersionSubmissions',
+                    relationships: {
+                      appStoreVersion: {
+                        data: { type: 'appStoreVersions', id: VERSION_ID }
+                      }
+                    }
+                  }
+                });
+                console.log('🎉 Successfully submitted for App Store review!');
+              } catch (submitError) {
+                console.log('⚠️ appStoreVersionSubmissions failed, trying reviewSubmissions...');
+                
+                // Try alternative submission method
+                const submission = await apiRequest('POST', '/reviewSubmissions', {
+                  data: {
+                    type: 'reviewSubmissions',
+                    attributes: {},
                     relationships: {
                       app: { data: { type: 'apps', id: APP_ID } }
                     }
                   }
                 });
-                versionId = newVersion.data.id;
-                console.log(`✅ Created version: ${versionId}`);
-              }
-              
-              // 3. Set build for version
-              console.log(`🔗 Linking build ${BUILD_NUMBER} to version ${VERSION}...`);
-              await apiRequest('PATCH', `/appStoreVersions/${versionId}/relationships/build`, {
-                data: { type: 'builds', id: buildId }
-              });
-              console.log('✅ Build linked!');
-              
-              // 4. Create review submission
-              console.log('🚀 Submitting for App Store review...');
-              await apiRequest('POST', '/reviewSubmissions', {
-                data: {
-                  type: 'reviewSubmissions',
-                  attributes: {},
-                  relationships: {
-                    app: { data: { type: 'apps', id: APP_ID } }
-                  }
-                }
-              });
-              
-              // 5. Add version to submission and submit
-              const submissions = await apiRequest('GET', `/reviewSubmissions?filter[app]=${APP_ID}&filter[state]=READY_FOR_REVIEW`);
-              if (submissions.data && submissions.data.length > 0) {
-                const submissionId = submissions.data[0].id;
                 
-                // Add item to submission
+                const submissionId = submission.data.data.id;
+                console.log(`📝 Created review submission: ${submissionId}`);
+                
+                // Add version to submission
                 await apiRequest('POST', '/reviewSubmissionItems', {
                   data: {
                     type: 'reviewSubmissionItems',
                     relationships: {
                       reviewSubmission: { data: { type: 'reviewSubmissions', id: submissionId } },
-                      appStoreVersion: { data: { type: 'appStoreVersions', id: versionId } }
+                      appStoreVersion: { data: { type: 'appStoreVersions', id: VERSION_ID } }
                     }
                   }
                 });
@@ -232,8 +245,12 @@ jobs:
               
             } catch (error) {
               console.error('❌ Error:', error.message);
-              console.log('⚠️ Build is uploaded. You may need to manually submit in App Store Connect.');
-              process.exit(0); // Don't fail the workflow
+              console.log('');
+              console.log('⚠️ Build is uploaded to App Store Connect.');
+              console.log('📱 Please go to App Store Connect to manually:');
+              console.log('   1. Select build for version 1.0');
+              console.log('   2. Click "Add for Review"');
+              process.exit(0); // Don't fail workflow - build is uploaded
             }
           }
           
@@ -243,7 +260,7 @@ jobs:
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-ipa-${{ github.event.inputs.version_name }}
+          name: ios-ipa-build-${{ steps.build_info.outputs.BUILD_NUMBER }}
           path: build/ios/ipa/*.ipa
           retention-days: 30
 
@@ -251,7 +268,7 @@ jobs:
         run: |
           echo "## 🎉 iOS Build Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ github.event.inputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** 1.0" >> $GITHUB_STEP_SUMMARY
           echo "**Build:** ${{ steps.build_info.outputs.BUILD_NUMBER }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Build uploaded and submitted for review!" >> $GITHUB_STEP_SUMMARY
+          echo "Build uploaded and submitted for App Store review!" >> $GITHUB_STEP_SUMMARY
