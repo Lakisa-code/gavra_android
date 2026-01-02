@@ -107,7 +107,7 @@ class DailyCheckInService {
     _isSubscribed = false;
   }
 
-  /// Initialize stream with current value from SharedPreferences
+  /// Initialize stream with current value
   static Future<void> initializeStreamForVozac(String vozac) async {
     final currentAmount = await getTodayAmount(vozac) ?? 0.0;
     if (!_sitanNovacController.isClosed) {

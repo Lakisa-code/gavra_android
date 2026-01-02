@@ -60,11 +60,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       'color': VozacBoja.get('Ivan'),
       'icon': Icons.directions_car,
     },
-    {
-      'name': 'Svetlana',
-      'color': VozacBoja.get('Svetlana'),
-      'icon': Icons.favorite,
-    },
+    // Svetlana sakrivena sa welcome screen-a
+    // {
+    //   'name': 'Svetlana',
+    //   'color': VozacBoja.get('Svetlana'),
+    //   'icon': Icons.favorite,
+    // },
     {
       'name': 'Bojan',
       'color': VozacBoja.get('Bojan'),

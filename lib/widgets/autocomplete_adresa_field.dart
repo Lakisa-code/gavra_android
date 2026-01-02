@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
-import '../services/adrese_service.dart';
+import '../services/adresa_supabase_service.dart';
 
 class AutocompleteAdresaField extends StatefulWidget {
   const AutocompleteAdresaField({
@@ -141,10 +141,12 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
   }
 
   Future<void> _loadAdrese() async {
-    final adrese = await AdreseService.getAdreseZaGrad(widget.grad);
+    // 📦 Učitaj adrese iz Supabase baze
+    final adreseFromDb = await AdresaSupabaseService.getAdreseZaGrad(widget.grad);
     if (mounted) {
       setState(() {
-        _filteredAdrese = adrese;
+        // Konvertuj List<Adresa> u List<String> (samo nazivi)
+        _filteredAdrese = adreseFromDb.map((a) => a.naziv).toList();
       });
     }
   }
@@ -157,13 +159,25 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
     }
 
     try {
-      final adrese = await AdreseService.pretraziAdrese(widget.grad, query);
+      // 🔍 PRETRAGA U SUPABASE BAZI
+      // Ako je query prazan, učitaj sve adrese za grad
+      // Ako query ima tekst, koristi SQL ILIKE pretragu
+      List<String> rezultati;
+
+      if (query.trim().isEmpty) {
+        final adreseFromDb = await AdresaSupabaseService.getAdreseZaGrad(widget.grad);
+        rezultati = adreseFromDb.map((a) => a.naziv).toList();
+      } else {
+        final adreseFromDb = await AdresaSupabaseService.searchAdrese(query, grad: widget.grad);
+        rezultati = adreseFromDb.map((a) => a.naziv).toList();
+      }
+
       if (mounted) {
         setState(() {
-          _filteredAdrese = adrese;
+          _filteredAdrese = rezultati;
           _isLoading = false;
           // Prikaži overlay samo ako ima unos ili je fokusiran
-          if (_focusNode.hasFocus && adrese.isNotEmpty) {
+          if (_focusNode.hasFocus && rezultati.isNotEmpty) {
             _showOverlay();
           } else {
             _removeOverlay();
@@ -233,13 +247,11 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
                             color: Colors.grey[600],
                           ),
                         ),
-                        onTap: () async {
+                        onTap: () {
                           widget.controller.text = adresa;
                           _removeOverlay();
                           _focusNode.unfocus();
-
-                          // Dodaj adresu u često korišćene
-                          await AdreseService.dodajAdresu(widget.grad, adresa);
+                          // 🔒 Adrese se više ne dodaju lokalno - sve je u Supabase bazi
                         },
                       );
                     },

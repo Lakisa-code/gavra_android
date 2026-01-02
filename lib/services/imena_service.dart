@@ -1,121 +1,120 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/putnik.dart';
-
+/// Servis za autocomplete imena putnika - koristi realna imena iz baze
 class ImenaService {
-  static const String _kljucImena = 'cesta_imena';
+  static final _supabase = Supabase.instance.client;
 
-  /// Dohvata listu čestih imena iz SharedPreferences
-  static Future<List<String>> getCestaImena() async {
-    final prefs = await SharedPreferences.getInstance();
-    final imena = prefs.getStringList(_kljucImena) ?? [];
-
-    // Dodaj neka default imena ako je lista prazna
-    if (imena.isEmpty) {
-      imena.addAll([
-        'Marko',
-        'Ana',
-        'Petar',
-        'Milica',
-        'Stefan',
-        'Jovana',
-        'Miloš',
-        'Tamara',
-
-        'Maja',
-        'Aleksandar',
-        'Jelena',
-        'Milan',
-        'Nevena',
-        'Luka',
-        'Kristina',
-        'Uroš',
-        'Marija',
-        'Filip',
-        'Teodora',
-        'Vladimir',
-        'Sanja',
-        'Nemanja',
-        'Sara',
-        'Bojan',
-      ]);
-      await _sacuvajImena(imena);
-    }
-
-    return imena;
-  }
-
-  /// Dodaje novo ime u listu čestih imena
-  static Future<void> dodajIme(String ime) async {
-    if (ime.trim().isEmpty) return;
-
-    final imena = await getCestaImena();
-    final imeFormatted = _formatirajIme(ime);
-
-    // Ako ime već postoji, premesti ga na vrh
-    if (imena.contains(imeFormatted)) {
-      imena.remove(imeFormatted);
-    }
-
-    imena.insert(0, imeFormatted);
-
-    // Ograniči na 50 imena
-    if (imena.length > 50) {
-      imena.removeRange(50, imena.length);
-    }
-
-    await _sacuvajImena(imena);
-  }
-
-  /// Ažurira česta imena na osnovu postojećih putnika
-  static Future<void> azurirajImenaIzPutnika(List<Putnik> putnici) async {
-    final Map<String, int> imenaCount = {};
-
-    // Broji koliko puta se koje ime pojavljuje
-    for (final putnik in putnici) {
-      final ime = _formatirajIme(putnik.ime);
-      if (ime.isNotEmpty) {
-        imenaCount[ime] = (imenaCount[ime] ?? 0) + 1;
-      }
-    }
-
-    // Sortira imena po učestalosti
-    final sortiranaImena = imenaCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-
-    // Uzima top 30 imena
-    final cestaImena = sortiranaImena.take(30).map((entry) => entry.key).toList();
-
-    // Dodaj postojeća imena da ne izgubimo default-e
-    final postojecaImena = await getCestaImena();
-    for (final ime in postojecaImena) {
-      if (!cestaImena.contains(ime)) {
-        cestaImena.add(ime);
-      }
-    }
-
-    await _sacuvajImena(cestaImena);
-  }
-
-  /// Pretražuje imena koja počinju sa datim stringom
+  /// Pretražuje imena iz baze koja počinju sa datim stringom
   static Future<List<String>> pretraziImena(String query) async {
     if (query.trim().isEmpty) return [];
 
-    final imena = await getCestaImena();
-    final queryLower = query.toLowerCase();
+    try {
+      // Pretraži realna imena putnika iz baze
+      final response = await _supabase
+          .from('registrovani_putnici')
+          .select('putnik_ime')
+          .ilike('putnik_ime', '${query.trim()}%')
+          .limit(20);
 
-    return imena.where((ime) => ime.toLowerCase().startsWith(queryLower)).take(10).toList();
+      final Set<String> imena = {};
+
+      for (final row in response as List) {
+        final punoIme = row['putnik_ime'] as String?;
+        if (punoIme != null && punoIme.isNotEmpty) {
+          // Izvuci samo prvo ime (pre prvog razmaka)
+          final prvoIme = punoIme.split(' ').first.trim();
+          if (prvoIme.toLowerCase().startsWith(query.toLowerCase())) {
+            imena.add(_formatirajIme(prvoIme));
+          }
+        }
+      }
+
+      return imena.take(10).toList();
+    } catch (e) {
+      // Fallback na default imena ako baza nije dostupna
+      return _getDefaultImena(query);
+    }
   }
 
-  static Future<void> _sacuvajImena(List<String> imena) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_kljucImena, imena);
+  /// Dohvata najčešća imena iz baze (za inicijalni prikaz)
+  static Future<List<String>> getCestaImena() async {
+    try {
+      final response =
+          await _supabase.from('registrovani_putnici').select('putnik_ime').not('putnik_ime', 'is', null).limit(100);
+
+      final Map<String, int> imenaCount = {};
+
+      for (final row in response as List) {
+        final punoIme = row['putnik_ime'] as String?;
+        if (punoIme != null && punoIme.isNotEmpty) {
+          final prvoIme = _formatirajIme(punoIme.split(' ').first.trim());
+          if (prvoIme.isNotEmpty) {
+            imenaCount[prvoIme] = (imenaCount[prvoIme] ?? 0) + 1;
+          }
+        }
+      }
+
+      // Sortiraj po učestalosti
+      final sortirana = imenaCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+      return sortirana.take(30).map((e) => e.key).toList();
+    } catch (e) {
+      return _defaultImena;
+    }
+  }
+
+  /// Dodaje ime - sada ne radi ništa jer se imena čitaju iz putnika
+  static Future<void> dodajIme(String ime) async {
+    // Nije potrebno - imena se automatski dodaju kad se kreira putnik
+  }
+
+  /// Ažurira imena - sada ne radi ništa jer se čitaju direktno iz baze
+  static Future<void> azurirajImenaIzPutnika(List<dynamic> putnici) async {
+    // Nije potrebno - imena se čitaju direktno iz baze
   }
 
   static String _formatirajIme(String ime) {
     if (ime.trim().isEmpty) return '';
-
-    // Kapitalizuj prvo slovo
     final trimmed = ime.trim();
     return trimmed[0].toUpperCase() + trimmed.substring(1).toLowerCase();
   }
+
+  /// Fallback default imena ako baza nije dostupna
+  static List<String> _getDefaultImena(String query) {
+    final queryLower = query.toLowerCase();
+    return _defaultImena.where((ime) => ime.toLowerCase().startsWith(queryLower)).take(10).toList();
+  }
+
+  static const List<String> _defaultImena = [
+    'Marko',
+    'Ana',
+    'Petar',
+    'Milica',
+    'Stefan',
+    'Jovana',
+    'Miloš',
+    'Tamara',
+    'Maja',
+    'Aleksandar',
+    'Jelena',
+    'Milan',
+    'Nevena',
+    'Luka',
+    'Kristina',
+    'Uroš',
+    'Marija',
+    'Filip',
+    'Teodora',
+    'Vladimir',
+    'Sanja',
+    'Nemanja',
+    'Sara',
+    'Bojan',
+    'Dragana',
+    'Marina',
+    'Ivan',
+    'David',
+    'Sofija',
+    'Tanja',
+  ];
 }

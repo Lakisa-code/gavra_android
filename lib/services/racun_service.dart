@@ -7,7 +7,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Servis za generisanje i štampanje računa za fizička lica
 class RacunService {
@@ -43,30 +43,43 @@ class RacunService {
   static const String napomenaValidnost =
       'Račun je punovažan bez pečata i potpisa u skladu sa Zakonom o privrednim društvima';
 
-  // ========== AUTO-INCREMENT BROJ RAČUNA ==========
-  static const String _brojRacunaKey = 'racun_broj_';
+  // ========== AUTO-INCREMENT BROJ RAČUNA (BAZA) ==========
+  static final _supabase = Supabase.instance.client;
 
-  /// Vraća sledeći broj računa u formatu "X/YYYY" i automatski uvećava brojač
+  /// Vraća sledeći broj računa u formatu "X/YYYY" i automatski uvećava brojač u BAZI
+  /// Atomska operacija - sprečava duplikate između vozača
   static Future<String> _getNextBrojRacuna() async {
-    final prefs = await SharedPreferences.getInstance();
     final godina = DateTime.now().year;
-    final key = '$_brojRacunaKey$godina';
 
-    int trenutniBroj = prefs.getInt(key) ?? 0;
-    trenutniBroj++;
-    await prefs.setInt(key, trenutniBroj);
+    try {
+      // Pozovi PostgreSQL funkciju za atomski increment
+      final response = await _supabase.rpc(
+        'get_next_racun_broj',
+        params: {'p_godina': godina},
+      );
 
-    return '$trenutniBroj/$godina';
+      final noviBroj = response as int;
+      return '$noviBroj/$godina';
+    } catch (e) {
+      // Fallback na timestamp ako baza nije dostupna
+      final timestamp = DateTime.now().millisecondsSinceEpoch % 100000;
+      return 'T$timestamp/$godina';
+    }
   }
 
   /// Vraća trenutni broj računa BEZ uvećavanja (za prikaz)
   static Future<String> getTrenutniBrojRacuna() async {
-    final prefs = await SharedPreferences.getInstance();
     final godina = DateTime.now().year;
-    final key = '$_brojRacunaKey$godina';
 
-    int trenutniBroj = prefs.getInt(key) ?? 0;
-    return '${trenutniBroj + 1}/$godina';
+    try {
+      final response =
+          await _supabase.from('racun_sequence').select('poslednji_broj').eq('godina', godina).maybeSingle();
+
+      final trenutniBroj = response?['poslednji_broj'] as int? ?? 0;
+      return '${trenutniBroj + 1}/$godina';
+    } catch (e) {
+      return '?/$godina';
+    }
   }
 
   /// Štampa račun za fizičko lice

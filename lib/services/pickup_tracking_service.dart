@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/putnik.dart';
 import 'permission_service.dart';
@@ -92,8 +91,6 @@ class PickupTrackingService {
     onApproachingPutnik = onApproaching;
     onAllPutniciCompleted = onCompleted;
 
-    await _saveTrackingState();
-
     _startGpsStream();
     return true;
   }
@@ -108,9 +105,6 @@ class PickupTrackingService {
     _currentPutnikIndex = 0;
 
     await _notifications.cancel(pickupNotificationId);
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('pickup_tracking_active');
   }
 
   /// 📍 START GPS STREAM
@@ -220,8 +214,6 @@ class PickupTrackingService {
       final nextPutnik = _activePutnici[_currentPutnikIndex];
       _updateToNextPutnikNotification(nextPutnik);
     }
-
-    _saveTrackingState();
   }
 
   /// 🔔 UPDATE NOTIFICATION FOR NEXT PUTNIK
@@ -260,13 +252,6 @@ class PickupTrackingService {
   }
 
   double _toRadians(double degrees) => degrees * pi / 180;
-
-  /// 💾 SAVE TRACKING STATE
-  Future<void> _saveTrackingState() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('pickup_tracking_active', _isTracking);
-    await prefs.setInt('pickup_current_index', _currentPutnikIndex);
-  }
 
   /// ❓ IS TRACKING ACTIVE
   bool get isTracking => _isTracking;
