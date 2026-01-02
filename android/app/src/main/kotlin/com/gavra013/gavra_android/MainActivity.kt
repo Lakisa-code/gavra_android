@@ -171,9 +171,6 @@ class MainActivity : FlutterActivity() {
         android.util.Log.d(TAG, "PiP mode changed: $isInPictureInPictureMode")
     }
     
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
-        // Auto-enter PiP when user presses home button
-        enterPipMode()
-    }
+    // UKLONJENO: Auto PiP kada izađeš iz aplikacije (slika 2)
+    // Ručni PiP iz background servisa i dalje radi (slika 1)
 }
