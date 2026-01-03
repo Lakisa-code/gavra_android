@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.32.2'
+  FLUTTER_VERSION: '3.35.6'
 
 jobs:
   build-and-upload-huawei:
