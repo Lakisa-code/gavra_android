@@ -1,0 +1,669 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../services/registrovani_putnik_service.dart';
+
+/// 📊 Helper za prikazivanje detaljnih statistika putnika
+/// Koristi se i u admin ekranu i u profilu putnika
+class PutnikStatistikeHelper {
+  /// Prikaži dijalog sa detaljnim statistikama
+  static Future<void> prikaziDetaljneStatistike({
+    required BuildContext context,
+    required String putnikId,
+    required String putnikIme,
+    required String tip,
+    String? tipSkole,
+    String? brojTelefona,
+    String radniDani = 'pon,uto,sre,cet,pet',
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool aktivan = true,
+  }) async {
+    String selectedPeriod = _getCurrentMonthYear();
+
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.analytics_outlined, color: Colors.blue.shade600),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Detaljne statistike - $putnikIme',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 📅 DROPDOWN ZA PERIOD
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade50,
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedPeriod,
+                          isExpanded: true,
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.blue.shade600,
+                          ),
+                          items: _getMonthOptions().map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 16,
+                                    color: Colors.blue.shade300,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(value),
+                                ],
+                              ),
+                            );
+                          }).toList()
+                            ..addAll([
+                              // 📊 CELA GODINA I UKUPNO
+                              DropdownMenuItem(
+                                value: 'Cela ${DateTime.now().year}',
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.event_note,
+                                      size: 16,
+                                      color: Colors.blue,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text('Cela ${DateTime.now().year}'),
+                                  ],
+                                ),
+                              ),
+                              const DropdownMenuItem(
+                                value: 'Ukupno',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.history,
+                                      size: 16,
+                                      color: Colors.purple,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Ukupno'),
+                                  ],
+                                ),
+                              ),
+                            ]),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                selectedPeriod = newValue;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    StreamBuilder<Map<String, dynamic>>(
+                      stream: _streamStatistikeZaPeriod(putnikId, selectedPeriod),
+                      builder: (context, snapshot) {
+                        // Loading state
+                        if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData) {
+                          return const SizedBox(
+                            height: 200,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return const SizedBox(
+                            height: 200,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        final stats = snapshot.data ?? {};
+                        if (stats['error'] == true) {
+                          return SizedBox(
+                            height: 200,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber_outlined,
+                                    color: Colors.orange,
+                                    size: 48,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Podaci trenutno nisu dostupni.\nPovežite se na internet.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.orange[700]),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        return _buildStatistikeContent(
+                          putnikIme: putnikIme,
+                          tip: tip,
+                          tipSkole: tipSkole,
+                          brojTelefona: brojTelefona,
+                          radniDani: radniDani,
+                          createdAt: createdAt,
+                          updatedAt: updatedAt,
+                          aktivan: aktivan,
+                          putnikId: putnikId,
+                          stats: stats,
+                          period: selectedPeriod,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Zatvori'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 📊 KREIRANJE SADRŽAJA STATISTIKA
+  static Widget _buildStatistikeContent({
+    required String putnikIme,
+    required String tip,
+    String? tipSkole,
+    String? brojTelefona,
+    required String radniDani,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    required bool aktivan,
+    required String putnikId,
+    required Map<String, dynamic> stats,
+    required String period,
+  }) {
+    Color periodColor = Colors.orange;
+    IconData periodIcon = Icons.calendar_today;
+
+    if (period.startsWith('Cela ')) {
+      periodColor = Colors.blue;
+      periodIcon = Icons.event_note;
+    } else if (period == 'Ukupno') {
+      periodColor = Colors.purple;
+      periodIcon = Icons.history;
+    }
+
+    return Column(
+      children: [
+        // 🎯 OSNOVNE INFORMACIJE
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '📋 Osnovne informacije',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[700],
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildStatRow('👤 Ime:', putnikIme),
+              _buildStatRow('📅 Radni dani:', radniDani),
+              _buildStatRow('📊 Tip putnika:', tip),
+              if (tipSkole != null)
+                _buildStatRow(
+                  tip == 'ucenik' ? '🏫 Škola:' : '🏢 Ustanova/Firma:',
+                  tipSkole,
+                ),
+              if (brojTelefona != null) _buildStatRow('📞 Telefon:', brojTelefona),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 💰 FINANSIJSKE INFORMACIJE
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '💰 Finansijske informacije',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[700],
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // 🔥 REALTIME: Datum, iznos i vozač poslednjeg plaćanja
+              StreamBuilder<Map<String, dynamic>?>(
+                stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnikId),
+                builder: (context, snapshot) {
+                  final placanje = snapshot.data;
+                  final datum = placanje?['datum'] as String?;
+                  final vozacIme = placanje?['vozac_ime'] as String?;
+                  final iznos = (placanje?['iznos'] as num?)?.toDouble() ?? 0.0;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStatRow(
+                        '💵 Poslednje plaćanje:',
+                        iznos > 0 ? '${iznos.toStringAsFixed(0)} RSD' : 'Nema podataka',
+                      ),
+                      _buildStatRow(
+                        '📅 Datum plaćanja:',
+                        datum ?? 'Nema podataka o datumu',
+                      ),
+                      _buildStatRow('🚗 Vozač (naplata):', vozacIme ?? 'Nema podataka'),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 📈 STATISTIKE PUTOVANJA - DINAMICKI PERIOD
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: periodColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: periodColor.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(periodIcon, size: 16, color: periodColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    '📈 Statistike',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: periodColor,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _buildStatRow('🚗 Putovanja:', '${stats['putovanja'] ?? 0}'),
+              _buildStatRow('❌ Otkazivanja:', '${stats['otkazivanja'] ?? 0}'),
+              _buildStatRow(
+                '🔄 Poslednje putovanje:',
+                stats['poslednje'] as String? ?? 'Nema podataka',
+              ),
+              _buildStatRow('📊 Uspešnost:', '${stats['uspesnost'] ?? 0}%'),
+              if (period == 'Ukupno' && stats['ukupan_prihod'] != null)
+                _buildStatRow(
+                  '💰 Ukupan prihod:',
+                  '${stats['ukupan_prihod']}',
+                ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 🕐 SISTEMSKE INFORMACIJE
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '🕐 Sistemske informacije',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[700],
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildStatRow('📅 Kreiran:', _formatDatum(createdAt)),
+              _buildStatRow('🔄 Ažuriran:', _formatDatum(updatedAt)),
+              _buildStatRow('✅ Status:', aktivan ? 'Aktivan' : 'Neaktivan'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 📊 HELPER METODA ZA KREIRANJE REDA STATISTIKE
+  static Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatDatum(DateTime? datum) {
+    if (datum == null) return 'Nema podataka';
+    return '${datum.day}.${datum.month}.${datum.year}';
+  }
+
+  static String _getCurrentMonthYear() {
+    final now = DateTime.now();
+    return '${_getMonthName(now.month)} ${now.year}';
+  }
+
+  static List<String> _getMonthOptions() {
+    final now = DateTime.now();
+    List<String> options = [];
+    for (int month = 1; month <= 12; month++) {
+      options.add('${_getMonthName(month)} ${now.year}');
+    }
+    return options;
+  }
+
+  static String _getMonthName(int month) {
+    const months = [
+      '',
+      'Januar',
+      'Februar',
+      'Mart',
+      'April',
+      'Maj',
+      'Jun',
+      'Jul',
+      'Avgust',
+      'Septembar',
+      'Oktobar',
+      'Novembar',
+      'Decembar',
+    ];
+    return months[month];
+  }
+
+  static int _getMonthNumber(String monthName) {
+    const months = [
+      '',
+      'Januar',
+      'Februar',
+      'Mart',
+      'April',
+      'Maj',
+      'Jun',
+      'Jul',
+      'Avgust',
+      'Septembar',
+      'Oktobar',
+      'Novembar',
+      'Decembar',
+    ];
+    for (int i = 1; i < months.length; i++) {
+      if (months[i] == monthName) return i;
+    }
+    return 0;
+  }
+
+  // 📊 STREAM STATISTIKA ZA PERIOD
+  static Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(String putnikId, String period) {
+    return Stream.fromFuture(_getStatistikeForPeriod(putnikId, period));
+  }
+
+  static Future<Map<String, dynamic>> _getStatistikeForPeriod(String putnikId, String period) async {
+    try {
+      if (period.startsWith('Cela ')) {
+        return await _getGodisnjeStatistike(putnikId);
+      }
+      if (period == 'Ukupno') {
+        return await _getUkupneStatistike(putnikId);
+      }
+
+      // Parsiraj mesec
+      final parts = period.split(' ');
+      if (parts.length == 2) {
+        final monthName = parts[0];
+        final year = int.tryParse(parts[1]);
+        if (year != null) {
+          final monthNumber = _getMonthNumber(monthName);
+          if (monthNumber > 0) {
+            return await _getStatistikeZaMesec(putnikId, monthNumber, year);
+          }
+        }
+      }
+
+      return _emptyStats();
+    } catch (e) {
+      return {'error': true, ..._emptyStats()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> _getGodisnjeStatistike(String putnikId) async {
+    final currentYear = DateTime.now().year;
+    final startOfYear = DateTime(currentYear);
+    final endOfYear = DateTime(currentYear, 12, 31);
+
+    final response = await Supabase.instance.client
+        .from('voznje_log')
+        .select()
+        .eq('putnik_id', putnikId)
+        .gte('created_at', startOfYear.toIso8601String())
+        .lte('created_at', endOfYear.toIso8601String())
+        .order('created_at', ascending: false);
+
+    List<String> daniSaVoznjom = [];
+    List<String> daniSamoOtkazivanje = [];
+    String? poslednje;
+    double ukupanPrihod = 0;
+
+    for (final record in response) {
+      final tip = record['tip'] as String?;
+      final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
+      final String? datumStr = record['datum'] as String?;
+      final datum = datumStr ?? record['created_at']?.toString().split('T')[0];
+
+      if (tip == 'voznja' && datum != null) {
+        ukupanPrihod += iznos;
+        if (!daniSaVoznjom.contains(datum)) {
+          daniSaVoznjom.add(datum);
+        }
+        if (poslednje == null) {
+          final d = DateTime.parse(datum);
+          poslednje = '${d.day}/${d.month}/${d.year}';
+        }
+      } else if (tip == 'otkazivanje' && datum != null) {
+        if (!daniSaVoznjom.contains(datum) && !daniSamoOtkazivanje.contains(datum)) {
+          daniSamoOtkazivanje.add(datum);
+        }
+      }
+    }
+
+    final int putovanja = daniSaVoznjom.length;
+    final int otkazivanja = daniSamoOtkazivanje.length;
+    final ukupno = putovanja + otkazivanja;
+    final uspesnost = ukupno > 0 ? ((putovanja / ukupno) * 100).round() : 0;
+
+    return {
+      'putovanja': putovanja,
+      'otkazivanja': otkazivanja,
+      'poslednje': poslednje ?? 'Nema podataka',
+      'uspesnost': uspesnost,
+      'ukupan_prihod': '${ukupanPrihod.toStringAsFixed(0)} RSD',
+    };
+  }
+
+  static Future<Map<String, dynamic>> _getUkupneStatistike(String putnikId) async {
+    final response = await Supabase.instance.client
+        .from('voznje_log')
+        .select()
+        .eq('putnik_id', putnikId)
+        .order('created_at', ascending: false);
+
+    List<String> daniSaVoznjom = [];
+    int otkazivanja = 0;
+    String? poslednje;
+    double ukupanPrihod = 0;
+
+    for (final record in response) {
+      final tip = record['tip'] as String?;
+      final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
+      final String? datumStr = record['datum'] as String?;
+      final datum = datumStr ?? record['created_at']?.toString().split('T')[0];
+
+      if (tip == 'voznja' && datum != null) {
+        ukupanPrihod += iznos;
+        if (!daniSaVoznjom.contains(datum)) {
+          daniSaVoznjom.add(datum);
+        }
+        if (poslednje == null) {
+          final d = DateTime.parse(datum);
+          poslednje = '${d.day}/${d.month}/${d.year}';
+        }
+      } else if (tip == 'otkazivanje') {
+        otkazivanja++;
+      }
+    }
+
+    final int putovanja = daniSaVoznjom.length;
+    final ukupno = putovanja + otkazivanja;
+    final uspesnost = ukupno > 0 ? ((putovanja / ukupno) * 100).round() : 0;
+
+    return {
+      'putovanja': putovanja,
+      'otkazivanja': otkazivanja,
+      'poslednje': poslednje ?? 'Nema podataka',
+      'uspesnost': uspesnost,
+      'ukupan_prihod': '${ukupanPrihod.toStringAsFixed(0)} RSD',
+    };
+  }
+
+  static Future<Map<String, dynamic>> _getStatistikeZaMesec(String putnikId, int mesec, int godina) async {
+    final DateTime mesecStart = DateTime(godina, mesec);
+    final DateTime mesecEnd = DateTime(godina, mesec + 1, 0, 23, 59, 59);
+
+    final String startStr = mesecStart.toIso8601String().split('T')[0];
+    final String endStr = mesecEnd.toIso8601String().split('T')[0];
+
+    final response = await Supabase.instance.client
+        .from('voznje_log')
+        .select('datum, tip, created_at')
+        .eq('putnik_id', putnikId)
+        .gte('datum', startStr)
+        .lte('datum', endStr)
+        .order('created_at', ascending: false);
+
+    List<String> uspesniDatumi = [];
+    int brojOtkazivanja = 0;
+    String? poslednjiDatum;
+
+    for (final zapis in response) {
+      final datum = zapis['datum'] as String;
+      final tip = zapis['tip'] as String?;
+
+      if (tip == 'voznja') {
+        poslednjiDatum ??= datum;
+        if (!uspesniDatumi.contains(datum)) {
+          uspesniDatumi.add(datum);
+        }
+      } else if (tip == 'otkazivanje') {
+        brojOtkazivanja++;
+      }
+    }
+
+    final int brojPutovanja = uspesniDatumi.length;
+    final int ukupno = brojPutovanja + brojOtkazivanja;
+    final double uspesnost = ukupno > 0 ? ((brojPutovanja / ukupno) * 100).roundToDouble() : 0;
+
+    return {
+      'putovanja': brojPutovanja,
+      'otkazivanja': brojOtkazivanja,
+      'uspesnost': uspesnost.toStringAsFixed(0),
+      'poslednje': poslednjiDatum != null ? _formatDatum(DateTime.parse(poslednjiDatum)) : 'Nema podataka',
+    };
+  }
+
+  static Map<String, dynamic> _emptyStats() {
+    return {
+      'putovanja': 0,
+      'otkazivanja': 0,
+      'poslednje': 'Nema podataka',
+      'uspesnost': 0,
+    };
+  }
+}

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/slobodna_mesta_service.dart'; // 🎫 Promena vremena
 import '../services/theme_manager.dart';
@@ -1166,8 +1167,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         const SizedBox(height: 16),
                       ],
 
-                      // 📊 Stanje računa i izvod
-                      _buildStatistikePoMesecimaCard(),
+                      // 📊 Detaljne statistike - dugme za dijalog
+                      _buildDetaljneStatistikeDugme(),
                       const SizedBox(height: 16),
 
                       // 📅 Raspored polazaka
@@ -1485,7 +1486,68 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
   }
 
-  /// 📊 Widget za prikaz stanja računa
+  /// 📊 Dugme za otvaranje detaljnih statistika
+  Widget _buildDetaljneStatistikeDugme() {
+    return Card(
+      color: Colors.transparent,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).glassBorder, width: 1.5),
+      ),
+      child: InkWell(
+        onTap: () {
+          PutnikStatistikeHelper.prikaziDetaljneStatistike(
+            context: context,
+            putnikId: _putnikData['id'] ?? '',
+            putnikIme: _putnikData['putnik_ime'] ?? 'Nepoznato',
+            tip: _putnikData['tip'] ?? 'radnik',
+            tipSkole: _putnikData['tip_skole'],
+            brojTelefona: _putnikData['broj_telefona'],
+            radniDani: _putnikData['radni_dani'] ?? 'pon,uto,sre,cet,pet',
+            createdAt:
+                _putnikData['created_at'] != null ? DateTime.tryParse(_putnikData['created_at'].toString()) : null,
+            updatedAt:
+                _putnikData['updated_at'] != null ? DateTime.tryParse(_putnikData['updated_at'].toString()) : null,
+            aktivan: _putnikData['aktivan'] ?? true,
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.analytics_outlined,
+                color: Colors.blue.shade300,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Detaljne statistike',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white.withValues(alpha: 0.5),
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 📊 Widget za prikaz stanja računa (STARI - nekoristi se više)
+  // ignore: unused_element
   Widget _buildStatistikePoMesecimaCard() {
     final meseci = {
       1: 'Januar',
@@ -1565,6 +1627,43 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 📊 DUGME ZA DETALJNE STATISTIKE
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  PutnikStatistikeHelper.prikaziDetaljneStatistike(
+                    context: context,
+                    putnikId: _putnikData['id'] ?? '',
+                    putnikIme: _putnikData['putnik_ime'] ?? 'Nepoznato',
+                    tip: _putnikData['tip'] ?? 'radnik',
+                    tipSkole: _putnikData['tip_skole'],
+                    brojTelefona: _putnikData['broj_telefona'],
+                    radniDani: _putnikData['radni_dani'] ?? 'pon,uto,sre,cet,pet',
+                    createdAt: _putnikData['created_at'] != null
+                        ? DateTime.tryParse(_putnikData['created_at'].toString())
+                        : null,
+                    updatedAt: _putnikData['updated_at'] != null
+                        ? DateTime.tryParse(_putnikData['updated_at'].toString())
+                        : null,
+                    aktivan: _putnikData['aktivan'] ?? true,
+                  );
+                },
+                icon: const Icon(Icons.analytics_outlined, size: 18),
+                label: const Text('Detaljne statistike'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white.withValues(alpha: 0.9),
+                  backgroundColor: Colors.blue.withValues(alpha: 0.2),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: Colors.blue.withValues(alpha: 0.4)),
+                  ),
+                ),
               ),
             ),
 
