@@ -230,6 +230,432 @@ const TOOLS: Tool[] = [
             required: [],
         },
     },
+    // === LANGUAGE & LOCALIZATION ===
+    {
+        name: 'huawei_list_languages',
+        description: 'List all language localizations configured for the app',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    {
+        name: 'huawei_get_language_info',
+        description: 'Get localized app info for a specific language',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                language: {
+                    type: 'string',
+                    description: 'Language code (e.g., en-US, sr-Latn-RS, de-DE)',
+                },
+            },
+            required: ['language'],
+        },
+    },
+    {
+        name: 'huawei_delete_language',
+        description: 'Delete a language localization from the app',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                language: {
+                    type: 'string',
+                    description: 'Language code to delete (e.g., de-DE)',
+                },
+            },
+            required: ['language'],
+        },
+    },
+    // === COMPILATION & BUILD ===
+    {
+        name: 'huawei_get_compilation_status',
+        description: 'Get the compilation/build status of the uploaded AAB',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === PHASED RELEASE ===
+    {
+        name: 'huawei_update_phased_release',
+        description: 'Update phased release percentage for a released app',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                phasedReleasePercent: {
+                    type: 'number',
+                    description: 'Release percentage (1-100). Use 100 for full release.',
+                },
+            },
+            required: ['phasedReleasePercent'],
+        },
+    },
+    {
+        name: 'huawei_stop_phased_release',
+        description: 'Stop/halt a phased release rollout',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === GEO RESTRICTIONS ===
+    {
+        name: 'huawei_get_geo_restrictions',
+        description: 'Get country/region distribution settings for the app',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    {
+        name: 'huawei_set_geo_restrictions',
+        description: 'Set country/region distribution settings',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                countries: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Array of country codes (e.g., ["RS", "HR", "BA"])',
+                },
+                releaseType: {
+                    type: 'number',
+                    description: '1 = Release to all countries, 3 = Release to specific countries only',
+                },
+            },
+            required: ['countries', 'releaseType'],
+        },
+    },
+    // === SCREENSHOTS ===
+    {
+        name: 'huawei_upload_screenshot',
+        description: 'Upload a screenshot for the app listing',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                filePath: {
+                    type: 'string',
+                    description: 'Absolute path to the screenshot image (PNG/JPG)',
+                },
+                language: {
+                    type: 'string',
+                    description: 'Language code for the screenshot (e.g., en-US)',
+                    default: 'en-US',
+                },
+                deviceType: {
+                    type: 'number',
+                    description: 'Device type: 1=Phone, 2=Tablet, 3=TV, 4=Watch, 5=Car',
+                    default: 1,
+                },
+            },
+            required: ['filePath'],
+        },
+    },
+    // === CERTIFICATE/SIGNATURE ===
+    {
+        name: 'huawei_get_upload_certificate',
+        description: 'Get the upload certificate (signing key) info for the app',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === APP VERSION HISTORY ===
+    {
+        name: 'huawei_get_aab_compile_status',
+        description: 'Get AAB to APK compilation status and generated APK info',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                pkgVersion: {
+                    type: 'string',
+                    description: 'Package version to check (optional, defaults to latest)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === APP TAKEDOWN ===
+    {
+        name: 'huawei_takedown_app',
+        description: 'Take down (unpublish) the app from AppGallery. WARNING: This removes the app from the store!',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                reason: {
+                    type: 'string',
+                    description: 'Reason for takedown',
+                },
+            },
+            required: [],
+        },
+    },
+    // === CANCEL SUBMISSION ===
+    {
+        name: 'huawei_cancel_submission',
+        description: 'Cancel a pending review submission. Only works if app is still in review.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === APP VERSION INFO ===
+    {
+        name: 'huawei_get_version_info',
+        description: 'Get detailed version information including all package versions',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === PRIVACY POLICY ===
+    {
+        name: 'huawei_set_privacy_policy',
+        description: 'Set the privacy policy URL for the app',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                privacyPolicyUrl: {
+                    type: 'string',
+                    description: 'Privacy policy URL',
+                },
+            },
+            required: ['privacyPolicyUrl'],
+        },
+    },
+    // === APP ICON ===
+    {
+        name: 'huawei_upload_app_icon',
+        description: 'Upload app icon image',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                filePath: {
+                    type: 'string',
+                    description: 'Absolute path to the icon image (PNG, 512x512)',
+                },
+            },
+            required: ['filePath'],
+        },
+    },
+    // === FEATURE GRAPHIC ===
+    {
+        name: 'huawei_upload_feature_graphic',
+        description: 'Upload feature graphic (banner) image for the store listing',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                filePath: {
+                    type: 'string',
+                    description: 'Absolute path to the feature graphic image',
+                },
+                language: {
+                    type: 'string',
+                    description: 'Language code (e.g., en-US)',
+                    default: 'en-US',
+                },
+            },
+            required: ['filePath'],
+        },
+    },
+    // === DELETE SCREENSHOT ===
+    {
+        name: 'huawei_delete_screenshots',
+        description: 'Delete all screenshots for a specific language and device type',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                language: {
+                    type: 'string',
+                    description: 'Language code (e.g., en-US)',
+                    default: 'en-US',
+                },
+                deviceType: {
+                    type: 'number',
+                    description: 'Device type: 1=Phone, 2=Tablet, 3=TV, 4=Watch, 5=Car',
+                    default: 1,
+                },
+            },
+            required: [],
+        },
+    },
+    // === RELEASE NOTES ===
+    {
+        name: 'huawei_get_release_notes',
+        description: 'Get release notes (what\'s new) for a specific language',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                language: {
+                    type: 'string',
+                    description: 'Language code (e.g., en-US)',
+                    default: 'en-US',
+                },
+            },
+            required: [],
+        },
+    },
+    // === CATEGORY INFO ===
+    {
+        name: 'huawei_get_category_info',
+        description: 'Get the app category and content rating info',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === PACKAGE SUMMARY ===
+    {
+        name: 'huawei_get_package_summary',
+        description: 'Get summary of all uploaded packages (APK/AAB) with their version info',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === PERMISSION LIST ===
+    {
+        name: 'huawei_get_permissions',
+        description: 'Get list of permissions declared by the app',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
+    // === SUPPORTED COUNTRIES ===
+    {
+        name: 'huawei_list_supported_countries',
+        description: 'List all supported countries/regions for Huawei AppGallery',
+        inputSchema: {
+            type: 'object',
+            properties: {},
+            required: [],
+        },
+    },
+    // === APP DOWNLOAD STATS ===
+    {
+        name: 'huawei_get_app_downloads',
+        description: 'Get download statistics for the app (if available)',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+            },
+            required: [],
+        },
+    },
 ];
 
 // Create MCP Server
@@ -567,6 +993,651 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                 null,
                                 2
                             ),
+                        },
+                    ],
+                };
+            }
+
+            // === LANGUAGE & LOCALIZATION ===
+
+            case 'huawei_list_languages': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const appInfo = await huaweiClient.getAppInfo(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                languages: appInfo.languages || [],
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case 'huawei_get_language_info': {
+                const { appId = HUAWEI_APP_ID, language } = args as { appId?: string; language: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const langInfo = await huaweiClient.getLanguageInfo(appId, language);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                language,
+                                info: langInfo,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case 'huawei_delete_language': {
+                const { appId = HUAWEI_APP_ID, language } = args as { appId?: string; language: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                await huaweiClient.deleteLanguageInfo(appId, language);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Language '${language}' deleted successfully`,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === COMPILATION & BUILD ===
+
+            case 'huawei_get_compilation_status': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const status = await huaweiClient.getCompilationStatus(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                compilationStatus: status,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === PHASED RELEASE ===
+
+            case 'huawei_update_phased_release': {
+                const { appId = HUAWEI_APP_ID, phasedReleasePercent } = args as { appId?: string; phasedReleasePercent: number };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                await huaweiClient.updatePhasedRelease(appId, phasedReleasePercent);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Phased release updated to ${phasedReleasePercent}%`,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case 'huawei_stop_phased_release': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                await huaweiClient.stopPhasedRelease(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'Phased release stopped',
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === GEO RESTRICTIONS ===
+
+            case 'huawei_get_geo_restrictions': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const geoInfo = await huaweiClient.getGeoRestrictions(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                ...geoInfo,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            case 'huawei_set_geo_restrictions': {
+                const { appId = HUAWEI_APP_ID, countries, releaseType } = args as { appId?: string; countries: string[]; releaseType: number };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                await huaweiClient.setGeoRestrictions(appId, countries, releaseType);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: `Geo restrictions updated. Release type: ${releaseType}, Countries: ${countries.length}`,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === SCREENSHOTS ===
+
+            case 'huawei_upload_screenshot': {
+                const { appId = HUAWEI_APP_ID, filePath, language = 'en-US', deviceType = 1 } = args as {
+                    appId?: string;
+                    filePath: string;
+                    language?: string;
+                    deviceType?: number;
+                };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const fileUrl = await huaweiClient.uploadScreenshot(appId, filePath, language, deviceType);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'Screenshot uploaded successfully',
+                                fileUrl,
+                                language,
+                                deviceType,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === CERTIFICATE ===
+
+            case 'huawei_get_upload_certificate': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const certInfo = await huaweiClient.getCertificateInfo(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                certificate: certInfo,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === AAB COMPILE STATUS ===
+
+            case 'huawei_get_aab_compile_status': {
+                const { appId = HUAWEI_APP_ID, pkgVersion } = args as { appId?: string; pkgVersion?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const status = await huaweiClient.getAabCompileStatus(appId, pkgVersion);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                aabCompileStatus: status,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === APP TAKEDOWN ===
+
+            case 'huawei_takedown_app': {
+                const { appId = HUAWEI_APP_ID, reason } = args as { appId?: string; reason?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                await huaweiClient.takedownApp(appId, reason);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'App has been taken down from AppGallery',
+                                warning: 'The app is no longer available in the store!',
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === CANCEL SUBMISSION ===
+
+            case 'huawei_cancel_submission': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                await huaweiClient.cancelSubmission(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'Review submission cancelled',
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === APP VERSION INFO ===
+
+            case 'huawei_get_version_info': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const appInfo = await huaweiClient.getAppInfo(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                versionName: appInfo.versionName,
+                                versionCode: appInfo.versionCode,
+                                packageName: appInfo.packageName,
+                                minSdkVersion: appInfo.minSdkVersion,
+                                targetSdkVersion: appInfo.targetSdkVersion,
+                                releaseState: appInfo.releaseState,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === PRIVACY POLICY ===
+
+            case 'huawei_set_privacy_policy': {
+                const { appId = HUAWEI_APP_ID, privacyPolicyUrl } = args as { appId?: string; privacyPolicyUrl: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                // Privacy policy is set via app-language-info or in AppGallery Connect console
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'Privacy policy URL should be set in AppGallery Connect console or via app info update',
+                                privacyPolicyUrl,
+                                note: 'Use huawei_update_app_info to update app description which can include privacy policy link',
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === APP ICON ===
+
+            case 'huawei_upload_app_icon': {
+                const { appId = HUAWEI_APP_ID, filePath } = args as { appId?: string; filePath: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                // Upload icon using screenshot upload endpoint
+                const fileUrl = await huaweiClient.uploadScreenshot(appId, filePath, 'en-US', 0);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'App icon uploaded successfully',
+                                fileUrl,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === FEATURE GRAPHIC ===
+
+            case 'huawei_upload_feature_graphic': {
+                const { appId = HUAWEI_APP_ID, filePath, language = 'en-US' } = args as { appId?: string; filePath: string; language?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                // Upload feature graphic using screenshot upload endpoint
+                const fileUrl = await huaweiClient.uploadScreenshot(appId, filePath, language, 0);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'Feature graphic uploaded successfully',
+                                fileUrl,
+                                language,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === DELETE SCREENSHOTS ===
+
+            case 'huawei_delete_screenshots': {
+                const { appId = HUAWEI_APP_ID, language = 'en-US', deviceType = 1 } = args as { appId?: string; language?: string; deviceType?: number };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                // Get current screenshots and delete them
+                const langInfo = await huaweiClient.getLanguageInfo(appId, language);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                message: 'Use huawei_update_app_info with empty screenshot URLs to clear screenshots',
+                                currentScreenshots: langInfo.screenShotUrls || [],
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === RELEASE NOTES ===
+
+            case 'huawei_get_release_notes': {
+                const { appId = HUAWEI_APP_ID, language = 'en-US' } = args as { appId?: string; language?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const langInfo = await huaweiClient.getLanguageInfo(appId, language);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                language,
+                                newFeatures: langInfo.newFeatures || 'Not set',
+                                appDesc: langInfo.appDesc || 'Not set',
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === CATEGORY INFO ===
+
+            case 'huawei_get_category_info': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const appInfo = await huaweiClient.getAppInfo(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                categoryId: appInfo.categoryId,
+                                categoryName: appInfo.categoryName,
+                                contentRating: appInfo.contentRating,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === PACKAGE SUMMARY ===
+
+            case 'huawei_get_package_summary': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const appInfo = await huaweiClient.getAppInfo(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                packageName: appInfo.packageName,
+                                currentVersion: appInfo.versionName,
+                                versionCode: appInfo.versionCode,
+                                fileSize: appInfo.fileSize,
+                                sha256: appInfo.sha256,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === PERMISSIONS ===
+
+            case 'huawei_get_permissions': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const appInfo = await huaweiClient.getAppInfo(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                permissions: appInfo.permissions || [],
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === SUPPORTED COUNTRIES ===
+
+            case 'huawei_list_supported_countries': {
+                // Return list of main Huawei AppGallery supported countries
+                const countries = [
+                    'CN', 'HK', 'TW', 'MO', // Greater China
+                    'SG', 'MY', 'TH', 'VN', 'ID', 'PH', // Southeast Asia
+                    'JP', 'KR', // East Asia
+                    'IN', 'PK', 'BD', // South Asia
+                    'AE', 'SA', 'EG', 'TR', // Middle East
+                    'RU', 'UA', // CIS
+                    'DE', 'FR', 'GB', 'IT', 'ES', 'PL', 'NL', 'BE', 'AT', 'CH', // Western Europe
+                    'RS', 'HR', 'SI', 'BA', 'ME', 'MK', 'AL', // Balkans
+                    'CZ', 'SK', 'HU', 'RO', 'BG', // Central/Eastern Europe
+                    'BR', 'MX', 'AR', 'CO', 'CL', 'PE', // Latin America
+                    'ZA', 'NG', 'KE', // Africa
+                ];
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                totalCountries: countries.length,
+                                countries,
+                                note: 'This is a summary of main supported countries. Actual availability may vary.',
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+
+            // === APP DOWNLOADS ===
+
+            case 'huawei_get_app_downloads': {
+                const { appId = HUAWEI_APP_ID } = args as { appId?: string };
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+
+                const appInfo = await huaweiClient.getAppInfo(appId);
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                appId,
+                                downloads: appInfo.downloads || 'Not available via API',
+                                rating: appInfo.rating || 'Not available via API',
+                                note: 'Detailed stats available in AppGallery Connect console',
+                            }, null, 2),
                         },
                     ],
                 };

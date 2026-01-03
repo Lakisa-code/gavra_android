@@ -21,6 +21,16 @@ export interface AppInfo {
     versionName: string;
     releaseState: number;
     languages: string[];
+    minSdkVersion?: string;
+    targetSdkVersion?: string;
+    categoryId?: number;
+    categoryName?: string;
+    contentRating?: string;
+    fileSize?: number;
+    sha256?: string;
+    permissions?: string[];
+    downloads?: string;
+    rating?: string;
 }
 export interface UploadUrlResponse {
     uploadUrl: string;
@@ -125,4 +135,59 @@ export declare class HuaweiAppGalleryClient {
         testPassword?: string;
         testRemark?: string;
     }>;
+    /**
+     * 📜 Get All Language Info
+     * GET /publish/v2/app-language-info
+     */
+    getLanguageInfo(appId: string, lang?: string): Promise<any>;
+    /**
+     * 🗑️ Delete Language Info
+     * DELETE /publish/v2/app-language-info
+     */
+    deleteLanguageInfo(appId: string, lang: string): Promise<void>;
+    /**
+     * 🌍 Get Geo Restrictions (Country Availability)
+     * GET /publish/v2/app-info (includes releaseCountry in response)
+     */
+    getGeoRestrictions(appId: string): Promise<any>;
+    /**
+     * 🌍 Set Geo Restrictions
+     * PUT /publish/v2/app-info
+     */
+    setGeoRestrictions(appId: string, countries: string[], releaseType: number): Promise<void>;
+    /**
+     * 📈 Update Phased Release
+     * PUT /publish/v2/phased-release
+     */
+    updatePhasedRelease(appId: string, percent: number): Promise<void>;
+    /**
+     * ⏹️ Stop Phased Release
+     * DELETE /publish/v2/phased-release
+     */
+    stopPhasedRelease(appId: string): Promise<void>;
+    /**
+     * 📸 Upload Screenshot
+     * POST to OBS upload URL then update app info
+     */
+    uploadScreenshot(appId: string, filePath: string, language?: string, deviceType?: number): Promise<string>;
+    /**
+     * 📜 Get Certificate Info
+     * GET /publish/v2/upload-cert
+     */
+    getCertificateInfo(appId: string): Promise<any>;
+    /**
+     * 📊 Get AAB Compile Status
+     * GET /publish/v2/aab/compile/status
+     */
+    getAabCompileStatus(appId: string, pkgVersion?: string): Promise<any>;
+    /**
+     * 🔴 Take Down App
+     * POST /publish/v2/app-takedown
+     */
+    takedownApp(appId: string, reason?: string): Promise<void>;
+    /**
+     * ❌ Cancel Submission
+     * POST /publish/v2/app-cancel-submit
+     */
+    cancelSubmission(appId: string): Promise<void>;
 }

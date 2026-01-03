@@ -376,4 +376,297 @@ export class HuaweiAppGalleryClient {
             testRemark: data.appInfo.testRemark,
         };
     }
+    /**
+     * 📜 Get All Language Info
+     * GET /publish/v2/app-language-info
+     */
+    async getLanguageInfo(appId, lang) {
+        const token = await this.getAccessToken();
+        let url = `${PUBLISH_API}/app-language-info?appId=${appId}`;
+        if (lang) {
+            url += `&lang=${lang}`;
+        }
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get language info: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${JSON.stringify(data.ret)}`);
+        }
+        return data;
+    }
+    /**
+     * 🗑️ Delete Language Info
+     * DELETE /publish/v2/app-language-info
+     */
+    async deleteLanguageInfo(appId, lang) {
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/app-language-info?appId=${appId}&lang=${lang}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to delete language: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${data.ret.msg}`);
+        }
+    }
+    /**
+     * 🌍 Get Geo Restrictions (Country Availability)
+     * GET /publish/v2/app-info (includes releaseCountry in response)
+     */
+    async getGeoRestrictions(appId) {
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/app-info?appId=${appId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get geo restrictions: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${JSON.stringify(data.ret)}`);
+        }
+        return {
+            releaseType: data.appInfo.releaseType,
+            releaseCountry: data.appInfo.releaseCountry,
+        };
+    }
+    /**
+     * 🌍 Set Geo Restrictions
+     * PUT /publish/v2/app-info
+     */
+    async setGeoRestrictions(appId, countries, releaseType) {
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/app-info?appId=${appId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                releaseType,
+                releaseCountry: countries.join(';'),
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to set geo restrictions: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${data.ret.msg}`);
+        }
+    }
+    /**
+     * 📈 Update Phased Release
+     * PUT /publish/v2/phased-release
+     */
+    async updatePhasedRelease(appId, percent) {
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/phased-release?appId=${appId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                phasedPercent: percent,
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to update phased release: ${response.status} - ${text}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${data.ret.msg}`);
+        }
+    }
+    /**
+     * ⏹️ Stop Phased Release
+     * DELETE /publish/v2/phased-release
+     */
+    async stopPhasedRelease(appId) {
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/phased-release?appId=${appId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to stop phased release: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${data.ret.msg}`);
+        }
+    }
+    /**
+     * 📸 Upload Screenshot
+     * POST to OBS upload URL then update app info
+     */
+    async uploadScreenshot(appId, filePath, language = 'en-US', deviceType = 1) {
+        // Get upload URL for screenshot
+        const suffix = path.extname(filePath).slice(1) || 'png';
+        const uploadInfo = await this.getScreenshotUploadUrl(appId, suffix);
+        // Upload file
+        const fileBuffer = fs.readFileSync(filePath);
+        const fileName = path.basename(filePath);
+        const formData = new FormData();
+        formData.append('file', fileBuffer, fileName);
+        formData.append('authCode', uploadInfo.authCode);
+        formData.append('fileCount', '1');
+        const uploadResponse = await fetch(uploadInfo.uploadUrl, {
+            method: 'POST',
+            body: formData,
+            headers: formData.getHeaders(),
+        });
+        if (!uploadResponse.ok) {
+            throw new Error(`Screenshot upload failed: ${uploadResponse.status}`);
+        }
+        const uploadData = await uploadResponse.json();
+        const fileUrl = uploadData.result.UploadFileRsp.fileInfoList[0].fileDestUlr;
+        // Now update app language info with the screenshot
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/app-language-info`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                appId,
+                lang: language,
+                deviceMaterials: [
+                    {
+                        deviceType,
+                        appIcon: undefined,
+                        screenShots: fileUrl,
+                    },
+                ],
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to update screenshot: ${response.status} - ${text}`);
+        }
+        return fileUrl;
+    }
+    /**
+     * 📜 Get Certificate Info
+     * GET /publish/v2/upload-cert
+     */
+    async getCertificateInfo(appId) {
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/upload-cert?appId=${appId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get certificate info: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${JSON.stringify(data.ret)}`);
+        }
+        return data.certInfo || data;
+    }
+    /**
+     * 📊 Get AAB Compile Status
+     * GET /publish/v2/aab/compile/status
+     */
+    async getAabCompileStatus(appId, pkgVersion) {
+        const token = await this.getAccessToken();
+        let url = `${PUBLISH_API}/aab/compile/status?appId=${appId}`;
+        if (pkgVersion) {
+            url += `&pkgVersion=${pkgVersion}`;
+        }
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get AAB compile status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${JSON.stringify(data.ret)}`);
+        }
+        return data;
+    }
+    /**
+     * 🔴 Take Down App
+     * POST /publish/v2/app-takedown
+     */
+    async takedownApp(appId, reason) {
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/app-takedown?appId=${appId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reason: reason || 'App takedown requested via API',
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to take down app: ${response.status} - ${text}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${data.ret.msg}`);
+        }
+    }
+    /**
+     * ❌ Cancel Submission
+     * POST /publish/v2/app-cancel-submit
+     */
+    async cancelSubmission(appId) {
+        const token = await this.getAccessToken();
+        const response = await fetch(`${PUBLISH_API}/app-cancel-submit?appId=${appId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to cancel submission: ${response.status} - ${text}`);
+        }
+        const data = await response.json();
+        if (data.ret.code !== 0) {
+            throw new Error(`API Error: ${data.ret.msg}`);
+        }
+    }
 }
