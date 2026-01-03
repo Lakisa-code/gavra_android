@@ -164,6 +164,7 @@ class HuaweiPushService {
         'provider': 'huawei',
         'token': token,
         'user_id': driverName, // nullable
+        'user_type': 'vozac',
       };
 
       try {

@@ -110,6 +110,7 @@ class FirebaseService {
         'provider': 'fcm',
         'token': token,
         'user_id': driverName,
+        'user_type': 'vozac',
       };
 
       try {
