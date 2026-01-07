@@ -4,17 +4,30 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { google } from "googleapis";
 import { Logger } from "./logger.js";
+import * as fs from "fs";
 const logger = new Logger('google-play-mcp');
 const PACKAGE_NAME = process.env.GOOGLE_PLAY_PACKAGE_NAME;
-const SERVICE_ACCOUNT_KEY = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY;
+// Support both: direct JSON string OR path to JSON file
+let SERVICE_ACCOUNT_KEY = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY;
+if (!SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
+    try {
+        SERVICE_ACCOUNT_KEY = fs.readFileSync(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH, "utf8");
+        logger.info(`Loaded service account key from file: ${process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH}`);
+    }
+    catch (err) {
+        logger.error(`Failed to read service account key from file: ${process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH}`);
+        logger.error(String(err));
+        process.exit(1);
+    }
+}
 // Validate required environment variables
 if (!PACKAGE_NAME) {
     logger.error('Missing required environment variable: GOOGLE_PLAY_PACKAGE_NAME');
     process.exit(1);
 }
 if (!SERVICE_ACCOUNT_KEY) {
-    logger.error('Missing required environment variable: GOOGLE_PLAY_SERVICE_ACCOUNT_KEY');
-    logger.error('Please set the service account JSON in your mcp.json');
+    logger.error('Missing required environment variable: GOOGLE_PLAY_SERVICE_ACCOUNT_KEY or GOOGLE_SERVICE_ACCOUNT_KEY_PATH');
+    logger.error('Set either the JSON string directly OR provide a path to the JSON file');
     process.exit(1);
 }
 logger.info('Google Play credentials loaded successfully');

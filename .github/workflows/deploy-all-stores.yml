@@ -1,0 +1,392 @@
+name: 🚀 Deploy to All Stores
+
+# Unified deployment workflow za Google Play i Huawei AppGallery
+# - Google Play: Closed Testing (Alpha)
+# - Huawei: Production + Review
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_google:
+        description: 'Deploy to Google Play (Closed Testing)?'
+        required: true
+        default: true
+        type: boolean
+      deploy_huawei:
+        description: 'Deploy to Huawei AppGallery (Production)?'
+        required: true
+        default: true
+        type: boolean
+      huawei_submit_review:
+        description: 'Submit Huawei for review?'
+        required: true
+        default: true
+        type: boolean
+      release_notes:
+        description: 'Release notes (What is new)'
+        required: false
+        default: 'Ispravke grešaka i poboljšanja performansi.'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════
+  # JOB 1: BUILD - Bump version, build AAB (runs once for all stores)
+  # ═══════════════════════════════════════════════════════════════════
+  build:
+    name: 📦 Build AAB
+    runs-on: ubuntu-latest
+    outputs:
+      version_name: ${{ steps.bump.outputs.VERSION_NAME }}
+      version_code: ${{ steps.bump.outputs.VERSION_CODE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Auto-bump versionCode
+        id: bump
+        run: |
+          # Read current version
+          VERSION_LINE=$(grep "^version:" pubspec.yaml)
+          VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\)+.*/\1/')
+          OLD_VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: [0-9]*\.[0-9]*\.[0-9]*+\([0-9]*\)/\1/')
+          
+          # Bump versionCode
+          NEW_VERSION_CODE=$((OLD_VERSION_CODE + 1))
+          
+          # Update pubspec.yaml
+          sed -i "s/^version: .*/version: $VERSION_NAME+$NEW_VERSION_CODE/" pubspec.yaml
+          
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=$NEW_VERSION_CODE" >> $GITHUB_OUTPUT
+          
+          echo "📌 Version: $VERSION_NAME"
+          echo "📌 Old versionCode: $OLD_VERSION_CODE"
+          echo "📌 New versionCode: $NEW_VERSION_CODE"
+
+      - name: Commit version bump
+        run: |
+          git add pubspec.yaml
+          git commit -m "🔖 Bump versionCode to ${{ steps.bump.outputs.VERSION_CODE }}" || echo "No changes to commit"
+          git push || echo "Nothing to push"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Prepare agconnect-services.json
+        env:
+          AGC_BASE64: ${{ secrets.AGC_BASE64 }}
+        run: |
+          mkdir -p assets android/app
+          if [ -n "$AGC_BASE64" ]; then
+            echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
+            echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
+            echo "✅ agconnect-services.json created from secret"
+          else
+            echo '{ "client": { "package_name": "com.gavra013.gavra_android" } }' > assets/agconnect-services.json
+            echo '{ "client": { "package_name": "com.gavra013.gavra_android" } }' > android/app/agconnect-services.json
+            echo "⚠️ Using placeholder agconnect-services.json"
+          fi
+
+      - name: Restore keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > gavra-release-key-production.keystore
+          cp gavra-release-key-production.keystore android/
+
+      - name: Create key.properties
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=../gavra-release-key-production.keystore
+          EOF
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build AAB
+        run: |
+          flutter build appbundle --release \
+            --build-name=${{ steps.bump.outputs.VERSION_NAME }} \
+            --build-number=${{ steps.bump.outputs.VERSION_CODE }}
+          AAB_SIZE=$(du -h build/app/outputs/bundle/release/app-release.aab | cut -f1)
+          echo "✅ AAB built successfully ($AAB_SIZE)"
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════
+  # JOB 2: GOOGLE PLAY - Upload to Closed Testing (Alpha)
+  # ═══════════════════════════════════════════════════════════════════
+  google-play:
+    name: 🔒 Google Play (Closed Testing)
+    needs: build
+    if: ${{ github.event.inputs.deploy_google == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download AAB artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
+          path: ./
+
+      - name: Upload to Google Play (Closed Testing)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.gavra013.gavra_android
+          releaseFiles: app-release.aab
+          track: alpha
+          status: completed
+          releaseName: "v${{ needs.build.outputs.version_name }} (${{ needs.build.outputs.version_code }})"
+
+      - name: Summary
+        run: |
+          echo "## ✅ Google Play Upload Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | ${{ needs.build.outputs.version_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build** | ${{ needs.build.outputs.version_code }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Track** | Closed Testing (Alpha) |" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════
+  # JOB 3: HUAWEI - Upload to Production + Submit for Review
+  # ═══════════════════════════════════════════════════════════════════
+  huawei:
+    name: 📱 Huawei AppGallery (Production)
+    needs: build
+    if: ${{ github.event.inputs.deploy_huawei == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download AAB artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
+          path: ./
+
+      - name: Upload to Huawei AppGallery
+        id: upload
+        env:
+          HUAWEI_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
+          HUAWEI_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
+          HUAWEI_APP_ID: ${{ secrets.AGC_APP_ID }}
+          VERSION: ${{ needs.build.outputs.version_name }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
+        run: |
+          echo "📦 Uploading AAB v$VERSION to Huawei AppGallery..."
+          
+          # === 1. Get access token ===
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"client_id\": \"$HUAWEI_CLIENT_ID\",
+              \"client_secret\": \"$HUAWEI_CLIENT_SECRET\",
+              \"grant_type\": \"client_credentials\"
+            }")
+          
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          
+          if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "❌ Failed to get access token"
+            echo "$TOKEN_RESPONSE"
+            exit 1
+          fi
+          echo "✅ Got access token"
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+          
+          # === 2. Get upload URL ===
+          UPLOAD_URL_RESPONSE=$(curl -s -X GET \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=$HUAWEI_APP_ID&suffix=aab" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID")
+          
+          RET_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.ret.code')
+          if [ "$RET_CODE" != "0" ]; then
+            echo "❌ API Error getting upload URL"
+            echo "$UPLOAD_URL_RESPONSE"
+            exit 1
+          fi
+          
+          UPLOAD_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.uploadUrl')
+          AUTH_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.authCode')
+          echo "✅ Got upload URL"
+          
+          # === 3. Upload AAB ===
+          AAB_PATH="app-release.aab"
+          
+          UPLOAD_RESPONSE=$(curl -s -X POST \
+            "$UPLOAD_URL" \
+            -F "file=@$AAB_PATH" \
+            -F "authCode=$AUTH_CODE" \
+            -F "fileCount=1")
+          
+          FILE_DEST_URL=$(echo $UPLOAD_RESPONSE | jq -r '.result.UploadFileRsp.fileInfoList[0].fileDestUlr // empty')
+          
+          if [ -z "$FILE_DEST_URL" ]; then
+            echo "❌ Failed to upload AAB"
+            echo "$UPLOAD_RESPONSE"
+            exit 1
+          fi
+          echo "✅ AAB uploaded"
+          
+          # === 4. Update app file info ===
+          UPDATE_RESPONSE=$(curl -s -X PUT \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$HUAWEI_APP_ID" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"appId\": \"$HUAWEI_APP_ID\",
+              \"fileType\": 14,
+              \"files\": [{
+                \"fileName\": \"app-release.aab\",
+                \"fileDestUrl\": \"$FILE_DEST_URL\"
+              }]
+            }")
+          
+          UPDATE_RET_CODE=$(echo $UPDATE_RESPONSE | jq -r '.ret.code')
+          if [ "$UPDATE_RET_CODE" != "0" ]; then
+            echo "⚠️ Warning: File info update returned code $UPDATE_RET_CODE"
+            echo "$UPDATE_RESPONSE"
+          else
+            echo "✅ File info updated"
+          fi
+          
+          # === 5. Update release notes (What's New) ===
+          if [ -n "$RELEASE_NOTES" ]; then
+            echo "📝 Updating release notes..."
+            
+            LANG_UPDATE=$(curl -s -X PUT \
+              "https://connect-api.cloud.huawei.com/api/publish/v2/app-language-info?appId=$HUAWEI_APP_ID" \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "client_id: $HUAWEI_CLIENT_ID" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"appId\": \"$HUAWEI_APP_ID\",
+                \"lang\": \"sr\",
+                \"newFeatures\": \"$RELEASE_NOTES\"
+              }")
+            
+            LANG_RET=$(echo $LANG_UPDATE | jq -r '.ret.code')
+            if [ "$LANG_RET" == "0" ]; then
+              echo "✅ Release notes updated (SR)"
+            else
+              echo "⚠️ Could not update release notes"
+            fi
+          fi
+          
+          echo ""
+          echo "🎉 AAB v$VERSION uploaded to Huawei AppGallery!"
+
+      - name: Submit for Review
+        if: ${{ github.event.inputs.huawei_submit_review == 'true' }}
+        env:
+          HUAWEI_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
+          HUAWEI_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
+          HUAWEI_APP_ID: ${{ secrets.AGC_APP_ID }}
+        run: |
+          echo "📤 Submitting for review..."
+          
+          # Get fresh token
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"client_id\": \"$HUAWEI_CLIENT_ID\",
+              \"client_secret\": \"$HUAWEI_CLIENT_SECRET\",
+              \"grant_type\": \"client_credentials\"
+            }")
+          
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          
+          # Submit for review
+          SUBMIT_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-submit?appId=$HUAWEI_APP_ID" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"appId\": \"$HUAWEI_APP_ID\"
+            }")
+          
+          SUBMIT_RET=$(echo $SUBMIT_RESPONSE | jq -r '.ret.code')
+          if [ "$SUBMIT_RET" == "0" ]; then
+            echo "✅ App submitted for review!"
+          else
+            echo "⚠️ Submit response:"
+            echo "$SUBMIT_RESPONSE"
+            echo ""
+            echo "📋 You may need to submit manually in AppGallery Connect"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## ✅ Huawei AppGallery Upload Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | ${{ needs.build.outputs.version_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build** | ${{ needs.build.outputs.version_code }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Track** | Production |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Submit for Review** | ${{ github.event.inputs.huawei_submit_review }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════
+  # JOB 4: SUMMARY - Final deployment summary
+  # ═══════════════════════════════════════════════════════════════════
+  summary:
+    name: 📊 Deployment Summary
+    needs: [build, google-play, huawei]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Summary
+        run: |
+          echo "# 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Version Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.build.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** ${{ needs.build.outputs.version_code }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Notes:** ${{ github.event.inputs.release_notes }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Store | Track | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Google Play | Closed Testing | ${{ needs.google-play.result == 'success' && '✅ Success' || needs.google-play.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Huawei AppGallery | Production | ${{ needs.huawei.result == 'success' && '✅ Success' || needs.huawei.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [Google Play Console](https://play.google.com/console)" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [Huawei AppGallery Connect](https://developer.huawei.com/consumer/en/service/josp/agc/index.html)" >> $GITHUB_STEP_SUMMARY

@@ -931,6 +931,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ["subscriptionId"],
                 },
             },
+            // === BETA APP LOCALIZATION (Test Information) ===
+            {
+                name: "ios_update_beta_app_localization",
+                description: "Update Beta App Localization (description, feedback email, etc.) for TestFlight Test Information",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        locale: {
+                            type: "string",
+                            description: "Locale code (e.g., en-US)",
+                            default: "en-US",
+                        },
+                        description: {
+                            type: "string",
+                            description: "Beta app description shown to testers in TestFlight",
+                        },
+                        feedbackEmail: {
+                            type: "string",
+                            description: "Email address for tester feedback",
+                        },
+                        marketingUrl: {
+                            type: "string",
+                            description: "Marketing URL",
+                        },
+                        privacyPolicyUrl: {
+                            type: "string",
+                            description: "Privacy policy URL",
+                        },
+                        tvOsPrivacyPolicy: {
+                            type: "string",
+                            description: "tvOS privacy policy text",
+                        },
+                    },
+                    required: [],
+                },
+            },
             // === BETA APP REVIEW ===
             {
                 name: "ios_submit_for_beta_review",
@@ -2240,6 +2276,81 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 return {
                     content: [{ type: "text", text: JSON.stringify({ success: true, promotionalOffers: offers }, null, 2) }],
                 };
+            }
+
+            // === BETA APP LOCALIZATION ===
+
+            case "ios_update_beta_app_localization": {
+                const { locale = "en-US", description, feedbackEmail, marketingUrl, privacyPolicyUrl, tvOsPrivacyPolicy } = args as {
+                    locale?: string;
+                    description?: string;
+                    feedbackEmail?: string;
+                    marketingUrl?: string;
+                    privacyPolicyUrl?: string;
+                    tvOsPrivacyPolicy?: string;
+                };
+
+                const token = generateToken();
+
+                // First, get existing beta app localizations
+                const listResponse = await fetch(`${BASE_URL}/apps/${APP_ID}/betaAppLocalizations`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (!listResponse.ok) throw new Error(`Failed to get beta app localizations: ${listResponse.status}`);
+
+                const listData = await listResponse.json() as AppStoreResponse<{ id: string; attributes: { locale: string } }[]>;
+                const existingLocalization = listData.data.find(l => l.attributes.locale === locale);
+
+                // Build attributes object with only provided fields
+                const attributes: Record<string, string> = {};
+                if (description !== undefined) attributes.description = description;
+                if (feedbackEmail !== undefined) attributes.feedbackEmail = feedbackEmail;
+                if (marketingUrl !== undefined) attributes.marketingUrl = marketingUrl;
+                if (privacyPolicyUrl !== undefined) attributes.privacyPolicyUrl = privacyPolicyUrl;
+                if (tvOsPrivacyPolicy !== undefined) attributes.tvOsPrivacyPolicy = tvOsPrivacyPolicy;
+
+                if (existingLocalization) {
+                    // PATCH existing localization
+                    const patchResponse = await fetch(`${BASE_URL}/betaAppLocalizations/${existingLocalization.id}`, {
+                        method: "PATCH",
+                        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            data: {
+                                type: "betaAppLocalizations",
+                                id: existingLocalization.id,
+                                attributes,
+                            },
+                        }),
+                    });
+
+                    if (!patchResponse.ok) throw new Error(`Failed to update beta app localization: ${patchResponse.status} - ${await patchResponse.text()}`);
+
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ success: true, message: `Beta app localization updated for ${locale}` }, null, 2) }],
+                    };
+                } else {
+                    // POST new localization
+                    const postResponse = await fetch(`${BASE_URL}/betaAppLocalizations`, {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            data: {
+                                type: "betaAppLocalizations",
+                                attributes: { locale, ...attributes },
+                                relationships: {
+                                    app: { data: { type: "apps", id: APP_ID } },
+                                },
+                            },
+                        }),
+                    });
+
+                    if (!postResponse.ok) throw new Error(`Failed to create beta app localization: ${postResponse.status} - ${await postResponse.text()}`);
+
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ success: true, message: `Beta app localization created for ${locale}` }, null, 2) }],
+                    };
+                }
             }
 
             // === BETA APP REVIEW ===

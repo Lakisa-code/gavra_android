@@ -1,0 +1,272 @@
+name: 📱 Huawei AppGallery Upload
+
+# Upload na Huawei AppGallery za review
+# Ručno pokretanje kada treba poslati novu verziju
+on:
+  workflow_dispatch:
+    inputs:
+      submit_for_review:
+        description: 'Submit for review after upload?'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      release_notes:
+        description: 'Release notes (What is new)'
+        required: false
+        default: 'Ispravke grešaka i poboljšanja performansi.'
+
+# Cancel prethodni workflow ako je aktivan
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+
+jobs:
+  build-and-upload-huawei:
+    name: 🚀 Build & Upload to Huawei
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
+          VERSION_CODE=$(grep "^version:" pubspec.yaml | sed 's/version: //' | cut -d'+' -f2)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "📌 Version: $VERSION ($VERSION_CODE)"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Prepare agconnect-services.json
+        env:
+          AGC_BASE64: ${{ secrets.AGC_BASE64 }}
+        run: |
+          mkdir -p assets
+          mkdir -p android/app
+          echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
+          echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
+          echo "✅ agconnect-services.json created"
+
+      - name: Create key.properties
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          echo "storePassword=$STORE_PASSWORD" > android/key.properties
+          echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+          echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          echo "✅ Keystore configured"
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Release AAB
+        run: |
+          flutter build appbundle --release
+          AAB_SIZE=$(du -h build/app/outputs/bundle/release/app-release.aab | cut -f1)
+          echo "✅ AAB built successfully ($AAB_SIZE)"
+
+      - name: Upload to Huawei AppGallery
+        id: upload
+        env:
+          HUAWEI_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
+          HUAWEI_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
+          HUAWEI_APP_ID: ${{ secrets.AGC_APP_ID }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
+        run: |
+          echo "📦 Uploading AAB v$VERSION to Huawei AppGallery..."
+          
+          # === 1. Get access token ===
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"client_id\": \"$HUAWEI_CLIENT_ID\",
+              \"client_secret\": \"$HUAWEI_CLIENT_SECRET\",
+              \"grant_type\": \"client_credentials\"
+            }")
+          
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          
+          if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "❌ Failed to get access token"
+            echo "$TOKEN_RESPONSE"
+            exit 1
+          fi
+          echo "✅ Got access token"
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+          
+          # === 2. Get upload URL ===
+          UPLOAD_URL_RESPONSE=$(curl -s -X GET \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=$HUAWEI_APP_ID&suffix=aab" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID")
+          
+          RET_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.ret.code')
+          if [ "$RET_CODE" != "0" ]; then
+            echo "❌ API Error getting upload URL"
+            echo "$UPLOAD_URL_RESPONSE"
+            exit 1
+          fi
+          
+          UPLOAD_URL=$(echo $UPLOAD_URL_RESPONSE | jq -r '.uploadUrl')
+          AUTH_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.authCode')
+          echo "✅ Got upload URL"
+          
+          # === 3. Upload AAB ===
+          AAB_PATH="build/app/outputs/bundle/release/app-release.aab"
+          
+          UPLOAD_RESPONSE=$(curl -s -X POST \
+            "$UPLOAD_URL" \
+            -F "file=@$AAB_PATH" \
+            -F "authCode=$AUTH_CODE" \
+            -F "fileCount=1")
+          
+          FILE_DEST_URL=$(echo $UPLOAD_RESPONSE | jq -r '.result.UploadFileRsp.fileInfoList[0].fileDestUlr // empty')
+          
+          if [ -z "$FILE_DEST_URL" ]; then
+            echo "❌ Failed to upload AAB"
+            echo "$UPLOAD_RESPONSE"
+            exit 1
+          fi
+          echo "✅ AAB uploaded"
+          
+          # === 4. Update app file info ===
+          UPDATE_RESPONSE=$(curl -s -X PUT \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$HUAWEI_APP_ID" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"appId\": \"$HUAWEI_APP_ID\",
+              \"fileType\": 14,
+              \"files\": [{
+                \"fileName\": \"app-release.aab\",
+                \"fileDestUrl\": \"$FILE_DEST_URL\"
+              }]
+            }")
+          
+          UPDATE_RET_CODE=$(echo $UPDATE_RESPONSE | jq -r '.ret.code')
+          if [ "$UPDATE_RET_CODE" != "0" ]; then
+            echo "⚠️ Warning: File info update returned code $UPDATE_RET_CODE"
+            echo "$UPDATE_RESPONSE"
+          else
+            echo "✅ File info updated"
+          fi
+          
+          # === 5. Update release notes (What's New) ===
+          if [ -n "$RELEASE_NOTES" ]; then
+            echo "📝 Updating release notes..."
+            
+            # Get current app info to find versionId
+            APP_INFO=$(curl -s -X GET \
+              "https://connect-api.cloud.huawei.com/api/publish/v2/app-info?appId=$HUAWEI_APP_ID" \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "client_id: $HUAWEI_CLIENT_ID")
+            
+            # Update Serbian (sr) localization with new features
+            LANG_UPDATE=$(curl -s -X PUT \
+              "https://connect-api.cloud.huawei.com/api/publish/v2/app-language-info?appId=$HUAWEI_APP_ID" \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "client_id: $HUAWEI_CLIENT_ID" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"appId\": \"$HUAWEI_APP_ID\",
+                \"lang\": \"sr\",
+                \"newFeatures\": \"$RELEASE_NOTES\"
+              }")
+            
+            LANG_RET=$(echo $LANG_UPDATE | jq -r '.ret.code')
+            if [ "$LANG_RET" == "0" ]; then
+              echo "✅ Release notes updated (SR)"
+            else
+              echo "⚠️ Could not update release notes"
+            fi
+          fi
+          
+          echo ""
+          echo "🎉 APK v$VERSION uploaded to Huawei AppGallery!"
+
+      - name: Submit for Review
+        if: ${{ github.event.inputs.submit_for_review == 'true' }}
+        env:
+          HUAWEI_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
+          HUAWEI_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
+          HUAWEI_APP_ID: ${{ secrets.AGC_APP_ID }}
+        run: |
+          echo "📤 Submitting for review..."
+          
+          # Get fresh token
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"client_id\": \"$HUAWEI_CLIENT_ID\",
+              \"client_secret\": \"$HUAWEI_CLIENT_SECRET\",
+              \"grant_type\": \"client_credentials\"
+            }")
+          
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          
+          # Submit for review
+          SUBMIT_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-submit?appId=$HUAWEI_APP_ID" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"appId\": \"$HUAWEI_APP_ID\"
+            }")
+          
+          SUBMIT_RET=$(echo $SUBMIT_RESPONSE | jq -r '.ret.code')
+          if [ "$SUBMIT_RET" == "0" ]; then
+            echo "✅ App submitted for review!"
+          else
+            echo "⚠️ Submit response:"
+            echo "$SUBMIT_RESPONSE"
+            echo ""
+            echo "📋 You may need to submit manually in AppGallery Connect"
+          fi
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: huawei-apk-v${{ steps.version.outputs.VERSION }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo ""
+          echo "═══════════════════════════════════════════════════"
+          echo "📱 HUAWEI APPGALLERY UPLOAD COMPLETE"
+          echo "═══════════════════════════════════════════════════"
+          echo "📌 Version: ${{ steps.version.outputs.VERSION }} (${{ steps.version.outputs.VERSION_CODE }})"
+          echo "📝 Release Notes: ${{ github.event.inputs.release_notes }}"
+          echo "📤 Submit for review: ${{ github.event.inputs.submit_for_review }}"
+          echo ""
+          echo "🔗 AppGallery Connect: https://developer.huawei.com/consumer/en/service/josp/agc/index.html"
+          echo "═══════════════════════════════════════════════════"

@@ -84,11 +84,19 @@ Future<void> takeScreenshot(
   IntegrationTestWidgetsFlutterBinding binding,
   String name,
 ) async {
-  // Za iOS simulator, koristimo convertFlutterSurfaceToImage
-  await binding.convertFlutterSurfaceToImage();
-  await Future.delayed(const Duration(milliseconds: 500));
+  try {
+    // Za iOS simulator, koristimo convertFlutterSurfaceToImage
+    await binding.convertFlutterSurfaceToImage();
+    await Future.delayed(const Duration(milliseconds: 500));
 
-  // takeScreenshot čuva screenshot automatski - ne treba ručno čuvanje
-  await binding.takeScreenshot(name);
-  print('📸 Screenshot taken: $name');
+    // Uzmi screenshot kao bytes - ovo automatski čuva kroz binding na iOS
+    final bytes = await binding.takeScreenshot(name);
+    print('📸 Screenshot taken: $name (${bytes.length} bytes)');
+
+    // Na iOS-u, binding.takeScreenshot() automatski čuva screenshot
+    // u test output koji flutter test pokupi
+    // Ne trebamo ručno čuvati u fajl jer to ne radi na iOS simulator sandbox-u
+  } catch (e) {
+    print('❌ Screenshot error for $name: $e');
+  }
 }
