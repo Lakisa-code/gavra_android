@@ -207,7 +207,26 @@
 # ===============================================
 -keep class com.benjaminabel.vibration.** { *; }
 
+# ===============================================
+# GOOGLE TINK CRYPTO (2026-01-08)
+# R8 missing classes fix
+# ===============================================
+-dontwarn com.google.api.client.http.**
+-dontwarn com.google.crypto.tink.**
+-keep class com.google.crypto.tink.** { *; }
+
+# Google API Client (used by Tink KeysDownloader)
+-dontwarn com.google.api.client.**
+-keep class com.google.api.client.** { *; }
+
+# ===============================================
+# JODA TIME (2026-01-08)
+# R8 missing classes fix
+# ===============================================
+-dontwarn org.joda.time.**
+-keep class org.joda.time.** { *; }
+
 # Final message
 # Configuration optimized for Gavra Android v6.0.0
 # Balances security, performance, and functionality
-# Updated 2026-01-05: Added Huawei, Freezed, GraphQL, Biometric rules
+# Updated 2026-01-08: Added Google Tink, Joda Time rules for R8
