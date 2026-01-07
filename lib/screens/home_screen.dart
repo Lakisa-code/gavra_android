@@ -768,7 +768,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: jedinicaMere,
+                      initialValue: jedinicaMere,
                       decoration: const InputDecoration(
                         labelText: 'Jedinica mere',
                         prefixIcon: Icon(Icons.straighten),
@@ -2616,7 +2616,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       Switch(
                                         value: _biometricEnabled,
                                         onChanged: null, // Handled by menu selection
-                                        activeThumbColor: Colors.green,
+                                        thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                                          if (states.contains(WidgetState.selected)) {
+                                            return Colors.green;
+                                          }
+                                          return null;
+                                        }),
                                       ),
                                     ],
                                   ),

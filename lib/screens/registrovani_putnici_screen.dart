@@ -985,10 +985,18 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       Switch(
                         value: putnik.aktivan,
                         onChanged: bolovanje ? null : (value) => _toggleAktivnost(putnik),
-                        activeThumbColor: Colors.green,
-                        activeTrackColor: Colors.green.shade200,
-                        inactiveThumbColor: Colors.grey,
-                        inactiveTrackColor: Colors.grey.shade300,
+                        thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return Colors.green;
+                          }
+                          return Colors.grey;
+                        }),
+                        trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return Colors.green.shade200;
+                          }
+                          return Colors.grey.shade300;
+                        }),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ],
