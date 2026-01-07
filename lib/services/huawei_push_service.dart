@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:huawei_push/huawei_push.dart';
@@ -25,6 +26,11 @@ class HuaweiPushService {
   /// Initialize and request token. This method is safe to call even when
   /// HMS is not available on the device — it will simply return null.
   Future<String?> initialize() async {
+    // 🍎 iOS ne podržava Huawei Push - preskoči
+    if (Platform.isIOS) {
+      return null;
+    }
+    
     try {
       // Subscribe for token stream — the plugin emits tokens when available or after
       // a successful registration with Huawei HMS. The plugin APIs vary across

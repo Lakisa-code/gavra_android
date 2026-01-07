@@ -20,7 +20,7 @@ class PermissionService {
     if (isScreenshotMode) {
       return true; // Preskoči dialog u screenshot modu
     }
-    
+
     final prefs = await SharedPreferences.getInstance();
     final isFirstLaunch = prefs.getBool(_firstLaunchKey) ?? true;
 
