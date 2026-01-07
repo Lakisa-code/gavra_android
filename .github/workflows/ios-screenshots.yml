@@ -94,45 +94,6 @@ jobs:
           
           ls -la screenshots/ipad/ || echo "No screenshots in ipad folder"
 
-      - name: Fallback - Manual Screenshots (if integration test failed)
-        run: |
-          # Check if we got screenshots
-          IPHONE_COUNT=$(ls -1 screenshots/iphone/*.png 2>/dev/null | wc -l || echo 0)
-          IPAD_COUNT=$(ls -1 screenshots/ipad/*.png 2>/dev/null | wc -l || echo 0)
-          
-          echo "iPhone screenshots: $IPHONE_COUNT"
-          echo "iPad screenshots: $IPAD_COUNT"
-          
-          # If no screenshots, take manual ones
-          if [ "$IPHONE_COUNT" -eq 0 ]; then
-            echo "Taking manual iPhone screenshots..."
-            xcrun simctl boot "$IPHONE_UDID" 2>/dev/null || true
-            sleep 5
-            xcrun simctl install "$IPHONE_UDID" build/ios/iphonesimulator/Runner.app
-            xcrun simctl launch "$IPHONE_UDID" com.gavra013.gavra013ios
-            sleep 8
-            xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/01_permissions.png
-            sleep 5
-            xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/02_welcome.png
-            sleep 5
-            xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/03_screen.png
-          fi
-          
-          if [ "$IPAD_COUNT" -eq 0 ]; then
-            echo "Taking manual iPad screenshots..."
-            xcrun simctl shutdown "$IPHONE_UDID" 2>/dev/null || true
-            xcrun simctl boot "$IPAD_UDID" 2>/dev/null || true
-            sleep 5
-            xcrun simctl install "$IPAD_UDID" build/ios/iphonesimulator/Runner.app
-            xcrun simctl launch "$IPAD_UDID" com.gavra013.gavra013ios
-            sleep 8
-            xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/01_ipad_permissions.png
-            sleep 5
-            xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/02_ipad_welcome.png
-            sleep 5
-            xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/03_ipad_screen.png
-          fi
-
       - name: List all screenshots
         run: |
           echo "=== iPhone Screenshots ==="
