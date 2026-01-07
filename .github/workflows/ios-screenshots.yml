@@ -5,8 +5,8 @@ on:
 
 jobs:
   screenshots:
-    runs-on: macos-13  # macOS Ventura with Xcode 14/15 - compatible with Firebase
-    timeout-minutes: 45
+    runs-on: macos-latest  # macOS 15 with latest Xcode
+    timeout-minutes: 60
     
     steps:
       - name: Checkout code
@@ -50,6 +50,13 @@ jobs:
 
       - name: Build iOS app
         run: |
+          # Update CocoaPods to get latest Firebase compatible with Xcode 16
+          cd ios
+          pod repo update
+          pod update FirebaseCore FirebaseCoreInternal FirebaseMessaging || true
+          cd ..
+          
+          # Build for simulator
           flutter build ios --simulator --no-codesign
 
       - name: Take iPhone Screenshots with Integration Test
