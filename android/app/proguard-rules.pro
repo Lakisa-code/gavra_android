@@ -158,6 +158,56 @@
 # Optimize string operations
 -optimizations !code/simplification/string
 
+# ===============================================
+# HUAWEI HMS & AGCONNECT (2026-01-05)
+# ===============================================
+-keep class com.huawei.hms.** { *; }
+-keep class com.huawei.agconnect.** { *; }
+-keep class com.huawei.hianalytics.** { *; }
+-keep class com.huawei.updatesdk.** { *; }
+-keep class com.huawei.hmf.** { *; }
+-dontwarn com.huawei.**
+
+# Huawei Push Kit
+-keep class com.huawei.hms.push.** { *; }
+-keep public class * extends com.huawei.hms.push.HmsMessageService { *; }
+
+# ===============================================
+# FREEZED & JSON SERIALIZATION (2026-01-05)
+# ===============================================
+-keep class * implements com.google.gson.TypeAdapterFactory { *; }
+-keep class * implements com.google.gson.JsonSerializer { *; }
+-keep class * implements com.google.gson.JsonDeserializer { *; }
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Keep Freezed generated classes
+-keep class **.*Freezed* { *; }
+-keep class **.*_$* { *; }
+
+# ===============================================
+# GRAPHQL (2026-01-05)
+# ===============================================
+-keep class com.apollographql.** { *; }
+-dontwarn com.apollographql.**
+
+# GraphQL Flutter
+-keep class graphql.** { *; }
+-dontwarn graphql.**
+
+# ===============================================
+# BIOMETRIC / LOCAL AUTH (2026-01-05)
+# ===============================================
+-keep class androidx.biometric.** { *; }
+-keep class io.flutter.plugins.localauth.** { *; }
+
+# ===============================================
+# VIBRATION PLUGIN (2026-01-05)
+# ===============================================
+-keep class com.benjaminabel.vibration.** { *; }
+
 # Final message
 # Configuration optimized for Gavra Android v6.0.0
 # Balances security, performance, and functionality
+# Updated 2026-01-05: Added Huawei, Freezed, GraphQL, Biometric rules

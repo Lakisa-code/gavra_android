@@ -3,7 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../globals.dart'; // 🎫 Za dnevniZakazivanjeNotifier
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
+import '../services/cena_obracun_service.dart';
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/slobodna_mesta_service.dart'; // 🎫 Promena vremena
 import '../services/theme_manager.dart';
@@ -11,6 +13,7 @@ import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
 import '../utils/schedule_utils.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
+import '../widgets/leaderboard_widget.dart'; // 🏆💀 Wall of Fame/Shame
 import '../widgets/shared/time_picker_cell.dart';
 import '../widgets/slobodna_mesta_widget.dart'; // 🎫 Slobodna mesta widget
 
@@ -228,7 +231,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // Izračunaj ukupno zaduženje
       final tipPutnika = _putnikData['tip'] ?? 'radnik';
-      final cenaPoVoznji = tipPutnika == 'ucenik' ? 600.0 : 700.0;
+      final cenaPoVoznji = CenaObracunService.getDefaultCenaByTip(tipPutnika);
       double ukupnoVoznji = 0;
       for (final lista in voznjeDetaljnoMap.values) {
         ukupnoVoznji += lista.length;
@@ -385,7 +388,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   /// 🎫 Da li prikazati SlobodnaMestaWidget
   /// - Učenici: 00:00 - 16:00
-  /// - Dnevni: posle 16:00
+  /// - Dnevni: kad admin uključi (dnevniZakazivanjeNotifier)
   /// - Radnici: uvek
   bool _prikaziSlobodnaMestaWidget() {
     final tip = _putnikData['tip']?.toString().toLowerCase() ?? 'radnik';
@@ -395,7 +398,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       case 'ucenik':
         return sat < 16; // 00:00 - 15:59
       case 'dnevni':
-        return sat >= 16; // 16:00 - 23:59
+        return dnevniZakazivanjeNotifier.value; // Admin kontrola
       case 'radnik':
       default:
         return true; // Uvek
@@ -1084,6 +1087,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
                       ),
 
+                      // 🏆💀 Leaderboard Widget - Wall of Fame / Wall of Shame
+                      // Samo za učenike i radnike (ne za dnevne)
+                      if (_putnikData['tip'] == 'ucenik' || _putnikData['tip'] == 'radnik')
+                        LeaderboardWidget(
+                          tipPutnika: _putnikData['tip'] as String? ?? 'radnik',
+                        ),
+
+                      // ─────────── Divider ───────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                      ),
+
                       // 🎫 Slobodna mesta Widget - prikazuje slobodna mesta po terminima
                       // 🎓 Učenici: 00:00 - 16:00
                       // 🚌 Dnevni: posle 16:00
@@ -1568,7 +1584,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
     // Cena po tipu
     final tip = _putnikData['tip'] ?? 'radnik';
-    final cenaPoVoznji = tip == 'ucenik' ? 600.0 : 700.0;
+    final cenaPoVoznji = CenaObracunService.getDefaultCenaByTip(tip);
 
     // Sortiraj mesece od najnovijeg
     final sortedKeys = <String>{

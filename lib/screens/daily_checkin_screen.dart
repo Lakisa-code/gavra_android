@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/daily_checkin_service.dart';
 import '../theme.dart';
@@ -133,56 +132,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         });
       }
     } catch (e) {
+      debugPrint('❌ DailyCheckIn Supabase error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-
-        // 🚨 SUPER JEDNOSTAVAN FALLBACK - direktno lokalno čuvanje!
-        try {
-          // Direktno lokalno čuvanje bez uključivanja servisa
-          final prefs = await SharedPreferences.getInstance();
-          final today = DateTime.now();
-          final todayKey = 'daily_checkin_${widget.vozac}_${today.year}_${today.month}_${today.day}';
-
-          await prefs.setBool(todayKey, true);
-          await prefs.setDouble('${todayKey}_amount', iznos);
-          await prefs.setString(
-            '${todayKey}_timestamp',
-            today.toIso8601String(),
-          );
-
-          // 🎯 KONZISTENTNA PORUKA - isto kao i uspešno slanje
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text('Dobro jutro ${widget.vozac}! Uspešno zabeleženo.'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.smartSuccess,
-              duration: const Duration(milliseconds: 800),
-            ),
-          );
-
-          // UVEK pozovi callback - app mora da nastavi!
-          Future.delayed(const Duration(milliseconds: 200), () {
-            if (mounted) {
-              widget.onCompleted();
-            }
-          });
-        } catch (fallbackError) {
-          // Čak i emergency save ne radi - prikaži grešku ali dozvoli nastavak
-          _showError('Greška u čuvanju: $fallbackError');
-
-          // IPAK DOZVOLI NASTAVAK NAKON 2 SEKUNDE!
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              widget.onCompleted();
-            }
-          });
-        }
+        _showError('Greška pri čuvanju: $e');
       }
     }
   }
@@ -503,9 +456,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       if (yesterdayReport != null) {
         // Postoji popis od juče - proveri da li je automatski ili ručni
         final popis = yesterdayReport['popis'] as Map<String, dynamic>;
-        final automatskiGenerisal = popis['automatskiGenerisal'] == true;
+        final automatskiGenerisan = popis['automatskiGenerisan'] == true;
 
-        if (automatskiGenerisal && mounted) {
+        if (automatskiGenerisan && mounted) {
           // AUTOMATSKI POPIS - Prikaži (vozač ga nije video)
           await _showAutomaticReportDialog(popis);
         }

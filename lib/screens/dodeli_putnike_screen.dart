@@ -196,127 +196,130 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7,
-          ),
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person_outline, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            putnik.ime,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Trenutni vozač: $currentVozac',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
+        return SafeArea(
+          top: false,
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context).dividerColor,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              // Lista vozača - scrollable
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                  ),
+                  child: Row(
                     children: [
-                      ...vozaci.map((vozac) {
-                        final isSelected = vozac == currentVozac;
-                        final color = VozacBoja.get(vozac);
-                        return ListTile(
+                      const Icon(Icons.person_outline, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              putnik.ime,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Trenutni vozač: $currentVozac',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Lista vozača - scrollable
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ...vozaci.map((vozac) {
+                          final isSelected = vozac == currentVozac;
+                          final color = VozacBoja.get(vozac);
+                          return ListTile(
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: color, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  vozac[0],
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              vozac,
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? color : null,
+                              ),
+                            ),
+                            trailing: isSelected
+                                ? Icon(Icons.check_circle, color: color)
+                                : const Icon(Icons.circle_outlined, color: Colors.grey),
+                            onTap: () => Navigator.pop(context, vozac),
+                          );
+                        }),
+                        // ➖ Opcija za uklanjanje vozača
+                        const Divider(),
+                        ListTile(
                           leading: Container(
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
-                              border: Border.all(color: color, width: 2),
+                              border: Border.all(color: Colors.grey, width: 2),
                             ),
-                            child: Center(
-                              child: Text(
-                                vozac[0],
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
+                            child: const Center(
+                              child: Icon(Icons.person_off, color: Colors.grey, size: 20),
                             ),
                           ),
-                          title: Text(
-                            vozac,
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? color : null,
-                            ),
+                          title: const Text(
+                            'Bez vozača',
+                            style: TextStyle(color: Colors.grey),
                           ),
-                          trailing: isSelected
-                              ? Icon(Icons.check_circle, color: color)
+                          trailing: currentVozac == 'Nedodeljen'
+                              ? const Icon(Icons.check_circle, color: Colors.grey)
                               : const Icon(Icons.circle_outlined, color: Colors.grey),
-                          onTap: () => Navigator.pop(context, vozac),
-                        );
-                      }),
-                      // ➖ Opcija za uklanjanje vozača
-                      const Divider(),
-                      ListTile(
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.grey, width: 2),
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.person_off, color: Colors.grey, size: 20),
-                          ),
+                          onTap: () => Navigator.pop(context, '_NONE_'),
                         ),
-                        title: const Text(
-                          'Bez vozača',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        trailing: currentVozac == 'Nedodeljen'
-                            ? const Icon(Icons.check_circle, color: Colors.grey)
-                            : const Icon(Icons.circle_outlined, color: Colors.grey),
-                        onTap: () => Navigator.pop(context, '_NONE_'),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

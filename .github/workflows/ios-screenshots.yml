@@ -52,38 +52,43 @@ jobs:
         run: |
           flutter build ios --simulator --no-codesign
 
-      - name: Take iPhone Screenshots
+      - name: Take iPhone Screenshots with Integration Test
         run: |
           mkdir -p screenshots/iphone
           
           # Boot iPhone simulator
           xcrun simctl boot "iPhone14Plus" || true
-          sleep 5
+          sleep 10
           
-          # Install app on simulator
-          xcrun simctl install "iPhone14Plus" build/ios/iphonesimulator/Runner.app
+          # Run integration test that takes screenshots
+          flutter test integration_test/screenshot_test.dart \
+            -d "iPhone14Plus" \
+            --dart-define=SCREENSHOTS=true || true
           
-          # Launch app
-          xcrun simctl launch "iPhone14Plus" com.gavra013.gavra013ios
-          sleep 8
+          # Fallback: Manual screenshots if test fails
+          if [ ! -f screenshots/01_welcome_screen.png ]; then
+            echo "Integration test didn't create screenshots, taking manual ones..."
+            
+            # Install app on simulator
+            xcrun simctl install "iPhone14Plus" build/ios/iphonesimulator/Runner.app
+            
+            # Launch app
+            xcrun simctl launch "iPhone14Plus" com.gavra013.gavra013ios
+            sleep 8
+            
+            # Take screenshots
+            xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/01_welcome.png
+            sleep 3
+            xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/02_screen.png
+            sleep 3
+            xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/03_screen.png
+          fi
           
-          # Screenshot 1 - Welcome Screen
-          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/01_welcome.png
-          sleep 2
+          # Move any screenshots from root to iphone folder
+          mv screenshots/*.png screenshots/iphone/ 2>/dev/null || true
           
-          # Note: For additional screens, you'd need UI automation
-          # Taking multiple screenshots of the same screen for now
-          # You can manually navigate and re-run or use integration tests
-          
-          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/02_screen.png
-          sleep 3
-          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/03_screen.png
-          sleep 3
-          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/04_screen.png
-          sleep 3
-          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/05_screen.png
-          sleep 3
-          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/06_screen.png
+          # Ensure we have at least 3 screenshots
+          ls -la screenshots/iphone/
 
       - name: Take iPad Screenshots
         run: |
@@ -94,7 +99,7 @@ jobs:
           
           # Boot iPad simulator
           xcrun simctl boot "iPadPro129" || true
-          sleep 5
+          sleep 10
           
           # Install app on iPad simulator
           xcrun simctl install "iPadPro129" build/ios/iphonesimulator/Runner.app
@@ -103,10 +108,14 @@ jobs:
           xcrun simctl launch "iPadPro129" com.gavra013.gavra013ios
           sleep 8
           
-          # Screenshot iPad
+          # Screenshot iPad - minimum 3
           xcrun simctl io "iPadPro129" screenshot screenshots/ipad/01_ipad_welcome.png
-          sleep 2
+          sleep 3
           xcrun simctl io "iPadPro129" screenshot screenshots/ipad/02_ipad_screen.png
+          sleep 3
+          xcrun simctl io "iPadPro129" screenshot screenshots/ipad/03_ipad_screen.png
+          
+          ls -la screenshots/ipad/
 
       - name: List screenshots
         run: |

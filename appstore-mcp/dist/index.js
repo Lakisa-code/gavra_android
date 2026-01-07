@@ -2,13 +2,30 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
+import * as fs from "fs";
 import jwt from "jsonwebtoken";
 import fetch from "node-fetch";
 const ISSUER_ID = process.env.APP_STORE_ISSUER_ID;
 const KEY_ID = process.env.APP_STORE_KEY_ID;
-const PRIVATE_KEY = process.env.APP_STORE_PRIVATE_KEY;
-const APP_ID = process.env.APP_STORE_APP_ID || "6740227083"; // Gavra app ID
-const BUNDLE_ID = process.env.APP_STORE_BUNDLE_ID || "com.gavra013.gavraAndroid";
+// Podrška za ključ iz fajla ILI direktno iz env varijable
+let PRIVATE_KEY;
+if (process.env.APP_STORE_PRIVATE_KEY_PATH) {
+    // Učitaj iz fajla
+    try {
+        PRIVATE_KEY = fs.readFileSync(process.env.APP_STORE_PRIVATE_KEY_PATH, "utf8");
+        console.error("✅ Loaded private key from file:", process.env.APP_STORE_PRIVATE_KEY_PATH);
+    }
+    catch (err) {
+        console.error("❌ Failed to read private key file:", err);
+    }
+}
+else if (process.env.APP_STORE_PRIVATE_KEY) {
+    // Koristi direktno iz env
+    PRIVATE_KEY = process.env.APP_STORE_PRIVATE_KEY;
+    console.error("✅ Using private key from environment variable");
+}
+const APP_ID = process.env.APP_STORE_APP_ID || "6757114361"; // Gavra 013 iOS app ID
+const BUNDLE_ID = process.env.APP_STORE_BUNDLE_ID || "com.gavra013.gavra013ios";
 const BASE_URL = "https://api.appstoreconnect.apple.com/v1";
 function generateToken() {
     if (!ISSUER_ID || !KEY_ID || !PRIVATE_KEY) {
@@ -233,6 +250,67 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         versionId: {
                             type: "string",
                             description: "The App Store version ID to submit",
+                        },
+                    },
+                    required: ["versionId"],
+                },
+            },
+            // === APP REVIEW INFORMATION (Demo Account, Contact Info) ===
+            {
+                name: "ios_get_app_review_info",
+                description: "Get App Review Information (demo account, contact info, notes) for a version",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        versionId: {
+                            type: "string",
+                            description: "The App Store version ID",
+                        },
+                    },
+                    required: ["versionId"],
+                },
+            },
+            {
+                name: "ios_set_app_review_info",
+                description: "Set App Review Information (demo account credentials, contact info, notes) for Apple reviewers",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        versionId: {
+                            type: "string",
+                            description: "The App Store version ID",
+                        },
+                        demoAccountName: {
+                            type: "string",
+                            description: "Demo account username for reviewer login",
+                        },
+                        demoAccountPassword: {
+                            type: "string",
+                            description: "Demo account password for reviewer login",
+                        },
+                        demoAccountRequired: {
+                            type: "boolean",
+                            description: "Whether sign-in is required to review the app",
+                        },
+                        contactFirstName: {
+                            type: "string",
+                            description: "Contact person first name",
+                        },
+                        contactLastName: {
+                            type: "string",
+                            description: "Contact person last name",
+                        },
+                        contactPhone: {
+                            type: "string",
+                            description: "Contact phone number (with country code, e.g., +381641162560)",
+                        },
+                        contactEmail: {
+                            type: "string",
+                            description: "Contact email address",
+                        },
+                        notes: {
+                            type: "string",
+                            description: "Additional notes/instructions for Apple reviewers (e.g., how to login)",
                         },
                     },
                     required: ["versionId"],
@@ -1292,6 +1370,101 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                             text: JSON.stringify({
                                 success: true,
                                 message: `Version ${versionId} has been submitted for App Store review!`,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            // === APP REVIEW INFORMATION (Demo Account, Contact Info) ===
+            case "ios_get_app_review_info": {
+                const { versionId } = args;
+                if (!versionId) {
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ success: false, error: "versionId is required" }, null, 2) }],
+                        isError: true,
+                    };
+                }
+                const response = await apiRequest(`/appStoreVersions/${versionId}/appStoreReviewDetail`);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                versionId,
+                                reviewInfo: {
+                                    id: response.data.id,
+                                    contactFirstName: response.data.attributes.contactFirstName,
+                                    contactLastName: response.data.attributes.contactLastName,
+                                    contactPhone: response.data.attributes.contactPhone,
+                                    contactEmail: response.data.attributes.contactEmail,
+                                    demoAccountName: response.data.attributes.demoAccountName,
+                                    demoAccountPassword: response.data.attributes.demoAccountPassword ? "********" : null,
+                                    demoAccountRequired: response.data.attributes.demoAccountRequired,
+                                    notes: response.data.attributes.notes,
+                                },
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            case "ios_set_app_review_info": {
+                const { versionId, demoAccountName, demoAccountPassword, demoAccountRequired, contactFirstName, contactLastName, contactPhone, contactEmail, notes } = args;
+                if (!versionId) {
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ success: false, error: "versionId is required" }, null, 2) }],
+                        isError: true,
+                    };
+                }
+                // First get the existing review detail ID
+                const existingResponse = await apiRequest(`/appStoreVersions/${versionId}/appStoreReviewDetail`);
+                const reviewDetailId = existingResponse.data.id;
+                // Build attributes object with only provided fields
+                const attributes = {};
+                if (demoAccountName !== undefined)
+                    attributes.demoAccountName = demoAccountName;
+                if (demoAccountPassword !== undefined)
+                    attributes.demoAccountPassword = demoAccountPassword;
+                if (demoAccountRequired !== undefined)
+                    attributes.demoAccountRequired = demoAccountRequired;
+                if (contactFirstName !== undefined)
+                    attributes.contactFirstName = contactFirstName;
+                if (contactLastName !== undefined)
+                    attributes.contactLastName = contactLastName;
+                if (contactPhone !== undefined)
+                    attributes.contactPhone = contactPhone;
+                if (contactEmail !== undefined)
+                    attributes.contactEmail = contactEmail;
+                if (notes !== undefined)
+                    attributes.notes = notes;
+                // PATCH the review detail
+                const token = generateToken();
+                const response = await fetch(`${BASE_URL}/appStoreReviewDetails/${reviewDetailId}`, {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            type: "appStoreReviewDetails",
+                            id: reviewDetailId,
+                            attributes,
+                        },
+                    }),
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to update review info: ${response.status} - ${errorText}`);
+                }
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                message: "App Review Information updated successfully!",
+                                updatedFields: Object.keys(attributes),
                             }, null, 2),
                         },
                     ],

@@ -30,17 +30,17 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     setState(() => _isLoading = true);
     try {
       final zahtevi = await PinZahtevService.dohvatiZahteveKojiCekaju();
+      if (!mounted) return;
       setState(() {
         _zahtevi = zahtevi;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška pri učitavanju: $e'), backgroundColor: Colors.red),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Greška pri učitavanju: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 

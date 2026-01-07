@@ -1,4 +1,3 @@
-// ignore_for_file: avoid_print
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -23,7 +22,6 @@ class PipService {
       if (call.method == 'onPipChanged') {
         final isInPip = call.arguments as bool;
         isPipActive.value = isInPip;
-        debugPrint('🎬 PiP mode changed: $isInPip');
       }
     });
   }
@@ -34,7 +32,6 @@ class PipService {
       final result = await _channel.invokeMethod<bool>('isPipSupported');
       return result ?? false;
     } catch (e) {
-      debugPrint('❌ PiP check error: $e');
       return false;
     }
   }
@@ -44,10 +41,8 @@ class PipService {
   Future<bool> enterPip() async {
     try {
       final result = await _channel.invokeMethod<bool>('enterPip');
-      debugPrint('🎬 enterPip result: $result');
       return result ?? false;
     } catch (e) {
-      debugPrint('❌ enterPip error: $e');
       return false;
     }
   }

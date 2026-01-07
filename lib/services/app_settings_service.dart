@@ -10,30 +10,44 @@ class AppSettingsService {
 
   /// Inicijalizuje listener na app_settings tabelu
   static Future<void> initialize() async {
-    // Učitaj početnu vrednost
-    await _loadNavBarType();
+    // Učitaj početne vrednosti
+    await _loadSettings();
 
     // Slušaj promene u realtime
     _subscription = supabase.from('app_settings').stream(primaryKey: ['id']).eq('id', 'global').listen((data) {
           if (data.isNotEmpty) {
-            final navBarType = data.first['nav_bar_type'] as String? ?? 'auto';
+            final row = data.first;
+
+            // Nav bar type
+            final navBarType = row['nav_bar_type'] as String? ?? 'auto';
             navBarTypeNotifier.value = navBarType;
             // Sync sa starim praznicniModNotifier za backward compatibility
             praznicniModNotifier.value = navBarType == 'praznici';
+
+            // Dnevni zakazivanje
+            final dnevniAktivno = row['dnevni_zakazivanje_aktivno'] as bool? ?? false;
+            dnevniZakazivanjeNotifier.value = dnevniAktivno;
           }
         });
   }
 
-  /// Učitaj nav_bar_type iz baze
-  static Future<void> _loadNavBarType() async {
+  /// Učitaj sva podešavanja iz baze
+  static Future<void> _loadSettings() async {
     try {
-      final response = await supabase.from('app_settings').select('nav_bar_type').eq('id', 'global').single();
+      final response = await supabase
+          .from('app_settings')
+          .select('nav_bar_type, dnevni_zakazivanje_aktivno')
+          .eq('id', 'global')
+          .single();
 
       final navBarType = response['nav_bar_type'] as String? ?? 'auto';
       navBarTypeNotifier.value = navBarType;
       praznicniModNotifier.value = navBarType == 'praznici';
+
+      final dnevniAktivno = response['dnevni_zakazivanje_aktivno'] as bool? ?? false;
+      dnevniZakazivanjeNotifier.value = dnevniAktivno;
     } catch (e) {
-      // Ako nema reda, ostavi default 'auto'
+      // Ako nema reda, ostavi default vrednosti
     }
   }
 
@@ -41,6 +55,14 @@ class AppSettingsService {
   static Future<void> setNavBarType(String type) async {
     await supabase.from('app_settings').update({
       'nav_bar_type': type,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', 'global');
+  }
+
+  /// Postavi dnevni_zakazivanje_aktivno (samo admin može)
+  static Future<void> setDnevniZakazivanjeAktivno(bool aktivno) async {
+    await supabase.from('app_settings').update({
+      'dnevni_zakazivanje_aktivno': aktivno,
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('id', 'global');
   }

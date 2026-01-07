@@ -644,6 +644,103 @@ const TOOLS = [
             required: [],
         },
     },
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 🧪 CLOUD TESTING
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        name: 'huawei_cloud_test_devices',
+        description: 'List available devices for Cloud Testing (Huawei phones/tablets in the cloud)',
+        inputSchema: {
+            type: 'object',
+            properties: {},
+            required: [],
+        },
+    },
+    {
+        name: 'huawei_cloud_test_create',
+        description: 'Create a Cloud Test task to test your APK on real Huawei devices. Test types: 1=Compatibility, 2=Stability, 3=Performance, 4=Power consumption',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                testType: {
+                    type: 'number',
+                    description: 'Test type: 1=Compatibility (does it install/run), 2=Stability (crash detection), 3=Performance (CPU/RAM), 4=Power (battery)',
+                    default: 1,
+                },
+                apkPath: {
+                    type: 'string',
+                    description: 'Absolute path to the APK file to test',
+                },
+                deviceIds: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Array of device IDs to test on (get from huawei_cloud_test_devices). If empty, uses popular devices.',
+                },
+                timeout: {
+                    type: 'number',
+                    description: 'Test timeout in minutes (default 30)',
+                    default: 30,
+                },
+            },
+            required: ['apkPath'],
+        },
+    },
+    {
+        name: 'huawei_cloud_test_status',
+        description: 'Get the status and progress of a Cloud Test task',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                taskId: {
+                    type: 'string',
+                    description: 'The test task ID (returned from huawei_cloud_test_create)',
+                },
+            },
+            required: ['taskId'],
+        },
+    },
+    {
+        name: 'huawei_cloud_test_list',
+        description: 'List all Cloud Test tasks for an app',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                appId: {
+                    type: 'string',
+                    description: 'The App ID (optional if HUAWEI_APP_ID env is set)',
+                },
+                pageNum: {
+                    type: 'number',
+                    description: 'Page number (default 1)',
+                    default: 1,
+                },
+                pageSize: {
+                    type: 'number',
+                    description: 'Results per page (default 10)',
+                    default: 10,
+                },
+            },
+            required: [],
+        },
+    },
+    {
+        name: 'huawei_cloud_test_report',
+        description: 'Get the detailed test report for a completed Cloud Test task',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                taskId: {
+                    type: 'string',
+                    description: 'The test task ID',
+                },
+            },
+            required: ['taskId'],
+        },
+    },
 ];
 // Create MCP Server
 const server = new Server({
@@ -1430,6 +1527,190 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                 downloads: appInfo.downloads || 'Not available via API',
                                 rating: appInfo.rating || 'Not available via API',
                                 note: 'Detailed stats available in AppGallery Connect console',
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 🧪 CLOUD TESTING HANDLERS
+            // ═══════════════════════════════════════════════════════════════════════════
+            case 'huawei_cloud_test_devices': {
+                const devices = await huaweiClient.getCloudTestDevices();
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                totalDevices: devices.length,
+                                devices: devices.map(d => ({
+                                    deviceId: d.deviceId,
+                                    name: `${d.brand} ${d.model}`,
+                                    osVersion: d.osVersion,
+                                    resolution: d.resolution,
+                                    available: d.available,
+                                })),
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'huawei_cloud_test_create': {
+                const { appId = HUAWEI_APP_ID, testType = 1, apkPath, deviceIds = [], timeout = 30 } = args;
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+                if (!apkPath) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'apkPath is required.' }, null, 2) }],
+                    };
+                }
+                // First upload the APK
+                logger.info(`Uploading APK for cloud testing: ${apkPath}`);
+                const uploadInfo = await huaweiClient.getUploadUrl(appId, 'apk');
+                const fileUrl = await huaweiClient.uploadFile(uploadInfo.uploadUrl, uploadInfo.authCode, apkPath);
+                // If no devices specified, get some popular ones
+                let testDeviceIds = deviceIds;
+                if (testDeviceIds.length === 0) {
+                    const allDevices = await huaweiClient.getCloudTestDevices();
+                    const availableDevices = allDevices.filter(d => d.available).slice(0, 5);
+                    testDeviceIds = availableDevices.map(d => d.deviceId);
+                }
+                // Create the test task
+                const result = await huaweiClient.createCloudTestTask(appId, testType, fileUrl, testDeviceIds, timeout);
+                const testTypeNames = {
+                    1: 'Compatibility',
+                    2: 'Stability',
+                    3: 'Performance',
+                    4: 'Power Consumption',
+                };
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                taskId: result.taskId,
+                                testType: testTypeNames[testType] || `Type ${testType}`,
+                                deviceCount: testDeviceIds.length,
+                                timeout: `${timeout} minutes`,
+                                message: result.message,
+                                nextStep: `Use huawei_cloud_test_status with taskId "${result.taskId}" to check progress`,
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'huawei_cloud_test_status': {
+                const { taskId } = args;
+                if (!taskId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'taskId is required.' }, null, 2) }],
+                    };
+                }
+                const status = await huaweiClient.getCloudTestStatus(taskId);
+                const statusNames = {
+                    0: 'Pending',
+                    1: 'Running',
+                    2: 'Completed',
+                    3: 'Failed',
+                };
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                taskId: status.taskId,
+                                status: statusNames[status.status] || `Status ${status.status}`,
+                                progress: `${status.progress}%`,
+                                startTime: status.startTime,
+                                endTime: status.endTime,
+                                deviceResults: status.deviceResults?.map(dr => ({
+                                    device: dr.deviceName,
+                                    passed: dr.passed,
+                                    errors: dr.errorCount,
+                                    warnings: dr.warningCount,
+                                })),
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'huawei_cloud_test_list': {
+                const { appId = HUAWEI_APP_ID, pageNum = 1, pageSize = 10 } = args;
+                if (!appId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'appId is required.' }, null, 2) }],
+                    };
+                }
+                const result = await huaweiClient.listCloudTestTasks(appId, pageNum, pageSize);
+                const testTypeNames = {
+                    1: 'Compatibility',
+                    2: 'Stability',
+                    3: 'Performance',
+                    4: 'Power',
+                };
+                const statusNames = {
+                    0: 'Pending',
+                    1: 'Running',
+                    2: 'Completed',
+                    3: 'Failed',
+                };
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                total: result.total,
+                                page: pageNum,
+                                tasks: result.tasks.map(t => ({
+                                    taskId: t.taskId,
+                                    testType: testTypeNames[t.testType] || `Type ${t.testType}`,
+                                    status: statusNames[t.status] || `Status ${t.status}`,
+                                    deviceCount: t.deviceCount,
+                                    created: t.createTime,
+                                })),
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'huawei_cloud_test_report': {
+                const { taskId } = args;
+                if (!taskId) {
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify({ success: false, error: 'taskId is required.' }, null, 2) }],
+                    };
+                }
+                const report = await huaweiClient.getCloudTestReport(taskId);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                success: true,
+                                taskId: report.taskId,
+                                summary: {
+                                    totalDevices: report.summary.totalDevices,
+                                    passed: report.summary.passedDevices,
+                                    failed: report.summary.failedDevices,
+                                    errors: report.summary.errorCount,
+                                    warnings: report.summary.warningCount,
+                                    passRate: `${Math.round((report.summary.passedDevices / report.summary.totalDevices) * 100)}%`,
+                                },
+                                deviceReports: report.deviceReports?.map(dr => ({
+                                    device: dr.deviceName,
+                                    passed: dr.passed,
+                                    errors: dr.errorCount,
+                                    warnings: dr.warningCount,
+                                    screenshots: dr.screenshots?.length || 0,
+                                })),
+                                reportUrl: report.reportUrl,
                             }, null, 2),
                         },
                     ],

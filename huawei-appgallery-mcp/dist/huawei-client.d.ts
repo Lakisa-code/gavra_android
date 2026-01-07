@@ -190,4 +190,91 @@ export declare class HuaweiAppGalleryClient {
      * POST /publish/v2/app-cancel-submit
      */
     cancelSubmission(appId: string): Promise<void>;
+    /**
+     * 📱 Get Available Test Devices
+     * GET /cloudtest/v1/devices
+     */
+    getCloudTestDevices(): Promise<CloudTestDevice[]>;
+    /**
+     * 🚀 Create Cloud Test Task
+     * POST /cloudtest/v1/tasks
+     *
+     * @param appId - App ID
+     * @param testType - Test type: 1=Compatibility, 2=Stability, 3=Performance, 4=Power
+     * @param fileUrl - URL of uploaded APK (use getUploadUrl + uploadFile first)
+     * @param deviceIds - Array of device IDs to test on
+     * @param timeout - Test timeout in minutes (default 30)
+     */
+    createCloudTestTask(appId: string, testType: number, fileUrl: string, deviceIds: string[], timeout?: number): Promise<CloudTestTaskResult>;
+    /**
+     * 📊 Get Cloud Test Task Status
+     * GET /cloudtest/v1/tasks/{taskId}
+     */
+    getCloudTestStatus(taskId: string): Promise<CloudTestStatus>;
+    /**
+     * 📋 List Cloud Test Tasks
+     * GET /cloudtest/v1/tasks
+     */
+    listCloudTestTasks(appId: string, pageNum?: number, pageSize?: number): Promise<CloudTestTaskList>;
+    /**
+     * 📥 Get Cloud Test Report
+     * GET /cloudtest/v1/tasks/{taskId}/report
+     */
+    getCloudTestReport(taskId: string): Promise<CloudTestReport>;
+}
+export interface CloudTestDevice {
+    deviceId: string;
+    deviceName: string;
+    brand: string;
+    model: string;
+    osVersion: string;
+    resolution: string;
+    available: boolean;
+}
+export interface CloudTestTaskResult {
+    taskId: string;
+    message: string;
+}
+export interface CloudTestStatus {
+    taskId: string;
+    status: number;
+    statusDesc: string;
+    progress: number;
+    startTime?: string;
+    endTime?: string;
+    deviceResults?: CloudTestDeviceResult[];
+}
+export interface CloudTestDeviceResult {
+    deviceId: string;
+    deviceName: string;
+    status: number;
+    passed: boolean;
+    errorCount: number;
+    warningCount: number;
+    screenshots?: string[];
+    logs?: string;
+}
+export interface CloudTestTask {
+    taskId: string;
+    testType: number;
+    status: number;
+    createTime: string;
+    deviceCount: number;
+}
+export interface CloudTestTaskList {
+    tasks: CloudTestTask[];
+    total: number;
+}
+export interface CloudTestReport {
+    taskId: string;
+    testType: number;
+    summary: {
+        totalDevices: number;
+        passedDevices: number;
+        failedDevices: number;
+        errorCount: number;
+        warningCount: number;
+    };
+    deviceReports: CloudTestDeviceResult[];
+    reportUrl?: string;
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 🔐 BIOMETRIC SERVICE
 /// Servis za biometrijsku autentifikaciju (otisak prsta, Face ID)
@@ -111,10 +111,8 @@ class BiometricService {
           useErrorDialogs: true,
         ),
       );
-    } on PlatformException catch (e) {
-      // Loguj grešku ali ne crashuj app
-      // ignore: avoid_print
-      print('Biometric auth error: ${e.message}');
+    } on PlatformException {
+      // Biometric auth failed silently
       return false;
     }
   }

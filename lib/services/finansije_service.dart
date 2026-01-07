@@ -1,0 +1,317 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// 💰 FINANSIJE SERVICE
+/// Računa prihode, troškove i neto zaradu
+class FinansijeService {
+  static final _supabase = Supabase.instance.client;
+
+  /// Dohvati ukupan prihod za period
+  static Future<double> getPrihodZaPeriod(DateTime from, DateTime to) async {
+    try {
+      final response = await _supabase
+          .from('voznje_log')
+          .select('iznos')
+          .eq('tip', 'uplata')
+          .gte('datum', from.toIso8601String().split('T')[0])
+          .lte('datum', to.toIso8601String().split('T')[0]);
+
+      double ukupno = 0;
+      for (final row in response) {
+        final iznos = row['iznos'];
+        if (iznos != null) {
+          ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+        }
+      }
+      return ukupno;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Dohvati broj vožnji za period
+  static Future<int> getBrojVoznjiZaPeriod(DateTime from, DateTime to) async {
+    try {
+      final response = await _supabase
+          .from('voznje_log')
+          .select('id')
+          .eq('tip', 'voznja')
+          .gte('datum', from.toIso8601String().split('T')[0])
+          .lte('datum', to.toIso8601String().split('T')[0]);
+
+      return (response as List).length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Dohvati sve aktivne troškove
+  static Future<List<Trosak>> getTroskovi() async {
+    try {
+      final response =
+          await _supabase.from('finansije_troskovi').select('*, vozaci(ime)').eq('aktivan', true).order('tip');
+
+      return (response as List).map((row) => Trosak.fromJson(row)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Dohvati ukupne mesečne troškove
+  static Future<double> getUkupniMesecniTroskovi() async {
+    final troskovi = await getTroskovi();
+    double ukupno = 0;
+    for (final t in troskovi) {
+      if (t.mesecno) {
+        ukupno += t.iznos;
+      }
+    }
+    return ukupno;
+  }
+
+  /// Dohvati troškove po tipu
+  static Future<Map<String, double>> getTroskoviPoTipu() async {
+    final troskovi = await getTroskovi();
+    final Map<String, double> poTipu = {
+      'plata': 0,
+      'kredit': 0,
+      'gorivo': 0,
+      'amortizacija': 0,
+      'ostalo': 0,
+    };
+
+    for (final t in troskovi) {
+      if (t.mesecno) {
+        poTipu[t.tip] = (poTipu[t.tip] ?? 0) + t.iznos;
+      }
+    }
+    return poTipu;
+  }
+
+  /// Ažuriraj trošak
+  static Future<bool> updateTrosak(String id, double noviIznos) async {
+    try {
+      await _supabase
+          .from('finansije_troskovi')
+          .update({'iznos': noviIznos, 'updated_at': DateTime.now().toIso8601String()}).eq('id', id);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Dodaj novi trošak
+  static Future<bool> addTrosak(String naziv, String tip, double iznos) async {
+    try {
+      await _supabase.from('finansije_troskovi').insert({
+        'naziv': naziv,
+        'tip': tip,
+        'iznos': iznos,
+        'mesecno': true,
+        'aktivan': true,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Obriši trošak (soft delete)
+  static Future<bool> deleteTrosak(String id) async {
+    try {
+      await _supabase.from('finansije_troskovi').update({'aktivan': false}).eq('id', id);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Dohvati kompletan finansijski izveštaj
+  static Future<FinansijskiIzvestaj> getIzvestaj() async {
+    final now = DateTime.now();
+
+    // Ova nedelja (ponedeljak - nedelja)
+    final weekday = now.weekday;
+    final mondayThisWeek = now.subtract(Duration(days: weekday - 1));
+    final sundayThisWeek = mondayThisWeek.add(const Duration(days: 6));
+    final startOfWeek = DateTime(mondayThisWeek.year, mondayThisWeek.month, mondayThisWeek.day);
+    final endOfWeek = DateTime(sundayThisWeek.year, sundayThisWeek.month, sundayThisWeek.day, 23, 59, 59);
+
+    // Ovaj mesec
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+
+    // Ova godina
+    final startOfYear = DateTime(now.year, 1, 1);
+    final endOfYear = DateTime(now.year, 12, 31, 23, 59, 59);
+
+    // Prihodi
+    final prihodNedelja = await getPrihodZaPeriod(startOfWeek, endOfWeek);
+    final prihodMesec = await getPrihodZaPeriod(startOfMonth, endOfMonth);
+    final prihodGodina = await getPrihodZaPeriod(startOfYear, endOfYear);
+
+    // Vožnje
+    final voznjiNedelja = await getBrojVoznjiZaPeriod(startOfWeek, endOfWeek);
+    final voznjiMesec = await getBrojVoznjiZaPeriod(startOfMonth, endOfMonth);
+    final voznjiGodina = await getBrojVoznjiZaPeriod(startOfYear, endOfYear);
+
+    // Troškovi (mesečni)
+    final troskoviMesecno = await getUkupniMesecniTroskovi();
+    final troskoviPoTipu = await getTroskoviPoTipu();
+
+    // Nedeljni troškovi = mesečni / 4.33
+    final troskoviNedelja = troskoviMesecno / 4.33;
+
+    // Godišnji troškovi = mesečni * 12
+    final troskoviGodina = troskoviMesecno * 12;
+
+    // Dani u mesecu do sad (za proporciju)
+    final danaUMesecu = endOfMonth.day;
+    final danaProsloDosad = now.day;
+    final proporcionalnaTroskoviMesec = troskoviMesecno * (danaProsloDosad / danaUMesecu);
+
+    return FinansijskiIzvestaj(
+      // Nedelja
+      prihodNedelja: prihodNedelja,
+      troskoviNedelja: troskoviNedelja,
+      netoNedelja: prihodNedelja - troskoviNedelja,
+      voznjiNedelja: voznjiNedelja,
+      // Mesec
+      prihodMesec: prihodMesec,
+      troskoviMesec: proporcionalnaTroskoviMesec,
+      netoMesec: prihodMesec - proporcionalnaTroskoviMesec,
+      voznjiMesec: voznjiMesec,
+      // Godina
+      prihodGodina: prihodGodina,
+      troskoviGodina: troskoviGodina * (now.month / 12), // Proporcionalno
+      netoGodina: prihodGodina - (troskoviGodina * (now.month / 12)),
+      voznjiGodina: voznjiGodina,
+      // Detalji troškova
+      troskoviPoTipu: troskoviPoTipu,
+      ukupnoMesecniTroskovi: troskoviMesecno,
+      // Datumi
+      startNedelja: startOfWeek,
+      endNedelja: endOfWeek,
+    );
+  }
+}
+
+/// Model za jedan trošak
+class Trosak {
+  final String id;
+  final String naziv;
+  final String tip;
+  final double iznos;
+  final bool mesecno;
+  final bool aktivan;
+  final String? vozacId;
+  final String? vozacIme;
+
+  Trosak({
+    required this.id,
+    required this.naziv,
+    required this.tip,
+    required this.iznos,
+    required this.mesecno,
+    required this.aktivan,
+    this.vozacId,
+    this.vozacIme,
+  });
+
+  factory Trosak.fromJson(Map<String, dynamic> json) {
+    // Izvuci ime vozača iz join-a
+    String? vozacIme;
+    if (json['vozaci'] != null && json['vozaci'] is Map) {
+      vozacIme = json['vozaci']['ime'] as String?;
+    }
+
+    return Trosak(
+      id: json['id']?.toString() ?? '',
+      naziv: json['naziv'] as String? ?? '',
+      tip: json['tip'] as String? ?? 'ostalo',
+      iznos: (json['iznos'] is num)
+          ? (json['iznos'] as num).toDouble()
+          : double.tryParse(json['iznos']?.toString() ?? '0') ?? 0,
+      mesecno: json['mesecno'] as bool? ?? true,
+      aktivan: json['aktivan'] as bool? ?? true,
+      vozacId: json['vozac_id']?.toString(),
+      vozacIme: vozacIme,
+    );
+  }
+
+  /// Prikaži naziv (koristi ime vozača za plate)
+  String get displayNaziv {
+    if (tip == 'plata' && vozacIme != null) {
+      return 'Plata - $vozacIme';
+    }
+    return naziv;
+  }
+
+  /// Emoji za tip troška
+  String get emoji {
+    switch (tip) {
+      case 'plata':
+        return '👷';
+      case 'kredit':
+        return '🏦';
+      case 'gorivo':
+        return '⛽';
+      case 'amortizacija':
+        return '🔧';
+      default:
+        return '📋';
+    }
+  }
+}
+
+/// Model za finansijski izveštaj
+class FinansijskiIzvestaj {
+  // Nedelja
+  final double prihodNedelja;
+  final double troskoviNedelja;
+  final double netoNedelja;
+  final int voznjiNedelja;
+
+  // Mesec
+  final double prihodMesec;
+  final double troskoviMesec;
+  final double netoMesec;
+  final int voznjiMesec;
+
+  // Godina
+  final double prihodGodina;
+  final double troskoviGodina;
+  final double netoGodina;
+  final int voznjiGodina;
+
+  // Detalji
+  final Map<String, double> troskoviPoTipu;
+  final double ukupnoMesecniTroskovi;
+
+  // Datumi
+  final DateTime startNedelja;
+  final DateTime endNedelja;
+
+  FinansijskiIzvestaj({
+    required this.prihodNedelja,
+    required this.troskoviNedelja,
+    required this.netoNedelja,
+    required this.voznjiNedelja,
+    required this.prihodMesec,
+    required this.troskoviMesec,
+    required this.netoMesec,
+    required this.voznjiMesec,
+    required this.prihodGodina,
+    required this.troskoviGodina,
+    required this.netoGodina,
+    required this.voznjiGodina,
+    required this.troskoviPoTipu,
+    required this.ukupnoMesecniTroskovi,
+    required this.startNedelja,
+    required this.endNedelja,
+  });
+
+  /// Formatiran datum nedelje
+  String get nedeljaPeriod {
+    return '${startNedelja.day}.${startNedelja.month}. - ${endNedelja.day}.${endNedelja.month}.';
+  }
+}

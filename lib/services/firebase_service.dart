@@ -1,10 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth_manager.dart';
 import 'local_notification_service.dart';
+import 'push_token_service.dart';
 import 'realtime_notification_service.dart';
 
 class FirebaseService {
@@ -94,55 +94,28 @@ class FirebaseService {
     }
   }
 
-  /// Registruje FCM token na Supabase (push_tokens tabela)
+  /// Registruje FCM token u push_tokens tabelu
+  /// Koristi unificirani PushTokenService
   static Future<void> _registerTokenWithServer(String token) async {
+    String? driverName;
     try {
-      final supabase = Supabase.instance.client;
-
-      String? driverName;
-      try {
-        driverName = await AuthManager.getCurrentDriver();
-      } catch (_) {
-        driverName = null;
-      }
-
-      final payload = {
-        'provider': 'fcm',
-        'token': token,
-        'user_id': driverName,
-        'user_type': 'vozac',
-      };
-
-      try {
-        await supabase.functions.invoke('register-push-token', body: payload);
-      } on FunctionException catch (e) {
-        if (e.status == 404) {
-          // Edge Function ne postoji
-        }
-        await _savePendingToken(token);
-      }
-    } catch (e) {
-      await _savePendingToken(token);
+      driverName = await AuthManager.getCurrentDriver();
+    } catch (_) {
+      driverName = null;
     }
-  }
 
-  /// Sačuvaj token lokalno za kasniju registraciju
-  static Future<void> _savePendingToken(String token) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('pending_fcm_token', token);
-    } catch (_) {}
+    await PushTokenService.registerToken(
+      token: token,
+      provider: 'fcm',
+      userType: 'vozac',
+      userId: driverName,
+    );
   }
 
   /// Pokušaj registrovati pending token
+  /// Delegira na PushTokenService
   static Future<void> tryRegisterPendingToken() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('pending_fcm_token');
-      if (token == null) return;
-      await prefs.remove('pending_fcm_token');
-      await _registerTokenWithServer(token);
-    } catch (_) {}
+    await PushTokenService.tryRegisterPendingToken();
   }
 
   /// 🔒 Flag da sprečimo višestruko registrovanje FCM listenera

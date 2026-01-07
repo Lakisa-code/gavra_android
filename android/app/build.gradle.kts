@@ -28,22 +28,6 @@ dependencies {
     // Add Firebase Cloud Messaging
     implementation("com.google.firebase:firebase-messaging")
 
-    // 🚀 OneSignal Dependency Resolution - Force compatible versions
-    implementation("androidx.work:work-runtime:2.8.1") {
-        because("OneSignal requires work-runtime")
-    }
-    implementation("androidx.cardview:cardview:1.0.0") {
-        because("OneSignal in-app-messages requires cardview")
-    }
-    implementation("androidx.browser:browser:1.3.0") {
-        because("OneSignal in-app-messages requires browser")
-    }
-
-    // Force Firebase messaging version for OneSignal compatibility
-    implementation("com.google.firebase:firebase-messaging:23.4.0") {
-        because("OneSignal requires firebase-messaging [21.0.0, 23.4.99]")
-    }
-
     // 🚀 Google Play Core - NEW MODULAR LIBRARIES (Android 14+ compatible)
     implementation("com.google.android.play:app-update:2.1.0") {
         because("Replaces deprecated play:core for in-app updates")
@@ -80,7 +64,7 @@ android {
     defaultConfig {
         applicationId = "com.gavra013.gavra_android"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
@@ -100,8 +84,9 @@ android {
 
     buildTypes {
         named("release") {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // 🚀 R8 ENABLED (2026-01-05) - smanjuje APK za ~40%
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

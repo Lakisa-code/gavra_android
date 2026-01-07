@@ -309,6 +309,30 @@ class SlobodnaMestaService {
         }
       }
 
+      // ═══════════════════════════════════════════════════════════════
+      // 🚌 OGRANIČENJA ZA DNEVNE PUTNIKE
+      // ═══════════════════════════════════════════════════════════════
+      if (tipPutnika == 'dnevni' && !zaCeluNedelju) {
+        // Dnevni mogu menjati samo za DANAS
+        if (!jeZaDanas) {
+          return {
+            'success': false,
+            'message': 'Dnevni putnici mogu zakazivati samo za današnji dan.',
+          };
+        }
+
+        // Brojač promena za danas
+        final brojPromena = await _brojPromenaZaDan(putnikId, danas, dan);
+
+        // Max 1 promena dnevno
+        if (brojPromena >= 1) {
+          return {
+            'success': false,
+            'message': 'Danas ste već promenili vreme. Pokušajte sutra.',
+          };
+        }
+      }
+
       // Proveri da li ima slobodnih mesta
       final imaMesta = await imaSlobodnihMesta(grad, novoVreme, datum: danas);
       if (!imaMesta) {
@@ -351,8 +375,8 @@ class SlobodnaMestaService {
       // Sačuvaj u bazu
       await _supabase.from('registrovani_putnici').update({'polasci_po_danu': jsonEncode(polasci)}).eq('id', putnikId);
 
-      // Zapiši promenu za učenike (za ograničenje)
-      if (tipPutnika == 'ucenik' && !zaCeluNedelju) {
+      // Zapiši promenu za učenike i dnevne (za ograničenje)
+      if ((tipPutnika == 'ucenik' || tipPutnika == 'dnevni') && !zaCeluNedelju) {
         await _zapisiPromenuVremena(putnikId, danas, dan);
       }
 
@@ -395,16 +419,63 @@ class SlobodnaMestaService {
   }
 
   /// Zapiši promenu vremena (za ograničenje učenika) - privatna verzija
+  /// Sada čuva i datum_polaska i sati_unapred za praćenje odgovornosti
   static Future<void> _zapisiPromenuVremena(String putnikId, String datum, String ciljniDan) async {
     try {
+      final now = DateTime.now();
+
+      // Izračunaj tačan datum polaska iz ciljnog dana
+      final datumPolaska = _izracunajDatumPolaska(ciljniDan);
+
+      // Izračunaj koliko sati unapred je zakazano
+      int satiUnapred = 0;
+      if (datumPolaska != null) {
+        final razlika = datumPolaska.difference(now);
+        satiUnapred = razlika.inHours;
+        if (satiUnapred < 0) satiUnapred = 0; // Ako je već prošlo
+      }
+
       await _supabase.from('promene_vremena_log').insert({
         'putnik_id': putnikId,
         'datum': datum,
         'ciljni_dan': ciljniDan.toLowerCase(),
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': now.toIso8601String(),
+        'datum_polaska': datumPolaska?.toIso8601String().split('T')[0],
+        'sati_unapred': satiUnapred,
       });
     } catch (e) {
       // Error writing change log
     }
+  }
+
+  /// Izračunaj tačan datum polaska iz imena dana (pon, uto, sre, cet, pet)
+  static DateTime? _izracunajDatumPolaska(String danKratica) {
+    final daniMapa = {
+      'pon': DateTime.monday,
+      'uto': DateTime.tuesday,
+      'sre': DateTime.wednesday,
+      'cet': DateTime.thursday,
+      'pet': DateTime.friday,
+      'sub': DateTime.saturday,
+      'ned': DateTime.sunday,
+    };
+
+    final targetWeekday = daniMapa[danKratica.toLowerCase()];
+    if (targetWeekday == null) return null;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Računaj razliku u danima
+    int daysUntilTarget = targetWeekday - today.weekday;
+
+    // Ako je ciljni dan danas ili ranije u nedelji, to je ovaj dan
+    // Ako je negativno, znači da je dan prošao - ali za naš slučaj
+    // gledamo tekuću nedelju (putnik može zakazati samo za tekuću nedelju)
+    if (daysUntilTarget < 0) {
+      daysUntilTarget += 7; // Sledeća nedelja
+    }
+
+    return today.add(Duration(days: daysUntilTarget));
   }
 }

@@ -909,4 +909,255 @@ export class HuaweiAppGalleryClient {
             throw new Error(`API Error: ${data.ret.msg}`);
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 🧪 CLOUD TESTING API
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * 📱 Get Available Test Devices
+     * GET /cloudtest/v1/devices
+     */
+    async getCloudTestDevices(): Promise<CloudTestDevice[]> {
+        const token = await this.getAccessToken();
+
+        const response = await fetch(`${API_BASE}/cloudtest/v1/devices`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to get test devices: ${response.status} - ${text}`);
+        }
+
+        const data = await response.json() as { ret: { code: number; msg: string }; deviceList: CloudTestDevice[] };
+
+        if (data.ret?.code !== 0) {
+            throw new Error(`API Error: ${data.ret?.msg || 'Unknown error'}`);
+        }
+
+        return data.deviceList || [];
+    }
+
+    /**
+     * 🚀 Create Cloud Test Task
+     * POST /cloudtest/v1/tasks
+     * 
+     * @param appId - App ID
+     * @param testType - Test type: 1=Compatibility, 2=Stability, 3=Performance, 4=Power
+     * @param fileUrl - URL of uploaded APK (use getUploadUrl + uploadFile first)
+     * @param deviceIds - Array of device IDs to test on
+     * @param timeout - Test timeout in minutes (default 30)
+     */
+    async createCloudTestTask(
+        appId: string,
+        testType: number,
+        fileUrl: string,
+        deviceIds: string[],
+        timeout: number = 30
+    ): Promise<CloudTestTaskResult> {
+        const token = await this.getAccessToken();
+
+        const body = {
+            appId,
+            testType,
+            apkPath: fileUrl,
+            deviceIdList: deviceIds,
+            timeout,
+        };
+
+        const response = await fetch(`${API_BASE}/cloudtest/v1/tasks`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to create test task: ${response.status} - ${text}`);
+        }
+
+        const data = await response.json() as { ret: { code: number; msg: string }; taskId: string };
+
+        if (data.ret?.code !== 0) {
+            throw new Error(`API Error: ${data.ret?.msg || 'Unknown error'}`);
+        }
+
+        return {
+            taskId: data.taskId,
+            message: 'Test task created successfully',
+        };
+    }
+
+    /**
+     * 📊 Get Cloud Test Task Status
+     * GET /cloudtest/v1/tasks/{taskId}
+     */
+    async getCloudTestStatus(taskId: string): Promise<CloudTestStatus> {
+        const token = await this.getAccessToken();
+
+        const response = await fetch(`${API_BASE}/cloudtest/v1/tasks/${taskId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to get test status: ${response.status} - ${text}`);
+        }
+
+        const data = await response.json() as { ret: { code: number; msg: string }; taskInfo: CloudTestStatus };
+
+        if (data.ret?.code !== 0) {
+            throw new Error(`API Error: ${data.ret?.msg || 'Unknown error'}`);
+        }
+
+        return data.taskInfo;
+    }
+
+    /**
+     * 📋 List Cloud Test Tasks
+     * GET /cloudtest/v1/tasks
+     */
+    async listCloudTestTasks(appId: string, pageNum: number = 1, pageSize: number = 10): Promise<CloudTestTaskList> {
+        const token = await this.getAccessToken();
+
+        const response = await fetch(
+            `${API_BASE}/cloudtest/v1/tasks?appId=${appId}&pageNum=${pageNum}&pageSize=${pageSize}`,
+            {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'client_id': this.credentials.clientId,
+                },
+            }
+        );
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to list test tasks: ${response.status} - ${text}`);
+        }
+
+        const data = await response.json() as {
+            ret: { code: number; msg: string };
+            taskList: CloudTestTask[];
+            total: number;
+        };
+
+        if (data.ret?.code !== 0) {
+            throw new Error(`API Error: ${data.ret?.msg || 'Unknown error'}`);
+        }
+
+        return {
+            tasks: data.taskList || [],
+            total: data.total || 0,
+        };
+    }
+
+    /**
+     * 📥 Get Cloud Test Report
+     * GET /cloudtest/v1/tasks/{taskId}/report
+     */
+    async getCloudTestReport(taskId: string): Promise<CloudTestReport> {
+        const token = await this.getAccessToken();
+
+        const response = await fetch(`${API_BASE}/cloudtest/v1/tasks/${taskId}/report`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'client_id': this.credentials.clientId,
+            },
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Failed to get test report: ${response.status} - ${text}`);
+        }
+
+        const data = await response.json() as { ret: { code: number; msg: string }; report: CloudTestReport };
+
+        if (data.ret?.code !== 0) {
+            throw new Error(`API Error: ${data.ret?.msg || 'Unknown error'}`);
+        }
+
+        return data.report;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🧪 CLOUD TESTING TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface CloudTestDevice {
+    deviceId: string;
+    deviceName: string;
+    brand: string;
+    model: string;
+    osVersion: string;
+    resolution: string;
+    available: boolean;
+}
+
+export interface CloudTestTaskResult {
+    taskId: string;
+    message: string;
+}
+
+export interface CloudTestStatus {
+    taskId: string;
+    status: number; // 0=Pending, 1=Running, 2=Completed, 3=Failed
+    statusDesc: string;
+    progress: number;
+    startTime?: string;
+    endTime?: string;
+    deviceResults?: CloudTestDeviceResult[];
+}
+
+export interface CloudTestDeviceResult {
+    deviceId: string;
+    deviceName: string;
+    status: number;
+    passed: boolean;
+    errorCount: number;
+    warningCount: number;
+    screenshots?: string[];
+    logs?: string;
+}
+
+export interface CloudTestTask {
+    taskId: string;
+    testType: number;
+    status: number;
+    createTime: string;
+    deviceCount: number;
+}
+
+export interface CloudTestTaskList {
+    tasks: CloudTestTask[];
+    total: number;
+}
+
+export interface CloudTestReport {
+    taskId: string;
+    testType: number;
+    summary: {
+        totalDevices: number;
+        passedDevices: number;
+        failedDevices: number;
+        errorCount: number;
+        warningCount: number;
+    };
+    deviceReports: CloudTestDeviceResult[];
+    reportUrl?: string;
 }

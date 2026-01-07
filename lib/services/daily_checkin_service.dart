@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'putnik_service.dart';
@@ -146,7 +147,7 @@ class DailyCheckInService {
         return true;
       }
     } catch (e) {
-      print('⚠️ [DailyCheckIn] Greška pri proveri baze: $e');
+      // Error handled silently
     }
 
     return false;
@@ -169,7 +170,6 @@ class DailyCheckInService {
         _sitanNovacController.add(sitanNovac);
       }
     } catch (e) {
-      print('❌ DailyCheckInService: Greška pri čuvanju u Supabase: $e');
       rethrow; // Propagiraj grešku da UI zna da nije uspelo
     }
   }
@@ -298,7 +298,6 @@ class DailyCheckInService {
     try {
       await _savePopisToSupabase(vozac, popisPodaci, datum);
     } catch (e) {
-      print('❌ DailyCheckInService: Greška pri čuvanju popisa: $e');
       rethrow;
     }
   }
@@ -321,7 +320,7 @@ class DailyCheckInService {
         };
       }
     } catch (e) {
-      print('⚠️ [DailyCheckIn] Greška pri dohvatanju popisa: $e');
+      // Error handled silently
     }
     return null;
   }
@@ -344,7 +343,7 @@ class DailyCheckInService {
         };
       }
     } catch (e) {
-      print('⚠️ [DailyCheckIn] Greška pri dohvatanju popisa za datum: $e');
+      // Error handled silently
     }
     return null;
   }
@@ -430,6 +429,9 @@ class DailyCheckInService {
       } catch (e) {
         kilometraza = 0.0;
       }
+      // 🆕 NAPLAĆENI PUTNICI
+      final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
+
       // 6. KREIRAJ POPIS OBJEKAT
       final automatskiPopis = {
         'vozac': vozac,
@@ -437,17 +439,19 @@ class DailyCheckInService {
         'ukupanPazar': ukupanPazar,
         'sitanNovac': sitanNovac,
         'otkazaniPutnici': otkazaniPutnici,
+        'naplaceniPutnici': naplaceniPutnici,
         'pokupljeniPutnici': pokupljeniPutnici,
         'dugoviPutnici': dugoviPutnici,
         'mesecneKarte': mesecneKarte,
         'kilometraza': kilometraza,
-        'automatskiGenerisal': true,
+        'automatskiGenerisan': true,
         'timestamp': DateTime.now().toIso8601String(),
       };
       // 7. SAČUVAJ AUTOMATSKI POPIS
       await saveDailyReport(vozac, targetDate, automatskiPopis);
       return automatskiPopis;
     } catch (e) {
+      debugPrint('❌ generateAutomaticReport error: $e');
       return null;
     }
   }
@@ -474,7 +478,7 @@ class DailyCheckInService {
         'dugovi_putnici': popisPodaci['dugoviPutnici'] ?? 0,
         'mesecne_karte': popisPodaci['mesecneKarte'] ?? 0,
         'kilometraza': popisPodaci['kilometraza'] ?? 0.0,
-        'automatski_generisan': popisPodaci['automatskiGenerisal'] ?? true,
+        'automatski_generisan': popisPodaci['automatskiGenerisan'] ?? true,
         'created_at': datum.toIso8601String(),
       });
     } catch (e) {

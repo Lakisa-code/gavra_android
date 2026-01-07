@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:huawei_push/huawei_push.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth_manager.dart';
 import 'local_notification_service.dart';
+import 'push_token_service.dart';
 
 /// Lightweight wrapper around the `huawei_push` plugin.
 ///
@@ -141,70 +140,27 @@ class HuaweiPushService {
     _messageSub = null;
   }
 
-  /// Calls a Supabase Edge Function (register-push-token) to store token.
-  /// The server-side function should validate and persist tokens securely.
-  ///
-  /// NAPOMENA: Ako Edge Function ne postoji (404), token se čuva lokalno
-  /// i može se registrovati kasnije kada funkcija bude dostupna.
+  /// Registruje HMS token u push_tokens tabelu
+  /// Koristi unificirani PushTokenService
   Future<void> _registerTokenWithServer(String token) async {
+    String? driverName;
     try {
-      final supabase = Supabase.instance.client;
-
-      // Send token to server for safe storage; provider identifies 'huawei'
-      // Try to attach current driver/user id if set in app session so server
-      // can map tokens to users. This helps routing pushes to specific drivers.
-      String? driverName;
-      try {
-        driverName = await AuthManager.getCurrentDriver();
-      } catch (_) {
-        driverName = null;
-      }
-
-      final payload = {
-        'provider': 'huawei',
-        'token': token,
-        'user_id': driverName, // nullable
-        'user_type': 'vozac',
-      };
-
-      try {
-        await supabase.functions.invoke('register-push-token', body: payload);
-      } on FunctionException catch (e) {
-        // Edge Function ne postoji ili vraća grešku
-        if (e.status == 404) {
-          // 404 = Edge Function ne postoji - ovo je očekivano ako nije deploy-ovana
-        }
-        // Sačuvaj token lokalno za kasnije
-        await _savePendingToken(token);
-      }
-    } catch (e) {
-      // Sačuvaj token lokalno za kasnije
-      await _savePendingToken(token);
+      driverName = await AuthManager.getCurrentDriver();
+    } catch (_) {
+      driverName = null;
     }
-  }
 
-  /// Sačuvaj token lokalno za kasniju registraciju
-  Future<void> _savePendingToken(String token) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('pending_huawei_token', token);
-    } catch (e) {
-      // 🔇 Ignore
-    }
+    await PushTokenService.registerToken(
+      token: token,
+      provider: 'huawei',
+      userType: 'vozac',
+      userId: driverName,
+    );
   }
 
   /// Attempt to register a pending token saved while Supabase wasn't initialized.
+  /// Delegira na PushTokenService
   Future<void> tryRegisterPendingToken() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('pending_huawei_token');
-      if (token == null) return;
-      // Remove the pending key early to avoid re-trying repeatedly if
-      // something consistently fails on server side.
-      await prefs.remove('pending_huawei_token');
-      await _registerTokenWithServer(token);
-    } catch (e) {
-      // 🔇 Ignore
-    }
+    await PushTokenService.tryRegisterPendingToken();
   }
 }

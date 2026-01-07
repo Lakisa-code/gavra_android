@@ -12,6 +12,7 @@ import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/auth_manager.dart';
 import '../services/biometric_service.dart';
+import '../services/cena_obracun_service.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
@@ -446,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           double ukupno = 0;
           for (var p in putnici) {
             if (selected[p.id] == true) {
-              final cena = p.cenaPoDanu ?? (p.tip == 'ucenik' ? 600.0 : 700.0);
+              final cena = CenaObracunService.getCenaPoDanu(p);
               ukupno += cena * (brojDana[p.id] ?? 22);
             }
           }
@@ -521,7 +522,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         children: [
                           // Lista putnika
                           ...putnici.map((p) {
-                            final cena = p.cenaPoDanu ?? (p.tip == 'ucenik' ? 600.0 : 700.0);
+                            final cena = CenaObracunService.getCenaPoDanu(p);
                             final dana = brojDana[p.id] ?? 22;
                             final iznos = cena * dana;
 
@@ -684,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             final List<Map<String, dynamic>> racuniPodaci = [];
                             for (var p in putnici) {
                               if (selected[p.id] == true) {
-                                final cena = p.cenaPoDanu ?? (p.tip == 'ucenik' ? 600.0 : 700.0);
+                                final cena = CenaObracunService.getCenaPoDanu(p);
                                 final dana = brojDana[p.id] ?? 22;
                                 racuniPodaci.add({
                                   'putnik': p,

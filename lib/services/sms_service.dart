@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/registrovani_putnik.dart';
+import 'cena_obracun_service.dart';
 import 'firebase_service.dart';
 import 'registrovani_putnik_service.dart';
 
@@ -99,7 +100,7 @@ class SMSService {
 
       for (RegistrovaniPutnik putnik in unpaidPassengers) {
         try {
-          final cenaPoDoanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
+          final cenaPoDoanu = CenaObracunService.getCenaPoDanu(putnik);
           // Dohvati broj putovanja iz voznje_log
           final brojPutovanja = await RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id);
           final brojOtkazivanja = await RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id);
@@ -179,7 +180,7 @@ class SMSService {
 
       for (RegistrovaniPutnik putnik in overduePassengers) {
         try {
-          final cenaPoDoanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
+          final cenaPoDoanu = CenaObracunService.getCenaPoDanu(putnik);
           // Dohvati broj putovanja iz voznje_log
           final brojPutovanja = await RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id);
           final brojOtkazivanja = await RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id);

@@ -39,7 +39,6 @@ class OsrmService {
       final coordsList = <String>[];
 
       coordsList.add('${startPosition.longitude},${startPosition.latitude}');
-      print('📍 START: ${startPosition.latitude}, ${startPosition.longitude}');
 
       final putniciWithCoords = <Putnik>[];
       for (final putnik in putnici) {
@@ -47,7 +46,6 @@ class OsrmService {
           final pos = coordinates[putnik]!;
           coordsList.add('${pos.longitude},${pos.latitude}');
           putniciWithCoords.add(putnik);
-          print('📍 ${putnik.ime}: ${pos.latitude}, ${pos.longitude} (${putnik.adresa})');
         }
       }
 
@@ -59,7 +57,6 @@ class OsrmService {
       final hasEndDestination = endDestination != null;
       if (hasEndDestination) {
         coordsList.add('${endDestination.longitude},${endDestination.latitude}');
-        print('📍 END: ${endDestination.latitude}, ${endDestination.longitude}');
       }
 
       final coordsString = coordsList.join(';');
@@ -115,8 +112,6 @@ class OsrmService {
           headers: {'Accept': 'application/json'},
         ).timeout(RouteConfig.osrmTimeout);
 
-        print('🌐 OSRM response: ${response.statusCode}');
-
         if (response.statusCode == 200) {
           final data = json.decode(response.body) as Map<String, dynamic>;
 
@@ -125,7 +120,7 @@ class OsrmService {
           }
         }
       } catch (e) {
-        print('❌ OSRM attempt $attempt failed: $e');
+        // Error logged silently
       }
 
       if (attempt < RouteConfig.osrmMaxRetries) {
@@ -156,15 +151,6 @@ class OsrmService {
 
       final waypointsToProcess = hasEndDestination ? waypoints.length - 1 : waypoints.length;
 
-      // 🐛 DEBUG: Logiraj waypoints da vidimo šta OSRM vraća
-      print('🗺️ OSRM waypoints:');
-      for (int i = 0; i < waypoints.length; i++) {
-        final wp = waypoints[i] as Map<String, dynamic>;
-        final wpIndex = wp['waypoint_index'] as int;
-        final name = i == 0 ? 'START' : (i < putniciWithCoords.length + 1 ? putniciWithCoords[i - 1].ime : 'END');
-        print('  [$i] $name -> waypoint_index: $wpIndex');
-      }
-
       // 🎯 ISPRAVLJEN ALGORITAM:
       // waypoint_index govori: "ova tačka (iz originalne liste) treba biti na poziciji waypoint_index u optimizovanoj ruti"
       // waypoints[0] je START, waypoints[1..n] su putnici, waypoints[n+1] je END (ako postoji)
@@ -184,11 +170,6 @@ class OsrmService {
       putniciWithWaypointIndex.sort((a, b) => a.value.compareTo(b.value));
 
       final orderedPutnici = putniciWithWaypointIndex.map((e) => e.key).toList();
-
-      print('🎯 Optimizovan redosled:');
-      for (int i = 0; i < orderedPutnici.length; i++) {
-        print('  ${i + 1}. ${orderedPutnici[i].ime}');
-      }
 
       // 🆕 Izračunaj ETA za svakog putnika iz legs
       final putniciEta = <String, int>{};

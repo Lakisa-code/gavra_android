@@ -46,10 +46,10 @@ dependencies:
   # printing: ^5.14.2  # removed for Android-only build to avoid web dependency conflicts
   pdf: ^3.11.3
   geolocator: ^14.0.2
-  graphql: ^5.1.2
-  graphql_flutter: ^5.1.2
+  # graphql: ^5.1.2  # UKLONJENO 2026-01-05 - nije korišćen
+  # graphql_flutter: ^5.1.2  # UKLONJENO 2026-01-05 - nije korišćen
   uuid: ^4.4.0
-  supabase: ^2.10.0
+  # supabase: ^2.10.0  # UKLONJENO 2026-01-05 - duplikat (već u supabase_flutter)
   
   # 🏗️ STATE MANAGEMENT & IMMUTABLE MODELS
   freezed_annotation: ^2.4.1
@@ -61,7 +61,7 @@ dependencies:
   # 📇 CONTACT PICKER - biranje broja iz imenika
   flutter_native_contact_picker: ^0.0.11
 
-  app_links: any
+  # app_links - dolazi kao zavisnost od supabase_flutter, ne treba eksplicitno
   vibration: ^3.1.4
   
   # 🔐 BIOMETRIC AUTHENTICATION (otisak prsta, Face ID)

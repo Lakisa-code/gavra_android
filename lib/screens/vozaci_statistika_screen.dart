@@ -143,17 +143,17 @@ class _VozaciStatistikaScreenState extends State<VozaciStatistikaScreen> {
         }
       }
 
+      if (!mounted) return;
       setState(() {
         _statsPoVozacima = stats;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 

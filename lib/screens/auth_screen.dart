@@ -62,6 +62,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     if (vozaciJson != null) {
       final List<dynamic> decoded = jsonDecode(vozaciJson);
+      if (!mounted) return;
       setState(() {
         _vozaci = decoded.map((v) => Map<String, dynamic>.from(v)).toList();
         _isLoading = false;
@@ -106,6 +107,7 @@ class _AuthScreenState extends State<AuthScreen> {
         },
       ];
       await _saveVozaci();
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }

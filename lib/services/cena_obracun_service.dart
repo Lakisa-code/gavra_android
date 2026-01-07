@@ -27,7 +27,7 @@ class CenaObracunService {
     return _getDefaultCenaPoDanu(putnik.tip);
   }
 
-  /// Dobija default cenu po danu za tip putnika
+  /// Dobija default cenu po danu za tip putnika (interna)
   static double _getDefaultCenaPoDanu(String tip) {
     switch (tip.toLowerCase()) {
       case 'ucenik':
@@ -39,6 +39,12 @@ class CenaObracunService {
       default:
         return defaultCenaRadnikPoDanu;
     }
+  }
+
+  /// Dobija default cenu po danu samo na osnovu tipa (String)
+  /// Koristi se kada nemamo RegistrovaniPutnik objekat (npr. iz Map)
+  static double getDefaultCenaByTip(String tip) {
+    return _getDefaultCenaPoDanu(tip);
   }
 
   /// Izračunaj mesečnu cenu za putnika na osnovu pokupljenja

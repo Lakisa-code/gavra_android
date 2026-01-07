@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
+import '../services/cena_obracun_service.dart';
 import '../services/geocoding_service.dart'; // 🌍 Za geocoding adresa
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/registrovani_putnik_service.dart';
@@ -1822,26 +1823,29 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Kontaktiraj ${putnik.putnikIme}',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+      builder: (context) => SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Kontaktiraj ${putnik.putnikIme}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            ...opcije,
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Otkaži'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ...opcije,
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Otkaži'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1950,7 +1954,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final ukupnoPlaceno = await RegistrovaniPutnikService.dohvatiUkupnoPlaceno(putnik.id);
 
     // Default cena po danu za input field
-    final cenaPoDanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
+    final cenaPoDanu = CenaObracunService.getCenaPoDanu(putnik);
     iznosController.text = cenaPoDanu.toStringAsFixed(0);
 
     if (!mounted) return;

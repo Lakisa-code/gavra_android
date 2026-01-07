@@ -54,3 +54,11 @@ int getCurrentWeekday() {
 int getCurrentHour() {
   return debugSimulatedHour ?? DateTime.now().hour;
 }
+
+/// 🎫 DNEVNI ZAKAZIVANJE - admin kontrola da li dnevni putnici mogu da zakazuju
+/// false = zakazivanje isključeno (default)
+/// true = zakazivanje aktivno
+final ValueNotifier<bool> dnevniZakazivanjeNotifier = ValueNotifier<bool>(false);
+
+/// Helper za proveru da li je zakazivanje za dnevne aktivno
+bool get isDnevniZakazivanjeAktivno => dnevniZakazivanjeNotifier.value;

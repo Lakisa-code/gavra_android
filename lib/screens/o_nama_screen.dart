@@ -26,10 +26,12 @@ class _ONamaScreenState extends State<ONamaScreen> {
   Future<void> _loadAppVersion() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
+      if (!mounted) return;
       setState(() {
         _appVersion = 'v${packageInfo.version} (${packageInfo.buildNumber})';
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _appVersion = 'v1.0.0';
       });

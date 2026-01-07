@@ -279,11 +279,15 @@ class _AdreseScreenState extends State<AdreseScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addAdresa,
-        icon: const Icon(Icons.add),
-        label: const Text('Dodaj'),
-        backgroundColor: Colors.green,
+      // 📱 ANDROID 15 EDGE-TO-EDGE: Padding za gesture navigation bar
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
+        child: FloatingActionButton.extended(
+          onPressed: _addAdresa,
+          icon: const Icon(Icons.add),
+          label: const Text('Dodaj'),
+          backgroundColor: Colors.green,
+        ),
       ),
     );
   }
