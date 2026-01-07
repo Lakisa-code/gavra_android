@@ -95,20 +95,25 @@ jobs:
           # Wait for app permission screen to appear
           sleep 10
           
-          # Tap on PRESKOČI button (bottom left area) - iPhone 16 Plus resolution 1284x2778
-          # Button is approximately at x=150, y=2400 (bottom left)
-          xcrun simctl io "$IPHONE_UDID" tap 150 700
+          # Screenshot 1: Permission screen (dozvole)
+          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/01_permissions.png
+          sleep 2
+          
+          # Tap on PRESKOČI button (bottom left) - iPhone 16 Plus (1284x2778 logical ~430x926 points)
+          # PRESKOČI is at bottom left of modal, approximately x=100, y=700
+          xcrun simctl io "$IPHONE_UDID" tap 100 700
           sleep 3
           
-          # Wait for main screen to load
-          sleep 5
+          # Screenshot 2: Welcome screen
+          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/02_welcome.png
+          sleep 2
           
-          # Take screenshots
-          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/01_welcome.png
+          # Tap on "O nama" button - it's near top center, approximately x=215, y=350
+          xcrun simctl io "$IPHONE_UDID" tap 215 350
           sleep 3
-          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/02_screen.png
-          sleep 3
-          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/03_screen.png
+          
+          # Screenshot 3: O nama screen
+          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/03_onama.png
           
           # Ensure we have at least 3 screenshots
           ls -la screenshots/iphone/
@@ -138,20 +143,25 @@ jobs:
           # Wait for app permission screen to appear
           sleep 10
           
-          # Tap on PRESKOČI button (bottom left area) - iPad Pro 13-inch resolution 2048x2732
-          # Button is approximately at x=150, y=750 (bottom left of dialog)
+          # Screenshot 1: Permission screen (dozvole)
+          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/01_ipad_permissions.png
+          sleep 2
+          
+          # Tap on PRESKOČI button (bottom left) - iPad Pro 13-inch (2048x2732 logical ~1024x1366 points)
+          # PRESKOČI is at bottom left of modal, approximately x=150, y=750
           xcrun simctl io "$IPAD_UDID" tap 150 750
           sleep 3
           
-          # Wait for main screen to load
-          sleep 5
+          # Screenshot 2: Welcome screen
+          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/02_ipad_welcome.png
+          sleep 2
           
-          # Screenshot iPad - minimum 3
-          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/01_ipad_welcome.png
+          # Tap on "O nama" button - it's near top center, approximately x=512, y=400
+          xcrun simctl io "$IPAD_UDID" tap 512 400
           sleep 3
-          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/02_ipad_screen.png
-          sleep 3
-          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/03_ipad_screen.png
+          
+          # Screenshot 3: O nama screen
+          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/03_ipad_onama.png
           
           ls -la screenshots/ipad/
 
