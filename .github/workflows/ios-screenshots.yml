@@ -103,11 +103,15 @@ jobs:
           ls -la screenshots/ipad/ || echo "No iPad screenshots"
           echo ""
           echo "=== Screenshot dimensions ==="
-          for f in screenshots/iphone/*.png 2>/dev/null; do
-            [ -f "$f" ] && echo "$f: $(file "$f" | grep -o '[0-9]* x [0-9]*')"
+          for f in screenshots/iphone/*.png; do
+            if [ -f "$f" ]; then
+              file "$f"
+            fi
           done
-          for f in screenshots/ipad/*.png 2>/dev/null; do
-            [ -f "$f" ] && echo "$f: $(file "$f" | grep -o '[0-9]* x [0-9]*')"
+          for f in screenshots/ipad/*.png; do
+            if [ -f "$f" ]; then
+              file "$f"
+            fi
           done
 
       - name: Upload iPhone Screenshots

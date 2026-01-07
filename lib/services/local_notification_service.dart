@@ -20,7 +20,7 @@ class LocalNotificationService {
     if (isScreenshotMode) {
       return;
     }
-    
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@drawable/ic_notification');
 
