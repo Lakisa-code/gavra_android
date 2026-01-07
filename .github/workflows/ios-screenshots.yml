@@ -1,0 +1,145 @@
+name: iOS Screenshots
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  screenshots:
+    runs-on: macos-14  # macOS Sonoma with Xcode 15
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: List available simulators
+        run: xcrun simctl list devices available
+
+      - name: Create iPhone 15 Pro Max Simulator
+        run: |
+          # Get the runtime identifier for iOS 17
+          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17" | tail -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
+          echo "Using runtime: $RUNTIME"
+          
+          # Create iPhone 15 Pro Max simulator
+          xcrun simctl create "iPhone15ProMax" "iPhone 15 Pro Max" "$RUNTIME" || true
+          
+          # Boot the simulator
+          xcrun simctl boot "iPhone15ProMax" || true
+          
+          # Wait for boot
+          sleep 10
+
+      - name: Create iPad Pro 12.9 Simulator  
+        run: |
+          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17" | tail -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
+          
+          # Create iPad Pro 12.9 simulator
+          xcrun simctl create "iPadPro129" "iPad Pro (12.9-inch) (6th generation)" "$RUNTIME" || true
+
+      - name: Build iOS app
+        run: |
+          flutter build ios --simulator --no-codesign
+
+      - name: Take iPhone Screenshots
+        run: |
+          mkdir -p screenshots/iphone
+          
+          # Boot iPhone simulator
+          xcrun simctl boot "iPhone15ProMax" || true
+          sleep 5
+          
+          # Install app on simulator
+          xcrun simctl install "iPhone15ProMax" build/ios/iphonesimulator/Runner.app
+          
+          # Launch app
+          xcrun simctl launch "iPhone15ProMax" com.gavra013.gavra013ios
+          sleep 8
+          
+          # Screenshot 1 - Welcome Screen
+          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/01_welcome.png
+          sleep 2
+          
+          # Note: For additional screens, you'd need UI automation
+          # Taking multiple screenshots of the same screen for now
+          # You can manually navigate and re-run or use integration tests
+          
+          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/02_screen.png
+          sleep 3
+          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/03_screen.png
+          sleep 3
+          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/04_screen.png
+          sleep 3
+          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/05_screen.png
+          sleep 3
+          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/06_screen.png
+
+      - name: Take iPad Screenshots
+        run: |
+          mkdir -p screenshots/ipad
+          
+          # Shutdown iPhone first
+          xcrun simctl shutdown "iPhone15ProMax" || true
+          
+          # Boot iPad simulator
+          xcrun simctl boot "iPadPro129" || true
+          sleep 5
+          
+          # Install app on iPad simulator
+          xcrun simctl install "iPadPro129" build/ios/iphonesimulator/Runner.app
+          
+          # Launch app
+          xcrun simctl launch "iPadPro129" com.gavra013.gavra013ios
+          sleep 8
+          
+          # Screenshot iPad
+          xcrun simctl io "iPadPro129" screenshot screenshots/ipad/01_ipad_welcome.png
+          sleep 2
+          xcrun simctl io "iPadPro129" screenshot screenshots/ipad/02_ipad_screen.png
+
+      - name: List screenshots
+        run: |
+          echo "=== iPhone Screenshots ==="
+          ls -la screenshots/iphone/
+          echo ""
+          echo "=== iPad Screenshots ==="
+          ls -la screenshots/ipad/
+          echo ""
+          echo "=== Screenshot dimensions ==="
+          for f in screenshots/iphone/*.png; do
+            echo "$f: $(file "$f" | grep -o '[0-9]* x [0-9]*')"
+          done
+          for f in screenshots/ipad/*.png; do
+            echo "$f: $(file "$f" | grep -o '[0-9]* x [0-9]*')"
+          done
+
+      - name: Upload iPhone Screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: iphone-screenshots-6.7inch
+          path: screenshots/iphone/
+          retention-days: 30
+
+      - name: Upload iPad Screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipad-screenshots-12.9inch
+          path: screenshots/ipad/
+          retention-days: 30
+
+      - name: Upload All Screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-ios-screenshots
+          path: screenshots/
+          retention-days: 30
