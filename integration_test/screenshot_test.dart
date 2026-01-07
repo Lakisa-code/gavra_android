@@ -12,93 +12,70 @@ void main() {
 
   group('App Store Screenshots', () {
     testWidgets('Take screenshots for App Store', (tester) async {
-      // Pokreni app
+      // Pokreni app (SCREENSHOT_MODE=true preskače permissions dialog)
       app.main();
-      
-      // Čekaj da se app učita i permissions dialog prikaže
+
+      // Čekaj da se app učita
       await tester.pumpAndSettle();
       await Future.delayed(const Duration(seconds: 5));
       await tester.pumpAndSettle();
 
-      // Screenshot 1: Permission Screen (dozvole)
-      print('📸 Taking screenshot 1: Permissions');
-      await takeScreenshot(binding, '01_permissions');
-
-      // Sačekaj malo pre klika
-      await Future.delayed(const Duration(seconds: 1));
-      await tester.pumpAndSettle();
-
-      // Klikni na PRESKOČI dugme - traži TextButton sa tim tekstom
-      final preskociButton = find.widgetWithText(TextButton, 'PRESKOČI');
-      final preskociText = find.text('PRESKOČI');
-      
-      print('🔍 Looking for PRESKOČI button...');
-      print('   TextButton finder: ${preskociButton.evaluate().length} found');
-      print('   Text finder: ${preskociText.evaluate().length} found');
-
+      // Proveri da li je permissions dialog prikazan (ne bi trebalo u SCREENSHOT_MODE)
+      final preskociButton = find.text('PRESKOČI');
       if (preskociButton.evaluate().isNotEmpty) {
-        print('✅ Found PRESKOČI TextButton, tapping...');
+        print('⚠️ Permissions dialog shown, tapping PRESKOČI...');
         await tester.tap(preskociButton);
-      } else if (preskociText.evaluate().isNotEmpty) {
-        print('✅ Found PRESKOČI text, tapping...');
-        await tester.tap(preskociText);
-      } else {
-        print('❌ PRESKOČI not found, trying ODOBRI...');
-        final odobriButton = find.widgetWithText(TextButton, 'ODOBRI');
-        if (odobriButton.evaluate().isNotEmpty) {
-          await tester.tap(odobriButton);
-        }
+        await tester.pumpAndSettle();
+        await Future.delayed(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
       }
 
-      // Čekaj da se dialog zatvori i WelcomeScreen prikaže
-      await tester.pumpAndSettle();
-      await Future.delayed(const Duration(seconds: 3));
-      await tester.pumpAndSettle();
-
-      // Screenshot 2: Welcome Screen
-      print('📸 Taking screenshot 2: Welcome');
-      await takeScreenshot(binding, '02_welcome');
+      // Screenshot 1: Welcome Screen (DOBRODOŠLI)
+      print('📸 Taking screenshot 1: Welcome');
+      await takeScreenshot(binding, '01_welcome');
 
       // Sačekaj da se animacije završe
       await Future.delayed(const Duration(seconds: 2));
       await tester.pumpAndSettle();
 
-      // Klikni na "O nama" dugme - koristi ancestor da nađe GestureDetector
+      // Klikni na "O nama" dugme
       print('🔍 Looking for O nama button...');
-      
       final oNamaText = find.text('O nama');
       print('   Text finder: ${oNamaText.evaluate().length} found');
-      
+
       if (oNamaText.evaluate().isNotEmpty) {
-        // Pronađi GestureDetector koji sadrži "O nama" text
-        final oNamaGesture = find.ancestor(
-          of: oNamaText,
-          matching: find.byType(GestureDetector),
-        );
-        
-        print('   GestureDetector finder: ${oNamaGesture.evaluate().length} found');
-        
-        if (oNamaGesture.evaluate().isNotEmpty) {
-          print('✅ Found O nama GestureDetector, tapping...');
-          await tester.tap(oNamaGesture.first);
-        } else {
-          print('⚠️ GestureDetector not found, tapping text directly...');
-          await tester.tap(oNamaText);
-        }
-        
+        print('✅ Found O nama, tapping...');
+        await tester.tap(oNamaText);
         await tester.pumpAndSettle();
         await Future.delayed(const Duration(seconds: 3));
         await tester.pumpAndSettle();
 
-        // Screenshot 3: O nama Screen
-        print('📸 Taking screenshot 3: O nama');
-        await takeScreenshot(binding, '03_onama');
+        // Screenshot 2: O nama Screen
+        print('📸 Taking screenshot 2: O nama');
+        await takeScreenshot(binding, '02_onama');
       } else {
-        print('❌ O nama not found! Taking fallback screenshot...');
-        // Fallback - još jedan welcome screenshot
-        await takeScreenshot(binding, '03_welcome_alt');
+        print('❌ O nama not found!');
       }
-      
+
+      // Vrati se nazad na Welcome
+      final backButton = find.byType(BackButton);
+      final iconBack = find.byIcon(Icons.arrow_back);
+      if (backButton.evaluate().isNotEmpty) {
+        await tester.tap(backButton);
+      } else if (iconBack.evaluate().isNotEmpty) {
+        await tester.tap(iconBack);
+      } else {
+        // Probaj Navigator.pop simulaciju
+        print('⚠️ No back button found, using Navigator.pop...');
+      }
+      await tester.pumpAndSettle();
+      await Future.delayed(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      // Screenshot 3: Welcome opet ili nešto drugo
+      print('📸 Taking screenshot 3: Final');
+      await takeScreenshot(binding, '03_screen');
+
       print('✅ All screenshots completed!');
     });
   });

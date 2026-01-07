@@ -15,6 +15,12 @@ class PermissionService {
   static Future<bool> requestAllPermissionsOnFirstLaunch(
     BuildContext context,
   ) async {
+    // 📸 SCREENSHOT MODE - preskoči permissions dialog za testiranje
+    const isScreenshotMode = bool.fromEnvironment('SCREENSHOT_MODE', defaultValue: false);
+    if (isScreenshotMode) {
+      return true; // Preskoči dialog u screenshot modu
+    }
+    
     final prefs = await SharedPreferences.getInstance();
     final isFirstLaunch = prefs.getBool(_firstLaunchKey) ?? true;
 
