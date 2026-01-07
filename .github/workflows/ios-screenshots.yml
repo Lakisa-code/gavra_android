@@ -81,11 +81,9 @@ jobs:
           xcrun simctl boot "$IPHONE_UDID" 2>/dev/null || true
           sleep 5
           
-          # Grant location permission BEFORE launching app
-          xcrun simctl privacy "$IPHONE_UDID" grant location com.gavra013.gavra013ios
-          xcrun simctl privacy "$IPHONE_UDID" grant location-always com.gavra013.gavra013ios
+          # Grant ALL permissions BEFORE launching app
+          xcrun simctl privacy "$IPHONE_UDID" grant all com.gavra013.gavra013ios
           
-          # Fallback: Manual screenshots
           echo "Taking manual screenshots..."
           
           # Install app on simulator
@@ -93,7 +91,9 @@ jobs:
           
           # Launch app
           xcrun simctl launch "$IPHONE_UDID" com.gavra013.gavra013ios
-          sleep 8
+          
+          # Wait longer for app to fully load (was 8, now 20)
+          sleep 20
           
           # Take screenshots
           xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/01_welcome.png
@@ -118,16 +118,17 @@ jobs:
           xcrun simctl boot "$IPAD_UDID" || true
           sleep 10
           
-          # Grant location permission BEFORE launching app
-          xcrun simctl privacy "$IPAD_UDID" grant location com.gavra013.gavra013ios
-          xcrun simctl privacy "$IPAD_UDID" grant location-always com.gavra013.gavra013ios
+          # Grant ALL permissions BEFORE launching app
+          xcrun simctl privacy "$IPAD_UDID" grant all com.gavra013.gavra013ios
           
           # Install app on iPad simulator
           xcrun simctl install "$IPAD_UDID" build/ios/iphonesimulator/Runner.app
           
           # Launch app
           xcrun simctl launch "$IPAD_UDID" com.gavra013.gavra013ios
-          sleep 8
+          
+          # Wait longer for app to fully load (was 8, now 20)
+          sleep 20
           
           # Screenshot iPad - minimum 3
           xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/01_ipad_welcome.png
