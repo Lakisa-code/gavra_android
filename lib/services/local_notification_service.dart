@@ -15,6 +15,12 @@ class LocalNotificationService {
   static const Duration _dedupeDuration = Duration(seconds: 30);
 
   static Future<void> initialize(BuildContext context) async {
+    // 📸 SCREENSHOT MODE - preskoči inicijalizaciju notifikacija
+    const isScreenshotMode = bool.fromEnvironment('SCREENSHOT_MODE', defaultValue: false);
+    if (isScreenshotMode) {
+      return;
+    }
+    
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@drawable/ic_notification');
 

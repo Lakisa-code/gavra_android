@@ -30,7 +30,7 @@ class HuaweiPushService {
     if (Platform.isIOS) {
       return null;
     }
-    
+
     try {
       // Subscribe for token stream — the plugin emits tokens when available or after
       // a successful registration with Huawei HMS. The plugin APIs vary across

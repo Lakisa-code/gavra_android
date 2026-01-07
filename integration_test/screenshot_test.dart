@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gavra_android/main.dart' as app;
@@ -90,15 +88,7 @@ Future<void> takeScreenshot(
   await binding.convertFlutterSurfaceToImage();
   await Future.delayed(const Duration(milliseconds: 500));
 
-  final List<int> bytes = await binding.takeScreenshot(name);
-
-  // Sačuvaj screenshot
-  final directory = Directory('screenshots');
-  if (!await directory.exists()) {
-    await directory.create(recursive: true);
-  }
-
-  final file = File('screenshots/$name.png');
-  await file.writeAsBytes(bytes);
-  print('📸 Screenshot saved: ${file.path}');
+  // takeScreenshot čuva screenshot automatski - ne treba ručno čuvanje
+  await binding.takeScreenshot(name);
+  print('📸 Screenshot taken: $name');
 }
