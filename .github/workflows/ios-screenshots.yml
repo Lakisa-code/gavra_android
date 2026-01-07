@@ -27,25 +27,36 @@ jobs:
 
       - name: Create iPhone 16 Plus Simulator
         run: |
-          # Get the runtime identifier for iOS 18
-          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 18" | head -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
-          echo "Using runtime: $RUNTIME"
+          # Use existing iPhone 16 Plus from iOS 18.4
+          # Get UDID of existing iPhone 16 Plus
+          IPHONE_UDID=$(xcrun simctl list devices available | grep "iPhone 16 Plus" | grep "iOS 18" | head -1 | awk -F'[()]' '{print $2}')
+          echo "Using existing iPhone 16 Plus: $IPHONE_UDID"
           
-          # Create iPhone 16 Plus simulator (6.7" - renders at correct 6.5" size)
-          xcrun simctl create "iPhone16Plus" "iPhone 16 Plus" "$RUNTIME" || true
+          # If no existing, create one with full runtime ID
+          if [ -z "$IPHONE_UDID" ]; then
+            RUNTIME=$(xcrun simctl list runtimes | grep "iOS 18.4" | awk '{print $NF}')
+            echo "Creating new simulator with runtime: $RUNTIME"
+            xcrun simctl create "iPhone16Plus" "iPhone 16 Plus" "$RUNTIME" || true
+            IPHONE_UDID="iPhone16Plus"
+          fi
           
           # Boot the simulator
-          xcrun simctl boot "iPhone16Plus" || true
+          xcrun simctl boot "$IPHONE_UDID" || true
+          
+          # Save UDID for later steps
+          echo "IPHONE_UDID=$IPHONE_UDID" >> $GITHUB_ENV
           
           # Wait for boot
           sleep 10
 
       - name: Create iPad Pro 13-inch Simulator  
         run: |
-          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 18" | head -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
+          # Use existing iPad Pro 13-inch (M4) from iOS 18.4
+          IPAD_UDID=$(xcrun simctl list devices available | grep "iPad Pro 13-inch (M4)" | head -1 | awk -F'[()]' '{print $2}')
+          echo "Using existing iPad Pro 13-inch: $IPAD_UDID"
           
-          # Create iPad Pro 13-inch (M4) simulator
-          xcrun simctl create "iPadPro13" "iPad Pro 13-inch (M4)" "$RUNTIME" || true
+          # Save UDID for later steps
+          echo "IPAD_UDID=$IPAD_UDID" >> $GITHUB_ENV
 
       - name: Build iOS app
         run: |
@@ -62,36 +73,29 @@ jobs:
         run: |
           mkdir -p screenshots/iphone
           
-          # Boot iPhone simulator
-          xcrun simctl boot "iPhone16Plus" || true
-          sleep 10
+          # Use UDID from previous step
+          echo "Using iPhone: $IPHONE_UDID"
           
-          # Run integration test that takes screenshots
-          flutter test integration_test/screenshot_test.dart \
-            -d "iPhone16Plus" \
-            --dart-define=SCREENSHOTS=true || true
+          # Ensure simulator is booted
+          xcrun simctl boot "$IPHONE_UDID" 2>/dev/null || true
+          sleep 5
           
-          # Fallback: Manual screenshots if test fails
-          if [ ! -f screenshots/01_welcome_screen.png ]; then
-            echo "Integration test didn't create screenshots, taking manual ones..."
-            
-            # Install app on simulator
-            xcrun simctl install "iPhone16Plus" build/ios/iphonesimulator/Runner.app
-            
-            # Launch app
-            xcrun simctl launch "iPhone16Plus" com.gavra013.gavra013ios
-            sleep 8
-            
-            # Take screenshots
-            xcrun simctl io "iPhone16Plus" screenshot screenshots/iphone/01_welcome.png
-            sleep 3
-            xcrun simctl io "iPhone16Plus" screenshot screenshots/iphone/02_screen.png
-            sleep 3
-            xcrun simctl io "iPhone16Plus" screenshot screenshots/iphone/03_screen.png
-          fi
+          # Fallback: Manual screenshots
+          echo "Taking manual screenshots..."
           
-          # Move any screenshots from root to iphone folder
-          mv screenshots/*.png screenshots/iphone/ 2>/dev/null || true
+          # Install app on simulator
+          xcrun simctl install "$IPHONE_UDID" build/ios/iphonesimulator/Runner.app
+          
+          # Launch app
+          xcrun simctl launch "$IPHONE_UDID" com.gavra013.gavra013ios
+          sleep 8
+          
+          # Take screenshots
+          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/01_welcome.png
+          sleep 3
+          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/02_screen.png
+          sleep 3
+          xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/03_screen.png
           
           # Ensure we have at least 3 screenshots
           ls -la screenshots/iphone/
@@ -101,25 +105,27 @@ jobs:
           mkdir -p screenshots/ipad
           
           # Shutdown iPhone first
-          xcrun simctl shutdown "iPhone16Plus" || true
+          xcrun simctl shutdown "$IPHONE_UDID" || true
+          
+          echo "Using iPad: $IPAD_UDID"
           
           # Boot iPad simulator
-          xcrun simctl boot "iPadPro13" || true
+          xcrun simctl boot "$IPAD_UDID" || true
           sleep 10
           
           # Install app on iPad simulator
-          xcrun simctl install "iPadPro13" build/ios/iphonesimulator/Runner.app
+          xcrun simctl install "$IPAD_UDID" build/ios/iphonesimulator/Runner.app
           
           # Launch app
-          xcrun simctl launch "iPadPro13" com.gavra013.gavra013ios
+          xcrun simctl launch "$IPAD_UDID" com.gavra013.gavra013ios
           sleep 8
           
           # Screenshot iPad - minimum 3
-          xcrun simctl io "iPadPro13" screenshot screenshots/ipad/01_ipad_welcome.png
+          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/01_ipad_welcome.png
           sleep 3
-          xcrun simctl io "iPadPro13" screenshot screenshots/ipad/02_ipad_screen.png
+          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/02_ipad_screen.png
           sleep 3
-          xcrun simctl io "iPadPro13" screenshot screenshots/ipad/03_ipad_screen.png
+          xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/03_ipad_screen.png
           
           ls -la screenshots/ipad/
 
