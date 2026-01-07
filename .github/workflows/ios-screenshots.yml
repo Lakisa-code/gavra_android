@@ -25,17 +25,18 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available
 
-      - name: Create iPhone 15 Pro Max Simulator
+      - name: Create iPhone 14 Plus Simulator
         run: |
           # Get the runtime identifier for iOS 17
           RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17" | tail -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
           echo "Using runtime: $RUNTIME"
           
-          # Create iPhone 15 Pro Max simulator
-          xcrun simctl create "iPhone15ProMax" "iPhone 15 Pro Max" "$RUNTIME" || true
+          # Create iPhone 14 Plus simulator (6.7" but renders at 1284x2778 - 6.5" size)
+          # Or iPhone 11 Pro Max which is native 6.5"
+          xcrun simctl create "iPhone14Plus" "iPhone 14 Plus" "$RUNTIME" || true
           
           # Boot the simulator
-          xcrun simctl boot "iPhone15ProMax" || true
+          xcrun simctl boot "iPhone14Plus" || true
           
           # Wait for boot
           sleep 10
@@ -56,40 +57,40 @@ jobs:
           mkdir -p screenshots/iphone
           
           # Boot iPhone simulator
-          xcrun simctl boot "iPhone15ProMax" || true
+          xcrun simctl boot "iPhone14Plus" || true
           sleep 5
           
           # Install app on simulator
-          xcrun simctl install "iPhone15ProMax" build/ios/iphonesimulator/Runner.app
+          xcrun simctl install "iPhone14Plus" build/ios/iphonesimulator/Runner.app
           
           # Launch app
-          xcrun simctl launch "iPhone15ProMax" com.gavra013.gavra013ios
+          xcrun simctl launch "iPhone14Plus" com.gavra013.gavra013ios
           sleep 8
           
           # Screenshot 1 - Welcome Screen
-          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/01_welcome.png
+          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/01_welcome.png
           sleep 2
           
           # Note: For additional screens, you'd need UI automation
           # Taking multiple screenshots of the same screen for now
           # You can manually navigate and re-run or use integration tests
           
-          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/02_screen.png
+          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/02_screen.png
           sleep 3
-          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/03_screen.png
+          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/03_screen.png
           sleep 3
-          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/04_screen.png
+          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/04_screen.png
           sleep 3
-          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/05_screen.png
+          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/05_screen.png
           sleep 3
-          xcrun simctl io "iPhone15ProMax" screenshot screenshots/iphone/06_screen.png
+          xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/06_screen.png
 
       - name: Take iPad Screenshots
         run: |
           mkdir -p screenshots/ipad
           
           # Shutdown iPhone first
-          xcrun simctl shutdown "iPhone15ProMax" || true
+          xcrun simctl shutdown "iPhone14Plus" || true
           
           # Boot iPad simulator
           xcrun simctl boot "iPadPro129" || true
@@ -126,14 +127,14 @@ jobs:
       - name: Upload iPhone Screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: iphone-screenshots-6.7inch
+          name: iphone-screenshots-1284x2778
           path: screenshots/iphone/
           retention-days: 30
 
       - name: Upload iPad Screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: ipad-screenshots-12.9inch
+          name: ipad-screenshots-2048x2732
           path: screenshots/ipad/
           retention-days: 30
 
