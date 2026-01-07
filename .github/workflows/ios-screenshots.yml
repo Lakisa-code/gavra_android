@@ -28,13 +28,13 @@ jobs:
       - name: Create iPhone 16 Plus Simulator
         run: |
           # Use existing iPhone 16 Plus from iOS 18.4
-          # Get UDID of existing iPhone 16 Plus
-          IPHONE_UDID=$(xcrun simctl list devices available | grep "iPhone 16 Plus" | grep "iOS 18" | head -1 | awk -F'[()]' '{print $2}')
+          # Get UDID of existing iPhone 16 Plus (UUID format: 36 chars with dashes)
+          IPHONE_UDID=$(xcrun simctl list devices available | grep "iPhone 16 Plus" | head -1 | grep -oE '[A-F0-9-]{36}')
           echo "Using existing iPhone 16 Plus: $IPHONE_UDID"
           
           # If no existing, create one with full runtime ID
           if [ -z "$IPHONE_UDID" ]; then
-            RUNTIME=$(xcrun simctl list runtimes | grep "iOS 18.4" | awk '{print $NF}')
+            RUNTIME=$(xcrun simctl list runtimes | grep "iOS 18" | head -1 | awk '{print $NF}')
             echo "Creating new simulator with runtime: $RUNTIME"
             xcrun simctl create "iPhone16Plus" "iPhone 16 Plus" "$RUNTIME" || true
             IPHONE_UDID="iPhone16Plus"
@@ -52,7 +52,8 @@ jobs:
       - name: Create iPad Pro 13-inch Simulator  
         run: |
           # Use existing iPad Pro 13-inch (M4) from iOS 18.4
-          IPAD_UDID=$(xcrun simctl list devices available | grep "iPad Pro 13-inch (M4)" | head -1 | awk -F'[()]' '{print $2}')
+          # Extract UDID (last thing in parentheses - the UUID format)
+          IPAD_UDID=$(xcrun simctl list devices available | grep "iPad Pro 13-inch (M4)" | head -1 | grep -oE '[A-F0-9-]{36}')
           echo "Using existing iPad Pro 13-inch: $IPAD_UDID"
           
           # Save UDID for later steps
