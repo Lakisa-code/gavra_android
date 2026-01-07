@@ -92,8 +92,16 @@ jobs:
           # Launch app
           xcrun simctl launch "$IPHONE_UDID" com.gavra013.gavra013ios
           
-          # Wait longer for app to fully load (was 8, now 20)
-          sleep 20
+          # Wait for app permission screen to appear
+          sleep 10
+          
+          # Tap on PRESKOČI button (bottom left area) - iPhone 16 Plus resolution 1284x2778
+          # Button is approximately at x=150, y=2400 (bottom left)
+          xcrun simctl io "$IPHONE_UDID" tap 150 700
+          sleep 3
+          
+          # Wait for main screen to load
+          sleep 5
           
           # Take screenshots
           xcrun simctl io "$IPHONE_UDID" screenshot screenshots/iphone/01_welcome.png
@@ -127,8 +135,16 @@ jobs:
           # Launch app
           xcrun simctl launch "$IPAD_UDID" com.gavra013.gavra013ios
           
-          # Wait longer for app to fully load (was 8, now 20)
-          sleep 20
+          # Wait for app permission screen to appear
+          sleep 10
+          
+          # Tap on PRESKOČI button (bottom left area) - iPad Pro 13-inch resolution 2048x2732
+          # Button is approximately at x=150, y=750 (bottom left of dialog)
+          xcrun simctl io "$IPAD_UDID" tap 150 750
+          sleep 3
+          
+          # Wait for main screen to load
+          sleep 5
           
           # Screenshot iPad - minimum 3
           xcrun simctl io "$IPAD_UDID" screenshot screenshots/ipad/01_ipad_welcome.png
