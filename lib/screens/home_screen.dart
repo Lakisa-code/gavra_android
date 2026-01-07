@@ -768,7 +768,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      initialValue: jedinicaMere,
+                      value: jedinicaMere,
                       decoration: const InputDecoration(
                         labelText: 'Jedinica mere',
                         prefixIcon: Icon(Icons.straighten),
