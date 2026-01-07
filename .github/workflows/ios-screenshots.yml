@@ -25,28 +25,27 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available
 
-      - name: Create iPhone 14 Plus Simulator
+      - name: Create iPhone 16 Plus Simulator
         run: |
-          # Get the runtime identifier for iOS 17
-          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17" | tail -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
+          # Get the runtime identifier for iOS 18
+          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 18" | head -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
           echo "Using runtime: $RUNTIME"
           
-          # Create iPhone 14 Plus simulator (6.7" but renders at 1284x2778 - 6.5" size)
-          # Or iPhone 11 Pro Max which is native 6.5"
-          xcrun simctl create "iPhone14Plus" "iPhone 14 Plus" "$RUNTIME" || true
+          # Create iPhone 16 Plus simulator (6.7" - renders at correct 6.5" size)
+          xcrun simctl create "iPhone16Plus" "iPhone 16 Plus" "$RUNTIME" || true
           
           # Boot the simulator
-          xcrun simctl boot "iPhone14Plus" || true
+          xcrun simctl boot "iPhone16Plus" || true
           
           # Wait for boot
           sleep 10
 
-      - name: Create iPad Pro 12.9 Simulator  
+      - name: Create iPad Pro 13-inch Simulator  
         run: |
-          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17" | tail -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
+          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 18" | head -1 | awk -F'[()]' '{print $2}' | awk '{print $1}')
           
-          # Create iPad Pro 12.9 simulator
-          xcrun simctl create "iPadPro129" "iPad Pro (12.9-inch) (6th generation)" "$RUNTIME" || true
+          # Create iPad Pro 13-inch (M4) simulator
+          xcrun simctl create "iPadPro13" "iPad Pro 13-inch (M4)" "$RUNTIME" || true
 
       - name: Build iOS app
         run: |
@@ -64,12 +63,12 @@ jobs:
           mkdir -p screenshots/iphone
           
           # Boot iPhone simulator
-          xcrun simctl boot "iPhone14Plus" || true
+          xcrun simctl boot "iPhone16Plus" || true
           sleep 10
           
           # Run integration test that takes screenshots
           flutter test integration_test/screenshot_test.dart \
-            -d "iPhone14Plus" \
+            -d "iPhone16Plus" \
             --dart-define=SCREENSHOTS=true || true
           
           # Fallback: Manual screenshots if test fails
@@ -77,18 +76,18 @@ jobs:
             echo "Integration test didn't create screenshots, taking manual ones..."
             
             # Install app on simulator
-            xcrun simctl install "iPhone14Plus" build/ios/iphonesimulator/Runner.app
+            xcrun simctl install "iPhone16Plus" build/ios/iphonesimulator/Runner.app
             
             # Launch app
-            xcrun simctl launch "iPhone14Plus" com.gavra013.gavra013ios
+            xcrun simctl launch "iPhone16Plus" com.gavra013.gavra013ios
             sleep 8
             
             # Take screenshots
-            xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/01_welcome.png
+            xcrun simctl io "iPhone16Plus" screenshot screenshots/iphone/01_welcome.png
             sleep 3
-            xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/02_screen.png
+            xcrun simctl io "iPhone16Plus" screenshot screenshots/iphone/02_screen.png
             sleep 3
-            xcrun simctl io "iPhone14Plus" screenshot screenshots/iphone/03_screen.png
+            xcrun simctl io "iPhone16Plus" screenshot screenshots/iphone/03_screen.png
           fi
           
           # Move any screenshots from root to iphone folder
@@ -102,25 +101,25 @@ jobs:
           mkdir -p screenshots/ipad
           
           # Shutdown iPhone first
-          xcrun simctl shutdown "iPhone14Plus" || true
+          xcrun simctl shutdown "iPhone16Plus" || true
           
           # Boot iPad simulator
-          xcrun simctl boot "iPadPro129" || true
+          xcrun simctl boot "iPadPro13" || true
           sleep 10
           
           # Install app on iPad simulator
-          xcrun simctl install "iPadPro129" build/ios/iphonesimulator/Runner.app
+          xcrun simctl install "iPadPro13" build/ios/iphonesimulator/Runner.app
           
           # Launch app
-          xcrun simctl launch "iPadPro129" com.gavra013.gavra013ios
+          xcrun simctl launch "iPadPro13" com.gavra013.gavra013ios
           sleep 8
           
           # Screenshot iPad - minimum 3
-          xcrun simctl io "iPadPro129" screenshot screenshots/ipad/01_ipad_welcome.png
+          xcrun simctl io "iPadPro13" screenshot screenshots/ipad/01_ipad_welcome.png
           sleep 3
-          xcrun simctl io "iPadPro129" screenshot screenshots/ipad/02_ipad_screen.png
+          xcrun simctl io "iPadPro13" screenshot screenshots/ipad/02_ipad_screen.png
           sleep 3
-          xcrun simctl io "iPadPro129" screenshot screenshots/ipad/03_ipad_screen.png
+          xcrun simctl io "iPadPro13" screenshot screenshots/ipad/03_ipad_screen.png
           
           ls -la screenshots/ipad/
 

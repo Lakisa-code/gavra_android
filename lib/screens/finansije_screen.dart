@@ -518,7 +518,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedTip,
+                initialValue: selectedTip,
                 decoration: const InputDecoration(
                   labelText: 'Tip',
                   border: OutlineInputBorder(),
