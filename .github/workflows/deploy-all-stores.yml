@@ -35,10 +35,10 @@ env:
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════
-  # JOB 1: BUILD - Bump version, build AAB (runs once for all stores)
+  # JOB 1: BUILD - Bump version, build AAB + APK (runs once for all stores)
   # ═══════════════════════════════════════════════════════════════════
   build:
-    name: 📦 Build AAB
+    name: 📦 Build AAB + APK
     runs-on: ubuntu-latest
     outputs:
       version_name: ${{ steps.bump.outputs.VERSION_NAME }}
@@ -139,11 +139,26 @@ jobs:
           AAB_SIZE=$(du -h build/app/outputs/bundle/release/app-release.aab | cut -f1)
           echo "✅ AAB built successfully ($AAB_SIZE)"
 
+      - name: Build APK (for Huawei)
+        run: |
+          flutter build apk --release \
+            --build-name=${{ steps.bump.outputs.VERSION_NAME }} \
+            --build-number=${{ steps.bump.outputs.VERSION_CODE }}
+          APK_SIZE=$(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)
+          echo "✅ APK built successfully ($APK_SIZE)"
+
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
           path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
 
   # ═══════════════════════════════════════════════════════════════════
@@ -190,10 +205,10 @@ jobs:
     if: ${{ github.event.inputs.deploy_huawei == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Download AAB artifact
+      - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: release-aab
+          name: release-apk
           path: ./
 
       - name: Upload to Huawei AppGallery
@@ -205,7 +220,7 @@ jobs:
           VERSION: ${{ needs.build.outputs.version_name }}
           RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
         run: |
-          echo "📦 Uploading AAB v$VERSION to Huawei AppGallery..."
+          echo "📦 Uploading APK v$VERSION to Huawei AppGallery..."
           
           # === 1. Get access token ===
           TOKEN_RESPONSE=$(curl -s -X POST \
@@ -229,7 +244,7 @@ jobs:
           
           # === 2. Get upload URL ===
           UPLOAD_URL_RESPONSE=$(curl -s -X GET \
-            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=$HUAWEI_APP_ID&suffix=aab" \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=$HUAWEI_APP_ID&suffix=apk" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $HUAWEI_CLIENT_ID")
           
@@ -244,23 +259,23 @@ jobs:
           AUTH_CODE=$(echo $UPLOAD_URL_RESPONSE | jq -r '.authCode')
           echo "✅ Got upload URL"
           
-          # === 3. Upload AAB ===
-          AAB_PATH="app-release.aab"
+          # === 3. Upload APK ===
+          APK_PATH="app-release.apk"
           
           UPLOAD_RESPONSE=$(curl -s -X POST \
             "$UPLOAD_URL" \
-            -F "file=@$AAB_PATH" \
+            -F "file=@$APK_PATH" \
             -F "authCode=$AUTH_CODE" \
             -F "fileCount=1")
           
           FILE_DEST_URL=$(echo $UPLOAD_RESPONSE | jq -r '.result.UploadFileRsp.fileInfoList[0].fileDestUlr // empty')
           
           if [ -z "$FILE_DEST_URL" ]; then
-            echo "❌ Failed to upload AAB"
+            echo "❌ Failed to upload APK"
             echo "$UPLOAD_RESPONSE"
             exit 1
           fi
-          echo "✅ AAB uploaded"
+          echo "✅ APK uploaded"
           
           # === 4. Update app file info ===
           UPDATE_RESPONSE=$(curl -s -X PUT \
@@ -270,9 +285,9 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{
               \"appId\": \"$HUAWEI_APP_ID\",
-              \"fileType\": 14,
+              \"fileType\": 5,
               \"files\": [{
-                \"fileName\": \"app-release.aab\",
+                \"fileName\": \"app-release.apk\",
                 \"fileDestUrl\": \"$FILE_DEST_URL\"
               }]
             }")
@@ -309,7 +324,7 @@ jobs:
           fi
           
           echo ""
-          echo "🎉 AAB v$VERSION uploaded to Huawei AppGallery!"
+          echo "🎉 APK v$VERSION uploaded to Huawei AppGallery!"
 
       - name: Submit for Review
         if: ${{ github.event.inputs.huawei_submit_review == 'true' }}
