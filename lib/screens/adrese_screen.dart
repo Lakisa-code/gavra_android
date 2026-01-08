@@ -111,7 +111,6 @@ class _AdreseScreenState extends State<AdreseScreen> {
           'grad': result['grad'],
           'ulica': result['ulica'],
           'broj': result['broj'],
-          'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', adresa['id']);
 
         await _loadAdrese();

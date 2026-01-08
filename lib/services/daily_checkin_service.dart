@@ -240,7 +240,6 @@ class DailyCheckInService {
               'dnevni_pazari': dnevniPazari,
               'ukupno': sitanNovac + dnevniPazari,
               'checkin_vreme': DateTime.now().toIso8601String(),
-              'created_at': datum.toIso8601String(),
             },
             onConflict: 'vozac,datum', // 🎯 Ključno za upsert!
           )
@@ -262,7 +261,6 @@ class DailyCheckInService {
                 'dnevni_pazari': dnevniPazari,
                 'ukupno': sitanNovac + dnevniPazari,
                 'checkin_vreme': DateTime.now().toIso8601String(),
-                'created_at': datum.toIso8601String(),
               },
               onConflict: 'vozac,datum', // 🎯 Ključno za upsert!
             )
