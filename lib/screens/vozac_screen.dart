@@ -11,7 +11,6 @@ import '../services/daily_checkin_service.dart';
 import '../services/driver_location_service.dart'; // 🚐 Za ETA tracking
 import '../services/firebase_service.dart'; // 🎯 Za vozača
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
-import '../services/pickup_tracking_service.dart'; // 🛰️ Za GPS pickup tracking
 import '../services/popis_service.dart'; // 📋 Za popis dana
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
@@ -1079,9 +1078,6 @@ class _VozacScreenState extends State<VozacScreen> {
       );
 
       if (result.success) {
-        // 🛰️ POKRENI PICKUP TRACKING SA GPS PRAĆENJEM
-        await _startPickupTracking();
-
         if (mounted) {
           setState(() {
             _optimizedRoute = result.optimizedPutnici ?? _optimizedRoute;
@@ -1117,59 +1113,8 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  // 🛰️ START PICKUP TRACKING (GPS + NOTIFIKACIJE)
-  Future<void> _startPickupTracking() async {
-    final coords = _cachedCoordinates;
-    if (coords == null || coords.isEmpty) {
-      return;
-    }
-
-    final pickupService = PickupTrackingService();
-    await pickupService.initialize();
-
-    final started = await pickupService.startTracking(
-      putnici: _optimizedRoute,
-      coordinates: coords,
-      onPickedUp: (putnik, status) async {
-        // Ručno pokupljanje - ova funkcija ne radi ništa
-      },
-      onSkipped: (putnik) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('⏭️ ${putnik.ime} preskočen'),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      onApproaching: (putnik, distance) {},
-      onCompleted: () {
-        if (mounted) {
-          setState(() {
-            _isGpsTracking = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🎉 Svi putnici pokupljeni!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      },
-    );
-
-    if (started) {
-    } else {}
-  }
-
   // 🛑 STOP SMART NAVIGATION
   void _stopSmartNavigation() {
-    // 🛰️ ZAUSTAVI PICKUP TRACKING
-    PickupTrackingService().stopTracking();
-
     if (mounted) {
       setState(() {
         _isGpsTracking = false;

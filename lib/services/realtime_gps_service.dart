@@ -25,15 +25,16 @@ class RealtimeGpsService {
         throw 'GPS dozvole nisu odobrene';
       }
 
-      // Konfiguriši GPS settings za visoku preciznost
-      const LocationSettings locationSettings = LocationSettings(
+      // Konfiguriši GPS settings - update svakih 30 sekundi (štedi bateriju i API)
+      final androidSettings = AndroidSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 5, // Update svakih 5 metara
+        distanceFilter: 100, // Ili svakih 100 metara ako brže
+        intervalDuration: const Duration(seconds: 30), // Update svakih 30 sekundi
       );
 
       // Pokreni tracking
       _positionSubscription = Geolocator.getPositionStream(
-        locationSettings: locationSettings,
+        locationSettings: androidSettings,
       ).listen((Position position) {
         _positionController.add(position);
 

@@ -113,6 +113,20 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                           color: Colors.purple,
                         ),
 
+                        const SizedBox(height: 16),
+
+                        // PROŠLA GODINA
+                        _buildPeriodCard(
+                          icon: '📜',
+                          naslov: 'Prošla godina',
+                          podnaslov: '${_izvestaj!.proslaGodina}',
+                          prihod: _izvestaj!.prihodProslaGodina,
+                          troskovi: _izvestaj!.troskoviProslaGodina,
+                          neto: _izvestaj!.netoProslaGodina,
+                          voznjiLabel: '${_izvestaj!.voznjiProslaGodina} vožnji',
+                          color: Colors.orange,
+                        ),
+
                         const SizedBox(height: 24),
 
                         // TROŠKOVI DETALJI

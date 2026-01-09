@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart' as novi_model;
 import '../services/adresa_supabase_service.dart';
-import '../services/cena_obracun_service.dart';
 import '../services/haptic_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
@@ -397,43 +396,6 @@ class _PutnikCardState extends State<PutnikCard> {
       }
     }
 
-    // Automatsko SMS roditeljima za plaćanje (samo za mesečne putnike učenike)
-    if (_putnik.mesecnaKarta == true &&
-        registrovaniPutnik != null &&
-        registrovaniPutnik.tip == 'ucenik' &&
-        ((registrovaniPutnik.brojTelefonaOca != null && registrovaniPutnik.brojTelefonaOca!.isNotEmpty) ||
-            (registrovaniPutnik.brojTelefonaMajke != null && registrovaniPutnik.brojTelefonaMajke!.isNotEmpty))) {
-      opcije.add(
-        Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            ),
-          ),
-          child: ListTile(
-            leading: Icon(
-              Icons.family_restroom,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            title: const Text(
-              '💰 SMS Roditeljima - Plaćanje',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: const Text('Automatska poruka za plaćanje mesečne karte'),
-            onTap: () async {
-              Navigator.pop(context);
-              if (registrovaniPutnik != null) {
-                await _posaljiSMSRoditeljimePlacanje(registrovaniPutnik);
-              }
-            },
-          ),
-        ),
-      );
-    }
-
     // Glavni broj telefona putnika
     if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
       opcije.add(
@@ -704,125 +666,6 @@ class _PutnikCardState extends State<PutnikCard> {
         );
       }
     }
-  }
-
-  /// Automatsko SMS roditeljima za plaćanje (samo za mesečne putnike učenike)
-  Future<void> _posaljiSMSRoditeljimePlacanje(
-    novi_model.RegistrovaniPutnik registrovaniPutnik,
-  ) async {
-    final List<String> roditelji = [];
-
-    // Dodaj broj oca ako postoji
-    if (registrovaniPutnik.brojTelefonaOca != null && registrovaniPutnik.brojTelefonaOca!.isNotEmpty) {
-      roditelji.add(registrovaniPutnik.brojTelefonaOca!);
-    }
-
-    // Dodaj broj majke ako postoji
-    if (registrovaniPutnik.brojTelefonaMajke != null && registrovaniPutnik.brojTelefonaMajke!.isNotEmpty) {
-      roditelji.add(registrovaniPutnik.brojTelefonaMajke!);
-    }
-
-    if (roditelji.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Nema brojeva telefona roditelja za slanje SMS'),
-            backgroundColor: Theme.of(context).colorScheme.warningPrimary,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Kreiraj automatsku poruku za plaćanje
-    final DateTime now = DateTime.now();
-    final String mesec = _getMonthName(now.month);
-    final String godina = now.year.toString();
-
-    // Koristi novi obračun cene
-    final obracun = await CenaObracunService.getDetaljniObracun(
-      putnik: registrovaniPutnik,
-      mesec: now.month,
-      godina: now.year,
-    );
-
-    final double konacnaCena = obracun['konacnaCena'] as double? ?? 0.0;
-    final double? customCenaPoDanu = obracun['customCenaPoDanu'] as double?;
-    final int brojDana = obracun['brojDanaSaPokupljenjima'] as int? ?? 0;
-
-    // Formatiraj tekst za iznos
-    final String iznosText;
-    if (konacnaCena > 0) {
-      iznosText = CenaObracunService.formatirajCenuZaSms(
-        cena: konacnaCena,
-        tip: registrovaniPutnik.tip,
-        brojDana: brojDana,
-        customCenaPoDanu: customCenaPoDanu,
-      );
-    } else {
-      iznosText = 'Prema dogovoru';
-    }
-
-    final String poruka = '🚌 GAVRA PREVOZ 🚌\n\n'
-        'Podsetnik za plaćanje mesečne karte:\n\n'
-        '👤 Putnik: ${_putnik.ime}\n'
-        '📅 Mesec: $mesec $godina\n'
-        '💰 Iznos: $iznosText\n\n'
-        '📞 Kontakt: Bojan - Gavra 013\n\n'
-        'Hvala na razumevanju! 🚌\n'
-        '---\n'
-        'Automatska poruka.';
-
-    int poslato = 0;
-    for (String broj in roditelji) {
-      try {
-        final url = Uri.parse('sms:$broj?body=${Uri.encodeComponent(poruka)}');
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url);
-          poslato++;
-
-          // Pauza između SMS-ova
-          if (roditelji.length > 1) {
-            await Future<void>.delayed(const Duration(seconds: 1));
-          }
-        }
-      } catch (e) {
-        // Ignoriši greške i nastavi sa sledećim brojem
-      }
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            poslato > 0
-                ? 'SMS za plaćanje poslat roditeljima ($poslato/${roditelji.length})'
-                : 'Nije moguće poslati SMS roditeljima',
-          ),
-          backgroundColor:
-              poslato > 0 ? Theme.of(context).colorScheme.successPrimary : Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
-  }
-
-  /// Helper - dobijanje naziva meseca na srpskom
-  String _getMonthName(int month) {
-    const List<String> months = [
-      'Januar',
-      'Februar',
-      'Mart',
-      'April',
-      'Maj',
-      'Jun',
-      'Jul',
-      'Avgust',
-      'Septembar',
-      'Oktobar',
-      'Novembar',
-      'Decembar',
-    ];
-    return months[month - 1];
   }
 
   // 💰 UNIVERZALNA METODA ZA PLAĆANJE - custom cena za sve tipove putnika

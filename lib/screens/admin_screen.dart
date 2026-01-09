@@ -4,6 +4,7 @@ import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/admin_security_service.dart'; // 🔐 ADMIN SECURITY
 import '../services/app_settings_service.dart'; // 🚌 NAV BAR SETTINGS
+import '../services/daily_checkin_service.dart'; // 💰 KUSUR SERVICE
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/pin_zahtev_service.dart'; // 📨 PIN ZAHTEVI
@@ -24,8 +25,8 @@ import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
 import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
+import 'odrzavanje_screen.dart'; // 📖 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
-import 'predikcija_screen.dart'; // 🔮 Predikcija sledeće nedelje
 import 'putnik_kvalitet_screen.dart'; // 🎯 Analiza kvaliteta putnika
 import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'vozac_screen.dart'; // DODANO za vozac screen
@@ -161,18 +162,12 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  // 💰 Direktan Supabase upit za kusur vozača
+  // 💰 Kusur iz daily_checkins tabele (jedinstveni izvor podataka)
   Future<double> _getKusurForVozac(String vozacIme) async {
     try {
-      final vozacUuid = await VozacMappingService.getVozacUuid(vozacIme);
-      if (vozacUuid == null) return 0.0;
-
-      final response = await supabase.from('vozaci').select('kusur').eq('id', vozacUuid).maybeSingle();
-
-      if (response != null && response['kusur'] != null) {
-        return (response['kusur'] as num).toDouble();
-      }
-      return 0.0;
+      // ✅ UJEDNAČENO: Čita iz daily_checkins umesto vozaci tabele
+      final kusur = await DailyCheckInService.getTodayAmount(vozacIme);
+      return kusur ?? 0.0;
     } catch (e) {
       return 0.0;
     }
@@ -228,6 +223,7 @@ class _AdminScreenState extends State<AdminScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => SafeArea(
         top: false,
         child: Container(
@@ -236,88 +232,90 @@ class _AdminScreenState extends State<AdminScreen> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                '📊 Statistike',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Text('📈', style: TextStyle(fontSize: 24)),
-                title: const Text('Statistika Vozača'),
-                subtitle: const Text('Pazar, vožnje, dnevnice'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => const VozaciStatistikaScreen(),
-                    ),
-                  );
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Text('🎯', style: TextStyle(fontSize: 24)),
-                title: const Text('Analiza Kvaliteta Putnika'),
-                subtitle: const Text('Ko se vozi, ko zauzima mesto'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => const PutnikKvalitetScreen(),
-                    ),
-                  );
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Text('🔮', style: TextStyle(fontSize: 24)),
-                title: const Text('Predikcija Sledeće Nedelje'),
-                subtitle: const Text('Predviđeni raspored putnika'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => const PredikcijaScreen(),
-                    ),
-                  );
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Text('💰', style: TextStyle(fontSize: 24)),
-                title: const Text('Finansije'),
-                subtitle: const Text('Prihodi, troškovi, neto zarada'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => const FinansijeScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+                const Text(
+                  '📊 Statistike',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Text('📈', style: TextStyle(fontSize: 24)),
+                  title: const Text('Statistika Vozača'),
+                  subtitle: const Text('Pazar, vožnje, dnevnice'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const VozaciStatistikaScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Text('🎯', style: TextStyle(fontSize: 24)),
+                  title: const Text('Analiza Kvaliteta Putnika'),
+                  subtitle: const Text('Ko se vozi, ko zauzima mesto'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const PutnikKvalitetScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Text('💰', style: TextStyle(fontSize: 24)),
+                  title: const Text('Finansije'),
+                  subtitle: const Text('Prihodi, troškovi, neto zarada'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const FinansijeScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Text('📖', style: TextStyle(fontSize: 24)),
+                  title: const Text('Kolska knjiga'),
+                  subtitle: const Text('Servisi, registracija, gume...'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const OdrzavanjeScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -97,87 +96,6 @@ class SlobodnaMestaService {
     } catch (e) {
       return 'Ponedeljak';
     }
-  }
-
-  /// Stream slobodnih mesta za oba grada - osvežava svakih 2 minuta
-  /// Vraća: {'BC': [SlobodnaMesta, ...], 'VS': [SlobodnaMesta, ...]}
-  static Stream<Map<String, List<SlobodnaMesta>>> streamSlobodnaMesta({String? datum}) {
-    final isoDate = datum ?? DateTime.now().toIso8601String().split('T')[0];
-
-    // Kreiraj StreamController koji emituje podatke
-    final controller = StreamController<Map<String, List<SlobodnaMesta>>>();
-    Timer? refreshTimer;
-    StreamSubscription? kapacitetSub;
-
-    // Funkcija za dohvatanje podataka
-    Future<void> fetchData(Map<String, Map<String, int>> kapacitet) async {
-      try {
-        final danName = _isoDateToDayName(isoDate);
-        final putnici = await _putnikService.getAllPutnici(targetDay: danName);
-
-        final result = <String, List<SlobodnaMesta>>{
-          'BC': [],
-          'VS': [],
-        };
-
-        // Bela Crkva
-        for (final vreme in KapacitetService.bcVremena) {
-          final maxMesta = kapacitet['BC']?[vreme] ?? 8;
-          final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate);
-
-          result['BC']!.add(SlobodnaMesta(
-            grad: 'BC',
-            vreme: vreme,
-            maxMesta: maxMesta,
-            zauzetaMesta: zauzeto,
-            aktivan: true,
-          ));
-        }
-
-        // Vršac
-        for (final vreme in KapacitetService.vsVremena) {
-          final maxMesta = kapacitet['VS']?[vreme] ?? 8;
-          final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate);
-
-          result['VS']!.add(SlobodnaMesta(
-            grad: 'VS',
-            vreme: vreme,
-            maxMesta: maxMesta,
-            zauzetaMesta: zauzeto,
-            aktivan: true,
-          ));
-        }
-
-        if (!controller.isClosed) {
-          controller.add(result);
-        }
-      } catch (e) {
-        // 🔇 Ignore
-      }
-    }
-
-    // Cache za poslednji kapacitet (za timer refresh)
-    Map<String, Map<String, int>> lastKapacitet = {'BC': {}, 'VS': {}};
-
-    // Sluša kapacitet stream
-    kapacitetSub = KapacitetService.streamKapacitet().listen((kapacitet) {
-      lastKapacitet = kapacitet;
-      fetchData(kapacitet);
-    });
-
-    // Timer koji osvežava svakih 2 minuta
-    refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
-      fetchData(lastKapacitet);
-    });
-
-    // Cleanup kad se stream zatvori
-    controller.onCancel = () {
-      refreshTimer?.cancel();
-      kapacitetSub?.cancel();
-      controller.close();
-    };
-
-    return controller.stream;
   }
 
   /// Jednokratno dohvatanje slobodnih mesta

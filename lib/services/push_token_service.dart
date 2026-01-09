@@ -11,7 +11,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// - Direktan UPSERT u push_tokens tabelu
 /// - Pending token mehanizam za offline scenarije
 class PushTokenService {
-  static final _supabase = Supabase.instance.client;
+  /// Lazy getter - pristupa Supabase tek kada je potrebno i inicijalizovan
+  static SupabaseClient get _supabase => Supabase.instance.client;
+
+  /// Proveri da li je Supabase inicijalizovan
+  static bool get _isSupabaseReady {
+    try {
+      // ignore: unnecessary_statements
+      Supabase.instance.client;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Ključ za čuvanje pending tokena u SharedPreferences
   static const _pendingTokenKey = 'pending_push_token';
@@ -33,6 +45,19 @@ class PushTokenService {
     try {
       if (token.isEmpty) {
         if (kDebugMode) debugPrint('⚠️ [PushToken] Prazan token, preskačem registraciju');
+        return false;
+      }
+
+      // ⏳ Proveri da li je Supabase spreman - ako nije, sačuvaj kao pending
+      if (!_isSupabaseReady) {
+        if (kDebugMode) debugPrint('⏳ [PushToken] Supabase nije spreman, čuvam kao pending');
+        await savePendingToken(
+          token: token,
+          provider: provider,
+          userType: userType,
+          userId: userId,
+          putnikId: putnikId,
+        );
         return false;
       }
 
@@ -228,6 +253,34 @@ class PushTokenService {
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('❌ [PushToken] Greška pri dohvatanju tokena putnika: $e');
+      return [];
+    }
+  }
+
+  /// 📊 Dohvati tokene za jednog putnika (po putnik_id)
+  /// Vraća listu jer putnik može imati više uređaja (roditelj + dete)
+  static Future<List<Map<String, String>>> getTokensForPutnik(String putnikId) async {
+    return getTokensForPutnici([putnikId]);
+  }
+
+  /// 🚗 Dohvati tokene za sve vozače
+  /// Koristi se za slanje vremenskih upozorenja i drugih vozačkih notifikacija
+  static Future<List<Map<String, String>>> getTokensForVozaci() async {
+    try {
+      final response = await _supabase.from('push_tokens').select('user_id, token, provider').eq('user_type', 'vozac');
+
+      return (response as List)
+          .map<Map<String, String>>((row) {
+            return {
+              'user_id': row['user_id']?.toString() ?? '',
+              'token': row['token'] as String? ?? '',
+              'provider': row['provider'] as String? ?? '',
+            };
+          })
+          .where((t) => t['token']!.isNotEmpty)
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri dohvatanju vozačkih tokena: $e');
       return [];
     }
   }

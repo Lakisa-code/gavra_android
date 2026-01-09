@@ -17,12 +17,13 @@ import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
+import 'services/payment_reminder_service.dart'; // 💰 Automatski payment reminder (27. i 5.)
 import 'services/putnik_service.dart'; // 🔄 DODATO za nedeljni reset
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
-import 'services/sms_service.dart'; // 📱 SMS podsetnici za plaćanje
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
+import 'services/weather_alert_service.dart'; // 🌨️ Upozorenja za loše vreme
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
 import 'supabase_client.dart';
 
@@ -145,6 +146,24 @@ void main() async {
       // Weekly reset check failed - silent
     }
 
+    // 💰 PAYMENT REMINDER - Proveri da li treba poslati podsetnik za plaćanje
+    // 27. u mesecu: pre deadline-a, 5. u mesecu: posle deadline-a
+    // Šalje se samo jednom dnevno (prvi korisnik koji otvori app)
+    try {
+      await PaymentReminderService.checkAndSendReminders();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [PaymentReminder] Check failed: $e');
+    }
+
+    // 🌨️ WEATHER ALERT - Proveri da li treba poslati upozorenje za loše vreme
+    // Šalje vozačima ako se očekuje sneg, led, nevreme ili magla
+    // Šalje se samo jednom dnevno (prvi korisnik koji otvori app)
+    try {
+      await WeatherAlertService.checkAndSendWeatherAlerts();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [WeatherAlert] Check failed: $e');
+    }
+
     // 🔄 REALTIME se inicijalizuje lazy kroz PutnikService
     // Ne treba eksplicitna pretplata ovde - PutnikService.streamKombinovaniPutniciFiltered()
     // će se pretplatiti kad neki ekran zatraži stream
@@ -163,14 +182,6 @@ void main() async {
     await CacheService.initialize();
   } catch (e) {
     // Ignoriši greške u cache - optional feature
-  }
-
-  // 📱 POKRENI SMS SERVIS - automatski podsetnici za plaćanje
-  // Predzadnji dan meseca u 20:00 + prvi dan meseca u 10:00
-  try {
-    SMSService.startAutomaticSMSService();
-  } catch (e) {
-    // Ignoriši greške u SMS servisu
   }
 
   runApp(const MyApp());

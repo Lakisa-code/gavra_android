@@ -9,9 +9,7 @@ class Vozac {
     this.brojTelefona,
     this.email,
     this.boja,
-    this.kusur = 0.0,
   })  : assert(ime.trim().isNotEmpty, 'Ime vozača ne može biti prazno'),
-        assert(kusur >= 0.0, 'Kusur ne može biti negativan'),
         id = id ?? const Uuid().v4();
 
   factory Vozac.fromMap(Map<String, dynamic> map) {
@@ -21,7 +19,6 @@ class Vozac {
       brojTelefona: map['telefon'] as String?,
       email: map['email'] as String?,
       boja: map['boja'] as String?,
-      kusur: (map['kusur'] as num?)?.toDouble() ?? 0.0,
     );
   }
   final String id;
@@ -29,7 +26,6 @@ class Vozac {
   final String? brojTelefona;
   final String? email;
   final String? boja;
-  final double kusur;
 
   Map<String, dynamic> toMap() {
     return {
@@ -38,7 +34,6 @@ class Vozac {
       'telefon': brojTelefona,
       'email': email,
       'boja': boja,
-      'kusur': kusur,
     };
   }
 
@@ -62,11 +57,6 @@ class Vozac {
   /// Validira da li je ime vozača validno (ne sme biti prazno)
   bool get isValidIme {
     return ime.trim().isNotEmpty && ime.trim().length >= 2;
-  }
-
-  /// Validira da li je kusur validan (mora biti >= 0)
-  bool get isValidKusur {
-    return kusur >= 0.0;
   }
 
   /// Validira telefon format (srpski broj)
@@ -97,7 +87,7 @@ class Vozac {
 
   /// Kompletna validacija vozača
   bool get isValid {
-    return isValidIme && isValidKusur && isValidTelefon && isValidEmail;
+    return isValidIme && isValidTelefon && isValidEmail;
   }
 
   /// Lista grešaka validacije
@@ -106,10 +96,6 @@ class Vozac {
 
     if (!isValidIme) {
       errors.add('Ime vozača mora imati najmanje 2 karaktera');
-    }
-
-    if (!isValidKusur) {
-      errors.add('Kusur ne može biti negativan');
     }
 
     if (!isValidTelefon) {
@@ -129,7 +115,6 @@ class Vozac {
     String? brojTelefona,
     String? email,
     String? boja,
-    double? kusur,
   }) {
     return Vozac(
       id: id,
@@ -137,13 +122,12 @@ class Vozac {
       brojTelefona: brojTelefona ?? this.brojTelefona,
       email: email ?? this.email,
       boja: boja ?? this.boja,
-      kusur: kusur ?? this.kusur,
     );
   }
 
   /// ToString metoda za debugging
   @override
   String toString() {
-    return 'Vozac{id: $id, ime: $ime, kusur: $kusur}';
+    return 'Vozac{id: $id, ime: $ime}';
   }
 }

@@ -144,15 +144,21 @@ class FinansijeService {
     final startOfYear = DateTime(now.year, 1, 1);
     final endOfYear = DateTime(now.year, 12, 31, 23, 59, 59);
 
+    // Prošla godina
+    final startOfProslaGodina = DateTime(now.year - 1, 1, 1);
+    final endOfProslaGodina = DateTime(now.year - 1, 12, 31, 23, 59, 59);
+
     // Prihodi
     final prihodNedelja = await getPrihodZaPeriod(startOfWeek, endOfWeek);
     final prihodMesec = await getPrihodZaPeriod(startOfMonth, endOfMonth);
     final prihodGodina = await getPrihodZaPeriod(startOfYear, endOfYear);
+    final prihodProslaGodina = await getPrihodZaPeriod(startOfProslaGodina, endOfProslaGodina);
 
     // Vožnje
     final voznjiNedelja = await getBrojVoznjiZaPeriod(startOfWeek, endOfWeek);
     final voznjiMesec = await getBrojVoznjiZaPeriod(startOfMonth, endOfMonth);
     final voznjiGodina = await getBrojVoznjiZaPeriod(startOfYear, endOfYear);
+    final voznjiProslaGodina = await getBrojVoznjiZaPeriod(startOfProslaGodina, endOfProslaGodina);
 
     // Troškovi (mesečni)
     final troskoviMesecno = await getUkupniMesecniTroskovi();
@@ -185,6 +191,12 @@ class FinansijeService {
       troskoviGodina: troskoviGodina * (now.month / 12), // Proporcionalno
       netoGodina: prihodGodina - (troskoviGodina * (now.month / 12)),
       voznjiGodina: voznjiGodina,
+      // Prošla godina
+      prihodProslaGodina: prihodProslaGodina,
+      troskoviProslaGodina: troskoviGodina, // Cela godina troškova
+      netoProslaGodina: prihodProslaGodina - troskoviGodina,
+      voznjiProslaGodina: voznjiProslaGodina,
+      proslaGodina: now.year - 1,
       // Detalji troškova
       troskoviPoTipu: troskoviPoTipu,
       ukupnoMesecniTroskovi: troskoviMesecno,
@@ -283,6 +295,13 @@ class FinansijskiIzvestaj {
   final double netoGodina;
   final int voznjiGodina;
 
+  // Prošla godina
+  final double prihodProslaGodina;
+  final double troskoviProslaGodina;
+  final double netoProslaGodina;
+  final int voznjiProslaGodina;
+  final int proslaGodina;
+
   // Detalji
   final Map<String, double> troskoviPoTipu;
   final double ukupnoMesecniTroskovi;
@@ -304,6 +323,11 @@ class FinansijskiIzvestaj {
     required this.troskoviGodina,
     required this.netoGodina,
     required this.voznjiGodina,
+    required this.prihodProslaGodina,
+    required this.troskoviProslaGodina,
+    required this.netoProslaGodina,
+    required this.voznjiProslaGodina,
+    required this.proslaGodina,
     required this.troskoviPoTipu,
     required this.ukupnoMesecniTroskovi,
     required this.startNedelja,

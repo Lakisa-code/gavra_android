@@ -99,3 +99,8 @@ flutter:
     - assets/logo_transparent.png # 🎨 Logo sa transparentnom pozadinom
     - assets/fonts/  # 🔤 Fontovi za PDF sa srpskim slovima
     - assets/weather/ # 🌤️ Vremenske ikone
+    - assets/tablica_066.png # 🚐 Tablice vozila
+    - assets/tablica_088.png
+    - assets/tablica_093.png
+    - assets/tablica_097.png
+    - assets/tablica_102.png

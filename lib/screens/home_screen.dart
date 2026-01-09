@@ -38,6 +38,7 @@ import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_list.dart';
+import '../widgets/registracija_countdown_widget.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
@@ -2168,35 +2169,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // PRVI RED - Rezervacije
-                          Container(
+                          // PRVI RED - Tablica levo, Rezervacije sredina, Dana desno
+                          Row(
                             // increase height slightly and reduce font so it never drifts under the control row below
-                            height: 28,
-                            alignment: Alignment.center,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                'R E Z E R V A C I J E',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  // slightly reduced letter spacing to keep the text compact on narrow screens
-                                  letterSpacing: 1.4,
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: 12,
-                                      color: Colors.black87,
+                            children: [
+                              // LEVO - Tablica vozila (ako ističe registracija)
+                              const RegistracijaTablicaWidget(),
+                              const SizedBox(width: 8),
+                              // SREDINA - "R E Z E R V A C I J E"
+                              Expanded(
+                                child: Container(
+                                  height: 28,
+                                  alignment: Alignment.center,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      'R E Z E R V A C I J E',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: Theme.of(context).colorScheme.onPrimary,
+                                        // slightly reduced letter spacing to keep the text compact on narrow screens
+                                        letterSpacing: 1.4,
+                                        shadows: [
+                                          Shadow(
+                                            blurRadius: 12,
+                                            color: Colors.black87,
+                                          ),
+                                          Shadow(
+                                            offset: Offset(2, 2),
+                                            blurRadius: 6,
+                                            color: Colors.black54,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    Shadow(
-                                      offset: Offset(2, 2),
-                                      blurRadius: 6,
-                                      color: Colors.black54,
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              // DESNO - Brojač dana do isteka registracije
+                              const RegistracijaBrojacWidget(),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           // DRUGI RED - Driver, Tema, Update i Dropdown

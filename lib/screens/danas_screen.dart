@@ -16,7 +16,6 @@ import '../services/driver_location_service.dart'; // 🚐 DODANO za realtime ET
 import '../services/firebase_service.dart';
 import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
 import '../services/local_notification_service.dart';
-import '../services/pickup_tracking_service.dart'; // 🛰️ DODANO za GPS pickup tracking
 import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikacije putnicima
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
@@ -2820,9 +2819,6 @@ class _DanasScreenState extends State<DanasScreen> {
       );
 
       if (result.success) {
-        // 🛰️ POKRENI PICKUP TRACKING SA GPS PRAĆENJEM
-        await _startPickupTracking();
-
         if (mounted) {
           setState(() {
             _optimizedRoute = result.optimizedPutnici ?? _optimizedRoute;
@@ -2859,67 +2855,12 @@ class _DanasScreenState extends State<DanasScreen> {
     }
   }
 
-  // 🛰️ START PICKUP TRACKING (GPS + NOTIFIKACIJE)
-  Future<void> _startPickupTracking() async {
-    final coords = _cachedCoordinates;
-    if (coords == null || coords.isEmpty) {
-      return;
-    }
-
-    final pickupService = PickupTrackingService();
-    await pickupService.initialize();
-
-    final started = await pickupService.startTracking(
-      putnici: _optimizedRoute,
-      coordinates: coords,
-      onPickedUp: (putnik, status) async {
-        // Ručno pokupljanje - ova funkcija ne radi ništa
-      },
-      onSkipped: (putnik) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('⏭️ ${putnik.ime} preskočen'),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      onApproaching: (putnik, distance) {
-        // Opciono: prikaži distancu u UI
-      },
-      onCompleted: () {
-        if (mounted) {
-          setState(() {
-            _isGpsTracking = false;
-            _navigationStatus = 'Svi putnici pokupljeni!';
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🎉 Svi putnici pokupljeni!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      },
-    );
-
-    if (started) {
-    } else {}
-  }
-
   void _stopSmartNavigation() {
-    // 🛰️ ZAUSTAVI PICKUP TRACKING
-    PickupTrackingService().stopTracking();
-
     if (mounted) {
       setState(() {
         _isGpsTracking = false;
         _navigationStatus = '';
       });
-      // ✅ ISPRAVKA: SnackBar unutar mounted provere
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('🛑 Navigacija zaustavljena'), backgroundColor: Colors.orange),
       );

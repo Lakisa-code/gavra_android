@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
-import '../globals.dart'; // 🎫 Za dnevniZakazivanjeNotifier
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/cena_obracun_service.dart';
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
@@ -15,7 +14,6 @@ import '../utils/schedule_utils.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 import '../widgets/leaderboard_widget.dart'; // 🏆💀 Wall of Fame/Shame
 import '../widgets/shared/time_picker_cell.dart';
-import '../widgets/slobodna_mesta_widget.dart'; // 🎫 Slobodna mesta widget
 
 /// 📊 MESEČNI PUTNIK PROFIL SCREEN
 /// Prikazuje podatke o mesečnom putniku: raspored, vožnje, dugovanja
@@ -383,25 +381,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (mounted) {
         Navigator.pop(context);
       }
-    }
-  }
-
-  /// 🎫 Da li prikazati SlobodnaMestaWidget
-  /// - Učenici: 00:00 - 16:00
-  /// - Dnevni: kad admin uključi (dnevniZakazivanjeNotifier)
-  /// - Radnici: uvek
-  bool _prikaziSlobodnaMestaWidget() {
-    final tip = _putnikData['tip']?.toString().toLowerCase() ?? 'radnik';
-    final sat = DateTime.now().hour;
-
-    switch (tip) {
-      case 'ucenik':
-        return sat < 16; // 00:00 - 15:59
-      case 'dnevni':
-        return dnevniZakazivanjeNotifier.value; // Admin kontrola
-      case 'radnik':
-      default:
-        return true; // Uvek
     }
   }
 
@@ -1099,50 +1078,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
                       ),
-
-                      // 🎫 Slobodna mesta Widget - prikazuje slobodna mesta po terminima
-                      // 🎓 Učenici: 00:00 - 16:00
-                      // 🚌 Dnevni: posle 16:00
-                      // 👷 Radnici: uvek
-                      if (_prikaziSlobodnaMestaWidget()) ...[
-                        SlobodnaMestaWidget(
-                          putnikId: _putnikData['id']?.toString(),
-                          putnikGrad: grad,
-                          putnikVreme: _putnikData['polazak']?.toString(),
-                          onPromenaVremena: (novoVreme) async {
-                            // Format: 'GRAD|VREME' npr. 'BC|7:00'
-                            final parts = novoVreme.split('|');
-                            if (parts.length != 2) return;
-
-                            final noviGrad = parts[0];
-                            final novoVremeValue = parts[1];
-
-                            // Odredi dan
-                            final danas = DateTime.now();
-                            const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-                            final dan = dani[danas.weekday - 1];
-
-                            // Sačuvaj messenger pre async poziva
-                            final messenger = ScaffoldMessenger.of(context);
-
-                            final result = await SlobodnaMestaService.promeniVremePutnika(
-                              putnikId: _putnikData['id']?.toString() ?? '',
-                              novoVreme: novoVremeValue,
-                              grad: noviGrad,
-                              dan: dan,
-                            );
-
-                            if (mounted) {
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  content: Text(result['message'] as String),
-                                  backgroundColor: result['success'] == true ? Colors.green : Colors.red,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ],
 
                       // ─────────── Divider ───────────
                       Padding(

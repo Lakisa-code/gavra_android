@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -9,46 +7,28 @@ import 'firebase_service.dart';
 import 'registrovani_putnik_service.dart';
 
 class SMSService {
-  static Timer? _monthlyTimer;
-  static bool _isServiceRunning = false;
   static final supabase = Supabase.instance.client;
 
-  /// Pokretanje automatskog SMS servisa
-  static void startAutomaticSMSService() {
-    if (_isServiceRunning) return;
+  /// Proverava da li treba prikazati podsetnik za plaćanje
+  /// Vraća true ako je predzadnji dan meseca ILI 5. dan meseca
+  static bool shouldShowPaymentReminder() {
+    final now = DateTime.now();
+    final lastDay = DateTime(now.year, now.month + 1, 0);
+    final secondToLastDay = lastDay.day - 1;
 
-    _isServiceRunning = true;
+    // Predzadnji dan meseca (podsetnik pre roka)
+    if (now.day == secondToLastDay) return true;
 
-    _monthlyTimer = Timer.periodic(const Duration(hours: 1), (timer) async {
-      await _checkAndSendMonthlySMS();
-    });
+    // 5. dan meseca (podsetnik za one koji nisu platili)
+    if (now.day == 5) return true;
+
+    return false;
   }
 
-  /// Zaustavljanje automatskog SMS servisa
-  static void stopAutomaticSMSService() {
-    _monthlyTimer?.cancel();
-    _monthlyTimer = null;
-    _isServiceRunning = false;
-  }
-
-  /// Provera da li je vreme za slanje SMS-a
-  static Future<void> _checkAndSendMonthlySMS() async {
-    DateTime now = DateTime.now();
-    DateTime secondToLastDay = _getSecondToLastDayOfMonth(now);
-
-    if (now.day == secondToLastDay.day && now.hour == 20 && now.minute >= 0 && now.minute < 5) {
-      await sendSMSToUnpaidMonthlyPassengers();
-    }
-
-    if (now.day == 1 && now.hour == 10 && now.minute >= 0 && now.minute < 5) {
-      await sendSMSToOverdueMonthlyPassengers();
-    }
-  }
-
-  /// Računa predzadnji dan meseca
-  static DateTime _getSecondToLastDayOfMonth(DateTime date) {
-    DateTime lastDay = DateTime(date.year, date.month + 1, 0);
-    return lastDay.subtract(const Duration(days: 1));
+  /// Vraća tip podsetnika: 'pre_roka' ili 'posle_roka'
+  static String getReminderType() {
+    final now = DateTime.now();
+    return now.day == 5 ? 'posle_roka' : 'pre_roka';
   }
 
   /// Šalje SMS svim neplaćenim mesečnim putnicima (predzadnji dan meseca)
@@ -309,9 +289,10 @@ class SMSService {
 
   /// Provera da li je danas predzadnji dan meseca
   static bool isSecondToLastDayOfMonth() {
-    DateTime now = DateTime.now();
-    DateTime secondToLastDay = _getSecondToLastDayOfMonth(now);
-    return now.day == secondToLastDay.day;
+    final now = DateTime.now();
+    final lastDay = DateTime(now.year, now.month + 1, 0);
+    final secondToLastDay = lastDay.day - 1;
+    return now.day == secondToLastDay;
   }
 
   /// Šalje SMS roditeljima učenika (majka i otac)

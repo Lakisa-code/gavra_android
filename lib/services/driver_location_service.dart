@@ -18,7 +18,6 @@ class DriverLocationService {
 
   static const Duration _updateInterval = Duration(seconds: 30);
   static const Duration _etaUpdateInterval = Duration(minutes: 1);
-  static const double _minDistanceMeters = 50;
 
   // State
   Timer? _locationTimer;
@@ -190,9 +189,8 @@ class DriverLocationService {
           position.latitude,
           position.longitude,
         );
-        if (distance < _minDistanceMeters) {
-          return;
-        }
+        // Log distance za debugging ako treba
+        debugPrint('🚐 GPS: pomeraj ${distance.toStringAsFixed(0)}m');
       }
 
       _lastPosition = position;
