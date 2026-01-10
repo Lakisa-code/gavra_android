@@ -381,202 +381,181 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
   }
 
   void _showTroskoviDialog() {
+    // Kontroleri za svaku kategoriju
+    final plateController = TextEditingController();
+    final kreditController = TextEditingController();
+    final gorivoController = TextEditingController();
+    final amortizacijaController = TextEditingController();
+    final ostaloController = TextEditingController();
+
+    // Popuni postojeće vrednosti
+    for (final trosak in _troskovi) {
+      switch (trosak.tip) {
+        case 'plata':
+          plateController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
+          break;
+        case 'kredit':
+          kreditController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
+          break;
+        case 'gorivo':
+          gorivoController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
+          break;
+        case 'amortizacija':
+          amortizacijaController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
+          break;
+        case 'ostalo':
+          ostaloController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
+          break;
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) => SafeArea(
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: SafeArea(
           top: false,
           child: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            child: Column(
-              children: [
-                // Handle
-                Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade400,
-                    borderRadius: BorderRadius.circular(2),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '⚙️ Podesi troškove',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Unesi mesečne iznose',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 16),
-
-                // Lista troškova
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _troskovi.length,
-                    itemBuilder: (context, index) {
-                      final trosak = _troskovi[index];
-                      return _buildTrosakEditTile(trosak);
-                    },
+                  const SizedBox(height: 16),
+                  const Text(
+                    '⚙️ Podesi troškove',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-
-                // Dodaj novi
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: OutlinedButton.icon(
-                    onPressed: _showDodajTrosakDialog,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Dodaj novi trošak'),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Unesi mesečne iznose',
+                    style: TextStyle(color: Colors.grey),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+                  const SizedBox(height: 24),
 
-  Widget _buildTrosakEditTile(Trosak trosak) {
-    return Card(
-      child: ListTile(
-        leading: Text(trosak.emoji, style: const TextStyle(fontSize: 24)),
-        title: Text(trosak.displayNaziv),
-        subtitle: Text(trosak.tip),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _formatIznos(trosak.iznos),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit, size: 20),
-              onPressed: () => _editTrosak(trosak),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                  // Plate
+                  _buildTrosakInputRow('💰', 'Plate', plateController),
+                  const SizedBox(height: 12),
 
-  void _editTrosak(Trosak trosak) {
-    final controller = TextEditingController(text: trosak.iznos.toStringAsFixed(0));
+                  // Kredit
+                  _buildTrosakInputRow('🏦', 'Kredit', kreditController),
+                  const SizedBox(height: 12),
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${trosak.emoji} ${trosak.displayNaziv}'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Mesečni iznos (din)',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Otkaži'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final noviIznos = double.tryParse(controller.text) ?? 0;
-              await FinansijeService.updateTrosak(trosak.id, noviIznos);
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              Navigator.pop(context); // Zatvori i bottom sheet
-              _loadData();
-            },
-            child: const Text('Sačuvaj'),
-          ),
-        ],
-      ),
-    );
-  }
+                  // Gorivo
+                  _buildTrosakInputRow('⛽', 'Gorivo', gorivoController),
+                  const SizedBox(height: 12),
 
-  void _showDodajTrosakDialog() {
-    final nazivController = TextEditingController();
-    final iznosController = TextEditingController();
-    String selectedTip = 'ostalo';
+                  // Amortizacija
+                  _buildTrosakInputRow('🔧', 'Amortizacija', amortizacijaController),
+                  const SizedBox(height: 12),
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          title: const Text('➕ Novi trošak'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nazivController,
-                decoration: const InputDecoration(
-                  labelText: 'Naziv',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: selectedTip,
-                decoration: const InputDecoration(
-                  labelText: 'Tip',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'plata', child: Text('👷 Plata')),
-                  DropdownMenuItem(value: 'kredit', child: Text('🏦 Kredit')),
-                  DropdownMenuItem(value: 'gorivo', child: Text('⛽ Gorivo')),
-                  DropdownMenuItem(value: 'amortizacija', child: Text('🔧 Amortizacija')),
-                  DropdownMenuItem(value: 'ostalo', child: Text('📋 Ostalo')),
+                  // Ostalo
+                  _buildTrosakInputRow('📋', 'Ostalo', ostaloController),
+                  const SizedBox(height: 24),
+
+                  // Sačuvaj dugme
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await _saveTroskovi(
+                          plate: double.tryParse(plateController.text) ?? 0,
+                          kredit: double.tryParse(kreditController.text) ?? 0,
+                          gorivo: double.tryParse(gorivoController.text) ?? 0,
+                          amortizacija: double.tryParse(amortizacijaController.text) ?? 0,
+                          ostalo: double.tryParse(ostaloController.text) ?? 0,
+                        );
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        _loadData();
+                      },
+                      icon: const Icon(Icons.save),
+                      label: const Text('Sačuvaj'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                 ],
-                onChanged: (value) => setStateDialog(() => selectedTip = value!),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: iznosController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Mesečni iznos (din)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Otkaži'),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (nazivController.text.isEmpty) return;
-                final iznos = double.tryParse(iznosController.text) ?? 0;
-                await FinansijeService.addTrosak(nazivController.text, selectedTip, iznos);
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                Navigator.pop(context); // Zatvori i bottom sheet
-                _loadData();
-              },
-              child: const Text('Dodaj'),
-            ),
-          ],
         ),
       ),
     );
+  }
+
+  Widget _buildTrosakInputRow(String emoji, String label, TextEditingController controller) {
+    return Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 24)),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: Text(label, style: const TextStyle(fontSize: 16)),
+        ),
+        Expanded(
+          flex: 3,
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.right,
+            decoration: InputDecoration(
+              hintText: '0',
+              suffixText: 'din',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              isDense: true,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _saveTroskovi({
+    required double plate,
+    required double kredit,
+    required double gorivo,
+    required double amortizacija,
+    required double ostalo,
+  }) async {
+    // Sačuvaj ili ažuriraj svaki trošak
+    await _saveOrUpdateTrosak('Plate', 'plata', plate);
+    await _saveOrUpdateTrosak('Kredit', 'kredit', kredit);
+    await _saveOrUpdateTrosak('Gorivo', 'gorivo', gorivo);
+    await _saveOrUpdateTrosak('Amortizacija', 'amortizacija', amortizacija);
+    await _saveOrUpdateTrosak('Ostalo', 'ostalo', ostalo);
+  }
+
+  Future<void> _saveOrUpdateTrosak(String naziv, String tip, double iznos) async {
+    // Pronađi postojeći trošak po tipu
+    final postojeci = _troskovi.where((t) => t.tip == tip).toList();
+
+    if (postojeci.isNotEmpty) {
+      // Ažuriraj prvi pronađeni
+      await FinansijeService.updateTrosak(postojeci.first.id, iznos);
+    } else {
+      // Dodaj novi trošak (čak i ako je 0, da bi postojao u bazi)
+      await FinansijeService.addTrosak(naziv, tip, iznos);
+    }
   }
 }

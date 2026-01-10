@@ -584,13 +584,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                         opacity: _fadeAnimation,
                         child: GestureDetector(
                           onTap: () async {
+                            final navigator = Navigator.of(context);
                             await _stopAudio();
                             await AuthManager.setCurrentDriver('Bojan');
                             if (!mounted) return;
-                            Navigator.pushReplacement(
-                              context,
+                            navigator.pushReplacement(
                               MaterialPageRoute<void>(
-                                builder: (context) => const HomeScreen(),
+                                builder: (ctx) => const HomeScreen(),
                               ),
                             );
                           },
