@@ -282,17 +282,19 @@ class _PutnikKvalitetScreenState extends State<PutnikKvalitetScreen> {
         ),
         subtitle: Row(
           children: [
-            Text(
-              'Kvalitet: ${entry.kvalitetSkor}%',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: borderColor,
+            Flexible(
+              child: Text(
+                'Kvalitet: ${entry.kvalitetSkor}%',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: borderColor,
+                ),
               ),
             ),
             const SizedBox(width: 8),
-            Text('| ${entry.prosecnoMesecnoFormatted}/mes'),
+            Flexible(child: Text('| ${entry.prosecnoMesecnoFormatted}/mes')),
             const SizedBox(width: 8),
-            Text('| ${entry.voznji30Dana} u 30d'),
+            Flexible(child: Text('| ${entry.voznji30Dana} u 30d')),
           ],
         ),
         children: [
