@@ -41,6 +41,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   bool _isAudioPlaying = false;
   late AnimationController _fadeController;
   late AnimationController _slideController;
+  late AnimationController _pulseController;
   late Animation<double> _fadeAnimation;
 
   // Lista vozača za email sistem - koristi VozacBoja utility
@@ -227,6 +228,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       vsync: this,
     );
 
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2500),
+      vsync: this,
+    )..repeat();
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
@@ -243,6 +249,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     WidgetsBinding.instance.removeObserver(this); // Uklanjamo observer
     _fadeController.dispose();
     _slideController.dispose();
+    _pulseController.dispose();
     _audioPlayer.dispose(); // Dodano za cleanup audio player-a
     super.dispose();
   }
@@ -373,6 +380,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Container(
@@ -382,99 +391,173 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
           gradient: ThemeManager().currentGradient,
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16), // Reduced padding
-            child: Column(
-              children: [
-                // 🎫 Mesečni putnici - NA SREDINI sa jednakim razmakom za O nama i Vozači
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 16),
-                        // Moderni welcome tekst - klikabilno za promenu teme
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: GestureDetector(
-                            onTap: () async {
-                              await ThemeManager().nextTheme();
-                              if (mounted) setState(() {});
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  SizedBox(height: screenHeight * 0.04),
+
+                  // 🎨 LOGO sa shimmer efektom
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: GestureDetector(
+                      onTap: () async {
+                        try {
+                          if (_isAudioPlaying) {
+                            await _audioPlayer.stop();
+                            _isAudioPlaying = false;
+                          } else {
+                            await _audioPlayer.setVolume(0.5);
+                            await _audioPlayer.play(AssetSource('kasno_je.mp3'));
+                            _isAudioPlaying = true;
+                          }
+                        } catch (_) {}
+                      },
+                      child: AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, child) {
+                          return ShaderMask(
+                            shaderCallback: (bounds) {
+                              return LinearGradient(
+                                begin: Alignment(-1.5 + 3 * _pulseController.value, 0),
+                                end: Alignment(-0.5 + 3 * _pulseController.value, 0),
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.6),
+                                  Colors.white,
+                                  Colors.white.withValues(alpha: 0.6),
+                                ],
+                                stops: const [0.0, 0.5, 1.0],
+                              ).createShader(bounds);
                             },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 18,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    ThemeManager().currentGradient.colors[0],
-                                    ThemeManager().currentGradient.colors[2],
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(32),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: ThemeManager().currentGradient.colors[1].withValues(alpha: 0.4),
-                                    blurRadius: 20,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  width: 2,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      'DOBRODOŠLI',
-                                      style: TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 3.5,
-                                        color: Colors.white,
-                                        shadows: [
-                                          // Glavni glow efekat - plavi
-                                          Shadow(
-                                            color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
-                                            blurRadius: 20,
-                                          ),
-                                          // Dodatni glow - svetliji plavi
-                                          Shadow(
-                                            color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
-                                            blurRadius: 15,
-                                          ),
-                                          // Treći glow - još svetliji
-                                          Shadow(
-                                            color: Colors.cyan.withValues(alpha: 0.4),
-                                            blurRadius: 10,
-                                          ),
-                                          // Osnovna senka za dubinu
-                                          const Shadow(
-                                            color: Colors.black26,
-                                            blurRadius: 8,
-                                            offset: Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            blendMode: BlendMode.srcATop,
+                            child: child,
+                          );
+                        },
+                        child: Image.asset(
+                          'assets/logo_transparent.png',
+                          height: 180,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 🎯 DOBRODOŠLI tekst - klikabilno za promenu teme
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: GestureDetector(
+                      onTap: () async {
+                        await ThemeManager().nextTheme();
+                        if (mounted) setState(() {});
+                      },
+                      child: ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: [
+                            Colors.white,
+                            Colors.amber.shade200,
+                            Colors.white,
+                          ],
+                        ).createShader(bounds),
+                        child: const Text(
+                          'DOBRODOŠLI',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 6,
+                            color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        // 📖 "O nama" dugme
-                        FadeTransition(
-                          opacity: _fadeAnimation,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Subtitle
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Text(
+                      'Vaš pouzdani prevoz',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withValues(alpha: 0.7),
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: screenHeight * 0.05),
+
+                  // 🚀 GLAVNO DUGME - PRIJAVA PUTNIKA
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegistrovaniPutnikLoginScreen(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.amber,
+                              Colors.amber.shade700,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.amber.withValues(alpha: 0.4),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.login,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'Prijavi se',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 📱 SEKUNDARNA DUGMAD - O nama i Vozači
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Row(
+                      children: [
+                        // O NAMA
+                        Expanded(
                           child: GestureDetector(
                             onTap: () {
                               Navigator.push(
@@ -483,96 +566,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                               );
                             },
                             child: Container(
-                              width: MediaQuery.of(context).size.width * 0.55,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(24),
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.15),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   width: 1.5,
                                 ),
                               ),
-                              child: Text(
-                                'O nama',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.5,
-                                  shadows: [
-                                    Shadow(
-                                      color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
-                                      blurRadius: 15,
-                                    ),
-                                    Shadow(
-                                      color: Colors.cyan.withValues(alpha: 0.4),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // 🎫 Mesečni putnici
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const RegistrovaniPutnikLoginScreen(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                                horizontal: 28,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.amber.withValues(alpha: 0.85),
-                                    Colors.white.withValues(alpha: 0.08),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: Colors.amber.withValues(alpha: 0.7),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.amber.withValues(alpha: 0.35),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              child: Column(
                                 children: [
                                   Icon(
-                                    Icons.card_membership,
-                                    color: Colors.white,
-                                    size: 24,
+                                    Icons.info_outline,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    size: 28,
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(height: 8),
                                   Text(
-                                    'Uloguj se',
+                                    'O nama',
                                     style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.0,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1,
                                     ),
                                   ),
                                 ],
@@ -580,214 +597,112 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        // 🍎 APPLE REVIEW dugme - SAKRIVENO (otkomentariši ako treba ponovo)
-                        // FadeTransition(
-                        //   opacity: _fadeAnimation,
-                        //   child: GestureDetector(
-                        //     onTap: () async {
-                        //       final navigator = Navigator.of(context);
-                        //       await _stopAudio();
-                        //       await AuthManager.setCurrentDriver('Bojan');
-                        //       if (!mounted) return;
-                        //       navigator.pushReplacement(
-                        //         MaterialPageRoute<void>(
-                        //           builder: (ctx) => const HomeScreen(),
-                        //         ),
-                        //       );
-                        //     },
-                        //     child: Container(
-                        //       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        //       decoration: BoxDecoration(
-                        //         gradient: LinearGradient(
-                        //           colors: [
-                        //             Colors.grey.shade800,
-                        //             Colors.grey.shade900,
-                        //           ],
-                        //           begin: Alignment.topLeft,
-                        //           end: Alignment.bottomRight,
-                        //         ),
-                        //         borderRadius: BorderRadius.circular(24),
-                        //         border: Border.all(
-                        //           color: Colors.white.withValues(alpha: 0.3),
-                        //           width: 2,
-                        //         ),
-                        //         boxShadow: [
-                        //           BoxShadow(
-                        //             color: Colors.black.withValues(alpha: 0.4),
-                        //             blurRadius: 15,
-                        //             offset: const Offset(0, 5),
-                        //           ),
-                        //         ],
-                        //       ),
-                        //       child: Row(
-                        //         mainAxisSize: MainAxisSize.min,
-                        //         children: [
-                        //           Text(
-                        //             '🍎',
-                        //             style: TextStyle(fontSize: 28),
-                        //           ),
-                        //           const SizedBox(width: 12),
-                        //           Text(
-                        //             'APPLE REVIEW',
-                        //             style: TextStyle(
-                        //               color: Colors.white,
-                        //               fontSize: 22,
-                        //               fontWeight: FontWeight.bold,
-                        //               letterSpacing: 2,
-                        //             ),
-                        //           ),
-                        //         ],
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
-                        // 🚗 "Vozači" dugme
-                        FadeTransition(
-                          opacity: _fadeAnimation,
+
+                        const SizedBox(width: 16),
+
+                        // VOZAČI
+                        Expanded(
                           child: GestureDetector(
                             onTap: () => _showDriverSelectionDialog(),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(20),
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.15),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   width: 1.5,
                                 ),
                               ),
-                              child: Text(
-                                'Vozači',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.5,
-                                  shadows: [
-                                    Shadow(
-                                      color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
-                                      blurRadius: 15,
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.local_taxi,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    size: 28,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Vozači',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1,
                                     ),
-                                    Shadow(
-                                      color: Colors.cyan.withValues(alpha: 0.4),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                        // Moderno dugme GAVRA 013 dole - compacted
-                        Container(
-                          padding: const EdgeInsets.only(top: 8), // Reduced padding
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: GestureDetector(
-                                onTap: () async {
-                                  try {
-                                    await _audioPlayer.setVolume(0.5);
-                                    await _audioPlayer.play(AssetSource('kasno_je.mp3'));
-                                    _isAudioPlaying = true;
-                                  } catch (_) {}
-                                },
-                                child: Image.asset(
-                                  'assets/logo_transparent.png',
-                                  height: 120,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8), // Reduced from 16
-                        // Footer
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Column(
-                            children: [
-                              Text(
-                                'Designed • Developed • Crafted with balls',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  letterSpacing: 1.0,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.white.withValues(alpha: 0.8),
-                                      blurRadius: 10,
-                                    ),
-                                    Shadow(
-                                      color: const Color(0xFF12D8FA).withValues(alpha: 0.6),
-                                      blurRadius: 15,
-                                    ),
-                                    Shadow(
-                                      color: Colors.cyan.withValues(alpha: 0.3),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'by Bojan Gavrilovic',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  letterSpacing: 1.0,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.white.withValues(alpha: 0.8),
-                                      blurRadius: 10,
-                                    ),
-                                    Shadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
-                                      blurRadius: 12,
-                                    ),
-                                    Shadow(
-                                      color: Colors.cyan.withValues(alpha: 0.3),
-                                      blurRadius: 6,
-                                    ),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '03.2025 - 01.2026',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  letterSpacing: 1.2,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.white.withValues(alpha: 0.8),
-                                      blurRadius: 10,
-                                    ),
-                                    Shadow(
-                                      color: const Color(0xFF12D8FA).withValues(alpha: 0.4),
-                                      blurRadius: 10,
-                                    ),
-                                    Shadow(
-                                      color: Colors.cyan.withValues(alpha: 0.2),
-                                      blurRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
-                ),
-              ],
+
+                  SizedBox(height: screenHeight * 0.08),
+
+                  // 📝 FOOTER
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                Colors.white.withValues(alpha: 0.3),
+                                Colors.transparent,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Designed • Developed • Crafted with balls',
+                          style: TextStyle(
+                            fontSize: 10,
+                            letterSpacing: 1,
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'by Bojan Gavrilovic',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'v6.0.15 • 2025-2026',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.5),
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ),

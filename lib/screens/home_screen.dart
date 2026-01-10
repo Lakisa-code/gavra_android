@@ -2614,32 +2614,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ],
                                 ),
                               ),
-                              // 👆 Biometrija opcija
-                              if (_biometricAvailable)
-                                PopupMenuItem(
-                                  value: 'biometric',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.fingerprint,
-                                        color: _biometricEnabled ? Colors.green : Colors.grey,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(_biometricEnabled ? 'Otisak: ON' : 'Otisak: OFF'),
-                                      const Spacer(),
-                                      Switch(
-                                        value: _biometricEnabled,
-                                        onChanged: null, // Handled by menu selection
-                                        thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
-                                          if (states.contains(WidgetState.selected)) {
-                                            return Colors.green;
-                                          }
-                                          return null;
-                                        }),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               const PopupMenuItem(
                                 value: 'logout',
                                 child: Row(

@@ -1546,9 +1546,31 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // Sačuvaj u bazu
       if (putnikId != null) {
-        await Supabase.instance.client
-            .from('registrovani_putnici')
-            .update({'polasci_po_danu': polasci}).eq('id', putnikId);
+        // 🆕 Automatski ažuriraj radni_dani na osnovu polasci_po_danu
+        final Set<String> radniDaniSet = {};
+        polasci.forEach((danKey, vrednosti) {
+          final bcVreme = vrednosti['bc'];
+          final vsVreme = vrednosti['vs'];
+          // Ako ima bilo koje vreme za taj dan, dodaj ga u radne dane
+          if ((bcVreme != null && bcVreme.isNotEmpty) || (vsVreme != null && vsVreme.isNotEmpty)) {
+            radniDaniSet.add(danKey);
+          }
+        });
+        final noviRadniDani = radniDaniSet.join(',');
+
+        // 🔍 DEBUG
+        debugPrint('🔍 DEBUG _saveVreme:');
+        debugPrint('   putnikId: $putnikId');
+        debugPrint('   dan: $dan, tipGrad: $tipGrad, novoVreme: $novoVreme');
+        debugPrint('   polasci: $polasci');
+        debugPrint('   noviRadniDani: $noviRadniDani');
+
+        await Supabase.instance.client.from('registrovani_putnici').update({
+          'polasci_po_danu': polasci,
+          'radni_dani': noviRadniDani,
+        }).eq('id', putnikId);
+
+        debugPrint('   ✅ Supabase update uspešan!');
 
         // 🎓 Zapiši promenu za učenike (za ograničenje)
         if (tipPutnika == 'ucenik') {
@@ -1558,19 +1580,21 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // Ažuriraj lokalni state
         setState(() {
           _putnikData['polasci_po_danu'] = polasci;
+          _putnikData['radni_dani'] = noviRadniDani;
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Vreme sačuvano'),
+            SnackBar(
+              content: Text('✅ Vreme sačuvano (radni_dani: $noviRadniDani)'),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 1),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
       }
     } catch (e) {
+      debugPrint('❌ DEBUG _saveVreme GREŠKA: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
