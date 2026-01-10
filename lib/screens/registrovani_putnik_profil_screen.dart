@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/route_config.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/cena_obracun_service.dart';
+import '../services/leaderboard_service.dart'; // 🏆💀 Leaderboard servis
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/slobodna_mesta_service.dart'; // 🎫 Promena vremena
 import '../services/theme_manager.dart';
@@ -12,7 +13,6 @@ import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
 import '../utils/schedule_utils.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
-import '../widgets/leaderboard_widget.dart'; // 🏆💀 Wall of Fame/Shame
 import '../widgets/shared/time_picker_cell.dart';
 
 /// 📊 MESEČNI PUTNIK PROFIL SCREEN
@@ -613,6 +613,104 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     );
   }
 
+  // 🏆💀 MINI LEADERBOARD - Fame ili Shame
+  Widget _buildMiniLeaderboard({required bool isShame}) {
+    return FutureBuilder<LeaderboardData?>(
+      future: LeaderboardService.getLeaderboard(tipPutnika: _putnikData['tip'] as String? ?? 'radnik'),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+
+        final data = snapshot.data!;
+        final entries = isShame ? data.wallOfShame : data.wallOfFame;
+        final title = isShame ? '💀 Shame' : '🏆 Fame';
+        final titleColor = isShame ? Colors.redAccent : Colors.greenAccent;
+
+        return Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isShame
+                  ? [Colors.red.shade900.withValues(alpha: 0.15), Colors.orange.shade900.withValues(alpha: 0.1)]
+                  : [Colors.green.shade900.withValues(alpha: 0.15), Colors.teal.shade900.withValues(alpha: 0.1)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: (isShame ? Colors.red : Colors.green).withValues(alpha: 0.15),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: titleColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              if (entries.isEmpty)
+                Text(
+                  'Nema podataka',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
+                  ),
+                )
+              else
+                ...entries.take(3).toList().asMap().entries.map((e) {
+                  final rank = e.key + 1;
+                  final entry = e.value;
+                  String displayName = entry.ime;
+                  if (displayName.length > 10) {
+                    final parts = displayName.split(' ');
+                    if (parts.length >= 2) {
+                      displayName = '${parts[0]} ${parts[1][0]}.';
+                    } else {
+                      displayName = '${displayName.substring(0, 8)}..';
+                    }
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 1),
+                    child: Row(
+                      children: [
+                        Text(
+                          '$rank.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 10,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(entry.icon, style: const TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  );
+                }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // 🌤️ DIJALOG ZA DETALJNU VREMENSKU PROGNOZU
   void _showWeatherDialog(String grad, WeatherData? data) {
     final gradPun = grad == 'BC' ? 'Bela Crkva' : 'Vršac';
@@ -887,10 +985,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildWeatherCompact('BC'),
-                            _buildWeatherCompact('VS'),
+                            Expanded(child: Center(child: _buildWeatherCompact('BC'))),
+                            const SizedBox(width: 16),
+                            Expanded(child: Center(child: _buildWeatherCompact('VS'))),
                           ],
                         ),
                       ),
@@ -944,7 +1043,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                               ),
                             ),
                             const SizedBox(height: 12),
-
                             // Ime
                             Text(
                               fullName,
@@ -1066,18 +1164,21 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
                       ),
 
-                      // 🏆💀 Leaderboard Widget - Wall of Fame / Wall of Shame
-                      // Samo za učenike i radnike (ne za dnevne)
-                      if (_putnikData['tip'] == 'ucenik' || _putnikData['tip'] == 'radnik')
-                        LeaderboardWidget(
-                          tipPutnika: _putnikData['tip'] as String? ?? 'radnik',
+                      // 🏆💀 FAME | SHAME - samo za učenike
+                      if (tip == 'ucenik')
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 🏆 FAME - levo
+                              Expanded(child: _buildMiniLeaderboard(isShame: false)),
+                              const SizedBox(width: 16),
+                              // 💀 SHAME - desno
+                              Expanded(child: _buildMiniLeaderboard(isShame: true)),
+                            ],
+                          ),
                         ),
-
-                      // ─────────── Divider ───────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
-                      ),
 
                       // ─────────── Divider ───────────
                       Padding(
@@ -1117,6 +1218,50 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         _buildOdsustvoButton(),
                         const SizedBox(height: 16),
                       ],
+
+                      // 💰 TRENUTNO ZADUŽENJE
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: _ukupnoZaduzenje > 0
+                                ? [Colors.red.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.05)]
+                                : [Colors.green.withValues(alpha: 0.2), Colors.green.withValues(alpha: 0.05)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _ukupnoZaduzenje > 0
+                                ? Colors.red.withValues(alpha: 0.3)
+                                : Colors.green.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'TRENUTNO STANJE',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontSize: 11,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
+                              style: TextStyle(
+                                color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
                       // 📊 Detaljne statistike - dugme za dijalog
                       _buildDetaljneStatistikeDugme(),

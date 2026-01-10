@@ -75,13 +75,33 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     final prefs = await SharedPreferences.getInstance();
     final savedData = prefs.getString('biometric_vozac_${widget.vozacIme}');
 
-    if (savedData == null) return;
+    if (savedData == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Nema sačuvanih kredencijala. Prijavi se prvo ručno.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
 
     final authenticated = await BiometricService.authenticate(
       reason: 'Potvrdi identitet za prijavu kao ${widget.vozacIme}',
     );
 
-    if (!authenticated) return;
+    if (!authenticated) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Biometrijska autentifikacija nije uspela'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
     // Dekoduj sačuvane podatke
     final data = jsonDecode(savedData);

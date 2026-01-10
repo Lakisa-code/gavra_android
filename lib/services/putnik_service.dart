@@ -559,13 +559,15 @@ class PutnikService {
             'Idite na: Meni ? Mesecni putnici da kreirate novog putnika.');
       }
 
-      // ?? A�URIRAJ polasci_po_danu za putnika sa novim polaskom
+      // ?? AŽURIRAJ polasci_po_danu za putnika sa novim polaskom
       final registrovaniPutnik = existingPutnici.first;
       final putnikId = registrovaniPutnik['id'] as String;
 
       Map<String, dynamic> polasciPoDanu = {};
-      if (registrovaniPutnik['polasci_po_danu'] != null) {
-        polasciPoDanu = Map<String, dynamic>.from(registrovaniPutnik['polasci_po_danu'] as Map);
+      final rawPolasciPoDanu = registrovaniPutnik['polasci_po_danu'];
+      // 🛡️ FIX: Proveri da li je Map, ne List (može biti [] ako je greškom postavljeno)
+      if (rawPolasciPoDanu != null && rawPolasciPoDanu is Map) {
+        polasciPoDanu = Map<String, dynamic>.from(rawPolasciPoDanu);
       }
 
       final danKratica = putnik.dan.toLowerCase();
