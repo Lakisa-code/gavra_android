@@ -579,6 +579,68 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                         ),
                       ),
                       const SizedBox(height: 24),
+                      // 🍎 APPLE REVIEW dugme - direktan ulaz bez šifre
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: GestureDetector(
+                          onTap: () async {
+                            await _stopAudio();
+                            await AuthManager.setCurrentDriver('Bojan');
+                            if (!mounted) return;
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (context) => const HomeScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.grey.shade800,
+                                  Colors.grey.shade900,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.4),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '🍎',
+                                  style: TextStyle(fontSize: 28),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'APPLE REVIEW',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       // 🚗 "Vozači" dugme
                       FadeTransition(
                         opacity: _fadeAnimation,
