@@ -72,21 +72,28 @@ class PutnikService {
 
     // Koristi centralizovani RealtimeManager
     _globalSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+      // 🐛 DEBUG: Log realtime event
+      print('🔴 REALTIME EVENT PRIMLJEN: ${payload.eventType} - ${payload.newRecord['putnik_ime'] ?? 'unknown'}');
+      print(
+          '🔴 REALTIME PAYLOAD: oldRecord keys=${payload.oldRecord.keys.toList()}, newRecord keys=${payload.newRecord.keys.toList()}');
       // 🔧 FIX: UVEK radi full refresh jer partial update ne može pravilno rekonstruisati
       // polasci_po_danu JSON koji sadrži vremePokupljenja, otkazanZaPolazak itd.
       // Partial update je previše kompleksan i error-prone za ovaj use case.
       _refreshAllStreams();
     });
     _isSubscribed = true;
+    print('🔴 DEBUG: Realtime subscription AKTIVIRAN za registrovani_putnici');
   }
 
   /// Osvežava SVE aktivne streamove (full refresh)
   void _refreshAllStreams() {
+    print('🔴 DEBUG: _refreshAllStreams() POZVANO - broj streamova: ${_streamParams.length}');
     for (final entry in _streamParams.entries) {
       final key = entry.key;
       final params = entry.value;
       final controller = _streams[key];
       if (controller != null && !controller.isClosed) {
+        print('🔴 DEBUG: Refreshing stream key=$key');
         _doFetchForStream(key, params.isoDate, params.grad, params.vreme, controller);
       }
     }

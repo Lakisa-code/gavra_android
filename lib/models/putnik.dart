@@ -117,18 +117,22 @@ class Putnik {
       }
     }
 
+    // ✅ FIX: Čitaj pokupljenje iz polasci_po_danu JSON-a (ne iz status kolone)
+    final vremePokupljenja = RegistrovaniHelpers.getVremePokupljenjaForDayAndPlace(map, danKratica, place);
+    final jePokupljenDanas = vremePokupljenja != null;
+
     return Putnik(
       id: map['id'], // ✅ UUID iz registrovani_putnici
       ime: map['putnik_ime'] as String? ?? '',
       polazak: RegistrovaniHelpers.normalizeTime(polazakRaw?.toString()) ?? '6:00',
-      pokupljen: map['status'] == null || (map['status'] != 'bolovanje' && map['status'] != 'godisnji'),
+      pokupljen: jePokupljenDanas, // ✅ FIX: Koristi stvarno pokupljenje iz JSON-a
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
       mesecnaKarta: tipPutnika != 'dnevni', // 🆕 FIX: false za dnevni tip
       dan: map['radni_dani'] as String? ?? 'Pon',
       status: status, // ✅ Koristi provereni status
       statusVreme: map['updated_at'] as String?,
       // ✅ NOVO: Čitaj vremePokupljenja iz polasci_po_danu (samo DANAS)
-      vremePokupljenja: RegistrovaniHelpers.getVremePokupljenjaForDayAndPlace(map, danKratica, place),
+      vremePokupljenja: vremePokupljenja,
       // ✅ NOVO: Čitaj vremePlacanja iz polasci_po_danu (samo DANAS)
       vremePlacanja: RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, danKratica, place),
       placeno: RegistrovaniHelpers.priceIsPaid(map),
