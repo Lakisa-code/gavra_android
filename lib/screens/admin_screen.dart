@@ -162,10 +162,10 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  // 💰 Kusur iz daily_checkins tabele (jedinstveni izvor podataka)
+  // 💰 Kusur iz daily_reports tabele (jedinstveni izvor podataka)
   Future<double> _getKusurForVozac(String vozacIme) async {
     try {
-      // ✅ UJEDNAČENO: Čita iz daily_checkins umesto vozaci tabele
+      // ✅ UJEDNAČENO: Čita iz daily_reports
       final kusur = await DailyCheckInService.getTodayAmount(vozacIme);
       return kusur ?? 0.0;
     } catch (e) {

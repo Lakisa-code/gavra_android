@@ -16,7 +16,7 @@ class RealtimeConfig {
     'registrovani_putnici',
     'vozac_lokacije',
     'kapacitet_polazaka',
-    'daily_checkins',
+    'daily_reports',
     'voznje_log',
   ];
 }

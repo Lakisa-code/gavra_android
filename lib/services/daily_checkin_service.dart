@@ -45,19 +45,22 @@ class DailyCheckInService {
   ) async {
     try {
       final supabase = Supabase.instance.client;
+      debugPrint('🔍 [Kusur] Fetching kusur for vozac=$vozac, datum=$today');
       final data = await supabase
-          .from('daily_checkins')
+          .from('daily_reports')
           .select('sitan_novac')
           .eq('vozac', vozac)
           .eq('datum', today)
           .maybeSingle();
 
+      debugPrint('🔍 [Kusur] Query result: $data');
       if (!controller.isClosed) {
         final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
+        debugPrint('🔍 [Kusur] Adding amount to stream: $amount');
         controller.add(amount);
       }
-    } catch (_) {
-      // Fetch error - silent
+    } catch (e) {
+      debugPrint('❌ [Kusur] Fetch error: $e');
     }
   }
 
@@ -66,7 +69,7 @@ class DailyCheckInService {
     if (_isSubscribed && _globalSubscription != null) return;
 
     // Koristi centralizovani RealtimeManager - JEDAN channel za sve vozače!
-    _globalSubscription = RealtimeManager.instance.subscribe('daily_checkins').listen((payload) {
+    _globalSubscription = RealtimeManager.instance.subscribe('daily_reports').listen((payload) {
       // Osvježi sve aktivne vozače
       for (final entry in _kusurControllers.entries) {
         final vozac = entry.key;
@@ -88,7 +91,7 @@ class DailyCheckInService {
     // Ako nema više aktivnih controllera, zatvori globalni subscription
     if (_kusurControllers.isEmpty && _globalSubscription != null) {
       _globalSubscription?.cancel();
-      RealtimeManager.instance.unsubscribe('daily_checkins');
+      RealtimeManager.instance.unsubscribe('daily_reports');
       _globalSubscription = null;
       _isSubscribed = false;
     }
@@ -103,7 +106,7 @@ class DailyCheckInService {
 
     // Zatvori globalni subscription
     _globalSubscription?.cancel();
-    RealtimeManager.instance.unsubscribe('daily_checkins');
+    RealtimeManager.instance.unsubscribe('daily_reports');
     _globalSubscription = null;
     _isSubscribed = false;
   }
@@ -128,7 +131,7 @@ class DailyCheckInService {
 
     try {
       final response = await Supabase.instance.client
-          .from('daily_checkins')
+          .from('daily_reports')
           .select('sitan_novac')
           .eq('vozac', vozac)
           .eq('datum', todayStr)
@@ -153,17 +156,16 @@ class DailyCheckInService {
     return false;
   }
 
-  /// Sačuvaj daily check-in (sitan novac i pazari)
+  /// Sačuvaj daily check-in (sitan novac)
   static Future<void> saveCheckIn(
     String vozac,
-    double sitanNovac, {
-    double dnevniPazari = 0.0,
-  }) async {
+    double sitanNovac,
+  ) async {
     final today = DateTime.now();
 
     // 🌐 DIREKTNO U BAZU - upsert će ažurirati ako već postoji za danas
     try {
-      await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 8));
+      await _saveToSupabase(vozac, sitanNovac, today).timeout(const Duration(seconds: 8));
 
       // Ažuriraj stream za UI
       if (!_sitanNovacController.isClosed) {
@@ -179,7 +181,7 @@ class DailyCheckInService {
     try {
       final today = DateTime.now().toIso8601String().split('T')[0];
       final data = await Supabase.instance.client
-          .from('daily_checkins')
+          .from('daily_reports')
           .select('sitan_novac')
           .eq('vozac', vozac)
           .eq('datum', today)
@@ -190,55 +192,21 @@ class DailyCheckInService {
     }
   }
 
-  /// Dohvati kompletne podatke za danas - DIREKTNO IZ BAZE
-  static Future<Map<String, dynamic>> getTodayCheckIn(String vozac) async {
-    try {
-      final today = DateTime.now().toIso8601String().split('T')[0];
-      final data = await Supabase.instance.client
-          .from('daily_checkins')
-          .select()
-          .eq('vozac', vozac)
-          .eq('datum', today)
-          .maybeSingle();
-
-      if (data != null) {
-        return {
-          'sitan_novac': (data['sitan_novac'] as num?)?.toDouble() ?? 0.0,
-          'dnevni_pazari': (data['dnevni_pazari'] as num?)?.toDouble() ?? 0.0,
-          'has_checked_in': true,
-          'timestamp': data['checkin_vreme'] != null ? DateTime.parse(data['checkin_vreme']) : null,
-        };
-      }
-    } catch (e) {
-      // Greška - vrati prazno
-    }
-
-    return {
-      'sitan_novac': 0.0,
-      'dnevni_pazari': 0.0,
-      'has_checked_in': false,
-      'timestamp': null,
-    };
-  }
-
-  /// Sačuvaj u Supabase tabelu daily_checkins
+  /// Sačuvaj u Supabase tabelu daily_reports
   static Future<Map<String, dynamic>?> _saveToSupabase(
     String vozac,
     double sitanNovac,
-    DateTime datum, {
-    double dnevniPazari = 0.0,
-  }) async {
+    DateTime datum,
+  ) async {
     final supabase = Supabase.instance.client;
     try {
       final response = await supabase
-          .from('daily_checkins')
+          .from('daily_reports')
           .upsert(
             {
               'vozac': vozac,
               'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
               'sitan_novac': sitanNovac,
-              'dnevni_pazari': dnevniPazari,
-              'ukupno': sitanNovac + dnevniPazari,
               'checkin_vreme': DateTime.now().toIso8601String(),
             },
             onConflict: 'vozac,datum', // 🎯 Ključno za upsert!
@@ -248,42 +216,8 @@ class DailyCheckInService {
 
       if (response is Map<String, dynamic>) return response;
       return null;
-    } on PostgrestException catch (e) {
-      if (e.code == 'PGRST106' || e.message.contains('does not exist') || e.code == '404') {
-        await _createDailyCheckinsTable();
-        final response = await supabase
-            .from('daily_checkins')
-            .upsert(
-              {
-                'vozac': vozac,
-                'datum': datum.toIso8601String().split('T')[0],
-                'sitan_novac': sitanNovac,
-                'dnevni_pazari': dnevniPazari,
-                'ukupno': sitanNovac + dnevniPazari,
-                'checkin_vreme': DateTime.now().toIso8601String(),
-              },
-              onConflict: 'vozac,datum', // 🎯 Ključno za upsert!
-            )
-            .select()
-            .maybeSingle();
-
-        if (response is Map<String, dynamic>) return response;
-        return null;
-      } else {
-        rethrow;
-      }
     } catch (e) {
       rethrow;
-    }
-  }
-
-  /// Kreiraj tabelu daily_checkins ako ne postoji
-  static Future<void> _createDailyCheckinsTable() async {
-    try {
-      final supabase = Supabase.instance.client;
-      await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
-    } catch (e) {
-      // 🔇 Ignore
     }
   }
 
@@ -467,8 +401,6 @@ class DailyCheckInService {
         'datum': datum.toIso8601String().split('T')[0],
         'ukupan_pazar': popisPodaci['ukupanPazar'] ?? 0.0,
         'sitan_novac': popisPodaci['sitanNovac'] ?? 0.0,
-        'dnevni_pazari': popisPodaci['ukupanPazar'] ?? 0.0, // Isti kao ukupan_pazar
-        'ukupno': (popisPodaci['sitanNovac'] ?? 0.0) + (popisPodaci['ukupanPazar'] ?? 0.0),
         'checkin_vreme': DateTime.now().toIso8601String(),
         'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,
         'naplaceni_putnici': popisPodaci['naplaceniPutnici'] ?? 0,

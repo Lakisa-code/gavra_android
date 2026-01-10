@@ -1618,7 +1618,7 @@ class _DanasScreenState extends State<DanasScreen> {
     }
 
     _initializeCurrentDriver();
-    // Nakon inicijalizacije vozača, proveri whitelist i poveži realtime stream za daily_checkins
+    // Nakon inicijalizacije vozača, proveri whitelist i poveži realtime stream za daily_reports
     _initializeCurrentDriver().then((_) {
       if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
         if (mounted) {
@@ -1738,7 +1738,7 @@ class _DanasScreenState extends State<DanasScreen> {
     TimerManager.cancelTimer('danas_screen_reset_debounce');
     TimerManager.cancelTimer('danas_screen_reset_debounce_2');
 
-    // Otkaži pretplatu za daily_checkins ako postoji
+    // Otkaži pretplatu za daily_reports ako postoji
     try {
       _dailyCheckinSub?.cancel();
     } catch (e) {
