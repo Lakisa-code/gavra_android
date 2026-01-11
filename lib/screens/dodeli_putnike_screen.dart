@@ -11,6 +11,7 @@ import '../services/putnik_service.dart';
 import '../services/theme_manager.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
+import '../utils/putnik_count_helper.dart';
 import '../utils/schedule_utils.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
@@ -166,15 +167,18 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     });
   }
 
-  // 📊 Broj putnika za BottomNavBar (ne računa odsustvo/otkazane)
+  // 📊 Broj putnika za BottomNavBar - REFAKTORISANO: koristi PutnikCountHelper za konzistentnost
   int _getPutnikCount(String grad, String vreme) {
-    final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
-    return _allPutnici.where((p) {
-      final vremeMatch = GradAdresaValidator.normalizeTime(p.polazak) == normalizedVreme;
-      final gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad);
-      final isActive = !p.jeOdsustvo && !p.jeOtkazan;
-      return vremeMatch && gradMatch && isActive;
-    }).length;
+    final isoDate = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
+    final danAbbrev = app_date_utils.DateUtils.getDayAbbreviation(_selectedDay);
+
+    final countHelper = PutnikCountHelper.fromPutnici(
+      putnici: _allPutnici,
+      targetDateIso: isoDate,
+      targetDayAbbr: danAbbrev,
+    );
+
+    return countHelper.getCount(grad, vreme);
   }
 
   // Callback za BottomNavBar
