@@ -160,14 +160,11 @@ class RegistrovaniPutnikService {
   /// 🔍 Proveri da li već postoji putnik sa istim brojem telefona
   Future<RegistrovaniPutnik?> findByPhone(String telefon) async {
     if (telefon.isEmpty) return null;
-    
+
     final normalizedInput = _normalizePhone(telefon);
-    
+
     // Dohvati sve putnike i uporedi normalizovane brojeve
-    final allPutnici = await _supabase
-        .from('registrovani_putnici')
-        .select()
-        .eq('obrisan', false);
+    final allPutnici = await _supabase.from('registrovani_putnici').select().eq('obrisan', false);
 
     for (final p in allPutnici) {
       final storedPhone = p['broj_telefona'] as String? ?? '';
@@ -186,10 +183,8 @@ class RegistrovaniPutnikService {
     if (telefon != null && telefon.isNotEmpty) {
       final existing = await findByPhone(telefon);
       if (existing != null) {
-        throw Exception(
-          'Putnik sa ovim brojem telefona već postoji: ${existing.putnikIme}. '
-          'Možete ga pronaći u listi putnika.'
-        );
+        throw Exception('Putnik sa ovim brojem telefona već postoji: ${existing.putnikIme}. '
+            'Možete ga pronaći u listi putnika.');
       }
     }
 

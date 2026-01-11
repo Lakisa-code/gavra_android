@@ -365,6 +365,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
           .select()
           .eq('broj_telefona', telefon)
           .eq('pin', pin)
+          .eq('obrisan', false)
           .maybeSingle();
 
       if (response != null) {

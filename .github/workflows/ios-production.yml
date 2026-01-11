@@ -59,8 +59,8 @@ jobs:
       - name: Get latest build number
         id: build_info
         run: |
-          # Hardcoded to 15 - previous builds were 1-14
-          NEW_BUILD=15
+          # Hardcoded to 16 - previous builds were 1-15
+          NEW_BUILD=16
           echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
           echo "📱 New build number: $NEW_BUILD"
 
