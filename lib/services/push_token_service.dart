@@ -34,12 +34,14 @@ class PushTokenService {
   /// [provider] - 'fcm' za Firebase ili 'huawei' za HMS
   /// [userType] - 'vozac' ili 'putnik'
   /// [userId] - ime vozača ili putnika (opciono)
+  /// [vozacId] - UUID vozača iz vozaci tabele (samo za vozače)
   /// [putnikId] - ID putnika iz registrovani_putnici tabele (samo za putnike)
   static Future<bool> registerToken({
     required String token,
     required String provider,
     String userType = 'vozac',
     String? userId,
+    String? vozacId,
     String? putnikId,
   }) async {
     try {
@@ -56,6 +58,7 @@ class PushTokenService {
           provider: provider,
           userType: userType,
           userId: userId,
+          vozacId: vozacId,
           putnikId: putnikId,
         );
         return false;
@@ -67,6 +70,7 @@ class PushTokenService {
           'provider': provider,
           'user_type': userType,
           'user_id': userId,
+          'vozac_id': vozacId,
           'putnik_id': putnikId,
           'updated_at': DateTime.now().toIso8601String(),
         },
@@ -90,6 +94,7 @@ class PushTokenService {
         provider: provider,
         userType: userType,
         userId: userId,
+        vozacId: vozacId,
         putnikId: putnikId,
       );
 
@@ -104,6 +109,7 @@ class PushTokenService {
     required String provider,
     String userType = 'vozac',
     String? userId,
+    String? vozacId,
     String? putnikId,
   }) async {
     try {
@@ -113,6 +119,7 @@ class PushTokenService {
         'provider': provider,
         'user_type': userType,
         'user_id': userId,
+        'vozac_id': vozacId,
         'putnik_id': putnikId,
         'saved_at': DateTime.now().toIso8601String(),
       });
@@ -154,6 +161,7 @@ class PushTokenService {
         provider: provider,
         userType: data['user_type'] as String? ?? 'vozac',
         userId: data['user_id'] as String?,
+        vozacId: data['vozac_id'] as String?,
         putnikId: data['putnik_id'] as String?,
       );
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'firebase_service.dart';
@@ -13,6 +14,8 @@ class PutnikPushService {
   /// Koristi unificirani PushTokenService
   static Future<bool> registerPutnikToken(dynamic putnikId) async {
     try {
+      if (kDebugMode) debugPrint('📱 [PutnikPush] Registrujem token za putnika: $putnikId');
+
       String? token;
       String? provider;
 
@@ -20,15 +23,19 @@ class PutnikPushService {
       token = await FirebaseService.getFCMToken();
       if (token != null && token.isNotEmpty) {
         provider = 'fcm';
+        if (kDebugMode) debugPrint('✅ [PutnikPush] FCM token dobijen: ${token.substring(0, 20)}...');
       } else {
+        if (kDebugMode) debugPrint('⚠️ [PutnikPush] FCM token nije dostupan, pokušavam HMS...');
         // Fallback na HMS (Huawei uređaji)
         token = await HuaweiPushService().initialize();
         if (token != null && token.isNotEmpty) {
           provider = 'huawei';
+          if (kDebugMode) debugPrint('✅ [PutnikPush] HMS token dobijen: ${token.substring(0, 20)}...');
         }
       }
 
       if (token == null || provider == null) {
+        if (kDebugMode) debugPrint('❌ [PutnikPush] Nijedan push provider nije dostupan!');
         return false;
       }
 
@@ -37,16 +44,23 @@ class PutnikPushService {
           await _supabase.from('registrovani_putnici').select('putnik_ime').eq('id', putnikId).maybeSingle();
 
       final putnikIme = putnikData?['putnik_ime'] as String?;
+      if (kDebugMode) debugPrint('📝 [PutnikPush] Ime putnika: $putnikIme');
 
       // Koristi unificirani PushTokenService
-      return await PushTokenService.registerToken(
+      final success = await PushTokenService.registerToken(
         token: token,
         provider: provider,
         userType: 'putnik',
         userId: putnikIme,
         putnikId: putnikId?.toString(),
       );
+
+      if (kDebugMode) {
+        debugPrint('${success ? "✅" : "❌"} [PutnikPush] Registracija ${success ? "uspešna" : "neuspešna"}');
+      }
+      return success;
     } catch (e) {
+      if (kDebugMode) debugPrint('❌ [PutnikPush] Greška pri registraciji: $e');
       return false;
     }
   }

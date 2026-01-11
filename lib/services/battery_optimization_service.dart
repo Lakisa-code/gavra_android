@@ -235,11 +235,48 @@ class BatteryOptimizationService {
     await intent.launch();
   }
 
+  /// 🔋 Zatraži sistemski popup za isključenje battery optimization
+  /// Ovo prikazuje Android sistemski dijalog "Dozvoli/Odbij"
+  /// Radi na svim Android uređajima, ali Huawei/Xiaomi mogu ignorisati
+  static Future<bool> requestIgnoreBatteryOptimization() async {
+    if (!Platform.isAndroid) return false;
+
+    try {
+      const intent = AndroidIntent(
+        action: 'android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+        data: 'package:com.gavra013.gavra_android',
+      );
+      await intent.launch();
+      return true;
+    } catch (e) {
+      // Fallback ako sistemski popup ne radi
+      await _openDefaultBatterySettings();
+      return false;
+    }
+  }
+
   /// Show the battery optimization warning dialog
+  /// Prvo pokušava sistemski popup, ako korisnik odbije - prikazuje uputstva
   static Future<void> showWarningDialog(BuildContext context) async {
     final manufacturer = await getManufacturer() ?? 'your phone';
     final manufacturerName = manufacturer[0].toUpperCase() + manufacturer.substring(1);
 
+    // 🔋 Prvo pokušaj sistemski popup (jednostavnije za korisnika)
+    // Na Huawei/Xiaomi ovo možda neće biti dovoljno, ali vredi pokušati
+    final isHuaweiOrXiaomi = manufacturer.contains('huawei') ||
+        manufacturer.contains('honor') ||
+        manufacturer.contains('xiaomi') ||
+        manufacturer.contains('redmi') ||
+        manufacturer.contains('poco');
+
+    if (!isHuaweiOrXiaomi) {
+      // Za Samsung i ostale - sistemski popup je dovoljan
+      await requestIgnoreBatteryOptimization();
+      await markShown();
+      return;
+    }
+
+    // Za Huawei/Xiaomi - prikaži detaljnija uputstva jer sistemski popup nije dovoljan
     if (!context.mounted) return;
 
     await showDialog(
@@ -266,16 +303,36 @@ class BatteryOptimizationService {
               '$manufacturerName telefoni automatski blokiraju pozadinske notifikacije radi uštede baterije.',
               style: const TextStyle(fontSize: 14),
             ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.lightbulb_outline, color: Colors.orange, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Ovo omogućava da vam ekran zasvetli kad stigne poruka.',
+                      style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
             const Text(
-              'Da biste primali notifikacije kada je aplikacija zatvorena:',
+              'Kliknite "Dozvoli" i pratite korake:',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 8),
-            _buildStep('1', 'Kliknite "Otvori podešavanja"'),
-            _buildStep('2', 'Nađite Gavra 013'),
-            _buildStep('3', 'Isključite "Upravljaj automatski"'),
-            _buildStep('4', 'Uključite SVE opcije'),
+            _buildStep('1', 'Nađite Gavra 013 u listi'),
+            _buildStep('2', 'Isključite "Upravljaj automatski"'),
+            _buildStep('3', 'Uključite SVE opcije'),
           ],
         ),
         actions: [

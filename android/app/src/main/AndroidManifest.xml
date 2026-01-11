@@ -15,7 +15,11 @@
   <uses-permission android:name="android.permission.VIBRATE" />
   <!-- Required for Android 13+ runtime notification permission -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- 📱 Full Screen Intent - za prikaz notifikacije preko lock screen-a (kao Viber poziv) -->
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- 🔋 Battery optimization - za paljenje ekrana na notifikaciju (Huawei/Xiaomi) -->
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
   <!-- SMS dozvole NISU potrebne - koristimo url_launcher (sms: URI) koji otvara SMS app -->
 
   <!-- 📞 Phone/Call permissions -->
@@ -54,7 +58,9 @@
       android:hardwareAccelerated="true" 
       android:windowSoftInputMode="adjustResize" 
       android:resizeableActivity="true" 
-      android:supportsPictureInPicture="true">
+      android:supportsPictureInPicture="true"
+      android:showWhenLocked="true"
+      android:turnScreenOn="true">
       <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
@@ -89,6 +95,17 @@
       android:screenOrientation="unspecified"
       android:resizeableActivity="true"
       tools:replace="android:screenOrientation,android:resizeableActivity" />
+
+    <!-- 🔔 Notification Listener Service - sluša notifikacije i pali ekran -->
+    <!-- NAPOMENA: Korisnik mora odobriti pristup u Settings > Apps > Special Access -->
+    <service
+      android:name=".GavraNotificationListener"
+      android:exported="false"
+      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+      </intent-filter>
+    </service>
 
     <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

@@ -91,6 +91,8 @@ class RealtimeNotificationService {
   }
 
   /// 🎯 Pošalji notifikaciju svim vozačima (broadcast)
+  /// Push notifikacija se šalje preko Supabase Edge funkcije koja sama prikazuje notifikaciju
+  /// Lokalna notifikacija se prikazuje SAMO ako push ne uspe (fallback u sendPushNotification)
   static Future<void> sendNotificationToAllDrivers({
     required String title,
     required String body,
@@ -99,6 +101,7 @@ class RealtimeNotificationService {
   }) async {
     try {
       // Šalje broadcast notifikaciju svim vozačima iz push_tokens tabele
+      // sendPushNotification interno prikazuje lokalnu notifikaciju ako push ne uspe
       await sendPushNotification(
         title: title,
         body: body,
@@ -107,23 +110,22 @@ class RealtimeNotificationService {
         excludeSender: excludeSender,
       );
     } catch (e) {
-      // Ako broadcast ne uspe, prikaži lokalnu notifikaciju
+      // Ako broadcast ne uspe, prikaži lokalnu notifikaciju kao fallback
+      try {
+        final currentDriver = await AuthManager.getCurrentDriver();
+        final shouldShowLocal = excludeSender == null ||
+            currentDriver == null ||
+            currentDriver.toLowerCase() != excludeSender.toLowerCase();
+
+        if (shouldShowLocal) {
+          await LocalNotificationService.showRealtimeNotification(
+            title: title,
+            body: body,
+            payload: jsonEncode(data ?? {}),
+          );
+        }
+      } catch (_) {}
     }
-
-    // 🛡️ Lokalna notifikacija SAMO ako trenutni vozač NIJE pošiljalac
-    try {
-      final currentDriver = await AuthManager.getCurrentDriver();
-      final shouldShowLocal =
-          excludeSender == null || currentDriver == null || currentDriver.toLowerCase() != excludeSender.toLowerCase();
-
-      if (shouldShowLocal) {
-        await LocalNotificationService.showRealtimeNotification(
-          title: title,
-          body: body,
-          payload: jsonEncode(data ?? {}),
-        );
-      }
-    } catch (_) {}
   }
 
   static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
@@ -155,26 +157,17 @@ class RealtimeNotificationService {
       try {
         final data = message.data;
 
-        final type = (data['type'] ?? '').toString().toLowerCase();
-        final datumString = (data['datum'] ?? data['date'] ?? '') as String;
-        final danas = DateTime.now();
-        bool isToday = false;
-        if (datumString.isNotEmpty) {
-          try {
-            final datum = DateTime.parse(datumString);
-            isToday = datum.year == danas.year && datum.month == danas.month && datum.day == danas.day;
-          } catch (_) {
-            isToday = false;
-          }
-        }
+        // Izvuci title i body - prvo notification payload, pa data payload
+        final title = message.notification?.title ?? data['title'] as String? ?? 'Gavra Notification';
+        final body =
+            message.notification?.body ?? data['body'] as String? ?? data['message'] as String? ?? 'Nova poruka';
 
-        if ((type == 'dodat' || type == 'novi_putnik' || type == 'otkazan' || type == 'otkazan_putnik') && isToday) {
-          LocalNotificationService.showRealtimeNotification(
-            title: message.notification?.title ?? 'Gavra Notification',
-            body: message.notification?.body ?? 'Nova poruka',
-            payload: (data['type'] as String?) ?? 'firebase_foreground',
-          );
-        }
+        // Prikaži notifikaciju za SVE poruke (bez filtriranja po tipu/datumu)
+        LocalNotificationService.showRealtimeNotification(
+          title: title,
+          body: body,
+          payload: data.isNotEmpty ? data.toString() : 'firebase_foreground',
+        );
       } catch (_) {}
     });
 

@@ -2,19 +2,40 @@ package com.gavra013.gavra_android
 
 import android.content.Context
 import android.os.Build
+import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
     private val VIBRATION_CHANNEL = "com.gavra013.gavra_android/vibration"
+    private val WAKELOCK_CHANNEL = "com.gavra013.gavra_android/wakelock"
     private val TAG = "GavraMainActivity"
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        
+        // WakeLock Channel - za paljenje ekrana na notifikaciju
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WAKELOCK_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "wakeScreen" -> {
+                    val duration = call.argument<Int>("duration") ?: 5000
+                    val success = wakeScreen(duration.toLong())
+                    android.util.Log.d(TAG, "wakeScreen($duration) called, success=$success")
+                    result.success(success)
+                }
+                "releaseWakeLock" -> {
+                    releaseWakeLock()
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
         
         // Vibration Channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, VIBRATION_CHANNEL).setMethodCallHandler { call, result ->
@@ -103,5 +124,71 @@ class MainActivity : FlutterFragmentActivity() {
             @Suppress("DEPRECATION")
             getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
+    }
+
+    /**
+     * Pali ekran kada stigne notifikacija
+     * Koristi WakeLock za buđenje uređaja iz sleep mode-a
+     */
+    private fun wakeScreen(duration: Long): Boolean {
+        return try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            
+            // Oslobodi prethodni WakeLock ako postoji
+            releaseWakeLock()
+            
+            // Kreiraj novi WakeLock sa ACQUIRE_CAUSES_WAKEUP flag-om
+            @Suppress("DEPRECATION")
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.SCREEN_BRIGHT_WAKE_LOCK or 
+                PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                PowerManager.ON_AFTER_RELEASE,
+                "Gavra013:NotificationWakeLock"
+            )
+            
+            // Acquire sa timeout-om
+            wakeLock?.acquire(duration)
+            
+            // Takođe postavi window flags za prikaz preko lock screen-a
+            runOnUiThread {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                    setShowWhenLocked(true)
+                    setTurnScreenOn(true)
+                } else {
+                    @Suppress("DEPRECATION")
+                    window.addFlags(
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                    )
+                }
+            }
+            
+            android.util.Log.d(TAG, "WakeLock acquired for ${duration}ms")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "wakeScreen error: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Oslobađa WakeLock
+     */
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                android.util.Log.d(TAG, "WakeLock released")
+            }
+            wakeLock = null
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "releaseWakeLock error: ${e.message}")
+        }
+    }
+
+    override fun onDestroy() {
+        releaseWakeLock()
+        super.onDestroy()
     }
 }

@@ -6,6 +6,7 @@ import '../config/route_config.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/cena_obracun_service.dart';
 import '../services/leaderboard_service.dart'; // 🏆💀 Leaderboard servis
+import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/slobodna_mesta_service.dart'; // 🎫 Promena vremena
 import '../services/theme_manager.dart';
@@ -61,7 +62,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     _putnikData = Map<String, dynamic>.from(widget.putnikData);
     _refreshPutnikData(); // 🔄 Učitaj sveže podatke iz baze
     _loadStatistike();
+    _registerPushToken(); // 📱 Registruj push token (retry ako nije uspelo pri login-u)
     WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
+  }
+
+  /// 📱 Registruje push token za notifikacije (retry mehanizam)
+  Future<void> _registerPushToken() async {
+    final putnikId = _putnikData['id'];
+    if (putnikId != null) {
+      await PutnikPushService.registerPutnikToken(putnikId);
+    }
   }
 
   /// 🔄 Osvežava podatke putnika iz baze

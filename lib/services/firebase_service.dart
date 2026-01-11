@@ -132,8 +132,12 @@ class FirebaseService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       // Show a local notification when app is foreground
       try {
-        final title = message.notification?.title ?? 'Gavra Notification';
-        final body = message.notification?.body ?? message.data['message'] ?? 'Nova notifikacija';
+        // Prvo pokušaj notification payload, pa data payload
+        final title = message.notification?.title ?? message.data['title'] as String? ?? 'Gavra Notification';
+        final body = message.notification?.body ??
+            message.data['body'] as String? ??
+            message.data['message'] as String? ??
+            'Nova notifikacija';
         LocalNotificationService.showRealtimeNotification(
             title: title, body: body, payload: message.data.isNotEmpty ? message.data.toString() : null);
       } catch (_) {}

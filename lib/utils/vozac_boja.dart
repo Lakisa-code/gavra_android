@@ -117,6 +117,12 @@ class VozacBoja {
     return ime != null && boje.containsKey(ime);
   }
 
+  /// Vraća Vozac objekat za dato ime (sa ID-om)
+  static Vozac? getVozac(String? ime) {
+    if (ime == null || _vozaciCache == null) return null;
+    return _vozaciCache![ime];
+  }
+
   /// Lista svih validnih vozača
   static List<String> get validDrivers => boje.keys.toList();
 

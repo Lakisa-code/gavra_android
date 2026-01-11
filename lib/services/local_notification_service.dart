@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -7,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../screens/danas_screen.dart';
+import 'wake_lock_service.dart';
 
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -41,11 +43,40 @@ class LocalNotificationService {
       description: 'Kanal za realtime heads-up notifikacije sa zvukom',
       importance: Importance.max,
       enableLights: true,
+      enableVibration: true,
+      playSound: true,
     );
 
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+    final androidPlugin =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.createNotificationChannel(channel);
+
+    // 🔓 Zatraži full screen intent permission za paljenje ekrana na lock screen
+    // Ovo je KLJUČNO za Huawei i Android 11+ uređaje
+    await requestFullScreenIntentPermission();
+  }
+
+  /// 🔓 Traži dozvolu za full screen intent (za paljenje ekrana na lock screen)
+  /// Na nekim uređajima (Huawei, Xiaomi, Android 11+) ovo mora biti eksplicitno odobreno
+  static Future<void> requestFullScreenIntentPermission() async {
+    try {
+      final androidPlugin = flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidPlugin != null) {
+        // Proveri da li imamo dozvolu
+        final hasPermission = await androidPlugin.canScheduleExactNotifications() ?? true;
+
+        if (!hasPermission) {
+          // Zatraži dozvolu za full screen intent
+          await androidPlugin.requestFullScreenIntentPermission();
+        }
+      }
+    } catch (e) {
+      // Nije kritično ako ne uspe - notifikacije će i dalje raditi
+      debugPrint('Full screen intent permission request failed: $e');
+    }
   }
 
   static Future<void> showRealtimeNotification({
@@ -80,6 +111,13 @@ class LocalNotificationService {
       _recentNotificationIds[dedupeKey] = now;
       _recentNotificationIds.removeWhere((k, v) => now.difference(v) > _dedupeDuration);
 
+      // 📱 Pali ekran kada stigne notifikacija (za lock screen)
+      try {
+        await WakeLockService.wakeScreen(durationMs: 5000);
+      } catch (_) {
+        // WakeLock nije dostupan - nije kritično
+      }
+
       await flutterLocalNotificationsPlugin.show(
         DateTime.now().millisecondsSinceEpoch.remainder(100000),
         title,
@@ -93,6 +131,9 @@ class LocalNotificationService {
             priority: Priority.high,
             playSound: true,
             enableLights: true,
+            enableVibration: true,
+            // 📳 Vibration pattern kao Viber - pali ekran na Huawei
+            vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
             when: DateTime.now().millisecondsSinceEpoch,
             fullScreenIntent: true,
             category: AndroidNotificationCategory.call,
@@ -153,18 +194,27 @@ class LocalNotificationService {
 
       await plugin.initialize(initializationSettings);
 
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      final androidDetails = AndroidNotificationDetails(
         'gavra_realtime_channel',
         'Gavra Realtime Notifikacije',
         channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
         importance: Importance.max,
         priority: Priority.high,
-        playSound: false,
+        playSound: true,
+        enableVibration: true,
+        // 📳 Vibration pattern kao Viber - pali ekran na Huawei
+        vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.call,
+        visibility: NotificationVisibility.public,
       );
 
-      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      final platformChannelSpecifics = NotificationDetails(
         android: androidDetails,
       );
+
+      // Wake screen for lock screen notifications
+      await WakeLockService.wakeScreen(durationMs: 10000);
 
       await plugin.show(
         DateTime.now().millisecondsSinceEpoch.remainder(100000),

@@ -8,6 +8,8 @@ import '../globals.dart';
 import '../screens/welcome_screen.dart';
 import '../utils/vozac_boja.dart';
 import 'firebase_service.dart';
+import 'huawei_push_service.dart';
+import 'push_token_service.dart';
 
 /// 🔐 CENTRALIZOVANI AUTH MANAGER
 /// Upravlja lokalnim auth operacijama kroz SharedPreferences
@@ -29,7 +31,58 @@ class AuthManager {
     }
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
-    // Push service removed - using only realtime notifications
+
+    // 📱 Ažuriraj push token sa user_id (ako token već postoji bez vlasnika)
+    await _updatePushTokenWithUserId(driverName);
+  }
+
+  /// 📱 Ažurira push token sa user_id i vozac_id vozača
+  /// Podržava i FCM (Google) i HMS (Huawei) tokene
+  static Future<void> _updatePushTokenWithUserId(String driverName) async {
+    try {
+      debugPrint('🔄 [AuthManager] Ažuriram token za vozača: $driverName');
+
+      // Dohvati vozac_id iz VozacBoja cache-a
+      final vozac = VozacBoja.getVozac(driverName);
+      final vozacId = vozac?.id;
+      debugPrint('🔄 [AuthManager] vozac_id: $vozacId');
+
+      // 1. Pokušaj FCM token (Google/Samsung uređaji)
+      final fcmToken = await FirebaseService.getFCMToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        debugPrint('🔄 [AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
+        final success = await PushTokenService.registerToken(
+          token: fcmToken,
+          provider: 'fcm',
+          userType: 'vozac',
+          userId: driverName,
+          vozacId: vozacId,
+        );
+        debugPrint('🔄 [AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
+      }
+
+      // 2. Pokušaj HMS token (Huawei uređaji)
+      // HMS token se dobija kroz initialize() ili stream, pa ažuriramo postojeći
+      try {
+        final hmsToken = await HuaweiPushService().initialize();
+        if (hmsToken != null && hmsToken.isNotEmpty) {
+          debugPrint('🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 30)}...');
+          final success = await PushTokenService.registerToken(
+            token: hmsToken,
+            provider: 'huawei',
+            userType: 'vozac',
+            userId: driverName,
+            vozacId: vozacId,
+          );
+          debugPrint('🔄 [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
+        }
+      } catch (e) {
+        // HMS nije dostupan na ovom uređaju - OK
+        debugPrint('🔄 [AuthManager] HMS nije dostupan: $e');
+      }
+    } catch (e) {
+      debugPrint('❌ [AuthManager] Greška pri ažuriranju tokena: $e');
+    }
   }
 
   /// Dobij trenutnog vozača
