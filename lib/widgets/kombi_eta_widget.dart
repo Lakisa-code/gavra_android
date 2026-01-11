@@ -45,10 +45,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     try {
       final supabase = Supabase.instance.client;
       // Učitaj SAMO aktivne vozače (koji su pritisnuli dugme "Ruta")
-      final data = await supabase
-          .from('vozac_lokacije')
-          .select()
-          .eq('aktivan', true);
+      final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true);
 
       if (!mounted) return;
 
