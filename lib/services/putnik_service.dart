@@ -889,10 +889,16 @@ class PutnikService {
           place = 'vs';
         }
 
-        // 🆕 Odredi dan kratica
-        final weekday = DateTime.now().weekday;
+        // 🆕 FIX: Koristi selectedDan umesto DateTime.now() - omogućava otkazivanje za bilo koji dan
         const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-        final danKratica = daniKratice[weekday - 1];
+        String danKratica;
+        if (selectedDan != null && selectedDan.isNotEmpty) {
+          // Normalizuj selectedDan (može biti "Pon", "pon", "Ponedeljak" itd.)
+          final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
+          danKratica = daniKratice.contains(normalizedDan) ? normalizedDan : daniKratice[DateTime.now().weekday - 1];
+        } else {
+          danKratica = daniKratice[DateTime.now().weekday - 1];
+        }
 
         // 🆕 Učitaj postojeći polasci_po_danu JSON
         Map<String, dynamic> polasci = {};
