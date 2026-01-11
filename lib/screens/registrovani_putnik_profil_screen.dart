@@ -1529,9 +1529,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (tipPutnika == 'ucenik') {
         // 0. 🔒 Proveri da li ima PENDING zahtev za VS (čeka algoritam)
         if (tipGrad == 'vs' && putnikId != null) {
+          // Konvertuj dan (pon/uto/sre...) u datum
+          final danIndex = daniLista.indexOf(dan.toLowerCase());
+          final danasIndex = sada.weekday - 1;
+          final razlika = danIndex - danasIndex;
+          final targetDatum = razlika >= 0
+              ? sada.add(Duration(days: razlika))
+              : sada.add(Duration(days: 7 + razlika)); // Sledeća nedelja
+
           final lockCheck = await SeatRequestService.isLockedForChanges(
             putnikId: putnikId,
-            dan: dan,
+            datum: targetDatum,
           );
           if (lockCheck.locked) {
             if (mounted) {

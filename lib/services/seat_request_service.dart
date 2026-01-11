@@ -1063,18 +1063,18 @@ class SeatRequestService {
     }
   }
 
-  /// 🔒 Proveri da li putnik ima PENDING zahtev za određeni dan
+  /// 🔒 Proveri da li putnik ima PENDING zahtev za određeni datum
   /// Vraća zahtev ako postoji, null ako ne
   static Future<SeatRequest?> getPendingRequestForDay({
     required String putnikId,
-    required String dan,
+    required DateTime datum,
   }) async {
     try {
       final response = await _supabase
           .from('seat_requests')
           .select()
           .eq('putnik_id', putnikId)
-          .eq('dan', dan.toLowerCase())
+          .eq('datum', datum.toIso8601String().split('T')[0])
           .eq('status', 'pending')
           .maybeSingle();
 
@@ -1089,15 +1089,15 @@ class SeatRequestService {
   /// 🔒 Proveri da li putnik ima NEEDSCHOICE zahtev (čeka da izabere alternativu)
   static Future<SeatRequest?> getNeedsChoiceRequestForDay({
     required String putnikId,
-    required String dan,
+    required DateTime datum,
   }) async {
     try {
       final response = await _supabase
           .from('seat_requests')
           .select()
           .eq('putnik_id', putnikId)
-          .eq('dan', dan.toLowerCase())
-          .eq('status', 'needsChoice')
+          .eq('datum', datum.toIso8601String().split('T')[0])
+          .eq('status', 'needs_choice')
           .maybeSingle();
 
       if (response == null) return null;
@@ -1112,10 +1112,10 @@ class SeatRequestService {
   /// Ako ima, ne može da menja vreme dok se ne reši
   static Future<({bool locked, String? reason, SeatRequest? request})> isLockedForChanges({
     required String putnikId,
-    required String dan,
+    required DateTime datum,
   }) async {
     // Proveri pending
-    final pending = await getPendingRequestForDay(putnikId: putnikId, dan: dan);
+    final pending = await getPendingRequestForDay(putnikId: putnikId, datum: datum);
     if (pending != null) {
       return (
         locked: true,
@@ -1125,7 +1125,7 @@ class SeatRequestService {
     }
 
     // Proveri needsChoice
-    final needsChoice = await getNeedsChoiceRequestForDay(putnikId: putnikId, dan: dan);
+    final needsChoice = await getNeedsChoiceRequestForDay(putnikId: putnikId, datum: datum);
     if (needsChoice != null) {
       return (
         locked: true,

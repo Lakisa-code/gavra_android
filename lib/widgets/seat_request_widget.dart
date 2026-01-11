@@ -347,6 +347,55 @@ class _SeatRequestWidgetState extends State<SeatRequestWidget> {
           ),
           const SizedBox(height: 16),
 
+          // 🔔 Prikaz alternativa za needsChoice status
+          if (req.status == SeatRequestStatus.needsChoice && req.alternatives != null && req.alternatives!.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '⚠️ Termin popunjen! Izaberi alternativu:',
+                  style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                // Dugmići za alternative
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    for (final alt in req.alternatives!)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ElevatedButton(
+                            onPressed: () => _chooseAlternative(alt),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Text(alt, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Dugme za čekanje originalnog termina
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _chooseWaitlist(),
+                    icon: const Icon(Icons.hourglass_empty, color: Colors.orange),
+                    label:
+                        Text('Čekaj ${req.zeljenoVreme} (lista čekanja)', style: const TextStyle(color: Colors.orange)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.orange),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+
           // Dugme za otkazivanje
           if (req.status == SeatRequestStatus.pending || req.status == SeatRequestStatus.approved)
             SizedBox(
@@ -364,6 +413,98 @@ class _SeatRequestWidgetState extends State<SeatRequestWidget> {
         ],
       ),
     );
+  }
+
+  /// Putnik bira alternativni termin
+  Future<void> _chooseAlternative(String izabranoVreme) async {
+    if (_existingRequest == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final success = await SeatRequestService.chooseAlternative(
+        requestId: _existingRequest!.id!,
+        izabranoVreme: izabranoVreme,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Izabrano vreme: $izabranoVreme'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Putnik bira da čeka originalni termin (lista čekanja)
+  Future<void> _chooseWaitlist() async {
+    if (_existingRequest == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Lista čekanja?'),
+        content: Text(
+          'Ako izabereš listu čekanja, bićeš obavešten ako se oslobodi mesto za ${_existingRequest!.zeljenoVreme}.\n\n'
+          'Napomena: Nije garantovano da će se mesto osloboditi.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Otkaži'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Čekaj'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final success = await SeatRequestService.chooseAlternative(
+        requestId: _existingRequest!.id!,
+        izabranoVreme: null, // null = waitlist
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⏳ Dodat na listu čekanja'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        await _loadData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   /// Prikaz izbora vremena
