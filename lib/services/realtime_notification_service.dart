@@ -102,25 +102,25 @@ class RealtimeNotificationService {
     try {
       // Lista vozača - SAMO ONI dobijaju broadcast notifikacije
       const vozaci = ['Bojan', 'Svetlana', 'Bilevski', 'Bruda', 'Ivan'];
-      
+
       final supabase = Supabase.instance.client;
-      
+
       // Dohvati tokene SAMO za vozače
       var query = supabase.from('push_tokens').select('token, provider, user_id').inFilter('user_id', vozaci);
-      
+
       final response = await query;
-      
+
       if ((response as List).isEmpty) return;
-      
+
       // Filtriraj exclude_sender
       final filteredTokens = response.where((t) {
         if (excludeSender == null) return true;
         final userId = t['user_id'] as String?;
         return userId?.toLowerCase() != excludeSender.toLowerCase();
       }).toList();
-      
+
       if (filteredTokens.isEmpty) return;
-      
+
       // Formatiraj tokene za slanje
       final tokens = filteredTokens
           .map<Map<String, dynamic>>((t) => {
