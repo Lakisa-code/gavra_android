@@ -308,7 +308,17 @@ class PutnikService {
           final danKratica = daniKratice[weekday - 1];
 
           final putnici = Putnik.fromRegistrovaniPutniciMultipleForDay(registrovaniResponse, danKratica);
-          final matching = putnici.where((p) => p.grad == grad).toList();
+          // ✅ FIX: Case-insensitive matching i normalizacija grada (Vršac/Vrsac, Bela Crkva)
+          final normalizedGrad = grad.toLowerCase();
+          final matching = putnici.where((p) {
+            final pGrad = p.grad.toLowerCase();
+            // Proveri da li se gradovi podudaraju (uključi varijacije)
+            if (normalizedGrad.contains('vr') || normalizedGrad.contains('vs')) {
+              return pGrad.contains('vr') || pGrad.contains('vs');
+            }
+            // Default: Bela Crkva
+            return pGrad.contains('bela') || pGrad.contains('bc');
+          }).toList();
           if (matching.isNotEmpty) {
             return matching.first;
           }
@@ -937,12 +947,38 @@ class PutnikService {
         }).eq('id', id.toString());
 
         try {
+          // 📊 Izračunaj koliko sati pre polaska je otkazano
+          int? satiPrePolaska;
+          try {
+            final vremePolaskaStr = selectedVreme ?? respMap['vreme_polaska'] as String? ?? '';
+            if (vremePolaskaStr.isNotEmpty && vremePolaskaStr.contains(':')) {
+              final parts = vremePolaskaStr.split(':');
+              final sat = int.tryParse(parts[0]) ?? 0;
+              final minut = int.tryParse(parts[1]) ?? 0;
+
+              // Izračunaj datum polaska iz dana
+              final targetWeekday =
+                  {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7}[danKratica] ?? now.weekday;
+              var polazakDatum = DateTime(now.year, now.month, now.day, sat, minut);
+
+              // Ako je drugi dan u nedelji, pomeri datum
+              int daysToAdd = targetWeekday - now.weekday;
+              if (daysToAdd < 0) daysToAdd += 7;
+              polazakDatum = polazakDatum.add(Duration(days: daysToAdd));
+
+              final razlika = polazakDatum.difference(now);
+              satiPrePolaska = razlika.inHours;
+              if (satiPrePolaska < 0) satiPrePolaska = 0;
+            }
+          } catch (_) {}
+
           await supabase.from('voznje_log').insert({
             'putnik_id': id.toString(),
             'datum': danas,
             'tip': 'otkazivanje',
             'iznos': 0,
             'vozac_id': vozacUuid,
+            'sati_pre_polaska': satiPrePolaska,
           });
         } catch (logError) {
           // Log insert not critical
@@ -1024,6 +1060,7 @@ class PutnikService {
     String currentDriver, {
     String? selectedVreme,
     String? selectedGrad,
+    String? targetDan, // 🆕 Dan za koji se briše (ako nije prosleđen, koristi današnji)
   }) async {
     try {
       if (currentDriver.isEmpty) {
@@ -1059,32 +1096,50 @@ class PutnikService {
             place = 'vs';
           }
 
-          // 🆕 Odredi dan kratica
-          final weekday = DateTime.now().weekday;
-          const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-          final danKratica = daniKratice[weekday - 1];
+          // 🆕 Odredi dan kratica - koristi targetDan ako je prosleđen, inače današnji
+          String danKratica;
+          if (targetDan != null && targetDan.isNotEmpty) {
+            danKratica = targetDan.toLowerCase();
+          } else {
+            final weekday = DateTime.now().weekday;
+            const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+            danKratica = daniKratice[weekday - 1];
+          }
 
           // 🆕 Obriši SVE markere za današnji dan i taj grad
+          // ✅ FIX: Uvek kreiraj dayData čak i ako ne postoji
+          Map<String, dynamic> dayData = {};
           if (polasci.containsKey(danKratica)) {
             final dayDataRaw = polasci[danKratica];
             if (dayDataRaw != null && dayDataRaw is Map) {
-              final dayData = Map<String, dynamic>.from(dayDataRaw);
-              // Briši otkazivanje
-              dayData.remove('${place}_otkazano');
-              dayData.remove('${place}_otkazao_vozac');
-              // Briši pokupljenje
-              dayData.remove('${place}_pokupljeno');
-              dayData.remove('${place}_pokupljeno_vozac');
-              // Briši plaćanje (nije per-place)
-              dayData.remove('placeno');
-              dayData.remove('placeno_iznos');
-              dayData.remove('placeno_vozac');
-              polasci[danKratica] = dayData;
+              dayData = Map<String, dynamic>.from(dayDataRaw);
             }
           }
 
+          // Briši otkazivanje
+          dayData.remove('${place}_otkazano');
+          dayData.remove('${place}_otkazao_vozac');
+          // Briši pokupljenje
+          dayData.remove('${place}_pokupljeno');
+          dayData.remove('${place}_pokupljeno_vozac');
+          // Briši plaćanje - SA PREFIKSOM (putnik_service koristi ovaj format)
+          dayData.remove('${place}_placeno');
+          dayData.remove('${place}_placeno_vozac');
+          dayData.remove('${place}_placeno_iznos');
+          // Briši plaćanje - BEZ PREFIKSA (registrovani_putnik_service koristi ovaj format)
+          dayData.remove('placeno');
+          dayData.remove('placeno_iznos');
+          dayData.remove('placeno_vozac');
+          polasci[danKratica] = dayData;
+
           // ✅ Triple-tap resetuje karticu u belo stanje
           // Statistika u voznje_log OSTAJE NETAKNUTA
+          // 🆕 DEBUG: Log šta se šalje u bazu
+          // ignore: avoid_print
+          print('🔄 RESET CARD: $imePutnika, place=$place, dan=$danKratica');
+          // ignore: avoid_print
+          print('🔄 RESET polasci_po_danu: $polasci');
+
           await supabase.from('registrovani_putnici').update({
             'aktivan': true,
             'status': 'radi',
@@ -1096,9 +1151,13 @@ class PutnikService {
         }
       } catch (e) {
         // Putnik not found
+        // ignore: avoid_print
+        print('❌ RESET CARD error: $e');
       }
     } catch (e) {
       // Greška pri resetovanju kartice
+      // ignore: avoid_print
+      print('❌ RESET CARD outer error: $e');
       rethrow;
     }
   }

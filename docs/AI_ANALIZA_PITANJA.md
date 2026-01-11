@@ -77,32 +77,33 @@ CREATE TABLE seat_requests (
 
 ## 📋 TODO LISTA - IMPLEMENTACIJA
 
-### FAZA 1: Baza podataka
-- [ ] 1.1 Kreirati tabelu `seat_requests`
-- [ ] 1.2 Dodati RLS politike (Row Level Security)
-- [ ] 1.3 Kreirati indekse za brže pretrage
-- [ ] 1.4 Testirati CRUD operacije
+### FAZA 1: Baza podataka ✅ ZAVRŠENO
+- [x] 1.1 Kreirati tabelu `seat_requests` ✅
+- [x] 1.2 Dodati RLS politike (Row Level Security) ✅
+- [x] 1.3 Kreirati indekse za brže pretrage ✅
+- [x] 1.4 Omogućiti Realtime ✅
 
-### FAZA 2: Backend servis (Dart)
-- [ ] 2.1 Kreirati `seat_request_service.dart` - CRUD za zahteve
-- [ ] 2.2 Kreirati `seat_optimization_service.dart` - algoritam optimizacije
-- [ ] 2.3 Dodati metodu za proveru slobodnih mesta
-- [ ] 2.4 Dodati metodu za predlaganje alternativa
-- [ ] 2.5 Dodati metodu za optimizaciju rasporeda
-- [ ] 2.6 Integracija sa postojećim `kapacitet_service.dart`
+### FAZA 2: Backend servis (Dart) ✅ ZAVRŠENO
+- [x] 2.1 Kreirati `seat_request_service.dart` - CRUD za zahteve ✅
+- [x] 2.2 Kreirati `seat_optimization_service.dart` - algoritam optimizacije ✅
+- [x] 2.3 Dodati metodu za proveru slobodnih mesta ✅ (checkAvailability)
+- [x] 2.4 Dodati metodu za predlaganje alternativa ✅ (findAlternatives)
+- [x] 2.5 Dodati metodu za optimizaciju rasporeda ✅ (optimize, applyOptimization)
+- [x] 2.6 Integracija sa postojećim `kapacitet_service.dart` ✅
 
-### FAZA 3: UI - Putnik
-- [ ] 3.1 Screen za slanje zahteva (izbor vremena)
-- [ ] 3.2 Prikaz statusa zahteva (pending/approved/waitlist)
-- [ ] 3.3 Prihvatanje/odbijanje alternativnog vremena
+### FAZA 3: UI - Putnik ✅ ZAVRŠENO
+- [x] 3.1 Widget za slanje zahteva (izbor vremena) ✅ `seat_request_widget.dart`
+- [x] 3.2 Prikaz statusa zahteva (pending/approved/waitlist) ✅
+- [x] 3.3 Otkazivanje zahteva ✅
 - [ ] 3.4 Push notifikacija kad se oslobodi mesto
 
-### FAZA 4: UI - Admin
-- [ ] 4.1 Dashboard sa pregledm svih zahteva po terminu
-- [ ] 4.2 Vizualizacija popunjenosti (progress bar)
-- [ ] 4.3 Dugme "Optimizuj raspored"
-- [ ] 4.4 Pregled predloga optimizacije
-- [ ] 4.5 Odobrenje/korekcija rasporeda
+### FAZA 4: UI - Admin ✅ ZAVRŠENO
+- [x] 4.1 Dashboard sa pregledom svih zahteva po terminu ✅ `seat_management_screen.dart`
+- [x] 4.2 Vizualizacija popunjenosti (progress bar) ✅
+- [x] 4.3 Dugme "Optimizuj raspored" ✅
+- [x] 4.4 Pregled predloga optimizacije ✅ `seat_optimization_widget.dart`
+- [x] 4.5 Odobrenje/korekcija rasporeda ✅
+- [x] 4.6 Navigacija iz Admin menija ✅
 
 ### FAZA 5: Testiranje i fine-tuning
 - [ ] 5.1 Testiranje sa realnim podacima
@@ -130,7 +131,24 @@ CREATE TABLE seat_requests (
 - [x] Dogovor finalizovan - 11. januar 2026.
 - [x] Analiza baze završena
 - [x] Plan implementacije napravljen
-- [ ] **SLEDEĆI KORAK: Faza 1.1 - Kreirati tabelu `seat_requests`**
+- [x] **FAZA 1 ZAVRŠENA** - Tabela `seat_requests` kreirana ✅
+  - Tabela kreirana sa svim kolonama
+  - RLS politike dodate (SELECT, INSERT, UPDATE, DELETE)
+  - Indeksi kreirani (datum, grad_vreme, status, putnik)
+  - Realtime uključen
+  - Trigger za auto updated_at
+- [ ] **SLEDEĆI KORAK: Faza 2.1 - Kreirati `seat_request_service.dart`**
+
+---
+
+## 📅 LOG PROMENA
+
+| Datum | Vreme | Akcija | Status |
+|-------|-------|--------|--------|
+| 2026-01-11 | - | Dogovor finalizovan | ✅ |
+| 2026-01-11 | - | Kreirana tabela `seat_requests` | ✅ |
+| 2026-01-11 | - | Dodate RLS politike | ✅ |
+| 2026-01-11 | - | Kreiran indeksi + realtime | ✅ |
 
 ---
 

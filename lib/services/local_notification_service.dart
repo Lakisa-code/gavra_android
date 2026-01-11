@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../screens/danas_screen.dart';
+import 'seat_request_service.dart';
 import 'wake_lock_service.dart';
 
 class LocalNotificationService {
@@ -253,6 +254,25 @@ class LocalNotificationService {
         }
       }
 
+      // 🎯 Handle seat_choice notifikacije posebno - prikaži dialog za izbor
+      if (notificationType == 'seat_choice' && response.payload != null) {
+        try {
+          final payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
+          if (context.mounted) {
+            await _showSeatChoiceDialog(
+              context: context,
+              requestId: payloadData['requestId'] as String,
+              zeljenoVreme: payloadData['zeljenoVreme'] as String,
+              ranijaAlternativa: payloadData['ranijaAlternativa'] as String?,
+              kasnijaAlternativa: payloadData['kasnijaAlternativa'] as String?,
+            );
+          }
+          return; // Ne navigiraj dalje
+        } catch (e) {
+          print('❌ Greška pri prikazivanju izbora: $e');
+        }
+      }
+
       if (context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
@@ -409,5 +429,170 @@ class LocalNotificationService {
       default:
         return 'pon';
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🎯 SEAT CHOICE DIALOG - Putnik bira alternativu
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /// Prikaži dialog za izbor alternativnog termina
+  static Future<void> _showSeatChoiceDialog({
+    required BuildContext context,
+    required String requestId,
+    required String zeljenoVreme,
+    String? ranijaAlternativa,
+    String? kasnijaAlternativa,
+  }) async {
+    final result = await showDialog<String?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.access_time, color: Colors.orange.shade700, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Termin popunjen',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RichText(
+              text: TextSpan(
+                style: TextStyle(color: Colors.grey.shade800, fontSize: 15),
+                children: [
+                  const TextSpan(text: 'Termin '),
+                  TextSpan(
+                    text: zeljenoVreme,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const TextSpan(text: ' je popunjen.\nIzaberi opciju:'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Opcije
+            if (ranijaAlternativa != null)
+              _buildChoiceOption(
+                context: context,
+                icon: Icons.arrow_back,
+                color: Colors.blue,
+                title: 'Raniji termin',
+                subtitle: ranijaAlternativa,
+                onTap: () => Navigator.of(context).pop(ranijaAlternativa),
+              ),
+
+            if (kasnijaAlternativa != null) ...[
+              const SizedBox(height: 10),
+              _buildChoiceOption(
+                context: context,
+                icon: Icons.arrow_forward,
+                color: Colors.green,
+                title: 'Kasniji termin',
+                subtitle: kasnijaAlternativa,
+                onTap: () => Navigator.of(context).pop(kasnijaAlternativa),
+              ),
+            ],
+
+            const SizedBox(height: 10),
+            _buildChoiceOption(
+              context: context,
+              icon: Icons.hourglass_empty,
+              color: Colors.orange,
+              title: 'Čekaj $zeljenoVreme',
+              subtitle: 'Javićemo ti ako se oslobodi',
+              onTap: () => Navigator.of(context).pop(null), // null = waitlist
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // Procesira izbor
+    if (result != null || result == null) {
+      final success = await SeatRequestService.chooseAlternative(
+        requestId: requestId,
+        izabranoVreme: result, // null = čekaj originalni
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? (result != null ? '✅ Rezervisano za $result' : '⏳ Na listi čekanja za $zeljenoVreme')
+                  : '❌ Greška pri izboru',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Gradi opciju za izbor
+  static Widget _buildChoiceOption({
+    required BuildContext context,
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: color.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: color.withValues(alpha: 0.8),
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: color),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

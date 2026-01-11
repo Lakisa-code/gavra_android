@@ -29,6 +29,7 @@ import 'odrzavanje_screen.dart'; // 📖 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
 import 'putnik_kvalitet_screen.dart'; // 🎯 Analiza kvaliteta putnika
 import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
+import 'seat_management_screen.dart'; // 🎫 Smart Seat Management
 import 'vozac_screen.dart'; // DODANO za vozac screen
 import 'vozaci_statistika_screen.dart'; // 📊 Statistika vozača
 
@@ -293,6 +294,22 @@ class _AdminScreenState extends State<AdminScreen> {
                       context,
                       MaterialPageRoute<void>(
                         builder: (context) => const FinansijeScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Text('🎫', style: TextStyle(fontSize: 24)),
+                  title: const Text('Smart Seat Management'),
+                  subtitle: const Text('Zahtevi za mesta, optimizacija'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const SeatManagementScreen(),
                       ),
                     );
                   },

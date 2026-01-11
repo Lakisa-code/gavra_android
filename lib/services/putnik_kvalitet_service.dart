@@ -31,8 +31,10 @@ class PutnikKvalitetService {
       }
 
       // 2. Dohvati SVE voznje_log zapise (ne samo tekući mesec)
-      final voznjeLogs =
-          await _supabase.from('voznje_log').select('putnik_id, tip, datum').inFilter('tip', ['voznja', 'otkazivanje']);
+      final voznjeLogs = await _supabase
+          .from('voznje_log')
+          .select('putnik_id, tip, datum, sati_pre_polaska')
+          .inFilter('tip', ['voznja', 'otkazivanje']);
 
       // 3. Dohvati promene vremena log za praćenje odgovornosti zakazivanja
       final promeneLogs = await _supabase.from('promene_vremena_log').select('putnik_id, sati_unapred');
@@ -40,7 +42,8 @@ class PutnikKvalitetService {
       // 4. Izračunaj statistiku za svakog putnika
       final Map<String, List<DateTime>> voznjePoPutniku = {};
       final Map<String, int> otkazivanjaPoPutniku = {};
-      final Map<String, List<int>> satiUnapredPoPutniku = {};
+      final Map<String, List<int>> satiUnapredPoPutniku = {}; // zakazivanje
+      final Map<String, List<int>> satiOtkazivanjaPoPutniku = {}; // otkazivanje
 
       for (final log in voznjeLogs) {
         final putnikId = log['putnik_id'] as String?;
@@ -56,10 +59,16 @@ class PutnikKvalitetService {
           }
         } else if (tip == 'otkazivanje') {
           otkazivanjaPoPutniku[putnikId] = (otkazivanjaPoPutniku[putnikId] ?? 0) + 1;
+          // Prikupi sate pre polaska za otkazivanje
+          final satiPre = log['sati_pre_polaska'] as int?;
+          if (satiPre != null) {
+            satiOtkazivanjaPoPutniku.putIfAbsent(putnikId, () => []);
+            satiOtkazivanjaPoPutniku[putnikId]!.add(satiPre);
+          }
         }
       }
 
-      // Prikupi sate unapred za svakog putnika
+      // Prikupi sate unapred za svakog putnika (zakazivanje)
       for (final log in promeneLogs) {
         final putnikId = log['putnik_id'] as String?;
         final satiUnapred = log['sati_unapred'] as int?;
@@ -105,33 +114,46 @@ class PutnikKvalitetService {
         final ukupnoAkcija = ukupnoVoznji + ukupnoOtkazivanja;
         final uspesnost = ukupnoAkcija > 0 ? (ukupnoVoznji / ukupnoAkcija * 100).round() : 0;
 
-        // 📊 ODGOVORNOST ZAKAZIVANJA - prosečno sati unapred (SAMO ZA UČENIKE)
-        final satiList = satiUnapredPoPutniku[id] ?? [];
+        // 📊 ODGOVORNOST ZAKAZIVANJA - prosečno sati unapred
+        final satiZakazivanja = satiUnapredPoPutniku[id] ?? [];
         double prosecnoSatiUnapred = 0;
-        if (satiList.isNotEmpty) {
-          prosecnoSatiUnapred = satiList.reduce((a, b) => a + b) / satiList.length;
+        if (satiZakazivanja.isNotEmpty) {
+          prosecnoSatiUnapred = satiZakazivanja.reduce((a, b) => a + b) / satiZakazivanja.length;
         }
+        // Zakazivanje faktor: 48+ sati = 1.0, 0 sati = 0
+        final zakazivanjeFaktor = (prosecnoSatiUnapred / 48.0).clamp(0.0, 1.0);
 
-        // Odgovornost faktor (0-1) - SAMO ZA UČENIKE
-        // 0 sati = 0 (bezobrazno), 24+ sati = 1 (odgovorno)
-        // Optimalno: 48+ sati unapred
-        final odgovornostFaktor = (prosecnoSatiUnapred / 48.0).clamp(0.0, 1.0);
+        // 📊 ODGOVORNOST OTKAZIVANJA - prosečno sati pre polaska kad otkaže
+        final satiOtkazivanja = satiOtkazivanjaPoPutniku[id] ?? [];
+        double prosecnoSatiOtkazivanja = 24; // Default ako nema otkazivanja - neutralno
+        if (satiOtkazivanja.isNotEmpty) {
+          prosecnoSatiOtkazivanja = satiOtkazivanja.reduce((a, b) => a + b) / satiOtkazivanja.length;
+        }
+        // Otkazivanje faktor: 24+ sati = 1.0, 0 sati = 0
+        // Optimalno: otkažeš dan unapred (24h), bezobrazno: zadnji minut (0h)
+        final otkazivanjeFaktor = (prosecnoSatiOtkazivanja / 24.0).clamp(0.0, 1.0);
+
+        // Kombinovani odgovornost faktor (zakazivanje + otkazivanje)
+        final odgovornostFaktor = ukupnoOtkazivanja > 0
+            ? (zakazivanjeFaktor * 0.5 + otkazivanjeFaktor * 0.5) // Ako ima otkazivanja, oba faktora
+            : zakazivanjeFaktor; // Ako nema otkazivanja, samo zakazivanje
 
         // KVALITET SKOR (0-100)
         // Formula zavisi od tipa putnika:
-        // - Učenici: 50% aktivnost, 30% uspešnost, 20% odgovornost (zakazivanje unapred)
-        // - Radnici/Dnevni: 70% aktivnost, 30% uspešnost (bez odgovornosti)
+        // - Učenici: 40% aktivnost, 30% uspešnost, 30% odgovornost (zakazivanje + otkazivanje)
+        // - Radnici/Dnevni: 50% aktivnost, 30% uspešnost, 20% otkazivanje unapred
         final faktorizovanoVoznji = (prosecnoMesecno / 8.0).clamp(0.0, 1.0);
         final faktorizovanaUspesnost = uspesnost / 100.0;
 
         int kvalitetSkor;
         if (tip == 'ucenik') {
-          // Učenici imaju faktor odgovornosti
+          // Učenici imaju oba faktora odgovornosti
           kvalitetSkor =
-              ((faktorizovanoVoznji * 0.5 + faktorizovanaUspesnost * 0.3 + odgovornostFaktor * 0.2) * 100).round();
+              ((faktorizovanoVoznji * 0.4 + faktorizovanaUspesnost * 0.3 + odgovornostFaktor * 0.3) * 100).round();
         } else {
-          // Radnici i dnevni nemaju faktor odgovornosti
-          kvalitetSkor = ((faktorizovanoVoznji * 0.7 + faktorizovanaUspesnost * 0.3) * 100).round();
+          // Radnici i dnevni - manje zakazivanja unapred, ali bitno kad otkazuju
+          kvalitetSkor =
+              ((faktorizovanoVoznji * 0.5 + faktorizovanaUspesnost * 0.3 + otkazivanjeFaktor * 0.2) * 100).round();
         }
 
         // Status emoji
@@ -158,6 +180,7 @@ class PutnikKvalitetService {
           voznji30Dana: voznji30Dana,
           uspesnost: uspesnost,
           prosecnoSatiUnapred: prosecnoSatiUnapred,
+          prosecnoSatiOtkazivanja: prosecnoSatiOtkazivanja,
           kvalitetSkor: kvalitetSkor,
           status: status,
         ));
@@ -204,6 +227,7 @@ class PutnikKvalitetEntry {
   final int voznji30Dana;
   final int uspesnost; // 0-100%
   final double prosecnoSatiUnapred; // Prosečno sati unapred zakazano
+  final double prosecnoSatiOtkazivanja; // Prosečno sati pre polaska kad otkaže
   final int kvalitetSkor; // 0-100
   final String status; // 🟢🟡🟠🔴
 
@@ -219,6 +243,7 @@ class PutnikKvalitetEntry {
     required this.voznji30Dana,
     required this.uspesnost,
     required this.prosecnoSatiUnapred,
+    required this.prosecnoSatiOtkazivanja,
     required this.kvalitetSkor,
     required this.status,
   });
@@ -233,7 +258,7 @@ class PutnikKvalitetEntry {
     return prosecnoMesecno.toStringAsFixed(1);
   }
 
-  /// Prosečno sati unapred formatirano
+  /// Prosečno sati unapred formatirano (zakazivanje)
   String get prosecnoSatiUnapredFormatted {
     if (prosecnoSatiUnapred >= 24) {
       final dani = prosecnoSatiUnapred / 24;
@@ -242,12 +267,30 @@ class PutnikKvalitetEntry {
     return '${prosecnoSatiUnapred.toStringAsFixed(0)}h';
   }
 
-  /// Odgovornost emoji
-  String get odgovornostStatus {
+  /// Prosečno sati otkazivanja formatirano
+  String get prosecnoSatiOtkazivanjaFormatted {
+    if (prosecnoSatiOtkazivanja >= 24) {
+      final dani = prosecnoSatiOtkazivanja / 24;
+      return '${dani.toStringAsFixed(1)} dana';
+    }
+    return '${prosecnoSatiOtkazivanja.toStringAsFixed(0)}h';
+  }
+
+  /// Odgovornost zakazivanja emoji
+  String get zakazivanjeStatus {
     if (prosecnoSatiUnapred >= 48) return '🟢'; // 2+ dana unapred
     if (prosecnoSatiUnapred >= 24) return '🟡'; // 1+ dan unapred
     if (prosecnoSatiUnapred >= 12) return '🟠'; // 12+ sati
     return '🔴'; // Zadnji minut
+  }
+
+  /// Odgovornost otkazivanja emoji
+  String get otkazivanjeStatus {
+    if (ukupnoOtkazivanja == 0) return '✅'; // Nema otkazivanja
+    if (prosecnoSatiOtkazivanja >= 24) return '🟢'; // 1+ dan unapred
+    if (prosecnoSatiOtkazivanja >= 12) return '🟡'; // 12+ sati
+    if (prosecnoSatiOtkazivanja >= 4) return '🟠'; // 4+ sati
+    return '🔴'; // Zadnji minut - bezobrazno!
   }
 
   /// Da li je kandidat za zamenu

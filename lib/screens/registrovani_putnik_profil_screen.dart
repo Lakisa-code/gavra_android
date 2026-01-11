@@ -8,6 +8,7 @@ import '../services/cena_obracun_service.dart';
 import '../services/leaderboard_service.dart'; // 🏆💀 Leaderboard servis
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
+import '../services/seat_request_service.dart'; // 🎫 Smart Seat Request Service
 import '../services/slobodna_mesta_service.dart'; // 🎫 Promena vremena
 import '../services/theme_manager.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
@@ -1277,7 +1278,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       _buildDetaljneStatistikeDugme(),
                       const SizedBox(height: 16),
 
-                      // 📅 Raspored polazaka
+                      // 📅 Raspored polazaka (sa integrisanim seat request za fleksibilne)
                       _buildRasporedCard(),
                       const SizedBox(height: 16),
                     ],
@@ -1443,14 +1444,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       ),
                     ),
                   ),
-                  // VS vreme - sa TimePickerCell
+                  // VS vreme - sa TimePickerCell ili SeatRequest za fleksibilne
                   Expanded(
                     child: Center(
-                      child: TimePickerCell(
-                        value: vsVreme,
-                        isBC: false,
-                        onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
-                      ),
+                      child: _buildVsCell(dan, vsVreme, bcVreme),
                     ),
                   ),
                 ],
@@ -1473,15 +1470,91 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final jeZaDanas = dan.toLowerCase() == danasDan.toLowerCase();
 
       // ═══════════════════════════════════════════════════════════════
+      // 🚫 OGRANIČENJA ZA RADNIKE - Max 1 promena dnevno
+      // ═══════════════════════════════════════════════════════════════
+      if (tipPutnika == 'radnik' && putnikId != null && jeZaDanas) {
+        final checkResult = await SeatRequestService.canMakeChange(putnikId);
+
+        if (!checkResult.allowed) {
+          // Blokiran - nema više promena
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(checkResult.message),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          return;
+        } else if (checkResult.remaining == 0) {
+          // Poslednja promena - traži potvrdu
+          if (!mounted) return;
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 28),
+                  const SizedBox(width: 12),
+                  const Text('Poslednja promena!'),
+                ],
+              ),
+              content: Text(
+                checkResult.message,
+                style: const TextStyle(fontSize: 15),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('Odustani'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  child: const Text('Da, promeni', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          );
+
+          if (confirmed != true) return;
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════
       // 🎓 OGRANIČENJA ZA UČENIKE
       // ═══════════════════════════════════════════════════════════════
       if (tipPutnika == 'ucenik') {
-        // 1. Proveri da li je pre 16h
+        // 0. 🔒 Proveri da li ima PENDING zahtev za VS (čeka algoritam)
+        if (tipGrad == 'vs' && putnikId != null) {
+          final lockCheck = await SeatRequestService.isLockedForChanges(
+            putnikId: putnikId,
+            dan: dan,
+          );
+          if (lockCheck.locked) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(lockCheck.reason ?? '🔒 Zaključano dok se ne dodeli mesto'),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+            return;
+          }
+        }
+
+        // 1. Proveri da li je pre 16h - za oba grada
+        // BC: mora da stigne na vreme
+        // VS: algoritam ih raspoređuje, ne može zadnji minut
         if (sada.hour >= 16) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('⏰ Promene su dozvoljene samo do 16:00h'),
+                content: Text('⏰ Zakazivanje je dozvoljeno samo do 16:00h'),
                 backgroundColor: Colors.orange,
                 duration: Duration(seconds: 3),
               ),
@@ -1490,38 +1563,59 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           return;
         }
 
-        // 2. Proveri broj promena za ciljni dan
+        // 2. 🎓 UČENICI: Max 2 promene dnevno (ukupno BC + VS)
+        // Posle 1. promene: upozorenje "Imate još 1 pravo"
+        // Posle 2. promene: blokiran do sutra
         if (putnikId != null) {
-          final brojPromena = await SlobodnaMestaService.brojPromenaZaDan(putnikId, dan);
+          final ukupnoPromena = await SlobodnaMestaService.ukupnoPromenaDanas(putnikId);
 
-          if (jeZaDanas) {
-            // Za DANAŠNJI dan: max 1 promena
-            if (brojPromena >= 1) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('⚠️ Za današnji dan možete promeniti vreme samo jednom.'),
-                    backgroundColor: Colors.orange,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
-              return;
+          if (ukupnoPromena >= 2) {
+            // Blokiran - potrošio obe promene
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🚫 Već ste iskoristili 2 promene danas. Pokušajte sutra.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 4),
+                ),
+              );
             }
-          } else {
-            // Za BUDUĆE dane: max 3 promene
-            if (brojPromena >= 3) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('⚠️ Za $dan ste već napravili 3 promene danas.'),
-                    backgroundColor: Colors.orange,
-                    duration: Duration(seconds: 3),
+            return;
+          } else if (ukupnoPromena == 1) {
+            // Poslednja promena - traži potvrdu
+            if (!mounted) return;
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 28),
+                    const SizedBox(width: 12),
+                    const Text('Poslednja promena!'),
+                  ],
+                ),
+                content: const Text(
+                  'Već ste jednom menjali danas.\n\n'
+                  'Imate još samo 1 pravo na promenu.\n\n'
+                  'Da li ste sigurni?',
+                  style: TextStyle(fontSize: 15),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text('Odustani'),
                   ),
-                );
-              }
-              return;
-            }
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                    child: const Text('Da, promeni', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirmed != true) return;
           }
         }
       }
@@ -1585,6 +1679,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // 🎓 Zapiši promenu za učenike (za ograničenje)
         if (tipPutnika == 'ucenik') {
           await SlobodnaMestaService.zapisiPromenuVremena(putnikId.toString(), dan);
+        }
+
+        // 🚫 Zapiši promenu za radnike (max 1 dnevno)
+        if (tipPutnika == 'radnik' && jeZaDanas) {
+          await SeatRequestService.recordChange(putnikId);
         }
 
         // Ažuriraj lokalni state
@@ -2088,5 +2187,386 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         ),
       ],
     );
+  }
+
+  // ============================================================
+  // 🎫 VS ĆELIJA SA SEAT REQUEST LOGIKOM
+  // ============================================================
+
+  /// Gradi VS ćeliju - ako je fleksibilan putnik, koristi seat request logiku
+  Widget _buildVsCell(String dan, String? vsVreme, String? bcVreme) {
+    final putnikId = _putnikData['id'] as String?;
+
+    // Ako ima fiksno VS vreme ILI nema BC vreme (ne ide taj dan) → normalan picker
+    if (vsVreme != null && vsVreme.isNotEmpty) {
+      return TimePickerCell(
+        value: vsVreme,
+        isBC: false,
+        onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
+      );
+    }
+
+    // Ako nema BC vreme, znači ne ide taj dan - prikaži prazan picker
+    if (bcVreme == null || bcVreme.isEmpty) {
+      return TimePickerCell(
+        value: null,
+        isBC: false,
+        onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
+      );
+    }
+
+    // FLEKSIBILAN PUTNIK - ima BC ali nema VS
+    // Proveri da li već ima zahtev za taj dan
+    return FutureBuilder<SeatRequest?>(
+      future: putnikId != null
+          ? SeatRequestService.getExistingRequest(
+              putnikId: putnikId,
+              grad: 'VS',
+              datum: _getDatumZaDan(dan),
+            )
+          : Future.value(null),
+      builder: (context, snapshot) {
+        final request = snapshot.data;
+
+        if (request != null) {
+          // Ima zahtev - prikaži status
+          return _buildRequestStatusCell(request);
+        }
+
+        // Nema zahtev - prikaži picker koji šalje zahtev
+        return GestureDetector(
+          onTap: () => _showSeatRequestPicker(dan),
+          child: Container(
+            width: 70,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.shade300, width: 2),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.add_circle_outline,
+                color: Colors.orange.shade400,
+                size: 20,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Prikazuje status zahteva u ćeliji
+  Widget _buildRequestStatusCell(SeatRequest request) {
+    Color bgColor;
+    Color borderColor;
+    Widget child;
+
+    switch (request.status) {
+      case SeatRequestStatus.approved:
+        bgColor = Colors.green.shade50;
+        borderColor = Colors.green;
+        child = Text(
+          request.dodeljenoVreme ?? request.zeljenoVreme,
+          style: TextStyle(
+            color: Colors.green.shade700,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        );
+        break;
+      case SeatRequestStatus.pending:
+        bgColor = Colors.orange.shade50;
+        borderColor = Colors.orange;
+        child = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.hourglass_empty, color: Colors.orange.shade700, size: 12),
+            const SizedBox(width: 2),
+            Text(
+              request.zeljenoVreme,
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        );
+        break;
+      case SeatRequestStatus.waitlist:
+        bgColor = Colors.yellow.shade50;
+        borderColor = Colors.yellow.shade700;
+        child = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.queue, color: Colors.yellow.shade800, size: 12),
+            const SizedBox(width: 2),
+            Text(
+              request.zeljenoVreme,
+              style: TextStyle(
+                color: Colors.yellow.shade800,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        );
+        break;
+      default:
+        bgColor = Colors.grey.shade100;
+        borderColor = Colors.grey;
+        child = Icon(Icons.access_time, color: Colors.grey.shade400, size: 18);
+    }
+
+    return Container(
+      width: 70,
+      height: 40,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor, width: 2),
+      ),
+      child: Center(child: child),
+    );
+  }
+
+  /// Prikazuje picker za seat request (izgleda isto kao TimePickerCell dialog)
+  Future<void> _showSeatRequestPicker(String dan) async {
+    final putnikId = _putnikData['id'] as String?;
+    final putnikIme =
+        _putnikData['putnik_ime'] as String? ?? '${_putnikData['ime'] ?? ''} ${_putnikData['prezime'] ?? ''}'.trim();
+
+    if (putnikId == null) return;
+
+    final datum = _getDatumZaDan(dan);
+    final jeZimski = isZimski(datum);
+    final vremena = jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+
+    final selectedVreme = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 320,
+          decoration: BoxDecoration(
+            gradient: ThemeManager().currentGradient,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'VS polazak',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // Info
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.white70, size: 16),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Izaberite željeno vreme povratka',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Time options
+              SizedBox(
+                height: 350,
+                child: ListView(
+                  children: vremena.map((vreme) {
+                    return ListTile(
+                      title: Text(
+                        vreme,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      leading: const Icon(Icons.circle_outlined, color: Colors.white54),
+                      onTap: () => Navigator.of(dialogContext).pop(vreme),
+                    );
+                  }).toList(),
+                ),
+              ),
+              // Actions
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Otkaži', style: TextStyle(color: Colors.white70)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (selectedVreme == null) return;
+
+    // Pošalji zahtev
+    final request = await SeatRequestService.createRequest(
+      putnikId: putnikId,
+      putnikIme: putnikIme.isNotEmpty ? putnikIme : null,
+      grad: 'VS',
+      datum: datum,
+      zeljenoVreme: selectedVreme,
+    );
+
+    if (request != null && mounted) {
+      // Prikaži lepu poruku sa info o čekanju
+      _showRequestConfirmationDialog(selectedVreme, datum);
+      setState(() {}); // Refresh da prikaže status
+    }
+  }
+
+  /// Prikazuje confirmation dialog sa info o čekanju
+  void _showRequestConfirmationDialog(String vreme, DateTime datum) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: ThemeManager().currentGradient,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Ikonica
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Naslov
+              const Text(
+                'Zahtev primljen! 📬',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Info o vremenu
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '🕐 Željeno vreme: $vreme',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Poruka o čekanju
+              const Text(
+                'Obrađujemo tvoj zahtev...',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.notifications_active, color: Colors.amber.withValues(alpha: 0.8), size: 18),
+                  const SizedBox(width: 8),
+                  const Flexible(
+                    child: Text(
+                      'Dobićeš potvrdu za najviše 10 min',
+                      style: TextStyle(
+                        color: Colors.amber,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Dugme
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Važi! 👍'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Vraća datum za dati dan u tekućoj/sledećoj nedelji (uvek unapred)
+  DateTime _getDatumZaDan(String dan) {
+    final now = DateTime.now();
+    const daniLista = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final currentDayIndex = now.weekday - 1; // 0 = pon
+    final targetDayIndex = daniLista.indexOf(dan.toLowerCase());
+
+    if (targetDayIndex == -1) return now;
+
+    int diff = targetDayIndex - currentDayIndex;
+
+    // Ako je dan prošao ove nedelje, uzmi sledeću nedelju
+    if (diff < 0) {
+      diff += 7;
+    }
+    // Ako je danas taj dan, ostavi danas (može da zakaže za danas)
+
+    return DateTime(now.year, now.month, now.day).add(Duration(days: diff));
   }
 }

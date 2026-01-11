@@ -268,6 +268,10 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // Brži admin reset sa triple tap
   void _handleTap() {
+    // 🆕 DEBUG: Proveri ko je vozač i da li može da resetuje
+    // ignore: avoid_print
+    print('🔍 TAP: currentDriver="${widget.currentDriver}", canReset=${_canResetCard()}, tapCount=$_tapCount');
+
     // Samo za admin (Bojan i Svetlana) na kartice koje mogu da se resetuju
     if (!['Bojan', 'Svetlana'].contains(widget.currentDriver) || !_canResetCard()) {
       return;
@@ -301,6 +305,12 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // Proverava da li se kartica može resetovati
   bool _canResetCard() {
+    // 👑 ADMIN JE TATA - može sve da resetuje
+    if (['Bojan', 'Svetlana'].contains(widget.currentDriver)) {
+      return true;
+    }
+
+    // Za ostale vozače - samo ako je nešto urađeno
     // Allow reset if putnik is marked as absent (bolovanje/godišnji)
     if (TextUtils.isStatusInCategory(_putnik.status, TextUtils.bolovanjeGodisnji)) {
       return true;
@@ -314,11 +324,20 @@ class _PutnikCardState extends State<PutnikCard> {
   Future<void> _handleResetCard() async {
     try {
       // Prosleđuj selectedVreme i selectedGrad za tačan reset
+      // ✅ FIX: Koristi _putnik.grad kao fallback ako selectedGrad nije prosleđen
+      final gradZaReset = widget.selectedGrad ?? _putnik.grad;
+      // ✅ FIX: Koristi _putnik.dan za tačan dan (ne današnji dan)
+      final danZaReset = _putnik.dan.toLowerCase().substring(0, 3); // Pon -> pon
+      // ignore: avoid_print
+      print(
+          '🔄 _handleResetCard: ime=${_putnik.ime}, grad=$gradZaReset, dan=$danZaReset, driver=${widget.currentDriver}');
+
       await PutnikService().resetPutnikCard(
         _putnik.ime,
         widget.currentDriver,
         selectedVreme: widget.selectedVreme,
-        selectedGrad: widget.selectedGrad,
+        selectedGrad: gradZaReset,
+        targetDan: danZaReset,
       );
 
       // Supabase realtime automatski triggeruje refresh
@@ -1575,6 +1594,7 @@ class _PutnikCardState extends State<PutnikCard> {
         _putnik.ime.toLowerCase().contains('radosev')) {}
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque, // ✅ FIX: Hvata tap na celoj kartici
       onTap: _handleTap, // Triple tap za brži admin reset
       onLongPressStart: (_) => _startLongPressTimer(),
       onLongPressEnd: (_) => _cancelLongPressTimer(),

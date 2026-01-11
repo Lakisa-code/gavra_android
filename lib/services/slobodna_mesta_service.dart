@@ -314,6 +314,20 @@ class SlobodnaMestaService {
     return _brojPromenaZaDan(putnikId, danas, ciljniDan);
   }
 
+  /// 🆕 Broji UKUPAN broj promena danas (svi dani zajedno)
+  /// Za učenike: max 2 promene dnevno (BC + VS ukupno)
+  static Future<int> ukupnoPromenaDanas(String putnikId) async {
+    try {
+      final danas = DateTime.now().toIso8601String().split('T')[0];
+      final response =
+          await _supabase.from('promene_vremena_log').select('id').eq('putnik_id', putnikId).eq('datum', danas);
+
+      return (response as List).length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   /// Privatna verzija koja prima datum
   static Future<int> _brojPromenaZaDan(String putnikId, String datum, String ciljniDan) async {
     try {

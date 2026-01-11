@@ -310,12 +310,32 @@ class _PutnikKvalitetScreenState extends State<PutnikKvalitetScreen> {
                 _buildDetailRow('📊 Prosečno mesečno', entry.prosecnoMesecnoFormatted),
                 _buildDetailRow('📈 Vožnji u 30d', '${entry.voznji30Dana}'),
                 _buildDetailRow('✅ Uspešnost', '${entry.uspesnost}%'),
-                // Prikaži "Zakazuje unapred" SAMO za učenike
+                const Divider(),
+                // 📊 ODGOVORNOST SEKCIJA
+                const Text(
+                  '📊 ODGOVORNOST',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                // Zakazivanje unapred (SAMO za učenike)
                 if (entry.tip == 'ucenik')
                   _buildDetailRow(
                     '⏰ Zakazuje unapred',
-                    '${entry.odgovornostStatus} ${entry.prosecnoSatiUnapredFormatted}',
-                    color: entry.prosecnoSatiUnapred >= 24 ? Colors.green : Colors.red,
+                    '${entry.zakazivanjeStatus} ${entry.prosecnoSatiUnapredFormatted}',
+                    color: entry.prosecnoSatiUnapred >= 24 ? Colors.green : Colors.orange,
+                  ),
+                // Otkazivanje unapred (za sve ako imaju otkazivanja)
+                if (entry.ukupnoOtkazivanja > 0)
+                  _buildDetailRow(
+                    '🚫 Otkazuje unapred',
+                    '${entry.otkazivanjeStatus} ${entry.prosecnoSatiOtkazivanjaFormatted}',
+                    color: entry.prosecnoSatiOtkazivanja >= 12 ? Colors.green : Colors.red,
+                  ),
+                if (entry.ukupnoOtkazivanja == 0)
+                  _buildDetailRow(
+                    '🚫 Otkazivanja',
+                    '✅ Nema otkazivanja',
+                    color: Colors.green,
                   ),
                 const Divider(),
                 _buildDetailRow('🎯 KVALITET SKOR', '${entry.kvalitetSkor}%', bold: true, color: borderColor),
