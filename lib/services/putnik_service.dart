@@ -712,7 +712,8 @@ class PutnikService {
 
   /// ? OZNACI KAO POKUPLJEN
   /// [grad] - opcioni parametar za određivanje koje pokupljenje (BC ili VS)
-  Future<void> oznaciPokupljen(dynamic id, String currentDriver, {String? grad}) async {
+  /// [selectedDan] - opcioni parametar za dan (npr. "Pon", "Uto") - ako nije prosleđen, koristi današnji dan
+  Future<void> oznaciPokupljen(dynamic id, String currentDriver, {String? grad, String? selectedDan}) async {
     // ?? DUPLICATE PREVENTION
     final actionKey = 'pickup_$id';
     if (_isDuplicateAction(actionKey)) {
@@ -739,9 +740,16 @@ class PutnikService {
       final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
 
-      // ✅ NOVO: Odredi dan i place za polasci_po_danu JSON
+      // ✅ FIX: Koristi selectedDan umesto DateTime.now() - omogućava pokupljenje za bilo koji dan
       const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      final danKratica = daniKratice[now.weekday - 1];
+      String danKratica;
+      if (selectedDan != null && selectedDan.isNotEmpty) {
+        // Normalizuj selectedDan (može biti "Pon", "pon", "Ponedeljak" itd.)
+        final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
+        danKratica = daniKratice.contains(normalizedDan) ? normalizedDan : daniKratice[now.weekday - 1];
+      } else {
+        danKratica = daniKratice[now.weekday - 1];
+      }
       final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
       final place = jeBC ? 'bc' : 'vs';
 

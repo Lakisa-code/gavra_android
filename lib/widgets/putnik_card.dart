@@ -123,7 +123,8 @@ class _PutnikCardState extends State<PutnikCard> {
         HapticService.putnikPokupljen();
 
         try {
-          await PutnikService().oznaciPokupljen(_putnik.id!, widget.currentDriver, grad: _putnik.grad);
+          await PutnikService()
+              .oznaciPokupljen(_putnik.id!, widget.currentDriver, grad: _putnik.grad, selectedDan: _putnik.dan);
 
           // GPS LEARN: Sačuvaj koordinate ako adresa nema koordinate
           _tryGpsLearn();
