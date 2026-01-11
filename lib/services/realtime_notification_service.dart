@@ -100,14 +100,40 @@ class RealtimeNotificationService {
     String? excludeSender,
   }) async {
     try {
-      // Šalje broadcast notifikaciju svim vozačima iz push_tokens tabele
-      // sendPushNotification interno prikazuje lokalnu notifikaciju ako push ne uspe
+      // Lista vozača - SAMO ONI dobijaju broadcast notifikacije
+      const vozaci = ['Bojan', 'Svetlana', 'Bilevski', 'Bruda', 'Ivan'];
+      
+      final supabase = Supabase.instance.client;
+      
+      // Dohvati tokene SAMO za vozače
+      var query = supabase.from('push_tokens').select('token, provider, user_id').inFilter('user_id', vozaci);
+      
+      final response = await query;
+      
+      if ((response as List).isEmpty) return;
+      
+      // Filtriraj exclude_sender
+      final filteredTokens = response.where((t) {
+        if (excludeSender == null) return true;
+        final userId = t['user_id'] as String?;
+        return userId?.toLowerCase() != excludeSender.toLowerCase();
+      }).toList();
+      
+      if (filteredTokens.isEmpty) return;
+      
+      // Formatiraj tokene za slanje
+      final tokens = filteredTokens
+          .map<Map<String, dynamic>>((t) => {
+                'token': t['token'] as String,
+                'provider': t['provider'] as String,
+              })
+          .toList();
+
       await sendPushNotification(
         title: title,
         body: body,
-        broadcast: true,
+        tokens: tokens,
         data: data,
-        excludeSender: excludeSender,
       );
     } catch (e) {
       // Ako broadcast ne uspe, prikaži lokalnu notifikaciju kao fallback
