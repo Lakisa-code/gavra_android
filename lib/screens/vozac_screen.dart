@@ -1275,8 +1275,14 @@ class _VozacScreenState extends State<VozacScreen> {
                     return const Center(child: CircularProgressIndicator(color: Colors.white));
                   }
 
+                  // 🎯 FILTER: Prikaži SAMO putnike dodeljene ovom vozaču
+                  final sviPutnici = snapshot.data ?? [];
+                  final mojiPutnici = sviPutnici.where((p) {
+                    return p.dodeljenVozac == _currentDriver;
+                  }).toList();
+
                   final putnici =
-                      _isRouteOptimized && _optimizedRoute.isNotEmpty ? _optimizedRoute : (snapshot.data ?? []);
+                      _isRouteOptimized && _optimizedRoute.isNotEmpty ? _optimizedRoute : mojiPutnici;
 
                   return Column(
                     children: [
@@ -1430,12 +1436,15 @@ class _VozacScreenState extends State<VozacScreen> {
           ),
           builder: (context, snapshot) {
             final allPutnici = snapshot.data ?? <Putnik>[];
+            
+            // 🎯 FILTER: Samo putnici dodeljeni ovom vozaču
+            final mojiPutnici = allPutnici.where((p) => p.dodeljenVozac == _currentDriver).toList();
 
             // 🔧 REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
             final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
             final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
             final countHelper = PutnikCountHelper.fromPutnici(
-              putnici: allPutnici,
+              putnici: mojiPutnici,
               targetDateIso: targetDateIso,
               targetDayAbbr: targetDayAbbr,
             );
