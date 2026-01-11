@@ -561,6 +561,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                           await AuthManager.setCurrentDriver('Bojan');
                           if (!mounted) return;
                           Navigator.pushReplacement(
+                            // ignore: use_build_context_synchronously
                             context,
                             MaterialPageRoute<void>(
                               builder: (context) => const HomeScreen(),
@@ -613,8 +614,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                         ),
                       ),
                     ),
-                  if (defaultTargetPlatform == TargetPlatform.iOS)
-                    const SizedBox(height: 16),
+                  if (defaultTargetPlatform == TargetPlatform.iOS) const SizedBox(height: 16),
 
                   // 📱 SEKUNDARNA DUGMAD - O nama i Vozači
                   FadeTransition(
