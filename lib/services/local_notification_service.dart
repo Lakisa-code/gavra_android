@@ -51,32 +51,6 @@ class LocalNotificationService {
         flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
     await androidPlugin?.createNotificationChannel(channel);
-
-    // 🔓 Zatraži full screen intent permission za paljenje ekrana na lock screen
-    // Ovo je KLJUČNO za Huawei i Android 11+ uređaje
-    await requestFullScreenIntentPermission();
-  }
-
-  /// 🔓 Traži dozvolu za full screen intent (za paljenje ekrana na lock screen)
-  /// Na nekim uređajima (Huawei, Xiaomi, Android 11+) ovo mora biti eksplicitno odobreno
-  static Future<void> requestFullScreenIntentPermission() async {
-    try {
-      final androidPlugin = flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-
-      if (androidPlugin != null) {
-        // Proveri da li imamo dozvolu
-        final hasPermission = await androidPlugin.canScheduleExactNotifications() ?? true;
-
-        if (!hasPermission) {
-          // Zatraži dozvolu za full screen intent
-          await androidPlugin.requestFullScreenIntentPermission();
-        }
-      }
-    } catch (e) {
-      // Nije kritično ako ne uspe - notifikacije će i dalje raditi
-      debugPrint('Full screen intent permission request failed: $e');
-    }
   }
 
   static Future<void> showRealtimeNotification({
@@ -135,8 +109,7 @@ class LocalNotificationService {
             // 📳 Vibration pattern kao Viber - pali ekran na Huawei
             vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
             when: DateTime.now().millisecondsSinceEpoch,
-            fullScreenIntent: true,
-            category: AndroidNotificationCategory.call,
+            category: AndroidNotificationCategory.message,
             visibility: NotificationVisibility.public,
             ticker: '$title - $body',
             color: const Color(0xFF64CAFB),
@@ -204,8 +177,7 @@ class LocalNotificationService {
         enableVibration: true,
         // 📳 Vibration pattern kao Viber - pali ekran na Huawei
         vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
-        fullScreenIntent: true,
-        category: AndroidNotificationCategory.call,
+        category: AndroidNotificationCategory.message,
         visibility: NotificationVisibility.public,
       );
 

@@ -15,8 +15,6 @@
   <uses-permission android:name="android.permission.VIBRATE" />
   <!-- Required for Android 13+ runtime notification permission -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-  <!-- 📱 Full Screen Intent - za prikaz notifikacije preko lock screen-a (kao Viber poziv) -->
-  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <!-- 🔋 Battery optimization - za paljenje ekrana na notifikaciju (Huawei/Xiaomi) -->
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
