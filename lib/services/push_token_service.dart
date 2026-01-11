@@ -64,18 +64,38 @@ class PushTokenService {
         return false;
       }
 
-      await _supabase.from('push_tokens').upsert(
-        {
-          'token': token,
-          'provider': provider,
-          'user_type': userType,
-          'user_id': userId,
-          'vozac_id': vozacId,
-          'putnik_id': putnikId,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        onConflict: 'token',
-      );
+      // 🔑 IMPORTANT: onConflict mora biti 'user_id, provider' (partial unique index)
+      // Ovo zamenjuje stari token novim kada korisnik reinstalira app
+      // Stari pristup sa onConflict: 'token' je pravio duplikate!
+      if (userId != null) {
+        // Korisnik ima user_id - koristi user_id + provider conflict
+        await _supabase.from('push_tokens').upsert(
+          {
+            'token': token,
+            'provider': provider,
+            'user_type': userType,
+            'user_id': userId,
+            'vozac_id': vozacId,
+            'putnik_id': putnikId,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          onConflict: 'user_id, provider',
+        );
+      } else {
+        // Nema user_id - koristi token kao conflict (anonimni uređaj)
+        await _supabase.from('push_tokens').upsert(
+          {
+            'token': token,
+            'provider': provider,
+            'user_type': userType,
+            'user_id': userId,
+            'vozac_id': vozacId,
+            'putnik_id': putnikId,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          onConflict: 'token',
+        );
+      }
 
       if (kDebugMode) {
         debugPrint('✅ [PushToken] Token registrovan: $provider/$userType/${token.substring(0, 20)}...');
