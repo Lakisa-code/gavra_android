@@ -146,8 +146,53 @@ class RegistrovaniPutnikService {
     _lastValue = null;
   }
 
+  /// 📱 Normalizuje broj telefona za poređenje
+  static String _normalizePhone(String telefon) {
+    var cleaned = telefon.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (cleaned.startsWith('+381')) {
+      cleaned = '0${cleaned.substring(4)}';
+    } else if (cleaned.startsWith('00381')) {
+      cleaned = '0${cleaned.substring(5)}';
+    }
+    return cleaned;
+  }
+
+  /// 🔍 Proveri da li već postoji putnik sa istim brojem telefona
+  Future<RegistrovaniPutnik?> findByPhone(String telefon) async {
+    if (telefon.isEmpty) return null;
+    
+    final normalizedInput = _normalizePhone(telefon);
+    
+    // Dohvati sve putnike i uporedi normalizovane brojeve
+    final allPutnici = await _supabase
+        .from('registrovani_putnici')
+        .select()
+        .eq('obrisan', false);
+
+    for (final p in allPutnici) {
+      final storedPhone = p['broj_telefona'] as String? ?? '';
+      if (storedPhone.isNotEmpty && _normalizePhone(storedPhone) == normalizedInput) {
+        return RegistrovaniPutnik.fromMap(p);
+      }
+    }
+    return null;
+  }
+
   /// Kreira novog mesečnog putnika
+  /// Baca grešku ako već postoji putnik sa istim brojem telefona
   Future<RegistrovaniPutnik> createRegistrovaniPutnik(RegistrovaniPutnik putnik) async {
+    // 🔍 PROVERA DUPLIKATA - pre insert-a proveri da li već postoji
+    final telefon = putnik.brojTelefona;
+    if (telefon != null && telefon.isNotEmpty) {
+      final existing = await findByPhone(telefon);
+      if (existing != null) {
+        throw Exception(
+          'Putnik sa ovim brojem telefona već postoji: ${existing.putnikIme}. '
+          'Možete ga pronaći u listi putnika.'
+        );
+      }
+    }
+
     final response = await _supabase.from('registrovani_putnici').insert(putnik.toMap()).select('''
           *
         ''').single();
