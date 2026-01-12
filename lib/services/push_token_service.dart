@@ -68,37 +68,29 @@ class PushTokenService {
       // Ovo je potrebno jer token može postojati sa user_id=null iz prethodne sesije
       await _supabase.from('push_tokens').delete().eq('token', token);
 
-      // 🔑 IMPORTANT: onConflict mora biti 'user_id, provider'
-      // Ovo zamenjuje stari token novim kada korisnik reinstalira app
-      if (userId != null) {
-        // Korisnik ima user_id - koristi user_id + provider conflict
-        await _supabase.from('push_tokens').upsert(
-          {
-            'token': token,
-            'provider': provider,
-            'user_type': userType,
-            'user_id': userId,
-            'vozac_id': vozacId,
-            'putnik_id': putnikId,
-            'updated_at': DateTime.now().toIso8601String(),
-          },
-          onConflict: 'user_id, provider',
-        );
-      } else {
-        // Nema user_id - koristi token kao conflict (anonimni uređaj)
-        await _supabase.from('push_tokens').upsert(
-          {
-            'token': token,
-            'provider': provider,
-            'user_type': userType,
-            'user_id': userId,
-            'vozac_id': vozacId,
-            'putnik_id': putnikId,
-            'updated_at': DateTime.now().toIso8601String(),
-          },
-          onConflict: 'token',
-        );
+      // 🧹 DRUGO: Obriši stare tokene za istog putnika (kad se app reinstalira, token se menja)
+      // Ovo garantuje da putnik ima samo JEDAN aktivan token
+      if (putnikId != null && putnikId.isNotEmpty) {
+        await _supabase.from('push_tokens').delete().eq('putnik_id', putnikId);
+        if (kDebugMode) debugPrint('🧹 [PushToken] Obrisani stari tokeni za putnik_id: $putnikId');
       }
+
+      // 🧹 TREĆE: Obriši stare tokene za istog vozača
+      if (vozacId != null && vozacId.isNotEmpty) {
+        await _supabase.from('push_tokens').delete().eq('vozac_id', vozacId);
+        if (kDebugMode) debugPrint('🧹 [PushToken] Obrisani stari tokeni za vozac_id: $vozacId');
+      }
+
+      // ✅ Sada jednostavno INSERT novi token (nema potrebe za upsert jer smo obrisali stare)
+      await _supabase.from('push_tokens').insert({
+        'token': token,
+        'provider': provider,
+        'user_type': userType,
+        'user_id': userId,
+        'vozac_id': vozacId,
+        'putnik_id': putnikId,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
 
       if (kDebugMode) {
         debugPrint('✅ [PushToken] Token registrovan: $provider/$userType/${token.substring(0, 20)}...');

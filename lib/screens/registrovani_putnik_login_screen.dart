@@ -359,14 +359,22 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
     });
 
     try {
-      // Traži putnika po telefonu i PIN-u
-      final response = await Supabase.instance.client
-          .from('registrovani_putnici')
-          .select()
-          .eq('broj_telefona', telefon)
-          .eq('pin', pin)
-          .eq('obrisan', false)
-          .maybeSingle();
+      // 📱 Normalizuj uneti broj za poređenje (isti kao u _checkTelefon)
+      final normalizedInput = _normalizePhone(telefon);
+
+      // Traži putnika - dohvati sve sa PIN-om i uporedi normalizovane brojeve
+      final allPutnici =
+          await Supabase.instance.client.from('registrovani_putnici').select().eq('pin', pin).eq('obrisan', false);
+
+      // Pronađi putnika sa istim normalizovanim brojem
+      Map<String, dynamic>? response;
+      for (final p in allPutnici as List) {
+        final storedPhone = p['broj_telefona'] as String? ?? '';
+        if (_normalizePhone(storedPhone) == normalizedInput) {
+          response = Map<String, dynamic>.from(p);
+          break;
+        }
+      }
 
       if (response != null) {
         // Sačuvaj za auto-login
@@ -391,7 +399,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
             context,
             MaterialPageRoute(
               builder: (context) => RegistrovaniPutnikProfilScreen(
-                putnikData: Map<String, dynamic>.from(response),
+                putnikData: response!,
               ),
             ),
           );
