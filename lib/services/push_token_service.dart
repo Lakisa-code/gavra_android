@@ -75,10 +75,17 @@ class PushTokenService {
         if (kDebugMode) debugPrint('🧹 [PushToken] Obrisani stari tokeni za putnik_id: $putnikId');
       }
 
-      // 🧹 TREĆE: Obriši stare tokene za istog vozača
+      // 🧹 TREĆE: Obriši stare tokene za istog vozača (po vozac_id)
       if (vozacId != null && vozacId.isNotEmpty) {
         await _supabase.from('push_tokens').delete().eq('vozac_id', vozacId);
         if (kDebugMode) debugPrint('🧹 [PushToken] Obrisani stari tokeni za vozac_id: $vozacId');
+      }
+
+      // 🧹 ČETVRTO: Obriši stare tokene za istog vozača (po user_id)
+      // Ovo je KLJUČNO - sprečava konflikt kad vozač menja uređaj ili reinstalira app
+      if (userId != null && userId.isNotEmpty) {
+        await _supabase.from('push_tokens').delete().eq('user_id', userId);
+        if (kDebugMode) debugPrint('🧹 [PushToken] Obrisani stari tokeni za user_id: $userId');
       }
 
       // ✅ Sada jednostavno INSERT novi token (nema potrebe za upsert jer smo obrisali stare)

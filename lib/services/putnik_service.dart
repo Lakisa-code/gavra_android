@@ -637,7 +637,10 @@ class PutnikService {
       final dayNames = ['Pon', 'Uto', 'Sre', 'Cet', 'Pet', 'Sub', 'Ned'];
       final todayName = dayNames[now.weekday - 1];
 
-      if (putnik.dan == todayName) {
+      // ✅ FIX: Podrška za višednevne putnike (npr. "pon-pet")
+      final isToday = putnik.dan.toLowerCase().contains(todayName.toLowerCase()) || putnik.dan == todayName;
+
+      if (isToday) {
         // 📲 ŠALJI PUSH SVIM VOZAČIMA (FCM + Huawei Push)
         RealtimeNotificationService.sendNotificationToAllDrivers(
           title: 'Novi putnik',
@@ -882,14 +885,18 @@ class PutnikService {
       vozacId = VozacMappingService.getVozacUuidSync(currentDriver);
     } catch (_) {}
 
-    await VoznjeLogService.dodajUplatu(
-      putnikId: id,
-      datum: now,
-      iznos: iznos,
-      vozacId: vozacId,
-      placeniMesec: now.month,
-      placenaGodina: now.year,
-    );
+    try {
+      await VoznjeLogService.dodajUplatu(
+        putnikId: id.toString(),
+        datum: now,
+        iznos: iznos,
+        vozacId: vozacId,
+        placeniMesec: now.month,
+        placenaGodina: now.year,
+      );
+    } catch (_) {
+      // Log error ali ne prekidaj - uplata je već zabeležena u polasci_po_danu
+    }
   }
 
   /// ? OTKAZI PUTNIKA - sada čuva otkazivanje PO POLASKU (grad) u polasci_po_danu JSON

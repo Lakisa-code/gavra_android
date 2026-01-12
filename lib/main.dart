@@ -27,6 +27,7 @@ import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje voza�
 import 'services/weather_alert_service.dart'; // 🌨️ Upozorenja za loše vreme
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
 import 'supabase_client.dart';
+import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -130,6 +131,13 @@ void main() async {
       await VozacMappingService.initialize();
     } catch (e) {
       // Nastavi bez vozac mapping-a ako ne uspe
+    }
+
+    // 🎨 INICIJALIZUJ VOZAC BOJA CACHE (za vozac_id u push tokenima)
+    try {
+      await VozacBoja.initialize();
+    } catch (e) {
+      // Nastavi bez vozac boja keša ako ne uspe - koristi fallback
     }
 
     // 🚐 INICIJALIZUJ VREME-VOZAC CACHE (za per-vreme dodeljivanje)

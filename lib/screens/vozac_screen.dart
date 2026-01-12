@@ -175,8 +175,8 @@ class _VozacScreenState extends State<VozacScreen> {
     // 🆘 FALLBACK: Ako FirebaseService ne vrati vozača, koristi _vozacIme (Ivan)
     if (_currentDriver == null || _currentDriver!.isEmpty) {
       _currentDriver = _vozacIme; // 'Ivan'
-      // Sačuvaj u SharedPreferences za sledeći put
-      await FirebaseService.setCurrentDriver(_vozacIme);
+      // ✅ FIX: Koristi AuthManager da bi se ažurirao i push token
+      await AuthManager.setCurrentDriver(_vozacIme);
     }
     if (mounted) setState(() {});
   }
