@@ -620,7 +620,7 @@ class SeatRequestService {
   static BatchProcessingResult? _lastBatchResult;
   static BatchProcessingResult? get lastBatchResult => _lastBatchResult;
 
-  /// Procesiraj sve pending zahteve za danas i sutra
+  /// Procesiraj sve pending zahteve za tekući dan
   /// Sortira po prioritetu i optimalno raspoređuje
   static Future<BatchProcessingResult> processPendingBatch({
     DateTime? specificDate,
@@ -635,9 +635,8 @@ class SeatRequestService {
     final details = <String>[];
 
     try {
-      // Dohvati datume za obradu (danas i sutra ako nije specificirano)
-      final dates =
-          specificDate != null ? [specificDate] : [DateTime.now(), DateTime.now().add(const Duration(days: 1))];
+      // Dohvati datum za obradu (samo tekući dan)
+      final dates = specificDate != null ? [specificDate] : [DateTime.now()];
 
       final gradovi = specificGrad != null ? [specificGrad] : ['VS', 'BC'];
 
