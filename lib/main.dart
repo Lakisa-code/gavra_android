@@ -23,6 +23,7 @@ import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
+import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌨️ Upozorenja za loše vreme
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
 import 'supabase_client.dart';
@@ -129,6 +130,13 @@ void main() async {
       await VozacMappingService.initialize();
     } catch (e) {
       // Nastavi bez vozac mapping-a ako ne uspe
+    }
+
+    // 🚐 INICIJALIZUJ VREME-VOZAC CACHE (za per-vreme dodeljivanje)
+    try {
+      await VremeVozacService().loadAllVremeVozac();
+    } catch (e) {
+      // Nastavi bez vreme-vozac keša ako ne uspe
     }
 
     // 🔧 INICIJALIZUJ APP SETTINGS SERVICE (nav bar tip iz baze)

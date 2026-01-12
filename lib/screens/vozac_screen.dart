@@ -34,7 +34,11 @@ import 'welcome_screen.dart';
 /// 🚗 VOZAČ SCREEN - Za Ivan-a
 /// Prikazuje putnike koristeći isti PutnikService stream kao DanasScreen
 class VozacScreen extends StatefulWidget {
-  const VozacScreen({Key? key}) : super(key: key);
+  /// Opcioni parametar - ako je null, koristi trenutnog ulogovanog vozača
+  /// Ako je prosleđen, prikazuje ekran kao da je taj vozač ulogovan (admin preview)
+  final String? previewAsDriver;
+
+  const VozacScreen({Key? key, this.previewAsDriver}) : super(key: key);
 
   @override
   State<VozacScreen> createState() => _VozacScreenState();
@@ -54,6 +58,19 @@ class _VozacScreenState extends State<VozacScreen> {
   List<Putnik> _optimizedRoute = [];
   bool _isLoading = false;
   Map<Putnik, Position>? _cachedCoordinates; // 🎯 Keširane koordinate
+
+  /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak
+  String _getWorkingDateIso() {
+    final today = DateTime.now();
+    // Vikendom (subota=6, nedelja=7) koristi naredni ponedeljak
+    if (today.weekday == DateTime.saturday) {
+      return today.add(const Duration(days: 2)).toIso8601String().split('T')[0];
+    } else if (today.weekday == DateTime.sunday) {
+      return today.add(const Duration(days: 1)).toIso8601String().split('T')[0];
+    }
+    return today.toIso8601String().split('T')[0];
+  }
+
   String? _currentDriver; // 🎯 Trenutni vozač
 
   // Status varijable
@@ -147,6 +164,13 @@ class _VozacScreenState extends State<VozacScreen> {
   }
 
   Future<void> _initializeCurrentDriver() async {
+    // 🎯 ADMIN PREVIEW MODE: Ako je prosleđen previewAsDriver, koristi ga
+    if (widget.previewAsDriver != null && widget.previewAsDriver!.isNotEmpty) {
+      _currentDriver = widget.previewAsDriver;
+      if (mounted) setState(() {});
+      return;
+    }
+
     _currentDriver = await FirebaseService.getCurrentDriver();
     // 🆘 FALLBACK: Ako FirebaseService ne vrati vozača, koristi _vozacIme (Ivan)
     if (_currentDriver == null || _currentDriver!.isEmpty) {
@@ -1266,7 +1290,7 @@ class _VozacScreenState extends State<VozacScreen> {
             ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : StreamBuilder<List<Putnik>>(
                 stream: _putnikService.streamKombinovaniPutniciFiltered(
-                  isoDate: DateTime.now().toIso8601String().split('T')[0],
+                  isoDate: _getWorkingDateIso(),
                   grad: _selectedGrad,
                   vreme: _selectedVreme,
                 ),
@@ -1281,8 +1305,7 @@ class _VozacScreenState extends State<VozacScreen> {
                     return p.dodeljenVozac == _currentDriver;
                   }).toList();
 
-                  final putnici =
-                      _isRouteOptimized && _optimizedRoute.isNotEmpty ? _optimizedRoute : mojiPutnici;
+                  final putnici = _isRouteOptimized && _optimizedRoute.isNotEmpty ? _optimizedRoute : mojiPutnici;
 
                   return Column(
                     children: [
@@ -1432,16 +1455,16 @@ class _VozacScreenState extends State<VozacScreen> {
         // 🎯 BOTTOM NAV BAR
         bottomNavigationBar: StreamBuilder<List<Putnik>>(
           stream: _putnikService.streamKombinovaniPutniciFiltered(
-            isoDate: DateTime.now().toIso8601String().split('T')[0],
+            isoDate: _getWorkingDateIso(),
           ),
           builder: (context, snapshot) {
             final allPutnici = snapshot.data ?? <Putnik>[];
-            
+
             // 🎯 FILTER: Samo putnici dodeljeni ovom vozaču
             final mojiPutnici = allPutnici.where((p) => p.dodeljenVozac == _currentDriver).toList();
 
             // 🔧 REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
-            final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
+            final targetDateIso = _getWorkingDateIso();
             final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
             final countHelper = PutnikCountHelper.fromPutnici(
               putnici: mojiPutnici,
@@ -1452,6 +1475,14 @@ class _VozacScreenState extends State<VozacScreen> {
             int getPutnikCount(String grad, String vreme) {
               return countHelper.getCount(grad, vreme);
             }
+
+            // 🎯 FILTER VREMENA: Samo vremena koja imaju putnike za ovog vozača
+            final filteredBcVremena = _bcVremena.where((vreme) => getPutnikCount('Bela Crkva', vreme) > 0).toList();
+            final filteredVsVremena = _vsVremena.where((vreme) => getPutnikCount('Vršac', vreme) > 0).toList();
+
+            // Ako nema putnika ni za jedno vreme, prikaži sva vremena (fallback)
+            final bcVremenaToShow = filteredBcVremena.isEmpty ? _bcVremena : filteredBcVremena;
+            final vsVremenaToShow = filteredVsVremena.isEmpty ? _vsVremena : filteredVsVremena;
 
             // Helper funkcija za kreiranje nav bar-a
             Widget buildNavBar(String navType) {
@@ -1471,8 +1502,8 @@ class _VozacScreenState extends State<VozacScreen> {
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
                     onPolazakChanged: _onPolazakChanged,
-                    bcVremena: _bcVremena,
-                    vsVremena: _vsVremena,
+                    bcVremena: bcVremenaToShow,
+                    vsVremena: vsVremenaToShow,
                   );
                 case 'letnji':
                   return BottomNavBarLetnji(
@@ -1481,8 +1512,8 @@ class _VozacScreenState extends State<VozacScreen> {
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
                     onPolazakChanged: _onPolazakChanged,
-                    bcVremena: _bcVremena,
-                    vsVremena: _vsVremena,
+                    bcVremena: bcVremenaToShow,
+                    vsVremena: vsVremenaToShow,
                   );
                 default: // 'auto'
                   return isZimski(DateTime.now())
@@ -1492,8 +1523,8 @@ class _VozacScreenState extends State<VozacScreen> {
                           selectedVreme: _selectedVreme,
                           getPutnikCount: getPutnikCount,
                           onPolazakChanged: _onPolazakChanged,
-                          bcVremena: _bcVremena,
-                          vsVremena: _vsVremena,
+                          bcVremena: bcVremenaToShow,
+                          vsVremena: vsVremenaToShow,
                         )
                       : BottomNavBarLetnji(
                           sviPolasci: _sviPolasci,
@@ -1501,8 +1532,8 @@ class _VozacScreenState extends State<VozacScreen> {
                           selectedVreme: _selectedVreme,
                           getPutnikCount: getPutnikCount,
                           onPolazakChanged: _onPolazakChanged,
-                          bcVremena: _bcVremena,
-                          vsVremena: _vsVremena,
+                          bcVremena: bcVremenaToShow,
+                          vsVremena: vsVremenaToShow,
                         );
               }
             }

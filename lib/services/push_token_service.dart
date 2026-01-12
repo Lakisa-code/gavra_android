@@ -64,9 +64,12 @@ class PushTokenService {
         return false;
       }
 
-      // 🔑 IMPORTANT: onConflict mora biti 'user_id, provider' (partial unique index)
+      // 🧹 PRVO: Obriši sve stare redove sa istim tokenom (sprečava duplicate key error)
+      // Ovo je potrebno jer token može postojati sa user_id=null iz prethodne sesije
+      await _supabase.from('push_tokens').delete().eq('token', token);
+
+      // 🔑 IMPORTANT: onConflict mora biti 'user_id, provider'
       // Ovo zamenjuje stari token novim kada korisnik reinstalira app
-      // Stari pristup sa onConflict: 'token' je pravio duplikate!
       if (userId != null) {
         // Korisnik ima user_id - koristi user_id + provider conflict
         await _supabase.from('push_tokens').upsert(

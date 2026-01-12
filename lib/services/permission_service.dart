@@ -170,7 +170,7 @@ class PermissionService {
                                       width: 1.5,
                                     ),
                                   ),
-                                  child: TextButton.icon(
+                                  child: TextButton(
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
@@ -184,8 +184,7 @@ class PermissionService {
                                         Navigator.of(context).pop(success);
                                       }
                                     },
-                                    icon: const Icon(Icons.check_circle_rounded, size: 18),
-                                    label: const Text(
+                                    child: const Text(
                                       'ODOBRI',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,

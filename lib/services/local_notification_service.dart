@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../screens/danas_screen.dart';
+import 'notification_navigation_service.dart';
 import 'seat_request_service.dart';
 import 'wake_lock_service.dart';
 
@@ -271,6 +272,12 @@ class LocalNotificationService {
         } catch (e) {
           print('❌ Greška pri prikazivanju izbora: $e');
         }
+      }
+
+      // 🚐 Handle transport_started notifikacije - otvori putnikov profil
+      if (notificationType == 'transport_started') {
+        await NotificationNavigationService.navigateToPassengerProfile();
+        return; // Ne navigiraj dalje
       }
 
       if (context.mounted) {

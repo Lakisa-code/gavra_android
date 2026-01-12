@@ -2714,6 +2714,10 @@ class _DanasScreenState extends State<DanasScreen> {
 
               // Return Widget - Helper funkcija za kreiranje nav bar-a
               Widget buildNavBar(String navType) {
+                // Get full day name for VremeVozacService
+                final dayNames = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+                final selectedDan = dayNames[DateTime.now().weekday - 1];
+
                 void onChanged(String grad, String vreme) {
                   DriverLocationService.instance.stopTracking();
                   if (mounted) {
@@ -2749,6 +2753,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                       isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                       onPolazakChanged: onChanged,
+                      selectedDan: selectedDan,
                     );
                   case 'zimski':
                     return BottomNavBarZimski(
@@ -2759,6 +2764,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                       isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                       onPolazakChanged: onChanged,
+                      selectedDan: selectedDan,
                     );
                   case 'letnji':
                     return BottomNavBarLetnji(
@@ -2769,6 +2775,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                       isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                       onPolazakChanged: onChanged,
+                      selectedDan: selectedDan,
                     );
                   default: // 'auto'
                     return isZimski(DateTime.now())
@@ -2780,6 +2787,7 @@ class _DanasScreenState extends State<DanasScreen> {
                             getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                             isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                             onPolazakChanged: onChanged,
+                            selectedDan: selectedDan,
                           )
                         : BottomNavBarLetnji(
                             sviPolasci: _sviPolasci,
@@ -2789,6 +2797,7 @@ class _DanasScreenState extends State<DanasScreen> {
                             getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                             isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                             onPolazakChanged: onChanged,
+                            selectedDan: selectedDan,
                           );
                 }
               }

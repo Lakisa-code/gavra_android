@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../config/route_config.dart';
 import '../services/theme_manager.dart';
+import '../services/vreme_vozac_service.dart'; // 🆕 Za border boju dodeljenog vozača
 import '../theme.dart';
+import '../utils/vozac_boja.dart'; // 🆕 Za border boju dodeljenog vozača
 
 class BottomNavBarLetnji extends StatefulWidget {
   const BottomNavBarLetnji({
@@ -16,6 +18,7 @@ class BottomNavBarLetnji extends StatefulWidget {
     this.isSlotLoading,
     this.bcVremena,
     this.vsVremena,
+    this.selectedDan, // 🆕 Dan za proveru dodeljenog vozača
   });
   final List<String> sviPolasci;
   final String selectedGrad;
@@ -26,6 +29,7 @@ class BottomNavBarLetnji extends StatefulWidget {
   final bool Function(String grad, String vreme)? isSlotLoading;
   final List<String>? bcVremena;
   final List<String>? vsVremena;
+  final String? selectedDan; // 🆕
 
   @override
   State<BottomNavBarLetnji> createState() => _BottomNavBarLetnjieState();
@@ -136,6 +140,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
                   isSlotLoading: widget.isSlotLoading,
                   scrollController: _bcScrollController,
                   currentThemeId: currentThemeId,
+                  selectedDan: widget.selectedDan, // 🆕
                 ),
                 _PolazakRow(
                   label: 'VS',
@@ -149,6 +154,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
                   isSlotLoading: widget.isSlotLoading,
                   scrollController: _vsScrollController,
                   currentThemeId: currentThemeId,
+                  selectedDan: widget.selectedDan, // 🆕
                 ),
               ],
             ),
@@ -172,6 +178,7 @@ class _PolazakRow extends StatelessWidget {
     this.getKapacitet,
     this.isSlotLoading,
     this.scrollController,
+    this.selectedDan, // 🆕
     Key? key,
   }) : super(key: key);
   final String label;
@@ -185,6 +192,30 @@ class _PolazakRow extends StatelessWidget {
   final bool Function(String grad, String vreme)? isSlotLoading;
   final ScrollController? scrollController;
   final String currentThemeId;
+  final String? selectedDan; // 🆕
+
+  /// 🆕 Konvertuj puno ime dana u kraticu za bazu
+  String _getDanKratica(String dan) {
+    const Map<String, String> dayMap = {
+      'Ponedeljak': 'pon',
+      'Utorak': 'uto',
+      'Sreda': 'sre',
+      'Četvrtak': 'cet',
+      'Petak': 'pet',
+      'Subota': 'sub',
+      'Nedelja': 'ned',
+    };
+    return dayMap[dan] ?? dan.toLowerCase().substring(0, 3);
+  }
+
+  /// 🆕 Dobij boju bordera za vreme - ako je dodeljen vozač, vrati njegovu boju
+  Color? _getVozacBorderColor(String vreme) {
+    if (selectedDan == null) return null;
+    final danKratica = _getDanKratica(selectedDan!);
+    final vozacIme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
+    if (vozacIme == null) return null;
+    return VozacBoja.get(vozacIme);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -209,6 +240,10 @@ class _PolazakRow extends StatelessWidget {
               child: Row(
                 children: vremena.map((vreme) {
                   final bool selected = selectedGrad == grad && selectedVreme == vreme;
+                  // 🆕 Proveri da li je dodeljen vozač za ovo vreme
+                  final vozacBorderColor = _getVozacBorderColor(vreme);
+                  final hasVozac = vozacBorderColor != null;
+
                   return GestureDetector(
                     onTap: () => onPolazakChanged(grad, vreme),
                     child: Container(
@@ -226,19 +261,24 @@ class _PolazakRow extends StatelessWidget {
                                     : currentThemeId == 'dark_pink'
                                         ? const Color(0xFFE91E8C).withValues(alpha: 0.15) // Dark Pink tema
                                         : Colors.blueAccent.withValues(alpha: 0.15)) // Plava tema
-                            : Colors.transparent,
+                            : hasVozac
+                                ? vozacBorderColor.withValues(alpha: 0.1) // 🆕 Lagana pozadina ako ima vozača
+                                : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: selected
-                              ? (currentThemeId == 'dark_steel_grey'
-                                  ? const Color(0xFF4A4A4A) // Crna tema
-                                  : currentThemeId == 'passionate_rose'
-                                      ? const Color(0xFFDC143C) // Crvena tema
-                                      : currentThemeId == 'dark_pink'
-                                          ? const Color(0xFFE91E8C) // Dark Pink tema
-                                          : Colors.blue) // Plava tema
-                              : Colors.grey[300]!,
-                          width: selected ? 2 : 1,
+                          // 🆕 Ako ima dodeljen vozač, koristi njegovu boju za border
+                          color: hasVozac
+                              ? vozacBorderColor
+                              : selected
+                                  ? (currentThemeId == 'dark_steel_grey'
+                                      ? const Color(0xFF4A4A4A) // Crna tema
+                                      : currentThemeId == 'passionate_rose'
+                                          ? const Color(0xFFDC143C) // Crvena tema
+                                          : currentThemeId == 'dark_pink'
+                                              ? const Color(0xFFE91E8C) // Dark Pink tema
+                                              : Colors.blue) // Plava tema
+                                  : Colors.grey[300]!,
+                          width: hasVozac ? 2.5 : (selected ? 2 : 1), // 🆕 Deblji border ako ima vozača
                         ),
                       ),
                       child: Column(

@@ -43,6 +43,7 @@ import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
 import 'promena_sifre_screen.dart';
+import 'vozac_screen.dart';
 import 'welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -2455,6 +2456,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               },
                             ),
                           ),
+                        if (_currentDriver == 'Bruda' || _currentDriver == 'Bilevski') const SizedBox(width: 4),
+                        if (_currentDriver == 'Bruda' || _currentDriver == 'Bilevski')
+                          Expanded(
+                            child: _HomeScreenButton(
+                              label: 'Ja',
+                              icon: Icons.person,
+                              onTap: () {
+                                // Navigate to VozacScreen sa trenutnim vozačem
+                                AnimatedNavigation.pushSmooth(
+                                  context,
+                                  VozacScreen(previewAsDriver: _currentDriver),
+                                );
+                              },
+                            ),
+                          ),
                         if (['Bojan', 'Svetlana'].contains(_currentDriver)) const SizedBox(width: 4),
                         if (['Bojan', 'Svetlana'].contains(_currentDriver))
                           Expanded(
@@ -2790,6 +2806,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           getPutnikCount: getPutnikCount,
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
+          selectedDan: _selectedDay,
         );
       case 'zimski':
         return BottomNavBarZimski(
@@ -2799,6 +2816,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           getPutnikCount: getPutnikCount,
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
+          selectedDan: _selectedDay,
         );
       case 'letnji':
         return BottomNavBarLetnji(
@@ -2808,6 +2826,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           getPutnikCount: getPutnikCount,
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
+          selectedDan: _selectedDay,
         );
       default: // 'auto'
         return isZimski(DateTime.now())
@@ -2818,6 +2837,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 getPutnikCount: getPutnikCount,
                 getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                 onPolazakChanged: onChanged,
+                selectedDan: _selectedDay,
               )
             : BottomNavBarLetnji(
                 sviPolasci: _sviPolasci,
@@ -2826,6 +2846,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 getPutnikCount: getPutnikCount,
                 getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                 onPolazakChanged: onChanged,
+                selectedDan: _selectedDay,
               );
     }
   }

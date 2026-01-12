@@ -172,6 +172,37 @@ class RegistrovaniHelpers {
     return dayData[adresaKey] as String?;
   }
 
+  /// 🆕 Dobij dodeljenog vozača za specifičan dan i pravac (bc ili vs)
+  /// Vraća ime vozača ako je postavljen u polasci_po_danu JSON-u
+  /// Ključ je npr. 'bc_vozac' ili 'vs_vozac'
+  static String? getDodeljenVozacForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Ključ je npr. 'bc_vozac' ili 'vs_vozac'
+    final vozacKey = '${place}_vozac';
+    return dayData[vozacKey] as String?;
+  }
+
   /// 🆕 HELPER: Izračunaj poslednji petak u ponoć (reset point)
   /// Nedelja se resetuje u ponoć petak→subota
   static DateTime _getLastFridayMidnight() {

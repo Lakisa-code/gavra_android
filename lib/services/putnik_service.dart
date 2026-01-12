@@ -1202,6 +1202,78 @@ class PutnikService {
     }
   }
 
+  /// 🆕 DODELI PUTNIKA VOZAČU ZA SPECIFIČAN PRAVAC (bc/vs)
+  /// Čuva bc_vozac ili vs_vozac u polasci_po_danu JSON za specifičan dan
+  /// [putnikId] - ID putnika
+  /// [noviVozac] - Ime vozača (npr. "Bilevski") ili null za uklanjanje
+  /// [place] - 'bc' za Bela Crkva pravac ili 'vs' za Vršac pravac
+  /// [selectedDan] - Dan u nedelji (npr. "pon", "Ponedeljak") - opcionalno, default je danas
+  Future<void> dodelPutnikaVozacuZaPravac(
+    String putnikId,
+    String? noviVozac,
+    String place, {
+    String? selectedDan,
+  }) async {
+    try {
+      // Validacija vozača
+      if (noviVozac != null && !VozacBoja.isValidDriver(noviVozac)) {
+        throw Exception(
+          'Nevalidan vozac: "$noviVozac". Dozvoljeni: ${VozacBoja.validDrivers.join(", ")}',
+        );
+      }
+
+      // Dohvati trenutne podatke putnika
+      final response =
+          await supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnikId).single();
+
+      // Odredi dan
+      const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      String danKratica;
+      if (selectedDan != null && selectedDan.isNotEmpty) {
+        final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
+        danKratica = daniKratice.contains(normalizedDan) ? normalizedDan : daniKratice[DateTime.now().weekday - 1];
+      } else {
+        danKratica = daniKratice[DateTime.now().weekday - 1];
+      }
+
+      // Učitaj postojeći polasci_po_danu JSON
+      Map<String, dynamic> polasci = {};
+      final polasciRaw = response['polasci_po_danu'];
+      if (polasciRaw != null) {
+        if (polasciRaw is String) {
+          try {
+            polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
+          } catch (_) {}
+        } else if (polasciRaw is Map) {
+          polasci = Map<String, dynamic>.from(polasciRaw);
+        }
+      }
+
+      // Dodaj/ažuriraj vozača za specifičan dan i pravac
+      if (!polasci.containsKey(danKratica)) {
+        polasci[danKratica] = <String, dynamic>{};
+      }
+      final dayData = polasci[danKratica] as Map<String, dynamic>;
+
+      // Ključ je npr. 'bc_vozac' ili 'vs_vozac'
+      final vozacKey = '${place}_vozac';
+      if (noviVozac != null) {
+        dayData[vozacKey] = noviVozac;
+      } else {
+        dayData.remove(vozacKey);
+      }
+      polasci[danKratica] = dayData;
+
+      // Sačuvaj u bazu
+      await supabase.from('registrovani_putnici').update({
+        'polasci_po_danu': polasci,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', putnikId);
+    } catch (e) {
+      throw Exception('Greška pri dodeljivanju vozača za pravac: $e');
+    }
+  }
+
   /// 🔄 NEDELJNI RESET - Briše polasci_po_danu podatke za sve putnike
   /// Poziva se automatski u subotu ujutru (nakon ponoći petak→subota)
   /// NE RESETUJE: bolovanje i godišnji (oni ostaju)

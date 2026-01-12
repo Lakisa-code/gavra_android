@@ -93,6 +93,9 @@ class DriverLocationService {
   Future<void> stopTracking() async {
     if (!_isTracking) return;
 
+    // 🆕 Sačuvaj vozacId pre cleanup-a
+    final vozacIdToDeactivate = _currentVozacId;
+
     _locationTimer?.cancel();
     _locationTimer = null;
 
@@ -101,6 +104,21 @@ class DriverLocationService {
 
     await _positionSubscription?.cancel();
     _positionSubscription = null;
+
+    // 🆕 Deaktiviraj vozača u Supabase - putnici više neće videti stari ETA
+    if (vozacIdToDeactivate != null) {
+      try {
+        debugPrint('🛑 Deaktiviram vozača: $vozacIdToDeactivate');
+        await Supabase.instance.client.from('vozac_lokacije').update({
+          'aktivan': false,
+          'putnici_eta': null,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('vozac_id', vozacIdToDeactivate);
+        debugPrint('✅ Vozač deaktiviran uspešno');
+      } catch (e) {
+        debugPrint('❌ Greška pri deaktivaciji vozača: $e');
+      }
+    }
 
     _isTracking = false;
     _currentVozacId = null;

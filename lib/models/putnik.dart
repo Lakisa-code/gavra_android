@@ -1,6 +1,7 @@
 ﻿import 'dart:convert';
 
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
+import '../services/vreme_vozac_service.dart'; // 🆕 Za per-vreme dodeljivanje vozača
 import '../utils/registrovani_helpers.dart';
 
 // Enum za statuse putnika
@@ -142,8 +143,14 @@ class Putnik {
           _getVozacIme(map['vozac_id'] as String?),
       // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu (samo DANAS)
       pokupioVozac: RegistrovaniHelpers.getPokupioVozacForDayAndPlace(map, danKratica, place),
-      // ✅ FIX: dodeljenVozac čita iz vozac_id (dodeljeni vozač)
-      dodeljenVozac: _getVozacIme(map['vozac_id'] as String?),
+      // 🆕 dodeljenVozac - 3 nivoa: 1) per-putnik (bc_vozac/vs_vozac), 2) per-vreme, 3) globalni vozac_id
+      dodeljenVozac: _getDodeljenVozacWithPriority(
+        map: map,
+        danKratica: danKratica,
+        place: place,
+        grad: grad,
+        vreme: polazakRaw ?? '',
+      ),
       grad: grad,
       adresa: _determineAdresaFromRegistrovani(map, grad), // ✅ FIX: Prosleđujemo grad za konzistentnost
       adresaId: _determineAdresaIdFromRegistrovani(map, grad), // ✅ NOVO - UUID adrese
@@ -379,7 +386,14 @@ class Putnik {
           naplatioVozac: naplatioVozacBC ?? _getVozacIme(map['vozac_id'] as String?),
           // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu
           pokupioVozac: pokupioVozacBC,
-          dodeljenVozac: _getVozacIme(map['vozac_id'] as String?),
+          // 🆕 dodeljenVozac - 3 nivoa: 1) per-putnik (bc_vozac), 2) per-vreme, 3) globalni vozac_id
+          dodeljenVozac: _getDodeljenVozacWithPriority(
+            map: map,
+            danKratica: normalizedTarget,
+            place: 'bc',
+            grad: 'Bela Crkva',
+            vreme: polazakBC,
+          ),
           vozac: vozac,
           grad: 'Bela Crkva',
           adresa: finalAdresaBc, // 🆕 PRIORITET: adresa_danas > stalna adresa
@@ -423,7 +437,14 @@ class Putnik {
           naplatioVozac: naplatioVozacVS ?? _getVozacIme(map['vozac_id'] as String?),
           // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu
           pokupioVozac: pokupioVozacVS,
-          dodeljenVozac: _getVozacIme(map['vozac_id'] as String?),
+          // 🆕 dodeljenVozac - 3 nivoa: 1) per-putnik (vs_vozac), 2) per-vreme, 3) globalni vozac_id
+          dodeljenVozac: _getDodeljenVozacWithPriority(
+            map: map,
+            danKratica: normalizedTarget,
+            place: 'vs',
+            grad: 'Vršac',
+            vreme: polazakVS,
+          ),
           vozac: vozac,
           grad: 'Vršac',
           adresa: finalAdresaVs, // 🆕 PRIORITET: adresa_danas > stalna adresa
@@ -576,6 +597,34 @@ class Putnik {
     return daniKratice[weekday - 1];
   }
 
+  /// 🆕 HELPER: Odredi dodelјenog vozača sa 3 nivoa prioriteta
+  /// 1) Per-putnik per-pravac (bc_vozac/vs_vozac iz polasci_po_danu)
+  /// 2) Per-vreme (iz vreme_vozac tabele - svi putnici na tom terminu)
+  /// 3) Globalni vozac_id (fallback)
+  static String? _getDodeljenVozacWithPriority({
+    required Map<String, dynamic> map,
+    required String danKratica,
+    required String place,
+    required String grad,
+    required String vreme,
+  }) {
+    // 1️⃣ NAJVIŠI PRIORITET: Per-putnik per-pravac (bc_vozac ili vs_vozac)
+    final perPutnik = RegistrovaniHelpers.getDodeljenVozacForDayAndPlace(map, danKratica, place);
+    if (perPutnik != null && perPutnik.isNotEmpty) {
+      return perPutnik;
+    }
+
+    // 2️⃣ SREDNJI PRIORITET: Per-vreme (iz vreme_vozac tabele)
+    // Koristi sinhroni pristup keširanju - keš MORA biti učitan pre poziva!
+    final perVreme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
+    if (perVreme != null && perVreme.isNotEmpty) {
+      return perVreme;
+    }
+
+    // 3️⃣ NAJNIŽI PRIORITET: Globalni vozac_id
+    return _getVozacIme(map['vozac_id'] as String?);
+  }
+
   // ✅ CENTRALIZOVANO: Konvertuj UUID u ime vozača sa fallback-om
   static String? _getVozacIme(String? uuid) {
     if (uuid == null || uuid.isEmpty) return null;
@@ -593,7 +642,7 @@ class Putnik {
         return 'Svetlana';
       case '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f':
         return 'Bruda';
-      case '8e6ac6c7-3b5b-4f0g-a9f2-2f4c5d8e9f0g':
+      case '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f':
         return 'Bilevski';
       case '67ea0a22-689c-41b8-b576-5b27145e8e5e':
         return 'Ivan';

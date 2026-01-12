@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../config/route_config.dart';
 import '../services/theme_manager.dart';
+import '../services/vreme_vozac_service.dart';
 import '../theme.dart';
+import '../utils/vozac_boja.dart';
 
 /// Bottom navigation bar za praznike/specijalne dane
 /// BC: 5:00, 6:00, 12:00, 13:00, 15:00
@@ -17,6 +19,7 @@ class BottomNavBarPraznici extends StatefulWidget {
     required this.getPutnikCount,
     this.getKapacitet,
     this.isSlotLoading,
+    this.selectedDan,
   });
   final List<String> sviPolasci;
   final String selectedGrad;
@@ -25,6 +28,7 @@ class BottomNavBarPraznici extends StatefulWidget {
   final int Function(String grad, String vreme) getPutnikCount;
   final int Function(String grad, String vreme)? getKapacitet;
   final bool Function(String grad, String vreme)? isSlotLoading;
+  final String? selectedDan;
 
   @override
   State<BottomNavBarPraznici> createState() => _BottomNavBarPrazniciState();
@@ -132,6 +136,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
                   isSlotLoading: widget.isSlotLoading,
                   scrollController: _bcScrollController,
                   currentThemeId: currentThemeId,
+                  selectedDan: widget.selectedDan,
                 ),
                 _PolazakRow(
                   label: 'VS',
@@ -145,6 +150,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
                   isSlotLoading: widget.isSlotLoading,
                   scrollController: _vsScrollController,
                   currentThemeId: currentThemeId,
+                  selectedDan: widget.selectedDan,
                 ),
               ],
             ),
@@ -168,6 +174,7 @@ class _PolazakRow extends StatelessWidget {
     this.getKapacitet,
     this.isSlotLoading,
     this.scrollController,
+    this.selectedDan,
     Key? key,
   }) : super(key: key);
   final String label;
@@ -181,6 +188,30 @@ class _PolazakRow extends StatelessWidget {
   final bool Function(String grad, String vreme)? isSlotLoading;
   final ScrollController? scrollController;
   final String currentThemeId;
+  final String? selectedDan;
+
+  /// 🆕 Konvertuj puno ime dana u kraticu za bazu
+  String _getDanKratica(String dan) {
+    const Map<String, String> dayMap = {
+      'Ponedeljak': 'pon',
+      'Utorak': 'uto',
+      'Sreda': 'sre',
+      'Četvrtak': 'cet',
+      'Petak': 'pet',
+      'Subota': 'sub',
+      'Nedelja': 'ned',
+    };
+    return dayMap[dan] ?? dan.toLowerCase().substring(0, 3);
+  }
+
+  /// Returns the vozač border color for a given vreme, or null if no vozač assigned
+  Color? _getVozacBorderColor(String vreme) {
+    if (selectedDan == null) return null;
+    final danKratica = _getDanKratica(selectedDan!);
+    final vozac = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
+    if (vozac != null) return VozacBoja.get(vozac);
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -205,6 +236,7 @@ class _PolazakRow extends StatelessWidget {
               child: Row(
                 children: vremena.map((vreme) {
                   final bool selected = selectedGrad == grad && selectedVreme == vreme;
+                  final vozacColor = _getVozacBorderColor(vreme);
                   return GestureDetector(
                     onTap: () => onPolazakChanged(grad, vreme),
                     child: Container(
@@ -233,7 +265,7 @@ class _PolazakRow extends StatelessWidget {
                                       : currentThemeId == 'dark_pink'
                                           ? const Color(0xFFE91E8C)
                                           : Colors.blue)
-                              : Colors.grey[300]!,
+                              : vozacColor ?? Colors.grey[300]!,
                           width: selected ? 2 : 1,
                         ),
                       ),

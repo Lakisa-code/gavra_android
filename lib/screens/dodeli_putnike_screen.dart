@@ -9,6 +9,7 @@ import '../models/putnik.dart';
 import '../services/kapacitet_service.dart';
 import '../services/putnik_service.dart';
 import '../services/theme_manager.dart';
+import '../services/vreme_vozac_service.dart'; // 🆕 Per-vreme dodeljivanje
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_count_helper.dart';
@@ -107,6 +108,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   }
 
   String _getTodayName() {
+    final today = DateTime.now();
+    // Vikendom (subota=6, nedelja=7) prikaži ponedeljak
+    if (today.weekday == DateTime.saturday || today.weekday == DateTime.sunday) {
+      return 'Ponedeljak';
+    }
     return app_date_utils.DateUtils.getTodayFullName();
   }
 
@@ -192,9 +198,20 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
+  /// 🆕 Vraća kraticu pravca: 'bc' za Bela Crkva, 'vs' za Vršac
+  String get _currentPlaceKratica => _selectedGrad == 'Bela Crkva' ? 'bc' : 'vs';
+
+  /// 🆕 Vraća kraticu dana: 'pon', 'uto', itd.
+  String get _currentDayKratica {
+    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final index = _dani.indexOf(_selectedDay);
+    return index >= 0 && index < daniKratice.length ? daniKratice[index] : 'pon';
+  }
+
   Future<void> _showVozacPicker(Putnik putnik) async {
     final vozaci = VozacBoja.validDrivers;
     final currentVozac = putnik.dodeljenVozac ?? 'Nedodeljen';
+    final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -239,7 +256,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               ),
                             ),
                             Text(
-                              'Trenutni vozač: $currentVozac',
+                              '$pravacLabel $_selectedVreme • Vozač: $currentVozac',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -333,12 +350,24 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       try {
         // ➖ Ako je izabrano "Bez vozača", postavi null
         final noviVozac = selected == '_NONE_' ? null : selected;
-        await _putnikService.prebacijPutnikaVozacu(putnik.id!, noviVozac);
+        final pravac = _currentPlaceKratica; // 'bc' ili 'vs'
+        final dan = _currentDayKratica; // 'pon', 'uto', itd.
+
+        // 🆕 Sačuvaj per-pravac (bc_vozac ili vs_vozac u polasci_po_danu)
+        await _putnikService.dodelPutnikaVozacuZaPravac(
+          putnik.id!,
+          noviVozac,
+          pravac,
+          selectedDan: dan,
+        );
+
         if (mounted) {
+          final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  noviVozac == null ? '✅ ${putnik.ime} uklonjen sa vozača' : '✅ ${putnik.ime} prebačen na $noviVozac'),
+              content: Text(noviVozac == null
+                  ? '✅ ${putnik.ime} uklonjen sa vozača ($pravacLabel)'
+                  : '✅ ${putnik.ime} → $noviVozac ($pravacLabel)'),
               backgroundColor: noviVozac == null ? Colors.grey : VozacBoja.get(noviVozac),
               duration: const Duration(seconds: 2),
             ),
@@ -357,6 +386,274 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
+  /// 🆕 DODELI CELO VREME VOZAČU
+  /// Prikazuje picker za izbor vozača koji će voziti CEO termin (npr. BC 18:00)
+  Future<void> _showVremeVozacPicker() async {
+    final vozaci = VozacBoja.validDrivers;
+    final vremeVozacService = VremeVozacService();
+    final danKratica = _currentDayKratica;
+
+    // Dohvati trenutnog vozača za ovo vreme (ako postoji)
+    final currentVozac = vremeVozacService.getVozacZaVremeSync(
+          _selectedGrad,
+          _selectedVreme,
+          danKratica,
+        ) ??
+        'Nije dodeljeno';
+
+    final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
+    final vremeLabel = '$pravacLabel $_selectedVreme';
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SafeArea(
+          top: false,
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.75,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context).dividerColor,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.schedule, size: 28, color: Colors.blue),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dodeli $vremeLabel',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Svi putnici na ovom terminu idu sa izabranim vozačem',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Trenutno: $currentVozac',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: currentVozac != 'Nije dodeljeno' ? VozacBoja.get(currentVozac) : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Lista vozača
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ...vozaci.map((vozac) {
+                          final isSelected = vozac == currentVozac;
+                          final color = VozacBoja.get(vozac);
+                          return ListTile(
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: color, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  vozac[0],
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              vozac,
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? color : null,
+                              ),
+                            ),
+                            trailing: isSelected
+                                ? Icon(Icons.check_circle, color: color)
+                                : const Icon(Icons.circle_outlined, color: Colors.grey),
+                            onTap: () => Navigator.pop(context, vozac),
+                          );
+                        }),
+                        // Opcija za uklanjanje
+                        const Divider(),
+                        ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.grey, width: 2),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.block, color: Colors.grey, size: 20),
+                            ),
+                          ),
+                          title: const Text(
+                            'Ukloni dodeljivanje',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          subtitle: const Text(
+                            'Putnici koriste individualna dodeljivanja',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          trailing: currentVozac == 'Nije dodeljeno'
+                              ? const Icon(Icons.check_circle, color: Colors.grey)
+                              : const Icon(Icons.circle_outlined, color: Colors.grey),
+                          onTap: () => Navigator.pop(context, '_REMOVE_'),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected != null) {
+      try {
+        if (selected == '_REMOVE_') {
+          await vremeVozacService.removeVozacZaVreme(
+            _selectedGrad,
+            _selectedVreme,
+            danKratica,
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✅ $vremeLabel - dodeljivanje uklonjeno'),
+                backgroundColor: Colors.grey,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            // Osveži listu putnika
+            _setupStream();
+          }
+        } else {
+          await vremeVozacService.setVozacZaVreme(
+            _selectedGrad,
+            _selectedVreme,
+            danKratica,
+            selected,
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✅ $vremeLabel → $selected (ceo termin)'),
+                backgroundColor: VozacBoja.get(selected),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            // Osveži listu putnika
+            _setupStream();
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Greška: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// 🆕 WIDGET: AppBar title sa indikatorom dodeljenog vozača
+  Widget _buildAppBarTitle() {
+    if (_isSelectionMode) {
+      return Text('${_selectedPutnici.length} selektovano');
+    }
+
+    final vremeVozacService = VremeVozacService();
+    final terminVozac = vremeVozacService.getVozacZaVremeSync(
+      _selectedGrad,
+      _selectedVreme,
+      _currentDayKratica,
+    );
+
+    if (terminVozac != null) {
+      final color = VozacBoja.get(terminVozac);
+      // Samo badge sa vozačem, bez "Dodeli Putnike" teksta da ne bude overflow
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color, width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              terminVozac,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const Text('Dodeli Putnike');
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -369,7 +666,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
-            title: Text(_isSelectionMode ? '${_selectedPutnici.length} selektovano' : 'Dodeli Putnike'),
+            title: _buildAppBarTitle(),
             centerTitle: true,
             elevation: 0,
             leading: _isSelectionMode
@@ -384,6 +681,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                   )
                 : null,
             actions: [
+              // 🆕 Dodeli celo vreme vozaču
+              IconButton(
+                icon: const Icon(Icons.groups),
+                tooltip: 'Dodeli termin vozaču',
+                onPressed: _showVremeVozacPicker,
+              ),
               // 🎯 Toggle selection mode
               IconButton(
                 icon: Icon(_isSelectionMode ? Icons.check_circle : Icons.checklist),
@@ -630,11 +933,13 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     if (_selectedPutnici.isEmpty) return;
 
     final count = _selectedPutnici.length;
+    final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Prebaci na $noviVozac?'),
-        content: Text('Da li želiš da prebaciš $count putnika na vozača $noviVozac?'),
+        content: Text('Da li želiš da prebaciš $count putnika na vozača $noviVozac za $pravacLabel pravac?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -656,9 +961,18 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     int uspesno = 0;
     int greska = 0;
 
+    final pravac = _currentPlaceKratica;
+    final dan = _currentDayKratica;
+
     for (final id in _selectedPutnici.toList()) {
       try {
-        await _putnikService.prebacijPutnikaVozacu(id, noviVozac);
+        // 🆕 Koristi per-pravac dodeljivanje
+        await _putnikService.dodelPutnikaVozacuZaPravac(
+          id,
+          noviVozac,
+          pravac,
+          selectedDan: dan,
+        );
         uspesno++;
       } catch (e) {
         greska++;
@@ -746,6 +1060,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           getPutnikCount: _getPutnikCount,
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: _onPolazakChanged,
+          selectedDan: _selectedDay,
         );
       case 'zimski':
         return BottomNavBarZimski(
@@ -755,6 +1070,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           getPutnikCount: _getPutnikCount,
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: _onPolazakChanged,
+          selectedDan: _selectedDay,
         );
       case 'letnji':
         return BottomNavBarLetnji(
@@ -764,6 +1080,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           getPutnikCount: _getPutnikCount,
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: _onPolazakChanged,
+          selectedDan: _selectedDay,
         );
       default: // 'auto'
         return isZimski(now)
@@ -774,6 +1091,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                 getPutnikCount: _getPutnikCount,
                 getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                 onPolazakChanged: _onPolazakChanged,
+                selectedDan: _selectedDay,
               )
             : BottomNavBarLetnji(
                 sviPolasci: _sviPolasci,
@@ -782,6 +1100,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                 getPutnikCount: _getPutnikCount,
                 getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                 onPolazakChanged: _onPolazakChanged,
+                selectedDan: _selectedDay,
               );
     }
   }

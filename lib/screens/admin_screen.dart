@@ -129,6 +129,56 @@ class _AdminScreenState extends State<AdminScreen> {
     super.dispose();
   }
 
+  /// 🚗 VOZAČ PICKER DIALOG - Admin može da vidi ekran bilo kog vozača
+  void _showVozacPickerDialog(BuildContext context) {
+    final vozaci = VozacBoja.validDrivers;
+
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Izaberi vozača'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: vozaci.length,
+              itemBuilder: (context, index) {
+                final vozac = vozaci[index];
+                final boja = VozacBoja.get(vozac);
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: boja,
+                    child: Text(
+                      vozac[0].toUpperCase(),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  title: Text(vozac),
+                  onTap: () {
+                    Navigator.of(dialogContext).pop();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => VozacScreen(previewAsDriver: vozac),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Otkaži'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _loadCurrentDriver() async {
     try {
       final driver = await FirebaseService.getCurrentDriver().timeout(
@@ -815,12 +865,11 @@ class _AdminScreenState extends State<AdminScreen> {
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  // VOZAČ
+                                  // VOZAČ - Dropdown za admin preview
                                   SizedBox(
                                     width: buttonWidth,
                                     child: InkWell(
-                                      onTap: () => Navigator.push(
-                                          context, MaterialPageRoute<void>(builder: (context) => const VozacScreen())),
+                                      onTap: () => _showVozacPickerDialog(context),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
@@ -830,20 +879,26 @@ class _AdminScreenState extends State<AdminScreen> {
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
                                         ),
-                                        child: const Center(
+                                        child: Center(
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
-                                                child: Text('Vozač',
-                                                    style: TextStyle(
-                                                        fontWeight: FontWeight.w600,
-                                                        fontSize: 14,
-                                                        color: Colors.white,
-                                                        shadows: [
-                                                          Shadow(
-                                                              offset: Offset(1, 1),
-                                                              blurRadius: 3,
-                                                              color: Colors.black54)
-                                                        ])))),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: const [
+                                                    Text('Vozač',
+                                                        style: TextStyle(
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: 14,
+                                                            color: Colors.white,
+                                                            shadows: [
+                                                              Shadow(
+                                                                  offset: Offset(1, 1),
+                                                                  blurRadius: 3,
+                                                                  color: Colors.black54)
+                                                            ])),
+                                                    Icon(Icons.arrow_drop_down, color: Colors.white, size: 16),
+                                                  ],
+                                                ))),
                                       ),
                                     ),
                                   ),
