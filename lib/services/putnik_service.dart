@@ -874,6 +874,22 @@ class PutnikService {
       'polasci_po_danu': polasciPoDanu,
       'updated_at': now.toIso8601String(),
     }).eq('id', id);
+
+    // ✅ FIX: Loguj uplatu u voznje_log tabelu za statistike
+    String? vozacId;
+    try {
+      await VozacMappingService.initialize();
+      vozacId = VozacMappingService.getVozacUuidSync(currentDriver);
+    } catch (_) {}
+
+    await VoznjeLogService.dodajUplatu(
+      putnikId: id,
+      datum: now,
+      iznos: iznos,
+      vozacId: vozacId,
+      placeniMesec: now.month,
+      placenaGodina: now.year,
+    );
   }
 
   /// ? OTKAZI PUTNIKA - sada čuva otkazivanje PO POLASKU (grad) u polasci_po_danu JSON
