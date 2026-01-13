@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../screens/welcome_screen.dart';
@@ -29,11 +30,19 @@ class AuthManager {
     if (!VozacBoja.isValidDriver(driverName)) {
       throw ArgumentError('Vozač "$driverName" nije registrovan');
     }
+
+    // 🧹 Invalidira stari cache pre postavljanja novog
+    invalidateCache();
+
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
 
     // 📱 Ažuriraj push token sa user_id (ako token već postoji bez vlasnika)
     await _updatePushTokenWithUserId(driverName);
+
+    // Postavi novi cache
+    _cachedDriver = driverName;
+    _cacheTime = DateTime.now();
   }
 
   /// 📱 Ažurira push token sa user_id i vozac_id vozača
@@ -85,10 +94,91 @@ class AuthManager {
     }
   }
 
-  /// Dobij trenutnog vozača
+  // 🔄 Memory cache sa TTL (5 minuta)
+  static String? _cachedDriver;
+  static DateTime? _cacheTime;
+  static const Duration _cacheTTL = Duration(minutes: 5);
+
+  /// Dobij trenutnog vozača - ČITA IZ SUPABASE po FCM/HMS tokenu
+  /// Fallback na SharedPreferences ako nema interneta
   static Future<String?> getCurrentDriver() async {
+    // 1. Proveri memory cache (TTL 5 min)
+    if (_cachedDriver != null && _cacheTime != null) {
+      if (DateTime.now().difference(_cacheTime!) < _cacheTTL) {
+        return _cachedDriver;
+      }
+    }
+
+    // 2. Pokušaj iz Supabase
+    try {
+      final driverFromSupabase = await _getDriverFromSupabase();
+      if (driverFromSupabase != null) {
+        _cachedDriver = driverFromSupabase;
+        _cacheTime = DateTime.now();
+        // Sinhronizuj sa SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_driverKey, driverFromSupabase);
+        return driverFromSupabase;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [AuthManager] Supabase nedostupan: $e');
+    }
+
+    // 3. Fallback na SharedPreferences (offline mod)
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_driverKey);
+    final localDriver = prefs.getString(_driverKey);
+    if (localDriver != null) {
+      _cachedDriver = localDriver;
+      _cacheTime = DateTime.now();
+    }
+    return localDriver;
+  }
+
+  /// 🔍 Dohvati vozača iz Supabase po FCM/HMS tokenu
+  static Future<String?> _getDriverFromSupabase() async {
+    try {
+      // Dobij trenutni FCM token
+      String? token = await FirebaseService.getFCMToken();
+
+      // Ako nema FCM, probaj HMS (Huawei)
+      if (token == null || token.isEmpty) {
+        try {
+          token = await HuaweiPushService().initialize();
+        } catch (_) {
+          // HMS nije dostupan
+        }
+      }
+
+      if (token == null || token.isEmpty) {
+        debugPrint('⚠️ [AuthManager] Nema FCM/HMS tokena');
+        return null;
+      }
+
+      // Query push_tokens po tokenu
+      final response = await Supabase.instance.client
+          .from('push_tokens')
+          .select('user_id')
+          .eq('token', token)
+          .eq('user_type', 'vozac')
+          .maybeSingle();
+
+      if (response != null && response['user_id'] != null) {
+        final userId = response['user_id'] as String;
+        debugPrint('✅ [AuthManager] Vozač iz Supabase: $userId');
+        return userId;
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('❌ [AuthManager] Greška pri čitanju iz Supabase: $e');
+      rethrow;
+    }
+  }
+
+  /// 🧹 Invalidira cache (pozovi nakon login/logout)
+  static void invalidateCache() {
+    _cachedDriver = null;
+    _cacheTime = null;
   }
 
   /// 🚪 LOGOUT FUNCTIONALITY
@@ -110,6 +200,9 @@ class AuthManager {
 
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // 🧹 Invalidira memory cache
+      invalidateCache();
 
       // 1. Obriši SharedPreferences - SVE session podatke uključujući zapamćene uređaje
       await prefs.remove(_driverKey);

@@ -707,9 +707,137 @@ class _PutnikCardState extends State<PutnikCard> {
     if (_putnik.mesecnaKarta == true) {
       // MESEČNI PUTNIK - CUSTOM CENA umesto fiksne
       await _handleRegistrovaniPayment();
+    } else if (_putnik.isDnevniTip) {
+      // DNEVNI PUTNIK - fiksna cena 600 RSD
+      await _handleDnevniPayment();
     } else {
       // OBIČNI PUTNIK - unos custom iznosa
       await _handleObicniPayment();
+    }
+  }
+
+  // 💵 PLAĆANJE DNEVNOG PUTNIKA - fiksna cena 600 RSD
+  Future<void> _handleDnevniPayment() async {
+    const double fiksnaCena = 600.0;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.outline,
+              width: 2,
+            ),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.today,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Dnevna karta',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Putnik: ${_putnik.ime}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Relacija: ${_putnik.grad}',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              Text(
+                'Polazak: ${_putnik.polazak}',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.attach_money,
+                      size: 32,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${fiksnaCena.toStringAsFixed(0)} RSD',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Odustani'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              icon: const Icon(Icons.payment),
+              label: const Text('Potvrdi plaćanje'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      // Provjeri da li putnik ima valjan ID
+      if (_putnik.id == null || _putnik.id.toString().isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Putnik nema valjan ID - ne može se naplatiti'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Izvrši plaćanje sa fiksnom cenom
+      await _executePayment(
+        fiksnaCena,
+        isRegistrovani: false,
+      );
     }
   }
 

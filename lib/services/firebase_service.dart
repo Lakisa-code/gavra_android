@@ -28,12 +28,10 @@ class FirebaseService {
     }
   }
 
-  /// Dobija trenutnog vozača iz SharedPreferences
+  /// Dobija trenutnog vozača - DELEGIRA NA AuthManager
+  /// AuthManager čita iz Supabase (push_tokens tabela) kao izvor istine
   static Future<String?> getCurrentDriver() async {
-    if (_currentDriver != null) return _currentDriver;
-
-    final prefs = await SharedPreferences.getInstance();
-    _currentDriver = prefs.getString('current_driver');
+    _currentDriver = await AuthManager.getCurrentDriver();
     return _currentDriver;
   }
 

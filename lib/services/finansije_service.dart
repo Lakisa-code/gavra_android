@@ -44,33 +44,59 @@ class FinansijeService {
     }
   }
 
-  /// Dohvati sve aktivne troškove
-  static Future<List<Trosak>> getTroskovi() async {
+  /// Dohvati sve aktivne troškove za određeni mesec/godinu
+  static Future<List<Trosak>> getTroskovi({int? mesec, int? godina}) async {
     try {
-      final response =
-          await _supabase.from('finansije_troskovi').select('*, vozaci(ime)').eq('aktivan', true).order('tip');
+      var query = _supabase.from('finansije_troskovi').select('*, vozaci(ime)').eq('aktivan', true);
 
+      if (mesec != null) {
+        query = query.eq('mesec', mesec);
+      }
+      if (godina != null) {
+        query = query.eq('godina', godina);
+      }
+
+      final response = await query.order('tip');
       return (response as List).map((row) => Trosak.fromJson(row)).toList();
     } catch (e) {
       return [];
     }
   }
 
-  /// Dohvati ukupne mesečne troškove
-  static Future<double> getUkupniMesecniTroskovi() async {
-    final troskovi = await getTroskovi();
-    double ukupno = 0;
-    for (final t in troskovi) {
-      if (t.mesecno) {
-        ukupno += t.iznos;
-      }
-    }
-    return ukupno;
+  /// Dohvati troškove za tekući mesec
+  static Future<List<Trosak>> getTroskoviTekuciMesec() async {
+    final now = DateTime.now();
+    return getTroskovi(mesec: now.month, godina: now.year);
   }
 
-  /// Dohvati troškove po tipu
-  static Future<Map<String, double>> getTroskoviPoTipu() async {
-    final troskovi = await getTroskovi();
+  /// Dohvati ukupne troškove za mesec/godinu
+  static Future<double> getUkupniTroskoviZaMesec(int mesec, int godina) async {
+    final troskovi = await getTroskovi(mesec: mesec, godina: godina);
+    return troskovi.fold(0.0, (sum, t) => sum + t.iznos);
+  }
+
+  /// Dohvati ukupne troškove za celu godinu
+  static Future<double> getUkupniTroskoviZaGodinu(int godina) async {
+    try {
+      final response =
+          await _supabase.from('finansije_troskovi').select('iznos').eq('aktivan', true).eq('godina', godina);
+
+      double ukupno = 0;
+      for (final row in response) {
+        final iznos = row['iznos'];
+        if (iznos != null) {
+          ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+        }
+      }
+      return ukupno;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Dohvati troškove po tipu za mesec/godinu
+  static Future<Map<String, double>> getTroskoviPoTipu({int? mesec, int? godina}) async {
+    final troskovi = await getTroskovi(mesec: mesec, godina: godina);
     final Map<String, double> poTipu = {
       'plata': 0,
       'kredit': 0,
@@ -80,9 +106,7 @@ class FinansijeService {
     };
 
     for (final t in troskovi) {
-      if (t.mesecno) {
-        poTipu[t.tip] = (poTipu[t.tip] ?? 0) + t.iznos;
-      }
+      poTipu[t.tip] = (poTipu[t.tip] ?? 0) + t.iznos;
     }
     return poTipu;
   }
@@ -99,15 +123,18 @@ class FinansijeService {
     }
   }
 
-  /// Dodaj novi trošak
-  static Future<bool> addTrosak(String naziv, String tip, double iznos) async {
+  /// Dodaj novi trošak za određeni mesec/godinu
+  static Future<bool> addTrosak(String naziv, String tip, double iznos, {int? mesec, int? godina}) async {
     try {
+      final now = DateTime.now();
       await _supabase.from('finansije_troskovi').insert({
         'naziv': naziv,
         'tip': tip,
         'iznos': iznos,
         'mesecno': true,
         'aktivan': true,
+        'mesec': mesec ?? now.month,
+        'godina': godina ?? now.year,
       });
       return true;
     } catch (e) {
@@ -145,8 +172,9 @@ class FinansijeService {
     final endOfYear = DateTime(now.year, 12, 31, 23, 59, 59);
 
     // Prošla godina
-    final startOfProslaGodina = DateTime(now.year - 1, 1, 1);
-    final endOfProslaGodina = DateTime(now.year - 1, 12, 31, 23, 59, 59);
+    final proslaGodina = now.year - 1;
+    final startOfProslaGodina = DateTime(proslaGodina, 1, 1);
+    final endOfProslaGodina = DateTime(proslaGodina, 12, 31, 23, 59, 59);
 
     // Prihodi
     final prihodNedelja = await getPrihodZaPeriod(startOfWeek, endOfWeek);
@@ -160,20 +188,25 @@ class FinansijeService {
     final voznjiGodina = await getBrojVoznjiZaPeriod(startOfYear, endOfYear);
     final voznjiProslaGodina = await getBrojVoznjiZaPeriod(startOfProslaGodina, endOfProslaGodina);
 
-    // Troškovi (mesečni)
-    final troskoviMesecno = await getUkupniMesecniTroskovi();
-    final troskoviPoTipu = await getTroskoviPoTipu();
+    // 📊 TROŠKOVI - PRAVILNO PO MESECIMA/GODINAMA
 
-    // Nedeljni troškovi = mesečni / 4.33
-    final troskoviNedelja = troskoviMesecno / 4.33;
+    // Tekući mesec - stvarni troškovi
+    final troskoviTekuciMesec = await getUkupniTroskoviZaMesec(now.month, now.year);
+    final troskoviPoTipu = await getTroskoviPoTipu(mesec: now.month, godina: now.year);
 
-    // Godišnji troškovi = mesečni * 12
-    final troskoviGodina = troskoviMesecno * 12;
+    // Nedelja - proporcionalno od mesečnih (mesec / 4.33)
+    final troskoviNedelja = troskoviTekuciMesec / 4.33;
 
-    // Dani u mesecu do sad (za proporciju)
+    // Ova godina - zbir svih meseci ove godine
+    final troskoviOvaGodina = await getUkupniTroskoviZaGodinu(now.year);
+
+    // Prošla godina - zbir svih meseci prošle godine
+    final troskoviProslaGodinaIznos = await getUkupniTroskoviZaGodinu(proslaGodina);
+
+    // Dani u mesecu do sad (za proporciju prikaza)
     final danaUMesecu = endOfMonth.day;
     final danaProsloDosad = now.day;
-    final proporcionalnaTroskoviMesec = troskoviMesecno * (danaProsloDosad / danaUMesecu);
+    final proporcionalnaTroskoviMesec = troskoviTekuciMesec * (danaProsloDosad / danaUMesecu);
 
     return FinansijskiIzvestaj(
       // Nedelja
@@ -188,18 +221,18 @@ class FinansijeService {
       voznjiMesec: voznjiMesec,
       // Godina
       prihodGodina: prihodGodina,
-      troskoviGodina: troskoviGodina * (now.month / 12), // Proporcionalno
-      netoGodina: prihodGodina - (troskoviGodina * (now.month / 12)),
+      troskoviGodina: troskoviOvaGodina,
+      netoGodina: prihodGodina - troskoviOvaGodina,
       voznjiGodina: voznjiGodina,
-      // Prošla godina
+      // Prošla godina - STVARNI troškovi iz baze
       prihodProslaGodina: prihodProslaGodina,
-      troskoviProslaGodina: troskoviGodina, // Cela godina troškova
-      netoProslaGodina: prihodProslaGodina - troskoviGodina,
+      troskoviProslaGodina: troskoviProslaGodinaIznos,
+      netoProslaGodina: prihodProslaGodina - troskoviProslaGodinaIznos,
       voznjiProslaGodina: voznjiProslaGodina,
-      proslaGodina: now.year - 1,
+      proslaGodina: proslaGodina,
       // Detalji troškova
       troskoviPoTipu: troskoviPoTipu,
-      ukupnoMesecniTroskovi: troskoviMesecno,
+      ukupnoMesecniTroskovi: troskoviTekuciMesec,
       // Datumi
       startNedelja: startOfWeek,
       endNedelja: endOfWeek,
@@ -217,6 +250,8 @@ class Trosak {
   final bool aktivan;
   final String? vozacId;
   final String? vozacIme;
+  final int? mesec;
+  final int? godina;
 
   Trosak({
     required this.id,
@@ -227,6 +262,8 @@ class Trosak {
     required this.aktivan,
     this.vozacId,
     this.vozacIme,
+    this.mesec,
+    this.godina,
   });
 
   factory Trosak.fromJson(Map<String, dynamic> json) {
@@ -247,6 +284,8 @@ class Trosak {
       aktivan: json['aktivan'] as bool? ?? true,
       vozacId: json['vozac_id']?.toString(),
       vozacIme: vozacIme,
+      mesec: json['mesec'] as int?,
+      godina: json['godina'] as int?,
     );
   }
 

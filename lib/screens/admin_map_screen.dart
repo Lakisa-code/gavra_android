@@ -99,8 +99,15 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         });
       }
 
-      // Učitaj iz vozac_lokacije tabele (prava tabela sa GPS podacima)
-      final response = await Supabase.instance.client.from('vozac_lokacije').select().limit(10);
+      // Učitaj iz vozac_lokacije tabele - SAMO aktivne vozače sa skorašnjim podacima
+      // Filter: aktivan = true I updated_at u poslednjih 4 sata (realno praćenje)
+      final recentTime = DateTime.now().subtract(const Duration(hours: 4)).toUtc().toIso8601String();
+      final response = await Supabase.instance.client
+          .from('vozac_lokacije')
+          .select()
+          .eq('aktivan', true)
+          .gte('updated_at', recentTime)
+          .limit(10);
       final gpsLokacije = <GPSLokacija>[];
       for (final json in response as List<dynamic>) {
         try {

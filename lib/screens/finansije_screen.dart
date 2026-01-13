@@ -29,7 +29,8 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
     setState(() => _isLoading = true);
 
     final izvestaj = await FinansijeService.getIzvestaj();
-    final troskovi = await FinansijeService.getTroskovi();
+    // Učitaj troškove za tekući mesec
+    final troskovi = await FinansijeService.getTroskoviTekuciMesec();
 
     setState(() {
       _izvestaj = izvestaj;
