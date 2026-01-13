@@ -23,13 +23,36 @@ class HuaweiPushService {
   StreamSubscription<RemoteMessage>? _messageSub;
   bool _messageListenerRegistered = false;
 
+  // 🛡️ ZAŠTITA OD VIŠESTRUKOG POZIVANJA
+  bool _initialized = false;
+  bool _initializing = false;
+  String? _cachedToken;
+
   /// Initialize and request token. This method is safe to call even when
   /// HMS is not available on the device — it will simply return null.
+  /// 🛡️ SAFE TO CALL MULTIPLE TIMES - vraća cached token ako već inicijalizovan
   Future<String?> initialize() async {
     // 🍎 iOS ne podržava Huawei Push - preskoči
     if (Platform.isIOS) {
       return null;
     }
+
+    // 🛡️ Ako je već inicijalizovan, vrati cached token
+    if (_initialized && _cachedToken != null) {
+      return _cachedToken;
+    }
+
+    // 🛡️ Ako je inicijalizacija u toku, sačekaj
+    if (_initializing) {
+      // Čekaj do 5 sekundi da se završi tekuća inicijalizacija
+      for (int i = 0; i < 50; i++) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (_initialized) return _cachedToken;
+      }
+      return _cachedToken;
+    }
+
+    _initializing = true;
 
     try {
       // Subscribe for token stream — the plugin emits tokens when available or after
@@ -37,7 +60,10 @@ class HuaweiPushService {
       // versions, so the stream-based approach is resilient.
       _tokenSub?.cancel();
       _tokenSub = Push.getTokenStream.listen((String? newToken) async {
-        if (newToken != null) await _registerTokenWithServer(newToken);
+        if (newToken != null && newToken.isNotEmpty) {
+          _cachedToken = newToken;
+          await _registerTokenWithServer(newToken);
+        }
       });
 
       // 🔔 SUBSCRIBE TO MESSAGE STREAM - slušaj dolazne push notifikacije
@@ -65,6 +91,7 @@ class HuaweiPushService {
         // parameter and does not return the token; the token is emitted on
         // Push.getTokenStream. Requesting the token explicitly increases the
         // chance of getting a token quickly.
+        // 🛡️ POZIVA SE SAMO JEDNOM PRI PRVOJ INICIJALIZACIJI
         try {
           Push.getToken('HCM');
         } catch (e) {
@@ -80,9 +107,13 @@ class HuaweiPushService {
       try {
         // Wait longer for the token to appear on the stream, as the SDK may
         // emit the token with a delay while contacting Huawei servers.
-        final firstValue = await Push.getTokenStream.first.timeout(const Duration(seconds: 15));
+        // 🛡️ SMANJEN TIMEOUT sa 15 na 5 sekundi
+        final firstValue = await Push.getTokenStream.first.timeout(const Duration(seconds: 5));
         if (firstValue.isNotEmpty) {
+          _cachedToken = firstValue;
           await _registerTokenWithServer(firstValue);
+          _initialized = true;
+          _initializing = false;
           return firstValue;
         }
       } catch (_) {
@@ -90,12 +121,18 @@ class HuaweiPushService {
         // still handle tokens once they become available.
       }
 
-      return null;
+      _initialized = true;
+      _initializing = false;
+      return _cachedToken;
     } catch (e) {
       // Non-fatal: plugin may throw if not configured on device.
+      _initializing = false;
       return null;
     }
   }
+
+  /// 🔑 GETTER ZA CACHED TOKEN - ne poziva initialize()
+  String? get cachedToken => _cachedToken;
 
   /// 🔔 SETUP MESSAGE LISTENER - sluša dolazne Huawei push poruke
   void _setupMessageListener() {

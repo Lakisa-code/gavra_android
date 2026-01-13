@@ -324,6 +324,9 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
             _buildTrosakRow('🏦 Kredit', poTipu['kredit'] ?? 0),
             _buildTrosakRow('⛽ Gorivo', poTipu['gorivo'] ?? 0),
             _buildTrosakRow('🔧 Amortizacija', poTipu['amortizacija'] ?? 0),
+            _buildTrosakRow('📝 Registracija', poTipu['registracija'] ?? 0),
+            _buildTrosakRow('🚗 YU auto', poTipu['yu_auto'] ?? 0),
+            _buildTrosakRow('🛠️ Majstori', poTipu['majstori'] ?? 0),
             _buildTrosakRow('📋 Ostalo', poTipu['ostalo'] ?? 0),
 
             const SizedBox(height: 16),
@@ -387,6 +390,9 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
     final kreditController = TextEditingController();
     final gorivoController = TextEditingController();
     final amortizacijaController = TextEditingController();
+    final registracijaController = TextEditingController();
+    final yuAutoController = TextEditingController();
+    final majstoriController = TextEditingController();
     final ostaloController = TextEditingController();
 
     // Popuni postojeće vrednosti
@@ -403,6 +409,15 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
           break;
         case 'amortizacija':
           amortizacijaController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
+          break;
+        case 'registracija':
+          registracijaController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
+          break;
+        case 'yu_auto':
+          yuAutoController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
+          break;
+        case 'majstori':
+          majstoriController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
           break;
         case 'ostalo':
           ostaloController.text = trosak.iznos > 0 ? trosak.iznos.toStringAsFixed(0) : '';
@@ -465,6 +480,18 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                   _buildTrosakInputRow('🔧', 'Amortizacija', amortizacijaController),
                   const SizedBox(height: 12),
 
+                  // Registracija
+                  _buildTrosakInputRow('📝', 'Registracija', registracijaController),
+                  const SizedBox(height: 12),
+
+                  // YU auto
+                  _buildTrosakInputRow('🚗', 'YU auto', yuAutoController),
+                  const SizedBox(height: 12),
+
+                  // Majstori
+                  _buildTrosakInputRow('🛠️', 'Majstori', majstoriController),
+                  const SizedBox(height: 12),
+
                   // Ostalo
                   _buildTrosakInputRow('📋', 'Ostalo', ostaloController),
                   const SizedBox(height: 24),
@@ -479,6 +506,9 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                           kredit: double.tryParse(kreditController.text) ?? 0,
                           gorivo: double.tryParse(gorivoController.text) ?? 0,
                           amortizacija: double.tryParse(amortizacijaController.text) ?? 0,
+                          registracija: double.tryParse(registracijaController.text) ?? 0,
+                          yuAuto: double.tryParse(yuAutoController.text) ?? 0,
+                          majstori: double.tryParse(majstoriController.text) ?? 0,
                           ostalo: double.tryParse(ostaloController.text) ?? 0,
                         );
                         if (!context.mounted) return;
@@ -537,6 +567,9 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
     required double kredit,
     required double gorivo,
     required double amortizacija,
+    required double registracija,
+    required double yuAuto,
+    required double majstori,
     required double ostalo,
   }) async {
     // Sačuvaj ili ažuriraj svaki trošak
@@ -544,6 +577,9 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
     await _saveOrUpdateTrosak('Kredit', 'kredit', kredit);
     await _saveOrUpdateTrosak('Gorivo', 'gorivo', gorivo);
     await _saveOrUpdateTrosak('Amortizacija', 'amortizacija', amortizacija);
+    await _saveOrUpdateTrosak('Registracija', 'registracija', registracija);
+    await _saveOrUpdateTrosak('YU auto', 'yu_auto', yuAuto);
+    await _saveOrUpdateTrosak('Majstori', 'majstori', majstori);
     await _saveOrUpdateTrosak('Ostalo', 'ostalo', ostalo);
   }
 

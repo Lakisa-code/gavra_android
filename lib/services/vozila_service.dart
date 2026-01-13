@@ -63,6 +63,151 @@ class VozilaService {
       return false;
     }
   }
+
+  // ==================== ISTORIJA SERVISA ====================
+
+  /// Dodaj zapis u istoriju vozila
+  static Future<bool> addIstorijuServisa({
+    required String voziloId,
+    required String tip,
+    DateTime? datum,
+    int? km,
+    String? opis,
+    double? cena,
+    String? pozicija,
+  }) async {
+    try {
+      await _supabase.from('vozila_istorija').insert({
+        'vozilo_id': voziloId,
+        'tip': tip,
+        'datum': datum?.toIso8601String().split('T')[0],
+        'km': km,
+        'opis': opis,
+        'cena': cena,
+        'pozicija': pozicija,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Dohvati istoriju servisa za vozilo
+  static Future<List<IstorijaSevisa>> getIstorijuServisa(String voziloId, {String? tip}) async {
+    try {
+      var query = _supabase.from('vozila_istorija').select().eq('vozilo_id', voziloId);
+
+      if (tip != null) {
+        query = query.eq('tip', tip);
+      }
+
+      final response = await query.order('datum', ascending: false);
+      return (response as List).map((row) => IstorijaSevisa.fromJson(row)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Obriši zapis iz istorije
+  static Future<bool> deleteIstorijuServisa(String id) async {
+    try {
+      await _supabase.from('vozila_istorija').delete().eq('id', id);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
+/// Model za istoriju servisa
+class IstorijaSevisa {
+  final String id;
+  final String voziloId;
+  final String tip;
+  final DateTime? datum;
+  final int? km;
+  final String? opis;
+  final double? cena;
+  final String? pozicija;
+  final DateTime createdAt;
+
+  IstorijaSevisa({
+    required this.id,
+    required this.voziloId,
+    required this.tip,
+    this.datum,
+    this.km,
+    this.opis,
+    this.cena,
+    this.pozicija,
+    required this.createdAt,
+  });
+
+  factory IstorijaSevisa.fromJson(Map<String, dynamic> json) {
+    return IstorijaSevisa(
+      id: json['id']?.toString() ?? '',
+      voziloId: json['vozilo_id']?.toString() ?? '',
+      tip: json['tip'] as String? ?? '',
+      datum: json['datum'] != null ? DateTime.tryParse(json['datum'].toString()) : null,
+      km: json['km'] as int?,
+      opis: json['opis'] as String?,
+      cena: json['cena'] != null ? (json['cena'] as num).toDouble() : null,
+      pozicija: json['pozicija'] as String?,
+      createdAt: DateTime.parse(json['created_at'].toString()),
+    );
+  }
+
+  /// Ikona za tip
+  String get ikona {
+    switch (tip) {
+      case 'mali_servis':
+        return '🔧';
+      case 'veliki_servis':
+        return '🛠️';
+      case 'alternator':
+        return '⚡';
+      case 'gume_prednje':
+        return '🛞';
+      case 'gume_zadnje':
+        return '🛞';
+      case 'akumulator':
+        return '🔋';
+      case 'plocice':
+        return '🛑';
+      case 'trap':
+        return '🔩';
+      case 'registracija':
+        return '📋';
+      default:
+        return '📝';
+    }
+  }
+
+  /// Naziv tipa
+  String get tipNaziv {
+    switch (tip) {
+      case 'mali_servis':
+        return 'Mali servis';
+      case 'veliki_servis':
+        return 'Veliki servis';
+      case 'alternator':
+        return 'Alternator';
+      case 'gume_prednje':
+        return 'Gume prednje';
+      case 'gume_zadnje':
+        return 'Gume zadnje';
+      case 'akumulator':
+        return 'Akumulator';
+      case 'plocice':
+        return 'Pločice';
+      case 'trap':
+        return 'Trap';
+      case 'registracija':
+        return 'Registracija';
+      default:
+        return 'Ostalo';
+    }
+  }
 }
 
 /// Model za vozilo - Kolska knjiga
@@ -86,6 +231,10 @@ class Vozilo {
   final int? alternatorKm;
   final DateTime? gumeDatum;
   final String? gumeOpis;
+  final DateTime? gumePrednjeDatum;
+  final String? gumePrednjeOpis;
+  final DateTime? gumeZadnjeDatum;
+  final String? gumeZadnjeOpis;
   final String? napomena;
   // Nova polja
   final DateTime? akumulatorDatum;
@@ -114,6 +263,10 @@ class Vozilo {
     this.alternatorKm,
     this.gumeDatum,
     this.gumeOpis,
+    this.gumePrednjeDatum,
+    this.gumePrednjeOpis,
+    this.gumeZadnjeDatum,
+    this.gumeZadnjeOpis,
     this.napomena,
     this.akumulatorDatum,
     this.akumulatorKm,
@@ -143,6 +296,10 @@ class Vozilo {
       alternatorKm: json['alternator_km'] as int?,
       gumeDatum: _parseDate(json['gume_datum']),
       gumeOpis: json['gume_opis'] as String?,
+      gumePrednjeDatum: _parseDate(json['gume_prednje_datum']),
+      gumePrednjeOpis: json['gume_prednje_opis'] as String?,
+      gumeZadnjeDatum: _parseDate(json['gume_zadnje_datum']),
+      gumeZadnjeOpis: json['gume_zadnje_opis'] as String?,
       akumulatorDatum: _parseDate(json['akumulator_datum']),
       akumulatorKm: json['akumulator_km'] as int?,
       plociceDatum: _parseDate(json['plocice_datum']),

@@ -72,7 +72,11 @@ class FinansijeService {
   /// Dohvati ukupne troškove za mesec/godinu
   static Future<double> getUkupniTroskoviZaMesec(int mesec, int godina) async {
     final troskovi = await getTroskovi(mesec: mesec, godina: godina);
-    return troskovi.fold(0.0, (sum, t) => sum + t.iznos);
+    double ukupno = 0;
+    for (final t in troskovi) {
+      ukupno += t.iznos;
+    }
+    return ukupno;
   }
 
   /// Dohvati ukupne troškove za celu godinu
@@ -102,6 +106,9 @@ class FinansijeService {
       'kredit': 0,
       'gorivo': 0,
       'amortizacija': 0,
+      'registracija': 0,
+      'yu_auto': 0,
+      'majstori': 0,
       'ostalo': 0,
     };
 

@@ -396,13 +396,27 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             const Divider(height: 32),
 
-            // Gume
+            // Gume prednje
             _buildEditableField(
               icon: '🛞',
-              label: 'Gume',
-              value: v.gumeOpis ?? '-',
-              subtitle: v.gumeDatum != null ? 'Menjane: ${Vozilo.formatDatum(v.gumeDatum)}' : null,
-              onEdit: () => _editGumeField(v.gumeDatum, v.gumeOpis),
+              label: 'Gume prednje',
+              value: v.gumePrednjeOpis ?? v.gumeOpis ?? '-',
+              subtitle: v.gumePrednjeDatum != null
+                  ? 'Menjane: ${Vozilo.formatDatum(v.gumePrednjeDatum)}'
+                  : v.gumeDatum != null
+                      ? 'Menjane: ${Vozilo.formatDatum(v.gumeDatum)}'
+                      : null,
+              onEdit: () =>
+                  _editGumeField('prednje', v.gumePrednjeDatum ?? v.gumeDatum, v.gumePrednjeOpis ?? v.gumeOpis),
+            ),
+
+            // Gume zadnje
+            _buildEditableField(
+              icon: '🛞',
+              label: 'Gume zadnje',
+              value: v.gumeZadnjeOpis ?? '-',
+              subtitle: v.gumeZadnjeDatum != null ? 'Menjane: ${Vozilo.formatDatum(v.gumeZadnjeDatum)}' : null,
+              onEdit: () => _editGumeField('zadnje', v.gumeZadnjeDatum, v.gumeZadnjeOpis),
             ),
 
             const Divider(height: 32),
@@ -655,6 +669,17 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                           '${prefix}_km': kmValue,
                         },
                       );
+
+                      // Dodaj u istoriju
+                      if (success && (selectedDatum != null || kmValue != null)) {
+                        await VozilaService.addIstorijuServisa(
+                          voziloId: _selectedVozilo!.id,
+                          tip: prefix,
+                          datum: selectedDatum,
+                          km: kmValue,
+                        );
+                      }
+
                       if (!context.mounted) return;
                       Navigator.pop(context);
                       if (success) {
@@ -679,9 +704,26 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     );
   }
 
-  void _editGumeField(DateTime? datum, String? opis) {
+  void _editGumeField(String pozicija, DateTime? datum, String? opis) {
     DateTime? selectedDatum = datum;
     final opisController = TextEditingController(text: opis ?? '');
+    final isPrednje = pozicija == 'prednje';
+    final label = isPrednje ? 'Gume prednje' : 'Gume zadnje';
+
+    // Tipovi guma sa emoji
+    String? selectedTip;
+    // Pokušaj prepoznati tip iz opisa
+    if (opis != null) {
+      if (opis.contains('☀️') || opis.toLowerCase().contains('letn')) {
+        selectedTip = 'letnje';
+      } else if (opis.contains('❄️') || opis.toLowerCase().contains('zimsk')) {
+        selectedTip = 'zimske';
+      } else if (opis.contains('🌤️') ||
+          opis.toLowerCase().contains('m+s') ||
+          opis.toLowerCase().contains('univerzal')) {
+        selectedTip = 'ms';
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -704,18 +746,53 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    '🛞 Gume',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    '🛞 $label',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
+
+                  // Tip guma - brzi izbor
+                  const Text('Tip guma:', style: TextStyle(fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTipGumaChip(
+                          '☀️ Letnje',
+                          'letnje',
+                          selectedTip,
+                          (tip) => setStateDialog(() => selectedTip = tip),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildTipGumaChip(
+                          '❄️ Zimske',
+                          'zimske',
+                          selectedTip,
+                          (tip) => setStateDialog(() => selectedTip = tip),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildTipGumaChip(
+                          '🌤️ M+S',
+                          'ms',
+                          selectedTip,
+                          (tip) => setStateDialog(() => selectedTip = tip),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
 
                   // Opis guma
                   TextField(
                     controller: opisController,
                     decoration: const InputDecoration(
-                      labelText: 'Opis guma',
+                      labelText: 'Marka i dimenzija',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.description),
                       hintText: 'npr. Michelin 215/65 R16',
@@ -754,13 +831,47 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
                   ElevatedButton.icon(
                     onPressed: () async {
+                      // Složi opis sa tipom guma
+                      String finalOpis = '';
+                      if (selectedTip != null) {
+                        final tipEmoji = selectedTip == 'letnje'
+                            ? '☀️'
+                            : selectedTip == 'zimske'
+                                ? '❄️'
+                                : '🌤️';
+                        finalOpis = tipEmoji;
+                      }
+                      if (opisController.text.isNotEmpty) {
+                        finalOpis += finalOpis.isNotEmpty ? ' ${opisController.text}' : opisController.text;
+                      }
+
+                      // Sačuvaj u vozila tabelu
+                      final updateData = isPrednje
+                          ? {
+                              'gume_prednje_datum': selectedDatum?.toIso8601String().split('T')[0],
+                              'gume_prednje_opis': finalOpis.isEmpty ? null : finalOpis,
+                            }
+                          : {
+                              'gume_zadnje_datum': selectedDatum?.toIso8601String().split('T')[0],
+                              'gume_zadnje_opis': finalOpis.isEmpty ? null : finalOpis,
+                            };
+
                       final success = await VozilaService.updateKolskaKnjiga(
                         _selectedVozilo!.id,
-                        {
-                          'gume_datum': selectedDatum?.toIso8601String().split('T')[0],
-                          'gume_opis': opisController.text.isEmpty ? null : opisController.text,
-                        },
+                        updateData,
                       );
+
+                      // Dodaj u istoriju
+                      if (success && selectedDatum != null) {
+                        await VozilaService.addIstorijuServisa(
+                          voziloId: _selectedVozilo!.id,
+                          tip: isPrednje ? 'gume_prednje' : 'gume_zadnje',
+                          datum: selectedDatum,
+                          opis: finalOpis.isEmpty ? null : finalOpis,
+                          pozicija: pozicija,
+                        );
+                      }
+
                       if (!context.mounted) return;
                       Navigator.pop(context);
                       if (success) {
@@ -779,6 +890,33 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipGumaChip(String label, String value, String? selected, Function(String?) onTap) {
+    final isSelected = selected == value;
+    return InkWell(
+      onTap: () => onTap(isSelected ? null : value),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue.shade100 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.blue.shade800 : Colors.black87,
           ),
         ),
       ),

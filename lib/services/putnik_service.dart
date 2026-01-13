@@ -11,6 +11,7 @@ import 'driver_location_service.dart';
 import 'realtime/realtime_manager.dart';
 import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
+import 'slobodna_mesta_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
 
@@ -556,6 +557,32 @@ class PutnikService {
         }
       }
 
+      // 🚫 PROVERA KAPACITETA - Da li ima slobodnih mesta?
+      final gradKey = GradAdresaValidator.isBelaCrkva(putnik.grad) ? 'BC' : 'VS';
+      final polazakVremeNorm = GradAdresaValidator.normalizeTime(putnik.polazak);
+      final datumZaProveru = putnik.datum ?? DateTime.now().toIso8601String().split('T')[0];
+
+      final slobodnaMestaData = await SlobodnaMestaService.getSlobodnaMesta(datum: datumZaProveru);
+      final listaZaGrad = slobodnaMestaData[gradKey];
+
+      if (listaZaGrad != null) {
+        for (final sm in listaZaGrad) {
+          if (sm.vreme == polazakVremeNorm) {
+            final dostupnoMesta = sm.maxMesta - sm.zauzetaMesta;
+            if (putnik.brojMesta > dostupnoMesta) {
+              throw Exception(
+                'NEMA DOVOLJNO SLOBODNIH MESTA!\n\n'
+                'Polazak: ${putnik.polazak} (${putnik.grad})\n'
+                'Potrebno mesta: ${putnik.brojMesta}\n'
+                'Slobodno mesta: $dostupnoMesta / ${sm.maxMesta}\n\n'
+                'Smanjite broj mesta ili izaberite drugi polazak.',
+              );
+            }
+            break;
+          }
+        }
+      }
+
       // ? PROVERAVA DA LI REGISTROVANI PUTNIK VEC POSTOJI
       final existingPutnici = await supabase
           .from('registrovani_putnici')
@@ -582,7 +609,7 @@ class PutnikService {
 
       final danKratica = putnik.dan.toLowerCase();
 
-      final gradKey = GradAdresaValidator.isBelaCrkva(putnik.grad) ? 'bc' : 'vs';
+      final gradKeyLower = GradAdresaValidator.isBelaCrkva(putnik.grad) ? 'bc' : 'vs';
 
       final polazakVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
 
@@ -590,20 +617,20 @@ class PutnikService {
         polasciPoDanu[danKratica] = {'bc': null, 'vs': null};
       }
       final danPolasci = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map);
-      danPolasci[gradKey] = polazakVreme;
+      danPolasci[gradKeyLower] = polazakVreme;
       // ?? Dodaj broj mesta ako je > 1
       if (putnik.brojMesta > 1) {
-        danPolasci['${gradKey}_mesta'] = putnik.brojMesta;
+        danPolasci['${gradKeyLower}_mesta'] = putnik.brojMesta;
       } else {
-        danPolasci.remove('${gradKey}_mesta');
+        danPolasci.remove('${gradKeyLower}_mesta');
       }
 
       // 🆕 Dodaj "adresa danas" ako je prosleđena (override za ovaj dan)
       if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
-        danPolasci['${gradKey}_adresa_danas_id'] = putnik.adresaId;
+        danPolasci['${gradKeyLower}_adresa_danas_id'] = putnik.adresaId;
       }
       if (putnik.adresa != null && putnik.adresa!.isNotEmpty && putnik.adresa != 'Adresa nije definisana') {
-        danPolasci['${gradKey}_adresa_danas'] = putnik.adresa;
+        danPolasci['${gradKeyLower}_adresa_danas'] = putnik.adresa;
       }
 
       polasciPoDanu[danKratica] = danPolasci;

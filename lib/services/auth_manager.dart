@@ -140,10 +140,11 @@ class AuthManager {
       // Dobij trenutni FCM token
       String? token = await FirebaseService.getFCMToken();
 
-      // Ako nema FCM, probaj HMS (Huawei)
+      // Ako nema FCM, probaj HMS (Huawei) - koristi cached token
       if (token == null || token.isEmpty) {
         try {
-          token = await HuaweiPushService().initialize();
+          // 🛡️ KORISTI CACHED TOKEN umesto initialize() da izbegneš beskonačnu petlju
+          token = HuaweiPushService().cachedToken;
         } catch (_) {
           // HMS nije dostupan
         }
