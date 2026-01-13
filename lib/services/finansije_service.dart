@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 💰 FINANSIJE SERVICE
@@ -134,6 +135,8 @@ class FinansijeService {
   static Future<bool> addTrosak(String naziv, String tip, double iznos, {int? mesec, int? godina}) async {
     try {
       final now = DateTime.now();
+      debugPrint(
+          '📝 [Finansije] Dodajem trošak: $naziv ($tip) = $iznos za ${mesec ?? now.month}/${godina ?? now.year}');
       await _supabase.from('finansije_troskovi').insert({
         'naziv': naziv,
         'tip': tip,
@@ -143,8 +146,10 @@ class FinansijeService {
         'mesec': mesec ?? now.month,
         'godina': godina ?? now.year,
       });
+      debugPrint('✅ [Finansije] Trošak dodat uspešno: $naziv');
       return true;
     } catch (e) {
+      debugPrint('❌ [Finansije] Greška pri dodavanju troška $naziv: $e');
       return false;
     }
   }
