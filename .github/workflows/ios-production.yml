@@ -12,8 +12,9 @@ env:
   FLUTTER_VERSION: '3.35.6'
   BUNDLE_ID: 'com.gavra013.gavra013ios'
   APP_ID: '6757114361'
-  VERSION_ID: '91ee99fd-9a91-4592-a148-3dc7f1fc6b01'
-  # Hardcoded version 1.0 which already has all metadata
+  VERSION_ID: 'f7bded3a-0055-40c8-9d90-2ac33b85c7a2'
+  VERSION_STRING: '1.1'
+  BUILD_NUMBER: '17'
 
 jobs:
   build-and-submit:
@@ -59,16 +60,16 @@ jobs:
       - name: Get latest build number
         id: build_info
         run: |
-          # Hardcoded to 16 - previous builds were 1-15
-          NEW_BUILD=16
+          # Using env variable for build number
+          NEW_BUILD=${{ env.BUILD_NUMBER }}
           echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
           echo "📱 New build number: $NEW_BUILD"
 
       - name: Build iOS App
         run: |
-          # Using version 1.0 to match existing App Store version
+          # Using version from env variables
           flutter build ipa --release \
-            --build-name=1.0 \
+            --build-name=${{ env.VERSION_STRING }} \
             --build-number=${{ steps.build_info.outputs.BUILD_NUMBER }} \
             --export-options-plist=$HOME/export_options.plist
 
@@ -136,7 +137,7 @@ jobs:
         run: |
           echo "## 🎉 iOS Build Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** 1.0" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ env.VERSION_STRING }}" >> $GITHUB_STEP_SUMMARY
           echo "**Build:** ${{ steps.build_info.outputs.BUILD_NUMBER }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Build uploaded and submitted for App Store review!" >> $GITHUB_STEP_SUMMARY
