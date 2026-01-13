@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../models/putnik.dart';
 import '../services/daily_checkin_service.dart';
-import '../services/putnik_service.dart';
 import '../services/statistika_service.dart';
+import '../services/voznje_log_service.dart';
 import '../utils/vozac_boja.dart';
 
 /// 🎯 MODEL ZA PODATKE POPISA
@@ -44,9 +43,8 @@ class PopisData {
 /// 📊 SERVIS ZA POPIS DANA
 /// Centralizuje logiku za učitavanje i čuvanje popisa
 class PopisService {
-  static final _putnikService = PutnikService();
-
   /// Učitaj podatke za popis
+  /// ✅ FIX: Koristi VoznjeLogService direktno za tačne statistike
   static Future<PopisData> loadPopisData({
     required String vozac,
     required String selectedGrad,
@@ -56,52 +54,33 @@ class PopisService {
     final dayStart = DateTime(today.year, today.month, today.day);
     final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
-    // 1. REALTIME STREAM ZA KOMBINOVANE PUTNIKE
-    late List<Putnik> putnici;
-    try {
-      final isoDate = DateTime.now().toIso8601String().split('T')[0];
-      final stream = _putnikService.streamKombinovaniPutniciFiltered(
-        isoDate: isoDate,
-        grad: selectedGrad,
-        vreme: selectedVreme,
-      );
-      putnici = await stream.first.timeout(const Duration(seconds: 10));
-    } catch (e) {
-      putnici = [];
-    }
+    // 1. ✅ DIREKTNE STATISTIKE IZ VOZNJE_LOG - tačni podaci
+    final stats = await VoznjeLogService.getStatistikePoVozacu(
+      vozacIme: vozac,
+      datum: today,
+    );
 
-    // 2. REALTIME DETALJNE STATISTIKE
-    final detaljneStats = await StatistikaService.instance.detaljneStatistikePoVozacima(putnici, dayStart, dayEnd);
-    final vozacStats = detaljneStats[vozac] ?? {};
+    final pokupljeniPutnici = stats['voznje'] as int? ?? 0;
+    final otkazaniPutnici = stats['otkazivanja'] as int? ?? 0;
+    final mesecneKarte = stats['uplate'] as int? ?? 0;
+    final ukupanPazar = stats['pazar'] as double? ?? 0.0;
 
-    // 3. REALTIME PAZAR STREAM
-    late double ukupanPazar;
-    try {
-      ukupanPazar = await StatistikaService.streamPazarZaVozaca(
-        vozac: vozac,
-        from: dayStart,
-        to: dayEnd,
-      ).first.timeout(const Duration(seconds: 10));
-    } catch (e) {
-      ukupanPazar = 0.0;
-    }
-
-    // 4. SITAN NOVAC
+    // 2. SITAN NOVAC
     final sitanNovac = await DailyCheckInService.getTodayAmount(vozac) ?? 0.0;
 
-    // 5. MAPIRANJE PODATAKA
-    final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
-    final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
-    final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
-    final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
-
-    // 6. KILOMETRAŽA
+    // 3. KILOMETRAŽA
     late double kilometraza;
     try {
       kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
     } catch (e) {
       kilometraza = 0.0;
     }
+
+    // 4. DUŽNICI - dnevni putnici koji su pokupljeni ali nisu platili
+    final dugoviPutnici = await VoznjeLogService.getBrojDuznikaPoVozacu(
+      vozacIme: vozac,
+      datum: today,
+    );
 
     return PopisData(
       vozac: vozac,

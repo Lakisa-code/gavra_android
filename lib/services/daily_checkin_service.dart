@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'putnik_service.dart';
 import 'realtime/realtime_manager.dart';
 import 'statistika_service.dart';
+import 'voznje_log_service.dart';
 
 class DailyCheckInService {
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
@@ -296,6 +296,7 @@ class DailyCheckInService {
   }
 
   /// 📊 AUTOMATSKO GENERISANJE POPISA ZA PRETHODNI DAN
+  /// ✅ FIX: Koristi VoznjeLogService direktno za tačne statistike
   static Future<Map<String, dynamic>?> generateAutomaticReport(
     String vozac,
     DateTime targetDate,
@@ -305,64 +306,43 @@ class DailyCheckInService {
       if (targetDate.weekday == 6 || targetDate.weekday == 7) {
         return null;
       }
-      final PutnikService putnikService = PutnikService();
+
       // 1. OSNOVNI PODACI ZA CILJANI DATUM
       final dayStart = DateTime(targetDate.year, targetDate.month, targetDate.day);
-      final dayEnd = DateTime(
-        targetDate.year,
-        targetDate.month,
-        targetDate.day,
-        23,
-        59,
-        59,
+      final dayEnd = DateTime(targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
+
+      // 2. ✅ DIREKTNE STATISTIKE IZ VOZNJE_LOG - tačni podaci
+      final stats = await VoznjeLogService.getStatistikePoVozacu(
+        vozacIme: vozac,
+        datum: targetDate,
       );
-      // 2. KOMBINOVANI PUTNICI ZA DATUM (iz realtime) - koristimo server-filter
-      final isoDate =
-          '${targetDate.year.toString().padLeft(4, '0')}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
-      final putnici = await putnikService.streamKombinovaniPutniciFiltered(isoDate: isoDate).first;
-      // ✅ FIX: Koristi StatistikaService umesto manuelne logike - IDENTIČNO SA _showPopisDana()
 
-      // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      final detaljneStats = await StatistikaService.instance.detaljneStatistikePoVozacima(
-        putnici,
-        dayStart,
-        dayEnd,
-      );
-      final vozacStats = detaljneStats[vozac] ?? {};
+      final pokupljeniPutnici = stats['voznje'] as int? ?? 0;
+      final otkazaniPutnici = stats['otkazivanja'] as int? ?? 0;
+      final mesecneKarte = stats['uplate'] as int? ?? 0;
+      final ukupanPazar = stats['pazar'] as double? ?? 0.0;
 
-      // 4. REALTIME PAZAR STREAM - IDENTIČNO SA _showPopisDana()
-      double ukupanPazar;
-      try {
-        ukupanPazar = await StatistikaService.streamPazarZaSveVozace(
-          from: dayStart,
-          to: dayEnd,
-        ).map((pazarMap) => pazarMap[vozac] ?? 0.0).first.timeout(const Duration(seconds: 10));
-      } catch (e) {
-        ukupanPazar = 0.0;
-      }
-
-      // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
-      final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
-      final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
-      final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
-      final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
-
-      // 5. SITAN NOVAC - UČITAJ RUČNO UNET KUSUR (ne kalkuliši automatski)
+      // 3. SITAN NOVAC - UČITAJ RUČNO UNET KUSUR
       double sitanNovac;
       try {
         sitanNovac = await getTodayAmount(vozac) ?? 0.0;
       } catch (e) {
         sitanNovac = 0.0;
       }
-      // 🚗 REALTIME GPS KILOMETRAŽA - IDENTIČNO SA _showPopisDana()
+
+      // 4. KILOMETRAŽA
       double kilometraza;
       try {
         kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
       } catch (e) {
         kilometraza = 0.0;
       }
-      // 🆕 NAPLAĆENI PUTNICI
-      final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
+
+      // 5. DUŽNICI - dnevni putnici koji su pokupljeni ali nisu platili
+      final dugoviPutnici = await VoznjeLogService.getBrojDuznikaPoVozacu(
+        vozacIme: vozac,
+        datum: targetDate,
+      );
 
       // 6. KREIRAJ POPIS OBJEKAT
       final automatskiPopis = {
@@ -371,7 +351,7 @@ class DailyCheckInService {
         'ukupanPazar': ukupanPazar,
         'sitanNovac': sitanNovac,
         'otkazaniPutnici': otkazaniPutnici,
-        'naplaceniPutnici': naplaceniPutnici,
+        'naplaceniPutnici': mesecneKarte,
         'pokupljeniPutnici': pokupljeniPutnici,
         'dugoviPutnici': dugoviPutnici,
         'mesecneKarte': mesecneKarte,
@@ -379,6 +359,7 @@ class DailyCheckInService {
         'automatskiGenerisan': true,
         'timestamp': DateTime.now().toIso8601String(),
       };
+
       // 7. SAČUVAJ AUTOMATSKI POPIS
       await saveDailyReport(vozac, targetDate, automatskiPopis);
       return automatskiPopis;

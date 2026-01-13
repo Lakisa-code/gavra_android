@@ -8,6 +8,162 @@ import 'vozac_mapping_service.dart';
 class VoznjeLogService {
   static final _supabase = Supabase.instance.client;
 
+  /// 📊 STATISTIKE ZA POPIS - Broj vožnji, otkazivanja i uplata po vozaču za određeni datum
+  /// Vraća mapu: {voznje: X, otkazivanja: X, uplate: X, pazar: X.X}
+  static Future<Map<String, dynamic>> getStatistikePoVozacu({
+    required String vozacIme,
+    required DateTime datum,
+  }) async {
+    int voznje = 0;
+    int otkazivanja = 0;
+    int uplate = 0;
+    double pazar = 0.0;
+
+    try {
+      // Dohvati UUID vozača
+      final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+      if (vozacUuid == null || vozacUuid.isEmpty) {
+        return {'voznje': 0, 'otkazivanja': 0, 'uplate': 0, 'pazar': 0.0};
+      }
+
+      final datumStr = datum.toIso8601String().split('T')[0];
+
+      final response =
+          await _supabase.from('voznje_log').select('tip, iznos').eq('vozac_id', vozacUuid).eq('datum', datumStr);
+
+      for (final record in response) {
+        final tip = record['tip'] as String?;
+        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
+
+        switch (tip) {
+          case 'voznja':
+            voznje++;
+            break;
+          case 'otkazivanje':
+            otkazivanja++;
+            break;
+          case 'uplata':
+            uplate++;
+            pazar += iznos;
+            break;
+        }
+      }
+    } catch (e) {
+      // Greška - vrati prazne statistike
+    }
+
+    return {
+      'voznje': voznje,
+      'otkazivanja': otkazivanja,
+      'uplate': uplate,
+      'pazar': pazar,
+    };
+  }
+
+  /// 📊 STREAM STATISTIKA ZA POPIS - Realtime verzija
+  static Stream<Map<String, dynamic>> streamStatistikePoVozacu({
+    required String vozacIme,
+    required DateTime datum,
+  }) {
+    final datumStr = datum.toIso8601String().split('T')[0];
+    final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+
+    if (vozacUuid == null || vozacUuid.isEmpty) {
+      return Stream.value({'voznje': 0, 'otkazivanja': 0, 'uplate': 0, 'pazar': 0.0});
+    }
+
+    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((records) {
+      int voznje = 0;
+      int otkazivanja = 0;
+      int uplate = 0;
+      double pazar = 0.0;
+
+      for (final record in records) {
+        // Filtriraj po vozaču i datumu
+        if (record['vozac_id'] != vozacUuid) continue;
+        if (record['datum'] != datumStr) continue;
+
+        final tip = record['tip'] as String?;
+        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
+
+        switch (tip) {
+          case 'voznja':
+            voznje++;
+            break;
+          case 'otkazivanje':
+            otkazivanja++;
+            break;
+          case 'uplata':
+            uplate++;
+            pazar += iznos;
+            break;
+        }
+      }
+
+      return {
+        'voznje': voznje,
+        'otkazivanja': otkazivanja,
+        'uplate': uplate,
+        'pazar': pazar,
+      };
+    });
+  }
+
+  /// 📊 DUŽNICI - Broj DNEVNIH putnika koji su pokupljeni ali NISU platili za dati datum
+  /// Dužnik = tip='dnevni', ima 'voznja' zapis ali NEMA 'uplata' zapis za isti datum
+  static Future<int> getBrojDuznikaPoVozacu({
+    required String vozacIme,
+    required DateTime datum,
+  }) async {
+    try {
+      final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+      if (vozacUuid == null || vozacUuid.isEmpty) return 0;
+
+      final datumStr = datum.toIso8601String().split('T')[0];
+
+      // Dohvati sve zapise za ovog vozača i datum
+      final response =
+          await _supabase.from('voznje_log').select('putnik_id, tip').eq('vozac_id', vozacUuid).eq('datum', datumStr);
+
+      // Grupiši po putnik_id
+      final Map<String, Set<String>> putnikTipovi = {};
+      for (final record in response) {
+        final putnikId = record['putnik_id'] as String?;
+        final tip = record['tip'] as String?;
+        if (putnikId == null || tip == null) continue;
+
+        putnikTipovi.putIfAbsent(putnikId, () => {});
+        putnikTipovi[putnikId]!.add(tip);
+      }
+
+      // Pronađi potencijalne dužnike (ima 'voznja' ali NEMA 'uplata')
+      final potencijalniDuznici = <String>[];
+      for (final entry in putnikTipovi.entries) {
+        if (entry.value.contains('voznja') && !entry.value.contains('uplata')) {
+          potencijalniDuznici.add(entry.key);
+        }
+      }
+
+      if (potencijalniDuznici.isEmpty) return 0;
+
+      // Proveri koji od njih su DNEVNI putnici (tip = 'dnevni')
+      final putniciResponse =
+          await _supabase.from('registrovani_putnici').select('id, tip').inFilter('id', potencijalniDuznici);
+
+      int brojDuznika = 0;
+      for (final putnik in putniciResponse) {
+        final tipPutnika = putnik['tip'] as String?;
+        if (tipPutnika == 'dnevni') {
+          brojDuznika++;
+        }
+      }
+
+      return brojDuznika;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   /// 🆕 Dohvati poslednje otkazivanje za sve putnike
   /// Vraća mapu {putnikId: {datum: DateTime, vozacIme: String}}
   static Future<Map<String, Map<String, dynamic>>> getOtkazivanjaZaSvePutnike() async {
