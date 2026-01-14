@@ -128,12 +128,12 @@ class _DugoviScreenState extends State<DugoviScreen> {
           _registerStreamHeartbeat('dugovi_stream');
           _dugoviStreamHealthy.value = true;
 
-          // ✅ Filter dužnike - SAMO DNEVNI PUTNICI koji nisu platili
+          // ✅ Filter dužnike - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
           final duzniciRaw = putnici
               .where(
                 (p) =>
-                    (p.mesecnaKarta != true) && // ✅ SAMO dnevni putnici (isključi mesečne)
-                    (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
+                    (!p.isMesecniTip) && // ✅ FIX: Plava kartica = nije mesečni tip
+                    (p.vremePlacanja == null) && // ✅ FIX: Nije platio ako nema vremePlacanja
                     (p.jePokupljen) &&
                     (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')),
               )

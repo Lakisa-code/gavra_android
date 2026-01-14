@@ -1313,12 +1313,13 @@ class _VozacScreenState extends State<VozacScreen> {
                       // ✅ ISPRAVKA: Računaj statistike direktno iz liste putnika (kao DanasScreen)
                       Builder(
                         builder: (context) {
-                          // 💳 DUŽNICI - SAMO DNEVNI PUTNICI koji nisu platili
+                          // 💳 DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
                           final filteredDuzniciRaw = putnici.where((putnik) {
-                            final jesteRegistrovani = putnik.mesecnaKarta == true;
-                            if (jesteRegistrovani) return false; // ✅ ISKLJUČI mesečne putnike
+                            final nijeMesecni = !putnik.isMesecniTip;
+                            if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesečni tip
 
-                            final nijePlatio = (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0);
+                            final nijePlatio =
+                                putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
                             final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
                             final pokupljen = putnik.jePokupljen;
 

@@ -1056,312 +1056,308 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-            : RefreshIndicator(
-                onRefresh: _loadStatistike,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 🌤️ VREMENSKA PROGNOZA - BC levo, VS desno
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: Center(child: _buildWeatherCompact('BC'))),
-                            const SizedBox(width: 16),
-                            Expanded(child: Center(child: _buildWeatherCompact('VS'))),
-                          ],
-                        ),
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 🌤️ VREMENSKA PROGNOZA - BC levo, VS desno
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: Center(child: _buildWeatherCompact('BC'))),
+                          const SizedBox(width: 16),
+                          Expanded(child: Center(child: _buildWeatherCompact('VS'))),
+                        ],
                       ),
-                      // Ime i status - Flow dizajn bez Card okvira
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            // Avatar - glassmorphism stil
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: tip == 'ucenik'
-                                      ? [Colors.blue.shade400, Colors.indigo.shade600]
-                                      : [Colors.orange.shade400, Colors.deepOrange.shade600],
-                                ),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.4),
-                                    blurRadius: 20,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
+                    ),
+                    // Ime i status - Flow dizajn bez Card okvira
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          // Avatar - glassmorphism stil
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: tip == 'ucenik'
+                                    ? [Colors.blue.shade400, Colors.indigo.shade600]
+                                    : [Colors.orange.shade400, Colors.deepOrange.shade600],
                               ),
-                              child: Center(
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.4),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${firstName.isNotEmpty ? firstName[0].toUpperCase() : ''}${lastName.isNotEmpty ? lastName[0].toUpperCase() : ''}',
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(1, 1),
+                                      blurRadius: 3,
+                                      color: Colors.black38,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Ime
+                          Text(
+                            fullName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+
+                          // Tip i grad
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: tip == 'ucenik'
+                                      ? Colors.blue.withValues(alpha: 0.3)
+                                      : tip == 'dnevni'
+                                          ? Colors.green.withValues(alpha: 0.3)
+                                          : Colors.orange.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                ),
                                 child: Text(
-                                  '${firstName.isNotEmpty ? firstName[0].toUpperCase() : ''}${lastName.isNotEmpty ? lastName[0].toUpperCase() : ''}',
+                                  tip == 'ucenik'
+                                      ? '🎓 Učenik'
+                                      : tip == 'dnevni'
+                                          ? '📅 Dnevni'
+                                          : '💼 Radnik',
                                   style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
                                     color: Colors.white,
-                                    letterSpacing: 2,
-                                    shadows: [
-                                      Shadow(
-                                        offset: Offset(1, 1),
-                                        blurRadius: 3,
-                                        color: Colors.black38,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              if (telefon.isNotEmpty && telefon != '-') ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.phone, color: Colors.white70, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        telefon,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            // Ime
-                            Text(
-                              fullName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-
-                            // Tip i grad
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Adrese - BC levo, VS desno
+                          if (_adresaBC != null || _adresaVS != null)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: tip == 'ucenik'
-                                        ? Colors.blue.withValues(alpha: 0.3)
-                                        : tip == 'dnevni'
-                                            ? Colors.green.withValues(alpha: 0.3)
-                                            : Colors.orange.withValues(alpha: 0.3),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                  ),
-                                  child: Text(
-                                    tip == 'ucenik'
-                                        ? '🎓 Učenik'
-                                        : tip == 'dnevni'
-                                            ? '📅 Dnevni'
-                                            : '💼 Radnik',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
+                                if (_adresaBC != null && _adresaBC!.isNotEmpty) ...[
+                                  Icon(Icons.home, color: Colors.white70, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _adresaBC!,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 13,
                                     ),
                                   ),
-                                ),
-                                if (telefon.isNotEmpty && telefon != '-') ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.phone, color: Colors.white70, size: 14),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          telefon,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
+                                ],
+                                if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
+                                if (_adresaVS != null && _adresaVS!.isNotEmpty) ...[
+                                  Icon(Icons.work, color: Colors.white70, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _adresaVS!,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 13,
                                     ),
                                   ),
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 16),
-                            // Adrese - BC levo, VS desno
-                            if (_adresaBC != null || _adresaVS != null)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (_adresaBC != null && _adresaBC!.isNotEmpty) ...[
-                                    Icon(Icons.home, color: Colors.white70, size: 16),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _adresaBC!,
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.9),
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                  if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
-                                  if (_adresaVS != null && _adresaVS!.isNotEmpty) ...[
-                                    Icon(Icons.work, color: Colors.white70, size: 16),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _adresaVS!,
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.9),
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ─────────── Divider ───────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                    ),
+
+                    // 🚐 ETA Widget sa 4 faze:
+                    // 1. 30 min pre polaska: "Vozač će uskoro krenuti"
+                    // 2. Vozač startovao rutu: Realtime ETA praćenje
+                    // 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min)
+                    // 4. Nakon 60 min: "Vaša sledeća vožnja: dan, vreme"
+                    if (_sledeciPolazak != null || _sledecaVoznjaInfo != null)
+                      KombiEtaWidget(
+                        putnikIme: fullName,
+                        grad: grad,
+                        vremePolaska: _sledeciPolazak,
+                        sledecaVoznja: _sledecaVoznjaInfo,
+                      ),
+
+                    // ─────────── Divider ───────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                    ),
+
+                    // 🏆💀 FAME | SHAME - samo za učenike
+                    if (tip == 'ucenik')
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 🏆 FAME - levo
+                            Expanded(child: _buildMiniLeaderboard(isShame: false)),
+                            const SizedBox(width: 16),
+                            // 💀 SHAME - desno
+                            Expanded(child: _buildMiniLeaderboard(isShame: true)),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
 
-                      // ─────────── Divider ───────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
-                      ),
+                    // ─────────── Divider ───────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                    ),
+                    const SizedBox(height: 8),
 
-                      // 🚐 ETA Widget sa 4 faze:
-                      // 1. 30 min pre polaska: "Vozač će uskoro krenuti"
-                      // 2. Vozač startovao rutu: Realtime ETA praćenje
-                      // 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min)
-                      // 4. Nakon 60 min: "Vaša sledeća vožnja: dan, vreme"
-                      if (_sledeciPolazak != null || _sledecaVoznjaInfo != null)
-                        KombiEtaWidget(
-                          putnikIme: fullName,
-                          grad: grad,
-                          vremePolaska: _sledeciPolazak,
-                          sledecaVoznja: _sledecaVoznjaInfo,
-                        ),
-
-                      // ─────────── Divider ───────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
-                      ),
-
-                      // 🏆💀 FAME | SHAME - samo za učenike
-                      if (tip == 'ucenik')
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 🏆 FAME - levo
-                              Expanded(child: _buildMiniLeaderboard(isShame: false)),
-                              const SizedBox(width: 16),
-                              // 💀 SHAME - desno
-                              Expanded(child: _buildMiniLeaderboard(isShame: true)),
-                            ],
+                    // Statistike
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            '🚌',
+                            'Vožnje',
+                            _brojVoznji.toString(),
+                            Colors.blue,
+                            'ovaj mesec',
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            '❌',
+                            'Otkazano',
+                            _brojOtkazivanja.toString(),
+                            Colors.orange,
+                            'ovaj mesec',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
-                      // ─────────── Divider ───────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                    // 🏖️ Bolovanje/Godišnji dugme - SAMO za radnike
+                    if (_putnikData['tip']?.toString().toLowerCase() == 'radnik') ...[
+                      _buildOdsustvoButton(),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 💰 TRENUTNO ZADUŽENJE
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: _ukupnoZaduzenje > 0
+                              ? [Colors.red.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.05)]
+                              : [Colors.green.withValues(alpha: 0.2), Colors.green.withValues(alpha: 0.05)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _ukupnoZaduzenje > 0
+                              ? Colors.red.withValues(alpha: 0.3)
+                              : Colors.green.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                       ),
-                      const SizedBox(height: 8),
-
-                      // Statistike
-                      Row(
+                      child: Column(
                         children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              '🚌',
-                              'Vožnje',
-                              _brojVoznji.toString(),
-                              Colors.blue,
-                              'ovaj mesec',
+                          Text(
+                            'TRENUTNO STANJE',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 11,
+                              letterSpacing: 1,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildStatCard(
-                              '❌',
-                              'Otkazano',
-                              _brojOtkazivanja.toString(),
-                              Colors.orange,
-                              'ovaj mesec',
+                          const SizedBox(height: 4),
+                          Text(
+                            _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
+                            style: TextStyle(
+                              color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
 
-                      // 🏖️ Bolovanje/Godišnji dugme - SAMO za radnike
-                      if (_putnikData['tip']?.toString().toLowerCase() == 'radnik') ...[
-                        _buildOdsustvoButton(),
-                        const SizedBox(height: 16),
-                      ],
+                    // 📊 Detaljne statistike - dugme za dijalog
+                    _buildDetaljneStatistikeDugme(),
+                    const SizedBox(height: 16),
 
-                      // 💰 TRENUTNO ZADUŽENJE
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: _ukupnoZaduzenje > 0
-                                ? [Colors.red.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.05)]
-                                : [Colors.green.withValues(alpha: 0.2), Colors.green.withValues(alpha: 0.05)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _ukupnoZaduzenje > 0
-                                ? Colors.red.withValues(alpha: 0.3)
-                                : Colors.green.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'TRENUTNO STANJE',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                fontSize: 11,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
-                              style: TextStyle(
-                                color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 📊 Detaljne statistike - dugme za dijalog
-                      _buildDetaljneStatistikeDugme(),
-                      const SizedBox(height: 16),
-
-                      // 📅 Raspored polazaka
-                      _buildRasporedCard(),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
+                    // 📅 Raspored polazaka
+                    _buildRasporedCard(),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
       ),

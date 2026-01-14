@@ -2325,12 +2325,12 @@ class _DanasScreenState extends State<DanasScreen> {
                             return vremeMatch && gradMatch && statusOk;
                           }).toList()
                         : filtriraniPutnici;
-                    // 💳 DUŽNICI - SAMO DNEVNI PUTNICI koji nisu platili (najnoviji na vrhu)
+                    // 💳 DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
                     final filteredDuzniciRaw = danasPutnici.where((putnik) {
-                      final jesteRegistrovani = putnik.mesecnaKarta == true;
-                      if (jesteRegistrovani) return false; // ✅ ISKLJUČI mesečne putnike
+                      final nijeMesecni = !putnik.isMesecniTip;
+                      if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesečni tip
 
-                      final nijePlatio = (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0);
+                      final nijePlatio = putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
                       final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
                       final pokupljen = putnik.jePokupljen;
 

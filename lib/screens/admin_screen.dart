@@ -1043,12 +1043,12 @@ class _AdminScreenState extends State<AdminScreen> {
               final shortDayName = _getShortDayName(_selectedDan);
               return putnik.dan == shortDayName;
             }).toList();
-            // ✅ DUŽNICI - SAMO DNEVNI PUTNICI koji nisu platili
+            // ✅ DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
             final filteredDuznici = filteredPutnici.where((putnik) {
-              final jesteRegistrovani = putnik.mesecnaKarta == true;
-              if (jesteRegistrovani) return false; // ✅ ISKLJUČI mesečne putnike
+              final nijeMesecni = !putnik.isMesecniTip;
+              if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesečni tip
 
-              final nijePlatio = (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0);
+              final nijePlatio = putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
               final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
               final pokupljen = putnik.jePokupljen;
 

@@ -125,11 +125,19 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         }
       }
 
+      // DEBUG: Štampaj šta je pronađeno
+      debugPrint('🚐 KombiEtaWidget: putnikIme=${widget.putnikIme}, eta=$eta, putniciEta=$putniciEta');
+
       setState(() {
         _isActive = true;
         _vozacStartovaoRutu = hasEtaData;
-        if (eta == -1 && _etaMinutes != -1) {
+        // Postavi vreme pokupljenja ako je ETA -1 (pokupljen) i još nije setovano
+        if (eta == -1 && _vremePokupljenja == null) {
           _vremePokupljenja = DateTime.now();
+        }
+        // Resetuj vreme pokupljenja ako ETA više nije -1 (nova vožnja)
+        if (eta != null && eta != -1) {
+          _vremePokupljenja = null;
         }
         _etaMinutes = eta;
         _vozacIme = vozacIme;
@@ -167,8 +175,10 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   _WidgetFaza _getCurrentFaza() {
     final bool isPokupljen = _etaMinutes == -1;
 
-    // Faza 3 & 4: Pokupljen
-    if (isPokupljen && _vremePokupljenja != null) {
+    // Faza 3 & 4: Pokupljen (ETA == -1)
+    if (isPokupljen) {
+      // Ako nemamo vreme pokupljenja, postavi ga sada
+      _vremePokupljenja ??= DateTime.now();
       final minutesSincePokupljenje = DateTime.now().difference(_vremePokupljenja!).inMinutes;
       if (minutesSincePokupljenje <= 60) {
         return _WidgetFaza.pokupljen; // Faza 3: Prikazuj "Pokupljeni ste" 60 min

@@ -716,9 +716,14 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  // 💵 PLAĆANJE DNEVNOG PUTNIKA - fiksna cena 600 RSD
+  // 💵 PLAĆANJE DNEVNOG PUTNIKA - fiksna cena 600 RSD (YU auto, Pošiljka = 500 RSD)
   Future<void> _handleDnevniPayment() async {
-    const double fiksnaCena = 600.0;
+    // YU auto i Pošiljka imaju specijalnu cenu od 500 RSD
+    final imeLower = _putnik.ime.toLowerCase();
+    final double fiksnaCena =
+        (imeLower.contains('yu auto') || imeLower.contains('pošiljka') || imeLower.contains('posiljka'))
+            ? 500.0
+            : 600.0;
 
     final bool? confirmed = await showDialog<bool>(
       context: context,
