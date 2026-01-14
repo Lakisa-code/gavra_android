@@ -54,6 +54,10 @@ class _PutnikCardState extends State<PutnikCard> {
   late Putnik _putnik;
   Timer? _longPressTimer;
   bool _isLongPressActive = false;
+  bool _isProcessing = false; // 🔒 Sprečava duple klikove tokom procesiranja
+
+  // 🔒 GLOBALNI LOCK - blokira SVE kartice dok jedan putnik nije završen u bazi
+  static bool _globalProcessingLock = false;
 
   // Za brži admin reset
   int _tapCount = 0;
@@ -99,6 +103,11 @@ class _PutnikCardState extends State<PutnikCard> {
   }
 
   Future<void> _handlePokupljen() async {
+    // 🔒 GLOBALNI LOCK - ako BILO KOJA kartica procesira, ignoriši
+    if (_globalProcessingLock) return;
+    // 🔒 ZAŠTITA OD DUPLOG KLIKA - ako već procesiramo, ignoriši
+    if (_isProcessing) return;
+
     if (_putnik.vremePokupljenja == null && widget.showActions && !_putnik.jeOtkazan) {
       // Sačuvaj originalno ime pre bilo kakvih operacija
       final String originalnoIme = _putnik.ime;
@@ -117,12 +126,30 @@ class _PutnikCardState extends State<PutnikCard> {
           return;
         }
 
+        // 🔒 POSTAVI OBA LOCK-A
+        _globalProcessingLock = true;
+        if (mounted) {
+          setState(() {
+            _isProcessing = true;
+          });
+        }
+
         // Uklonjena validacija vozača - prihvataju se svi vozači
 
-        // 📳 Jača vibracija za pokupljenog putnika - vozač lakše oseti
+        // ⏱️ SAČEKAJ 1.5 SEKUNDE - zaštita od slučajnog klika
+        await Future<void>.delayed(const Duration(milliseconds: 1500));
+
+        // Ako je korisnik otišao sa ekrana tokom čekanja, prekini
+        if (!mounted) {
+          _globalProcessingLock = false;
+          return;
+        }
+
+        // 📳 Vibracija nakon 1.5s - potvrda da počinje procesiranje
         HapticService.putnikPokupljen();
 
         try {
+          // ⏳ Baza radi
           await PutnikService()
               .oznaciPokupljen(_putnik.id!, widget.currentDriver, grad: _putnik.grad, selectedDan: _putnik.dan);
 
@@ -142,8 +169,11 @@ class _PutnikCardState extends State<PutnikCard> {
             if (mounted) {
               setState(() {
                 _putnik = updatedPutnik;
+                _isProcessing = false; // 🔓 Otključaj lokalni
               });
             }
+            // 🔓 OTKLJUČAJ GLOBALNI - tek kad kartica pozeleni!
+            _globalProcessingLock = false;
 
             // 🎉 PRIKAZ USPEŠNE PORUKE - koristi originalno ime
             if (mounted) {
@@ -158,17 +188,20 @@ class _PutnikCardState extends State<PutnikCard> {
             }
           } else {
             // Forsiraj UI ažuriranje
+            _globalProcessingLock = false; // 🔓 Otključaj globalni
             if (mounted) {
-              if (mounted) {
-                setState(() {
-                  // Jednostavno forsiranje rebuild-a widgeta
-                });
-              }
+              setState(() {
+                _isProcessing = false; // 🔓 Otključaj
+              });
             }
           }
         } catch (e) {
-          // Prikaz greške korisniku
+          // ❌ GREŠKA - otključaj i prikaži grešku
+          _globalProcessingLock = false; // 🔓 Otključaj globalni
           if (mounted) {
+            setState(() {
+              _isProcessing = false; // 🔓 Otključaj
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Greška pri pokupljanju $originalnoIme: $e'),
@@ -180,6 +213,12 @@ class _PutnikCardState extends State<PutnikCard> {
         }
       } catch (e) {
         // Greška pri označavanju kao pokupljen
+        _globalProcessingLock = false; // 🔓 Otključaj globalni
+        if (mounted) {
+          setState(() {
+            _isProcessing = false; // 🔓 Otključaj
+          });
+        }
       }
     }
   }
