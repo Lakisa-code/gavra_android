@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../theme.dart';
-import '../widgets/custom_back_button.dart';
 import '../widgets/putnik_list.dart';
 
 class DugoviScreen extends StatefulWidget {
@@ -33,8 +32,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   List<Putnik> _cachedDugovi = [];
-  String _selectedFilter = 'svi'; // 'svi', 'veliki_dug', 'mali_dug'
-  String _sortBy = 'iznos'; // 'iznos', 'vreme', 'ime', 'vozac'
+  final String _selectedFilter = 'svi'; // 'svi', 'veliki_dug', 'mali_dug'
+  final String _sortBy = 'vreme'; // 'iznos', 'vreme', 'ime', 'vozac' - default: najnoviji gore
 
   @override
   void initState() {
@@ -290,7 +289,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   children: [
-                    const GradientBackButton(),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -314,22 +312,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
                         ],
                       ),
                     ),
-                    // 🔄 MANUAL REFRESH BUTTON
-                    IconButton(
-                      icon: ValueListenableBuilder<bool>(
-                        valueListenable: _isRealtimeHealthy,
-                        builder: (context, isHealthy, child) {
-                          return Icon(
-                            isHealthy ? Icons.refresh : Icons.refresh_rounded,
-                            color: isHealthy ? Colors.white : Colors.white70,
-                          );
-                        },
-                      ),
-                      onPressed: () {
-                        _initializeRealtimeStream();
-                      },
-                      tooltip: 'Osveži podatke',
-                    ),
                   ],
                 ),
               ),
@@ -338,8 +320,25 @@ class _DugoviScreenState extends State<DugoviScreen> {
         ),
         body: Column(
           children: [
-            // 🔍 ENHANCED SEARCH AND FILTER BAR
-            _buildSearchAndFilterBar(),
+            // 💰 UKUPAN DUG BAR
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade50,
+                border: Border(
+                  bottom: BorderSide(color: Colors.indigo.shade200),
+                ),
+              ),
+              child: Text(
+                'Ukupan dug: ${_calculateTotalDebt().toStringAsFixed(0)} RSD',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.red.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
             // 📋 LISTA DUGOVA - V3.0 REALTIME DATA
             Expanded(
               child: _buildRealtimeContent(),
@@ -348,188 +347,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
         ),
       ), // Zatvaranje Scaffold
     ); // Zatvaranje Container
-  }
-
-  // 🔍 ENHANCED SEARCH AND FILTER BAR
-  Widget _buildSearchAndFilterBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.indigo.shade50,
-        border: Border(
-          bottom: BorderSide(color: Colors.indigo.shade200),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Search field
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Pretraži po imenu, vozaču ili gradu...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        if (mounted) setState(() {});
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.indigo.shade300),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Advanced filters row
-          Row(
-            children: [
-              // Filter dropdown
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.indigo.shade200),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedFilter,
-                      isExpanded: true,
-                      icon: Icon(
-                        Icons.arrow_drop_down,
-                        color: Colors.indigo.shade600,
-                      ),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.indigo.shade800,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      onChanged: (value) {
-                        if (mounted) {
-                          setState(() {
-                            _selectedFilter = value!;
-                          });
-                        }
-                      },
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'svi',
-                          child: Text('Svi dugovi'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'veliki_dug',
-                          child: Text('Veliki dugovi (500+ RSD)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'mali_dug',
-                          child: Text('Mali dugovi (<500 RSD)'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Sort dropdown
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.indigo.shade200),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _sortBy,
-                      isExpanded: true,
-                      icon: Icon(Icons.sort, color: Colors.indigo.shade600),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.indigo.shade800,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      onChanged: (value) {
-                        if (mounted) {
-                          setState(() {
-                            _sortBy = value!;
-                            _sortDugovi(_cachedDugovi);
-                          });
-                        }
-                      },
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'iznos',
-                          child: Text('Po iznosu'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'vreme',
-                          child: Text('Po vremenu'),
-                        ),
-                        DropdownMenuItem<String>(value: 'ime', child: Text('Po imenu')),
-                        DropdownMenuItem(
-                          value: 'vozac',
-                          child: Text('Po vozaču'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Results counter
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: _dugoviStreamHealthy,
-                builder: (context, isHealthy, child) {
-                  final filteredCount = _getFilteredDugovi().length;
-                  final totalCount = _cachedDugovi.length;
-                  final totalDebt = _calculateTotalDebt();
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isHealthy ? 'Prikazano: $filteredCount od $totalCount dužnika' : 'Podaci se učitavaju...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.indigo.shade600,
-                          fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
-                        ),
-                      ),
-                      if (isHealthy) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Ukupan dug: ${totalDebt.toStringAsFixed(0)} RSD',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.red.shade600,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 
   // 💰 CALCULATE TOTAL DEBT
@@ -647,16 +464,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
             'Svi putnici su platili svoje karte',
             style: TextStyle(color: Colors.grey.shade500),
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _initializeRealtimeStream(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Osveži podatke'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
           ),
         ],
       ),

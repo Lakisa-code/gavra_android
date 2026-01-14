@@ -342,6 +342,10 @@ class Putnik {
     final iznosPlacanjaBC = RegistrovaniHelpers.getIznosPlacanjaForDayAndPlace(map, normalizedTarget, 'bc');
     final iznosPlacanjaVS = RegistrovaniHelpers.getIznosPlacanjaForDayAndPlace(map, normalizedTarget, 'vs');
 
+    // ✅ FIX: Čitaj vremena plaćanja iz polasci_po_danu JSON (za filter dužnika)
+    final vremePlacanjaBC = RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, normalizedTarget, 'bc');
+    final vremePlacanjaVS = RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, normalizedTarget, 'vs');
+
     // ✅ NOVO: Čitaj adrese iz JOIN-a sa adrese tabelom (ako postoji)
     // JOIN format: adresa_bc: {id, naziv, ulica, broj, grad, koordinate}
     final adresaBcJoin = map['adresa_bc'] as Map<String, dynamic>?;
@@ -383,7 +387,7 @@ class Putnik {
           status: status,
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaBC, // ✅ NOVO: Iz polasci_po_danu
-          vremePlacanja: vremePlacanja,
+          vremePlacanja: vremePlacanjaBC, // ✅ FIX: Čitaj iz JSON-a za BC
           placeno: (iznosPlacanjaBC ?? 0) > 0, // ✅ FIX: placeno ako ima iznos
           cena: iznosPlacanjaBC ?? iznosPlacanja, // ✅ FIX: čitaj iz JSON-a
           // ✅ NOVO: Čitaj naplatioVozac iz polasci_po_danu
@@ -434,7 +438,7 @@ class Putnik {
           status: status,
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaVS, // ✅ NOVO: Iz polasci_po_danu
-          vremePlacanja: vremePlacanja,
+          vremePlacanja: vremePlacanjaVS, // ✅ FIX: Čitaj iz JSON-a za VS
           placeno: (iznosPlacanjaVS ?? 0) > 0, // ✅ FIX: placeno ako ima iznos
           cena: iznosPlacanjaVS ?? iznosPlacanja, // ✅ FIX: čitaj iz JSON-a
           // ✅ NOVO: Čitaj naplatioVozac iz polasci_po_danu

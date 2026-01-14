@@ -72,6 +72,36 @@
         "copilot/claude-sonnet-4.5",
         "copilot/gpt-5-mini"
       ]
+    },
+    "gavra_android/.vscode/mcp.json: supabase": {
+      "allowedModels": [
+        "copilot/gpt-5-mini",
+        "copilot/claude-opus-4.5"
+      ]
+    },
+    "gavra_android/.vscode/mcp.json: huawei-appgallery": {
+      "allowedModels": [
+        "copilot/gpt-5-mini",
+        "copilot/claude-opus-4.5"
+      ]
+    },
+    "gavra_android/.vscode/mcp.json: google-play": {
+      "allowedModels": [
+        "copilot/gpt-5-mini",
+        "copilot/claude-opus-4.5"
+      ]
+    },
+    "gavra_android/.vscode/mcp.json: github": {
+      "allowedModels": [
+        "copilot/gpt-5-mini",
+        "copilot/claude-opus-4.5"
+      ]
+    },
+    "gavra_android/.vscode/mcp.json: app-store-connect": {
+      "allowedModels": [
+        "copilot/gpt-5-mini",
+        "copilot/claude-opus-4.5"
+      ]
     }
   },
   "files.watcherExclude": {

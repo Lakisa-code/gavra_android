@@ -1352,10 +1352,14 @@ class _PutnikCardState extends State<PutnikCard> {
           throw Exception('Putnik nema valjan ID - ne može se naplatiti');
         }
 
+        // Odredi place iz grada kartice gde je kliknuto
+        final place = _putnik.grad.toLowerCase().contains('vr') ? 'vs' : 'bc';
+
         await PutnikService().oznaciPlaceno(
           _putnik.id!,
           iznos,
           widget.currentDriver,
+          place,
         );
       }
 

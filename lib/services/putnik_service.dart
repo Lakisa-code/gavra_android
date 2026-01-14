@@ -853,6 +853,7 @@ class PutnikService {
     dynamic id,
     double iznos,
     String currentDriver,
+    String place,
   ) async {
     // 🚨 DUPLICATE PREVENTION
     final actionKey = 'payment_$id';
@@ -878,9 +879,7 @@ class PutnikService {
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     final danKratica = daniKratice[now.weekday - 1];
 
-    // Odredi place iz response (grad putnika)
-    final gradPutnika = response['grad'] as String? ?? '';
-    final place = gradPutnika.toLowerCase().contains('vr') ? 'vs' : 'bc';
+    // place dolazi kao parametar iz kartice gde je vozač kliknuo
 
     Map<String, dynamic> polasciPoDanu = {};
     final rawPolasci = response['polasci_po_danu'];
