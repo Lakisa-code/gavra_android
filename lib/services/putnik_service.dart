@@ -1,6 +1,7 @@
 ﻿import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
@@ -910,7 +911,14 @@ class PutnikService {
     try {
       await VozacMappingService.initialize();
       vozacId = VozacMappingService.getVozacUuidSync(currentDriver);
-    } catch (_) {}
+      vozacId ??= await VozacMappingService.getVozacUuid(currentDriver);
+    } catch (e) {
+      debugPrint('❌ markAsPaid: Greška pri VozacMapping za "$currentDriver": $e');
+    }
+
+    if (vozacId == null) {
+      debugPrint('⚠️ markAsPaid: vozacId je NULL za vozača "$currentDriver" - uplata neće biti u statistici!');
+    }
 
     try {
       await VoznjeLogService.dodajUplatu(
@@ -921,8 +929,12 @@ class PutnikService {
         placeniMesec: now.month,
         placenaGodina: now.year,
       );
-    } catch (_) {
-      // Log error ali ne prekidaj - uplata je već zabeležena u polasci_po_danu
+      debugPrint(
+          '✅ markAsPaid: Uplata upisana u voznje_log - putnik: $id, vozac: $currentDriver ($vozacId), iznos: $iznos');
+    } catch (e) {
+      debugPrint('❌ markAsPaid: GREŠKA pri upisu u voznje_log: $e');
+      // Re-throw da korisnik zna da je nešto pošlo naopako
+      rethrow;
     }
   }
 

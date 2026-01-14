@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
@@ -265,12 +266,20 @@ class RegistrovaniPutnikService {
           // Konvertuj ime u UUID
           try {
             await VozacMappingService.initialize();
-            final converted = VozacMappingService.getVozacUuidSync(vozacIme);
+            var converted = VozacMappingService.getVozacUuidSync(vozacIme);
+            converted ??= await VozacMappingService.getVozacUuid(vozacIme);
             if (converted != null && _isValidUuid(converted)) {
               validVozacId = converted;
             }
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('❌ azurirajPlacanjeZaMesec: Greška pri VozacMapping za "$vozacIme": $e');
+          }
         }
+      }
+
+      if (validVozacId == null) {
+        debugPrint(
+            '⚠️ azurirajPlacanjeZaMesec: vozacId je NULL za vozača "$vozacIme" - uplata neće biti u statistici!');
       }
 
       await VoznjeLogService.dodajUplatu(
