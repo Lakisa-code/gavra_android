@@ -44,8 +44,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   Future<void> _loadGpsData() async {
     try {
       final supabase = Supabase.instance.client;
-      // Učitaj SAMO aktivne vozače (koji su pritisnuli dugme "Ruta")
-      final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true);
+      // Učitaj SAMO aktivne vozače za ovaj grad (koji su pritisnuli dugme "Ruta")
+      final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true).eq('grad', widget.grad);
 
       if (!mounted) return;
 

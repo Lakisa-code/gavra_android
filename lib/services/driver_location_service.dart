@@ -38,7 +38,9 @@ class DriverLocationService {
   // Getteri
   bool get isTracking => _isTracking;
   String? get currentVozacId => _currentVozacId;
-  int get remainingPassengers => _currentPutniciEta?.length ?? 0;
+
+  /// Broj preostalih putnika za pokupiti (ETA >= 0)
+  int get remainingPassengers => _currentPutniciEta?.values.where((v) => v >= 0).length ?? 0;
 
   /// Pokreni praćenje lokacije za vozača
   Future<bool> startTracking({
@@ -171,10 +173,13 @@ class DriverLocationService {
 
   /// 🆕 Označi putnika kao pokupljenог (ETA = -1)
   /// Automatski zaustavlja tracking ako su svi pokupljeni
-  void removePassenger(String putnikIme) {
+  Future<void> removePassenger(String putnikIme) async {
     if (_currentPutniciEta == null) return;
 
     _currentPutniciEta![putnikIme] = -1;
+
+    // 🔄 Odmah pošalji ažurirani status u Supabase
+    await _sendCurrentLocation();
 
     final aktivniPutnici = _currentPutniciEta!.values.where((v) => v >= 0).length;
     if (aktivniPutnici == 0) {
@@ -277,7 +282,11 @@ class DriverLocationService {
     String? smer,
   }) async {
     try {
-      var query = Supabase.instance.client.from('vozac_lokacije').select().eq('grad', grad);
+      var query = Supabase.instance.client
+          .from('vozac_lokacije')
+          .select()
+          .eq('aktivan', true) // ✅ Filtrira samo aktivne vozače
+          .eq('grad', grad);
 
       if (vremePolaska != null) {
         query = query.eq('vreme_polaska', vremePolaska);
