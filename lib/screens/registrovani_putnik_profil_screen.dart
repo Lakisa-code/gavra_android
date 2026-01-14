@@ -55,6 +55,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   String? _sledeciPolazak;
   // ignore: unused_field
   String _smerTure = 'BC_VS';
+  String? _sledecaVoznjaInfo; // 🆕 Format: "Ponedeljak, 7:00 BC"
 
   @override
   void initState() {
@@ -190,18 +191,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // 🚐 Određivanje sledećeg polaska za GPS tracking
       String? sledeciPolazak;
 
-      // 🧪 DEBUG MODE: Uvek prikazuj tracking widget za testiranje
-      const bool debugAlwaysShowTracking = true; // POSTAVI NA false ZA PRODUKCIJU!
-
       // Dobavi vremena polazaka iz RouteConfig (automatski letnji/zimski)
       final vremenaPolazaka = RouteConfig.getVremenaPolazaka(
         grad: grad,
         letnji: !isZimski(now), // Automatska provera sezone
       );
 
-      // Za testiranje - uzmi prvi sledeći polazak ili prvi u listi
-      sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute) ??
-          (debugAlwaysShowTracking && vremenaPolazaka.isNotEmpty ? vremenaPolazaka.first : null);
+      // Uzmi sledeći polazak (ili null ako nema više polazaka danas)
+      sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute);
 
       // 💰 Istorija plaćanja - poslednjih 6 meseci
       final istorija = await _loadIstorijuPlacanja(putnikId);
@@ -269,6 +266,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         _sledeciPolazak = sledeciPolazak;
         // Odredi smer ture - ako je grad BC, putnik ide BC->VS, ako je VS ide VS->BC
         _smerTure = (grad == 'BC' || grad == 'Bela Crkva') ? 'BC_VS' : 'VS_BC';
+        // 🆕 Izračunaj sledeću vožnju za Fazu 4
+        _sledecaVoznjaInfo = _izracunajSledecuVoznju();
         _isLoading = false;
       });
     } catch (e) {
@@ -277,6 +276,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   }
 
   /// 🕐 Nađi sledeći polazak na osnovu trenutnog vremena
+  /// Vraća polazak od 30 min PRE termina. Widget sam upravlja nestajanjem nakon pokupljenja.
   String? _getNextPolazak(List<String> vremena, int currentHour, int currentMinute) {
     final currentMinutes = currentHour * 60 + currentMinute;
 
@@ -288,13 +288,86 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final minute = int.tryParse(parts[1]) ?? 0;
       final polazakMinutes = hour * 60 + minute;
 
-      // Ako je polazak za više od 30 minuta od sada, to je sledeći
-      if (polazakMinutes > currentMinutes - 30) {
+      // Prozor za praćenje: 30 min PRE polaska do 120 min POSLE (fallback)
+      // Widget sam nestaje 60 min nakon pokupljenja ili kad vozač završi turu
+      final windowStart = polazakMinutes - 30; // 30 min pre polaska
+      final windowEnd = polazakMinutes + 120; // 120 min posle polaska (safety fallback)
+
+      if (currentMinutes >= windowStart && currentMinutes <= windowEnd) {
         return vreme;
       }
     }
 
-    return null; // Nema više polazaka danas
+    return null; // Nema polazaka u aktivnom prozoru
+  }
+
+  /// 🆕 Izračunaj sledeću zakazanu vožnju putnika
+  /// Vraća format: "Ponedeljak, 7:00 BC" ili null ako nema zakazanih vožnji
+  String? _izracunajSledecuVoznju() {
+    try {
+      final polasciPoDanu = _putnikData['polasci_po_danu'];
+      if (polasciPoDanu == null) return null;
+
+      final now = DateTime.now();
+      final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final daniPuniNaziv = {
+        'pon': 'Ponedeljak',
+        'uto': 'Utorak',
+        'sre': 'Sreda',
+        'cet': 'Četvrtak',
+        'pet': 'Petak',
+        'sub': 'Subota',
+        'ned': 'Nedelja',
+      };
+
+      // Prođi kroz narednih 7 dana
+      for (int i = 0; i < 7; i++) {
+        final checkDate = now.add(Duration(days: i));
+        final danIndex = checkDate.weekday - 1; // 0-6 (pon-ned)
+        if (danIndex >= daniNedelje.length) continue;
+
+        final dan = daniNedelje[danIndex];
+        final polasciZaDan = polasciPoDanu[dan];
+        if (polasciZaDan == null) continue;
+
+        // Uzmi BC ili VS polazak
+        String? polazak;
+        String? grad;
+        if (polasciZaDan is Map) {
+          final bc = polasciZaDan['bc'] as String?;
+          final vs = polasciZaDan['vs'] as String?;
+          if (bc != null && bc.isNotEmpty && bc != '00:00:00') {
+            polazak = bc.replaceAll(':00', '').replaceFirst(RegExp('^0'), '');
+            grad = 'BC';
+          } else if (vs != null && vs.isNotEmpty && vs != '00:00:00') {
+            polazak = vs.replaceAll(':00', '').replaceFirst(RegExp('^0'), '');
+            grad = 'VS';
+          }
+        }
+
+        if (polazak == null || grad == null) continue;
+
+        // Ako je danas, proveri da li je polazak već prošao
+        if (i == 0) {
+          final parts = polazak.split(':');
+          final polazakHour = int.tryParse(parts[0]) ?? 0;
+          final polazakMinute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+          final polazakMinutes = polazakHour * 60 + polazakMinute;
+          final currentMinutes = now.hour * 60 + now.minute;
+
+          // Ako je polazak prošao, preskoči danas
+          if (polazakMinutes < currentMinutes - 30) continue;
+        }
+
+        // Formatiraj rezultat
+        final danNaziv = daniPuniNaziv[dan] ?? dan;
+        return '$danNaziv, $polazak $grad';
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   /// 💰 Učitaj istoriju plaćanja - od 1. januara tekuće godine
@@ -1162,12 +1235,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
                       ),
 
-                      // 🚐 ETA Widget - prikazuje "Kombi stiže za X min" ako je vozač aktivan
-                      KombiEtaWidget(
-                        putnikIme: fullName,
-                        grad: grad,
-                        vremePolaska: _sledeciPolazak,
-                      ),
+                      // 🚐 ETA Widget sa 4 faze:
+                      // 1. 30 min pre polaska: "Vozač će uskoro krenuti"
+                      // 2. Vozač startovao rutu: Realtime ETA praćenje
+                      // 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min)
+                      // 4. Nakon 60 min: "Vaša sledeća vožnja: dan, vreme"
+                      if (_sledeciPolazak != null || _sledecaVoznjaInfo != null)
+                        KombiEtaWidget(
+                          putnikIme: fullName,
+                          grad: grad,
+                          vremePolaska: _sledeciPolazak,
+                          sledecaVoznja: _sledecaVoznjaInfo,
+                        ),
 
                       // ─────────── Divider ───────────
                       Padding(

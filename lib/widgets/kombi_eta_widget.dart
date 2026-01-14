@@ -5,28 +5,43 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/realtime/realtime_manager.dart';
 
-/// Widget koji prikazuje ETA dolaska kombija
+/// Widget koji prikazuje ETA dolaska kombija sa 4 faze:
+/// 1. 30 min pre polaska: "Vozač će uskoro krenuti"
+/// 2. Vozač startovao rutu: Realtime ETA praćenje
+/// 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min)
+/// 4. Nakon 60 min: "Vaša sledeća zakazana vožnja: dan, vreme"
 class KombiEtaWidget extends StatefulWidget {
   const KombiEtaWidget({
     Key? key,
     required this.putnikIme,
     required this.grad,
     this.vremePolaska,
+    this.sledecaVoznja, // 🆕 Format: "Ponedeljak, 7:00" ili null
   }) : super(key: key);
 
   final String putnikIme;
   final String grad;
-  final String? vremePolaska; // 🆕 Opciono filtriranje po vremenu polaska
+  final String? vremePolaska;
+  final String? sledecaVoznja; // 🆕 Sledeća zakazana vožnja
 
   @override
   State<KombiEtaWidget> createState() => _KombiEtaWidgetState();
+}
+
+/// Faze prikaza widgeta
+enum _WidgetFaza {
+  cekanje, // Faza 1: 30 min pre polaska - "Vozač će uskoro krenuti"
+  pracenje, // Faza 2: Vozač startovao rutu - realtime ETA
+  pokupljen, // Faza 3: Pokupljen - prikazuje vreme pokupljenja 60 min
+  sledecaVoznja, // Faza 4: Nakon 60 min - prikazuje sledeću vožnju
 }
 
 class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   StreamSubscription? _subscription;
   int? _etaMinutes;
   bool _isLoading = true;
-  bool _isActive = false;
+  bool _isActive = false; // Vozač je aktivan (šalje lokaciju)
+  bool _vozacStartovaoRutu = false; // 🆕 Vozač pritisnuo "Ruta" dugme
   String? _vozacIme;
   DateTime? _vremePokupljenja;
 
@@ -46,14 +61,10 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   Future<void> _loadGpsData() async {
     try {
       final supabase = Supabase.instance.client;
-
-      // 🔧 Normalizuj grad - BC/Bela Crkva i VS/Vršac tretiramo isto
       final normalizedGrad = _normalizeGrad(widget.grad);
 
-      // Učitaj SVE aktivne vozače, pa filtriraj po normalizovanom gradu
       var query = supabase.from('vozac_lokacije').select().eq('aktivan', true);
 
-      // 🆕 Ako je prosleđeno vreme polaska, filtriraj i po njemu
       if (widget.vremePolaska != null) {
         query = query.eq('vreme_polaska', widget.vremePolaska!);
       }
@@ -64,7 +75,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       final list = data as List<dynamic>;
 
-      // Filtriraj po normalizovanom gradu (BC = Bela Crkva, VS = Vršac)
       final filteredList = list.where((driver) {
         final driverGrad = driver['grad'] as String? ?? '';
         return _normalizeGrad(driverGrad) == normalizedGrad;
@@ -73,6 +83,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       if (filteredList.isEmpty) {
         setState(() {
           _isActive = false;
+          _vozacStartovaoRutu = false;
           _etaMinutes = null;
           _vozacIme = null;
           _isLoading = false;
@@ -80,26 +91,27 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         return;
       }
 
-      // Uzmi prvog AKTIVNOG vozača
       final driver = filteredList.first;
       final putniciEta = driver['putnici_eta'] as Map<String, dynamic>?;
       final vozacIme = driver['vozac_ime'] as String?;
 
-      // Pronađi ETA za ovog putnika
+      // 🆕 Proveri da li vozač ima putnike u ETA mapi (znači da je startovao rutu)
+      final hasEtaData = putniciEta != null && putniciEta.isNotEmpty;
+
       int? eta;
       if (putniciEta != null) {
-        // Prvo pokušaj exact match
+        // Exact match
         if (putniciEta.containsKey(widget.putnikIme)) {
           eta = putniciEta[widget.putnikIme] as int?;
         } else {
-          // Probaj case-insensitive match
+          // Case-insensitive match
           for (final entry in putniciEta.entries) {
             if (entry.key.toLowerCase() == widget.putnikIme.toLowerCase()) {
               eta = entry.value as int?;
               break;
             }
           }
-          // Ako još nema match, probaj partial match (ime sadrži putnikIme ili obrnuto)
+          // Partial match
           if (eta == null) {
             final putnikLower = widget.putnikIme.toLowerCase();
             for (final entry in putniciEta.entries) {
@@ -115,6 +127,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       setState(() {
         _isActive = true;
+        _vozacStartovaoRutu = hasEtaData;
         if (eta == -1 && _etaMinutes != -1) {
           _vremePokupljenja = DateTime.now();
         }
@@ -127,12 +140,12 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         setState(() {
           _isLoading = false;
           _isActive = false;
+          _vozacStartovaoRutu = false;
         });
       }
     }
   }
 
-  /// 🔧 Normalizuje grad u standardni format (BC ili VS)
   String _normalizeGrad(String grad) {
     final lower = grad.toLowerCase();
     if (lower.contains('bela') || lower == 'bc') {
@@ -144,30 +157,46 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   }
 
   void _startListening() {
-    // Učitaj inicijalne podatke
     _loadGpsData();
-
-    // Koristi centralizovani RealtimeManager - deli channel sa drugim widgetima
     _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen((payload) {
       _loadGpsData();
     });
+  }
+
+  /// 🆕 Odredi trenutnu fazu widgeta
+  _WidgetFaza _getCurrentFaza() {
+    final bool isPokupljen = _etaMinutes == -1;
+
+    // Faza 3 & 4: Pokupljen
+    if (isPokupljen && _vremePokupljenja != null) {
+      final minutesSincePokupljenje = DateTime.now().difference(_vremePokupljenja!).inMinutes;
+      if (minutesSincePokupljenje <= 60) {
+        return _WidgetFaza.pokupljen; // Faza 3: Prikazuj "Pokupljeni ste" 60 min
+      } else {
+        return _WidgetFaza.sledecaVoznja; // Faza 4: Prikazuj sledeću vožnju
+      }
+    }
+
+    // Faza 2: Vozač startovao rutu i ima ETA
+    if (_isActive && _vozacStartovaoRutu && _etaMinutes != null && _etaMinutes! >= 0) {
+      return _WidgetFaza.pracenje;
+    }
+
+    // Faza 1: Čekanje (vozač aktivan ali nije startovao rutu, ili nema ETA za ovog putnika)
+    if (_isActive || widget.vremePolaska != null) {
+      return _WidgetFaza.cekanje;
+    }
+
+    // Default: Čekanje
+    return _WidgetFaza.cekanje;
   }
 
   @override
   Widget build(BuildContext context) {
     // Loading state
     if (_isLoading) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.grey.shade400, Colors.grey.shade600],
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
+      return _buildContainer(
+        Colors.grey,
         child: const Center(
           child: SizedBox(
             width: 24,
@@ -181,36 +210,104 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       );
     }
 
-    // Odredi boje i poruku na osnovu stanja
-    final bool hasEta = _isActive && _etaMinutes != null;
-    final bool isPokupljen = _etaMinutes == -1;
+    final faza = _getCurrentFaza();
 
-    // Poruka i naslov
-    final String title;
-    final String message;
-
-    if (isPokupljen) {
-      title = 'POKUPLJEN';
-      // Prikaži vreme pokupljenja
-      if (_vremePokupljenja != null) {
-        final h = _vremePokupljenja!.hour.toString().padLeft(2, '0');
-        final m = _vremePokupljenja!.minute.toString().padLeft(2, '0');
-        message = 'U $h:$m - Uživajte u vožnji!';
-      } else {
-        message = 'Uživajte u vožnji!';
-      }
-    } else if (hasEta) {
-      title = 'KOMBI STIŽE ZA';
-      message = _formatEta(_etaMinutes!);
-    } else {
-      title = 'PRAĆENJE UŽIVO';
-      message = 'Vozač će uskoro krenuti';
+    // Ako smo u fazi 4 i nema sledeće vožnje, sakrij widget
+    if (faza == _WidgetFaza.sledecaVoznja && widget.sledecaVoznja == null) {
+      return const SizedBox.shrink();
     }
 
-    // Boje sa providnošću kao IZMIRENO kocka
-    // Zelena kad je pokupljen, plava kad ima ETA, siva kad čeka
-    final Color baseColor = isPokupljen ? Colors.green : (hasEta ? Colors.blue : Colors.grey);
+    // Ako nema aktivnog vozača i nismo u fazi pokupljen/sledeca, sakrij widget
+    if (!_isActive && faza == _WidgetFaza.cekanje && widget.vremePolaska == null) {
+      return const SizedBox.shrink();
+    }
 
+    // Odredi sadržaj na osnovu faze
+    final String title;
+    final String message;
+    final Color baseColor;
+    final IconData? icon;
+
+    switch (faza) {
+      case _WidgetFaza.cekanje:
+        // Faza 1: 30 min pre polaska
+        title = '🚐 PRAĆENJE UŽIVO';
+        message = 'Vozač će uskoro krenuti';
+        baseColor = Colors.grey;
+        icon = Icons.schedule;
+
+      case _WidgetFaza.pracenje:
+        // Faza 2: Realtime ETA
+        title = '🚐 KOMBI STIŽE ZA';
+        message = _formatEta(_etaMinutes!);
+        baseColor = Colors.blue;
+        icon = Icons.directions_bus;
+
+      case _WidgetFaza.pokupljen:
+        // Faza 3: Pokupljen
+        title = '✅ POKUPLJENI STE';
+        if (_vremePokupljenja != null) {
+          final h = _vremePokupljenja!.hour.toString().padLeft(2, '0');
+          final m = _vremePokupljenja!.minute.toString().padLeft(2, '0');
+          message = 'U $h:$m - Uživajte u vožnji!';
+        } else {
+          message = 'Uživajte u vožnji!';
+        }
+        baseColor = Colors.green;
+        icon = Icons.check_circle;
+
+      case _WidgetFaza.sledecaVoznja:
+        // Faza 4: Sledeća vožnja
+        title = '📅 SLEDEĆA VOŽNJA';
+        message = widget.sledecaVoznja ?? 'Nema zakazanih vožnji';
+        baseColor = Colors.purple;
+        icon = Icons.event;
+    }
+
+    return _buildContainer(
+      baseColor,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 24),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: faza == _WidgetFaza.pracenje ? 28 : 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (_vozacIme != null && faza == _WidgetFaza.pracenje)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Vozač: $_vozacIme',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContainer(Color baseColor, {required Widget child}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -229,38 +326,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           width: 2,
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            message,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: isPokupljen ? 18 : (hasEta ? 28 : 18),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          if (_vozacIme != null && hasEta && !isPokupljen)
-            Text(
-              'Vozač: $_vozacIme',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 12,
-              ),
-            ),
-        ],
-      ),
+      child: child,
     );
   }
 
