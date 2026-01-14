@@ -1166,6 +1166,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       KombiEtaWidget(
                         putnikIme: fullName,
                         grad: grad,
+                        vremePolaska: _sledeciPolazak,
                       ),
 
                       // ─────────── Divider ───────────

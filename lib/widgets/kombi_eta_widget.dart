@@ -11,10 +11,12 @@ class KombiEtaWidget extends StatefulWidget {
     Key? key,
     required this.putnikIme,
     required this.grad,
+    this.vremePolaska,
   }) : super(key: key);
 
   final String putnikIme;
   final String grad;
+  final String? vremePolaska; // 🆕 Opciono filtriranje po vremenu polaska
 
   @override
   State<KombiEtaWidget> createState() => _KombiEtaWidgetState();
@@ -44,14 +46,31 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   Future<void> _loadGpsData() async {
     try {
       final supabase = Supabase.instance.client;
-      // Učitaj SAMO aktivne vozače za ovaj grad (koji su pritisnuli dugme "Ruta")
-      final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true).eq('grad', widget.grad);
+
+      // 🔧 Normalizuj grad - BC/Bela Crkva i VS/Vršac tretiramo isto
+      final normalizedGrad = _normalizeGrad(widget.grad);
+
+      // Učitaj SVE aktivne vozače, pa filtriraj po normalizovanom gradu
+      var query = supabase.from('vozac_lokacije').select().eq('aktivan', true);
+
+      // 🆕 Ako je prosleđeno vreme polaska, filtriraj i po njemu
+      if (widget.vremePolaska != null) {
+        query = query.eq('vreme_polaska', widget.vremePolaska!);
+      }
+
+      final data = await query;
 
       if (!mounted) return;
 
       final list = data as List<dynamic>;
 
-      if (list.isEmpty) {
+      // Filtriraj po normalizovanom gradu (BC = Bela Crkva, VS = Vršac)
+      final filteredList = list.where((driver) {
+        final driverGrad = driver['grad'] as String? ?? '';
+        return _normalizeGrad(driverGrad) == normalizedGrad;
+      }).toList();
+
+      if (filteredList.isEmpty) {
         setState(() {
           _isActive = false;
           _etaMinutes = null;
@@ -62,7 +81,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       }
 
       // Uzmi prvog AKTIVNOG vozača
-      final driver = list.first;
+      final driver = filteredList.first;
       final putniciEta = driver['putnici_eta'] as Map<String, dynamic>?;
       final vozacIme = driver['vozac_ime'] as String?;
 
@@ -111,6 +130,17 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         });
       }
     }
+  }
+
+  /// 🔧 Normalizuje grad u standardni format (BC ili VS)
+  String _normalizeGrad(String grad) {
+    final lower = grad.toLowerCase();
+    if (lower.contains('bela') || lower == 'bc') {
+      return 'BC';
+    } else if (lower.contains('vršac') || lower.contains('vrsac') || lower == 'vs') {
+      return 'VS';
+    }
+    return grad.toUpperCase();
   }
 
   void _startListening() {

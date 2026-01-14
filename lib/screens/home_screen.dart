@@ -1371,11 +1371,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         },
                                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                         visualDensity: VisualDensity.compact,
+                                        side: const BorderSide(color: Colors.white, width: 2),
+                                        checkColor: Colors.white,
+                                        activeColor: Colors.orange,
                                       ),
                                       const Expanded(
                                         child: Text(
                                           'Promeni adresu samo za danas',
-                                          style: TextStyle(fontSize: 14),
+                                          style: TextStyle(fontSize: 14, color: Colors.white),
                                         ),
                                       ),
                                     ],
@@ -1388,19 +1391,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   DropdownButtonFormField<String>(
                                     // ignore: deprecated_member_use
                                     value: samoDanasAdresaId,
+                                    isExpanded: true, // ✅ Sprečava overflow
                                     decoration: InputDecoration(
                                       labelText: 'Adresa samo za danas',
+                                      labelStyle: TextStyle(color: Colors.grey.shade700),
                                       prefixIcon: const Icon(Icons.edit_location_alt, color: Colors.orange),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Colors.orange),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: Colors.orange.shade300),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Colors.orange, width: 2),
                                       ),
                                       filled: true,
-                                      fillColor: Colors.orange.shade50,
+                                      fillColor: Colors.white,
                                     ),
+                                    dropdownColor: Colors.white, // Bela pozadina dropdown-a
+                                    style: const TextStyle(color: Colors.black), // Crni tekst
                                     items: dostupneAdrese.map((adresa) {
                                       return DropdownMenuItem<String>(
                                         value: adresa['id'], // Čuvamo ID kao value
-                                        child: Text(adresa['naziv'] ?? ''),
+                                        child: Text(
+                                          adresa['naziv'] ?? '',
+                                          overflow: TextOverflow.ellipsis, // ✅ Skraćuje dugačak tekst
+                                          style: const TextStyle(color: Colors.black),
+                                        ),
                                       );
                                     }).toList(),
                                     onChanged: (value) {
@@ -1411,7 +1431,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             orElse: () => {})['naziv'];
                                       });
                                     },
-                                    hint: const Text('Izaberi adresu'),
+                                    hint: Text(
+                                      'Izaberi adresu',
+                                      style: TextStyle(color: Colors.grey.shade600),
+                                    ),
                                   ),
                                 ],
 
