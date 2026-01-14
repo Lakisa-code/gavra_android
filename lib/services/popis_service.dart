@@ -37,6 +37,7 @@ class PopisData {
         'dugoviPutnici': dugoviPutnici,
         'mesecneKarte': mesecneKarte,
         'kilometraza': kilometraza,
+        'automatskiGenerisan': false, // ✅ Ručni popis
       };
 }
 

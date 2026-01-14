@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'daily_checkin_service.dart';
 import 'local_notification_service.dart';
+import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
 
 /// 📊 SERVIS ZA AUTOMATSKI POPIS U 21:00
@@ -34,6 +35,9 @@ class ScheduledPopisService {
   /// Proveri da li je propušten popis za danas
   static Future<void> _checkMissedPopis() async {
     try {
+      // 🔧 FIX: Osiguraj da je VozacMappingService inicijalizovan
+      await VozacMappingService.initialize();
+
       final now = DateTime.now();
 
       // Preskači vikend
@@ -102,6 +106,10 @@ class ScheduledPopisService {
 
   /// Generiši popis za sve vozače
   static Future<void> _generatePopisForAllVozaci(DateTime datum) async {
+    // 🔧 FIX: Osiguraj da je VozacMappingService inicijalizovan pre dohvatanja statistika!
+    // Bez ovoga, getVozacUuidSync() vraća null i sve statistike su 0
+    await VozacMappingService.initialize();
+
     int uspesno = 0;
     int neuspesno = 0;
 
@@ -147,6 +155,13 @@ class ScheduledPopisService {
         await DailyCheckInService.saveDailyReport(vozac, datum, popisData);
         uspesno++;
 
+        // 📲 Pošalji notifikaciju za ovog vozača sa detaljima
+        await LocalNotificationService.showRealtimeNotification(
+          title: '📊 Popis za $vozac - ${datum.day}.${datum.month}.${datum.year}',
+          body:
+              '💰 Pazar: ${pazar.toStringAsFixed(0)} din\n✅ Pokupljeni: $pokupljeni\n❌ Otkazani: $otkazani\n⚠️ Dužnici: $duznici',
+        );
+
         debugPrint(
             '✅ [ScheduledPopis] Popis za $vozac: pokupljeni=$pokupljeni, otkazani=$otkazani, duznici=$duznici, pazar=$pazar');
       } catch (e) {
@@ -160,14 +175,6 @@ class ScheduledPopisService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_lastPopisDateKey, datum.toIso8601String().split('T')[0]);
     } catch (_) {}
-
-    // Prikaži notifikaciju o završenom popisu
-    if (uspesno > 0) {
-      await LocalNotificationService.showRealtimeNotification(
-        title: '📊 Automatski popis završen',
-        body: 'Generisani popisi za $uspesno vozača (${datum.day}.${datum.month}.${datum.year})',
-      );
-    }
 
     debugPrint('📊 [ScheduledPopis] Završeno: $uspesno uspešno, $neuspesno neuspešno');
   }

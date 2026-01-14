@@ -377,21 +377,24 @@ class DailyCheckInService {
   ) async {
     final supabase = Supabase.instance.client;
     try {
-      await supabase.from('daily_reports').upsert({
-        'vozac': vozac,
-        'datum': datum.toIso8601String().split('T')[0],
-        'ukupan_pazar': popisPodaci['ukupanPazar'] ?? 0.0,
-        'sitan_novac': popisPodaci['sitanNovac'] ?? 0.0,
-        'checkin_vreme': DateTime.now().toIso8601String(),
-        'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,
-        'naplaceni_putnici': popisPodaci['naplaceniPutnici'] ?? 0,
-        'pokupljeni_putnici': popisPodaci['pokupljeniPutnici'] ?? 0,
-        'dugovi_putnici': popisPodaci['dugoviPutnici'] ?? 0,
-        'mesecne_karte': popisPodaci['mesecneKarte'] ?? 0,
-        'kilometraza': popisPodaci['kilometraza'] ?? 0.0,
-        'automatski_generisan': popisPodaci['automatskiGenerisan'] ?? true,
-        'created_at': datum.toIso8601String(),
-      });
+      await supabase.from('daily_reports').upsert(
+        {
+          'vozac': vozac,
+          'datum': datum.toIso8601String().split('T')[0],
+          'ukupan_pazar': popisPodaci['ukupanPazar'] ?? 0.0,
+          'sitan_novac': popisPodaci['sitanNovac'] ?? 0.0,
+          'checkin_vreme': DateTime.now().toIso8601String(),
+          'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,
+          'naplaceni_putnici': popisPodaci['naplaceniPutnici'] ?? 0,
+          'pokupljeni_putnici': popisPodaci['pokupljeniPutnici'] ?? 0,
+          'dugovi_putnici': popisPodaci['dugoviPutnici'] ?? 0,
+          'mesecne_karte': popisPodaci['mesecneKarte'] ?? 0,
+          'kilometraza': popisPodaci['kilometraza'] ?? 0.0,
+          'automatski_generisan': popisPodaci['automatskiGenerisan'] ?? true,
+          'created_at': datum.toIso8601String(),
+        },
+        onConflict: 'vozac,datum', // 🎯 Ključno za upsert - sprečava duplikate!
+      );
     } catch (e) {
       rethrow;
     }
