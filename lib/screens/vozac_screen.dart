@@ -12,6 +12,7 @@ import '../services/driver_location_service.dart'; // 🚐 Za ETA tracking
 import '../services/firebase_service.dart'; // 🎯 Za vozača
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
 import '../services/popis_service.dart'; // 📋 Za popis dana
+import '../services/putnik_push_service.dart'; // 📱 Za push notifikacije putnicima
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
@@ -644,6 +645,60 @@ class _VozacScreenState extends State<VozacScreen> {
             _currentPassengerIndex = 0;
             _isLoading = false;
           });
+        }
+
+        // 🚐 POKRENI REALTIME TRACKING ZA PUTNIKE
+        // Šalje GPS lokaciju + ETA za svakog putnika u Supabase
+        if (_currentDriver != null && result.putniciEta != null) {
+          final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
+
+          // Konvertuj koordinate: Map<Putnik, Position> -> Map<String, Position>
+          Map<String, Position>? coordsByName;
+          if (_cachedCoordinates != null) {
+            coordsByName = {};
+            for (final entry in _cachedCoordinates!.entries) {
+              coordsByName[entry.key.ime] = entry.value;
+            }
+          }
+
+          // Izvuci redosled imena putnika
+          final putniciRedosled = optimizedPutnici.map((p) => p.ime).toList();
+
+          await DriverLocationService.instance.startTracking(
+            vozacId: _currentDriver!,
+            vozacIme: _currentDriver!,
+            grad: _selectedGrad,
+            vremePolaska: _selectedVreme,
+            smer: smer,
+            putniciEta: result.putniciEta,
+            putniciCoordinates: coordsByName,
+            putniciRedosled: putniciRedosled,
+            onAllPassengersPickedUp: () {
+              if (mounted) {
+                setState(() {
+                  _isGpsTracking = false;
+                  _navigationStatus = '';
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Svi putnici pokupljeni! Tracking automatski zaustavljen.'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+          );
+
+          if (mounted) {
+            setState(() => _isGpsTracking = true);
+          }
+
+          // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA
+          await _sendTransportStartedNotifications(
+            putniciEta: result.putniciEta!,
+            vozacIme: _currentDriver!,
+          );
         }
 
         final routeString = optimizedPutnici.take(3).map((p) => p.adresa?.split(',').first ?? p.ime).join(' → ');
@@ -1675,5 +1730,43 @@ class _VozacScreenState extends State<VozacScreen> {
     if (color == Colors.red) return Colors.red[300]!;
     if (color == Colors.orange) return Colors.orange[300]!;
     return color.withValues(alpha: 0.6);
+  }
+
+  // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA KADA VOZAC KRENE
+  Future<void> _sendTransportStartedNotifications({
+    required Map<String, int> putniciEta,
+    required String vozacIme,
+  }) async {
+    try {
+      // Dohvati tokene za sve putnike
+      final putnikImena = putniciEta.keys.toList();
+      final tokens = await PutnikPushService.getTokensForPutnici(putnikImena);
+
+      if (tokens.isEmpty) {
+        return;
+      }
+
+      // Pošalji notifikaciju svakom putniku
+      for (final entry in tokens.entries) {
+        final putnikIme = entry.key;
+        final tokenInfo = entry.value;
+        final eta = putniciEta[putnikIme] ?? 0;
+
+        await RealtimeNotificationService.sendPushNotification(
+          title: '🚐 Kombi je krenuo!',
+          body: 'Vozač $vozacIme kreće ka vama. Stiže za ~$eta min.',
+          tokens: [
+            {'token': tokenInfo['token']!, 'provider': tokenInfo['provider']!}
+          ],
+          data: {
+            'type': 'transport_started',
+            'eta_minutes': eta,
+            'vozac': vozacIme,
+          },
+        );
+      }
+    } catch (e) {
+      // Error sending notifications
+    }
   }
 }
