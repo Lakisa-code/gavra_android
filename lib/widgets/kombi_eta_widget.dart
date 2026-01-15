@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,7 +9,7 @@ import '../services/realtime/realtime_manager.dart';
 /// Widget koji prikazuje ETA dolaska kombija sa 4 faze:
 /// 1. 30 min pre polaska: "Vozač će uskoro krenuti"
 /// 2. Vozač startovao rutu: Realtime ETA praćenje
-/// 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min)
+/// 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min) - ČITA IZ BAZE!
 /// 4. Nakon 60 min: "Vaša sledeća zakazana vožnja: dan, vreme"
 class KombiEtaWidget extends StatefulWidget {
   const KombiEtaWidget({
@@ -16,13 +17,15 @@ class KombiEtaWidget extends StatefulWidget {
     required this.putnikIme,
     required this.grad,
     this.vremePolaska,
-    this.sledecaVoznja, // 🆕 Format: "Ponedeljak, 7:00" ili null
+    this.sledecaVoznja,
+    this.putnikId, // 🆕 ID putnika za čitanje iz baze
   }) : super(key: key);
 
   final String putnikIme;
   final String grad;
   final String? vremePolaska;
-  final String? sledecaVoznja; // 🆕 Sledeća zakazana vožnja
+  final String? sledecaVoznja;
+  final String? putnikId; // 🆕 UUID putnika
 
   @override
   State<KombiEtaWidget> createState() => _KombiEtaWidgetState();
@@ -38,12 +41,14 @@ enum _WidgetFaza {
 
 class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   StreamSubscription? _subscription;
+  StreamSubscription? _putnikSubscription; // 🆕 Za praćenje promena u registrovani_putnici
   int? _etaMinutes;
   bool _isLoading = true;
   bool _isActive = false; // Vozač je aktivan (šalje lokaciju)
   bool _vozacStartovaoRutu = false; // 🆕 Vozač pritisnuo "Ruta" dugme
   String? _vozacIme;
-  DateTime? _vremePokupljenja;
+  DateTime? _vremePokupljenja; // 🆕 ČITA SE IZ BAZE - tačno vreme kada je vozač pritisnuo
+  bool _jePokupljenIzBaze = false; // 🆕 Flag iz baze
 
   @override
   void initState() {
@@ -54,7 +59,11 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   @override
   void dispose() {
     _subscription?.cancel();
+    _putnikSubscription?.cancel();
     RealtimeManager.instance.unsubscribe('vozac_lokacije');
+    if (widget.putnikId != null) {
+      RealtimeManager.instance.unsubscribe('registrovani_putnici');
+    }
     super.dispose();
   }
 
@@ -202,20 +211,99 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   void _startListening() {
     _loadGpsData();
+    _loadPokupljenjeIzBaze(); // 🆕 Učitaj status pokupljenja iz baze
     _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen((payload) {
       _loadGpsData();
     });
+    // 🆕 Prati promene u registrovani_putnici tabeli (kada vozač pokupi putnika)
+    if (widget.putnikId != null) {
+      _putnikSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+        _loadPokupljenjeIzBaze();
+      });
+    }
+  }
+
+  /// 🆕 Učitaj vreme pokupljenja DIREKTNO iz baze (polasci_po_danu JSON)
+  Future<void> _loadPokupljenjeIzBaze() async {
+    if (widget.putnikId == null) return;
+
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase
+          .from('registrovani_putnici')
+          .select('polasci_po_danu')
+          .eq('id', widget.putnikId!)
+          .maybeSingle();
+
+      if (!mounted || response == null) return;
+
+      final polasciPoDanu = response['polasci_po_danu'];
+      if (polasciPoDanu == null) return;
+
+      // Odredi ključ za grad (bc ili vs)
+      final place = _normalizeGrad(widget.grad).toLowerCase(); // 'bc' ili 'vs'
+      final pokupljenoKey = '${place}_pokupljeno';
+
+      // Odredi dan (pon, uto, sre...)
+      final now = DateTime.now();
+      const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final danKratica = daniKratice[now.weekday - 1];
+
+      // Parsiraj JSON
+      Map<String, dynamic>? decoded;
+      if (polasciPoDanu is String) {
+        try {
+          decoded = Map<String, dynamic>.from(
+            polasciPoDanu.isNotEmpty ? 
+            Map<String, dynamic>.from(jsonDecode(polasciPoDanu)) : {}
+          );
+        } catch (_) {
+          return;
+        }
+      } else if (polasciPoDanu is Map) {
+        decoded = Map<String, dynamic>.from(polasciPoDanu);
+      }
+
+      if (decoded == null) return;
+
+      final dayData = decoded[danKratica];
+      if (dayData == null || dayData is! Map) return;
+
+      final pokupljenoTimestamp = dayData[pokupljenoKey] as String?;
+      if (pokupljenoTimestamp == null || pokupljenoTimestamp.isEmpty) {
+        // Nije pokupljen
+        setState(() {
+          _jePokupljenIzBaze = false;
+          // NE resetuj _vremePokupljenja ovde - možda je vozač aktivan
+        });
+        return;
+      }
+
+      // Parsiraj timestamp i proveri da li je DANAS
+      final pokupljenoDate = DateTime.tryParse(pokupljenoTimestamp)?.toLocal();
+      if (pokupljenoDate == null) return;
+
+      final danas = DateTime.now();
+      final jeDanas = pokupljenoDate.year == danas.year &&
+          pokupljenoDate.month == danas.month &&
+          pokupljenoDate.day == danas.day;
+
+      if (jeDanas) {
+        debugPrint('✅ KombiEtaWidget: Pokupljen iz baze u ${pokupljenoDate.hour}:${pokupljenoDate.minute}');
+        setState(() {
+          _jePokupljenIzBaze = true;
+          _vremePokupljenja = pokupljenoDate; // 🆕 TAČNO VREME IZ BAZE!
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ KombiEtaWidget._loadPokupljenjeIzBaze error: $e');
+    }
   }
 
   /// 🆕 Odredi trenutnu fazu widgeta
   _WidgetFaza _getCurrentFaza() {
-    final bool isPokupljen = _etaMinutes == -1;
-
-    // Faza 3 & 4: Pokupljen (ETA == -1) - ALI samo ako je vozač aktivan!
-    // Ako vozač nije aktivan, ignoriši stari -1 iz baze
-    if (isPokupljen && _isActive) {
-      // Ako nemamo vreme pokupljenja, postavi ga sada
-      _vremePokupljenja ??= DateTime.now();
+    // 🆕 PRIORITET 1: Ako je pokupljen IZ BAZE (vozač pritisnuo long press) - to je ISTINA!
+    if (_jePokupljenIzBaze && _vremePokupljenja != null) {
       final minutesSincePokupljenje = DateTime.now().difference(_vremePokupljenja!).inMinutes;
       if (minutesSincePokupljenje <= 60) {
         return _WidgetFaza.pokupljen; // Faza 3: Prikazuj "Pokupljeni ste" 60 min
@@ -224,7 +312,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       }
     }
 
-    // Faza 2: Vozač startovao rutu i ima ETA
+    // Faza 2: Vozač startovao rutu i ima ETA (praćenje uživo)
     if (_isActive && _vozacStartovaoRutu && _etaMinutes != null && _etaMinutes! >= 0) {
       return _WidgetFaza.pracenje;
     }

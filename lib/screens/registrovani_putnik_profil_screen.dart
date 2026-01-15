@@ -1256,7 +1256,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     // 🚐 ETA Widget sa 4 faze:
                     // 1. 30 min pre polaska: "Vozač će uskoro krenuti"
                     // 2. Vozač startovao rutu: Realtime ETA praćenje
-                    // 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min)
+                    // 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min) - ČITA IZ BAZE!
                     // 4. Nakon 60 min: "Vaša sledeća vožnja: dan, vreme"
                     if (_sledeciPolazak != null || _sledecaVoznjaInfo != null)
                       KombiEtaWidget(
@@ -1264,6 +1264,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         grad: grad,
                         vremePolaska: _sledeciPolazak,
                         sledecaVoznja: _sledecaVoznjaInfo,
+                        putnikId: _putnikData['id']?.toString(), // 🆕 Za čitanje pokupljenja iz baze
                       ),
 
                     // ─────────── Divider ───────────
