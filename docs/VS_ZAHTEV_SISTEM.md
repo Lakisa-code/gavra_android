@@ -11,7 +11,7 @@ Umesto odbijanja putnika kada je kombi pun, sistem treba da ih skuplja na listu 
 ### 1. Zahtev (Korisnik bira termin)
 - Korisnik bira VS termin (npr. 14:00).
 - Sistem stavlja status `pending` i pokreće timer **10 minuta**.
-- Korisnik dobija poruku: *"⏳ VS Zahtev primljen, provera za 10 min..."*
+- Korisnik dobija poruku: *"⏳ Vaš zahtev se obrađuje. Dobićete odgovor uskoro."*
 
 ### 2. Provera (Nakon 10 minuta)
 Sistem proverava slobodna mesta (`SlobodnaMestaService`).

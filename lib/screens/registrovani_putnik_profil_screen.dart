@@ -2135,6 +2135,22 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             body: 'Vaš zahtev za $vreme se obrađuje. Dobićete odgovor uskoro.',
             payload: 'vs_waiting_list',
           );
+
+          // 🆕 IAKO JE NA LISTI ČEKANJA, PONUDI ALTERNATIVE (Ako želi da pređe u slobodan termin)
+          final alternative = await _pronadjiAlternativneTermineDetaljno(vreme, datum, 'VS');
+          // Ponudi samo ako ima slobodnih alternativa
+          if (alternative['pre'] != null || alternative['posle'] != null) {
+            await Future.delayed(const Duration(seconds: 2)); // Sačekaj malo da stigne prva notifikacija
+            await LocalNotificationService.showVsAlternativeNotification(
+              zeljeniTermin: vreme,
+              putnikId: putnikId,
+              dan: dan,
+              polasci: polasci,
+              radniDani: radniDani,
+              terminPre: alternative['pre'],
+              terminPosle: alternative['posle'],
+            );
+          }
         } else {
           // ❌ NIJE rush hour - odbij zahtev, ali ponudi alternative
 
