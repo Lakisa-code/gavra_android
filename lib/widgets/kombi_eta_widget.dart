@@ -175,8 +175,9 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   _WidgetFaza _getCurrentFaza() {
     final bool isPokupljen = _etaMinutes == -1;
 
-    // Faza 3 & 4: Pokupljen (ETA == -1)
-    if (isPokupljen) {
+    // Faza 3 & 4: Pokupljen (ETA == -1) - ALI samo ako je vozač aktivan!
+    // Ako vozač nije aktivan, ignoriši stari -1 iz baze
+    if (isPokupljen && _isActive) {
       // Ako nemamo vreme pokupljenja, postavi ga sada
       _vremePokupljenja ??= DateTime.now();
       final minutesSincePokupljenje = DateTime.now().difference(_vremePokupljenja!).inMinutes;

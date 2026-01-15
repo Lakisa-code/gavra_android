@@ -251,13 +251,20 @@ class SlobodnaMestaService {
         }
       }
 
-      // Proveri da li ima slobodnih mesta
-      final imaMesta = await imaSlobodnihMesta(grad, novoVreme, datum: danas);
-      if (!imaMesta) {
-        return {
-          'success': false,
-          'message': 'Nema slobodnih mesta za $novoVreme',
-        };
+      // ═══════════════════════════════════════════════════════════════
+      // 🎫 PROVERA SLOBODNIH MESTA
+      // 🎓 UČENICI + BC: Svi prolaze do 16h bez obzira na kapacitet
+      // 🚌 OSTALI: Moraju imati slobodno mesto
+      // ═══════════════════════════════════════════════════════════════
+      final jeUcenikBC = tipPutnika == 'ucenik' && grad.toUpperCase() == 'BC';
+      if (!jeUcenikBC) {
+        final imaMesta = await imaSlobodnihMesta(grad, novoVreme, datum: danas);
+        if (!imaMesta) {
+          return {
+            'success': false,
+            'message': 'Nema slobodnih mesta za $novoVreme',
+          };
+        }
       }
 
       // Dohvati trenutne polaske
@@ -305,6 +312,12 @@ class SlobodnaMestaService {
     } catch (e) {
       return {'success': false, 'message': 'Greška: $e'};
     }
+  }
+
+  /// Javna metoda za logovanje promene (koristi se iz RegistrovaniPutnikProfilScreen)
+  static Future<void> logujPromenuVremena(String putnikId, String ciljniDan) async {
+    final danas = DateTime.now().toIso8601String().split('T')[0];
+    await _zapisiPromenuVremena(putnikId, danas, ciljniDan);
   }
 
   /// Broji koliko puta je putnik menjao vreme za određeni ciljni dan (danas)

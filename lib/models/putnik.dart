@@ -367,24 +367,31 @@ class Putnik {
     final finalAdresaVs = adresaDanasVsNaziv ?? adresaVrsac;
     final finalAdresaVsId = adresaDanasVsId ?? map['adresa_vrsac_id'] as String?;
 
-    // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan
-    if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
+    // 🆕 Proveri da li je putnik otkazan za ovaj dan i grad
+    final bcOtkazan = RegistrovaniHelpers.isOtkazanForDayAndPlace(map, normalizedTarget, 'bc');
+    final vsOtkazan = RegistrovaniHelpers.isOtkazanForDayAndPlace(map, normalizedTarget, 'vs');
+
+    // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan ILI ako je otkazan
+    if ((polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') || bcOtkazan) {
       // ✅ KORISTI ODVOJENU KOLONU: vreme_pokupljenja_bc za Bela Crkva polazak
       bool pokupljenZaOvajPolazak = false;
       if (vremePokupljenjaBC != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
         pokupljenZaOvajPolazak = true; // Već je provera DANAS u helper funkciji
       }
 
+      // 🆕 Ako je otkazan bez polaska, koristi placeholder
+      final efectivePolazakBC = polazakBC ?? 'Otkazano';
+
       putnici.add(
         Putnik(
           id: map['id'], // ✅ Direktno proslijedi ID bez parsiranja
           ime: ime,
-          polazak: polazakBC,
+          polazak: efectivePolazakBC,
           pokupljen: pokupljenZaOvajPolazak,
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: mesecnaKarta, // 🆕 FIX: koristi izračunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status: status,
+          status: bcOtkazan ? 'otkazan' : status, // 🆕 Ako je otkazan, postavi status
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaBC, // ✅ NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaBC, // ✅ FIX: Čitaj iz JSON-a za BC
@@ -395,13 +402,15 @@ class Putnik {
           // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu
           pokupioVozac: pokupioVozacBC,
           // 🆕 dodeljenVozac - 3 nivoa: 1) per-putnik (bc_vozac), 2) per-vreme, 3) globalni vozac_id
-          dodeljenVozac: _getDodeljenVozacWithPriority(
-            map: map,
-            danKratica: normalizedTarget,
-            place: 'bc',
-            grad: 'Bela Crkva',
-            vreme: polazakBC,
-          ),
+          dodeljenVozac: polazakBC != null
+              ? _getDodeljenVozacWithPriority(
+                  map: map,
+                  danKratica: normalizedTarget,
+                  place: 'bc',
+                  grad: 'Bela Crkva',
+                  vreme: polazakBC,
+                )
+              : null,
           vozac: vozac,
           grad: 'Bela Crkva',
           adresa: finalAdresaBc, // 🆕 PRIORITET: adresa_danas > stalna adresa
@@ -413,29 +422,32 @@ class Putnik {
           tipPutnika: tipPutnika, // 🆕 FIX: dodaj tip putnika
           vremeOtkazivanja: RegistrovaniHelpers.getVremeOtkazivanjaForDayAndPlace(map, normalizedTarget, 'bc'),
           otkazaoVozac: RegistrovaniHelpers.getOtkazaoVozacForDayAndPlace(map, normalizedTarget, 'bc'),
-          otkazanZaPolazak: RegistrovaniHelpers.isOtkazanForDayAndPlace(map, normalizedTarget, 'bc'), // ✅ DODATO
+          otkazanZaPolazak: bcOtkazan, // ✅ Koristi već izračunatu vrednost
         ),
       );
     }
 
-    // Kreiraj putnik za Vršac ako ima polazak za targetDan
-    if (polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') {
+    // Kreiraj putnik za Vršac ako ima polazak za targetDan ILI ako je otkazan
+    if ((polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') || vsOtkazan) {
       // ✅ NOVO: Čitaj vreme pokupljenja iz polasci_po_danu (samo DANAS)
       bool pokupljenZaOvajPolazak = false;
       if (vremePokupljenjaVS != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
         pokupljenZaOvajPolazak = true; // Već je provera DANAS u helper funkciji
       }
 
+      // 🆕 Ako je otkazan bez polaska, koristi placeholder
+      final efectivePolazakVS = polazakVS ?? 'Otkazano';
+
       putnici.add(
         Putnik(
           id: map['id'], // ✅ Direktno proslijedi ID bez parsiranja
           ime: ime,
-          polazak: polazakVS,
+          polazak: efectivePolazakVS,
           pokupljen: pokupljenZaOvajPolazak,
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: mesecnaKarta, // 🆕 FIX: koristi izračunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status: status,
+          status: vsOtkazan ? 'otkazan' : status, // 🆕 Ako je otkazan, postavi status
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaVS, // ✅ NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaVS, // ✅ FIX: Čitaj iz JSON-a za VS
@@ -446,13 +458,15 @@ class Putnik {
           // ✅ NOVO: Čitaj pokupioVozac iz polasci_po_danu
           pokupioVozac: pokupioVozacVS,
           // 🆕 dodeljenVozac - 3 nivoa: 1) per-putnik (vs_vozac), 2) per-vreme, 3) globalni vozac_id
-          dodeljenVozac: _getDodeljenVozacWithPriority(
-            map: map,
-            danKratica: normalizedTarget,
-            place: 'vs',
-            grad: 'Vršac',
-            vreme: polazakVS,
-          ),
+          dodeljenVozac: polazakVS != null
+              ? _getDodeljenVozacWithPriority(
+                  map: map,
+                  danKratica: normalizedTarget,
+                  place: 'vs',
+                  grad: 'Vršac',
+                  vreme: polazakVS,
+                )
+              : null,
           vozac: vozac,
           grad: 'Vršac',
           adresa: finalAdresaVs, // 🆕 PRIORITET: adresa_danas > stalna adresa
@@ -464,7 +478,7 @@ class Putnik {
           tipPutnika: tipPutnika, // 🆕 FIX: dodaj tip putnika
           vremeOtkazivanja: RegistrovaniHelpers.getVremeOtkazivanjaForDayAndPlace(map, normalizedTarget, 'vs'),
           otkazaoVozac: RegistrovaniHelpers.getOtkazaoVozacForDayAndPlace(map, normalizedTarget, 'vs'),
-          otkazanZaPolazak: RegistrovaniHelpers.isOtkazanForDayAndPlace(map, normalizedTarget, 'vs'), // ✅ DODATO
+          otkazanZaPolazak: vsOtkazan, // ✅ Koristi već izračunatu vrednost
         ),
       );
     }

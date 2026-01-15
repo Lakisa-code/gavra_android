@@ -27,10 +27,10 @@ import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'odrzavanje_screen.dart'; // 📖 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
-import 'putnik_kvalitet_screen.dart'; // 🎯 Analiza kvaliteta putnika
+import 'putnik_kvalitet_screen_v2.dart'; // 🎯 Analiza kvaliteta putnika
 import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'vozac_screen.dart'; // DODANO za vozac screen
-import 'vozaci_statistika_screen.dart'; // 📊 Statistika vozača
+import 'vozaci_statistika_screen_v2.dart'; // 📊 Statistika vozača
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({Key? key}) : super(key: key);
@@ -310,7 +310,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
-                        builder: (context) => const VozaciStatistikaScreen(),
+                        builder: (context) => const VozaciStatistikaScreenV2(),
                       ),
                     );
                   },
@@ -326,7 +326,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
-                        builder: (context) => const PutnikKvalitetScreen(),
+                        builder: (context) => const PutnikKvalitetScreenV2(),
                       ),
                     );
                   },

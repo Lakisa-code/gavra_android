@@ -1,15 +1,17 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../globals.dart';
+import 'auth_manager.dart';
 import 'daily_checkin_service.dart';
-import 'local_notification_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
 
 /// 📊 SERVIS ZA AUTOMATSKI POPIS U 21:00
 /// Generiše popis za sve aktivne vozače svakog radnog dana u 21:00
+/// ✅ Popup dialog za ulogovanog vozača
 class ScheduledPopisService {
   static Timer? _dailyTimer;
   static bool _isInitialized = false;
@@ -155,12 +157,17 @@ class ScheduledPopisService {
         await DailyCheckInService.saveDailyReport(vozac, datum, popisData);
         uspesno++;
 
-        // 📲 Pošalji notifikaciju za ovog vozača sa detaljima
-        await LocalNotificationService.showRealtimeNotification(
-          title: '📊 Popis za $vozac - ${datum.day}.${datum.month}.${datum.year}',
-          body:
-              '💰 Pazar: ${pazar.toStringAsFixed(0)} din\n✅ Pokupljeni: $pokupljeni\n❌ Otkazani: $otkazani\n⚠️ Dužnici: $duznici',
-        );
+        // 📊 POPUP DIALOG - samo za ulogovanog vozača
+        final currentDriver = await AuthManager.getCurrentDriver();
+        if (currentDriver != null && currentDriver == vozac) {
+          _showPopisDialog(
+            datum: datum,
+            pazar: pazar,
+            pokupljeni: pokupljeni,
+            otkazani: otkazani,
+            duznici: duznici,
+          );
+        }
 
         debugPrint(
             '✅ [ScheduledPopis] Popis za $vozac: pokupljeni=$pokupljeni, otkazani=$otkazani, duznici=$duznici, pazar=$pazar');
@@ -177,6 +184,68 @@ class ScheduledPopisService {
     } catch (_) {}
 
     debugPrint('📊 [ScheduledPopis] Završeno: $uspesno uspešno, $neuspesno neuspešno');
+  }
+
+  /// Prikaži popup dialog sa popisom
+  static void _showPopisDialog({
+    required DateTime datum,
+    required double pazar,
+    required int pokupljeni,
+    required int otkazani,
+    required int duznici,
+  }) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Text('📊', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 8),
+              Text(
+                'Popis ${datum.day}.${datum.month}.${datum.year}',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildPopisRow('💰 Pazar', '${pazar.toStringAsFixed(0)} din'),
+              const Divider(),
+              _buildPopisRow('✅ Pokupljeni', '$pokupljeni'),
+              _buildPopisRow('❌ Otkazani', '$otkazani'),
+              _buildPopisRow('⚠️ Dužnici', '$duznici'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Helper za red u popup-u
+  static Widget _buildPopisRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 16)),
+          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
   }
 
   /// Ručno pokreni popis (za testiranje)

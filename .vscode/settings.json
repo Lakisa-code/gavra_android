@@ -75,20 +75,32 @@
     },
     "gavra_android/.vscode/mcp.json: supabase": {
       "allowedModels": [
+        "copilot/claude-opus-4.5",
+        "copilot/gemini-3-flash-preview",
         "copilot/gpt-5-mini",
-        "copilot/claude-opus-4.5"
+        "copilot/grok-code-fast-1",
+        "copilot/oswe-vscode-prime",
+        "copilot/auto"
       ]
     },
     "gavra_android/.vscode/mcp.json: huawei-appgallery": {
       "allowedModels": [
+        "copilot/claude-opus-4.5",
         "copilot/gpt-5-mini",
-        "copilot/claude-opus-4.5"
+        "copilot/auto",
+        "copilot/gemini-3-flash-preview",
+        "copilot/grok-code-fast-1",
+        "copilot/oswe-vscode-prime"
       ]
     },
     "gavra_android/.vscode/mcp.json: google-play": {
       "allowedModels": [
+        "copilot/claude-opus-4.5",
         "copilot/gpt-5-mini",
-        "copilot/claude-opus-4.5"
+        "copilot/auto",
+        "copilot/gemini-3-flash-preview",
+        "copilot/grok-code-fast-1",
+        "copilot/oswe-vscode-prime"
       ]
     },
     "gavra_android/.vscode/mcp.json: github": {
@@ -99,8 +111,12 @@
     },
     "gavra_android/.vscode/mcp.json: app-store-connect": {
       "allowedModels": [
+        "copilot/claude-opus-4.5",
         "copilot/gpt-5-mini",
-        "copilot/claude-opus-4.5"
+        "copilot/auto",
+        "copilot/gemini-3-flash-preview",
+        "copilot/grok-code-fast-1",
+        "copilot/oswe-vscode-prime"
       ]
     }
   },

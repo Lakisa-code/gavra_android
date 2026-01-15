@@ -19,6 +19,9 @@ class TimePickerCell extends StatelessWidget {
   final ValueChanged<String?> onChanged;
   final double? width;
   final double? height;
+  final String? status; // 🆕 pending, confirmed, waiting, null
+  final String? dayName; // 🆕 Dan u nedelji (pon, uto, sre...) za zaključavanje prošlih dana
+  final bool isCancelled; // 🆕 Da li je otkazan (crveno)
 
   const TimePickerCell({
     Key? key,
@@ -27,39 +30,148 @@ class TimePickerCell extends StatelessWidget {
     required this.onChanged,
     this.width = 70,
     this.height = 40,
+    this.status,
+    this.dayName,
+    this.isCancelled = false,
   }) : super(key: key);
+
+  /// Vraća DateTime za određeni dan u tekućoj nedelji
+  DateTime? _getDateForDay() {
+    if (dayName == null) return null;
+
+    final now = DateTime.now();
+    final todayWeekday = now.weekday;
+
+    const daniMap = {
+      'pon': 1,
+      'uto': 2,
+      'sre': 3,
+      'cet': 4,
+      'pet': 5,
+      'sub': 6,
+      'ned': 7,
+    };
+
+    final targetWeekday = daniMap[dayName!.toLowerCase()];
+    if (targetWeekday == null) return null;
+
+    // Razlika u danima od danas
+    final diff = targetWeekday - todayWeekday;
+    return DateTime(now.year, now.month, now.day).add(Duration(days: diff));
+  }
+
+  /// Da li je dan zaključan (prošao ili danas posle 18:00)
+  bool get isLocked {
+    if (dayName == null) return false;
+
+    final dayDate = _getDateForDay();
+    if (dayDate == null) return false;
+
+    final now = DateTime.now();
+    final todayOnly = DateTime(now.year, now.month, now.day);
+
+    // Zaključaj ako je dan pre danas
+    if (dayDate.isBefore(todayOnly)) {
+      return true;
+    }
+
+    // 🆕 Zaključaj današnji dan posle 19:00 (nema smisla zakazivati uveče za isti dan)
+    if (dayDate.isAtSameMomentAs(todayOnly) && now.hour >= 19) {
+      return true;
+    }
+
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
     final hasTime = value != null && value!.isNotEmpty;
+    final isPending = status == 'pending';
+    final isWaiting = status == 'waiting';
+    final locked = isLocked;
+
+    debugPrint(
+        '🎨 [TimePickerCell] value=$value, status=$status, isPending=$isPending, dayName=$dayName, locked=$locked, isCancelled=$isCancelled');
+
+    // Boje za različite statuse
+    Color borderColor = Colors.grey.shade300;
+    Color bgColor = Colors.white;
+    Color textColor = Colors.black87;
+
+    // 🔴 OTKAZANO - crvena (prioritet nad svim ostalim) - bez obzira na locked
+    if (isCancelled) {
+      borderColor = Colors.red;
+      bgColor = Colors.red.shade50;
+      textColor = Colors.red.shade800;
+    }
+    // ⬜ PROŠLI DAN (nije otkazan) - sivo
+    else if (locked) {
+      borderColor = Colors.grey.shade400;
+      bgColor = Colors.grey.shade200;
+      textColor = Colors.grey.shade600;
+    }
+    // 🟠 PENDING - narandžasto
+    else if (isPending) {
+      borderColor = Colors.orange;
+      bgColor = Colors.orange.shade50;
+      textColor = Colors.orange.shade800;
+    }
+    // 🔵 WAITING - plavo
+    else if (isWaiting) {
+      borderColor = Colors.blue;
+      bgColor = Colors.blue.shade50;
+      textColor = Colors.blue.shade800;
+    }
 
     return GestureDetector(
-      onTap: () => _showTimePickerDialog(context),
+      onTap: (locked || isCancelled) ? null : () => _showTimePickerDialog(context),
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: bgColor,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.grey.shade300,
+            color: borderColor,
+            width: (isPending || isWaiting || isCancelled) ? 2 : 1,
           ),
         ),
         child: Center(
           child: hasTime
-              ? Text(
-                  value!,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isCancelled) ...[
+                      Icon(Icons.cancel, size: 12, color: textColor),
+                      const SizedBox(width: 2),
+                    ] else if (locked) ...[
+                      Icon(Icons.check_circle, size: 12, color: Colors.green),
+                      const SizedBox(width: 2),
+                    ] else if (isPending) ...[
+                      Icon(Icons.hourglass_empty, size: 12, color: textColor),
+                      const SizedBox(width: 2),
+                    ] else if (isWaiting) ...[
+                      Icon(Icons.schedule, size: 12, color: textColor),
+                      const SizedBox(width: 2),
+                    ],
+                    Text(
+                      value!,
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: (isPending || isWaiting || locked || isCancelled) ? 12 : 14,
+                      ),
+                    ),
+                  ],
                 )
-              : Icon(
-                  Icons.access_time,
-                  color: Colors.grey.shade400,
-                  size: 18,
-                ),
+              : isCancelled
+                  ? Icon(Icons.cancel, color: Colors.red.shade400, size: 18)
+                  : Icon(
+                      Icons.access_time,
+                      color: Colors.grey.shade400,
+                      size: 18,
+                    ),
         ),
       ),
     );
@@ -128,9 +240,32 @@ class TimePickerCell extends StatelessWidget {
                         value == null || value!.isEmpty ? Icons.check_circle : Icons.circle_outlined,
                         color: value == null || value!.isEmpty ? Colors.green : Colors.white54,
                       ),
-                      onTap: () {
+                      onTap: () async {
+                        // Ako već postoji termin, pitaj za potvrdu
+                        if (value != null && value!.isNotEmpty) {
+                          final potvrda = await showDialog<bool>(
+                            context: dialogContext,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Potvrda otkazivanja'),
+                              content: const Text('Da li ste sigurni da želite da otkažete termin?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: const Text('Ne'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: const Text('Da', style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (potvrda != true) return;
+                        }
                         onChanged(null);
-                        Navigator.of(dialogContext).pop();
+                        if (dialogContext.mounted) {
+                          Navigator.of(dialogContext).pop();
+                        }
                       },
                     ),
                     const Divider(color: Colors.white24),

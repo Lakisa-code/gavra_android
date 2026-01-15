@@ -102,20 +102,6 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
 
                         const SizedBox(height: 16),
 
-                        // GODINA
-                        _buildPeriodCard(
-                          icon: '📊',
-                          naslov: 'Ova godina',
-                          podnaslov: '${DateTime.now().year}',
-                          prihod: _izvestaj!.prihodGodina,
-                          troskovi: _izvestaj!.troskoviGodina,
-                          neto: _izvestaj!.netoGodina,
-                          voznjiLabel: '${_izvestaj!.voznjiGodina} vožnji',
-                          color: Colors.purple,
-                        ),
-
-                        const SizedBox(height: 16),
-
                         // PROŠLA GODINA
                         _buildPeriodCard(
                           icon: '📜',
@@ -126,6 +112,20 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                           neto: _izvestaj!.netoProslaGodina,
                           voznjiLabel: '${_izvestaj!.voznjiProslaGodina} vožnji',
                           color: Colors.orange,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // GODINA
+                        _buildPeriodCard(
+                          icon: '📊',
+                          naslov: 'Ova godina',
+                          podnaslov: '${DateTime.now().year}',
+                          prihod: _izvestaj!.prihodGodina,
+                          troskovi: _izvestaj!.troskoviGodina,
+                          neto: _izvestaj!.netoGodina,
+                          voznjiLabel: '${_izvestaj!.voznjiGodina} vožnji',
+                          color: Colors.purple,
                         ),
 
                         const SizedBox(height: 24),

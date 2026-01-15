@@ -130,6 +130,91 @@ class LocalNotificationService {
     }
   }
 
+  /// 🎫 Prikazuje notifikaciju sa alternativnim BC terminima
+  /// Jedna notifikacija sa opcijama: alternativni termini ili čekanje
+  static Future<void> showBcAlternativeNotification({
+    required String zeljeniTermin,
+    required String putnikId,
+    required String dan,
+    required Map<String, dynamic> polasci,
+    required String radniDani,
+    String? terminPre,
+    String? terminPosle,
+  }) async {
+    try {
+      // Kreiraj payload sa svim podacima
+      final payload = jsonEncode({
+        'type': 'bc_alternativa',
+        'putnikId': putnikId,
+        'dan': dan,
+        'zeljeniTermin': zeljeniTermin,
+        'polasci': polasci,
+        'radniDani': radniDani,
+      });
+
+      // Kreiraj listu akcija
+      final actions = <AndroidNotificationAction>[];
+
+      // Dodaj alternativne termine ako postoje
+      if (terminPre != null) {
+        actions.add(AndroidNotificationAction(
+          'prihvati_$terminPre',
+          '✅ $terminPre',
+          showsUserInterface: true,
+        ));
+      }
+
+      if (terminPosle != null) {
+        actions.add(AndroidNotificationAction(
+          'prihvati_$terminPosle',
+          '✅ $terminPosle',
+          showsUserInterface: true,
+        ));
+      }
+
+      // Dodaj opciju za čekanje željenog termina
+      actions.add(AndroidNotificationAction(
+        'cekaj_$zeljeniTermin',
+        '⏳ Čekaj $zeljeniTermin',
+        showsUserInterface: true,
+      ));
+
+      // Dodaj opciju za odustajanje
+      actions.add(const AndroidNotificationAction(
+        'odustani',
+        '❌ Odustani',
+        cancelNotification: true,
+      ));
+
+      // Kreiraj body text
+      String bodyText = 'Nema mesta za $zeljeniTermin.';
+      if (terminPre != null || terminPosle != null) {
+        final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
+        bodyText += '\nSlobodni: ${altTermini.join(", ")}';
+      }
+
+      await flutterLocalNotificationsPlugin.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        '🕐 Izaberite termin',
+        bodyText,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'gavra_realtime_channel',
+            'Gavra Realtime Notifikacije',
+            channelDescription: 'Kanal za realtime notifikacije',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            actions: actions,
+          ),
+        ),
+        payload: payload,
+      );
+    } catch (e) {
+      // 🔇 Ignore
+    }
+  }
+
   static Future<void> showNotificationFromBackground({
     required String title,
     required String body,
@@ -205,6 +290,40 @@ class LocalNotificationService {
     NotificationResponse response,
   ) async {
     try {
+      // 🎫 Handle BC alternativa action buttons
+      if (response.actionId != null && response.actionId!.startsWith('prihvati_')) {
+        await _handleBcAlternativaAction(response);
+        return;
+      }
+
+      // 🎫 Handle VS alternativa action buttons
+      if (response.actionId != null && response.actionId!.startsWith('vs_prihvati_')) {
+        await _handleVsAlternativaAction(response);
+        return;
+      }
+
+      // ⏳ Handle "čekaj željeni termin" akcija (BC)
+      if (response.actionId != null && response.actionId!.startsWith('cekaj_')) {
+        await _handleBcCekajAction(response);
+        return;
+      }
+
+      // ⏳ Handle "čekaj željeni termin" akcija (VS)
+      if (response.actionId != null && response.actionId!.startsWith('vs_cekaj_')) {
+        await _handleVsCekajAction(response);
+        return;
+      }
+
+      // Odustani akcija (BC) - samo zatvori notifikaciju
+      if (response.actionId == 'odustani') {
+        return;
+      }
+
+      // Odustani akcija (VS)
+      if (response.actionId == 'vs_odustani') {
+        return;
+      }
+
       final context = navigatorKey.currentContext;
       if (context == null) return;
 
@@ -218,6 +337,13 @@ class LocalNotificationService {
           final Map<String, dynamic> payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
 
           notificationType = payloadData['type'] as String?;
+
+          // 🎫 BC/VS alternativa - samo otvori profil bez navigacije
+          if (notificationType == 'bc_alternativa' || notificationType == 'vs_alternativa') {
+            await NotificationNavigationService.navigateToPassengerProfile();
+            return;
+          }
+
           final putnikData = payloadData['putnik'];
 
           if (putnikData is Map<String, dynamic>) {
@@ -415,6 +541,286 @@ class LocalNotificationService {
         return 'ned';
       default:
         return 'pon';
+    }
+  }
+
+  /// 🎫 Handler za BC alternativa action button - sačuva izabrani termin
+  static Future<void> _handleBcAlternativaAction(NotificationResponse response) async {
+    try {
+      if (response.payload == null || response.actionId == null) return;
+
+      final payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
+
+      // Izvuci termin iz actionId (format: "prihvati_7:00")
+      final termin = response.actionId!.replaceFirst('prihvati_', '');
+
+      final putnikId = payloadData['putnikId'] as String?;
+      final dan = payloadData['dan'] as String?;
+      final polasciRaw = payloadData['polasci'];
+      final radniDani = payloadData['radniDani'] as String?;
+
+      if (putnikId == null || dan == null || termin.isEmpty) return;
+
+      // Parsiraj polasci
+      Map<String, dynamic> polasci = {};
+      if (polasciRaw is Map) {
+        polasciRaw.forEach((key, value) {
+          if (value is Map) {
+            polasci[key.toString()] = Map<String, dynamic>.from(value);
+          }
+        });
+      }
+
+      // Ažuriraj sa novim terminom
+      polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
+      (polasci[dan] as Map<String, dynamic>)['bc'] = termin;
+      (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
+
+      // Sačuvaj u bazu
+      await Supabase.instance.client.from('registrovani_putnici').update({
+        'polasci_po_danu': polasci,
+        if (radniDani != null) 'radni_dani': radniDani,
+      }).eq('id', putnikId);
+
+      // Pošalji potvrdu notifikaciju
+      await showRealtimeNotification(
+        title: '✅ Termin potvrđen',
+        body: 'Vaš termin $termin je uspešno sačuvan',
+        payload: 'bc_alternativa_confirmed',
+      );
+    } catch (e) {
+      // 🔇 Ignore errors
+    }
+  }
+
+  /// ⏳ Handler za "čekaj željeni termin" akcija - ostavlja pending status
+  static Future<void> _handleBcCekajAction(NotificationResponse response) async {
+    try {
+      if (response.payload == null || response.actionId == null) return;
+
+      final payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
+
+      // Izvuci željeni termin iz actionId (format: "cekaj_7:00")
+      final zeljeniTermin = response.actionId!.replaceFirst('cekaj_', '');
+
+      final putnikId = payloadData['putnikId'] as String?;
+      final dan = payloadData['dan'] as String?;
+      final polasciRaw = payloadData['polasci'];
+      final radniDani = payloadData['radniDani'] as String?;
+
+      if (putnikId == null || dan == null || zeljeniTermin.isEmpty) return;
+
+      // Parsiraj polasci
+      Map<String, dynamic> polasci = {};
+      if (polasciRaw is Map) {
+        polasciRaw.forEach((key, value) {
+          if (value is Map) {
+            polasci[key.toString()] = Map<String, dynamic>.from(value);
+          }
+        });
+      }
+
+      // Postavi željeni termin sa statusom "waiting" (čeka oslobađanje)
+      polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
+      (polasci[dan] as Map<String, dynamic>)['bc'] = zeljeniTermin;
+      (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'waiting';
+
+      // Sačuvaj u bazu
+      await Supabase.instance.client.from('registrovani_putnici').update({
+        'polasci_po_danu': polasci,
+        if (radniDani != null) 'radni_dani': radniDani,
+      }).eq('id', putnikId);
+
+      // Pošalji potvrdu notifikaciju
+      await showRealtimeNotification(
+        title: '⏳ Na listi čekanja',
+        body: 'Bićete obavešteni kada se oslobodi mesto za $zeljeniTermin',
+        payload: 'bc_waiting_confirmed',
+      );
+    } catch (e) {
+      // 🔇 Ignore errors
+    }
+  }
+
+  /// 🎫 Prikazuje notifikaciju sa alternativnim VS terminima
+  /// Jedna notifikacija sa opcijama: alternativni termini ili čekanje
+  static Future<void> showVsAlternativeNotification({
+    required String zeljeniTermin,
+    required String putnikId,
+    required String dan,
+    required Map<String, dynamic> polasci,
+    required String radniDani,
+    String? terminPre,
+    String? terminPosle,
+  }) async {
+    try {
+      // Kreiraj payload sa svim podacima
+      final payload = jsonEncode({
+        'type': 'vs_alternativa',
+        'putnikId': putnikId,
+        'dan': dan,
+        'zeljeniTermin': zeljeniTermin,
+        'polasci': polasci,
+        'radniDani': radniDani,
+      });
+
+      // Kreiraj listu akcija
+      final actions = <AndroidNotificationAction>[];
+
+      // Dodaj alternativne termine ako postoje
+      if (terminPre != null) {
+        actions.add(AndroidNotificationAction(
+          'vs_prihvati_$terminPre',
+          '✅ $terminPre',
+          showsUserInterface: true,
+        ));
+      }
+
+      if (terminPosle != null) {
+        actions.add(AndroidNotificationAction(
+          'vs_prihvati_$terminPosle',
+          '✅ $terminPosle',
+          showsUserInterface: true,
+        ));
+      }
+
+      // Dodaj opciju za čekanje željenog termina
+      actions.add(AndroidNotificationAction(
+        'vs_cekaj_$zeljeniTermin',
+        '⏳ Čekaj $zeljeniTermin',
+        showsUserInterface: true,
+      ));
+
+      // Dodaj opciju za odustajanje
+      actions.add(const AndroidNotificationAction(
+        'vs_odustani',
+        '❌ Odustani',
+        cancelNotification: true,
+      ));
+
+      // Kreiraj body text
+      String bodyText = 'Nema mesta za $zeljeniTermin (VS).';
+      if (terminPre != null || terminPosle != null) {
+        final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
+        bodyText += '\nSlobodni: ${altTermini.join(", ")}';
+      }
+
+      await flutterLocalNotificationsPlugin.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        '🕐 [VS] Izaberite termin',
+        bodyText,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'gavra_realtime_channel',
+            'Gavra Realtime Notifikacije',
+            channelDescription: 'Kanal za realtime notifikacije',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            actions: actions,
+          ),
+        ),
+        payload: payload,
+      );
+    } catch (e) {
+      // 🔇 Ignore
+    }
+  }
+
+  /// 🎫 Handler za VS alternativa action button
+  static Future<void> _handleVsAlternativaAction(NotificationResponse response) async {
+    try {
+      if (response.payload == null || response.actionId == null) return;
+
+      final payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
+
+      // Izvuci termin iz actionId (format: "vs_prihvati_7:00")
+      final termin = response.actionId!.replaceFirst('vs_prihvati_', '');
+
+      final putnikId = payloadData['putnikId'] as String?;
+      final dan = payloadData['dan'] as String?;
+      final polasciRaw = payloadData['polasci'];
+      final radniDani = payloadData['radniDani'] as String?;
+
+      if (putnikId == null || dan == null || termin.isEmpty) return;
+
+      // Parsiraj polasci
+      Map<String, dynamic> polasci = {};
+      if (polasciRaw is Map) {
+        polasciRaw.forEach((key, value) {
+          if (value is Map) {
+            polasci[key.toString()] = Map<String, dynamic>.from(value);
+          }
+        });
+      }
+
+      // Ažuriraj sa novim terminom
+      polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
+      (polasci[dan] as Map<String, dynamic>)['vs'] = termin;
+      (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
+
+      // Sačuvaj u bazu
+      await Supabase.instance.client.from('registrovani_putnici').update({
+        'polasci_po_danu': polasci,
+        if (radniDani != null) 'radni_dani': radniDani,
+      }).eq('id', putnikId);
+
+      // Pošalji potvrdu notifikaciju
+      await showRealtimeNotification(
+        title: '✅ [VS] Termin potvrđen',
+        body: 'Vaš termin $termin je uspešno sačuvan',
+        payload: 'vs_alternativa_confirmed',
+      );
+    } catch (e) {
+      // 🔇 Ignore
+    }
+  }
+
+  /// ⏳ Handler za VS "čekaj željeni termin"
+  static Future<void> _handleVsCekajAction(NotificationResponse response) async {
+    try {
+      if (response.payload == null || response.actionId == null) return;
+
+      final payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
+
+      // Izvuci željeni termin iz actionId (format: "vs_cekaj_7:00")
+      final zeljeniTermin = response.actionId!.replaceFirst('vs_cekaj_', '');
+
+      final putnikId = payloadData['putnikId'] as String?;
+      final dan = payloadData['dan'] as String?;
+      final polasciRaw = payloadData['polasci'];
+      final radniDani = payloadData['radniDani'] as String?;
+
+      if (putnikId == null || dan == null || zeljeniTermin.isEmpty) return;
+
+      // Parsiraj polasci
+      Map<String, dynamic> polasci = {};
+      if (polasciRaw is Map) {
+        polasciRaw.forEach((key, value) {
+          if (value is Map) {
+            polasci[key.toString()] = Map<String, dynamic>.from(value);
+          }
+        });
+      }
+
+      // Postavi željeni termin sa statusom "waiting"
+      polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
+      (polasci[dan] as Map<String, dynamic>)['vs'] = zeljeniTermin;
+      (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'waiting';
+
+      // Sačuvaj u bazu
+      await Supabase.instance.client.from('registrovani_putnici').update({
+        'polasci_po_danu': polasci,
+        if (radniDani != null) 'radni_dani': radniDani,
+      }).eq('id', putnikId);
+
+      // Pošalji potvrdu notifikaciju
+      await showRealtimeNotification(
+        title: '⏳ [VS] Na listi čekanja',
+        body: 'Bićete obavešteni kada se oslobodi mesto za $zeljeniTermin',
+      );
+    } catch (e) {
+      // 🔇 Ignore
     }
   }
 }

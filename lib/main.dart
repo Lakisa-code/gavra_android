@@ -21,7 +21,7 @@ import 'services/payment_reminder_service.dart'; // 💰 Automatski payment remi
 import 'services/putnik_service.dart'; // 🔄 DODATO za nedeljni reset
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
-import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00
+import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00 (bez notif)
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
@@ -286,7 +286,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // 🎨 Inicijalizuj ThemeManager
       await ThemeManager().initialize();
 
-      // 📊 Inicijalizuj automatski popis u 21:00 (osim vikendom)
+      // 📊 Automatski popis u 21:00 (samo čuva u bazu, BEZ notifikacija)
       await ScheduledPopisService.initialize();
 
       // 🧹 PERIODIČKI CLEANUP - svaki put kada se app pokrene
