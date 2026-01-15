@@ -320,7 +320,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
         ),
         body: Column(
           children: [
-            // 💰 UKUPAN DUG BAR
+            // 💰 UKUPAN DUG BAR UKLONJEN PO ZAHTEVU (15.01.2026)
+            /*
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -339,6 +340,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                 ),
               ),
             ),
+            */
             // 📋 LISTA DUGOVA - V3.0 REALTIME DATA
             Expanded(
               child: _buildRealtimeContent(),
@@ -347,11 +349,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
         ),
       ), // Zatvaranje Scaffold
     ); // Zatvaranje Container
-  }
-
-  // 💰 CALCULATE TOTAL DEBT
-  double _calculateTotalDebt() {
-    return _getFilteredDugovi().fold(0.0, (sum, duznik) => sum + _calculateDugAmount(duznik));
   }
 
   // 🚀 V3.0 REALTIME CONTENT BUILDER

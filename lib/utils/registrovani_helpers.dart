@@ -439,8 +439,12 @@ class RegistrovaniHelpers {
     if (dayData == null || dayData is! Map) return null;
 
     // Ključ je npr. 'bc_placeno' ili 'vs_placeno'
-    final placenoKey = '${place}_placeno';
-    final placenoTimestamp = dayData[placenoKey] as String?;
+    // 🆕 FALLBACK LOGIKA: Proveri i drugi grad jer je dnevna karta validna za oba
+    var placenoTimestamp = dayData['${place}_placeno'] as String?;
+    if (placenoTimestamp == null) {
+      final otherPlace = place == 'bc' ? 'vs' : 'bc';
+      placenoTimestamp = dayData['${otherPlace}_placeno'] as String?;
+    }
 
     if (placenoTimestamp == null || placenoTimestamp.isEmpty) return null;
 
@@ -527,8 +531,13 @@ class RegistrovaniHelpers {
     if (dayData == null || dayData is! Map) return null;
 
     // Ključ je npr. 'bc_placeno_iznos' ili 'vs_placeno_iznos'
-    final iznosKey = '${place}_placeno_iznos';
-    final iznos = dayData[iznosKey];
+    // 🆕 FALLBACK LOGIKA: Proveri i drugi grad
+    var iznos = dayData['${place}_placeno_iznos'];
+    if (iznos == null) {
+      final otherPlace = place == 'bc' ? 'vs' : 'bc';
+      iznos = dayData['${otherPlace}_placeno_iznos'];
+    }
+
     if (iznos == null) return null;
     if (iznos is num) return iznos.toDouble();
     return double.tryParse(iznos.toString());

@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
+import '../utils/grad_adresa_validator.dart';
 import 'realtime/realtime_manager.dart';
+import 'slobodna_mesta_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart'; // 🔄 DODATO za istoriju vožnji
 
@@ -178,6 +180,7 @@ class RegistrovaniPutnikService {
 
   /// Kreira novog mesečnog putnika
   /// Baca grešku ako već postoji putnik sa istim brojem telefona
+  /// Baca grešku ako je kapacitet popunjen za bilo koji termin
   Future<RegistrovaniPutnik> createRegistrovaniPutnik(RegistrovaniPutnik putnik) async {
     // 🔍 PROVERA DUPLIKATA - pre insert-a proveri da li već postoji
     final telefon = putnik.brojTelefona;
@@ -189,7 +192,15 @@ class RegistrovaniPutnikService {
       }
     }
 
-    final response = await _supabase.from('registrovani_putnici').insert(putnik.toMap()).select('''
+    // 🚫 PROVERA KAPACITETA - Da li ima slobodnih mesta za sve termine?
+    // Koristi toMap() da dobije raw format polasaka: { "pon": { "bc": "8:00", "vs": null }, ... }
+    final putnikMap = putnik.toMap();
+    final rawPolasci = putnikMap['polasci_po_danu'] as Map<String, dynamic>?;
+    if (rawPolasci != null) {
+      await _validateKapacitetForRawPolasci(rawPolasci);
+    }
+
+    final response = await _supabase.from('registrovani_putnici').insert(putnikMap).select('''
           *
         ''').single();
 
@@ -198,12 +209,111 @@ class RegistrovaniPutnikService {
     return RegistrovaniPutnik.fromMap(response);
   }
 
+  /// 🚫 Validira da ima slobodnih mesta za sve termine putnika
+  /// Prima raw polasci_po_danu map iz baze (format: { "pon": { "bc": "8:00", "vs": null }, ... })
+  Future<void> _validateKapacitetForRawPolasci(Map<String, dynamic> polasciPoDanu) async {
+    if (polasciPoDanu.isEmpty) return;
+
+    final danas = DateTime.now();
+    final daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+
+    // Proveri svaki dan koji putnik ima definisan
+    for (final danKratica in daniKratice) {
+      final danData = polasciPoDanu[danKratica];
+      if (danData == null || danData is! Map) continue;
+
+      // Proveri BC polazak - PAŽNJA: null.toString() = "null", ne prazan string!
+      final bcValue = danData['bc'];
+      final bcVreme = (bcValue != null && bcValue.toString().isNotEmpty && bcValue.toString() != 'null')
+          ? bcValue.toString()
+          : null;
+
+      if (bcVreme != null) {
+        // Izračunaj datum za ovaj dan u narednih 7 dana
+        final targetDate = _getNextDateForDay(danas, danKratica);
+        final datumStr = targetDate.toIso8601String().split('T')[0];
+
+        final normalizedVreme = GradAdresaValidator.normalizeTime(bcVreme);
+        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('BC', normalizedVreme, datum: datumStr);
+        if (!imaMesta) {
+          final danPunoIme = _getDanPunoIme(danKratica);
+          throw Exception(
+            'NEMA SLOBODNIH MESTA!\n\n'
+            'Termin: $danPunoIme u $bcVreme (Bela Crkva)\n'
+            'Kapacitet je popunjen.\n\n'
+            'Izaberite drugi termin ili kontaktirajte admina.',
+          );
+        }
+      }
+
+      // Proveri VS polazak - PAŽNJA: null.toString() = "null", ne prazan string!
+      final vsValue = danData['vs'];
+      final vsVreme = (vsValue != null && vsValue.toString().isNotEmpty && vsValue.toString() != 'null')
+          ? vsValue.toString()
+          : null;
+
+      if (vsVreme != null) {
+        final targetDate = _getNextDateForDay(danas, danKratica);
+        final datumStr = targetDate.toIso8601String().split('T')[0];
+
+        final normalizedVreme = GradAdresaValidator.normalizeTime(vsVreme);
+        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('VS', normalizedVreme, datum: datumStr);
+        if (!imaMesta) {
+          final danPunoIme = _getDanPunoIme(danKratica);
+          throw Exception(
+            'NEMA SLOBODNIH MESTA!\n\n'
+            'Termin: $danPunoIme u $vsVreme (Vršac)\n'
+            'Kapacitet je popunjen.\n\n'
+            'Izaberite drugi termin ili kontaktirajte admina.',
+          );
+        }
+      }
+    }
+  }
+
+  /// Vraća sledeći datum za dati dan u nedelji
+  DateTime _getNextDateForDay(DateTime fromDate, String danKratica) {
+    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
+    final targetWeekday = daniMap[danKratica] ?? 1;
+    final currentWeekday = fromDate.weekday;
+
+    int daysToAdd = targetWeekday - currentWeekday;
+    if (daysToAdd < 0) daysToAdd += 7;
+
+    return fromDate.add(Duration(days: daysToAdd));
+  }
+
+  /// Vraća puno ime dana
+  String _getDanPunoIme(String kratica) {
+    const map = {
+      'pon': 'Ponedeljak',
+      'uto': 'Utorak',
+      'sre': 'Sreda',
+      'cet': 'Četvrtak',
+      'pet': 'Petak',
+      'sub': 'Subota',
+      'ned': 'Nedelja',
+    };
+    return map[kratica] ?? kratica;
+  }
+
   /// Ažurira mesečnog putnika
+  /// Proverava kapacitet ako se menjaju termini (polasci_po_danu)
   Future<RegistrovaniPutnik> updateRegistrovaniPutnik(
     String id,
-    Map<String, dynamic> updates,
-  ) async {
+    Map<String, dynamic> updates, {
+    bool skipKapacitetCheck = false,
+  }) async {
     updates['updated_at'] = DateTime.now().toIso8601String();
+
+    // 🚫 PROVERA KAPACITETA - ako se menjaju termini
+    if (!skipKapacitetCheck && updates.containsKey('polasci_po_danu')) {
+      final polasciPoDanu = updates['polasci_po_danu'];
+      if (polasciPoDanu != null && polasciPoDanu is Map) {
+        // Direktno koristi raw polasci_po_danu map za validaciju
+        await _validateKapacitetForRawPolasci(Map<String, dynamic>.from(polasciPoDanu));
+      }
+    }
 
     final response = await _supabase.from('registrovani_putnici').update(updates).eq('id', id).select('''
           *

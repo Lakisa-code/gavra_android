@@ -849,12 +849,14 @@ class PutnikService {
   }
 
   /// ? OZNACI KAO PLACENO
+  /// 💰 OZNACI KAO PLAĆENO
+  /// [grad] - parametar za određivanje koje plaćanje (BC ili VS) - ISTO kao oznaciPokupljen
   Future<void> oznaciPlaceno(
     dynamic id,
     double iznos,
-    String currentDriver,
-    String place,
-  ) async {
+    String currentDriver, {
+    String? grad,
+  }) async {
     // 🚨 DUPLICATE PREVENTION
     final actionKey = 'payment_$id';
     if (_isDuplicateAction(actionKey)) {
@@ -879,7 +881,9 @@ class PutnikService {
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     final danKratica = daniKratice[now.weekday - 1];
 
-    // place dolazi kao parametar iz kartice gde je vozač kliknuo
+    // ✅ FIX: Izračunaj place iz grad parametra - ISTO kao oznaciPokupljen!
+    final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
+    final place = jeBC ? 'bc' : 'vs';
 
     Map<String, dynamic> polasciPoDanu = {};
     final rawPolasci = response['polasci_po_danu'];
