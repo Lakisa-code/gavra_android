@@ -2131,8 +2131,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // Notifikacija
           await LocalNotificationService.showRealtimeNotification(
-            title: '⏳ Lista čekanja',
-            body: 'Nema slobodnih mesta za $vreme. Dodati ste na listu čekanja za drugi kombi.',
+            title: '⏳ Zahtev u obradi',
+            body: 'Vaš zahtev za $vreme se obrađuje. Dobićete odgovor uskoro.',
             payload: 'vs_waiting_list',
           );
         } else {
