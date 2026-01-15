@@ -1845,7 +1845,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('⏳ VS Zahtev primljen, provera za 10 min...'),
+                  content: Text('⏳ Vaš zahtev se obrađuje. Dobićete odgovor uskoro.'),
                   backgroundColor: Colors.blue,
                   duration: Duration(seconds: 3),
                 ),
