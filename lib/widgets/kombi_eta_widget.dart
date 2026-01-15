@@ -349,8 +349,12 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       return const SizedBox.shrink();
     }
 
-    // Ako nema aktivnog vozača i nismo u fazi pokupljen/sledeca, sakrij widget
-    if (!_isActive && faza == _WidgetFaza.cekanje && widget.vremePolaska == null) {
+    // 🔧 FIX: Sakrij widget ako nema aktivnog vozača i nismo pokupljeni
+    // Widget se prikazuje SAMO kad:
+    // 1. Vozač je aktivan (šalje GPS) - praćenje uživo
+    // 2. Putnik je pokupljen (iz baze) - zeleni status
+    // 3. Prikazujemo sledeću vožnju - ljubičasti status
+    if (!_isActive && faza == _WidgetFaza.cekanje) {
       return const SizedBox.shrink();
     }
 

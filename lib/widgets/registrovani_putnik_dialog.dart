@@ -1578,7 +1578,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       firmaAdresa: _firmaAdresaController.text.isEmpty ? null : _firmaAdresaController.text.trim(),
     );
 
-    final dodatiPutnik = await _registrovaniPutnikService.dodajMesecnogPutnika(noviPutnik);
+    // ✅ Admin dodaje putnika - preskači proveru kapaciteta
+    final dodatiPutnik = await _registrovaniPutnikService.dodajMesecnogPutnika(
+      noviPutnik,
+      skipKapacitetCheck: true,
+    );
 
     if (mounted) {
       Navigator.pop(context);
@@ -1630,9 +1634,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     };
 
     try {
+      // ✅ Admin uređuje putnika - preskači proveru kapaciteta
       await _registrovaniPutnikService.updateRegistrovaniPutnik(
         widget.existingPutnik!.id,
         updateMap,
+        skipKapacitetCheck: true,
       );
 
       // Očisti cache (refresh se dešava kroz ValueKey u parent screen-u)

@@ -180,8 +180,11 @@ class RegistrovaniPutnikService {
 
   /// Kreira novog mesečnog putnika
   /// Baca grešku ako već postoji putnik sa istim brojem telefona
-  /// Baca grešku ako je kapacitet popunjen za bilo koji termin
-  Future<RegistrovaniPutnik> createRegistrovaniPutnik(RegistrovaniPutnik putnik) async {
+  /// Baca grešku ako je kapacitet popunjen za bilo koji termin (osim ako je skipKapacitetCheck=true)
+  Future<RegistrovaniPutnik> createRegistrovaniPutnik(
+    RegistrovaniPutnik putnik, {
+    bool skipKapacitetCheck = false,
+  }) async {
     // 🔍 PROVERA DUPLIKATA - pre insert-a proveri da li već postoji
     final telefon = putnik.brojTelefona;
     if (telefon != null && telefon.isNotEmpty) {
@@ -193,11 +196,13 @@ class RegistrovaniPutnikService {
     }
 
     // 🚫 PROVERA KAPACITETA - Da li ima slobodnih mesta za sve termine?
-    // Koristi toMap() da dobije raw format polasaka: { "pon": { "bc": "8:00", "vs": null }, ... }
+    // Preskači ako admin uređuje (skipKapacitetCheck=true)
     final putnikMap = putnik.toMap();
-    final rawPolasci = putnikMap['polasci_po_danu'] as Map<String, dynamic>?;
-    if (rawPolasci != null) {
-      await _validateKapacitetForRawPolasci(rawPolasci);
+    if (!skipKapacitetCheck) {
+      final rawPolasci = putnikMap['polasci_po_danu'] as Map<String, dynamic>?;
+      if (rawPolasci != null) {
+        await _validateKapacitetForRawPolasci(rawPolasci);
+      }
     }
 
     final response = await _supabase.from('registrovani_putnici').insert(putnikMap).select('''
@@ -351,8 +356,11 @@ class RegistrovaniPutnikService {
   }
 
   /// Dodaje novog mesečnog putnika (legacy metoda name)
-  Future<RegistrovaniPutnik> dodajMesecnogPutnika(RegistrovaniPutnik putnik) async {
-    return await createRegistrovaniPutnik(putnik);
+  Future<RegistrovaniPutnik> dodajMesecnogPutnika(
+    RegistrovaniPutnik putnik, {
+    bool skipKapacitetCheck = false,
+  }) async {
+    return await createRegistrovaniPutnik(putnik, skipKapacitetCheck: skipKapacitetCheck);
   }
 
   /// Ažurira plaćanje za mesec (vozacId je UUID)
