@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/route_config.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/cena_obracun_service.dart';
-import '../services/leaderboard_service.dart'; // 🏆💀 Leaderboard servis
 import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikacije
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
@@ -715,7 +714,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     );
   }
 
-  // 🏆💀 MINI LEADERBOARD - Fame ili Shame
+  // 🏆💀 MINI LEADERBOARD - Fame ili Shame - PRIVREMENO ISKLJUČENO
+  // TODO: Vratiti kada bude spremno
+  /*
   Widget _buildMiniLeaderboard({required bool isShame}) {
     return FutureBuilder<LeaderboardData?>(
       future: LeaderboardService.getLeaderboard(tipPutnika: _putnikData['tip'] as String? ?? 'radnik'),
@@ -812,6 +813,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       },
     );
   }
+  */
 
   // 🌤️ DIJALOG ZA DETALJNU VREMENSKU PROGNOZU
   void _showWeatherDialog(String grad, WeatherData? data) {
@@ -1270,21 +1272,22 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
                     ),
 
-                    // 🏆💀 FAME | SHAME - samo za učenike
-                    if (tip == 'ucenik')
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 🏆 FAME - levo
-                            Expanded(child: _buildMiniLeaderboard(isShame: false)),
-                            const SizedBox(width: 16),
-                            // 💀 SHAME - desno
-                            Expanded(child: _buildMiniLeaderboard(isShame: true)),
-                          ],
-                        ),
-                      ),
+                    // 🏆💀 FAME | SHAME - PRIVREMENO ISKLJUČENO
+                    // TODO: Vratiti kada bude spremno
+                    // if (tip == 'ucenik')
+                    //   Padding(
+                    //     padding: const EdgeInsets.symmetric(vertical: 8),
+                    //     child: Row(
+                    //       crossAxisAlignment: CrossAxisAlignment.start,
+                    //       children: [
+                    //         // 🏆 FAME - levo
+                    //         Expanded(child: _buildMiniLeaderboard(isShame: false)),
+                    //         const SizedBox(width: 16),
+                    //         // 💀 SHAME - desno
+                    //         Expanded(child: _buildMiniLeaderboard(isShame: true)),
+                    //       ],
+                    //     ),
+                    //   ),
 
                     // ─────────── Divider ───────────
                     Padding(
