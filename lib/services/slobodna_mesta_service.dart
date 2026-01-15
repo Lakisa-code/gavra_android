@@ -468,4 +468,106 @@ class SlobodnaMestaService {
 
     return today.add(Duration(days: daysUntilTarget));
   }
+
+  /// 🆕 Broji registrovane putnike sa statusom 'ceka_mesto' za VS Rush Hour termin
+  /// Vraća broj putnika koji čekaju za određeni termin i dan
+  static Future<int> brojCekaMestoZaVsTermin(String vreme, String dan) async {
+    try {
+      final response =
+          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu').not('polasci_po_danu', 'is', null);
+
+      int count = 0;
+      for (final row in response) {
+        final polasci = row['polasci_po_danu'] as Map<String, dynamic>?;
+        if (polasci == null) continue;
+
+        final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
+        if (danData == null) continue;
+
+        final vsVreme = danData['vs'] as String?;
+        final vsStatus = danData['vs_status'] as String?;
+
+        if (vsVreme == vreme && vsStatus == 'ceka_mesto') {
+          count++;
+        }
+      }
+
+      return count;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// 🆕 Potvrdi sve putnike na listi čekanja za VS Rush Hour termin
+  /// Koristi se kada se skupi 4+ zahteva za drugi kombi
+  static Future<int> potvrdiSveCekaMestoZaVsTermin(String vreme, String dan) async {
+    try {
+      final response =
+          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu').not('polasci_po_danu', 'is', null);
+
+      int confirmedCount = 0;
+      for (final row in response) {
+        final putnikId = row['id'] as String;
+        final polasci = Map<String, dynamic>.from(row['polasci_po_danu'] as Map);
+
+        final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
+        if (danData == null) continue;
+
+        final vsVreme = danData['vs'] as String?;
+        final vsStatus = danData['vs_status'] as String?;
+
+        if (vsVreme == vreme && vsStatus == 'ceka_mesto') {
+          // Potvrdi ovog putnika
+          (polasci[dan.toLowerCase()] as Map<String, dynamic>)['vs_status'] = 'confirmed';
+
+          await _supabase.from('registrovani_putnici').update({
+            'polasci_po_danu': polasci,
+          }).eq('id', putnikId);
+
+          confirmedCount++;
+        }
+      }
+
+      return confirmedCount;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// 🆕 Dohvati listu putnik ID-jeva koji čekaju za VS Rush Hour termin
+  /// Sortirano po FIFO - ko se prvi prijavio, prvi je na listi
+  static Future<List<String>> dohvatiCekaMestoZaVsTermin(String vreme, String dan) async {
+    try {
+      final response =
+          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu').not('polasci_po_danu', 'is', null);
+
+      // Lista sa ID i timestamp za sortiranje
+      final List<MapEntry<String, DateTime>> waitingList = [];
+
+      for (final row in response) {
+        final polasci = row['polasci_po_danu'] as Map<String, dynamic>?;
+        if (polasci == null) continue;
+
+        final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
+        if (danData == null) continue;
+
+        final vsVreme = danData['vs'] as String?;
+        final vsStatus = danData['vs_status'] as String?;
+        final vsCekaOd = danData['vs_ceka_od'] as String?;
+
+        if (vsVreme == vreme && vsStatus == 'ceka_mesto') {
+          // Parsiraj timestamp ili koristi davni datum ako nema
+          final timestamp = vsCekaOd != null ? DateTime.tryParse(vsCekaOd) ?? DateTime(2000) : DateTime(2000);
+          waitingList.add(MapEntry(row['id'] as String, timestamp));
+        }
+      }
+
+      // Sortiraj po vremenu prijave (FIFO - najstariji prvi)
+      waitingList.sort((a, b) => a.value.compareTo(b.value));
+
+      return waitingList.map((e) => e.key).toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }

@@ -313,6 +313,11 @@ class LocalNotificationService {
         await _handleVsCekajAction(response);
         return;
       }
+      // 🆕 Handle "zadrži čekanje" akcija (Rush Hour) - isto što i Čekaj, ali samo conferma status
+      if (response.actionId != null && response.actionId!.startsWith('vs_zadrzi_')) {
+        await _handleVsZadrziAction(response);
+        return;
+      }
 
       // Odustani akcija (BC) - samo zatvori notifikaciju
       if (response.actionId == 'odustani') {
@@ -633,8 +638,8 @@ class LocalNotificationService {
 
       // Pošalji potvrdu notifikaciju
       await showRealtimeNotification(
-        title: '⏳ Na listi čekanja',
-        body: 'Bićete obavešteni kada se oslobodi mesto za $zeljeniTermin',
+        title: '✅ Zahtev primljen',
+        body: 'Zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.',
         payload: 'bc_waiting_confirmed',
       );
     } catch (e) {
@@ -652,6 +657,7 @@ class LocalNotificationService {
     required String radniDani,
     String? terminPre,
     String? terminPosle,
+    bool isRushHourWaiting = false, // 🆕 Flag za Rush Hour poruku
   }) async {
     try {
       // Kreiraj payload sa svim podacima
@@ -685,29 +691,52 @@ class LocalNotificationService {
       }
 
       // Dodaj opciju za čekanje željenog termina
+      // Za Rush Hour je tekst specifičan "Sačekajte [Vreme]"
       actions.add(AndroidNotificationAction(
-        'vs_cekaj_$zeljeniTermin',
-        '⏳ Čekaj $zeljeniTermin',
+        isRushHourWaiting ? 'vs_zadrzi_$zeljeniTermin' : 'vs_cekaj_$zeljeniTermin',
+        isRushHourWaiting ? '⏳ Sačekaj $zeljeniTermin' : '⏳ Lista čekanja',
         showsUserInterface: true,
       ));
 
-      // Dodaj opciju za odustajanje
-      actions.add(const AndroidNotificationAction(
-        'vs_odustani',
-        '❌ Odustani',
-        cancelNotification: true,
-      ));
+      // Dodaj opciju za odustajanje (samo ako nije Rush Hour waiting, jer tu nema odustajanja eksplicitno, oni su već na čekanju)
+      if (!isRushHourWaiting) {
+        actions.add(const AndroidNotificationAction(
+          'vs_odustani',
+          '❌ Odustani',
+          cancelNotification: true,
+        ));
+      }
 
       // Kreiraj body text
       String bodyText = 'Nema mesta za $zeljeniTermin (VS).';
-      if (terminPre != null || terminPosle != null) {
-        final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
-        bodyText += '\nSlobodni: ${altTermini.join(", ")}';
+
+      if (isRushHourWaiting) {
+        String alternativesPart = '';
+        if (terminPre != null && terminPosle != null) {
+          alternativesPart = 'u $terminPre i $terminPosle';
+        } else if (terminPre != null) {
+          alternativesPart = 'u $terminPre';
+        } else if (terminPosle != null) {
+          alternativesPart = 'u $terminPosle';
+        }
+
+        if (alternativesPart.isNotEmpty) {
+          // 🆕 Kraći tekst: "Obrađuje se zahtev" umesto dugog pitanja
+          bodyText = 'Obrađuje se zahtev. Imate alternativu $alternativesPart.';
+        } else {
+          // Fallback
+          bodyText = 'Obrađuje se zahtev. Proveravamo slobodna mesta...';
+        }
+      } else {
+        if (terminPre != null || terminPosle != null) {
+          final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
+          bodyText += '\nSlobodni: ${altTermini.join(", ")}';
+        }
       }
 
       await flutterLocalNotificationsPlugin.show(
         DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        '🕐 [VS] Izaberite termin',
+        isRushHourWaiting ? '⏳ Izbor termina' : '🕐 [VS] Izaberite termin',
         bodyText,
         NotificationDetails(
           android: AndroidNotificationDetails(
@@ -717,6 +746,10 @@ class LocalNotificationService {
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
+            styleInformation: BigTextStyleInformation(
+              bodyText, // Omogućava više redova teksta
+              contentTitle: isRushHourWaiting ? '⏳ Izbor termina' : '🕐 [VS] Izaberite termin',
+            ),
             actions: actions,
           ),
         ),
@@ -816,8 +849,56 @@ class LocalNotificationService {
 
       // Pošalji potvrdu notifikaciju
       await showRealtimeNotification(
-        title: '⏳ [VS] Na listi čekanja',
-        body: 'Bićete obavešteni kada se oslobodi mesto za $zeljeniTermin',
+        title: '✅ Zahtev primljen',
+        body: 'Zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.',
+      );
+    } catch (e) {
+      // 🔇 Ignore
+    }
+  }
+
+  /// ⏳ Handler za VS "zadrži čekanje"
+  static Future<void> _handleVsZadrziAction(NotificationResponse response) async {
+    try {
+      if (response.payload == null || response.actionId == null) return;
+
+      final payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
+
+      // Izvuci željeni termin iz actionId (format: "vs_zadrzi_7:00")
+      final zeljeniTermin = response.actionId!.replaceFirst('vs_zadrzi_', '');
+
+      final putnikId = payloadData['putnikId'] as String?;
+      final dan = payloadData['dan'] as String?;
+      final polasciRaw = payloadData['polasci'];
+      final radniDani = payloadData['radniDani'] as String?;
+
+      if (putnikId == null || dan == null || zeljeniTermin.isEmpty) return;
+
+      // Parsiraj polasci
+      Map<String, dynamic> polasci = {};
+      if (polasciRaw is Map) {
+        polasciRaw.forEach((key, value) {
+          if (value is Map) {
+            polasci[key.toString()] = Map<String, dynamic>.from(value);
+          }
+        });
+      }
+
+      // Potvrdi status 'ceka_mesto' (za svaki slučaj)
+      polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
+      (polasci[dan] as Map<String, dynamic>)['vs'] = zeljeniTermin;
+      (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'ceka_mesto';
+
+      // Sačuvaj u bazu
+      await Supabase.instance.client.from('registrovani_putnici').update({
+        'polasci_po_danu': polasci,
+        if (radniDani != null) 'radni_dani': radniDani,
+      }).eq('id', putnikId);
+
+      // Pošalji potvrdu notifikaciju
+      await showRealtimeNotification(
+        title: '✅ Zahtev primljen',
+        body: 'Zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.',
       );
     } catch (e) {
       // 🔇 Ignore
