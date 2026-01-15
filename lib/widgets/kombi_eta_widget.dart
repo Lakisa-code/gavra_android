@@ -107,19 +107,19 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
         // 3. SANITY CHECK za automatsku detekciju (kada putnik nema target vreme)
         if (driverVreme == null) return false;
-        
+
         final now = DateTime.now();
         final parts = driverVreme.split(':');
         if (parts.length != 2) return false;
-        
+
         final h = int.tryParse(parts[0]) ?? 0;
         final m = int.tryParse(parts[1]) ?? 0;
-        
+
         int diffInMinutes = (h * 60 + m) - (now.hour * 60 + now.minute);
-        
+
         if (diffInMinutes > 720) diffInMinutes -= 1440;
         if (diffInMinutes < -720) diffInMinutes += 1440;
-        
+
         if (diffInMinutes < -180 || diffInMinutes > 240) return false;
 
         return true;
@@ -254,9 +254,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       if (polasciPoDanu is String) {
         try {
           decoded = Map<String, dynamic>.from(
-            polasciPoDanu.isNotEmpty ? 
-            Map<String, dynamic>.from(jsonDecode(polasciPoDanu)) : {}
-          );
+              polasciPoDanu.isNotEmpty ? Map<String, dynamic>.from(jsonDecode(polasciPoDanu)) : {});
         } catch (_) {
           return;
         }
@@ -284,9 +282,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       if (pokupljenoDate == null) return;
 
       final danas = DateTime.now();
-      final jeDanas = pokupljenoDate.year == danas.year &&
-          pokupljenoDate.month == danas.month &&
-          pokupljenoDate.day == danas.day;
+      final jeDanas =
+          pokupljenoDate.year == danas.year && pokupljenoDate.month == danas.month && pokupljenoDate.day == danas.day;
 
       if (jeDanas) {
         debugPrint('✅ KombiEtaWidget: Pokupljen iz baze u ${pokupljenoDate.hour}:${pokupljenoDate.minute}');
