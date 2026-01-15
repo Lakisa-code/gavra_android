@@ -1519,7 +1519,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             final bcVreme = danPolasci?['bc'];
             final vsVreme = danPolasci?['vs'];
             final bcStatus = danPolasci?['bc_status']?.toString();
-            final vsStatus = danPolasci?['vs_status']?.toString();
+            // 🆕 Mapiranje 'ceka_mesto' statusa u 'waiting' za UI
+            final vsStatusRaw = danPolasci?['vs_status']?.toString();
+            final vsStatus = vsStatusRaw == 'ceka_mesto' ? 'waiting' : vsStatusRaw;
             final bcOtkazano = danPolasci?['bc_otkazano'] != null;
             final vsOtkazano = danPolasci?['vs_otkazano'] != null;
             // 🆕 Otkazano vreme - prikazuje se u crvenom
@@ -2104,35 +2106,66 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           payload: 'vs_zahtev_confirmed',
         );
       } else {
-        // ❌ NEMA MESTA - odbij zahtev, ali ponudi alternative
+        // ❌ NEMA MESTA
+        // 🆕 RUSH HOUR LOGIKA (13, 14, 15:30) -> Waiting List
+        final isRushHour = ['13:00', '14:00', '15:30'].contains(vreme);
 
-        // 1. Očisti trenutni zahtev (jer nema mesta)
-        (polasci[dan] as Map<String, dynamic>)['vs'] = null;
-        (polasci[dan] as Map<String, dynamic>)['vs_status'] = null;
+        if (isRushHour) {
+          debugPrint('🚦 [VS] Rush Hour ($vreme) -> Lista čekanja');
 
-        await Supabase.instance.client.from('registrovani_putnici').update({
-          'polasci_po_danu': polasci,
-        }).eq('id', putnikId);
+          // Postavi status na 'ceka_mesto'
+          (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'ceka_mesto';
 
-        if (mounted) {
-          setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
-          });
+          await Supabase.instance.client.from('registrovani_putnici').update({
+            'polasci_po_danu': polasci,
+            'radni_dani': radniDani,
+          }).eq('id', putnikId);
+
+          // Ažuriraj lokalni UI
+          if (mounted) {
+            setState(() {
+              _putnikData['polasci_po_danu'] = polasci;
+              _putnikData['radni_dani'] = radniDani;
+            });
+          }
+
+          // Notifikacija
+          await LocalNotificationService.showRealtimeNotification(
+            title: '⏳ Lista čekanja',
+            body: 'Nema slobodnih mesta za $vreme. Dodati ste na listu čekanja za drugi kombi.',
+            payload: 'vs_waiting_list',
+          );
+        } else {
+          // ❌ NIJE rush hour - odbij zahtev, ali ponudi alternative
+
+          // 1. Očisti trenutni zahtev (jer nema mesta)
+          (polasci[dan] as Map<String, dynamic>)['vs'] = null;
+          (polasci[dan] as Map<String, dynamic>)['vs_status'] = null;
+
+          await Supabase.instance.client.from('registrovani_putnici').update({
+            'polasci_po_danu': polasci,
+          }).eq('id', putnikId);
+
+          if (mounted) {
+            setState(() {
+              _putnikData['polasci_po_danu'] = polasci;
+            });
+          }
+
+          // 2. Pronađi alternativne termine za VS
+          final alternative = await _pronadjiAlternativneTermineDetaljno(vreme, datum, 'VS');
+
+          // 3. Pošalji notifikaciju sa alternativama
+          await LocalNotificationService.showVsAlternativeNotification(
+            zeljeniTermin: vreme,
+            putnikId: putnikId,
+            dan: dan,
+            polasci: polasci,
+            radniDani: radniDani,
+            terminPre: alternative['pre'],
+            terminPosle: alternative['posle'],
+          );
         }
-
-        // 2. Pronađi alternativne termine za VS
-        final alternative = await _pronadjiAlternativneTermineDetaljno(vreme, datum, 'VS');
-
-        // 3. Pošalji notifikaciju sa alternativama
-        await LocalNotificationService.showVsAlternativeNotification(
-          zeljeniTermin: vreme,
-          putnikId: putnikId,
-          dan: dan,
-          polasci: polasci,
-          radniDani: radniDani,
-          terminPre: alternative['pre'],
-          terminPosle: alternative['posle'],
-        );
       }
 
       _pendingVsZahtev = null;

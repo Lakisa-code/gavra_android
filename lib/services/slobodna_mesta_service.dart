@@ -15,6 +15,7 @@ class SlobodnaMesta {
   final int maxMesta;
   final int zauzetaMesta;
   final bool aktivan;
+  final int waitingCount; // 🆕 Broj ljudi na listi čekanja
 
   SlobodnaMesta({
     required this.grad,
@@ -22,6 +23,7 @@ class SlobodnaMesta {
     required this.maxMesta,
     required this.zauzetaMesta,
     required this.aktivan,
+    this.waitingCount = 0, // 🆕 Default 0
   });
 
   /// Broj slobodnih mesta
@@ -30,9 +32,18 @@ class SlobodnaMesta {
   /// Da li je pun kapacitet
   bool get jePuno => slobodna <= 0;
 
+  /// 🆕 Da li je ovo "Rush Hour" (špic) vreme kada se skupljaju zahtevi za drugi kombi
+  bool get isRushHour => ['13:00', '14:00', '15:30'].contains(vreme);
+
+  /// 🆕 Da li ima dovoljno ljudi na čekanju za drugi kombi (min 3)
+  bool get shouldActivateSecondVan => waitingCount >= 3;
+
   /// Status boja: zelena (>3), žuta (1-3), crvena (0)
+  /// Ako je PUNO ali ima waiting listu:
+  /// - Ljubicasta: Drugi kombi se puni (waiting >= 1)
   String get statusBoja {
     if (!aktivan) return 'grey';
+    if (jePuno && waitingCount > 0) return 'purple'; // 🆕 Indikator za waiting listu
     if (slobodna > 3) return 'green';
     if (slobodna > 0) return 'yellow';
     return 'red';
@@ -69,6 +80,36 @@ class SlobodnaMestaService {
 
       if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
         // ✅ FIX: Broji broj mesta (brojMesta), ne samo broj putnika
+        count += p.brojMesta;
+      }
+    }
+
+    return count;
+  }
+
+  /// 🆕 Izračunaj broj putnika na CEKANJU za određeni grad/vreme
+  static int _countWaitingZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate) {
+    final normalizedGrad = grad.toLowerCase();
+    final targetDayAbbr = _isoDateToDayAbbr(isoDate);
+
+    int count = 0;
+    for (final p in putnici) {
+      // 🆕 Brojimo SAMO one koji su na čekanju
+      if (p.status != 'ceka_mesto') continue;
+
+      // Proveri datum/dan
+      final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+      if (!dayMatch) continue;
+
+      // Proveri vreme
+      final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+      if (normVreme != vreme) continue;
+
+      // Proveri grad
+      final jeBC = GradAdresaValidator.isBelaCrkva(p.grad);
+      final jeVS = GradAdresaValidator.isVrsac(p.grad);
+
+      if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
         count += p.brojMesta;
       }
     }
@@ -118,6 +159,7 @@ class SlobodnaMestaService {
     for (final vreme in KapacitetService.bcVremena) {
       final maxMesta = kapacitet['BC']?[vreme] ?? 8;
       final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate);
+      final waiting = _countWaitingZaPolazak(putnici, 'BC', vreme, isoDate);
 
       result['BC']!.add(SlobodnaMesta(
         grad: 'BC',
@@ -125,6 +167,7 @@ class SlobodnaMestaService {
         maxMesta: maxMesta,
         zauzetaMesta: zauzeto,
         aktivan: true,
+        waitingCount: waiting,
       ));
     }
 
@@ -132,6 +175,7 @@ class SlobodnaMestaService {
     for (final vreme in KapacitetService.vsVremena) {
       final maxMesta = kapacitet['VS']?[vreme] ?? 8;
       final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate);
+      final waiting = _countWaitingZaPolazak(putnici, 'VS', vreme, isoDate);
 
       result['VS']!.add(SlobodnaMesta(
         grad: 'VS',
@@ -139,6 +183,7 @@ class SlobodnaMestaService {
         maxMesta: maxMesta,
         zauzetaMesta: zauzeto,
         aktivan: true,
+        waitingCount: waiting,
       ));
     }
 

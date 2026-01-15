@@ -24,6 +24,9 @@ class PutnikHelpers {
     // Ne računaj ako je na odsustvu (bolovanje/godišnji)
     if (p.jeOdsustvo) return false;
 
+    // 🆕 Ne računaj ako je status 'ceka_mesto' (VIP lista čekanja za drugi kombi)
+    if (p.status == 'ceka_mesto') return false;
+
     return true;
   }
 
