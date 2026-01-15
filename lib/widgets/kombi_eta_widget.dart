@@ -78,15 +78,25 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       final filteredList = list.where((driver) {
         final driverGrad = driver['grad'] as String? ?? '';
         final driverVreme = driver['vreme_polaska'] as String?;
+        final updatedAtStr = driver['updated_at'] as String?;
 
         // 1. Provera grada
         if (_normalizeGrad(driverGrad) != normalizedGrad) return false;
 
-        // 2. Ako tražimo specifično vreme, to je već filterovano u bazi, ali može i ovde
+        // 🛑 STALE CHECK: Ako zapis nije ažuriran u poslednjih 30 minuta, ignoriši ga!
+        // Ovo rešava problem "zombija" vozača koji nisu odjavljeni (putnici_eta ostaje zapamćen)
+        if (updatedAtStr != null) {
+          final updatedAt = DateTime.tryParse(updatedAtStr);
+          if (updatedAt != null) {
+            final diff = DateTime.now().difference(updatedAt).inMinutes.abs();
+            if (diff > 30) return false; // Stariji od 30 min -> SIGURNO zombi
+          }
+        }
+
+        // 2. Ako tražimo specifično vreme (npr. putnik bira 05:00), ignoriši ako vozač nije ažuran
         if (widget.vremePolaska != null) return true;
 
-        // 3. SANITY CHECK: Ako nemamo target vreme, ignoriši "duhove" (stare vožnje)
-        // Proveri da li je vreme polaska vozača "blizu" trenutnog vremena (+/- 3h)
+        // 3. SANITY CHECK za automatsku detekciju (kada putnik nema target vreme)
         if (driverVreme == null) return false;
         
         final now = DateTime.now();
@@ -98,12 +108,9 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         
         int diffInMinutes = (h * 60 + m) - (now.hour * 60 + now.minute);
         
-        // Normalizuj oko ponoći (npr. ako je sad 23:50 a vožnja 00:10)
-        // Opseg [-720, 720] -> npr. ako je diff 1400 (23h razlike), to je zapravo -40 min (-1h)
         if (diffInMinutes > 720) diffInMinutes -= 1440;
         if (diffInMinutes < -720) diffInMinutes += 1440;
         
-        // Ako je vožnja pre više od 3h ili za više od 4h, ignoriši
         if (diffInMinutes < -180 || diffInMinutes > 240) return false;
 
         return true;
