@@ -8,6 +8,7 @@ import 'package:flutter/services.dart'; // 📱 Za Edge-to-Edge prikaz (Android 
 import 'package:google_api_availability/google_api_availability.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'globals.dart';
 import 'screens/welcome_screen.dart';
@@ -32,6 +33,8 @@ import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 🕯️ WAKELOCK - Sprečava gašenje ekrana dok je aplikacija aktivna
+  WakelockPlus.enable();
 
   // 📱 EDGE-TO-EDGE PRIKAZ
   // Za Android 15 (SDK 35+): edge-to-edge je automatski primenjen, boje system bar-a su ignorisane

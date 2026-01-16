@@ -24,10 +24,7 @@ import '../widgets/shared/time_picker_cell.dart';
 class RegistrovaniPutnikProfilScreen extends StatefulWidget {
   final Map<String, dynamic> putnikData;
 
-  const RegistrovaniPutnikProfilScreen({
-    Key? key,
-    required this.putnikData,
-  }) : super(key: key);
+  const RegistrovaniPutnikProfilScreen({Key? key, required this.putnikData}) : super(key: key);
 
   @override
   State<RegistrovaniPutnikProfilScreen> createState() => _RegistrovaniPutnikProfilScreenState();
@@ -200,9 +197,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // Sačuvaj promene ako ih ima
       if (hasChanges) {
-        await Supabase.instance.client.from('registrovani_putnici').update({
-          'polasci_po_danu': polasci,
-        }).eq('id', putnikId);
+        await Supabase.instance.client
+            .from('registrovani_putnici')
+            .update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
         // Ažuriraj lokalni state
         if (mounted) {
@@ -538,12 +535,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final parts = e.key.split('-');
         final godina = int.parse(parts[0]);
         final mesec = int.parse(parts[1]);
-        return {
-          'mesec': mesec,
-          'godina': godina,
-          'iznos': e.value,
-          'datum': poslednjeDatum[e.key],
-        };
+        return {'mesec': mesec, 'godina': godina, 'iznos': e.value, 'datum': poslednjeDatum[e.key]};
       }).toList();
 
       result.sort((a, b) {
@@ -564,15 +556,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: const Text('Odjava?', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Da li želiš da se odjaviš?',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-        ),
+        content: Text('Da li želiš da se odjaviš?', style: TextStyle(color: Colors.white.withValues(alpha: 0.8))),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ne'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ne')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -644,10 +630,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           ),
           content: const Text('Da li želite da se vratite na posao?'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Ne'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ne')),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -707,12 +690,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Odustani'),
-            ),
-          ],
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Odustani'))],
         ),
       );
 
@@ -747,20 +725,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 : '🤒 Postavljeni ste na bolovanje';
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(poruka),
-            backgroundColor: noviStatus == 'radi' ? Colors.green : Colors.orange,
-          ),
+          SnackBar(content: Text(poruka), backgroundColor: noviStatus == 'radi' ? Colors.green : Colors.orange),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -789,11 +759,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // Widget za ikonu - slika ili emoji (usklađene veličine)
         Widget iconWidget;
         if (WeatherData.isAssetIcon(icon)) {
-          iconWidget = Image.asset(
-            WeatherData.getAssetPath(icon),
-            width: 32,
-            height: 32,
-          );
+          iconWidget = Image.asset(WeatherData.getAssetPath(icon), width: 32, height: 32);
         } else {
           iconWidget = Text(icon, style: const TextStyle(fontSize: 14));
         }
@@ -931,23 +897,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
-          ),
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.9),
           decoration: BoxDecoration(
             gradient: Theme.of(context).backgroundGradient,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Theme.of(context).glassBorder,
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
+            border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2)],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -957,21 +912,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).glassContainer,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
+                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
                         '🌤️ Vreme - $gradPun',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                     GestureDetector(
@@ -1046,11 +994,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if (WeatherData.isAssetIcon(data.icon))
-                                Image.asset(
-                                  WeatherData.getAssetPath(data.icon),
-                                  width: 80,
-                                  height: 80,
-                                )
+                                Image.asset(WeatherData.getAssetPath(data.icon), width: 80, height: 80)
                               else
                                 Text(data.icon, style: const TextStyle(fontSize: 60)),
                               const SizedBox(width: 16),
@@ -1077,10 +1021,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   if (data.tempMin != null && data.tempMax != null)
                                     Text(
                                       '${data.tempMin!.round()}° / ${data.tempMax!.round()}°',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white70,
-                                      ),
+                                      style: const TextStyle(fontSize: 16, color: Colors.white70),
                                     ),
                                 ],
                               ),
@@ -1090,20 +1031,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                           // Opis baziran na weather code
                           Text(
                             _getWeatherDescription(data.dailyWeatherCode ?? data.weatherCode),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500),
                             textAlign: TextAlign.center,
                           ),
                         ],
                       )
                     : const Center(
-                        child: Text(
-                          'Podaci nisu dostupni',
-                          style: TextStyle(color: Colors.white70, fontSize: 16),
-                        ),
+                        child: Text('Podaci nisu dostupni', style: TextStyle(color: Colors.white70, fontSize: 16)),
                       ),
               ),
             ],
@@ -1151,9 +1085,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final aktivan = _putnikData['aktivan'] as bool? ?? true;
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: ThemeManager().currentGradient,
-      ),
+      decoration: BoxDecoration(gradient: ThemeManager().currentGradient),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -1219,10 +1151,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                     ? [Colors.blue.shade400, Colors.indigo.shade600]
                                     : [Colors.orange.shade400, Colors.deepOrange.shade600],
                               ),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.4),
-                                width: 2,
-                              ),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
                               boxShadow: [
                                 BoxShadow(
                                   color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.4),
@@ -1239,13 +1168,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                   letterSpacing: 2,
-                                  shadows: [
-                                    Shadow(
-                                      offset: Offset(1, 1),
-                                      blurRadius: 3,
-                                      color: Colors.black38,
-                                    ),
-                                  ],
+                                  shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black38)],
                                 ),
                               ),
                             ),
@@ -1254,11 +1177,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                           // Ime
                           Text(
                             fullName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
 
@@ -1329,10 +1248,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   const SizedBox(width: 4),
                                   Text(
                                     _adresaBC!,
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      fontSize: 13,
-                                    ),
+                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                                   ),
                                 ],
                                 if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
@@ -1341,10 +1257,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   const SizedBox(width: 4),
                                   Text(
                                     _adresaVS!,
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      fontSize: 13,
-                                    ),
+                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                                   ),
                                 ],
                               ],
@@ -1408,13 +1321,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStatCard(
-                            '🚌',
-                            'Vožnje',
-                            _brojVoznji.toString(),
-                            Colors.blue,
-                            'ovaj mesec',
-                          ),
+                          child: _buildStatCard('🚌', 'Vožnje', _brojVoznji.toString(), Colors.blue, 'ovaj mesec'),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1504,26 +1411,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-              color: color,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 11,
-            ),
-          ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 10,
-            ),
-          ),
+          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11)),
+          Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10)),
         ],
       ),
     );
@@ -1561,13 +1452,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
 
     final dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
-    final daniLabels = {
-      'pon': 'Ponedeljak',
-      'uto': 'Utorak',
-      'sre': 'Sreda',
-      'cet': 'Četvrtak',
-      'pet': 'Petak',
-    };
+    final daniLabels = {'pon': 'Ponedeljak', 'uto': 'Utorak', 'sre': 'Sreda', 'cet': 'Četvrtak', 'pet': 'Petak'};
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1583,11 +1468,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           const Center(
             child: Text(
               '🕐 Vremena polaska',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 16),
@@ -1649,13 +1530,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                   // Naziv dana
                   SizedBox(
                     width: 100,
-                    child: Text(
-                      daniLabels[dan] ?? dan,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                    ),
+                    child: Text(daniLabels[dan] ?? dan, style: const TextStyle(color: Colors.white, fontSize: 14)),
                   ),
                   // BC vreme - sa TimePickerCell
                   Expanded(
@@ -1713,7 +1588,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       debugPrint('📋 [BC] tipPutnika=$tipPutnika, jeUcenik=$jeUcenik, jeRadnik=$jeRadnik, jeDnevni=$jeDnevni');
       debugPrint(
-          '📋 [BC] jeBcUcenikZahtev=$jeBcUcenikZahtev, jeBcRadnikZahtev=$jeBcRadnikZahtev, jeBcDnevniZahtev=$jeBcDnevniZahtev');
+        '📋 [BC] jeBcUcenikZahtev=$jeBcUcenikZahtev, jeBcRadnikZahtev=$jeBcRadnikZahtev, jeBcDnevniZahtev=$jeBcDnevniZahtev',
+      );
 
       // Ažuriraj lokalno - ČUVAJ SVE PODATKE (pokupljeno, placeno, otkazano, itd.)
       final polasciRaw = _putnikData['polasci_po_danu'] ?? {};
@@ -1793,15 +1669,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // Za naredne dane: proveri da li je pre 16h
           final sada = TimeOfDay.now();
           final jePre16h = sada.hour < 16;
+          // final jePre16h = false; // TEMP TEST: Force post-16h for explicit capacity check
 
           // 1. Sačuvaj odmah sa statusom pending + timestamp za autonomni sistem
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
-          await Supabase.instance.client.from('registrovani_putnici').update({
-            'polasci_po_danu': polasci,
-            'radni_dani': noviRadniDani,
-          }).eq('id', putnikId);
+          await Supabase.instance.client
+              .from('registrovani_putnici')
+              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           // Ažuriraj lokalni state
           setState(() {
@@ -1864,19 +1740,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             final reason = shouldWaitUntil20hCase2 ? 'posle 16h' : 'višestruka izmena';
             debugPrint('🎯 [BC] UČENIK: Čekam do 20:00 ($reason)');
 
+            // Računamo vreme do 20:00
             final now = DateTime.now();
-            final tonight20h = DateTime(now.year, now.month, now.day, 20, 0, 0);
-            Duration waitDuration;
-            if (now.isBefore(tonight20h)) {
-              waitDuration = tonight20h.difference(now);
-            } else {
-              waitDuration = Duration.zero; // Već je prošlo 20h
-            }
+            final targetTime = DateTime(now.year, now.month, now.day, 20, 0, 0);
+            var waitDuration = targetTime.difference(now);
+            if (waitDuration.isNegative) waitDuration = const Duration(seconds: 1);
 
             if (mounted) {
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text('⏳ Potvrda će stići oko 20:00h'),
                   backgroundColor: Colors.orange,
                   duration: Duration(seconds: 4),
@@ -1886,7 +1759,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
             _bcZahtevTimer = Timer(waitDuration, () async {
               debugPrint('⏰ [BC] 20:00 TIMER ISTEKAO! Pozivam _confirmBcZahtev()');
-              await _confirmBcZahtev();
+              try {
+                await _confirmBcZahtev();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error: $e')));
+                }
+              }
             });
           } else if (jeDanas) {
             // DANAŠNJI dan: 10 minuta
@@ -1910,10 +1789,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
-          await Supabase.instance.client.from('registrovani_putnici').update({
-            'polasci_po_danu': polasci,
-            'radni_dani': noviRadniDani,
-          }).eq('id', putnikId);
+          await Supabase.instance.client
+              .from('registrovani_putnici')
+              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           setState(() {
             _putnikData['polasci_po_danu'] = polasci;
@@ -1961,10 +1839,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // Odmah sačuvaj kao confirmed - bez timera i čekanja
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
 
-          await Supabase.instance.client.from('registrovani_putnici').update({
-            'polasci_po_danu': polasci,
-            'radni_dani': noviRadniDani,
-          }).eq('id', putnikId);
+          await Supabase.instance.client
+              .from('registrovani_putnici')
+              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           setState(() {
             _putnikData['polasci_po_danu'] = polasci;
@@ -1986,10 +1863,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 📅 VS DNEVNI - DIREKTNO PRIHVATA ZAHTEV (admin kontroliše pomoću dugmeta)
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
 
-          await Supabase.instance.client.from('registrovani_putnici').update({
-            'polasci_po_danu': polasci,
-            'radni_dani': noviRadniDani,
-          }).eq('id', putnikId);
+          await Supabase.instance.client
+              .from('registrovani_putnici')
+              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           setState(() {
             _putnikData['polasci_po_danu'] = polasci;
@@ -2019,10 +1895,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // Postavi status na pending
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
 
-          await Supabase.instance.client.from('registrovani_putnici').update({
-            'polasci_po_danu': polasci,
-            'radni_dani': noviRadniDani,
-          }).eq('id', putnikId);
+          await Supabase.instance.client
+              .from('registrovani_putnici')
+              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           setState(() {
             _putnikData['polasci_po_danu'] = polasci;
@@ -2068,23 +1943,25 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Greška: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ Greška: $e'), backgroundColor: Colors.red));
       }
     }
   }
 
   /// Pomoćna metoda za normalno čuvanje (da ne dupliram kod)
-  Future<void> _saveNormalFlow(String putnikId, Map<String, dynamic> polasci, String noviRadniDani, String tipGrad,
-      String dan, String? novoVreme) async {
-    await Supabase.instance.client.from('registrovani_putnici').update({
-      'polasci_po_danu': polasci,
-      'radni_dani': noviRadniDani,
-    }).eq('id', putnikId);
+  Future<void> _saveNormalFlow(
+    String putnikId,
+    Map<String, dynamic> polasci,
+    String noviRadniDani,
+    String tipGrad,
+    String dan,
+    String? novoVreme,
+  ) async {
+    await Supabase.instance.client
+        .from('registrovani_putnici')
+        .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
     // Ažuriraj lokalni state
     setState(() {
@@ -2173,9 +2050,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       debugPrint('🔍 [BC] Proveravam mesta za $vreme na datum $targetDate, proveraMesta=$proveraMesta');
 
       // 🎫 Proveri slobodna mesta SAMO ako je potrebno (današnji dan ili posle 16h)
-      final imaMesta = proveraMesta
-          ? await SlobodnaMestaService.imaSlobodnihMesta('BC', vreme, datum: targetDate)
-          : true; // Naredni dani do 16h - automatski potvrdi
+      // Ako ne treba provera (naredni dani do 16h), automatski je true
+      final imaMesta =
+          proveraMesta ? await SlobodnaMestaService.imaSlobodnihMesta('BC', vreme, datum: targetDate) : true;
 
       debugPrint('📊 [BC] imaMesta = $imaMesta');
 
@@ -2184,10 +2061,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
 
         // Ažuriraj u bazi
-        await Supabase.instance.client.from('registrovani_putnici').update({
-          'polasci_po_danu': polasci,
-          'radni_dani': radniDani,
-        }).eq('id', putnikId);
+        await Supabase.instance.client
+            .from('registrovani_putnici')
+            .update({'polasci_po_danu': polasci, 'radni_dani': radniDani}).eq('id', putnikId);
 
         // Ažuriraj lokalni state ako je widget još mounted
         if (mounted) {
@@ -2209,9 +2085,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         (polasci[dan] as Map<String, dynamic>)['bc_status'] = null;
 
         // Ažuriraj u bazi
-        await Supabase.instance.client.from('registrovani_putnici').update({
-          'polasci_po_danu': polasci,
-        }).eq('id', putnikId);
+        await Supabase.instance.client
+            .from('registrovani_putnici')
+            .update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
         // Ažuriraj lokalni state
         if (mounted) {
@@ -2272,10 +2148,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // ✅ IMA MESTA - potvrdi zahtev
         (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
 
-        await Supabase.instance.client.from('registrovani_putnici').update({
-          'polasci_po_danu': polasci,
-          'radni_dani': radniDani,
-        }).eq('id', putnikId);
+        await Supabase.instance.client
+            .from('registrovani_putnici')
+            .update({'polasci_po_danu': polasci, 'radni_dani': radniDani}).eq('id', putnikId);
 
         if (mounted) {
           setState(() {
@@ -2301,10 +2176,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'ceka_mesto';
           (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = DateTime.now().toIso8601String();
 
-          await Supabase.instance.client.from('registrovani_putnici').update({
-            'polasci_po_danu': polasci,
-            'radni_dani': radniDani,
-          }).eq('id', putnikId);
+          await Supabase.instance.client
+              .from('registrovani_putnici')
+              .update({'polasci_po_danu': polasci, 'radni_dani': radniDani}).eq('id', putnikId);
 
           // Ažuriraj lokalni UI
           if (mounted) {
@@ -2316,29 +2190,74 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 🆕 PROVERI KOLIKO LJUDI ČEKA ZA OVAJ TERMIN
           final brojCekaju = await SlobodnaMestaService.brojCekaMestoZaVsTermin(vreme, dan);
+
+          // 🆕 PROVERA "POSLEDNJI UČENIK" - Da li "ugurati" poslednjeg (ako fali samo 1)
+          // Samo ako korisnik čeka SAM za ovaj termin (iako je pun) i poslednji je koji treba da se vrati kući
+          bool shouldSqueezeIn = false;
+
+          // Proveri da li je putnik učenik
+          final tipPutnika = _putnikData['tip'] as String? ?? '';
+          final jeUcenik = tipPutnika.toLowerCase().contains('ucenik');
+
+          if (jeUcenik && brojCekaju == 1) {
+            final uceniciOtisli = await SlobodnaMestaService.getBrojUcenikaKojiSuOtisliUSkolu(dan);
+            final uceniciVracaju = await SlobodnaMestaService.getBrojUcenikaKojiSeVracaju(dan);
+
+            // Ako je broj onih koji se vraćaju (uključujući ovog na čekanju) jednak onima koji su otišli
+            // To znači da je ovo POSLEDNJI učenik koji je "visio"
+            if (uceniciVracaju >= uceniciOtisli) {
+              debugPrint('🎒 [VS] OVO JE POSLEDNJI UČENIK! "Uguralicu" aktiviramo.');
+              shouldSqueezeIn = true;
+            }
+          }
+
           debugPrint('📊 [VS] Broj ljudi na čekanju za $vreme: $brojCekaju');
 
-          if (brojCekaju >= 4) {
-            // ✅ IMA 4+ ZAHTEVA -> POTVRDI SVE (2. kombi kreće!)
-            debugPrint('🚐 [VS] 4+ zahteva! Potvrđujem sve za drugi kombi');
+          if (brojCekaju >= 4 || shouldSqueezeIn) {
+            // ✅ IMA 4+ ZAHTEVA ILI JE "UGURVANJE" (Poslednji učenik)
+            if (shouldSqueezeIn) {
+              debugPrint('🚐 [VS] SQUEEZE-IN AKTIVIRAN: Potvrđujem samo ovog učenika (preko kapaciteta)');
+              // Ovde potvrđujemo samo NJEGA, ne ceo bus (ako ima drugih na čekanju, mada smo proverili brojCekaju == 1)
 
-            final potvrdjeno = await SlobodnaMestaService.potvrdiSveCekaMestoZaVsTermin(vreme, dan);
-            debugPrint('✅ [VS] Potvrđeno $potvrdjeno putnika za drugi kombi');
+              (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
 
-            // Ažuriraj lokalni state (ovaj putnik je sada confirmed)
-            (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
-            if (mounted) {
-              setState(() {
-                _putnikData['polasci_po_danu'] = polasci;
-              });
+              await Supabase.instance.client
+                  .from('registrovani_putnici')
+                  .update({'polasci_po_danu': polasci, 'radni_dani': radniDani}).eq('id', putnikId);
+
+              if (mounted) {
+                setState(() {
+                  _putnikData['polasci_po_danu'] = polasci;
+                });
+              }
+
+              await LocalNotificationService.showRealtimeNotification(
+                title: '✅ Zahtev potvrđen',
+                body: 'Vaš povratak u $vreme je potvrđen. (Squeeze-in)',
+                payload: 'vs_squeeze_confirmed',
+              );
+            } else {
+              // ... standardna logika za drugi kombi ...
+              debugPrint('🚐 [VS] 4+ zahteva! Potvrđujem sve za drugi kombi');
+
+              final potvrdjeno = await SlobodnaMestaService.potvrdiSveCekaMestoZaVsTermin(vreme, dan);
+              debugPrint('✅ [VS] Potvrđeno $potvrdjeno putnika za drugi kombi');
+
+              // Ažuriraj lokalni state (ovaj putnik je sada confirmed)
+              (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
+              if (mounted) {
+                setState(() {
+                  _putnikData['polasci_po_danu'] = polasci;
+                });
+              }
+
+              // Notifikacija - potvrđen
+              await LocalNotificationService.showRealtimeNotification(
+                title: '✅ Zahtev potvrđen',
+                body: 'Vaš povratak u $vreme je potvrđen. Vidimo se!',
+                payload: 'vs_second_van_confirmed',
+              );
             }
-
-            // Notifikacija - potvrđen
-            await LocalNotificationService.showRealtimeNotification(
-              title: '✅ Zahtev potvrđen',
-              body: 'Vaš povratak u $vreme je potvrđen. Vidimo se!',
-              payload: 'vs_second_van_confirmed',
-            );
           } else {
             // ⏳ NEMA DOVOLJNO ZAHTEVA - proveri alternative
             final alternative = await _pronadjiAlternativneTermineDetaljno(vreme, datum, 'VS');
@@ -2378,9 +2297,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           (polasci[dan] as Map<String, dynamic>)['vs'] = null;
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = null;
 
-          await Supabase.instance.client.from('registrovani_putnici').update({
-            'polasci_po_danu': polasci,
-          }).eq('id', putnikId);
+          await Supabase.instance.client
+              .from('registrovani_putnici')
+              .update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
           if (mounted) {
             setState(() {
@@ -2411,8 +2330,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   }
 
   /// 🔍 Pronalazi alternativne termine detaljno (vraća pre i posle)
-  Future<Map<String, String?>> _pronadjiAlternativneTermineDetaljno(String zeljeniTermin,
-      [String? datum, String grad = 'BC']) async {
+  Future<Map<String, String?>> _pronadjiAlternativneTermineDetaljno(
+    String zeljeniTermin, [
+    String? datum,
+    String grad = 'BC',
+  ]) async {
     try {
       final slobodna = await SlobodnaMestaService.getSlobodnaMesta(datum: datum);
       final termini = slobodna[grad] ?? [];
@@ -2546,26 +2468,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.analytics_outlined,
-                color: Colors.blue.shade300,
-                size: 24,
-              ),
+              Icon(Icons.analytics_outlined, color: Colors.blue.shade300, size: 24),
               const SizedBox(width: 12),
               const Text(
                 'Detaljne statistike',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.white.withValues(alpha: 0.5),
-                size: 16,
-              ),
+              Icon(Icons.arrow_forward_ios, color: Colors.white.withValues(alpha: 0.5), size: 16),
             ],
           ),
         ),
@@ -2598,10 +2508,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final cenaPoVoznji = CenaObracunService.getDefaultCenaByTip(tip);
 
     // Sortiraj mesece od najnovijeg
-    final sortedKeys = <String>{
-      ..._voznjeDetaljno.keys,
-      ..._otkazivanjaDetaljno.keys,
-    }.toList()
+    final sortedKeys = <String>{..._voznjeDetaljno.keys, ..._otkazivanjaDetaljno.keys}.toList()
       ..sort((a, b) => b.compareTo(a));
 
     return Card(
@@ -2638,11 +2545,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 children: [
                   Text(
                     'VAŠE TRENUTNO STANJE',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
-                      letterSpacing: 1,
-                    ),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12, letterSpacing: 1),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -2697,10 +2600,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             const SizedBox(height: 20),
 
             // Linija razdvajanja
-            Container(
-              height: 1,
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
+            Container(height: 1, color: Colors.white.withValues(alpha: 0.1)),
 
             const SizedBox(height: 16),
 
@@ -2708,11 +2608,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             const Center(
               child: Text(
                 '📋 Izvod po mesecima',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(height: 12),
@@ -2777,11 +2673,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       children: [
                         Text(
                           '$mesecNaziv $godina',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         const Spacer(),
                         Container(
@@ -2805,10 +2697,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     ),
                     subtitle: Text(
                       '$brojVoznji vožnji × ${cenaPoVoznji.toStringAsFixed(0)} = ${ukupnoZaMesec.toStringAsFixed(0)} RSD',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
                     ),
                     children: [
                       // VOŽNJE PO DANIMA
@@ -2851,10 +2740,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                     ),
                                     child: Text(
                                       '$dan ${datum.day}.${datum.month}.',
-                                      style: TextStyle(
-                                        color: Colors.green.shade100,
-                                        fontSize: 11,
-                                      ),
+                                      style: TextStyle(color: Colors.green.shade100, fontSize: 11),
                                     ),
                                   );
                                 }).toList(),
@@ -2905,10 +2791,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                     ),
                                     child: Text(
                                       '$dan ${datum.day}.${datum.month}.',
-                                      style: TextStyle(
-                                        color: Colors.orange.shade100,
-                                        fontSize: 11,
-                                      ),
+                                      style: TextStyle(color: Colors.orange.shade100, fontSize: 11),
                                     ),
                                   );
                                 }).toList(),
@@ -2929,11 +2812,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         ),
                         child: Column(
                           children: [
-                            _buildZbirRow('Ukupno vožnji:', '$brojVoznji × ${cenaPoVoznji.toStringAsFixed(0)}',
-                                '${ukupnoZaMesec.toStringAsFixed(0)} RSD'),
+                            _buildZbirRow(
+                              'Ukupno vožnji:',
+                              '$brojVoznji × ${cenaPoVoznji.toStringAsFixed(0)}',
+                              '${ukupnoZaMesec.toStringAsFixed(0)} RSD',
+                            ),
                             const SizedBox(height: 6),
-                            _buildZbirRow('Plaćeno:', '', '${placenoZaMesec.toStringAsFixed(0)} RSD',
-                                color: Colors.green),
+                            _buildZbirRow(
+                              'Plaćeno:',
+                              '',
+                              '${placenoZaMesec.toStringAsFixed(0)} RSD',
+                              color: Colors.green,
+                            ),
                             const Divider(color: Colors.white24, height: 16),
                             _buildZbirRow(
                               dugujeZaMesec > 0 ? 'Za uplatu:' : 'Stanje:',
@@ -2968,13 +2858,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           ),
         ),
         if (formula.isNotEmpty)
-          Text(
-            formula,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 11,
-            ),
-          ),
+          Text(formula, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
         Text(
           value,
           style: TextStyle(

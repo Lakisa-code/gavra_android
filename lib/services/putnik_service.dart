@@ -660,32 +660,8 @@ class PutnikService {
 
       await supabase.from('registrovani_putnici').update(updateData).eq('id', putnikId);
 
-      // 📲 REAL-TIME NOTIFIKACIJA - Novi putnik dodat (samo za današnji dan)
-      final now = DateTime.now();
-      final dayNames = ['Pon', 'Uto', 'Sre', 'Cet', 'Pet', 'Sub', 'Ned'];
-      final todayName = dayNames[now.weekday - 1];
-
-      // ✅ FIX: Podrška za višednevne putnike (npr. "pon-pet")
-      final isToday = putnik.dan.toLowerCase().contains(todayName.toLowerCase()) || putnik.dan == todayName;
-
-      if (isToday) {
-        // 📲 ŠALJI PUSH SVIM VOZAČIMA (FCM + Huawei Push)
-        RealtimeNotificationService.sendNotificationToAllDrivers(
-          title: 'Novi putnik',
-          body: 'Dodat je novi putnik ${putnik.ime} (${putnik.grad}, ${putnik.polazak})',
-          excludeSender: putnik.dodeljenVozac,
-          data: {
-            'type': 'novi_putnik',
-            'datum': now.toIso8601String(),
-            'putnik': {
-              'ime': putnik.ime,
-              'grad': putnik.grad,
-              'vreme': putnik.polazak,
-              'dan': putnik.dan,
-            },
-          },
-        );
-      }
+      // 📲 NOTIFIKACIJA UKLONJENA PO NALOGU 16.01.2026.
+      // Prethodno je ovde bila logika za slanje push notifikacije svim vozačima (RealtimeNotificationService.sendNotificationToAllDrivers)
     } catch (e) {
       rethrow;
     }

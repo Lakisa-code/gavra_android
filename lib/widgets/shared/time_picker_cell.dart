@@ -79,8 +79,9 @@ class TimePickerCell extends StatelessWidget {
     final todayOnly = DateTime(now.year, now.month, now.day);
 
     // Zaključaj ako je dan pre danas
+    // TEMP TEST: Disable locking for past days
     if (dayDate.isBefore(todayOnly)) {
-      return true;
+      return false; // TEMPORARY CHANGE: return false instead of true
     }
 
     // 🆕 Zaključaj današnji dan posle 19:00 (nema smisla zakazivati uveče za isti dan)
