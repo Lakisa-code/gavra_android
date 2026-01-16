@@ -888,15 +888,27 @@ class PutnikService {
     // ✅ FIX: Loguj uplatu u voznje_log tabelu za statistike
     String? vozacId;
     try {
-      await VozacMappingService.initialize();
+      if (!VozacMappingService.isInitialized) {
+        await VozacMappingService.initialize();
+      }
       vozacId = VozacMappingService.getVozacUuidSync(currentDriver);
       vozacId ??= await VozacMappingService.getVozacUuid(currentDriver);
+
+      // 🛡️ FALLBACK: Ako mapping servis ne nađe UUID za Ivana, koristi hardkodovani
+      if (vozacId == null && currentDriver == 'Ivan') {
+        vozacId = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
+      }
     } catch (e) {
       debugPrint('❌ markAsPaid: Greška pri VozacMapping za "$currentDriver": $e');
+      // Pokušaj fallback za Ivana čak i ako je mapping pukao
+      if (currentDriver == 'Ivan') {
+        vozacId = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
+      }
     }
 
     if (vozacId == null) {
       debugPrint('⚠️ markAsPaid: vozacId je NULL za vozača "$currentDriver" - uplata neće biti u statistici!');
+      throw Exception('Sistem ne može da identifikuje vozača. Pokušajte ponovo ili restartujte aplikaciju.');
     }
 
     try {
@@ -913,7 +925,7 @@ class PutnikService {
     } catch (e) {
       debugPrint('❌ markAsPaid: GREŠKA pri upisu u voznje_log: $e');
       // Re-throw da korisnik zna da je nešto pošlo naopako
-      rethrow;
+      throw Exception('Greška pri čuvanju uplate u statistiku: $e');
     }
   }
 

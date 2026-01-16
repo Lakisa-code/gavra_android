@@ -12,6 +12,9 @@ class VozacMappingService {
 
   static const Duration _cacheValidityPeriod = Duration(minutes: 30);
 
+  // Expose status
+  static bool get isInitialized => _isInitialized;
+
   /// 🚀 INICIJALIZACIJA CACHE-A NA STARTUP
   static Future<void> initialize() async {
     if (_isInitialized) return;

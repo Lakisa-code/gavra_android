@@ -1063,91 +1063,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     return '';
   }
 
-  /// 🔔 Test notifikacija dijalog (vizuelno testiranje)
-  void _showNotificationTestDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('🔔 Test Notifikacija'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  LocalNotificationService.showRealtimeNotification(
-                    title: '✅ Zahtev primljen',
-                    body:
-                        '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-                    payload: 'test_payload',
-                  );
-                },
-                child: const Text('1. Evidentirano (Pending)'),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () {
-                  LocalNotificationService.showRealtimeNotification(
-                    title: '✅ Mesto osigurano!',
-                    body: '✅ Mesto osigurano! Vaša rezervacija za 07:00 je potvrđena. Želimo vam ugodnu vožnju! 🚌',
-                    payload: 'test_payload',
-                  );
-                },
-                child: const Text('2. Osigurano (Confirmed)'),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () {
-                  LocalNotificationService.showRealtimeNotification(
-                    title: '⏳ Zahtev i dalje u obradi',
-                    body:
-                        '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-                    payload: 'test_payload',
-                  );
-                },
-                child: const Text('3. Lista Čekanja (Same as 1)'),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () {
-                  // Mock data for alternatives
-                  LocalNotificationService.showVsAlternativeNotification(
-                    zeljeniTermin: '07:00',
-                    putnikId: 'test_id',
-                    dan: 'pon',
-                    polasci: {},
-                    radniDani: '',
-                    terminPre: '06:00',
-                    terminPosle: '09:00',
-                  );
-                },
-                child: const Text('4. Alternative (Popunjeno)'),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () {
-                  LocalNotificationService.showRealtimeNotification(
-                    title: '✅ Zahtev potvrđen',
-                    body:
-                        '🚌 Dobre vesti! Zbog velikog interesovanja, organizovali smo dodatna mesta. Vaš povratak je POTVRĐEN!',
-                    payload: 'test_payload',
-                  );
-                },
-                child: const Text('5. Drugi Bus (Extra)'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Zatvori'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // Ime može biti u 'putnik_ime' ili odvojeno 'ime'/'prezime'
@@ -1184,11 +1099,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_active, color: Colors.yellow),
-              tooltip: 'Test Notifikacije',
-              onPressed: _showNotificationTestDialog,
-            ),
             IconButton(
               icon: const Icon(Icons.palette, color: Colors.white),
               tooltip: 'Tema',
