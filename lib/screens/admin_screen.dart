@@ -25,6 +25,7 @@ import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
 import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
+import 'live_monitor_screen.dart'; // 🖥️ LIVE MONITOR
 import 'odrzavanje_screen.dart'; // 📖 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
 import 'putnik_kvalitet_screen_v2.dart'; // 🎯 Analiza kvaliteta putnika
@@ -836,17 +837,17 @@ class _AdminScreenState extends State<AdminScreen> {
                             },
                           ),
                           const SizedBox(height: 4),
-                          // ČETVRTI RED - Vozač, Mesta, Dnevni toggle (3 dugmeta)
+                          // ČETVRTI RED - Vozač, Monitor, Mesta, Dnevni (4 dugmeta)
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final screenWidth = constraints.maxWidth;
-                              const spacing = 1.0;
-                              const padding = 8.0;
+                              const spacing = 4.0; // Increased spacing safety
+                              const padding = 12.0; // Increased padding safety
                               final availableWidth = screenWidth - padding;
-                              final buttonWidth = (availableWidth - (spacing * 2)) / 3; // 3 dugmeta
+                              final buttonWidth = (availableWidth - (spacing * 3)) / 4;
 
                               return Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   // VOZAČ - Dropdown za admin preview
                                   SizedBox(
@@ -905,6 +906,39 @@ class _AdminScreenState extends State<AdminScreen> {
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
                                                 child: Text('Mesta',
+                                                    style: TextStyle(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                        shadows: [
+                                                          Shadow(
+                                                              offset: Offset(1, 1),
+                                                              blurRadius: 3,
+                                                              color: Colors.black54)
+                                                        ])))),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // MONITOR
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(context,
+                                          MaterialPageRoute<void>(builder: (context) => const LiveMonitorScreen())),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+                                        ),
+                                        child: const Center(
+                                            child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text('Monitor',
                                                     style: TextStyle(
                                                         fontWeight: FontWeight.w600,
                                                         fontSize: 14,
