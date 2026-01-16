@@ -2,5 +2,8 @@
   // 🚫 DENO EXTENSION УКЛОЊЕНА
   // Не користимо Supabase Edge Functions локално
   // За Supabase Cloud користимо REST API директно
-  "recommendations": []
+  "recommendations": [
+    "automatalabs.copilot-mcp",
+    "github.copilot-chat"
+  ]
 }

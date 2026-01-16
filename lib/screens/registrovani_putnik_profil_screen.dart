@@ -1666,6 +1666,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         status: bcStatus,
                         dayName: dan,
                         isCancelled: bcOtkazano,
+                        tipPutnika: _putnikData['tip']?.toString(), // 🆕 Za proveru dnevnog zakazivanja
                         onChanged: (newValue) => _updatePolazak(dan, 'bc', newValue),
                       ),
                     ),
@@ -1679,6 +1680,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         status: vsStatus,
                         dayName: dan,
                         isCancelled: vsOtkazano,
+                        tipPutnika: _putnikData['tip']?.toString(), // 🆕 Za proveru dnevnog zakazivanja
                         onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
                       ),
                     ),
@@ -1704,11 +1706,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final tipPutnika = _putnikData['tip']?.toString();
       final jeUcenik = tipPutnika == 'ucenik';
       final jeRadnik = tipPutnika == 'radnik';
+      final jeDnevni = tipPutnika == 'dnevni';
       final jeBcUcenikZahtev = tipGrad == 'bc' && jeUcenik && novoVreme != null;
       final jeBcRadnikZahtev = tipGrad == 'bc' && jeRadnik && novoVreme != null;
+      final jeBcDnevniZahtev = tipGrad == 'bc' && jeDnevni && novoVreme != null;
 
-      debugPrint('📋 [BC] tipPutnika=$tipPutnika, jeUcenik=$jeUcenik, jeRadnik=$jeRadnik');
-      debugPrint('📋 [BC] jeBcUcenikZahtev=$jeBcUcenikZahtev, jeBcRadnikZahtev=$jeBcRadnikZahtev');
+      debugPrint('📋 [BC] tipPutnika=$tipPutnika, jeUcenik=$jeUcenik, jeRadnik=$jeRadnik, jeDnevni=$jeDnevni');
+      debugPrint(
+          '📋 [BC] jeBcUcenikZahtev=$jeBcUcenikZahtev, jeBcRadnikZahtev=$jeBcRadnikZahtev, jeBcDnevniZahtev=$jeBcDnevniZahtev');
 
       // Ažuriraj lokalno - ČUVAJ SVE PODATKE (pokupljeno, placeno, otkazano, itd.)
       final polasciRaw = _putnikData['polasci_po_danu'] ?? {};
@@ -1789,8 +1794,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           final sada = TimeOfDay.now();
           final jePre16h = sada.hour < 16;
 
-          // 1. Sačuvaj odmah sa statusom pending
+          // 1. Sačuvaj odmah sa statusom pending + timestamp za autonomni sistem
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
+          (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
           await Supabase.instance.client.from('registrovani_putnici').update({
             'polasci_po_danu': polasci,
@@ -1817,9 +1823,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 3. Otkaži prethodni timer ako postoji
           _bcZahtevTimer?.cancel();
 
-          // 4. Provera broja izmena za datum
-          // - Današnji dan: proveri mesta
-          // - Naredni dani (do 16h): bez provere, automatski potvrdi
+          // 4. UČENIK BC logika:
+          // - DANAŠNJI dan: uvek proverava kapacitet
+          // - SUTRAŠNJI/BUDUĆI dan do 16h: automatski potvrđen BEZ provere kapaciteta
+          // - SUTRAŠNJI/BUDUĆI dan posle 16h: proverava kapacitet
           final trebaProveraMesta = jeDanas || !jePre16h;
 
           // - Izračunaj ciljni datum za proveru mesta/izmena
@@ -1846,9 +1853,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             'proveraMesta': trebaProveraMesta,
           };
 
-          if (shouldWaitUntil20h && jePre16h && !jeDanas) {
-            // Ako je 2. ili kasnija izmena pre 16h za BUDUĆI dan -> čekamo do 20:00
-            debugPrint('🎯 [BC] UČENIK: Višestruka izmena za BUDUĆI dan! Čekam do 20:00.');
+          // Odredi kada treba čekati do 20h:
+          // - Višestruka izmena (2+) za budući dan pre 16h
+          // - ILI zahtev za budući dan posle 16h (prva ili bilo koja izmena)
+          final shouldWaitUntil20hCase1 = shouldWaitUntil20h && jePre16h && !jeDanas; // Višestruka izmena pre 16h
+          final shouldWaitUntil20hCase2 = !jePre16h && !jeDanas; // Posle 16h za budući dan
+
+          if (shouldWaitUntil20hCase1 || shouldWaitUntil20hCase2) {
+            // Čekamo do 20:00h
+            final reason = shouldWaitUntil20hCase2 ? 'posle 16h' : 'višestruka izmena';
+            debugPrint('🎯 [BC] UČENIK: Čekam do 20:00 ($reason)');
 
             final now = DateTime.now();
             final tonight20h = DateTime(now.year, now.month, now.day, 20, 0, 0);
@@ -1863,7 +1877,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('⏳ Zbog izmene, potvrda će stići oko 20:00h'),
+                  content: Text('⏳ Potvrda će stići oko 20:00h'),
                   backgroundColor: Colors.orange,
                   duration: Duration(seconds: 4),
                 ),
@@ -1874,16 +1888,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               debugPrint('⏰ [BC] 20:00 TIMER ISTEKAO! Pozivam _confirmBcZahtev()');
               await _confirmBcZahtev();
             });
+          } else if (jeDanas) {
+            // DANAŠNJI dan: 10 minuta
+            debugPrint('🎯 [BC] UČENIK: Pending zahtev za DANAS, timer 10 min');
+
+            _bcZahtevTimer = Timer(const Duration(minutes: 10), () async {
+              debugPrint('⏰ [BC] TIMER ISTEKAO! Pozivam _confirmBcZahtev()');
+              await _confirmBcZahtev();
+            });
           } else {
-            // Prva izmena (budući) ili BILO KOJA izmena (danas/posle 16h)
-            // Za DANAS: 10 minuta
-            // Za SUTRA/BUDUĆE: 5 minuta (prvi put)
-            final int timerMinutes = jeDanas ? 10 : 5;
+            // BUDUĆI dan do 16h (prva izmena): 5 minuta
+            debugPrint('🎯 [BC] UČENIK: Pending zahtev za SUTRA do 16h, timer 5 min');
 
-            debugPrint('🎯 [BC] UČENIK: Pending zahtev sačuvan za datum: $targetDate');
-            debugPrint('🎯 [BC] Pokrećem timer $timerMinutes min');
-
-            _bcZahtevTimer = Timer(Duration(minutes: timerMinutes), () async {
+            _bcZahtevTimer = Timer(const Duration(minutes: 5), () async {
               debugPrint('⏰ [BC] TIMER ISTEKAO! Pozivam _confirmBcZahtev()');
               await _confirmBcZahtev();
             });
@@ -1891,6 +1908,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         } else if (jeBcRadnikZahtev) {
           // 👷 BC RADNIK - sačuvaj kao pending, čekaj 5 minuta, proveri mesta
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
+          (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
           await Supabase.instance.client.from('registrovani_putnici').update({
             'polasci_po_danu': polasci,
@@ -1938,6 +1956,57 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           _bcZahtevTimer = Timer(const Duration(minutes: 5), () async {
             await _confirmBcZahtev();
           });
+        } else if (jeBcDnevniZahtev) {
+          // 📅 BC DNEVNI - DIREKTNO PRIHVATA ZAHTEV (admin kontroliše pomoću dugmeta)
+          // Odmah sačuvaj kao confirmed - bez timera i čekanja
+          (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
+
+          await Supabase.instance.client.from('registrovani_putnici').update({
+            'polasci_po_danu': polasci,
+            'radni_dani': noviRadniDani,
+          }).eq('id', putnikId);
+
+          setState(() {
+            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['radni_dani'] = noviRadniDani;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Zahtev je prihvaćen!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+
+          debugPrint('🎯 [BC] DNEVNI: Zahtev direktno prihvaćen za $novoVreme');
+        } else if (tipGrad == 'vs' && novoVreme != null && jeDnevni) {
+          // 📅 VS DNEVNI - DIREKTNO PRIHVATA ZAHTEV (admin kontroliše pomoću dugmeta)
+          (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
+
+          await Supabase.instance.client.from('registrovani_putnici').update({
+            'polasci_po_danu': polasci,
+            'radni_dani': noviRadniDani,
+          }).eq('id', putnikId);
+
+          setState(() {
+            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['radni_dani'] = noviRadniDani;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Zahtev je prihvaćen!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+
+          debugPrint('🎯 [VS] DNEVNI: Zahtev direktno prihvaćen za $novoVreme');
         } else if (tipGrad == 'vs' && novoVreme != null) {
           // 🚐 VS LOGIKA - Pending + Timer + Provera mesta (za SVE dane)
           final danas = DateTime.now();

@@ -211,7 +211,8 @@ class SlobodnaMestaService {
   /// - Za DANAŠNJI dan: samo 1 promena
   /// - Za BUDUĆE dane: max 3 promene po danu
   ///
-  /// Tipovi 'radnik' i 'dnevni' nemaju ograničenja.
+  /// Tip 'radnik' nema ograničenja.
+  /// Tip 'dnevni' - admin kontroliše mogućnost zakazivanja putem dugmeta u Admin Screen.
   static Future<Map<String, dynamic>> promeniVremePutnika({
     required String putnikId,
     required String novoVreme,
@@ -239,9 +240,15 @@ class SlobodnaMestaService {
       final tipPutnika = (putnikResponse['tip'] as String?)?.toLowerCase() ?? 'radnik';
 
       // ═══════════════════════════════════════════════════════════════
-      // 🎓 OGRANIČENJA ZA UČENIKE
+      // 🎓 OGRANIČENJA ZA UČENIKE - PRVO ZAKAZIVANJE DO 16H
       // ═══════════════════════════════════════════════════════════════
       if (tipPutnika == 'ucenik' && !zaCeluNedelju) {
+        // Proveri da li je pre 16h
+        if (sada.hour < 16 && !jeZaDanas) {
+          // Ako je za sutrašnji ili sledeći dan, prihvati bez provere slobodnih mesta
+          return {'success': true, 'message': 'Zakazivanje uspešno bez provere slobodnih mesta.'};
+        }
+
         // Proveri da li je pre 16h
         if (sada.hour >= 16) {
           return {
@@ -273,28 +280,43 @@ class SlobodnaMestaService {
       }
 
       // ═══════════════════════════════════════════════════════════════
-      // 🚌 OGRANIČENJA ZA DNEVNE PUTNIKE
+      // 🎓 PROMENA VEĆ ZAKAZANOG VREMENA ZA SUTRA I SLEDEĆE DANE
+      // DODATAK: PONUDA ALTERNATIVNOG VREMENA AKO NEMA MESTA
       // ═══════════════════════════════════════════════════════════════
-      if (tipPutnika == 'dnevni' && !zaCeluNedelju) {
-        // Dnevni mogu menjati samo za DANAS
-        if (!jeZaDanas) {
-          return {
-            'success': false,
-            'message': 'Dnevni putnici mogu zakazivati samo za današnji dan.',
-          };
-        }
+      if (tipPutnika == 'ucenik' && !jeZaDanas && sada.hour < 20) {
+        // Prihvati zahtev i zakaži proveru slobodnih mesta u 20:00
+        return {
+          'success': true,
+          'message': 'Vaš zahtev je prihvaćen. Provera slobodnih mesta biće izvršena u 20:00.',
+        };
+      }
 
-        // Brojač promena za danas
-        final brojPromena = await _brojPromenaZaDan(putnikId, danas, dan);
-
-        // Max 1 promena dnevno
-        if (brojPromena >= 1) {
-          return {
-            'success': false,
-            'message': 'Danas ste već promenili vreme. Pokušajte sutra.',
-          };
+      if (tipPutnika == 'ucenik' && !jeZaDanas && sada.hour >= 20) {
+        // Proveri slobodna mesta nakon 20:00
+        final imaMesta = await imaSlobodnihMesta(grad, novoVreme, datum: danas);
+        if (!imaMesta) {
+          // Ponudi alternativno vreme ako nema mesta
+          final alternativnoVreme = await nadjiAlternativnoVreme(grad, datum: danas);
+          if (alternativnoVreme != null) {
+            return {
+              'success': false,
+              'message':
+                  'Nažalost, nema slobodnih mesta za traženo vreme. Predlažemo alternativno vreme: $alternativnoVreme.',
+            };
+          } else {
+            return {
+              'success': false,
+              'message': 'Nažalost, nema slobodnih mesta za traženo vreme, niti imamo alternativu.',
+            };
+          }
         }
       }
+
+      // ═══════════════════════════════════════════════════════════════
+      // 🚌 DNEVNI PUTNICI - BEZ OGRANIČENJA
+      // Admin kontroliše mogućnost zakazivanja putem dugmeta u Admin Screen
+      // Algoritam samo prihvata zahteve bez dodatnih provera
+      // ═══════════════════════════════════════════════════════════════
 
       // ═══════════════════════════════════════════════════════════════
       // 🎫 PROVERA SLOBODNIH MESTA
@@ -569,5 +591,22 @@ class SlobodnaMestaService {
     } catch (e) {
       return [];
     }
+  }
+
+  /// Pronađi alternativno vreme za određeni grad i datum
+  static Future<String?> nadjiAlternativnoVreme(String grad, {required String datum}) async {
+    final slobodna = await getSlobodnaMesta(datum: datum);
+    final lista = slobodna[grad.toUpperCase()];
+    if (lista == null) return null;
+
+    // Pronađi prvo vreme koje nije puno
+    for (final s in lista) {
+      if (!s.jePuno) {
+        return s.vreme;
+      }
+    }
+
+    // Ako nema slobodnih vremena, vrati null
+    return null;
   }
 }

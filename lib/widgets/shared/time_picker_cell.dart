@@ -22,6 +22,7 @@ class TimePickerCell extends StatelessWidget {
   final String? status; // 🆕 pending, confirmed, waiting, null
   final String? dayName; // 🆕 Dan u nedelji (pon, uto, sre...) za zaključavanje prošlih dana
   final bool isCancelled; // 🆕 Da li je otkazan (crveno)
+  final String? tipPutnika; // 🆕 Tip putnika: radnik, ucenik, dnevni
 
   const TimePickerCell({
     Key? key,
@@ -33,6 +34,7 @@ class TimePickerCell extends StatelessWidget {
     this.status,
     this.dayName,
     this.isCancelled = false,
+    this.tipPutnika,
   }) : super(key: key);
 
   /// Vraća DateTime za određeni dan u tekućoj nedelji
@@ -61,7 +63,13 @@ class TimePickerCell extends StatelessWidget {
   }
 
   /// Da li je dan zaključan (prošao ili danas posle 18:00)
+  /// 🆕 Za dnevne putnike: zaključano ako admin nije omogućio zakazivanje
   bool get isLocked {
+    // 🆕 DNEVNI PUTNICI: proverava da li je admin omogućio zakazivanje
+    if (tipPutnika == 'dnevni' && !isDnevniZakazivanjeAktivno) {
+      return true;
+    }
+
     if (dayName == null) return false;
 
     final dayDate = _getDateForDay();
