@@ -63,20 +63,25 @@ class TimePickerCell extends StatelessWidget {
   }
 
   /// Da li je dan zaključan (prošao ili danas posle 18:00)
-  /// 🆕 Za dnevne putnike: zaključano ako admin nije omogućio zakazivanje
+  /// 🆕 Za dnevne putnike: zaključano ako admin nije omogućio zakazivanje, a ako jeste, SAMO tekući dan
   bool get isLocked {
-    // 🆕 DNEVNI PUTNICI: proverava da li je admin omogućio zakazivanje
-    if (tipPutnika == 'dnevni' && !isDnevniZakazivanjeAktivno) {
-      return true;
+    final now = DateTime.now();
+    final todayOnly = DateTime(now.year, now.month, now.day);
+    final dayDate = _getDateForDay();
+
+    // 🆕 DNEVNI PUTNICI:
+    if (tipPutnika == 'dnevni') {
+      // 1. Ako admin nije omogućio globalno - zaključaj sve
+      if (!isDnevniZakazivanjeAktivno) return true;
+
+      // 2. Ako je omogućio - dozvoljen SAMO tekući dan
+      if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
+        return true;
+      }
     }
 
     if (dayName == null) return false;
-
-    final dayDate = _getDateForDay();
     if (dayDate == null) return false;
-
-    final now = DateTime.now();
-    final todayOnly = DateTime(now.year, now.month, now.day);
 
     // Zaključaj ako je dan pre danas
     // TEMP TEST: Disable locking for past days
@@ -133,7 +138,40 @@ class TimePickerCell extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: (locked || isCancelled) ? null : () => _showTimePickerDialog(context),
+      onTap: () {
+        if (isCancelled) return; // Otkazano - nema akcije
+
+        // 🆕 EKSPLICITNA PORUKA DNEVNIM PUTNICIMA AKO JE ZAKLJUČANO
+        if (tipPutnika == 'dnevni' && isLocked) {
+          final now = DateTime.now();
+          final todayOnly = DateTime(now.year, now.month, now.day);
+          final dayDate = _getDateForDay();
+
+          if (!isDnevniZakazivanjeAktivno) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('⛔ Zakazivanje trenutno nije omogućeno od strane administratora.'),
+                backgroundColor: Colors.redAccent,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan. Hvala na razumevanju! 🚌'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
+          return;
+        }
+
+        if (locked) return; // Ostali slučajevi zaključavanja (npr. prošli dan)
+
+        _showTimePickerDialog(context);
+      },
       child: Container(
         width: width,
         height: height,

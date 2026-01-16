@@ -516,15 +516,16 @@ class PutnikStatistikeHelper {
 
   static Future<Map<String, dynamic>> _getGodisnjeStatistike(String putnikId) async {
     final currentYear = DateTime.now().year;
-    final startOfYear = DateTime(currentYear);
-    final endOfYear = DateTime(currentYear, 12, 31);
+    // Koristimo datum (YYYY-MM-DD) za filtriranje, isto kao kod mesečne statistike
+    final startOfYearStr = '$currentYear-01-01';
+    final endOfYearStr = '$currentYear-12-31';
 
     final response = await Supabase.instance.client
         .from('voznje_log')
         .select()
         .eq('putnik_id', putnikId)
-        .gte('created_at', startOfYear.toIso8601String())
-        .lte('created_at', endOfYear.toIso8601String())
+        .gte('datum', startOfYearStr)
+        .lte('datum', endOfYearStr)
         .order('created_at', ascending: false);
 
     List<String> daniSaVoznjom = [];

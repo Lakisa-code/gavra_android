@@ -8,8 +8,25 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../screens/danas_screen.dart';
+import '../supabase_client.dart';
 import 'notification_navigation_service.dart';
 import 'wake_lock_service.dart';
+
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse notificationResponse) async {
+  // 1. Inicijalizuj Supabase jer smo u background isolate-u
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  } catch (e) {
+    // Već inicijalizovano ili greška
+  }
+
+  // 2. Prosledi hendleru
+  await LocalNotificationService.handleNotificationTap(notificationResponse);
+}
 
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -34,8 +51,9 @@ class LocalNotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
-        _handleNotificationTap(response);
+        handleNotificationTap(response);
       },
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -187,10 +205,13 @@ class LocalNotificationService {
       ));
 
       // Kreiraj body text
-      String bodyText = 'Nema mesta za $zeljeniTermin.';
+      String bodyText;
       if (terminPre != null || terminPosle != null) {
         final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
-        bodyText += '\nSlobodni: ${altTermini.join(", ")}';
+        bodyText =
+            'Nažalost, termin u $zeljeniTermin je popunjen 😔. Ali ne brinite, imamo slobodna mesta u ovim terminima: ${altTermini.join(", ")}';
+      } else {
+        bodyText = 'Nažalost, termin u $zeljeniTermin je popunjen 😔. Trenutno nemamo alternativnih termina.';
       }
 
       await flutterLocalNotificationsPlugin.show(
@@ -286,7 +307,7 @@ class LocalNotificationService {
     }
   }
 
-  static Future<void> _handleNotificationTap(
+  static Future<void> handleNotificationTap(
     NotificationResponse response,
   ) async {
     try {
@@ -589,8 +610,8 @@ class LocalNotificationService {
 
       // Pošalji potvrdu notifikaciju
       await showRealtimeNotification(
-        title: '✅ Termin potvrđen',
-        body: 'Vaš termin $termin je uspešno sačuvan',
+        title: '✅ Mesto osigurano!',
+        body: '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
         payload: 'bc_alternativa_confirmed',
       );
     } catch (e) {
@@ -628,7 +649,7 @@ class LocalNotificationService {
       // Postavi željeni termin sa statusom "waiting" (čeka oslobađanje)
       polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
       (polasci[dan] as Map<String, dynamic>)['bc'] = zeljeniTermin;
-      (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'waiting';
+      (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'waiting';
 
       // Sačuvaj u bazu
       await Supabase.instance.client.from('registrovani_putnici').update({
@@ -639,8 +660,9 @@ class LocalNotificationService {
       // Pošalji potvrdu notifikaciju
       await showRealtimeNotification(
         title: '✅ Zahtev primljen',
-        body: 'Zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.',
-        payload: 'bc_waiting_confirmed',
+        body:
+            '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+        payload: 'vs_waiting_confirmed',
       );
     } catch (e) {
       // 🔇 Ignore errors
@@ -708,7 +730,7 @@ class LocalNotificationService {
       }
 
       // Kreiraj body text
-      String bodyText = 'Nema mesta za $zeljeniTermin (VS).';
+      String bodyText = 'Nažalost, termin u $zeljeniTermin je popunjen 😔.';
 
       if (isRushHourWaiting) {
         String alternativesPart = '';
@@ -730,7 +752,7 @@ class LocalNotificationService {
       } else {
         if (terminPre != null || terminPosle != null) {
           final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
-          bodyText += '\nSlobodni: ${altTermini.join(", ")}';
+          bodyText += ' Ali ne brinite, imamo slobodna mesta u ovim terminima: ${altTermini.join(", ")}';
         }
       }
 
@@ -801,7 +823,7 @@ class LocalNotificationService {
       // Pošalji potvrdu notifikaciju
       await showRealtimeNotification(
         title: '✅ [VS] Termin potvrđen',
-        body: 'Vaš termin $termin je uspešno sačuvan',
+        body: '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
         payload: 'vs_alternativa_confirmed',
       );
     } catch (e) {
@@ -850,7 +872,8 @@ class LocalNotificationService {
       // Pošalji potvrdu notifikaciju
       await showRealtimeNotification(
         title: '✅ Zahtev primljen',
-        body: 'Zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.',
+        body:
+            '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
       );
     } catch (e) {
       // 🔇 Ignore
@@ -898,7 +921,8 @@ class LocalNotificationService {
       // Pošalji potvrdu notifikaciju
       await showRealtimeNotification(
         title: '✅ Zahtev primljen',
-        body: 'Zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.',
+        body:
+            '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
       );
     } catch (e) {
       // 🔇 Ignore

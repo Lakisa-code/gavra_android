@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/registrovani_putnik.dart';
+import '../services/admin_audit_service.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/geocoding_service.dart'; // 🌍 Za geocoding adresa
@@ -1716,6 +1717,18 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       try {
         final success = await _registrovaniPutnikService.obrisiRegistrovaniPutnik(putnik.id);
 
+        if (success) {
+          // logic simplified slightly if not needing immediate mount check
+          // 🛡️ AUDIT LOG
+          final currentUser = supabase.auth.currentUser;
+          await AdminAuditService.logAction(
+            adminName: currentUser?.email ?? 'Unknown Admin',
+            actionType: 'delete_passenger',
+            details: 'Obrisan putnik: ${putnik.putnikIme}',
+            metadata: {'putnik_id': putnik.id, 'ime': putnik.putnikIme},
+          );
+        }
+
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -2903,27 +2916,25 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       // Jedno putovanje = jedan dan (bez obzira na broj vožnji tog dana)
       // Otkazivanja se broje svako pojedinačno
       List<String> uspesniDatumi = [];
-      int brojOtkazivanja = 0;
+      List<String> otkazaniDatumi = [];
       String? poslednjiDatum;
 
       // Procesuiraj zapise po datumima
       for (final zapis in zapisi) {
         final datum = zapis['datum'] as String;
-        final tip = zapis['tip'] as String?;
+        final tip = zapis['tip'] as String? ?? '';
+
+        poslednjiDatum ??= datum;
 
         if (tip == 'voznja') {
-          // Poslednje putovanje - samo za vožnje, ne otkazivanja
-          poslednjiDatum ??= datum;
-          if (!uspesniDatumi.contains(datum)) {
-            uspesniDatumi.add(datum);
-          }
+          uspesniDatumi.add(datum);
         } else if (tip == 'otkazivanje') {
-          // Broji svako otkazivanje
-          brojOtkazivanja++;
+          otkazaniDatumi.add(datum);
         }
       }
 
       final int brojPutovanja = uspesniDatumi.length;
+      final int brojOtkazivanja = otkazaniDatumi.length;
       final int ukupno = brojPutovanja + brojOtkazivanja;
       final double uspesnost = ukupno > 0 ? ((brojPutovanja / ukupno) * 100).roundToDouble() : 0;
 

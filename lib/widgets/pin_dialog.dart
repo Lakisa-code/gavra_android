@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/admin_audit_service.dart';
+
 /// PIN DIALOG za mesečne putnike
 /// Prikazuje/generiše/šalje PIN kod
 class PinDialog extends StatefulWidget {
@@ -47,6 +49,15 @@ class _PinDialogState extends State<PinDialog> {
 
     try {
       await Supabase.instance.client.from('registrovani_putnici').update({'pin': newPin}).eq('id', widget.putnikId);
+
+      // 🛡️ AUDIT LOG
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      await AdminAuditService.logAction(
+        adminName: currentUser?.email ?? 'Unknown Admin',
+        actionType: 'change_pin',
+        details: 'Promenjen PIN za putnika: ${widget.putnikIme}',
+        metadata: {'putnik_id': widget.putnikId},
+      );
 
       setState(() {
         _pin = newPin;

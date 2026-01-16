@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/constants.dart'; // 🧱 CONSTANTS
 import '../config/route_config.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/cena_obracun_service.dart';
 import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikacije
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
-import '../services/realtime_notification_service.dart'; // 📢 Notifikacije vozačima
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera slobodnih mesta
 import '../services/theme_manager.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
@@ -788,7 +788,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   }
 
   // 🏆💀 MINI LEADERBOARD - Fame ili Shame - PRIVREMENO ISKLJUČENO
-  // TODO: Vratiti kada bude spremno
   /*
   Widget _buildMiniLeaderboard({required bool isShame}) {
     return FutureBuilder<LeaderboardData?>(
@@ -1064,6 +1063,91 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     return '';
   }
 
+  /// 🔔 Test notifikacija dijalog (vizuelno testiranje)
+  void _showNotificationTestDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🔔 Test Notifikacija'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  LocalNotificationService.showRealtimeNotification(
+                    title: '✅ Zahtev primljen',
+                    body:
+                        '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+                    payload: 'test_payload',
+                  );
+                },
+                child: const Text('1. Evidentirano (Pending)'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  LocalNotificationService.showRealtimeNotification(
+                    title: '✅ Mesto osigurano!',
+                    body: '✅ Mesto osigurano! Vaša rezervacija za 07:00 je potvrđena. Želimo vam ugodnu vožnju! 🚌',
+                    payload: 'test_payload',
+                  );
+                },
+                child: const Text('2. Osigurano (Confirmed)'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  LocalNotificationService.showRealtimeNotification(
+                    title: '⏳ Zahtev i dalje u obradi',
+                    body:
+                        '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+                    payload: 'test_payload',
+                  );
+                },
+                child: const Text('3. Lista Čekanja (Same as 1)'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  // Mock data for alternatives
+                  LocalNotificationService.showVsAlternativeNotification(
+                    zeljeniTermin: '07:00',
+                    putnikId: 'test_id',
+                    dan: 'pon',
+                    polasci: {},
+                    radniDani: '',
+                    terminPre: '06:00',
+                    terminPosle: '09:00',
+                  );
+                },
+                child: const Text('4. Alternative (Popunjeno)'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  LocalNotificationService.showRealtimeNotification(
+                    title: '✅ Zahtev potvrđen',
+                    body:
+                        '🚌 Dobre vesti! Zbog velikog interesovanja, organizovali smo dodatna mesta. Vaš povratak je POTVRĐEN!',
+                    payload: 'test_payload',
+                  );
+                },
+                child: const Text('5. Drugi Bus (Extra)'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Zatvori'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Ime može biti u 'putnik_ime' ili odvojeno 'ime'/'prezime'
@@ -1100,6 +1184,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_active, color: Colors.yellow),
+              tooltip: 'Test Notifikacije',
+              onPressed: _showNotificationTestDialog,
+            ),
             IconButton(
               icon: const Icon(Icons.palette, color: Colors.white),
               tooltip: 'Tema',
@@ -1294,7 +1383,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     ),
 
                     // 🏆💀 FAME | SHAME - PRIVREMENO ISKLJUČENO
-                    // TODO: Vratiti kada bude spremno
                     // if (tip == 'ucenik')
                     //   Padding(
                     //     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1685,13 +1773,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             _putnikData['radni_dani'] = noviRadniDani;
           });
 
-          // 2. Prikaži poruku "zahtev primljen"
+          //  //  // 2. Prikaži poruku "zahtev primljen"
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.'),
-                backgroundColor: Colors.blueGrey,
-                duration: Duration(seconds: 3),
+                content: Text(
+                    '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 4),
               ),
             );
           }
@@ -1750,7 +1839,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('⏳ Potvrda će stići oko 20:00h'),
+                  content: Text('⏳ Zahtev uspešno primljen, biće obrađen do 20:00h'),
                   backgroundColor: Colors.orange,
                   duration: Duration(seconds: 4),
                 ),
@@ -1835,9 +1924,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             await _confirmBcZahtev();
           });
         } else if (jeBcDnevniZahtev) {
-          // 📅 BC DNEVNI - DIREKTNO PRIHVATA ZAHTEV (admin kontroliše pomoću dugmeta)
-          // Odmah sačuvaj kao confirmed - bez timera i čekanja
-          (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
+          // 📅 BC DNEVNI - Wait 10 min then check
+          (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
+          (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
           await Supabase.instance.client
               .from('registrovani_putnici')
@@ -1851,17 +1940,40 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Zahtev je prihvaćen!'),
+                content: Text(
+                    '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!'),
                 backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 4),
               ),
             );
           }
 
-          debugPrint('🎯 [BC] DNEVNI: Zahtev direktno prihvaćen za $novoVreme');
+          final danas = DateTime.now();
+          const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
+          final danWeekday = daniMap[dan.toLowerCase()] ?? danas.weekday;
+          int diff = danWeekday - danas.weekday;
+          if (diff < 0) diff += 7;
+          final targetDate = danas.add(Duration(days: diff)).toIso8601String().split('T')[0];
+
+          debugPrint('🎯 [BC] DNEVNI: Pending zahtev, timer 10 min');
+
+          _pendingBcZahtev = {
+            'putnikId': putnikId,
+            'dan': dan,
+            'vreme': novoVreme,
+            'datum': targetDate,
+            'polasci': Map<String, dynamic>.from(polasci),
+            'radniDani': noviRadniDani,
+            'proveraMesta': true, // Dnevni uvek proverava mesta
+          };
+
+          _bcZahtevTimer?.cancel();
+          _bcZahtevTimer = Timer(const Duration(minutes: 10), () async {
+            await _confirmBcZahtev();
+          });
         } else if (tipGrad == 'vs' && novoVreme != null && jeDnevni) {
-          // 📅 VS DNEVNI - DIREKTNO PRIHVATA ZAHTEV (admin kontroliše pomoću dugmeta)
-          (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
+          // 📅 VS DNEVNI - Wait 10 min then check
+          (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
 
           await Supabase.instance.client
               .from('registrovani_putnici')
@@ -1875,14 +1987,36 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Zahtev je prihvaćen!'),
+                content: Text(
+                    '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!'),
                 backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 4),
               ),
             );
           }
 
-          debugPrint('🎯 [VS] DNEVNI: Zahtev direktno prihvaćen za $novoVreme');
+          final danas = DateTime.now();
+          const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
+          final danWeekday = daniMap[dan.toLowerCase()] ?? danas.weekday;
+          int diff = danWeekday - danas.weekday;
+          if (diff < 0) diff += 7;
+          final targetDate = danas.add(Duration(days: diff)).toIso8601String().split('T')[0];
+
+          debugPrint('🎯 [VS] DNEVNI: Pending zahtev, timer 10 min');
+
+          _pendingVsZahtev = {
+            'putnikId': putnikId,
+            'dan': dan,
+            'vreme': novoVreme,
+            'datum': targetDate,
+            'polasci': Map<String, dynamic>.from(polasci),
+            'radniDani': noviRadniDani,
+          };
+
+          _vsZahtevTimer?.cancel();
+          _vsZahtevTimer = Timer(const Duration(minutes: 10), () async {
+            await _confirmVsZahtev();
+          });
         } else if (tipGrad == 'vs' && novoVreme != null) {
           // 🚐 VS LOGIKA - Pending + Timer + Provera mesta (za SVE dane)
           final danas = DateTime.now();
@@ -1907,9 +2041,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.'),
-                backgroundColor: Colors.blueGrey,
-                duration: Duration(seconds: 3),
+                content: Text(
+                    '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 4),
               ),
             );
           }
@@ -1937,6 +2072,40 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             await _confirmVsZahtev();
           });
         } else {
+          // ✅ NORMAL FLOW SAVE
+          // Čuva promene direktno u bazu (za otkazivanje ili ne-kritične promene)
+          Future<void> _saveNormalFlow(
+            String putnikId,
+            Map<String, dynamic> polasci,
+            String radniDani,
+            String tipGrad,
+            String dan,
+            String? vreme,
+          ) async {
+            try {
+              await Supabase.instance.client.from('registrovani_putnici').update({
+                'polasci_po_danu': polasci,
+                'radni_dani': radniDani,
+              }).eq('id', putnikId);
+
+              if (mounted) {
+                setState(() {
+                  _putnikData['polasci_po_danu'] = polasci;
+                  _putnikData['radni_dani'] = radniDani;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('✅ Uspešno sačuvano'), backgroundColor: Colors.green),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('❌ Greška pri čuvanju: $e'), backgroundColor: Colors.red),
+                );
+              }
+            }
+          }
+
           // 🟢 NORMALAN FLOW - odmah sačuvaj (otkazivanje)
           _saveNormalFlow(putnikId, polasci, noviRadniDani, tipGrad, dan, novoVreme);
         }
@@ -1946,81 +2115,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('❌ Greška: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  /// Pomoćna metoda za normalno čuvanje (da ne dupliram kod)
-  Future<void> _saveNormalFlow(
-    String putnikId,
-    Map<String, dynamic> polasci,
-    String noviRadniDani,
-    String tipGrad,
-    String dan,
-    String? novoVreme,
-  ) async {
-    await Supabase.instance.client
-        .from('registrovani_putnici')
-        .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
-
-    // Ažuriraj lokalni state
-    setState(() {
-      _putnikData['polasci_po_danu'] = polasci;
-      _putnikData['radni_dani'] = noviRadniDani;
-    });
-
-    // 🔴 OTKAZIVANJE - pošalji notifikaciju vozačima i logiraj u voznje_log
-    // Notifikacija samo za DANAŠNJI dan
-    if (novoVreme == null) {
-      // Proveri da li je otkazan današnji dan
-      final now = DateTime.now();
-      final daniKratice = ['', 'pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      final danasnjiDan = daniKratice[now.weekday];
-      final jeOtkazanDanas = dan.toLowerCase() == danasnjiDan;
-
-      if (jeOtkazanDanas) {
-        final imePutnika = _putnikData['ime'] ?? 'Putnik';
-        final prezimePutnika = _putnikData['prezime'] ?? '';
-        await RealtimeNotificationService.sendNotificationToAllDrivers(
-          title: '❌ Otkazivanje',
-          body: '$imePutnika $prezimePutnika je otkazao/la ${tipGrad.toUpperCase()} za danas',
-        );
-      }
-
-      // 📝 Logiraj otkazivanje u voznje_log za statistiku (uvek, ne samo danas)
-      try {
-        await Supabase.instance.client.from('voznje_log').insert({
-          'putnik_id': putnikId,
-          'datum': DateTime.now().toIso8601String().split('T')[0],
-          'tip': 'otkazivanje',
-          'iznos': 0,
-        });
-        // Ažuriraj lokalni brojač
-        setState(() {
-          _brojOtkazivanja++;
-        });
-      } catch (e) {
-        debugPrint('❌ Greška pri logovanju otkazivanja: $e');
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Polazak otkazan'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Vreme sačuvano'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
       }
     }
   }
@@ -2075,12 +2169,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         // Pošalji notifikaciju - uspešno
         await LocalNotificationService.showRealtimeNotification(
-          title: '✅ Zahtev obrađen',
+          title: '✅ Zahtev uspešno obrađen',
           body: 'Vaš zahtev za $vreme je uspešno obrađen',
           payload: 'bc_zahtev_confirmed',
         );
       } else {
-        // ❌ NEMA MESTA - odbij zahtev, vrati na prethodno
+        // ❌ NEMA MESTA - odbij zahtev, vrati na prethodo
         (polasci[dan] as Map<String, dynamic>)['bc'] = null;
         (polasci[dan] as Map<String, dynamic>)['bc_status'] = null;
 
@@ -2197,7 +2291,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // Proveri da li je putnik učenik
           final tipPutnika = _putnikData['tip'] as String? ?? '';
-          final jeUcenik = tipPutnika.toLowerCase().contains('ucenik');
+          final jeUcenik = tipPutnika.toLowerCase().contains(AppConstants.userTypeUcenik);
 
           if (jeUcenik && brojCekaju == 1) {
             final uceniciOtisli = await SlobodnaMestaService.getBrojUcenikaKojiSuOtisliUSkolu(dan);
@@ -2206,7 +2300,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             // Ako je broj onih koji se vraćaju (uključujući ovog na čekanju) jednak onima koji su otišli
             // To znači da je ovo POSLEDNJI učenik koji je "visio"
             if (uceniciVracaju >= uceniciOtisli) {
-              debugPrint('🎒 [VS] OVO JE POSLEDNJI UČENIK! "Uguralicu" aktiviramo.');
+              debugPrint('🎒 [VS] OVO JE POSLEDNJI UČENIK! "Uguricu" aktiviramo.');
               shouldSqueezeIn = true;
             }
           }
@@ -2232,7 +2326,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               }
 
               await LocalNotificationService.showRealtimeNotification(
-                title: '✅ Zahtev potvrđen',
+                title: '✅ Vaš zahtev uspešno obrađen',
                 body: 'Vaš povratak u $vreme je potvrđen. (Squeeze-in)',
                 payload: 'vs_squeeze_confirmed',
               );
@@ -2254,7 +2348,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               // Notifikacija - potvrđen
               await LocalNotificationService.showRealtimeNotification(
                 title: '✅ Zahtev potvrđen',
-                body: 'Vaš povratak u $vreme je potvrđen. Vidimo se!',
+                body:
+                    '🚌 Dobre vesti! Zbog velikog interesovanja, organizovali smo dodatna mesta. Vaš povratak je POTVRĐEN!',
                 payload: 'vs_second_van_confirmed',
               );
             }
@@ -2285,7 +2380,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
               await LocalNotificationService.showRealtimeNotification(
                 title: '⏳ Zahtev i dalje u obradi',
-                body: 'Trenutno nema slobodnih mesta. Obavestićemo vas čim se situacija promeni.',
+                body:
+                    '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
                 payload: 'vs_still_waiting',
               );
             }

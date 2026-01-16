@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/admin_audit_service.dart'; // 🕵️ ADMIN AUDIT
+import '../services/firebase_service.dart'; // 👤 CURRENT USER
 import '../services/kapacitet_service.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
@@ -233,13 +235,29 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
       final success = await KapacitetService.setKapacitet(grad, vreme, result);
       if (!mounted) return;
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ $grad $vreme = $result mesta'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _loadKapacitet();
+        try {
+          // 🕵️ AUDIT LOG
+          final vozac = await FirebaseService.getCurrentDriver() ?? 'Unknown Admin';
+          await AdminAuditService.logCapacityChange(
+            adminName: vozac,
+            datum: 'Standardni raspored',
+            vreme: '$grad $vreme',
+            oldCap: trenutni,
+            newCap: result,
+          );
+        } catch (e) {
+          // Ignore log errors
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ $grad $vreme = $result mesta'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _loadKapacitet();
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

@@ -85,28 +85,42 @@ class WeeklyResetService {
     try {
       final supabase = Supabase.instance.client;
 
-      // Učitaj sve aktivne putnike
-      final putnici = await supabase.from('registrovani_putnici').select('id, polasci_po_danu').eq('aktivan', true);
+      // Učitaj sve aktivne putnike - dodao i 'tip' za selektivni reset
+      final putnici =
+          await supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').eq('aktivan', true);
 
       int resetCount = 0;
 
       for (final putnik in putnici) {
         final putnikId = putnik['id'] as String;
         final polasci = putnik['polasci_po_danu'] as Map<String, dynamic>? ?? {};
+        final tip = putnik['tip'] as String? ?? 'radnik';
 
         if (polasci.isEmpty) continue;
+
+        // ODREDI DA LI SE BRIŠE RASPORED (za promenljive putnike)
+        // Radnici zadržavaju raspored, učenici i dnevni kreću ispočetka
+        final shouldClearSchedule = tip == 'ucenik' || tip == 'dnevni';
 
         // Očisti statuse i otkazivanja za svaki dan
         final resetPolasci = <String, dynamic>{};
         for (final dan in polasci.keys) {
           final danData = polasci[dan] as Map<String, dynamic>? ?? {};
 
-          // Zadrži samo bc i vs vremena
-          resetPolasci[dan] = {
-            'bc': danData['bc'],
-            'vs': danData['vs'],
-            // Briše: bc_status, vs_status, bc_otkazano, vs_otkazano, bc_pokupljeno, vs_pokupljeno, itd.
-          };
+          if (shouldClearSchedule) {
+            // 🧹 ZA UČENIKE I DNEVNE: Brišemo i vremena polazaka
+            resetPolasci[dan] = {
+              'bc': null,
+              'vs': null,
+            };
+          } else {
+            // 👷 ZA RADNIKE: Zadržavamo postojeća vremena
+            resetPolasci[dan] = {
+              'bc': danData['bc'],
+              'vs': danData['vs'],
+              // Briše: bc_status, vs_status, bc_otkazano, vs_otkazano, itd.
+            };
+          }
         }
 
         // Ažuriraj u bazi
