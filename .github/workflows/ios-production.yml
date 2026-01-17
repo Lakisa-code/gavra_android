@@ -15,6 +15,14 @@ on:
         description: 'Release notes (optional)'
         required: false
         default: ''
+      version_name:
+        description: 'Optional version name override (e.g. 1.2.3)'
+        required: false
+        default: ''
+      version_code:
+        description: 'Optional version code override (build number)'
+        required: false
+        default: ''
 
 # Cancel prethodni workflow ako je aktivan
 concurrency:
@@ -71,9 +79,14 @@ jobs:
       - name: Get version info
         id: version
         run: |
-          VERSION_LINE=$(grep "^version:" pubspec.yaml)
-          VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
-          VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: [0-9]*\.[0-9]*\.[0-9]*+\([0-9]*\)/\1/')
+          if [ -n "${{ github.event.inputs.version_name }}" ]; then
+            VERSION_NAME="${{ github.event.inputs.version_name }}"
+            VERSION_CODE="${{ github.event.inputs.version_code }}"
+          else
+            VERSION_LINE=$(grep "^version:" pubspec.yaml)
+            VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
+            VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: [0-9]*\.[0-9]*\.[0-9]*+\([0-9]*\)/\1/')
+          fi
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "📌 Version: $VERSION_NAME ($VERSION_CODE)"

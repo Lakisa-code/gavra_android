@@ -49,17 +49,16 @@ jobs:
     name: Prepare version (dry-run by default)
     runs-on: ubuntu-latest
     outputs:
-      new_version: ${{ steps.get.outputs.new_version }}
+      new_version_name: ${{ steps.get_version.outputs.new_version_name }}
+      new_version_code: ${{ steps.get_version.outputs.new_version_code }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Show current version
-        id: get
         run: |
           VERSION_LINE=$(grep "^version:" pubspec.yaml || true)
           echo "Current: $VERSION_LINE"
-          echo "new_version=" >> $GITHUB_OUTPUT
 
       - name: Bump version (optional)
         if: ${{ github.event.inputs.bump_type != 'none' && github.event.inputs.confirm == 'true' }}
@@ -87,7 +86,7 @@ ns=re.sub(r'(version:\s*)([0-9]+\.[0-9]+\.[0-9]+\+[0-9]+)',r'\1'+new,s,flags=re.
 with open(fn,'w') as f:
     f.write(ns)
 print('Bumped version to',new)
-print('new_version='+new)
+          print('new_version='+new)
 PY
 
       - name: Commit & push bumped pubspec (if any)
@@ -98,6 +97,16 @@ PY
           git add pubspec.yaml
           git commit -m "chore(release): bump version via workflow (${GITHUB_RUN_ID})" || echo "no changes to commit"
           git push origin HEAD:${{ github.ref }} || git push
+
+      - name: Get final version info
+        id: get_version
+        run: |
+          VERSION_LINE=$(grep "^version:" pubspec.yaml || true)
+          VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: \([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/')
+          VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: [0-9]\+\.[0-9]\+\.[0-9]\++\([0-9]\+\)/\1/')
+          echo "new_version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "new_version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "📌 Final version: $VERSION_NAME ($VERSION_CODE)"
 
   trigger-uploads:
     name: Trigger platform uploads
@@ -113,6 +122,11 @@ PY
         with:
           workflow: google-closed-testing.yml
           ref: ${{ github.ref }}
+          inputs: |
+            version_name: '${{ needs.prepare-version.outputs.new_version_name }}'
+            version_code: '${{ needs.prepare-version.outputs.new_version_code }}'
+            release_notes: '${{ github.event.inputs.release_notes }}'
+            track: 'alpha'
 
       - name: Optionally trigger Huawei upload (and submit for review when requested)
         if: ${{ github.event.inputs.submit_huawei == 'true' }}
