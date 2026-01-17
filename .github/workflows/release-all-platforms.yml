@@ -130,6 +130,9 @@ PY
         with:
           workflow: ios-production.yml
           ref: ${{ github.ref }}
+          inputs: |
+            submit_for_review: '${{ github.event.inputs.submit_ios }}'
+            release_notes: '${{ github.event.inputs.release_notes }}'
 
       - name: Summary
         run: |

@@ -2,6 +2,19 @@ name: 🍎 iOS Production Release
 
 on:
   workflow_dispatch:
+    inputs:
+      submit_for_review:
+        description: 'Submit for App Store review after upload?'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        default: ''
 
 # Cancel prethodni workflow ako je aktivan
 concurrency:
@@ -136,6 +149,56 @@ jobs:
           }
           
           echo "🎉 Successfully submitted for App Store review!"
+        - name: Find and link build to version
+          id: link_build
+          run: |
+            BUILD_NUM="${{ steps.build_info.outputs.BUILD_NUMBER }}"
+            echo "🔍 Looking for build $BUILD_NUM..."
+
+            # Wait additional time if needed for build to appear
+            for i in 1 2 3; do
+              BUILD_ID=$(app-store-connect builds list \
+                --app-id "$APP_ID" \
+                --build-version-number "$BUILD_NUM" \
+                --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
+
+              if [ -n "$BUILD_ID" ]; then
+                echo "✅ Found build ID: $BUILD_ID"
+                break
+              fi
+              echo "⏳ Build not found yet, waiting 60 seconds (attempt $i/3)..."
+              sleep 60
+            done
+
+            if [ -z "$BUILD_ID" ]; then
+              echo "❌ Could not find build $BUILD_NUM"
+              echo "⚠️ Build is uploaded. Please manually select it in App Store Connect."
+              echo "BUILD_ID=" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
+
+            # Link build to version
+            echo "🔗 Linking build to version (id: $VERSION_ID)..."
+            app-store-connect app-store-versions modify \
+              --id "$VERSION_ID" \
+              --build-id "$BUILD_ID" || true
+
+        - name: Submit for review (optional)
+          if: ${{ github.event.inputs.submit_for_review == 'true' }}
+          run: |
+            if [ -z "${{ steps.link_build.outputs.BUILD_ID }}" ]; then
+              echo "❌ No build ID found to submit; skipping submission."
+              exit 0
+            fi
+            echo "🚀 Submitting for App Store review..."
+            app-store-connect app-store-version-submissions create \
+              --app-store-version-id "$VERSION_ID" || {
+              echo "⚠️ Could not auto-submit. Please submit manually in App Store Connect."
+              exit 0
+            }
+            echo "🎉 Successfully submitted for App Store review!"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
