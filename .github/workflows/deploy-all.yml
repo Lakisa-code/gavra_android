@@ -31,6 +31,9 @@ concurrency:
 
 env:
   FLUTTER_VERSION: '3.35.6'
+  BUNDLE_ID: 'com.gavra013.gavra013ios'
+  APP_ID: '6757114361'
+  VERSION_ID: 'f7bded3a-0055-40c8-9d90-2ac33b85c7a2'
 
 jobs:
   google-play:
@@ -201,9 +204,6 @@ jobs:
       APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
       APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
       CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
-      BUNDLE_ID: 'com.gavra013.gavra013ios'
-      APP_ID: '6757114361'
-      VERSION_ID: 'f7bded3a-0055-40c8-9d90-2ac33b85c7a2'
     
     steps:
       - name: Checkout
