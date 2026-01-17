@@ -221,6 +221,11 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Write certificate key to file
+        run: |
+          echo "${{ secrets.CERTIFICATE_PRIVATE_KEY }}" > /tmp/cert_key.pem
+          echo "CERTIFICATE_PRIVATE_KEY=/tmp/cert_key.pem" >> $GITHUB_ENV
+
       - name: Setup keychain
         run: keychain initialize
 
