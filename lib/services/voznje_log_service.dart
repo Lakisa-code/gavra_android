@@ -16,14 +16,15 @@ class VoznjeLogService {
   }) async {
     int voznje = 0;
     int otkazivanja = 0;
-    int uplate = 0;
+    int naplaceniDnevni = 0;
+    int naplaceniMesecni = 0;
     double pazar = 0.0;
 
     try {
       // Dohvati UUID vozača
       final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
       if (vozacUuid == null || vozacUuid.isEmpty) {
-        return {'voznje': 0, 'otkazivanja': 0, 'uplate': 0, 'pazar': 0.0};
+        return {'voznje': 0, 'otkazivanja': 0, 'uplate': 0, 'mesecne': 0, 'pazar': 0.0};
       }
 
       final datumStr = datum.toIso8601String().split('T')[0];
@@ -43,7 +44,18 @@ class VoznjeLogService {
             otkazivanja++;
             break;
           case 'uplata':
-            uplate++;
+            // STARI TIP PRE MIGRACIJE (sada više ne bi trebao da postoji, ali za svaki slučaj)
+            // Pretpostavljamo da je 'uplata' bila dnevna ako je iznos manji od np. 2000?
+            // Ili ga brojimo u dnevne.
+            naplaceniDnevni++;
+            pazar += iznos;
+            break;
+          case 'uplata_dnevna':
+            naplaceniDnevni++;
+            pazar += iznos;
+            break;
+          case 'uplata_mesecna':
+            naplaceniMesecni++;
             pazar += iznos;
             break;
         }
@@ -55,7 +67,8 @@ class VoznjeLogService {
     return {
       'voznje': voznje,
       'otkazivanja': otkazivanja,
-      'uplate': uplate,
+      'uplate': naplaceniDnevni, // Dnevne naplate
+      'mesecne': naplaceniMesecni, // Mesečne naplate
       'pazar': pazar,
     };
   }
@@ -218,11 +231,12 @@ class VoznjeLogService {
     String? vozacId,
     int? placeniMesec,
     int? placenaGodina,
+    String tipUplate = 'uplata', // Default na 'uplata' za backward compatibility
   }) async {
     await _supabase.from('voznje_log').insert({
       'putnik_id': putnikId,
       'datum': datum.toIso8601String().split('T')[0],
-      'tip': 'uplata',
+      'tip': tipUplate,
       'iznos': iznos,
       'vozac_id': vozacId,
       'placeni_mesec': placeniMesec ?? datum.month,
@@ -242,8 +256,8 @@ class VoznjeLogService {
     try {
       final response = await _supabase
           .from('voznje_log')
-          .select('vozac_id, iznos')
-          .eq('tip', 'uplata')
+          .select('vozac_id, iznos, tip')
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
           .gte('datum', from.toIso8601String().split('T')[0])
           .lte('datum', to.toIso8601String().split('T')[0]);
 
@@ -285,7 +299,9 @@ class VoznjeLogService {
 
       for (final record in records) {
         // Filtriraj po tipu i datumu
-        if (record['tip'] != 'uplata') continue;
+        final tip = record['tip'] as String?;
+        if (tip == null || (tip != 'uplata' && tip != 'uplata_mesecna' && tip != 'uplata_dnevna')) continue;
+
         final datum = record['datum'] as String?;
         if (datum == null) continue;
         if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;
@@ -327,7 +343,7 @@ class VoznjeLogService {
       final response = await _supabase
           .from('voznje_log')
           .select('id')
-          .eq('tip', 'uplata')
+          .eq('tip', 'uplata_mesecna')
           .eq('vozac_id', vozacUuid ?? vozacImeIliUuid)
           .gte('datum', from.toIso8601String().split('T')[0])
           .lte('datum', to.toIso8601String().split('T')[0]);
@@ -351,8 +367,8 @@ class VoznjeLogService {
       final toStr = to.toIso8601String().split('T')[0];
 
       for (final record in records) {
-        // Filtriraj po tipu i datumu
-        if (record['tip'] != 'uplata') continue;
+        // Filtriraj po tipu ('uplata_mesecna' samo) i datumu
+        if (record['tip'] != 'uplata_mesecna') continue;
         final datum = record['datum'] as String?;
         if (datum == null) continue;
         if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;

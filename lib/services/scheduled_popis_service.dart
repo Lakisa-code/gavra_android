@@ -125,7 +125,8 @@ class ScheduledPopisService {
 
         final pokupljeni = stats['voznje'] as int? ?? 0;
         final otkazani = stats['otkazivanja'] as int? ?? 0;
-        final uplate = stats['uplate'] as int? ?? 0;
+        final uplateDnevne = stats['uplate'] as int? ?? 0;
+        final uplateMesecne = stats['mesecne'] as int? ?? 0;
         final pazar = stats['pazar'] as double? ?? 0.0;
 
         // Dohvati broj dužnika (pokupljeni ali neplaćeni)
@@ -144,10 +145,10 @@ class ScheduledPopisService {
           'ukupanPazar': pazar,
           'sitanNovac': sitanNovac,
           'otkazaniPutnici': otkazani,
-          'naplaceniPutnici': uplate,
+          'naplaceniPutnici': uplateDnevne, // Samo dnevne karte
           'pokupljeniPutnici': pokupljeni,
           'dugoviPutnici': duznici,
-          'mesecneKarte': uplate,
+          'mesecneKarte': uplateMesecne, // Samo mesečne karte
           'kilometraza': 0.0,
           'automatskiGenerisan': true,
           'timestamp': DateTime.now().toIso8601String(),

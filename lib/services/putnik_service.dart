@@ -857,7 +857,7 @@ class PutnikService {
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     final danKratica = daniKratice[now.weekday - 1];
 
-    // ✅ FIX: Izračunaj place iz grad parametra - ISTO kao oznaciPokupljen!
+    // ✅ FIX: Izračunaj place iz grad parametra - ISTO kao oznaciPokupljeno!
     final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
     final place = jeBC ? 'bc' : 'vs';
 
@@ -919,6 +919,7 @@ class PutnikService {
         vozacId: vozacId,
         placeniMesec: now.month,
         placenaGodina: now.year,
+        tipUplate: 'uplata_dnevna',
       );
       debugPrint(
           '✅ markAsPaid: Uplata upisana u voznje_log - putnik: $id, vozac: $currentDriver ($vozacId), iznos: $iznos');
@@ -1335,7 +1336,7 @@ class PutnikService {
       // Dohvati sve putnike koji NISU na bolovanju/godišnjem
       final response = await supabase
           .from('registrovani_putnici')
-          .select('id, polasci_po_danu, status')
+          .select('id, polasci_po_danu, status, tip')
           .not('status', 'in', '(bolovanje,godisnji)');
 
       final putnici = response as List<dynamic>;
@@ -1343,6 +1344,9 @@ class PutnikService {
       for (final putnik in putnici) {
         final id = putnik['id'] as String;
         final polasciRaw = putnik['polasci_po_danu'];
+        // Proveri tip putnika
+        final tip = putnik['tip'] as String?;
+        final isVariableSchedule = tip == 'ucenik' || tip == 'dnevni';
 
         if (polasciRaw == null) continue;
 
@@ -1365,14 +1369,33 @@ class PutnikService {
           final dayData = polasci[dayKey];
           if (dayData is Map<String, dynamic>) {
             final mutableDayData = Map<String, dynamic>.from(dayData);
-            // Ukloni dnevne podatke ali zadrži vreme polaska
-            final keysToRemove = mutableDayData.keys
-                .where((k) =>
-                    k.contains('_pokupljeno') ||
-                    k.contains('_placeno') ||
-                    k.contains('_otkazano') ||
-                    k.contains('_vozac'))
-                .toList();
+
+            // Definiši šta se briše
+            final keysToRemove = mutableDayData.keys.where((k) {
+              // 1. Statusi (uvek briši za sve)
+              if (k.contains('_pokupljeno') ||
+                  k.contains('_placeno') ||
+                  k.contains('_otkazano') ||
+                  k.contains('_vozac') || // Briše i naplatio_vozac, pokupio_vozac
+                  k == 'placeno' ||
+                  k == 'placeno_iznos') {
+                // Dodatni check
+                return true;
+              }
+
+              // 2. Vreme (samo za ucenike i dnevne)
+              // Brišemo vreme polaska da se ne bi pojavljivali u listi sa starim vremenom
+              if (isVariableSchedule) {
+                if (['bc', 'vs', 'bela_crkva', 'vrsac'].contains(k) ||
+                    k.startsWith('polazak_') ||
+                    k.startsWith('vreme_') ||
+                    k.endsWith('_time')) {
+                  return true;
+                }
+              }
+
+              return false;
+            }).toList();
 
             for (final key in keysToRemove) {
               mutableDayData.remove(key);
@@ -1395,24 +1418,18 @@ class PutnikService {
   }
 
   /// 🔄 PROVERI I IZVRŠI NEDELJNI RESET ako je potrebno
-  /// Poziva se kad se app pokrene - proverava da li je subota i da li je reset već urađen
+  /// Poziva se kad se app pokrene - proverava da li je subota (petak ponoc)
   Future<void> checkAndPerformWeeklyReset() async {
     final now = DateTime.now();
 
-    // Proveri da li je subota (weekday == 6)
+    // Resetuj SAMO subotom (petak ponoć)
     if (now.weekday != DateTime.saturday) {
-      return; // Nije subota, ne radi ništa
+      return;
     }
 
-    // Proveri da li je reset već urađen ove nedelje
     try {
-      // Koristi Supabase za čuvanje poslednjeg reseta (umesto SharedPreferences)
-      // Čuvamo u posebnoj tabeli ili kao metadata
-
-      // Proveri app_settings tabelu (ako postoji) ili koristi local storage
-      // Za sada koristimo jednostavnu proveru - reset se radi samo jednom u subotu
-
-      // Izvrši reset
+      // Izvrši reset (M-F podaci)
+      // Ovo je sigurno izvršavati više puta jer briše samo M-F podatke
       await weeklyResetPolasciPoDanu();
     } catch (_) {
       // Weekly reset check error - silent

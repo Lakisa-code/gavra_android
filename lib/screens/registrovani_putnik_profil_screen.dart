@@ -74,6 +74,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     _registerPushToken(); // 📱 Registruj push token (retry ako nije uspelo pri login-u)
     _checkAndResolvePendingRequests(); // 🆕 Proveri zaglavljene pending zahteve
     WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
+
+    // 📅 Proveri podsetnik za raspored
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkWeeklyScheduleReminder();
+    });
   }
 
   @override
@@ -212,6 +217,60 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     } catch (e) {
       debugPrint('❌ [PendingCheck] Greška: $e');
+    }
+  }
+
+  // 📅 PROVERA NEDELJNOG RASPODA
+  Future<void> _checkWeeklyScheduleReminder() async {
+    // 1. Proveri tip putnika (samo za radnike)
+    final tip = (_putnikData['tip'] ?? '').toString().toLowerCase();
+    if (!tip.contains('radnik')) {
+      return;
+    }
+
+    // 2. Izračunaj vreme poslednjeg reseta (Petak ponoć / Subota 00:00)
+    final now = DateTime.now();
+    // Weekday: Mon=1, ..., Fri=5, Sat=6, Sun=7
+    int diff = (now.weekday - DateTime.saturday) % 7;
+    if (diff < 0) diff += 7;
+    final lastResetDate = now.subtract(Duration(days: diff));
+    // Reset na 00:00:00
+    final lastResetTime = DateTime(lastResetDate.year, lastResetDate.month, lastResetDate.day);
+
+    // 3. Proveri SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final lastShownMs = prefs.getInt('last_schedule_reminder_timestamp') ?? 0;
+    final lastShownTime = DateTime.fromMillisecondsSinceEpoch(lastShownMs);
+
+    // Ako je poslednji put prikazano PRE poslednjeg reseta -> prikaži ponovo
+    if (lastShownTime.isBefore(lastResetTime) && mounted) {
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.calendar_month, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('📅 Novi raspored'),
+            ],
+          ),
+          content: const Text(
+            'Stigao je novi nedeljni ciklus!\n\n'
+            'Molimo vas da potvrdite ili ažurirate vaša vremena vožnje za sledeću nedelju, '
+            'kako bismo na vreme organizovali prevoz.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('UREDU', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+
+      // 4. Ažuriraj timestamp da ne prikazuje ponovo do sledećeg reset-a
+      await prefs.setInt('last_schedule_reminder_timestamp', now.millisecondsSinceEpoch);
     }
   }
 
@@ -1572,6 +1631,42 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   /// - BC radnici: odmah provera mesta (bez čekanja)
   /// - VS svi: odmah čuvanje bez provere
   Future<void> _updatePolazak(String dan, String tipGrad, String? novoVreme) async {
+    // 📅 BLOKADA PETKOM (za učenike i radnike)
+    // Ako je danas PETAK, zabrani menjanje bilo kog dana osim (eventualno) današnjeg,
+    // ali ovde blokiramo SVE jer je jednostavnije i sigurnije.
+    final now = DateTime.now();
+    if (now.weekday == DateTime.friday) {
+      final tip = (_putnikData['tip'] ?? '').toString().toLowerCase();
+
+      // Samo za radnike i učenike
+      if (tip.contains('radnik') || tip.contains('ucenik')) {
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.calendar_month_outlined, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Priprema rasporeda'),
+              ],
+            ),
+            content: const Text(
+                'Zakazivanje termina za narednu nedelju počinje u petak posle ponoći (subota).\n\n'
+                'Ovaj kratak prekid je neophodan kako bismo zatvorili trenutni ciklus i pripremili optimalne uslove za sledeću nedelju, radi osiguranja maksimalne tačnosti i kvaliteta usluge.\n\n'
+                'Molimo vas da vaš novi raspored unesete sutra.',
+                style: TextStyle(fontSize: 16)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('RAZUMEM', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        return; // 🛑 PREKINI IZVRŠAVANJE, NE MENJAJ NIŠTA
+      }
+    }
+
     debugPrint('🚀 [BC] _updatePolazak pozvan: dan=$dan, tipGrad=$tipGrad, novoVreme=$novoVreme');
 
     try {

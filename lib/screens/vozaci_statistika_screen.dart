@@ -124,6 +124,8 @@ class _VozaciStatistikaScreenState extends State<VozaciStatistikaScreen> {
             stats[vozacIme]!.otkazani++;
             break;
           case 'uplata':
+          case 'uplata_mesecna':
+          case 'uplata_dnevna':
             stats[vozacIme]!.pazar += iznos;
             // Označi putnika kao naplaćenog
             if (putnikId != null) {

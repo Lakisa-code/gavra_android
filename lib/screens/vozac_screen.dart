@@ -1369,7 +1369,8 @@ class _VozacScreenState extends State<VozacScreen> {
                       Builder(
                         builder: (context) {
                           // 💳 DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
-                          final filteredDuzniciRaw = putnici.where((putnik) {
+                          // ❗ KORISTIMO sviPutnici da bi videli SVE dužnike, ne samo moje
+                          final filteredDuzniciRaw = sviPutnici.where((putnik) {
                             final nijeMesecni = !putnik.isMesecniTip;
                             if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesečni tip
 
@@ -1536,9 +1537,14 @@ class _VozacScreenState extends State<VozacScreen> {
             final filteredBcVremena = _bcVremena.where((vreme) => getPutnikCount('Bela Crkva', vreme) > 0).toList();
             final filteredVsVremena = _vsVremena.where((vreme) => getPutnikCount('Vršac', vreme) > 0).toList();
 
-            // Ako nema putnika ni za jedno vreme, prikaži sva vremena (fallback)
-            final bcVremenaToShow = filteredBcVremena.isEmpty ? _bcVremena : filteredBcVremena;
-            final vsVremenaToShow = filteredVsVremena.isEmpty ? _vsVremena : filteredVsVremena;
+            // ✅ IZMENA: Uklonjen fallback. Ako nema putnika, liste su prazne.
+            final bcVremenaToShow = filteredBcVremena;
+            final vsVremenaToShow = filteredVsVremena;
+
+            // ✅ SAKRIJ CEO BOTTOM BAR AKO NEMA VOŽNJI
+            if (bcVremenaToShow.isEmpty && vsVremenaToShow.isEmpty) {
+              return const SizedBox.shrink();
+            }
 
             // Helper funkcija za kreiranje nav bar-a
             Widget buildNavBar(String navType) {

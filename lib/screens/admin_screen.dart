@@ -213,17 +213,6 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  // 💰 Kusur iz daily_reports tabele (jedinstveni izvor podataka)
-  Future<double> _getKusurForVozac(String vozacIme) async {
-    try {
-      // ✅ UJEDNAČENO: Čita iz daily_reports
-      final kusur = await DailyCheckInService.getTodayAmount(vozacIme);
-      return kusur ?? 0.0;
-    } catch (e) {
-      return 0.0;
-    }
-  }
-
   // 🔄 REALTIME MONITORING SETUP
   void _setupRealtimeMonitoring() {
     // Setting up realtime monitoring
@@ -1298,11 +1287,11 @@ class _AdminScreenState extends State<AdminScreen> {
                         // 💸 KUSUR KOCKE (REAL-TIME)
                         Row(
                           children: [
-                            // Kusur za Bruda - DIREKTAN SUPABASE POZIV
+                            // Kusur za Bruda - REAL-TIME SUPABASE STREAM
                             Expanded(
-                              child: FutureBuilder<double>(
-                                // Direktan Supabase upit za kusur
-                                future: _getKusurForVozac('Bruda'),
+                              child: StreamBuilder<double>(
+                                // Stream za kusur
+                                stream: DailyCheckInService.streamTodayAmount('Bruda'),
                                 builder: (context, snapshot) {
                                   // Heartbeat indicator pokazuje status konekcije
                                   if (snapshot.hasError) {
@@ -1432,11 +1421,11 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            // Kusur za Bilevski - DIREKTAN SUPABASE POZIV
+                            // Kusur za Bilevski - REAL-TIME SUPABASE STREAM
                             Expanded(
-                              child: FutureBuilder<double>(
-                                // Direktan Supabase upit za kusur
-                                future: _getKusurForVozac('Bilevski'),
+                              child: StreamBuilder<double>(
+                                // Stream za kusur
+                                stream: DailyCheckInService.streamTodayAmount('Bilevski'),
                                 builder: (context, snapshot) {
                                   // Heartbeat indicator pokazuje status konekcije
                                   if (snapshot.hasError) {

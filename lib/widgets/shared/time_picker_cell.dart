@@ -248,110 +248,154 @@ class TimePickerCell extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: 320,
-          decoration: BoxDecoration(
-            gradient: ThemeManager().currentGradient,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Title
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  isBC ? 'BC polazak' : 'VS polazak',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+      builder: (dialogContext) {
+        // 📅 PROVERA DANA - PETAK INFO DIALOG
+        // Ako je danas petak, prikaži informativni tekst na vrhu dijaloga
+        final now = DateTime.now();
+        final isFriday = now.weekday == DateTime.friday;
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            width: 320,
+            decoration: BoxDecoration(
+              gradient: ThemeManager().currentGradient,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ⚠️ PETAK INFO BANER
+                if (isFriday)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade700,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    child: const Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'ZAOŠTRAVANJE RASPOREDA',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Izmene koje sada pravite važe za OVO zakazivanje. Za sledeću nedelju raspored možete uneti tek od subote ujutru.',
+                          style: TextStyle(color: Colors.white, fontSize: 11),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Title - sa ili bez paddinga zavisno od banera
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: isFriday ? 12 : 16,
+                    bottom: 16,
+                  ),
+                  child: Text(
+                    isBC ? 'BC polazak' : 'VS polazak',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              // Content
-              SizedBox(
-                height: 350,
-                child: ListView(
-                  children: [
-                    // Option to clear
-                    ListTile(
-                      title: const Text(
-                        'Bez polaska',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                      leading: Icon(
-                        value == null || value!.isEmpty ? Icons.check_circle : Icons.circle_outlined,
-                        color: value == null || value!.isEmpty ? Colors.green : Colors.white54,
-                      ),
-                      onTap: () async {
-                        // Ako već postoji termin, pitaj za potvrdu
-                        if (value != null && value!.isNotEmpty) {
-                          final potvrda = await showDialog<bool>(
-                            context: dialogContext,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Potvrda otkazivanja'),
-                              content: const Text('Da li ste sigurni da želite da otkažete termin?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(false),
-                                  child: const Text('Ne'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(true),
-                                  child: const Text('Da', style: TextStyle(color: Colors.red)),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (potvrda != true) return;
-                        }
-                        onChanged(null);
-                        if (dialogContext.mounted) {
-                          Navigator.of(dialogContext).pop();
-                        }
-                      },
-                    ),
-                    const Divider(color: Colors.white24),
-                    // Time options
-                    ...vremena.map((vreme) {
-                      final isSelected = value == vreme;
-                      return ListTile(
-                        title: Text(
-                          vreme,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white70,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
+                // Content
+                SizedBox(
+                  height: 350,
+                  child: ListView(
+                    children: [
+                      // Option to clear
+                      ListTile(
+                        title: const Text(
+                          'Bez polaska',
+                          style: TextStyle(color: Colors.white70),
                         ),
                         leading: Icon(
-                          isSelected ? Icons.check_circle : Icons.circle_outlined,
-                          color: isSelected ? Colors.green : Colors.white54,
+                          value == null || value!.isEmpty ? Icons.check_circle : Icons.circle_outlined,
+                          color: value == null || value!.isEmpty ? Colors.green : Colors.white54,
                         ),
-                        onTap: () {
-                          onChanged(vreme);
-                          Navigator.of(dialogContext).pop();
+                        onTap: () async {
+                          // Ako već postoji termin, pitaj za potvrdu
+                          if (value != null && value!.isNotEmpty) {
+                            final potvrda = await showDialog<bool>(
+                              context: dialogContext,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Potvrda otkazivanja'),
+                                content: const Text('Da li ste sigurni da želite da otkažete termin?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                    child: const Text('Ne'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                    child: const Text('Da', style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (potvrda != true) return;
+                          }
+                          onChanged(null);
+                          if (dialogContext.mounted) {
+                            Navigator.of(dialogContext).pop();
+                          }
                         },
-                      );
-                    }),
-                  ],
+                      ),
+                      const Divider(color: Colors.white24),
+                      // Time options
+                      ...vremena.map((vreme) {
+                        final isSelected = value == vreme;
+                        return ListTile(
+                          title: Text(
+                            vreme,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.white70,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                          leading: Icon(
+                            isSelected ? Icons.check_circle : Icons.circle_outlined,
+                            color: isSelected ? Colors.green : Colors.white54,
+                          ),
+                          onTap: () {
+                            onChanged(vreme);
+                            Navigator.of(dialogContext).pop();
+                          },
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              ),
-              // Actions
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Otkaži', style: TextStyle(color: Colors.white70)),
+                // Actions
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Otkaži', style: TextStyle(color: Colors.white70)),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

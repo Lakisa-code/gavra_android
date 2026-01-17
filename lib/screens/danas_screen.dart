@@ -102,6 +102,9 @@ class _DanasScreenState extends State<DanasScreen> {
   final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
   final Map<String, DateTime> _streamHeartbeats = {};
 
+  // 📅 MIDNIGHT RESET TRACKER
+  DateTime _currentDate = DateTime.now();
+
   // 🔧 CACHED STREAMS - sprečava kreiranje novih stream-ova na svaki build
   Stream<Map<String, int>>? _cachedDjackiStream;
 
@@ -129,6 +132,34 @@ class _DanasScreenState extends State<DanasScreen> {
 
   void _checkStreamHealth() {
     final now = DateTime.now();
+
+    // 🌙 MIDNIGHT RESET CHECK
+    // Proveri da li se datum promenio od poslednje provere
+    if (now.day != _currentDate.day || now.month != _currentDate.month || now.year != _currentDate.year) {
+      print('🌙 MIDNIGHT DETECTED: Clearing caches and refreshing...');
+      _currentDate = now;
+
+      // Clear all caches
+      PutnikService.clearCache();
+      RegistrovaniPutnikService.clearRealtimeCache();
+      _cachedDjackiStream = null;
+
+      if (mounted) {
+        setState(() {
+          // Force rebuild
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📅 Novi dan je počeo! Lista putnika je osvežena.'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      return; // Skip standard health check for this tick
+    }
+
     bool isHealthy = true;
 
     for (final entry in _streamHeartbeats.entries) {
@@ -192,7 +223,7 @@ class _DanasScreenState extends State<DanasScreen> {
         }).toList();
 
         // 🎓 FINALNA LOGIKA: UKUPNO/OSTALO
-        // UKUPNO = svi koji su krenuli ujutru u školu (BC polazak)
+        // UKUPNO = svi koji su krenuli u školu (BC polazak)
         // OSTALO = oni koji još nemaju upisan povratak (VS polazak) ili su otkazali
         int ukupnoUjutro = 0; // ukupno učenika koji su krenuli u školu
         int reseniUcenici = 0; // učenici upisani za povratak (imaju VS polazak)
@@ -757,14 +788,12 @@ class _DanasScreenState extends State<DanasScreen> {
     return SizedBox(
       height: 24,
       child: GestureDetector(
-        onTap: _isLoading || !hasPassengers || !isDriverValid
-            ? null
+        onTap: _isRouteOptimized
+            ? () {
+                _resetOptimization();
+              }
             : () {
-                if (_isRouteOptimized) {
-                  _resetOptimization();
-                } else {
-                  _optimizeCurrentRoute(_currentPutnici, isAlreadyOptimized: false);
-                }
+                _optimizeCurrentRoute(_currentPutnici, isAlreadyOptimized: false);
               },
         child: Center(
           child: Container(

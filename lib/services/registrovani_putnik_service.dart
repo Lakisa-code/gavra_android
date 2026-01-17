@@ -407,6 +407,7 @@ class RegistrovaniPutnikService {
         vozacId: validVozacId,
         placeniMesec: pocetakMeseca.month,
         placenaGodina: pocetakMeseca.year,
+        tipUplate: 'uplata_mesecna',
       );
 
       final now = DateTime.now();
