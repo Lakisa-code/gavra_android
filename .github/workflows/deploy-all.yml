@@ -196,14 +196,6 @@ jobs:
   ios-app-store:
     name: 🍎 iOS App Store
     runs-on: macos-latest
-    env:
-      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
-      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
-      BUNDLE_ID: 'com.gavra013.gavra013ios'
-      APP_ID: '6757114361'
-      VERSION_ID: 'f7bded3a-0055-40c8-9d90-2ac33b85c7a2'
     
     steps:
       - name: Checkout
@@ -225,9 +217,18 @@ jobs:
         run: keychain initialize
 
       - name: Fetch signing files
-        run: app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          app-store-connect fetch-signing-files "com.gavra013.gavra013ios" \
+            --type IOS_APP_STORE \
+            --create
 
       - name: Setup certificates
+        env:
+          CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
         run: keychain add-certificates
 
       - name: Setup code signing
@@ -246,6 +247,10 @@ jobs:
         run: flutter build ipa --release --build-name=${{ steps.version.outputs.VERSION_NAME }} --build-number=${{ steps.version.outputs.VERSION_CODE }} --export-options-plist=$HOME/export_options.plist
 
       - name: Upload to App Store
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: app-store-connect publish --path build/ios/ipa/*.ipa
 
       - name: Wait for processing
@@ -253,8 +258,14 @@ jobs:
 
       - name: Link build
         id: link_build
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
           BUILD_NUM="${{ steps.version.outputs.VERSION_CODE }}"
+          APP_ID="6757114361"
+          VERSION_ID="f7bded3a-0055-40c8-9d90-2ac33b85c7a2"
           for i in 1 2 3; do
             BUILD_ID=$(app-store-connect builds list --app-id "$APP_ID" --build-version-number "$BUILD_NUM" --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
             if [ -n "$BUILD_ID" ]; then
@@ -267,7 +278,12 @@ jobs:
 
       - name: Submit for review
         if: ${{ github.event.inputs.submit_for_review == 'true' }}
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
+          VERSION_ID="f7bded3a-0055-40c8-9d90-2ac33b85c7a2"
           if [ -n "${{ steps.link_build.outputs.BUILD_ID }}" ]; then
             app-store-connect app-store-version-submissions create --app-store-version-id "$VERSION_ID" || echo "⚠️ Manual submission needed"
           fi
