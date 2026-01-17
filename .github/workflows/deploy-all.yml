@@ -223,7 +223,7 @@ jobs:
 
       - name: Write certificate key to file
         run: |
-          echo "${{ secrets.CERTIFICATE_PRIVATE_KEY }}" > /tmp/cert_key.pem
+          printf '%s' "${{ secrets.CERTIFICATE_PRIVATE_KEY }}" > /tmp/cert_key.pem
           chmod 600 /tmp/cert_key.pem
 
       - name: Setup keychain
