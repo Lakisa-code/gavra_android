@@ -142,6 +142,14 @@ class DriverLocationService {
 
     _currentPutniciEta = Map.from(newPutniciEta);
     await _sendCurrentLocation();
+
+    // 🆕 Check if all finished
+    final activeCount = _currentPutniciEta!.values.where((v) => v >= 0).length;
+    if (activeCount == 0 && _isTracking) {
+      debugPrint('✅ Svi putnici završeni (ETA update) - zaustavljam tracking');
+      _onAllPassengersPickedUp?.call();
+      stopTracking();
+    }
   }
 
   /// 🆕 REALTIME ETA: Osvežava ETA pozivom OpenRouteService API
@@ -189,21 +197,27 @@ class DriverLocationService {
   }
 
   /// Proveri i zatraži dozvole za lokaciju - CENTRALIZOVANO
+  /// Forsiraj slanje trenutne lokacije (npr. kada se pokupi putnik)
+  Future<void> forceLocationUpdate({Position? knownPosition}) async {
+    await _sendCurrentLocation(knownPosition: knownPosition);
+  }
+
   Future<bool> _checkLocationPermission() async {
     return await PermissionService.ensureGpsForNavigation();
   }
 
   /// Pošalji trenutnu lokaciju u Supabase
-  Future<void> _sendCurrentLocation() async {
+  Future<void> _sendCurrentLocation({Position? knownPosition}) async {
     if (!_isTracking || _currentVozacId == null) return;
 
     try {
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
+      final position = knownPosition ??
+          await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 10),
+            ),
+          );
 
       if (_lastPosition != null) {
         final distance = Geolocator.distanceBetween(

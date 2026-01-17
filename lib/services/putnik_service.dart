@@ -13,6 +13,7 @@ import 'realtime/realtime_manager.dart';
 import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
 import 'slobodna_mesta_service.dart';
+import 'unified_geocoding_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
 
@@ -753,6 +754,10 @@ class PutnikService {
     final undoPickup = Map<String, dynamic>.from(response);
     _addToUndoStack('pickup', id, undoPickup);
 
+    // 🧠 AUTO-LEARNING: Pokušaj da naučiš koordinate ako ih nema
+    // Ovo radimo asinhrono (bez await) da ne kočimo UI
+    UnifiedGeocodingService.tryLearnFromDriverLocation(putnik);
+
     if (tabela == 'registrovani_putnici') {
       final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
@@ -826,7 +831,7 @@ class PutnikService {
 
   /// ? OZNACI KAO PLACENO
   /// 💰 OZNACI KAO PLAĆENO
-  /// [grad] - parametar za određivanje koje plaćanje (BC ili VS) - ISTO kao oznaciPokupljen
+  /// [grad] - parametar za određivanje koje plaćanje (BC ili VS) - ISTO kao oznaciPokupljeno
   Future<void> oznaciPlaceno(
     dynamic id,
     double iznos,

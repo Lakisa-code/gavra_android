@@ -258,6 +258,12 @@ class _VozacScreenState extends State<VozacScreen> {
 
     if (preostaliPutnici.isEmpty) {
       // Svi putnici su pokupljeni ili otkazani - ZADRŽI ih u listi
+
+      // ✅ STOP TRACKING AKO SU SVI GOTOVI
+      if (DriverLocationService.instance.isTracking) {
+        await DriverLocationService.instance.updatePutniciEta({});
+      }
+
       if (mounted) {
         setState(() {
           _optimizedRoute = pokupljeniIOtkazani; // ✅ ZADRŽI pokupljene u listi
@@ -287,6 +293,13 @@ class _VozacScreenState extends State<VozacScreen> {
             _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
             _currentPassengerIndex = 0;
           });
+
+          // 🔄 REALTIME FIX: Ažuriraj ETA (uklanja pokupljene sa mape)
+          if (DriverLocationService.instance.isTracking && result.putniciEta != null) {
+            await DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
+          }
+
+          if (!mounted) return;
 
           final sledeci = result.optimizedPutnici!.isNotEmpty ? result.optimizedPutnici!.first.ime : 'N/A';
           ScaffoldMessenger.of(context).showSnackBar(

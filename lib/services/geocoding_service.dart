@@ -66,9 +66,16 @@ class GeocodingService {
         return diskCached;
       }
 
-      // 3. Pozovi API
+      // 3. Pozovi API (Photon -> Nominatim fallback)
       try {
-        final coords = await _fetchFromNominatim(grad, adresa);
+        // PRIMARNO: Photon (Komoot)
+        // Bolji za fuzzy pretragu ("Šipad", "Pumpa"...)
+        String? coords = await _fetchFromPhoton(grad, adresa);
+
+        // Fallback: Nominatim (OSM)
+        // Ako Photon ne nađe, probamo strogu pretragu
+        coords ??= await _fetchFromNominatim(grad, adresa);
+
         if (coords != null) {
           CacheService.saveToMemory(cacheKey, coords);
           await CacheService.saveToDisk(cacheKey, coords);
@@ -130,6 +137,48 @@ class GeocodingService {
       }
     }
 
+    return null;
+  }
+
+  // Pozovi Photon API (Komoot) kao fallback
+  // Mnogo tolerantniji na greške u kucanju i lokalne nazive
+  static Future<String?> _fetchFromPhoton(String grad, String adresa) async {
+    try {
+      // Photon zahteva jedan query string
+      // Format: "Adresa, Grad"
+      final query = '$adresa, $grad';
+      final encodedQuery = Uri.encodeComponent(query);
+
+      // Ograničimo pretragu na Srbiju (bias)
+      // bbox for Serbia roughly: 18.82,41.85,23.01,46.19
+      // Ovo sprečava da "Prima pumpa" vrati London ili Bosnu
+      const String bbox = '&bbox=18.82,41.85,23.01,46.19';
+
+      final url = 'https://photon.komoot.io/api/?q=$encodedQuery&limit=1$bbox';
+
+      // Photon zahteva User-Agent da ne bi vraćao 403
+      final headers = {'User-Agent': 'GavraAndroid/1.0'};
+
+      final response = await http.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final features = data['features'] as List<dynamic>?;
+
+        if (features != null && features.isNotEmpty) {
+          final feature = features[0];
+          final geometry = feature['geometry'];
+          final coordinates = geometry['coordinates'] as List<dynamic>; // [lon, lat]
+
+          final lon = coordinates[0];
+          final lat = coordinates[1];
+
+          return '$lat,$lon';
+        }
+      }
+    } catch (e) {
+      // Silently ignore errors
+    }
     return null;
   }
 

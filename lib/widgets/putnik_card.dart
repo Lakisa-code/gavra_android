@@ -236,6 +236,9 @@ class _PutnikCardState extends State<PutnikCard> {
       // Dobij trenutnu GPS lokaciju
       final position = await RealtimeGpsService.getCurrentPosition();
 
+      // 📍 UPDATE DRIVER LOCATION (Admin Map)
+      // Odmah pošalji lokaciju administratoru da zna da je putnik pokupljen baš OVDE
+
       // Sačuvaj koordinate u bazu
       final success = await AdresaSupabaseService.updateKoordinateFromGps(
         adresaId: adresaId,
