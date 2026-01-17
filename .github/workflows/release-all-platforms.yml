@@ -114,14 +114,15 @@ PY
           workflow: google-closed-testing.yml
           ref: ${{ github.ref }}
 
-      - name: Optionally trigger Huawei upload
+      - name: Optionally trigger Huawei upload (and submit for review when requested)
         if: ${{ github.event.inputs.submit_huawei == 'true' }}
         uses: peter-evans/workflow-dispatch@v1
         with:
           workflow: huawei-production.yml
           ref: ${{ github.ref }}
           inputs: |
-            submit_for_review: 'false'
+            submit_for_review: '${{ github.event.inputs.submit_huawei }}'
+            release_notes: '${{ github.event.inputs.release_notes }}'
 
       - name: Optionally trigger iOS upload
         if: ${{ github.event.inputs.submit_ios == 'true' }}
