@@ -1,6 +1,6 @@
 name: 🌍 All Platforms Release
 
-# Deploy na sve tri platforme odjednom
+# Deploy to all three platforms simultaneously
 on:
   workflow_dispatch:
     inputs:
