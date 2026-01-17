@@ -13,8 +13,6 @@ env:
   BUNDLE_ID: 'com.gavra013.gavra013ios'
   APP_ID: '6757114361'
   VERSION_ID: 'f7bded3a-0055-40c8-9d90-2ac33b85c7a2'
-  VERSION_STRING: '1.1'
-  BUILD_NUMBER: '17'
 
 jobs:
   build-and-submit:
@@ -57,19 +55,32 @@ jobs:
       - name: Setup code signing
         run: xcode-project use-profiles
 
+      - name: Get version info
+        id: version
+        run: |
+          VERSION_LINE=$(grep "^version:" pubspec.yaml)
+          VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
+          VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: [0-9]*\.[0-9]*\.[0-9]*+\([0-9]*\)/\1/')
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "📌 Version: $VERSION_NAME ($VERSION_CODE)"
+
       - name: Get latest build number
         id: build_info
         run: |
-          # Using env variable for build number
-          NEW_BUILD=${{ env.BUILD_NUMBER }}
+          # Prefer explicit BUILD_NUMBER env override, otherwise use pubspec value
+          NEW_BUILD="${BUILD_NUMBER}"
+          if [ -z "$NEW_BUILD" ]; then
+            NEW_BUILD="${{ steps.version.outputs.VERSION_CODE }}"
+          fi
           echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
           echo "📱 New build number: $NEW_BUILD"
 
       - name: Build iOS App
         run: |
-          # Using version from env variables
+          # Using version from pubspec.yaml
           flutter build ipa --release \
-            --build-name=${{ env.VERSION_STRING }} \
+            --build-name=${{ steps.version.outputs.VERSION_NAME }} \
             --build-number=${{ steps.build_info.outputs.BUILD_NUMBER }} \
             --export-options-plist=$HOME/export_options.plist
 
@@ -110,8 +121,8 @@ jobs:
             exit 0
           fi
           
-          # Link build to version 1.0
-          echo "🔗 Linking build to version 1.0..."
+          # Link build to version (app store version id)
+          echo "🔗 Linking build to version (id: $VERSION_ID)..."
           app-store-connect app-store-versions modify \
             --id "$VERSION_ID" \
             --build-id "$BUILD_ID" || true
@@ -137,7 +148,7 @@ jobs:
         run: |
           echo "## 🎉 iOS Build Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ env.VERSION_STRING }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.VERSION_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "**Build:** ${{ steps.build_info.outputs.BUILD_NUMBER }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Build uploaded and submitted for App Store review!" >> $GITHUB_STEP_SUMMARY
