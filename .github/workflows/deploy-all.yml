@@ -221,19 +221,16 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Write certificate key to file
-        run: |
-          printf '%s' "${{ secrets.CERTIFICATE_PRIVATE_KEY }}" > /tmp/cert_key.pem
-          chmod 600 /tmp/cert_key.pem
-
       - name: Setup keychain
         run: keychain initialize
 
       - name: Fetch signing files
+        env:
+          CERT_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
         run: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key @file:/tmp/cert_key.pem \
+            --certificate-key @env:CERT_KEY \
             --create
 
       - name: Setup certificates
