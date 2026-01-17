@@ -200,6 +200,7 @@ jobs:
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
       APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
       BUNDLE_ID: 'com.gavra013.gavra013ios'
       APP_ID: '6757114361'
       VERSION_ID: 'f7bded3a-0055-40c8-9d90-2ac33b85c7a2'
@@ -219,15 +220,6 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-
-      - name: Setup certificate private key
-        env:
-          CERTIFICATE_PRIVATE_KEY_BASE64: ${{ secrets.CERTIFICATE_PRIVATE_KEY_BASE64 }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$CERTIFICATE_PRIVATE_KEY_BASE64" | base64 --decode > ~/.ssh/certificate_key
-          chmod 600 ~/.ssh/certificate_key
-          echo "CERTIFICATE_PRIVATE_KEY=$HOME/.ssh/certificate_key" >> $GITHUB_ENV
 
       - name: Setup keychain
         run: keychain initialize
