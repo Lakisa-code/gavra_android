@@ -68,30 +68,30 @@ jobs:
         if: ${{ github.event.inputs.bump_type != 'none' && github.event.inputs.confirm == 'true' }}
         run: |
           python3 - <<'PY'
-import re,sys
-fn='pubspec.yaml'
-with open(fn,'r') as f:
-    s=f.read()
-m=re.search(r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)',s,flags=re.M)
-if not m:
-    print('Could not parse version from pubspec.yaml',file=sys.stderr); sys.exit(1)
-major,minor,patch = m.group(1).split('.')
-build=int(m.group(2))
-bt='${{ github.event.inputs.bump_type }}'
-if bt=='patch':
-    patch=str(int(patch)+1)
-elif bt=='minor':
-    minor=str(int(minor)+1); patch='0'
-elif bt=='major':
-    major=str(int(major)+1); minor='0'; patch='0'
-build+=1
-new=f'{major}.{minor}.{patch}+{build}'
-ns=re.sub(r'(version:\s*)([0-9]+\.[0-9]+\.[0-9]+\+[0-9]+)',r'\1'+new,s,flags=re.M)
-with open(fn,'w') as f:
-    f.write(ns)
-print('Bumped version to',new)
+          import re,sys
+          fn='pubspec.yaml'
+          with open(fn,'r') as f:
+              s=f.read()
+          m=re.search(r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)',s,flags=re.M)
+          if not m:
+              print('Could not parse version from pubspec.yaml',file=sys.stderr); sys.exit(1)
+          major,minor,patch = m.group(1).split('.')
+          build=int(m.group(2))
+          bt='${{ github.event.inputs.bump_type }}'
+          if bt=='patch':
+              patch=str(int(patch)+1)
+          elif bt=='minor':
+              minor=str(int(minor)+1); patch='0'
+          elif bt=='major':
+              major=str(int(major)+1); minor='0'; patch='0'
+          build+=1
+          new=f'{major}.{minor}.{patch}+{build}'
+          ns=re.sub(r'(version:\s*)([0-9]+\.[0-9]+\.[0-9]+\+[0-9]+)',r'\1'+new,s,flags=re.M)
+          with open(fn,'w') as f:
+              f.write(ns)
+          print('Bumped version to',new)
           print('new_version='+new)
-PY
+          PY
 
       - name: Commit & push bumped pubspec (if any)
         if: ${{ github.event.inputs.bump_type != 'none' && github.event.inputs.confirm == 'true' }}
