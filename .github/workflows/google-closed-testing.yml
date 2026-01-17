@@ -33,17 +33,11 @@ jobs:
           channel: 'stable'
 
       - name: Prepare agconnect-services.json
-        env:
-          AGC_BASE64: ${{ secrets.AGC_BASE64 || '' }}
         run: |
           mkdir -p assets android/app
-          if [ -n "$AGC_BASE64" ]; then
-            echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
-            echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
-          else
-            echo '{ "client": { "package_name": "com.gavra013.gavra_android" } }' > assets/agconnect-services.json
-            echo '{ "client": { "package_name": "com.gavra013.gavra_android" } }' > android/app/agconnect-services.json
-          fi
+          # Force valid configuration for Google Play build to satisfy Huawei plugin requirements
+          echo '{ "client": { "package_name": "com.gavra013.gavra_android" } }' > assets/agconnect-services.json
+          cp assets/agconnect-services.json android/app/agconnect-services.json
 
       - name: Restore keystore
         env:
