@@ -15,6 +15,10 @@ on:
         description: 'Release notes (optional)'
         required: false
         default: ''
+      force_replace_review:
+        description: 'Automatically replace an existing in-review submission (use with caution)'
+        required: true
+        default: 'false'
       version_name:
         description: 'Optional version name override (e.g. 1.2.3)'
         required: false
@@ -197,6 +201,39 @@ jobs:
             app-store-connect app-store-versions modify \
               --id "$VERSION_ID" \
               --build-id "$BUILD_ID" || true
+
+        - name: Check existing App Store submission status
+          id: check_submission
+          run: |
+            # Attempt to list submissions for the app version; if a submission is in review/waiting, act based on force_replace_review
+            SUBS_JSON=$(app-store-connect app-store-version-submissions list --app-store-version-id "$VERSION_ID" --json 2>/dev/null || echo "[]")
+            SUB_ID=$(echo "$SUBS_JSON" | python3 - <<'PY'
+  import sys,json
+  data=json.load(sys.stdin)
+  for s in data:
+      # submission properties differ; check common fields
+      st = s.get('state') or s.get('status') or s.get('submissionState') or ''
+      if st and st.upper() in ('IN_REVIEW','WAITING_FOR_REVIEW','PENDING'):
+          print(s.get('id') or '')
+          sys.exit(0)
+  print('')
+  PY
+  )
+            if [ -n "$SUB_ID" ]; then
+              echo "FOUND_SUBMISSION_ID=$SUB_ID" >> $GITHUB_OUTPUT
+              echo "Found existing submission: $SUB_ID"
+              if [ "${{ github.event.inputs.force_replace_review }}" = "true" ]; then
+                echo "Force replace requested — attempting to delete existing submission $SUB_ID"
+                app-store-connect app-store-version-submissions delete --id "$SUB_ID" || true
+                echo "Attempted delete (may require manual review if CLI doesn't support delete)."
+              else
+                echo "ERROR: There is an active submission in review (id:$SUB_ID). To replace it set force_replace_review=true or cancel it manually.";
+                exit 1
+              fi
+            else
+              echo "No active App Store submissions found for version id $VERSION_ID"
+              echo "FOUND_SUBMISSION_ID=" >> $GITHUB_OUTPUT
+            fi
 
         - name: Submit for review (optional)
           if: ${{ github.event.inputs.submit_for_review == 'true' }}

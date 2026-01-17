@@ -25,6 +25,10 @@ on:
         description: 'Set to true to actually perform bump/push/tag. Default is false (dry-run).'
         required: true
         default: 'false'
+      force_replace_review:
+        description: 'When true, replace existing in-review submissions for platforms that support it (dangerous).'
+        required: true
+        default: 'false'
       submit_ios:
         description: 'Trigger iOS upload workflow?'
         required: true
@@ -137,6 +141,7 @@ PY
           inputs: |
             submit_for_review: '${{ github.event.inputs.submit_huawei }}'
             release_notes: '${{ github.event.inputs.release_notes }}'
+            force_replace_review: '${{ github.event.inputs.force_replace_review }}'
 
       - name: Optionally trigger iOS upload
         if: ${{ github.event.inputs.submit_ios == 'true' }}
@@ -147,6 +152,7 @@ PY
           inputs: |
             submit_for_review: '${{ github.event.inputs.submit_ios }}'
             release_notes: '${{ github.event.inputs.release_notes }}'
+            force_replace_review: '${{ github.event.inputs.force_replace_review }}'
 
       - name: Summary
         run: |

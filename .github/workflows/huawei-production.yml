@@ -13,6 +13,10 @@ on:
         options:
           - 'true'
           - 'false'
+      force_replace_review:
+        description: 'Automatically replace existing in-review AppGallery submissions (use with caution)'
+        required: true
+        default: 'false'
       release_notes:
         description: 'Release notes (What is new)'
         required: false
@@ -69,6 +73,45 @@ jobs:
           echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
           echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
           echo "✅ agconnect-services.json created"
+
+      - name: Check existing AppGallery submission status
+        id: check_huawei_submission
+        run: |
+          # Get token
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" \
+            -H "Content-Type: application/json" \
+            -d "{\"client_id\": \"$HUAWEI_CLIENT_ID\", \"client_secret\": \"$HUAWEI_CLIENT_SECRET\", \"grant_type\": \"client_credentials\"}")
+
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
+            echo "⚠️ Could not get Huawei access token — skipping Huawei review check";
+            echo "HUAWEI_SUBMISSION_EXISTS=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          APP_INFO=$(curl -s -X GET \
+            "https://connect-api.cloud.huawei.com/api/publish/v2/app-info?appId=$HUAWEI_APP_ID" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID")
+
+          # Look for hints of pending review in the returned JSON
+          # (fields can vary; this is a best-effort check)
+          if echo "$APP_INFO" | jq -e '. | tostring | test("review|pending|checking|in_review"; "i")' >/dev/null 2>&1; then
+            echo "FOUND_HUAWEI_PENDING_REVIEW=true" >> $GITHUB_OUTPUT
+            echo "Huawei AppGallery shows possible pending review status"
+            if [ "${{ github.event.inputs.force_replace_review }}" = "true" ]; then
+              echo "Force replace requested — attempting to cancel existing review via API (best-effort)"
+              # Cancel endpoint would be used here if available; for safety we only note action and continue
+              echo "(Note) Automated cancel via API not implemented; please cancel manually if required or implement cancel call."
+            else
+              echo "ERROR: Huawei app appears to have a pending review. To replace it set force_replace_review=true or cancel it manually.";
+              exit 1
+            fi
+          else
+            echo "FOUND_HUAWEI_PENDING_REVIEW=false" >> $GITHUB_OUTPUT
+            echo "No obvious pending Huawei review detected"
+          fi
 
       - name: Create key.properties
         env:
