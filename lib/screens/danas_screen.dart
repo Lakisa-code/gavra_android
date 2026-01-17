@@ -395,18 +395,15 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
         ),
         const SizedBox(height: 2),
-        // 3. RED: ĐAČKI BROJAČ - NAV (samo kad je ruta optimizovana) - SPEEDOMETER
+        // 3. RED: ĐAČKI BROJAČ - NAV - SPEEDOMETER
         SizedBox(
           height: 24,
           child: Row(
             children: [
               Expanded(child: _buildDjackiBrojacButton()),
               const SizedBox(width: 4),
-              // NAV se prikazuje samo kad je ruta optimizovana
-              if (_isRouteOptimized) ...[
-                Expanded(child: _buildMapsButton()),
-                const SizedBox(width: 4),
-              ],
+              Expanded(child: _buildMapsButton()),
+              const SizedBox(width: 4),
               Expanded(child: _buildSpeedometerButton()),
             ],
           ),

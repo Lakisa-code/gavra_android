@@ -41,10 +41,6 @@
     <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_notification" />
     <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/notification_color" />
 
-    <!-- 🎮 MIUI Gaming optimizations -->
-    <meta-data android:name="miui.game.mode" android:value="true" />
-    <meta-data android:name="miui.performance.mode" android:value="high" />
-
     <!-- 📱 LARGE SCREEN SUPPORT for Android 16+ (foldables, tablets) -->
     <!-- Explicitly declare support for all screen sizes and orientations -->
     <activity android:name=".MainActivity" 
