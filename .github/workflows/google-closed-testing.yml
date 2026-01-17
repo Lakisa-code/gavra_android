@@ -53,12 +53,10 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          cat > android/key.properties <<EOF
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
-          storeFile=../gavra-release-key-production.keystore
-          EOF
+          printf "storePassword=%s\n" "$KEYSTORE_PASSWORD" > android/key.properties
+          printf "keyPassword=%s\n" "$KEY_PASSWORD" >> android/key.properties
+          printf "keyAlias=%s\n" "$KEY_ALIAS" >> android/key.properties
+          printf "storeFile=../gavra-release-key-production.keystore\n" >> android/key.properties
 
       - name: Get dependencies
         run: flutter pub get
