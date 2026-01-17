@@ -29,7 +29,7 @@ env:
   FLUTTER_VERSION: '3.35.6'
   BUNDLE_ID: 'com.gavra013.gavra013ios'
   APP_ID: '6757114361'
-  VERSION_ID: 'f7bded3a-0055-40c8-9d90-2ac33b85c7a2'
+  VERSION_ID: 'a4397448-6ed5-4220-82df-1b84e1a63657'
 
 jobs:
   build-and-submit:
