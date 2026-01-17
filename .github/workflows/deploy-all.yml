@@ -224,7 +224,7 @@ jobs:
       - name: Write certificate key to file
         run: |
           echo "${{ secrets.CERTIFICATE_PRIVATE_KEY }}" > /tmp/cert_key.pem
-          echo "CERTIFICATE_PRIVATE_KEY=/tmp/cert_key.pem" >> $GITHUB_ENV
+          chmod 600 /tmp/cert_key.pem
 
       - name: Setup keychain
         run: keychain initialize
@@ -233,6 +233,7 @@ jobs:
         run: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key @file:/tmp/cert_key.pem \
             --create
 
       - name: Setup certificates
