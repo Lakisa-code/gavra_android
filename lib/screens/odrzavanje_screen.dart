@@ -344,6 +344,14 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
               onEdit: () => _editDateField('registracija_vazi_do', 'Registracija važi do', v.registracijaVaziDo),
             ),
 
+            // Napomena
+            _buildEditableField(
+              icon: '📝',
+              label: 'Napomena',
+              value: v.napomena ?? '-',
+              onEdit: () => _editTextField('napomena', 'Napomena', v.napomena, multiline: true),
+            ),
+
             const Divider(height: 32),
 
             // Mali servis
@@ -427,14 +435,6 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
               label: 'Radio code',
               value: v.radio,
               onEdit: () => _editTextField('radio', 'Radio code', v.radio),
-            ),
-
-            // Napomena
-            _buildEditableField(
-              icon: '📝',
-              label: 'Napomena',
-              value: v.napomena ?? '-',
-              onEdit: () => _editTextField('napomena', 'Napomena', v.napomena, multiline: true),
             ),
 
             const SizedBox(height: 80),

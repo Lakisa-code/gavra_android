@@ -21,6 +21,11 @@ class RegistrovaniPutnikService {
   static StreamSubscription? _sharedSubscription;
   static List<RegistrovaniPutnik>? _lastValue;
 
+  // 🔧 SINGLETON PATTERN za "SVI PUTNICI" stream (uključujući neaktivne)
+  static StreamController<List<RegistrovaniPutnik>>? _sharedSviController;
+  static StreamSubscription? _sharedSviSubscription;
+  static List<RegistrovaniPutnik>? _lastSviValue;
+
   /// Dohvata sve mesečne putnike
   Future<List<RegistrovaniPutnik>> getAllRegistrovaniPutnici() async {
     final response = await _supabase.from('registrovani_putnici').select('''
@@ -141,12 +146,21 @@ class RegistrovaniPutnikService {
 
   /// 🧹 Čisti singleton cache - pozovi kad treba resetovati sve
   static void clearRealtimeCache() {
+    // Čisti Aktivni stream
     _sharedSubscription?.cancel();
     RealtimeManager.instance.unsubscribe('registrovani_putnici');
     _sharedSubscription = null;
     _sharedController?.close();
     _sharedController = null;
     _lastValue = null;
+
+    // Čisti Svi stream
+    _sharedSviSubscription?.cancel();
+    RealtimeManager.instance.unsubscribe('registrovani_putnici_svi');
+    _sharedSviSubscription = null;
+    _sharedSviController?.close();
+    _sharedSviController = null;
+    _lastSviValue = null;
   }
 
   /// 📱 Normalizuje broj telefona za poređenje
@@ -499,12 +513,8 @@ class RegistrovaniPutnikService {
 
       if (putnik == null) return [];
 
-      final placanjaIzLoga = await _supabase
-          .from('voznje_log')
-          .select()
-          .eq('putnik_id', putnik['id'])
-          .eq('tip', 'uplata')
-          .order('datum', ascending: false) as List<dynamic>;
+      final placanjaIzLoga = await _supabase.from('voznje_log').select().eq('putnik_id', putnik['id']).inFilter(
+          'tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']).order('datum', ascending: false) as List<dynamic>;
 
       for (var placanje in placanjaIzLoga) {
         svaPlacanja.add({
@@ -640,7 +650,7 @@ class RegistrovaniPutnikService {
           .from('voznje_log')
           .select('datum, vozac_id, iznos')
           .eq('putnik_id', putnikId)
-          .eq('tip', 'uplata')
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
           .order('datum', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -672,7 +682,11 @@ class RegistrovaniPutnikService {
   static Future<double> dohvatiUkupnoPlaceno(String putnikId) async {
     final supabase = Supabase.instance.client;
     try {
-      final response = await supabase.from('voznje_log').select('iznos').eq('putnik_id', putnikId).eq('tip', 'uplata');
+      final response = await supabase
+          .from('voznje_log')
+          .select('iznos')
+          .eq('putnik_id', putnikId)
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']);
 
       double ukupno = 0.0;
       for (final row in response) {
@@ -682,5 +696,51 @@ class RegistrovaniPutnikService {
     } catch (_) {
       return 0.0;
     }
+  }
+
+  /// 🔧 SINGLETON STREAM za SVE mesečne putnike (uključujući neaktivne)
+  static Stream<List<RegistrovaniPutnik>> streamSviRegistrovaniPutnici() {
+    if (_sharedSviController != null && !_sharedSviController!.isClosed) {
+      if (_lastSviValue != null) {
+        Future.microtask(() {
+          if (_sharedSviController != null && !_sharedSviController!.isClosed) {
+            _sharedSviController!.add(_lastSviValue!);
+          }
+        });
+      }
+      return _sharedSviController!.stream;
+    }
+
+    _sharedSviController = StreamController<List<RegistrovaniPutnik>>.broadcast();
+    final supabase = Supabase.instance.client;
+
+    _fetchAndEmitSvi(supabase);
+    _setupRealtimeSubscriptionSvi(supabase);
+
+    return _sharedSviController!.stream;
+  }
+
+  static Future<void> _fetchAndEmitSvi(SupabaseClient supabase) async {
+    try {
+      final data = await supabase
+          .from('registrovani_putnici')
+          .select()
+          .eq('obrisan', false) // Samo ovo je razlika - ne filtriramo po 'aktivan'
+          .order('putnik_ime');
+
+      final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
+      _lastSviValue = putnici;
+
+      if (_sharedSviController != null && !_sharedSviController!.isClosed) {
+        _sharedSviController!.add(putnici);
+      }
+    } catch (_) {}
+  }
+
+  static void _setupRealtimeSubscriptionSvi(SupabaseClient supabase) {
+    _sharedSviSubscription?.cancel();
+    _sharedSviSubscription = RealtimeManager.instance.subscribe('registrovani_putnici_svi').listen((payload) {
+      _fetchAndEmitSvi(supabase);
+    });
   }
 }

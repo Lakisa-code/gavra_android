@@ -26,6 +26,7 @@ import 'dugovi_screen.dart';
 import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'live_monitor_screen.dart'; // 🖥️ LIVE MONITOR
+import 'ml_lab_screen.dart'; // 🧪 ML LAB
 import 'odrzavanje_screen.dart'; // 📖 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
 import 'putnik_kvalitet_screen_v2.dart'; // 🎯 Analiza kvaliteta putnika
@@ -349,6 +350,22 @@ class _AdminScreenState extends State<AdminScreen> {
                       context,
                       MaterialPageRoute<void>(
                         builder: (context) => const OdrzavanjeScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.science, size: 24, color: Colors.blue),
+                  title: const Text('ML Lab'),
+                  subtitle: const Text('Machine Learning analiza i predviđanja'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const MLLabScreen(),
                       ),
                     );
                   },

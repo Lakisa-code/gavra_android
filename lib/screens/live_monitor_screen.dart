@@ -43,12 +43,24 @@ class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
 
     try {
       final now = DateTime.now();
-      final todayStr = now.toIso8601String().split('T')[0];
-      final dayAbbr =
-          app_date_utils.DateUtils.getDayAbbreviation(app_date_utils.DateUtils.getTodayFullName()); // e.g. 'pet'
+
+      // 📅 VIKEND LOGIKA: Ako je vikend (Sub/Ned), prikaži Ponedeljak
+      DateTime targetDate = now;
+      if (now.weekday == DateTime.saturday) {
+        targetDate = now.add(const Duration(days: 2));
+      } else if (now.weekday == DateTime.sunday) {
+        targetDate = now.add(const Duration(days: 1));
+      }
+
+      final targetDateStr = targetDate.toIso8601String().split('T')[0];
+
+      // Dobij pun naziv dana za ciljni datum (npr. "ponedeljak")
+      final targetDayName = app_date_utils.DateUtils.weekdayToString(targetDate.weekday);
+      // Dobij skraćenicu (npr. "pon")
+      final dayAbbr = app_date_utils.DateUtils.getDayAbbreviation(targetDayName);
 
       // 1. Fetch Slots
-      final slotsMap = await SlobodnaMestaService.getSlobodnaMesta(datum: todayStr);
+      final slotsMap = await SlobodnaMestaService.getSlobodnaMesta(datum: targetDateStr);
       final bcSlots = slotsMap['BC'] ?? [];
       final vsSlots = slotsMap['VS'] ?? [];
 

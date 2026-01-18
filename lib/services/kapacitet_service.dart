@@ -18,6 +18,9 @@ class KapacitetService {
   static DateTime? _cacheTime;
   static const _cacheDuration = Duration(minutes: 5);
 
+  // 🔄 GLOBAL REALTIME LISTENER za automatsko ažuriranje cache-a
+  static StreamSubscription? _globalRealtimeSubscription;
+
   /// Vremena polazaka za Belu Crkvu (prema navBarType)
   static List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
@@ -263,5 +266,58 @@ class KapacitetService {
     if (_kapacitetCache == null) {
       await getKapacitet();
     }
+  }
+
+  /// 🚀 INICIJALIZUJ GLOBALNI REALTIME LISTENER
+  /// Pozovi ovu funkciju jednom pri startu aplikacije (npr. u main.dart ili home_screen)
+  static void startGlobalRealtimeListener() {
+    // Prvo učitaj cache
+    ensureCacheLoaded();
+
+    // Ako već postoji subscription, preskoči
+    if (_globalRealtimeSubscription != null) {
+      return;
+    }
+
+    // Pokreni globalni listener koji će ažurirati cache u pozadini
+    _globalRealtimeSubscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
+      print('🎫 Kapacitet realtime update: ${payload.eventType}');
+
+      // Ažuriraj cache direktno za performanse
+      if (payload.eventType == PostgresChangeEvent.update || payload.eventType == PostgresChangeEvent.insert) {
+        final grad = payload.newRecord['grad'] as String?;
+        final vreme = payload.newRecord['vreme'] as String?;
+        final maxMesta = payload.newRecord['max_mesta'] as int?;
+        final aktivan = payload.newRecord['aktivan'] as bool? ?? true;
+
+        if (grad != null && vreme != null && maxMesta != null && _kapacitetCache != null) {
+          if (_kapacitetCache!.containsKey(grad)) {
+            if (aktivan) {
+              _kapacitetCache![grad]![vreme] = maxMesta;
+              print('✅ Cache ažuriran: $grad $vreme = $maxMesta mesta');
+            } else {
+              // Ako je deaktiviran, postavi na 0 ili ukloni
+              _kapacitetCache![grad]!.remove(vreme);
+              print('🚫 Polazak deaktiviran: $grad $vreme');
+            }
+          }
+        }
+      } else if (payload.eventType == PostgresChangeEvent.delete) {
+        // Na DELETE invaliduj cache potpuno
+        _kapacitetCache = null;
+        print('🗑️ Kapacitet obrisan, cache invalidiran');
+        // Ponovo učitaj
+        getKapacitet();
+      }
+    });
+
+    print('🚀 Globalni kapacitet realtime listener pokrenut!');
+  }
+
+  /// Zaustavi globalni listener (cleanup)
+  static void stopGlobalRealtimeListener() {
+    _globalRealtimeSubscription?.cancel();
+    _globalRealtimeSubscription = null;
+    print('🛑 Globalni kapacitet listener zaustavljen');
   }
 }

@@ -18,6 +18,7 @@ import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
+import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
 import 'services/payment_reminder_service.dart'; // 💰 Automatski payment reminder (27. i 5.)
 import 'services/putnik_service.dart'; // 🔄 DODATO za nedeljni reset
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
@@ -156,6 +157,15 @@ void main() async {
       await AppSettingsService.initialize();
     } catch (e) {
       // Nastavi bez app settings ako ne uspe - default je 'auto'
+    }
+
+    // 🎫 INICIJALIZUJ GLOBALNI KAPACITET REALTIME LISTENER
+    // Automatski ažurira cache u pozadini kada admin promeni broj mesta
+    try {
+      KapacitetService.startGlobalRealtimeListener();
+    } catch (e) {
+      // Nastavi bez realtime listenera - kapacitet će raditi ali bez real-time update
+      if (kDebugMode) debugPrint('❌ [Kapacitet] Global listener failed: $e');
     }
 
     // 🔄 NEDELJNI RESET - Proveri da li treba resetovati polasci_po_danu

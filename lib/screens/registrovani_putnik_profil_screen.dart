@@ -563,7 +563,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           .from('voznje_log')
           .select('iznos, datum, created_at')
           .eq('putnik_id', putnikId)
-          .eq('tip', 'uplata')
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
           .gte('datum', pocetakGodine.toIso8601String().split('T')[0])
           .order('datum', ascending: false);
 

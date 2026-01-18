@@ -849,12 +849,11 @@ class _DanasScreenState extends State<DanasScreen> {
           height: 24,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: bgColor != Colors.transparent
-                ? BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(16),
-                  )
-                : null,
+            decoration: BoxDecoration(
+              color: bgColor != Colors.transparent ? bgColor : null,
+              borderRadius: BorderRadius.circular(16),
+              border: speed == 0 ? Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5) : null,
+            ),
             child: Center(
               child: Text(
                 speed.toStringAsFixed(0),
@@ -889,7 +888,12 @@ class _DanasScreenState extends State<DanasScreen> {
               : (hasOptimizedRoute ? Theme.of(context).colorScheme.primary : Colors.grey.shade400),
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           elevation: hasOptimizedRoute ? 2 : 1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: hasOptimizedRoute
+                ? BorderSide.none
+                : BorderSide(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         ),
         child: FittedBox(
@@ -900,12 +904,16 @@ class _DanasScreenState extends State<DanasScreen> {
               Icon(
                 _isGpsTracking ? Icons.stop : Icons.navigation,
                 size: 12,
-                color: Theme.of(context).colorScheme.onPrimary,
+                color: hasOptimizedRoute ? Theme.of(context).colorScheme.onPrimary : Colors.white,
               ),
               const SizedBox(width: 2),
               Text(
                 _isGpsTracking ? 'STOP' : 'NAV',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: hasOptimizedRoute ? null : Colors.white,
+                ),
               ),
             ],
           ),

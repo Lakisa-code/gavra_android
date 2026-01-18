@@ -10,6 +10,7 @@ import '../services/auth_manager.dart';
 import '../services/daily_checkin_service.dart';
 import '../services/driver_location_service.dart'; // 🚐 Za ETA tracking
 import '../services/firebase_service.dart'; // 🎯 Za vozača
+import '../services/kapacitet_service.dart'; // 🎫 Za broj mesta
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
 import '../services/popis_service.dart'; // 📋 Za popis dana
 import '../services/putnik_push_service.dart'; // 📱 Za push notifikacije putnicima
@@ -1546,6 +1547,11 @@ class _VozacScreenState extends State<VozacScreen> {
               return countHelper.getCount(grad, vreme);
             }
 
+            // 🎫 KAPACITET: Broj mesta za svaki polazak (real-time od admina)
+            int getKapacitet(String grad, String vreme) {
+              return KapacitetService.getKapacitetSync(grad, vreme);
+            }
+
             // 🎯 FILTER VREMENA: Samo vremena koja imaju putnike za ovog vozača
             final filteredBcVremena = _bcVremena.where((vreme) => getPutnikCount('Bela Crkva', vreme) > 0).toList();
             final filteredVsVremena = _vsVremena.where((vreme) => getPutnikCount('Vršac', vreme) > 0).toList();
@@ -1568,6 +1574,7 @@ class _VozacScreenState extends State<VozacScreen> {
                     selectedGrad: _selectedGrad,
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
+                    getKapacitet: getKapacitet,
                     onPolazakChanged: _onPolazakChanged,
                   );
                 case 'zimski':
@@ -1576,6 +1583,7 @@ class _VozacScreenState extends State<VozacScreen> {
                     selectedGrad: _selectedGrad,
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
+                    getKapacitet: getKapacitet,
                     onPolazakChanged: _onPolazakChanged,
                     bcVremena: bcVremenaToShow,
                     vsVremena: vsVremenaToShow,
@@ -1586,6 +1594,7 @@ class _VozacScreenState extends State<VozacScreen> {
                     selectedGrad: _selectedGrad,
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
+                    getKapacitet: getKapacitet,
                     onPolazakChanged: _onPolazakChanged,
                     bcVremena: bcVremenaToShow,
                     vsVremena: vsVremenaToShow,
@@ -1597,6 +1606,7 @@ class _VozacScreenState extends State<VozacScreen> {
                           selectedGrad: _selectedGrad,
                           selectedVreme: _selectedVreme,
                           getPutnikCount: getPutnikCount,
+                          getKapacitet: getKapacitet,
                           onPolazakChanged: _onPolazakChanged,
                           bcVremena: bcVremenaToShow,
                           vsVremena: vsVremenaToShow,
@@ -1606,6 +1616,7 @@ class _VozacScreenState extends State<VozacScreen> {
                           selectedGrad: _selectedGrad,
                           selectedVreme: _selectedVreme,
                           getPutnikCount: getPutnikCount,
+                          getKapacitet: getKapacitet,
                           onPolazakChanged: _onPolazakChanged,
                           bcVremena: bcVremenaToShow,
                           vsVremena: vsVremenaToShow,

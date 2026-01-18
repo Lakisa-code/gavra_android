@@ -141,7 +141,7 @@ class PaymentReminderService {
       final placanjaResponse = await _supabase
           .from('voznje_log')
           .select('putnik_id')
-          .eq('tip', 'uplata')
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
           .eq('placeni_mesec', targetMonth)
           .eq('placena_godina', targetYear);
 

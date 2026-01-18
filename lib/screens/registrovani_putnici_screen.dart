@@ -37,6 +37,7 @@ class RegistrovaniPutniciScreen extends StatefulWidget {
 class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni'
+  String _paymentFilter = 'svi'; // 'svi', 'platili', 'nisu_platili'
 
   // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon čuvanja
   int _streamRefreshKey = 0;
@@ -204,7 +205,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
               .from('voznje_log')
               .select('iznos')
               .eq('putnik_id', putnik.id)
-              .eq('tip', 'uplata')
+              .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
               .order('datum', ascending: false)
               .limit(1)
               .maybeSingle();
@@ -243,6 +244,44 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       }
     } catch (e) {
       // Greška u učitavanju stvarnih plaćanja
+    }
+  }
+
+  // 💰 UČITAJ PLAĆENE MESECE ZA SVE PUTNIKE - batch load za filter
+  Future<void> _ucitajPlaceneMeseceZaSvePutnike(List<RegistrovaniPutnik> putnici) async {
+    try {
+      final now = DateTime.now();
+      final startOfYear = DateTime(now.year, 1, 1);
+
+      // Dohvati sve uplate za tekuću godinu
+      final response = await supabase
+          .from('voznje_log')
+          .select('putnik_id, placeni_mesec, placena_godina')
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
+          .gte('datum', startOfYear.toIso8601String().split('T')[0])
+          .not('placeni_mesec', 'is', null)
+          .not('placena_godina', 'is', null);
+
+      final Map<String, Set<String>> placeniMeseci = {};
+
+      for (final row in response) {
+        final putnikId = row['putnik_id'] as String?;
+        final mesec = row['placeni_mesec'] as int?;
+        final godina = row['placena_godina'] as int?;
+
+        if (putnikId != null && mesec != null && godina != null) {
+          placeniMeseci[putnikId] = placeniMeseci[putnikId] ?? {};
+          placeniMeseci[putnikId]!.add('$mesec-$godina');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _placeniMeseci.addAll(placeniMeseci);
+        });
+      }
+    } catch (e) {
+      // Greška u učitavanju plaćenih meseci
     }
   }
 
@@ -396,6 +435,29 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       filtered = filtered.where((p) => p.tip == filterType).toList();
     }
 
+    // Filter po plaćanju (samo za mesečne - radnik i ucenik)
+    if (_paymentFilter != 'svi') {
+      final now = DateTime.now();
+      final currentMonth = now.month;
+      final currentYear = now.year;
+
+      filtered = filtered.where((p) {
+        // Preskoči dnevne putnike - oni ne plaćaju mesečno
+        if (p.tip == 'dnevni') {
+          return false;
+        }
+
+        final placeniMeseci = _placeniMeseci[p.id] ?? {};
+        final jePlatioTrenutniMesec = placeniMeseci.contains('$currentMonth-$currentYear');
+
+        if (_paymentFilter == 'platili') {
+          return jePlatioTrenutniMesec;
+        } else {
+          return !jePlatioTrenutniMesec;
+        }
+      }).toList();
+    }
+
     // Filter po search term
     if (searchTerm.isNotEmpty) {
       final searchLower = searchTerm.toLowerCase();
@@ -442,22 +504,41 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   children: [
                     const SizedBox.shrink(),
                     const Expanded(
-                      child: Text(
-                        'Putnici',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(1, 1),
-                              blurRadius: 3,
-                              color: Colors.black54,
-                            ),
-                          ],
-                        ),
+                      child: SizedBox.shrink(),
+                    ),
+                    // Filter za plaćanja
+                    IconButton(
+                      icon: Icon(
+                        _paymentFilter == 'svi'
+                            ? Icons.payments_outlined
+                            : _paymentFilter == 'platili'
+                                ? Icons.check_circle
+                                : Icons.cancel,
+                        color: _paymentFilter == 'svi' ? Colors.white70 : Colors.white,
+                        shadows: const [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black54,
+                          ),
+                        ],
                       ),
+                      onPressed: () {
+                        setState(() {
+                          if (_paymentFilter == 'svi') {
+                            _paymentFilter = 'platili';
+                          } else if (_paymentFilter == 'platili') {
+                            _paymentFilter = 'nisu_platili';
+                          } else {
+                            _paymentFilter = 'svi';
+                          }
+                        });
+                      },
+                      tooltip: _paymentFilter == 'svi'
+                          ? 'Svi putnici'
+                          : _paymentFilter == 'platili'
+                              ? 'Samo koji su platili'
+                              : 'Samo koji nisu platili',
                     ),
                     // Filter za radnike sa brojem
                     Stack(
@@ -651,57 +732,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                         ),
                       ],
                     ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(
-                        Icons.more_vert,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(1, 1),
-                            blurRadius: 3,
-                            color: Colors.black54,
-                          ),
-                        ],
-                      ),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'export':
-                            _exportPutnici();
-                            break;
-                          case 'import':
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Import funkcionalnost će biti dodana uskoro',
-                                ),
-                              ),
-                            );
-                            break;
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'export',
-                          child: Row(
-                            children: [
-                              Icon(Icons.download, size: 20),
-                              SizedBox(width: 8),
-                              Text('Export u CSV'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'import',
-                          child: Row(
-                            children: [
-                              Icon(Icons.upload, size: 20),
-                              SizedBox(width: 8),
-                              Text('Import iz CSV'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
                     IconButton(
                       icon: const Icon(
                         Icons.add,
@@ -834,6 +864,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _ucitajStvarnaPlacanja(filteredPutnici);
                         _ucitajAdreseZaPutnike(filteredPutnici); // 📍 Batch load adresa
+                        _ucitajPlaceneMeseceZaSvePutnike(filteredPutnici); // 💰 Batch load plaćenih meseci
                       });
                     }
                   }
@@ -3420,87 +3451,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  /// � EXPORT PUTNIKA U CSV
-  Future<void> _exportPutnici() async {
-    try {
-      final putnici = await _registrovaniPutnikService.registrovaniPutniciStream.first;
-
-      if (putnici.isEmpty) {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nema putnika za export')),
-        );
-        return;
-      }
-
-      // Kreiranje CSV sadržaja
-      final csvData = StringBuffer();
-      csvData.writeln(
-        'Ime,Tip,Škola/Ustanova,Broj Telefona,Adresa BC,Adresa VS,Radni Dani,Polasci BC,Polasci VS,Status',
-      );
-
-      for (final putnik in putnici) {
-        final polasciBc = <String>[];
-        final polasciVs = <String>[];
-
-        for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-          final bc = putnik.getPolazakBelaCrkvaZaDan(dan);
-          final vs = putnik.getPolazakVrsacZaDan(dan);
-          if (bc != null && bc.isNotEmpty) polasciBc.add('$dan:$bc');
-          if (vs != null && vs.isNotEmpty) polasciVs.add('$dan:$vs');
-        }
-
-        // ✅ REŠENO: Async dobijanje naziva adresa iz UUID-ova
-        final adresaBcNaziv = await putnik.getAdresaBelaCrkvaNaziv() ?? '';
-        final adresaVsNaziv = await putnik.getAdresaVrsacNaziv() ?? '';
-
-        csvData.writeln(
-          [
-            '"${putnik.putnikIme}"',
-            putnik.tip,
-            '"${putnik.tipSkole ?? ''}"',
-            putnik.brojTelefona ?? '',
-            '"$adresaBcNaziv"', // Stvarni naziv BC adrese
-            '"$adresaVsNaziv"', // Stvarni naziv VS adrese
-            putnik.radniDani,
-            '"${polasciBc.join(';')}"',
-            '"${polasciVs.join(';')}"',
-            putnik.status,
-          ].join(','),
-        );
-      }
-
-      // Snimanje fajla - implementacija u toku
-      // Za sada samo prikaži CSV sadržaj u dialog-u
-      if (mounted) {
-        showDialog<void>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Export CSV'),
-            content: SingleChildScrollView(
-              child: SelectableText(
-                csvData.toString(),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Zatvori'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška pri exportu: $e')),
-      );
-    }
-  }
-
-  /// �📋 KOPIRAJ VREMENA NA DRUGE RADNE DANE
+  /// 📋 KOPIRAJ VREMENA NA DRUGE RADNE DANE
   void _kopirajVremenaNaDrugeRadneDane(String izvorDan) {
     final bcVreme = _getControllerBelaCrkva(izvorDan).text.trim();
     final vsVreme = _getControllerVrsac(izvorDan).text.trim();

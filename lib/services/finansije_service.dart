@@ -12,7 +12,7 @@ class FinansijeService {
       final response = await _supabase
           .from('voznje_log')
           .select('iznos')
-          .eq('tip', 'uplata')
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
           .gte('datum', from.toIso8601String().split('T')[0])
           .lte('datum', to.toIso8601String().split('T')[0]);
 

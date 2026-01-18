@@ -268,11 +268,11 @@ class RouteConfig {
 
   /// Zimski red vožnje - Bela Crkva polasci
   static const List<String> bcVremenaZimski = [
-    '5:00',
-    '6:00',
-    '7:00',
-    '8:00',
-    '9:00',
+    '05:00',
+    '06:00',
+    '07:00',
+    '08:00',
+    '09:00',
     '11:00',
     '12:00',
     '13:00',
@@ -283,9 +283,9 @@ class RouteConfig {
 
   /// Zimski red vožnje - Vršac polasci
   static const List<String> vsVremenaZimski = [
-    '6:00',
-    '7:00',
-    '8:00',
+    '06:00',
+    '07:00',
+    '08:00',
     '10:00',
     '11:00',
     '12:00',
@@ -298,9 +298,9 @@ class RouteConfig {
 
   /// Letnji red vožnje - Bela Crkva polasci
   static const List<String> bcVremenaLetnji = [
-    '5:00',
-    '6:00',
-    '8:00',
+    '05:00',
+    '06:00',
+    '08:00',
     '10:00',
     '12:00',
     '13:00',
@@ -311,9 +311,9 @@ class RouteConfig {
 
   /// Letnji red vožnje - Vršac polasci
   static const List<String> vsVremenaLetnji = [
-    '6:00',
-    '7:00',
-    '9:00',
+    '06:00',
+    '07:00',
+    '09:00',
     '11:00',
     '13:00',
     '14:00',
