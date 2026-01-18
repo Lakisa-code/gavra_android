@@ -1,6 +1,5 @@
 name: 🍎 iOS Production Release
 
-# Trigger for iOS production build
 on:
   workflow_dispatch:
     inputs:
@@ -21,7 +20,6 @@ on:
         required: true
         default: 'false'
 
-# Cancel prethodni workflow ako je aktivan
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -90,6 +88,12 @@ jobs:
           echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
           echo "📱 Build number: $NEW_BUILD"
 
+      - name: Update Info.plist
+        run: |
+          # Ensure Info.plist has the correct version
+          plutil -replace CFBundleShortVersionString -string "${{ steps.version.outputs.VERSION_NAME }}" ios/Runner/Info.plist
+          plutil -replace CFBundleVersion -string "${{ steps.build_info.outputs.BUILD_NUMBER }}" ios/Runner/Info.plist
+
       - name: Build iOS App
         run: |
           flutter build ipa --release \
@@ -104,8 +108,8 @@ jobs:
 
       - name: Wait for build processing
         run: |
-          echo "⏳ Waiting 3 minutes for Apple to process build..."
-          sleep 180
+          echo "⏳ Waiting 5 minutes for Apple to process build..."
+          sleep 300
           echo "✅ Build should be processed now"
 
       - name: Find and link build to version
@@ -114,66 +118,34 @@ jobs:
           BUILD_NUM="${{ steps.build_info.outputs.BUILD_NUMBER }}"
           echo "🔍 Looking for build $BUILD_NUM..."
 
-          # Wait additional time if needed for build to appear
-          for i in 1 2 3; do
-            BUILD_ID=$(app-store-connect builds list \
+          # Try to find the build
+          BUILD_ID=$(app-store-connect builds list \
+            --app-id "$APP_ID" \
+            --build-version-number "$BUILD_NUM" \
+            --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
+
+          if [ -z "$BUILD_ID" ]; then
+             echo "⏳ Build not found immediately. Waiting more..."
+             sleep 120
+             BUILD_ID=$(app-store-connect builds list \
               --app-id "$APP_ID" \
               --build-version-number "$BUILD_NUM" \
               --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
-
-            if [ -n "$BUILD_ID" ]; then
-              echo "✅ Found build ID: $BUILD_ID"
-              break
-            fi
-            echo "⏳ Build not found yet, waiting 60 seconds (attempt $i/3)..."
-            sleep 60
-          done
-
-          if [ -z "$BUILD_ID" ]; then
-            echo "❌ Could not find build $BUILD_NUM"
-            echo "⚠️ Build is uploaded. Please manually select it in App Store Connect."
-            echo "BUILD_ID=" >> $GITHUB_OUTPUT
-            exit 0
           fi
 
-          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
-
-          # Link build to version
-          echo "🔗 Linking build to version (id: $VERSION_ID)..."
-          app-store-connect app-store-versions modify \
-            --id "$VERSION_ID" \
-            --build-id "$BUILD_ID" || true
-
-      - name: Check existing App Store submission status
-        id: check_submission
-        run: |
-          # Attempt to list submissions for the app version
-          SUBS_JSON=$(app-store-connect app-store-version-submissions list --app-store-version-id "$VERSION_ID" --json 2>/dev/null || echo "[]")
-          SUB_ID=$(echo "$SUBS_JSON" | python3 - <<'PY'
-import sys,json
-data=json.load(sys.stdin)
-for s in data:
-    st = s.get('state') or s.get('status') or s.get('submissionState') or ''
-    if st and st.upper() in ('IN_REVIEW','WAITING_FOR_REVIEW','PENDING'):
-        print(s.get('id') or '')
-        sys.exit(0)
-print('')
-PY
-)
-          if [ -n "$SUB_ID" ]; then
-            echo "FOUND_SUBMISSION_ID=$SUB_ID" >> $GITHUB_OUTPUT
-            echo "Found existing submission: $SUB_ID"
-            if [ "${{ github.event.inputs.force_replace_review }}" = "true" ]; then
-              echo "Force replace requested — attempting to delete existing submission $SUB_ID"
-              app-store-connect app-store-version-submissions delete --id "$SUB_ID" || true
-              echo "Attempted delete (may require manual review if CLI doesn't support delete)."
-            else
-              echo "❌ ERROR: There is an active submission in review (id:$SUB_ID). To replace it set force_replace_review=true or cancel it manually."
-              exit 1
-            fi
+          if [ -n "$BUILD_ID" ]; then
+            echo "✅ Found build ID: $BUILD_ID"
+            echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
+            
+            # Link build to version
+            echo "🔗 Linking build to version (id: $VERSION_ID)..."
+            app-store-connect app-store-versions modify \
+              --id "$VERSION_ID" \
+              --build-id "$BUILD_ID" || echo "⚠️ Warning: Linking failed (maybe version string mismatch or already linked)"
           else
-            echo "No active App Store submissions found for version id $VERSION_ID"
-            echo "FOUND_SUBMISSION_ID=" >> $GITHUB_OUTPUT
+            echo "❌ Could not find build $BUILD_NUM in App Store Connect yet."
+            echo "⚠️ Proceeding without linking/submitting."
+            echo "BUILD_ID=" >> $GITHUB_OUTPUT
           fi
 
       - name: Submit for review (optional)
@@ -191,23 +163,8 @@ PY
           }
           echo "🎉 Successfully submitted for App Store review!"
 
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-ipa-build-${{ steps.build_info.outputs.BUILD_NUMBER }}
-          path: build/ios/ipa/*.ipa
-          retention-days: 30
-
       - name: Summary
+        if: always()
         run: |
           echo "## 🎉 iOS Build Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ steps.version.outputs.VERSION_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Build:** ${{ steps.build_info.outputs.BUILD_NUMBER }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Submit for review:** ${{ github.event.inputs.submit_for_review }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ github.event.inputs.submit_for_review }}" = "true" ]; then
-            echo "✅ Build uploaded and submitted for App Store review!" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ Build uploaded to App Store Connect (not submitted for review)" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "ver: ${{ steps.version.outputs.VERSION_NAME }} (${{ steps.build_info.outputs.BUILD_NUMBER }})" >> $GITHUB_STEP_SUMMARY
