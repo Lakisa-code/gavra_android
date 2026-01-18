@@ -66,8 +66,7 @@ jobs:
     with:
       git_ref: ${{ needs.prepare-release.outputs.new_sha }}
       bump_version: false
-      force_replace_review: '${{ inputs.ios_force_replace }}'
-      submit_for_review: 'true'
+      force_replace_review: ${{ inputs.ios_force_replace }}
 
   # Job 3: Huawei
   huawei-release:
