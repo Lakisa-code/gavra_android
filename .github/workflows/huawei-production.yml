@@ -79,23 +79,40 @@ jobs:
 
       - name: Auto-Bump Version
         if: ${{ github.event.inputs.bump_version == 'true' }}
-        shell: pwsh
+        shell: bash
         run: |
-          ./bump_version.ps1
-          
-          # Git configuration
+          # Read version from pubspec.yaml
+          LINE=$(grep "^version: " pubspec.yaml)
+          VERSION_PART=$(echo "$LINE" | sed 's/version: //g' | cut -d+ -f1)
+          BUILD_PART=$(echo "$LINE" | sed 's/.*+//g')
+
+          # Split version into major.minor.patch
+          IFS='.' read -r -a parts <<< "$VERSION_PART"
+          MAJOR="${parts[0]}"
+          MINOR="${parts[1]}"
+          PATCH="${parts[2]}"
+
+          # Increment Patch and Build (Patch + 1, Build + 1)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_BUILD=$((BUILD_PART + 1))
+
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH+$NEW_BUILD"
+          echo "[INFO] Bumping version: $VERSION_PART+$BUILD_PART -> $NEW_VERSION"
+
+          # Update file using sed (inplace)
+          sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+
+          # Git commit and push
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          
-          # Commit and push
           git add pubspec.yaml
-          if (git diff --staged --quiet) {
-            Write-Host "No changes to commit."
-          } else {
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
             git commit -m "Auto-bump version [skip ci]"
-            git push origin HEAD:main
-            Write-Host "✅ Version bumped and pushed to repo."
-          }
+            git push origin HEAD:${{ github.ref_name }}
+            echo "✅ Version bumped and pushed."
+          fi
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -157,23 +174,22 @@ jobs:
 
       - name: Get version info
         id: version
+        shell: bash
         run: |
-          if ($env:version_name) {
-            $verName = $env:version_name
-          } else {
-             $pubspec = Get-Content pubspec.yaml
-             $verLine = $pubspec | Where-Object { $_ -match "^version:" }
-             $verName = $verLine -replace "version: (\d+\.\d+\.\d+).*", '$1'
-          }
-          echo "VERSION=$verName" >> $env:GITHUB_OUTPUT
-          Write-Host "[INFO] Version: $verName"
+          if [ -n "$version_name" ]; then
+            VER_NAME="$version_name"
+          else
+             VER_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: //g' | cut -d+ -f1)
+          fi
+          echo "VERSION=$VER_NAME" >> $GITHUB_OUTPUT
+          echo "[INFO] Version: $VER_NAME"
 
       - name: Build Release APK
         run: |
           flutter build apk --release
-          Write-Host "[OK] APK built successfully"
+          echo "[OK] APK built successfully"
 
-      - name: Upload to Huawei AppGallery (PowerShell)
+      - name: Upload to Huawei AppGallery (Bash)
         id: upload
         env:
           HUAWEI_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
@@ -182,88 +198,97 @@ jobs:
           VERSION: ${{ steps.version.outputs.VERSION }}
           SUBMIT: ${{ inputs.submit_for_review }}
           FORCE_REPLACE: ${{ inputs.force_replace_review }}
+        shell: bash
         run: |
-          $clientId = $env:HUAWEI_CLIENT_ID
-          $clientSecret = $env:HUAWEI_CLIENT_SECRET
-          $appId = $env:HUAWEI_APP_ID
-
-          Write-Host "[INFO] Uploading to Huawei..."
+          echo "[INFO] Uploading to Huawei..."
 
           # 1. Get Token
-          $tokenBody = @{
-            client_id = $clientId
-            client_secret = $clientSecret
-            grant_type = "client_credentials"
-          } | ConvertTo-Json
-          $tokenResponse = Invoke-RestMethod -Uri "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" -Method Post -Body $tokenBody -ContentType "application/json"
-          $accessToken = $tokenResponse.access_token
+          TOKEN_RESPONSE=$(curl -s -X POST "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" \
+            -H "Content-Type: application/json" \
+            -d "{\"client_id\": \"$HUAWEI_CLIENT_ID\", \"client_secret\": \"$HUAWEI_CLIENT_SECRET\", \"grant_type\": \"client_credentials\"}")
+          
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
 
-          if (-not $accessToken) { Write-Error "Failed to get Access Token"; exit 1 }
-          Write-Host "✅ Got Access Token"
+          if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to get Access Token: $TOKEN_RESPONSE"
+            exit 1
+          fi
+          echo "✅ Got Access Token"
 
           # 2. Get Upload URL
-          $uploadUrlHeaders = @{ Authorization = "Bearer $accessToken"; client_id = $clientId }
-          
           # 2.1 Cancel Previous Review (If requested)
-          if ($env:FORCE_REPLACE -eq 'true') {
-             Write-Host "⚠️ Force Replace: Attempting to cancel previous submission..."
-             try {
-                $cancelUrl = "https://connect-api.cloud.huawei.com/api/publish/v2/app-cancel-submit?appId=$appId"
-                Invoke-RestMethod -Uri $cancelUrl -Method Put -Headers $uploadUrlHeaders -ContentType "application/json"
-                Write-Host "✅ Previous submission cancelled."
-                Start-Sleep -Seconds 5
-             } catch {
-                Write-Host "ℹ️ Cancel attempt ignored (App probably not in review). Details: $($_.Exception.Message)"
-             }
-          }
+          if [ "$FORCE_REPLACE" == "true" ]; then
+             echo "⚠️ Force Replace: Attempting to cancel previous submission..."
+             CANCEL_URL="https://connect-api.cloud.huawei.com/api/publish/v2/app-cancel-submit?appId=$HUAWEI_APP_ID"
+             curl -s -X PUT "$CANCEL_URL" \
+               -H "Authorization: Bearer $ACCESS_TOKEN" \
+               -H "client_id: $HUAWEI_CLIENT_ID" \
+               -H "Content-Type: application/json" || echo "ℹ️ Cancel attempt ignored."
+             sleep 5
+          fi
 
-          $uploadUrlResponse = Invoke-RestMethod -Uri "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=${appId}&suffix=apk" -Headers $uploadUrlHeaders -Method Get
-          $uploadUrl = $uploadUrlResponse.uploadUrl
-          $authCode = $uploadUrlResponse.authCode
+          UPLOAD_URL_RESPONSE=$(curl -s -X GET "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=${HUAWEI_APP_ID}&suffix=apk" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID")
           
-          if (-not $uploadUrl) { Write-Error "Failed to get Upload URL"; exit 1 }
+          UPLOAD_URL=$(echo "$UPLOAD_URL_RESPONSE" | jq -r '.uploadUrl')
+          AUTH_CODE=$(echo "$UPLOAD_URL_RESPONSE" | jq -r '.authCode')
+          
+          if [ "$UPLOAD_URL" == "null" ] || [ -z "$UPLOAD_URL" ]; then
+             echo "Failed to get Upload URL: $UPLOAD_URL_RESPONSE"
+             exit 1
+          fi
 
-          # 3. Upload APK (Using curl.exe because Invoke-RestMethod multipart is tricky without .NET classes)
-          $apkPath = "build\app\outputs\flutter-apk\app-release.apk"
+          # 3. Upload APK
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
           
-          Write-Host "🚀 Uploading file via curl.exe..."
-          $curlArgs = @("-k", "-s", "-X", "POST", "$uploadUrl", "-F", "file=@$apkPath", "-F", "authCode=$authCode", "-F", "fileCount=1")
-          $uploadResult = & curl.exe @curlArgs
+          echo "🚀 Uploading file..."
+          # Note: Huawei requires 'file' and 'authCode' and 'fileCount'
+          UPLOAD_RESULT=$(curl -s -k -X POST "$UPLOAD_URL" \
+            -F "file=@$APK_PATH" \
+            -F "authCode=$AUTH_CODE" \
+            -F "fileCount=1")
           
-          # Parse result (it is JSON string)
-          $uploadJson = $uploadResult | ConvertFrom-Json
-          $fileDestUrl = $uploadJson.result.UploadFileRsp.fileInfoList[0].fileDestUlr
+          FILE_DEST_URL=$(echo "$UPLOAD_RESULT" | jq -r '.result.UploadFileRsp.fileInfoList[0].fileDestUlr')
 
-          if (-not $fileDestUrl) { Write-Error "Failed to upload APK: $uploadResult"; exit 1 }
-          Write-Host "✅ Uploaded. Dest URL: $fileDestUrl"
+          if [ "$FILE_DEST_URL" == "null" ] || [ -z "$FILE_DEST_URL" ]; then
+             echo "Failed to upload APK: $UPLOAD_RESULT"
+             exit 1
+          fi
+          echo "✅ Uploaded. Dest URL: $FILE_DEST_URL"
 
           # 4. Update App File Info
-          $updateBody = @{
-            appId = $appId
-            fileType = 5 # 5=APK
-            files = @( @{ fileName = "app-release.apk"; fileDestUrl = $fileDestUrl } )
-          } | ConvertTo-Json -Depth 10
+          # Construct JSON body safely
+          UPDATE_BODY=$(jq -n \
+            --arg appId "$HUAWEI_APP_ID" \
+            --arg fileDestUrl "$FILE_DEST_URL" \
+            '{appId: $appId, fileType: 5, files: [{fileName: "app-release.apk", fileDestUrl: $fileDestUrl}]}')
 
-          Invoke-RestMethod -Uri "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$appId" -Method Put -Headers $uploadUrlHeaders -Body $updateBody -ContentType "application/json"
-          Write-Host "✅ App File Info Updated"
+          curl -s -X PUT "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$HUAWEI_APP_ID" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "client_id: $HUAWEI_CLIENT_ID" \
+            -H "Content-Type: application/json" \
+            -d "$UPDATE_BODY"
+            
+          echo "✅ App File Info Updated"
 
           # 5. Submit for Review
-          if ($env:SUBMIT -eq 'true') {
-             Write-Host "📤 Submitting for Review..."
-             $submitBody = @{ appId = $appId } | ConvertTo-Json
-             try {
-                Invoke-RestMethod -Uri "https://connect-api.cloud.huawei.com/api/publish/v2/app-submit?appId=$appId" -Method Post -Headers $uploadUrlHeaders -Body $submitBody -ContentType "application/json"
-                Write-Host "✅ App submitted successfully!"
-             } catch {
-                Write-Host "⚠️ Submit failed. It might be already in review."
-                Write-Host "Error details: $($_.Exception.Message)"
-                Write-Host "Please check AppGallery Connect manually."
-             }
-          }
+          if [ "$SUBMIT" == "true" ]; then
+             echo "📤 Submitting for Review..."
+             SUBMIT_BODY=$(jq -n --arg appId "$HUAWEI_APP_ID" '{appId: $appId}')
+             
+             RESPONSE=$(curl -s -X POST "https://connect-api.cloud.huawei.com/api/publish/v2/app-submit?appId=$HUAWEI_APP_ID" \
+               -H "Authorization: Bearer $ACCESS_TOKEN" \
+               -H "client_id: $HUAWEI_CLIENT_ID" \
+               -H "Content-Type: application/json" \
+               -d "$SUBMIT_BODY")
+               
+             echo "Submit Response: $RESPONSE"
+          fi
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
           name: huawei-apk-v${{ steps.version.outputs.VERSION }}
-          path: build\app\outputs\flutter-apk\app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
