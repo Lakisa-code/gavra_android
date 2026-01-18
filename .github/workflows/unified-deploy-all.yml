@@ -266,7 +266,7 @@ jobs:
           fi
 
   # ==============================================================================
-  # 4. iOS APP STORE
+  # 5. iOS APP STORE
   # ==============================================================================
   deploy-ios:
     name: 🍎 iOS App Store
@@ -275,6 +275,7 @@ jobs:
     env:
       BUNDLE_ID: 'com.gavra013.gavra013ios'
       APP_ID: '6757114361'
+      VERSION_ID: 'a4397448-6ed5-4220-82df-1b84e1a63657'
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
       APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
@@ -294,23 +295,56 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
           cache: true
-
-      - name: Install Apple Certificate and Profile
-        uses: apple-actions/import-codesign-certs@v2
-        with:
-          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-
-      - name: Prepare secrets (Fastlane/iOS)
-        run: |
-           mkdir -p ios/fastlane
-           echo "app_identifier(\"$BUNDLE_ID\")" > ios/fastlane/Appfile
-           echo "apple_id(\"bojan.gavrilovic@gmail.com\")" >> ios/fastlane/Appfile
-           echo "itc_team_id(\"121487823\")" >> ios/fastlane/Appfile
-           echo "team_id(\"5W88G55S9F\")" >> ios/fastlane/Appfile
+      
+      # USE CODEMAGIC TOOLS (Match ios-production.yml)
+      - name: Install Codemagic CLI Tools
+        run: pip install codemagic-cli-tools
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Setup keychain
+        run: keychain initialize
+
+      - name: Fetch signing files
+        run: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Setup certificates
+        run: keychain add-certificates
+
+      - name: Setup code signing
+        run: xcode-project use-profiles
+
+      - name: Create ExportOptions.plist
+        run: |
+          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -n 1)
+          echo "Found Profile Path: $PROFILE_PATH"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i "$PROFILE_PATH"))
+          echo "Found Profile UUID: $PROFILE_UUID"
+
+          if [ -z "$PROFILE_UUID" ]; then
+            echo "Error: Could not extract UUID from profile"
+            exit 1
+          fi
+          
+          cat <<EOF > $HOME/export_options.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$PROFILE_UUID</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
 
       - name: Install Pods
         run: |
@@ -318,7 +352,15 @@ jobs:
           pod install
 
       - name: Build IPA
-        run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+        run: |
+          VERSION_NAME=$(echo "${{ needs.bump-and-tag.outputs.new_version }}" | cut -d+ -f1)
+          # Ensure build number is integer (ios-production uses runs offset, here we use bumped version)
+          VERSION_CODE=$(echo "${{ needs.bump-and-tag.outputs.new_version }}" | cut -d+ -f2)
+
+          flutter build ipa --release \
+            --build-name=$VERSION_NAME \
+            --build-number=$VERSION_CODE \
+            --export-options-plist=$HOME/export_options.plist
 
       - name: Upload to TestFlight
         if: ${{ inputs.dry_run == false }}
@@ -328,3 +370,4 @@ jobs:
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+
