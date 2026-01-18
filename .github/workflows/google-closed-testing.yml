@@ -37,19 +37,40 @@ jobs:
 
       - name: Auto-Bump Version
         if: ${{ inputs.bump_version == true }}
-        shell: pwsh
+        shell: bash
         run: |
-          ./bump_version.ps1
+          # Read version from pubspec.yaml
+          LINE=$(grep "^version: " pubspec.yaml)
+          VERSION_PART=$(echo "$LINE" | sed 's/version: //g' | cut -d+ -f1)
+          BUILD_PART=$(echo "$LINE" | sed 's/.*+//g')
+
+          # Split version into major.minor.patch
+          IFS='.' read -r -a parts <<< "$VERSION_PART"
+          MAJOR="${parts[0]}"
+          MINOR="${parts[1]}"
+          PATCH="${parts[2]}"
+
+          # Increment Patch and Build (Patch + 1, Build + 1)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_BUILD=$((BUILD_PART + 1))
+
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH+$NEW_BUILD"
+          echo "[INFO] Bumping version: $VERSION_PART+$BUILD_PART -> $NEW_VERSION"
+
+          # Update file using sed (inplace)
+          sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+
+          # Git commit and push
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add pubspec.yaml
-          if (git diff --staged --quiet) {
-            Write-Host "No changes to commit."
-          } else {
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
             git commit -m "Auto-bump version [skip ci]"
-            git push origin HEAD:main
-            Write-Host "✅ Version bumped and pushed to repo."
-          }
+            git push origin HEAD:${{ github.ref_name }}
+            echo "✅ Version bumped and pushed."
+          fi
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -63,69 +84,64 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
 
-      - name: Prepare secrets (Windows)
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          GOOGLE_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      - name: Prepare secrets (Linux)
         run: |
           # 1. Restore Keystore
-          $keystoreBytes = [System.Convert]::FromBase64String($env:KEYSTORE_BASE64)
-          [System.IO.File]::WriteAllBytes("$(Get-Location)\android\gavra-release-key-production.keystore", $keystoreBytes)
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
           
           # 2. Create key.properties
-          $keyProps = "storePassword=$env:KEYSTORE_PASSWORD`nkeyPassword=$env:KEY_PASSWORD`nkeyAlias=$env:KEY_ALIAS`nstoreFile=../gavra-release-key-production.keystore"
-          Set-Content -Path "android/key.properties" -Value $keyProps
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=../gavra-release-key-production.keystore" >> android/key.properties
 
           # 3. Restore Google Play JSON
-          Set-Content -Path "android/google-service-account.json" -Value $env:GOOGLE_JSON
+          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}" > android/google-service-account.json
 
       - name: 🛡️ Verify Keystore (Fail Fast)
-        run: |
-          Write-Host "Verifying Keystore integrity..."
-          if (Test-Path "android/gavra-release-key-production.keystore") {
-            $keystoreSize = (Get-Item "android/gavra-release-key-production.keystore").Length
-            Write-Host "Keystore size: $keystoreSize bytes"
-            
-            if ($keystoreSize -lt 100) {
-              Write-Error "Keystore is too small! Likely corrupted."
-              exit 1
-            }
-            
-            # Pokusaj da izlistas kljuceve keytool-om (ovo ce pucati odmah ako je format los)
-            & "$env:JAVA_HOME/bin/keytool.exe" -list -v -keystore "android/gavra-release-key-production.keystore" -storepass "$env:KEYSTORE_PASSWORD"
-            if ($LASTEXITCODE -ne 0) {
-              Write-Error "Keytool verification FAILED! Your KEYSTORE_BASE64 secret is likely invalid or corrupted."
-              exit 1
-            }
-            Write-Host "✅ Keystore verification PASSED."
-          } else {
-             Write-Error "Keystore file not found!"
-             exit 1
-          }
         env:
            KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "Verifying Keystore integrity..."
+          KEYSTORE_PATH="android/gavra-release-key-production.keystore"
+          if [ -f "$KEYSTORE_PATH" ]; then
+            SIZE=$(stat -c%s "$KEYSTORE_PATH")
+            echo "Keystore size: $SIZE bytes"
+            
+            if [ "$SIZE" -lt 100 ]; then
+              echo "Keystore is too small! Likely corrupted."
+              exit 1
+            fi
+            
+            # Verify with keytool
+            keytool -list -v -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASSWORD"
+            if [ $? -ne 0 ]; then
+              echo "Keytool verification FAILED! Your KEYSTORE_BASE64 secret is likely invalid or corrupted."
+              exit 1
+            fi
+            echo "✅ Keystore verification PASSED."
+          else
+             echo "Keystore file not found!"
+             exit 1
+          fi
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Get version info
         id: version
+        shell: bash
         run: |
-          if ($env:version_name) {
-            $verName = $env:version_name
-            $verCode = $env:version_code
-          } else {
-            $pubspec = Get-Content pubspec.yaml
-            $verLine = $pubspec | Where-Object { $_ -match "^version:" }
-            $verName = $verLine -replace "version: (\d+\.\d+\.\d+).*", '$1'
-            $verCode = $verLine -replace ".*[\+](.*)", '$1'
-          }
-          echo "VERSION_NAME=$verName" >> $env:GITHUB_OUTPUT
-          echo "VERSION_CODE=$verCode" >> $env:GITHUB_OUTPUT
-          Write-Host "[INFO] Building v$verName ($verCode)"
+          if [ -n "$version_name" ]; then
+            VER_NAME="$version_name"
+            VER_CODE="$version_code"
+          else
+            VER_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: //g' | cut -d+ -f1)
+            VER_CODE=$(grep '^version:' pubspec.yaml | sed 's/.*+//g')
+          fi
+          echo "VERSION_NAME=$VER_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=$VER_CODE" >> $GITHUB_OUTPUT
+          echo "[INFO] Building v$VER_NAME ($VER_CODE)"
 
       - name: Build AAB
         run: |
@@ -136,7 +152,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.gavra013.gavra_android
-          releaseFiles: build\app\outputs\bundle\release\app-release.aab # Windows path separator
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab # Linux/Unix path
           track: alpha # Closed Testing
           status: completed
           releaseName: "v${{ steps.version.outputs.VERSION_NAME }}"
@@ -145,7 +161,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: google-play-aab-${{ steps.version.outputs.VERSION_CODE }}
-          path: build\app\outputs\bundle\release\app-release.aab
+          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
       - name: Summary
