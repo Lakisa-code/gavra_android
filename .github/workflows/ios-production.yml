@@ -71,6 +71,24 @@ jobs:
       - name: Setup code signing
         run: xcode-project use-profiles
 
+      - name: Create ExportOptions.plist
+        run: |
+          cat > $HOME/export_options.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | xargs basename | sed 's/.mobileprovision//')</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
       - name: Get version info
         id: version
         run: |
