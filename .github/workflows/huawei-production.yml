@@ -133,6 +133,16 @@ jobs:
           Set-Content -Path "android/key.properties" -Value $keyProps
           Write-Host "[OK] Secrets configured"
 
+      - name: 🛡️ Verify Keystore (Fail Fast)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        shell: pwsh
+        run: |
+          if (-not $env:KEYSTORE_BASE64) { Write-Error "KEYSTORE_BASE64 is empty/null!"; exit 1 }
+          $len = $env:KEYSTORE_BASE64.Length
+          Write-Host "Keystore Secret Length: $len chars"
+          if ($len -lt 100) { Write-Error "Keystore secret is too short ($len chars). Likely invalid/empty."; exit 1 }
+
       - name: Get dependencies
         run: flutter pub get
 
