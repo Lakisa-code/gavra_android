@@ -40,6 +40,11 @@ on:
          required: false
          default: 'false'
          type: string
+      submit_for_review:
+         description: 'Submit for review?'
+         required: false
+         default: 'true'
+         type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -71,7 +76,7 @@ jobs:
           ref: ${{ inputs.git_ref || github.ref }}
 
       - name: Auto-Bump Version
-        if: ${{ github.event.inputs.bump_version == 'true' }}
+        if: ${{ inputs.bump_version == true || github.event.inputs.bump_version == 'true' }}
         shell: pwsh
         run: |
           ./bump_version.ps1
@@ -123,7 +128,7 @@ jobs:
           echo "Found Profile Path: $PROFILE_PATH"
 
       - name: Cancel previous submission
-        if: ${{ github.event.inputs.force_replace_review == 'true' }}
+        if: ${{ inputs.force_replace_review == 'true' || github.event.inputs.force_replace_review == 'true' }}
         run: |
           echo "⚠️ Force replacing review requested..."
           echo "🔍 Checking for existing submissions for Version ID: $VERSION_ID"
@@ -251,7 +256,7 @@ jobs:
           fi
 
       - name: Submit for review (optional)
-        if: ${{ github.event.inputs.submit_for_review == 'true' }}
+        if: ${{ inputs.submit_for_review == 'true' || github.event.inputs.submit_for_review == 'true' }}
         run: |
           if [ -z "${{ steps.link_build.outputs.BUILD_ID }}" ]; then
             echo "❌ No build ID found to submit; skipping submission."
