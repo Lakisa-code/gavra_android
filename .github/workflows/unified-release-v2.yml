@@ -1,0 +1,123 @@
+name: 🚀 Release All Platforms (Unified V2)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_version:
+        description: 'Auto-bump Version? (Recommended: true)'
+        required: true
+        default: 'true'
+        type: boolean
+      ios_force_replace:
+        description: 'Force Replace existing reviews? (iOS & Huawei)'
+        required: true
+        default: 'false'
+        type: boolean
+      submit_for_review:
+        description: 'Submit for Review immediately? (iOS & Huawei)'
+        required: true
+        default: 'true'
+        type: boolean
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  # ------------------------------------------------------------------
+  # JOB 1: BUMP VERSION (Centralized Version Management)
+  # ------------------------------------------------------------------
+  bump-version-job:
+    name: 🔖 Bump Version & Tag
+    runs-on: windows-latest
+    outputs:
+      new_sha: ${{ steps.push.outputs.commit_hash }}
+      skipped_bump: ${{ steps.push.outputs.skipped }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0 # Fetch all history for proper git operations
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Execute Bump Script
+        if: ${{ inputs.bump_version == true }}
+        shell: pwsh
+        run: |
+          Write-Host "Running bump_version.ps1..."
+          ./bump_version.ps1
+
+      - name: Commit & Push Changes
+        id: push
+        if: ${{ inputs.bump_version == true }}
+        shell: pwsh
+        run: |
+          git add pubspec.yaml
+          
+          if (git diff --staged --quiet) {
+            Write-Host "No changes detected (maybe version was already bumped manually)."
+            echo "skipped=true" >> $env:GITHUB_OUTPUT
+            $sha = git rev-parse HEAD
+            echo "commit_hash=$sha" >> $env:GITHUB_OUTPUT
+          } else {
+            git commit -m "🔖 Release Bump [skip ci]"
+            git push origin HEAD:main
+            
+            $sha = git rev-parse HEAD
+            Write-Host "✅ Pushed new version. SHA: $sha"
+            echo "commit_hash=$sha" >> $env:GITHUB_OUTPUT
+            echo "skipped=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Get SHA if no bump
+        if: ${{ inputs.bump_version == false }}
+        shell: pwsh
+        run: |
+          $sha = git rev-parse HEAD
+          echo "commit_hash=$sha" >> $env:GITHUB_OUTPUT
+
+  # ------------------------------------------------------------------
+  # JOB 2: GOOGLE PLAY (Closed Testing)
+  # ------------------------------------------------------------------
+  google-release:
+    name: 🤖 Google Play
+    needs: bump-version-job
+    uses: ./.github/workflows/google-closed-testing.yml
+    secrets: inherit
+    with:
+      # Use the SHA from the bump job to ensure we build exactly that version
+      git_ref: ${{ needs.bump-version-job.outputs.new_sha }}
+      bump_version: false # Already bumped in Job 1
+
+  # ------------------------------------------------------------------
+  # JOB 3: HUAWEI APPGALLERY
+  # ------------------------------------------------------------------
+  huawei-release:
+    name: 📱 Huawei AppGallery
+    needs: bump-version-job
+    uses: ./.github/workflows/huawei-production.yml
+    secrets: inherit
+    with:
+      git_ref: ${{ needs.bump-version-job.outputs.new_sha }}
+      bump_version: false
+      submit_for_review: ${{ inputs.submit_for_review }}
+      force_replace_review: ${{ inputs.ios_force_replace }}
+
+  # ------------------------------------------------------------------
+  # JOB 4: IOS (App Store / TestFlight)
+  # ------------------------------------------------------------------
+  ios-release:
+    name: 🍎 iOS App Store
+    needs: bump-version-job
+    uses: ./.github/workflows/ios-production.yml
+    secrets: inherit
+    with:
+      git_ref: ${{ needs.bump-version-job.outputs.new_sha }}
+      bump_version: false
+      submit_for_review: ${{ inputs.submit_for_review }}
+      force_replace_review: ${{ inputs.ios_force_replace }}
