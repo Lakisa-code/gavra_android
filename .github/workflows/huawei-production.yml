@@ -208,7 +208,7 @@ jobs:
              }
           }
 
-          $uploadUrlResponse = Invoke-RestMethod -Uri "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=$appId&suffix=apk" -Headers $uploadUrlHeaders -Method Get
+          $uploadUrlResponse = Invoke-RestMethod -Uri "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=${appId}&suffix=apk" -Headers $uploadUrlHeaders -Method Get
           $uploadUrl = $uploadUrlResponse.uploadUrl
           $authCode = $uploadUrlResponse.authCode
           
