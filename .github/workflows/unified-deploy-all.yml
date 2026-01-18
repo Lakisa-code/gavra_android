@@ -27,6 +27,11 @@ on:
         required: false
         default: 'true'
         type: boolean
+      dry_run:
+        description: 'Dry Run? (Build ONLY - No Upload)'
+        required: true
+        default: 'false'
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -157,6 +162,7 @@ jobs:
           flutter build appbundle --release --build-name=$VERSION_NAME --build-number=$VERSION_CODE
 
       - name: Upload to Google Play (Closed Testing)
+        if: ${{ inputs.dry_run == false }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
@@ -223,6 +229,7 @@ jobs:
         run: flutter build apk --release
 
       - name: Upload to Huawei AppGallery (Bash)
+        if: ${{ inputs.dry_run == false }}
         env:
           HUAWEI_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
           HUAWEI_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
@@ -313,6 +320,7 @@ jobs:
         run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
 
       - name: Upload to TestFlight
+        if: ${{ inputs.dry_run == false }}
         uses: apple-actions/upload-testflight-build@v1
         with:
           app-path: 'build/ios/ipa/gavra_android.ipa'
