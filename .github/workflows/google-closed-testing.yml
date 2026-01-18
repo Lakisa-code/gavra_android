@@ -3,6 +3,12 @@ name: 🔒 Google Play Closed Testing
 # Upload na Google Play Closed Testing (Alpha track)
 on:
   workflow_dispatch:
+    inputs:
+      bump_version:
+        description: 'Auto-bump version in pubspec.yaml?'
+        required: true
+        default: 'false'
+        type: boolean
   workflow_call:
     inputs:
       git_ref:
