@@ -1,0 +1,321 @@
+name: 🚀 UNIFIED DEPLOY ALL (Google, Huawei, iOS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_version:
+        description: 'Auto-bump version in pubspec.yaml?'
+        required: true
+        default: 'true'
+        type: boolean
+      release_notes:
+        description: 'Release notes (What is new)'
+        required: false
+        default: 'Ispravke grešaka i poboljšanja performansi.'
+      submit_for_review_huawei:
+        description: 'Huawei: Submit for review?'
+        required: false
+        default: 'true'
+        type: boolean
+      force_replace_review_huawei:
+        description: 'Huawei: Force replace review?'
+        required: false
+        default: 'false'
+        type: boolean
+      submit_for_review_ios:
+        description: 'iOS: Submit for review?'
+        required: false
+        default: 'true'
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+
+permissions:
+  contents: write
+
+jobs:
+  # ==============================================================================
+  # 1. BUMP VERSION JOB (Runs first, updates repo)
+  # ==============================================================================
+  bump-and-tag:
+    name: 🔖 Bump Version
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version_step.outputs.NEW_VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auto-Bump Version
+        id: version_step
+        if: ${{ inputs.bump_version == true }}
+        shell: bash
+        run: |
+          # Read version from pubspec.yaml
+          LINE=$(grep "^version: " pubspec.yaml)
+          VERSION_PART=$(echo "$LINE" | sed 's/version: //g' | cut -d+ -f1)
+          BUILD_PART=$(echo "$LINE" | sed 's/.*+//g')
+
+          # Split version into major.minor.patch
+          IFS='.' read -r -a parts <<< "$VERSION_PART"
+          MAJOR="${parts[0]}"
+          MINOR="${parts[1]}"
+          PATCH="${parts[2]}"
+
+          # Increment Patch and Build (Patch + 1, Build + 1)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_BUILD=$((BUILD_PART + 1))
+
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH+$NEW_BUILD"
+          echo "[INFO] Bumping version: $VERSION_PART+$BUILD_PART -> $NEW_VERSION"
+
+          # Update file using sed (inplace)
+          sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+
+          # Output for other jobs
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Git commit and push
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add pubspec.yaml
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Auto-bump version to $NEW_VERSION [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+            echo "✅ Version bumped and pushed."
+          fi
+      
+      - name: Read Version (if not bumped)
+        if: ${{ inputs.bump_version == false }}
+        run: |
+           LINE=$(grep "^version: " pubspec.yaml)
+           VERSION_PART=$(echo "$LINE" | sed 's/version: //g')
+           echo "NEW_VERSION=$VERSION_PART" >> $GITHUB_OUTPUT
+
+  # ==============================================================================
+  # 2. GOOGLE PLAY (Alpha)
+  # ==============================================================================
+  deploy-google:
+    name: 🤖 Google Play (Alpha)
+    needs: bump-and-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }} # Checkout the branch (including new push)
+
+      - name: Pull Latest Changes (Ensure we have the bump)
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Prepare secrets (Linux)
+        run: |
+          # 1. Restore Keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
+          
+          # 2. Create key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=../gavra-release-key-production.keystore" >> android/key.properties
+
+          # 3. Restore Google Play JSON
+          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}" > android/google-service-account.json
+
+          # 4. Restore AgConnect (Huawei) - Required for build even if not releasing to Huawei
+          mkdir -p android/app
+          echo "${{ secrets.AGC_BASE64 }}" | base64 -d > android/app/agconnect-services.json
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build AAB
+        run: |
+          VERSION_NAME=$(echo "${{ needs.bump-and-tag.outputs.new_version }}" | cut -d+ -f1)
+          VERSION_CODE=$(echo "${{ needs.bump-and-tag.outputs.new_version }}" | cut -d+ -f2)
+          flutter build appbundle --release --build-name=$VERSION_NAME --build-number=$VERSION_CODE
+
+      - name: Upload to Google Play (Closed Testing)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.gavra013.gavra_android
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: alpha
+          status: completed
+          releaseName: "v${{ needs.bump-and-tag.outputs.new_version }}"
+
+  # ==============================================================================
+  # 3. HUAWEI APPGALLERY
+  # ==============================================================================
+  deploy-huawei:
+    name: 📱 Huawei AppGallery
+    needs: bump-and-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Pull Latest Changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Prepare Secrets (Linux)
+        env:
+          AGC_BASE64: ${{ secrets.AGC_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: |
+          mkdir -p android/app
+          mkdir -p assets
+          echo "${{ secrets.AGC_BASE64 }}" | base64 -d > android/app/agconnect-services.json
+          cp android/app/agconnect-services.json assets/agconnect-services.json
+
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Upload to Huawei AppGallery (Bash)
+        env:
+          HUAWEI_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
+          HUAWEI_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
+          HUAWEI_APP_ID: ${{ secrets.AGC_APP_ID }}
+          SUBMIT: ${{ inputs.submit_for_review_huawei }}
+          FORCE_REPLACE: ${{ inputs.force_replace_review_huawei }}
+        shell: bash
+        run: |
+          echo "[INFO] Uploading to Huawei..."
+          # (Simplified logic from verified workflow)
+          TOKEN_RESPONSE=$(curl -s -X POST "https://connect-api.cloud.huawei.com/api/oauth2/v1/token" -H "Content-Type: application/json" -d "{\"client_id\": \"$HUAWEI_CLIENT_ID\", \"client_secret\": \"$HUAWEI_CLIENT_SECRET\", \"grant_type\": \"client_credentials\"}")
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+          
+          if [ "$FORCE_REPLACE" == "true" ]; then
+             curl -s -X PUT "https://connect-api.cloud.huawei.com/api/publish/v2/app-cancel-submit?appId=$HUAWEI_APP_ID" -H "Authorization: Bearer $ACCESS_TOKEN" -H "client_id: $HUAWEI_CLIENT_ID" -H "Content-Type: application/json"
+             sleep 5
+          fi
+
+          UPLOAD_URL_RESPONSE=$(curl -s -X GET "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=${HUAWEI_APP_ID}&suffix=apk" -H "Authorization: Bearer $ACCESS_TOKEN" -H "client_id: $HUAWEI_CLIENT_ID")
+          UPLOAD_URL=$(echo "$UPLOAD_URL_RESPONSE" | jq -r '.uploadUrl')
+          AUTH_CODE=$(echo "$UPLOAD_URL_RESPONSE" | jq -r '.authCode')
+
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          UPLOAD_RESULT=$(curl -s -k -X POST "$UPLOAD_URL" -F "file=@$APK_PATH" -F "authCode=$AUTH_CODE" -F "fileCount=1")
+          FILE_DEST_URL=$(echo "$UPLOAD_RESULT" | jq -r '.result.UploadFileRsp.fileInfoList[0].fileDestUlr')
+
+          UPDATE_BODY=$(jq -n --arg appId "$HUAWEI_APP_ID" --arg fileDestUrl "$FILE_DEST_URL" '{appId: $appId, fileType: 5, files: [{fileName: "app-release.apk", fileDestUrl: $fileDestUrl}]}')
+          curl -s -X PUT "https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info?appId=$HUAWEI_APP_ID" -H "Authorization: Bearer $ACCESS_TOKEN" -H "client_id: $HUAWEI_CLIENT_ID" -H "Content-Type: application/json" -d "$UPDATE_BODY"
+
+          if [ "$SUBMIT" == "true" ]; then
+             SUBMIT_BODY=$(jq -n --arg appId "$HUAWEI_APP_ID" '{appId: $appId}')
+             curl -s -X POST "https://connect-api.cloud.huawei.com/api/publish/v2/app-submit?appId=$HUAWEI_APP_ID" -H "Authorization: Bearer $ACCESS_TOKEN" -H "client_id: $HUAWEI_CLIENT_ID" -H "Content-Type: application/json" -d "$SUBMIT_BODY"
+          fi
+
+  # ==============================================================================
+  # 4. iOS APP STORE
+  # ==============================================================================
+  deploy-ios:
+    name: 🍎 iOS App Store
+    needs: bump-and-tag
+    runs-on: macos-latest
+    env:
+      BUNDLE_ID: 'com.gavra013.gavra013ios'
+      APP_ID: '6757114361'
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Pull Latest Changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Install Apple Certificate and Profile
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
+      - name: Prepare secrets (Fastlane/iOS)
+        run: |
+           mkdir -p ios/fastlane
+           echo "app_identifier(\"$BUNDLE_ID\")" > ios/fastlane/Appfile
+           echo "apple_id(\"bojan.gavrilovic@gmail.com\")" >> ios/fastlane/Appfile
+           echo "itc_team_id(\"121487823\")" >> ios/fastlane/Appfile
+           echo "team_id(\"5W88G55S9F\")" >> ios/fastlane/Appfile
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Install Pods
+        run: |
+          cd ios
+          pod install
+
+      - name: Build IPA
+        run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v1
+        with:
+          app-path: 'build/ios/ipa/gavra_android.ipa'
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
