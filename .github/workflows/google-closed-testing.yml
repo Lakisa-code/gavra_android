@@ -72,7 +72,7 @@ jobs:
           }
           echo "VERSION_NAME=$verName" >> $env:GITHUB_OUTPUT
           echo "VERSION_CODE=$verCode" >> $env:GITHUB_OUTPUT
-          Write-Host "📦 Building v$verName ($verCode)"
+          Write-Host "[INFO] Building v$verName ($verCode)"
 
       - name: Build AAB
         run: |

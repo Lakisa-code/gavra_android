@@ -70,7 +70,7 @@ jobs:
           # 3. Create key.properties
           $keyProps = "storePassword=$env:STORE_PASSWORD`nkeyPassword=$env:KEY_PASSWORD`nkeyAlias=$env:KEY_ALIAS`nstoreFile=upload-keystore.jks"
           Set-Content -Path "android/key.properties" -Value $keyProps
-          Write-Host "✅ Secrets configured"
+          Write-Host "[OK] Secrets configured"
 
       - name: Get dependencies
         run: flutter pub get
@@ -86,12 +86,12 @@ jobs:
              $verName = $verLine -replace "version: (\d+\.\d+\.\d+).*", '$1'
           }
           echo "VERSION=$verName" >> $env:GITHUB_OUTPUT
-          Write-Host "📌 Version: $verName"
+          Write-Host "[INFO] Version: $verName"
 
       - name: Build Release APK
         run: |
           flutter build apk --release
-          Write-Host "✅ APK built successfully"
+          Write-Host "[OK] APK built successfully"
 
       - name: Upload to Huawei AppGallery (PowerShell)
         id: upload
@@ -106,7 +106,7 @@ jobs:
           $clientSecret = $env:HUAWEI_CLIENT_SECRET
           $appId = $env:HUAWEI_APP_ID
 
-          Write-Host "📦 Uploading to Huawei..."
+          Write-Host "[INFO] Uploading to Huawei..."
 
           # 1. Get Token
           $tokenBody = @{
