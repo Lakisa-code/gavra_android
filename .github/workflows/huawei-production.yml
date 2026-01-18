@@ -66,10 +66,10 @@ permissions:
 jobs:
   build-and-upload-huawei:
     name: 🚀 Build & Upload to Huawei
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     defaults:
       run:
-        shell: powershell
+        shell: pwsh
 
     steps:
       - name: Checkout
