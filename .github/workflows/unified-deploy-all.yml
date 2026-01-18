@@ -362,12 +362,46 @@ jobs:
             --build-number=$VERSION_CODE \
             --export-options-plist=$HOME/export_options.plist
 
-      - name: Upload to TestFlight
+      - name: Upload to App Store Connect
         if: ${{ inputs.dry_run == false }}
-        uses: apple-actions/upload-testflight-build@v1
-        with:
-          app-path: 'build/ios/ipa/gavra_android.ipa'
-          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
-          api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          app-store-connect publish --path build/ios/ipa/*.ipa
+          echo "✅ Build uploaded to App Store Connect!"
+
+      - name: Wait for build processing
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          echo "⏳ Waiting 5 minutes for Apple to process build..."
+          sleep 300
+          echo "✅ Build should be processed now"
+
+      - name: Link and Submit (Optional)
+        id: link_build
+        if: ${{ inputs.dry_run == false && inputs.submit_for_review_ios == true }}
+        run: |
+           # Use the version code we built with
+           BUILD_NUM=$(echo "${{ needs.bump-and-tag.outputs.new_version }}" | cut -d+ -f2)
+           echo "🔍 Looking for build $BUILD_NUM..."
+           
+           # Try to find the build
+           BUILD_ID=$(app-store-connect builds list \
+             --app-id "$APP_ID" \
+             --build-version-number "$BUILD_NUM" \
+             --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
+
+           if [ -n "$BUILD_ID" ]; then
+             echo "✅ Found build ID: $BUILD_ID"
+             
+             # Link build to version
+             echo "🔗 Linking build to version (id: $VERSION_ID)..."
+             app-store-connect app-store-versions modify \
+               --id "$VERSION_ID" \
+               --build-id "$BUILD_ID" || echo "⚠️ Warning: Linking failed"
+
+             echo "🚀 Submitting for App Store review..."
+             app-store-connect app-store-version-submissions create \
+               --app-store-version-id "$VERSION_ID" || echo "⚠️ Could not auto-submit."
+           else
+             echo "❌ Could not find build $BUILD_NUM in App Store Connect yet."
+           fi
 
