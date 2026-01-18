@@ -86,7 +86,7 @@ jobs:
             Write-Host "No changes to commit."
           } else {
             git commit -m "Auto-bump version to $(grep 'version:' pubspec.yaml) [skip ci]"
-            git push
+            git push origin HEAD:main
             Write-Host "✅ Version bumped and pushed to repo."
           }
 

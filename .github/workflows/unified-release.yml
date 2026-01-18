@@ -45,7 +45,7 @@ jobs:
             Write-Host "No changes to commit (maybe manually bumped?)"
           } else {
             git commit -m "🔖 Release Bump [skip ci]"
-            git push
+            git push origin HEAD:main
             Write-Host "✅ Version successfully bumped."
           }
 
