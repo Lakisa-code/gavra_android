@@ -82,6 +82,32 @@ jobs:
           # 3. Restore Google Play JSON
           Set-Content -Path "android/google-service-account.json" -Value $env:GOOGLE_JSON
 
+      - name: 🛡️ Verify Keystore (Fail Fast)
+        run: |
+          Write-Host "Verifying Keystore integrity..."
+          if (Test-Path "android/gavra-release-key-production.keystore") {
+            $keystoreSize = (Get-Item "android/gavra-release-key-production.keystore").Length
+            Write-Host "Keystore size: $keystoreSize bytes"
+            
+            if ($keystoreSize -lt 100) {
+              Write-Error "Keystore is too small! Likely corrupted."
+              exit 1
+            }
+            
+            # Pokusaj da izlistas kljuceve keytool-om (ovo ce pucati odmah ako je format los)
+            & "$env:JAVA_HOME/bin/keytool.exe" -list -v -keystore "android/gavra-release-key-production.keystore" -storepass "$env:KEYSTORE_PASSWORD"
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Keytool verification FAILED! Your KEYSTORE_BASE64 secret is likely invalid or corrupted."
+              exit 1
+            }
+            Write-Host "✅ Keystore verification PASSED."
+          } else {
+             Write-Error "Keystore file not found!"
+             exit 1
+          }
+        env:
+           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+
       - name: Get dependencies
         run: flutter pub get
 
