@@ -15,7 +15,11 @@ env:
 jobs:
   build-and-upload:
     name: 🚀 Build & Upload to Google Play
-    runs-on: ubuntu-latest
+    runs-on: self-hosted # CHANGED: Uses your local Windows Runner
+    defaults:
+      run:
+        shell: powershell # CHANGED: Explicitly use PowerShell
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,63 +36,55 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
 
-      - name: Prepare agconnect-services.json
-        run: |
-          mkdir -p assets android/app
-          # Force valid configuration for Google Play build to satisfy Huawei plugin requirements
-          echo '{ "client": { "package_name": "com.gavra013.gavra_android" } }' > assets/agconnect-services.json
-          cp assets/agconnect-services.json android/app/agconnect-services.json
-
-      - name: Restore keystore
+      - name: Prepare secrets (Windows)
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > gavra-release-key-production.keystore
-          mkdir -p android
-          cp gavra-release-key-production.keystore android/
-
-      - name: Create key.properties
-        env:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          GOOGLE_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
-          printf "storePassword=%s\n" "$KEYSTORE_PASSWORD" > android/key.properties
-          printf "keyPassword=%s\n" "$KEY_PASSWORD" >> android/key.properties
-          printf "keyAlias=%s\n" "$KEY_ALIAS" >> android/key.properties
-          printf "storeFile=../gavra-release-key-production.keystore\n" >> android/key.properties
+          # 1. Restore Keystore
+          $keystoreBytes = [System.Convert]::FromBase64String($env:KEYSTORE_BASE64)
+          [System.IO.File]::WriteAllBytes("$(Get-Location)\android\gavra-release-key-production.keystore", $keystoreBytes)
+          
+          # 2. Create key.properties
+          $keyProps = "storePassword=$env:KEYSTORE_PASSWORD`nkeyPassword=$env:KEY_PASSWORD`nkeyAlias=$env:KEY_ALIAS`nstoreFile=../gavra-release-key-production.keystore"
+          Set-Content -Path "android/key.properties" -Value $keyProps
+
+          # 3. Restore Google Play JSON
+          Set-Content -Path "android/google-service-account.json" -Value $env:GOOGLE_JSON
 
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Get version info (pubspec or inputs)
+      - name: Get version info
         id: version
         run: |
-          if [ -n "${{ github.event.inputs.version_name }}" ]; then
-            VERSION_NAME="${{ github.event.inputs.version_name }}"
-            VERSION_CODE="${{ github.event.inputs.version_code }}"
-          else
-            VERSION_LINE=$(grep "^version:" pubspec.yaml)
-            VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
-            VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: [0-9]*\.[0-9]*\.[0-9]*+\([0-9]*\)/\1/')
-          fi
-          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "📦 Building v$VERSION_NAME ($VERSION_CODE)"
+          if ($env:version_name) {
+            $verName = $env:version_name
+            $verCode = $env:version_code
+          } else {
+            $pubspec = Get-Content pubspec.yaml
+            $verLine = $pubspec | Where-Object { $_ -match "^version:" }
+            $verName = $verLine -replace "version: (\d+\.\d+\.\d+).*", '$1'
+            $verCode = $verLine -replace ".*[\+](.*)", '$1'
+          }
+          echo "VERSION_NAME=$verName" >> $env:GITHUB_OUTPUT
+          echo "VERSION_CODE=$verCode" >> $env:GITHUB_OUTPUT
+          Write-Host "📦 Building v$verName ($verCode)"
 
       - name: Build AAB
         run: |
-          flutter build appbundle --release \
-            --build-name=${{ steps.version.outputs.VERSION_NAME }} \
-            --build-number=${{ steps.version.outputs.VERSION_CODE }}
+          flutter build appbundle --release --build-name=${{ steps.version.outputs.VERSION_NAME }} --build-number=${{ steps.version.outputs.VERSION_CODE }}
 
       - name: Upload to Google Play (Closed Testing)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.gavra013.gavra_android
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: alpha
+          releaseFiles: build\app\outputs\bundle\release\app-release.aab # Windows path separator
+          track: alpha # Closed Testing
           status: completed
           releaseName: "v${{ steps.version.outputs.VERSION_NAME }}"
 
@@ -96,7 +92,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: google-play-aab-${{ steps.version.outputs.VERSION_CODE }}
-          path: build/app/outputs/bundle/release/app-release.aab
+          path: build\app\outputs\bundle\release\app-release.aab
           retention-days: 30
 
       - name: Summary
