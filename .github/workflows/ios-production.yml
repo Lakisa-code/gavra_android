@@ -40,6 +40,11 @@ on:
          required: false
          default: 'false'
          type: string
+      submit_for_review:
+         description: 'Submit for review?'
+         required: false
+         default: 'true'
+         type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
