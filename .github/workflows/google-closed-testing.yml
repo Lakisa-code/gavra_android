@@ -27,7 +27,7 @@ permissions:
 jobs:
   build-and-upload:
     name: 🚀 Build & Upload to Google Play
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
