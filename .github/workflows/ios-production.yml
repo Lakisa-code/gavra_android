@@ -73,7 +73,11 @@ jobs:
 
       - name: Create ExportOptions.plist
         run: |
-          cat > $HOME/export_options.plist <<EOF
+          PROVISIONING_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | xargs basename | sed 's/.mobileprovision//')
+          echo "Found Profile: $PROVISIONING_PROFILE"
+          
+          # Create plist using printf to avoid heredoc indentation issues
+          cat <<EOF > $HOME/export_options.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -83,7 +87,7 @@ jobs:
             <key>provisioningProfiles</key>
             <dict>
               <key>$BUNDLE_ID</key>
-              <string>$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | xargs basename | sed 's/.mobileprovision//')</string>
+              <string>$PROVISIONING_PROFILE</string>
             </dict>
           </dict>
           </plist>
