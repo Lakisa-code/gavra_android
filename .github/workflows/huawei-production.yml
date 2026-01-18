@@ -109,7 +109,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
 
-      - name: Prepare Secrets (Windows)
+      - name: Prepare Secrets (Linux)
         env:
           AGC_BASE64: ${{ secrets.AGC_BASE64 }}
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -118,30 +118,39 @@ jobs:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         run: |
           # 1. Restore agconnect
-          $agcBytes = [System.Convert]::FromBase64String($env:AGC_BASE64)
-          New-Item -ItemType Directory -Force -Path "android/app"
-          New-Item -ItemType Directory -Force -Path "assets"
-          [System.IO.File]::WriteAllBytes("$(Get-Location)\android\app\agconnect-services.json", $agcBytes)
-          [System.IO.File]::WriteAllBytes("$(Get-Location)\assets\agconnect-services.json", $agcBytes)
+          mkdir -p android/app
+          mkdir -p assets
+          echo "${{ secrets.AGC_BASE64 }}" | base64 -d > android/app/agconnect-services.json
+          cp android/app/agconnect-services.json assets/agconnect-services.json
 
           # 2. Restore Keystore
-          $keystoreBytes = [System.Convert]::FromBase64String($env:KEYSTORE_BASE64)
-          [System.IO.File]::WriteAllBytes("$(Get-Location)\android\app\upload-keystore.jks", $keystoreBytes)
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
 
           # 3. Create key.properties
-          $keyProps = "storePassword=$env:STORE_PASSWORD`nkeyPassword=$env:KEY_PASSWORD`nkeyAlias=$env:KEY_ALIAS`nstoreFile=upload-keystore.jks"
-          Set-Content -Path "android/key.properties" -Value $keyProps
-          Write-Host "[OK] Secrets configured"
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          
+          echo "[OK] Secrets configured"
 
       - name: 🛡️ Verify Keystore (Fail Fast)
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        shell: pwsh
+        shell: bash
         run: |
-          if (-not $env:KEYSTORE_BASE64) { Write-Error "KEYSTORE_BASE64 is empty/null!"; exit 1 }
-          $len = $env:KEYSTORE_BASE64.Length
-          Write-Host "Keystore Secret Length: $len chars"
-          if ($len -lt 100) { Write-Error "Keystore secret is too short ($len chars). Likely invalid/empty."; exit 1 }
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "KEYSTORE_BASE64 is empty/null!"
+            exit 1
+          fi
+          
+          if [ -f "android/app/upload-keystore.jks" ]; then
+            SIZE=$(stat -c%s "android/app/upload-keystore.jks")
+            echo "Keystore size: $SIZE bytes"
+          else
+            echo "Keystore file validation failed: File not found!"
+            exit 1
+          fi
 
       - name: Get dependencies
         run: flutter pub get
