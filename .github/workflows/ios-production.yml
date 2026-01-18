@@ -45,6 +45,11 @@ on:
          required: false
          default: 'true'
          type: string
+      release_notes:
+         description: 'Release notes'
+         required: false
+         default: ''
+         type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
