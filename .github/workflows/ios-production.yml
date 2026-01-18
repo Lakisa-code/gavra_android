@@ -116,9 +116,12 @@ jobs:
       - name: Get latest build number
         id: build_info
         run: |
-          NEW_BUILD="${{ steps.version.outputs.VERSION_CODE }}"
+          # Use GitHub run number with offset to ensure uniqueness > 373
+          # Run number increases automatically on every run
+          OFFSET=400
+          NEW_BUILD=$(( $GITHUB_RUN_NUMBER + $OFFSET ))
           echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
-          echo "📱 Build number: $NEW_BUILD"
+          echo "📱 Auto-generated Build number: $NEW_BUILD"
 
       - name: Update Info.plist
         run: |
