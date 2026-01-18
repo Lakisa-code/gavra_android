@@ -45,6 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSContactsUsageDescription</key>
 	<string>Aplikacija pristupa kontaktima kako biste mogli izabrati broj telefona putnika iz imenika.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
