@@ -16,6 +16,37 @@ on:
         description: 'Release notes (What is new)'
         required: false
         default: 'Ispravke grešaka i poboljšanja performansi.'
+      bump_version:
+        description: 'Auto-bump version in pubspec.yaml?'
+        required: true
+        default: 'false'
+        type: boolean
+      force_replace_review:
+        description: 'Force replace/cancel existing review?'
+        required: true
+        default: 'false'
+        type: boolean
+  workflow_call:
+    inputs:
+      git_ref:
+        description: 'Git Ref to checkout (optional)'
+        required: false
+        type: string
+      bump_version:
+        description: 'Auto-bump version in pubspec.yaml?'
+        required: false
+        default: false
+        type: boolean
+      submit_for_review:
+         description: 'Submit for review?'
+         required: false
+         default: 'true'
+         type: string
+      force_replace_review:
+         description: 'Force replace review?'
+         required: false
+         default: 'false'
+         type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,6 +54,9 @@ concurrency:
 
 env:
   FLUTTER_VERSION: '3.35.6'
+
+permissions:
+  contents: write
 
 jobs:
   build-and-upload-huawei:
@@ -35,6 +69,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref || github.ref }}
+
+      - name: Auto-Bump Version
+        if: ${{ github.event.inputs.bump_version == 'true' }}
+        shell: pwsh
+        run: |
+          ./bump_version.ps1
+          
+          # Git configuration
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # Commit and push
+          git add pubspec.yaml
+          if (git diff --staged --quiet) {
+            Write-Host "No changes to commit."
+          } else {
+            git commit -m "Auto-bump version [skip ci]"
+            git push
+            Write-Host "✅ Version bumped and pushed to repo."
+          }
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -100,7 +156,8 @@ jobs:
           HUAWEI_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
           HUAWEI_APP_ID: ${{ secrets.AGC_APP_ID }}
           VERSION: ${{ steps.version.outputs.VERSION }}
-          SUBMIT: ${{ github.event.inputs.submit_for_review }}
+          SUBMIT: ${{ inputs.submit_for_review }}
+          FORCE_REPLACE: ${{ inputs.force_replace_review }}
         run: |
           $clientId = $env:HUAWEI_CLIENT_ID
           $clientSecret = $env:HUAWEI_CLIENT_SECRET
@@ -122,6 +179,20 @@ jobs:
 
           # 2. Get Upload URL
           $uploadUrlHeaders = @{ Authorization = "Bearer $accessToken"; client_id = $clientId }
+          
+          # 2.1 Cancel Previous Review (If requested)
+          if ($env:FORCE_REPLACE -eq 'true') {
+             Write-Host "⚠️ Force Replace: Attempting to cancel previous submission..."
+             try {
+                $cancelUrl = "https://connect-api.cloud.huawei.com/api/publish/v2/app-cancel-submit?appId=$appId"
+                Invoke-RestMethod -Uri $cancelUrl -Method Put -Headers $uploadUrlHeaders -ContentType "application/json"
+                Write-Host "✅ Previous submission cancelled."
+                Start-Sleep -Seconds 5
+             } catch {
+                Write-Host "ℹ️ Cancel attempt ignored (App probably not in review). Details: $($_.Exception.Message)"
+             }
+          }
+
           $uploadUrlResponse = Invoke-RestMethod -Uri "https://connect-api.cloud.huawei.com/api/publish/v2/upload-url?appId=$appId&suffix=apk" -Headers $uploadUrlHeaders -Method Get
           $uploadUrl = $uploadUrlResponse.uploadUrl
           $authCode = $uploadUrlResponse.authCode
@@ -160,8 +231,8 @@ jobs:
                 Invoke-RestMethod -Uri "https://connect-api.cloud.huawei.com/api/publish/v2/app-submit?appId=$appId" -Method Post -Headers $uploadUrlHeaders -Body $submitBody -ContentType "application/json"
                 Write-Host "✅ App submitted successfully!"
              } catch {
-                Write-Warning "Submit failed. It might be already in review."
-                Write-Host $_.Exception.Response
+                Write-Host "⚠️ Submit failed. It might be already in review."
+                Write-Host "Error details: $($_.Exception.Message)"
                 Write-Host "Please check AppGallery Connect manually."
              }
           }

@@ -19,6 +19,27 @@ on:
         description: 'Automatically replace an existing in-review submission (use with caution)'
         required: true
         default: 'false'
+      bump_version:
+        description: 'Auto-bump version in pubspec.yaml?'
+        required: true
+        default: 'true'
+        type: boolean
+  workflow_call:
+    inputs:
+      git_ref:
+        description: 'Git Ref to checkout (optional)'
+        required: false
+        type: string
+      bump_version:
+        description: 'Auto-bump version in pubspec.yaml?'
+        required: false
+        default: false
+        type: boolean
+      force_replace_review:
+         description: 'Force replace review?'
+         required: false
+         default: 'false'
+         type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,6 +50,9 @@ env:
   BUNDLE_ID: 'com.gavra013.gavra013ios'
   APP_ID: '6757114361'
   VERSION_ID: 'a4397448-6ed5-4220-82df-1b84e1a63657'
+
+permissions:
+  contents: write
 
 jobs:
   build-and-submit:
@@ -43,6 +67,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref || github.ref }}
+
+      - name: Auto-Bump Version
+        if: ${{ github.event.inputs.bump_version == 'true' }}
+        shell: pwsh
+        run: |
+          ./bump_version.ps1
+          
+          # Git configuration
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # Commit and push
+          git add pubspec.yaml
+          if (git diff --staged --quiet) {
+            Write-Host "No changes to commit."
+          } else {
+            git commit -m "Auto-bump version to $(grep 'version:' pubspec.yaml) [skip ci]"
+            git push
+            Write-Host "✅ Version bumped and pushed to repo."
+          }
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -75,6 +121,27 @@ jobs:
         run: |
           PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -n 1)
           echo "Found Profile Path: $PROFILE_PATH"
+
+      - name: Cancel previous submission
+        if: ${{ github.event.inputs.force_replace_review == 'true' }}
+        run: |
+          echo "⚠️ Force replacing review requested..."
+          echo "🔍 Checking for existing submissions for Version ID: $VERSION_ID"
+          
+          # Try to find submission ID
+          SUBMISSION_ID=$(app-store-connect app-store-version-submissions list \
+            --filter-app-store-version "$VERSION_ID" \
+            --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
+
+          if [ -n "$SUBMISSION_ID" ]; then
+             echo "✅ Found active submission ID: $SUBMISSION_ID"
+             echo "🚫 Cancelling submission..."
+             app-store-connect app-store-version-submissions delete --id "$SUBMISSION_ID"
+             echo "✅ Cancelled."
+          else
+             echo "ℹ️ No submission ID found via list. Attempting direct delete by version ID as fallback..."
+             app-store-connect app-store-version-submissions delete --app-store-version-id "$VERSION_ID" || echo "Fallback delete failed or not supported."
+          fi
           
           # Extract UUID from the profile using security and PlistBuddy
           # security cms -D -i output the signed data (plist) which PlistBuddy can read

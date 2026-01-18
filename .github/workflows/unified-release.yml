@@ -1,0 +1,91 @@
+name: 🚀 Release All Platforms
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_version:
+        description: 'Bump Version (Create new release)?'
+        required: true
+        default: 'true'
+        type: boolean
+      ios_force_replace:
+        description: 'Force Replace Review (iOS & Huawei)?'
+        required: true
+        default: 'true'
+        type: boolean
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  # Job 1: Bump Version (runs once)
+  prepare-release:
+    name: 🔖 Bump Version & Tag
+    runs-on: windows-latest
+    outputs:
+      new_sha: ${{ steps.push.outputs.commit_hash }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump Version
+        if: ${{ inputs.bump_version == 'true' }}
+        shell: pwsh
+        run: |
+          ./bump_version.ps1
+          
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add pubspec.yaml
+          
+          if (git diff --staged --quiet) {
+            Write-Host "No changes to commit (maybe manually bumped?)"
+          } else {
+            git commit -m "🔖 Release Bump [skip ci]"
+            git push
+            Write-Host "✅ Version successfully bumped."
+          }
+
+      - name: Get Latest SHA
+        id: push
+        shell: pwsh
+        run: |
+          $sha = git rev-parse HEAD
+          echo "commit_hash=$sha" >> $env:GITHUB_OUTPUT
+          Write-Host "Using Commit SHA: $sha"
+
+  # Job 2: iOS
+  ios-release:
+    name: 🍎 iOS Release
+    needs: prepare-release
+    uses: ./.github/workflows/ios-production.yml
+    secrets: inherit
+    with:
+      git_ref: ${{ needs.prepare-release.outputs.new_sha }}
+      bump_version: false
+      force_replace_review: ${{ inputs.ios_force_replace }}
+
+  # Job 3: Huawei
+  huawei-release:
+    name: 📱 Huawei Release
+    needs: prepare-release
+    uses: ./.github/workflows/huawei-production.yml
+    secrets: inherit
+    with:
+      git_ref: ${{ needs.prepare-release.outputs.new_sha }}
+      bump_version: false
+      submit_for_review: 'true'
+      force_replace_review: ${{ inputs.ios_force_replace }} # Use same flag for Huawei
+
+  # Job 4: Google Play
+  google-release:
+    name: 🤖 Google Play Release
+    needs: prepare-release
+    uses: ./.github/workflows/google-closed-testing.yml
+    secrets: inherit
+    with:
+      git_ref: ${{ needs.prepare-release.outputs.new_sha }}
+      bump_version: false
