@@ -51,13 +51,13 @@ jobs:
     name: 🔖 Bump Version
     runs-on: ubuntu-latest
     outputs:
-      new_version: ${{ steps.version_step.outputs.NEW_VERSION }}
+      new_version: ${{ steps.bump_step.outputs.NEW_VERSION || steps.read_step.outputs.NEW_VERSION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Auto-Bump Version
-        id: version_step
+        id: bump_step
         if: ${{ inputs.bump_version == true }}
         shell: bash
         run: |
@@ -98,7 +98,7 @@ jobs:
           fi
       
       - name: Read Version (if not bumped)
-        id: version_step
+        id: read_step
         if: ${{ inputs.bump_version == false }}
         run: |
            LINE=$(grep "^version: " pubspec.yaml)
