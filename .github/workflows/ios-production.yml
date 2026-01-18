@@ -73,8 +73,18 @@ jobs:
 
       - name: Create ExportOptions.plist
         run: |
-          PROVISIONING_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | xargs basename | sed 's/.mobileprovision//')
-          echo "Found Profile: $PROVISIONING_PROFILE"
+          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -n 1)
+          echo "Found Profile Path: $PROFILE_PATH"
+          
+          # Extract UUID from the profile using security and PlistBuddy
+          # security cms -D -i output the signed data (plist) which PlistBuddy can read
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i "$PROFILE_PATH"))
+          echo "Found Profile UUID: $PROFILE_UUID"
+
+          if [ -z "$PROFILE_UUID" ]; then
+            echo "Error: Could not extract UUID from profile"
+            exit 1
+          fi
           
           # Create plist using printf to avoid heredoc indentation issues
           cat <<EOF > $HOME/export_options.plist
@@ -87,7 +97,7 @@ jobs:
             <key>provisioningProfiles</key>
             <dict>
               <key>$BUNDLE_ID</key>
-              <string>$PROVISIONING_PROFILE</string>
+              <string>$PROFILE_UUID</string>
             </dict>
           </dict>
           </plist>
