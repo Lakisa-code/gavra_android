@@ -27,7 +27,7 @@ env:
 jobs:
   build-and-upload-huawei:
     name: 🚀 Build & Upload to Huawei
-    runs-on: self-hosted # Use your local Windows Runner
+    runs-on: windows-latest
     defaults:
       run:
         shell: powershell
@@ -42,19 +42,19 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # - name: Setup Flutter
-      #   uses: subosito/flutter-action@v2
-      #   with:
-      #     flutter-version: ${{ env.FLUTTER_VERSION }}
-      #     channel: 'stable'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
 
       - name: Prepare Secrets (Windows)
         env:
           AGC_BASE64: ${{ secrets.AGC_BASE64 }}
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         run: |
           # 1. Restore agconnect
           $agcBytes = [System.Convert]::FromBase64String($env:AGC_BASE64)
