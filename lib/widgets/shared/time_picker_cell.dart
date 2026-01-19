@@ -173,6 +173,30 @@ class TimePickerCell extends StatelessWidget {
       onTap: () {
         if (isCancelled) return; // Otkazano - nema akcije
 
+        // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor
+        if (isPending) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+
+        // 🚫 BLOKADA ZA WAITING STATUS - čeka se oslobađanje mesta
+        if (isWaiting) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⏳ Vaš zahtev je na listi čekanja. Javićemo vam se kada se oslobodi mesto.'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+
         // 🆕 EKSPLICITNA PORUKA DNEVNIM PUTNICIMA AKO JE ZAKLJUČANO
         if (tipPutnika == 'dnevni' && isLocked) {
           final now = DateTime.now();
