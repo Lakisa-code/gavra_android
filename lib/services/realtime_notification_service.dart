@@ -90,6 +90,58 @@ class RealtimeNotificationService {
     }
   }
 
+  /// 📲 Pošalji push notifikaciju putniku (za potvrdu termina)
+  /// Šalje push notifikaciju direktno na token putnika - radi čak i kad je app zatvoren
+  static Future<bool> sendNotificationToPutnik({
+    required String putnikId,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Dohvati token putnika
+      final response =
+          await supabase.from('push_tokens').select('token, provider').eq('user_id', putnikId).maybeSingle();
+
+      if (response == null) {
+        // Putnik nema token - prikaži lokalnu notifikaciju kao fallback
+        await LocalNotificationService.showRealtimeNotification(
+          title: title,
+          body: body,
+          payload: jsonEncode(data ?? {}),
+        );
+        return false;
+      }
+
+      // Formatiraj token za slanje
+      final tokens = [
+        {
+          'token': response['token'] as String,
+          'provider': response['provider'] as String,
+        }
+      ];
+
+      return await sendPushNotification(
+        title: title,
+        body: body,
+        tokens: tokens,
+        data: data,
+      );
+    } catch (e) {
+      // Ako push ne uspe, prikaži lokalnu notifikaciju kao fallback
+      try {
+        await LocalNotificationService.showRealtimeNotification(
+          title: title,
+          body: body,
+          payload: jsonEncode(data ?? {}),
+        );
+      } catch (_) {}
+      return false;
+    }
+  }
+
   /// 🎯 Pošalji notifikaciju svim vozačima (broadcast)
   /// Push notifikacija se šalje preko Supabase Edge funkcije koja sama prikazuje notifikaciju
   /// Lokalna notifikacija se prikazuje SAMO ako push ne uspe (fallback u sendPushNotification)
@@ -253,6 +305,12 @@ class RealtimeNotificationService {
       // 🚐 Za "transport_started" - otvori putnikov profil ekran
       if (notificationType == 'transport_started') {
         await NotificationNavigationService.navigateToPassengerProfile();
+        return;
+      }
+
+      // 🔐 Za "pin_zahtev" - otvori PIN zahtevi ekran (admin)
+      if (notificationType == 'pin_zahtev') {
+        await NotificationNavigationService.navigateToPinZahtevi();
         return;
       }
 

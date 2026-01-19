@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../screens/danas_screen.dart';
+import '../screens/pin_zahtevi_screen.dart';
 import '../screens/registrovani_putnik_profil_screen.dart';
 
 class NotificationNavigationService {
@@ -30,6 +31,24 @@ class NotificationNavigationService {
             builder: (context) => RegistrovaniPutnikProfilScreen(
               putnikData: Map<String, dynamic>.from(response),
             ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Ignoriši greške
+    }
+  }
+
+  /// 🔐 Navigiraj na PIN zahtevi ekran (za admina)
+  static Future<void> navigateToPinZahtevi() async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    try {
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => const PinZahteviScreen(),
           ),
         );
       }

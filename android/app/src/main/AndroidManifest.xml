@@ -18,6 +18,8 @@
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <!-- 🔋 Battery optimization - za paljenje ekrana na notifikaciju (Huawei/Xiaomi) -->
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  <!-- 🔔 Full-screen intent permission for lock screen notifications (Android 11+) -->
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
   <!-- SMS dozvole NISU potrebne - koristimo url_launcher (sms: URI) koji otvara SMS app -->
 
   <!-- 📞 Phone/Call permissions -->

@@ -10,6 +10,7 @@ import '../models/registrovani_putnik.dart';
 import '../screens/danas_screen.dart';
 import '../supabase_client.dart';
 import 'notification_navigation_service.dart';
+import 'realtime_notification_service.dart';
 import 'wake_lock_service.dart';
 
 @pragma('vm:entry-point')
@@ -64,12 +65,21 @@ class LocalNotificationService {
       enableLights: true,
       enableVibration: true,
       playSound: true,
+      showBadge: true,
     );
 
     final androidPlugin =
         flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
     await androidPlugin?.createNotificationChannel(channel);
+
+    // 🔔 Request permission for exact alarms and full-screen intents (Android 12+)
+    try {
+      // Request permission to show full-screen notifications (for lock screen)
+      await androidPlugin?.requestNotificationsPermission();
+    } catch (e) {
+      // Ignore if not supported
+    }
   }
 
   static Future<void> showRealtimeNotification({
@@ -139,6 +149,13 @@ class LocalNotificationService {
               contentTitle: title,
               htmlFormatContentTitle: true,
             ),
+            // 🔔 KRITIČNO: Full-screen intent za lock screen (Android 10+)
+            fullScreenIntent: true,
+            // 🔔 Dodatne opcije za garantovano prikazivanje
+            channelShowBadge: true,
+            onlyAlertOnce: false,
+            autoCancel: true,
+            ongoing: false,
           ),
         ),
         payload: payload,
@@ -226,6 +243,22 @@ class LocalNotificationService {
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
+            enableLights: true,
+            enableVibration: true,
+            vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+            category: AndroidNotificationCategory.message,
+            visibility: NotificationVisibility.public,
+            // 🔔 KRITIČNO: Full-screen intent za lock screen (Android 10+)
+            fullScreenIntent: true,
+            // 🔔 Dodatne opcije za garantovano prikazivanje
+            channelShowBadge: true,
+            onlyAlertOnce: false,
+            autoCancel: true,
+            ongoing: false,
+            styleInformation: BigTextStyleInformation(
+              bodyText,
+              contentTitle: '🕐 Izaberite termin',
+            ),
             actions: actions,
           ),
         ),
@@ -286,6 +319,14 @@ class LocalNotificationService {
         vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
         category: AndroidNotificationCategory.message,
         visibility: NotificationVisibility.public,
+        // 🔔 KRITIČNO: Full-screen intent za lock screen (Android 10+)
+        fullScreenIntent: true,
+        // 🔔 Dodatne opcije za garantovano prikazivanje
+        channelShowBadge: true,
+        onlyAlertOnce: false,
+        autoCancel: true,
+        ongoing: false,
+        enableLights: true,
       );
 
       final platformChannelSpecifics = NotificationDetails(
@@ -370,8 +411,13 @@ class LocalNotificationService {
             return;
           }
 
-          final putnikData = payloadData['putnik'];
+          // 🔐 PIN zahtev - otvori PIN zahtevi ekran
+          if (notificationType == 'pin_zahtev') {
+            await NotificationNavigationService.navigateToPinZahtevi();
+            return;
+          }
 
+          final putnikData = payloadData['putnik'];
           if (putnikData is Map<String, dynamic>) {
             putnikIme = (putnikData['ime'] ?? putnikData['name']) as String?;
             putnikGrad = putnikData['grad'] as String?;
@@ -608,11 +654,12 @@ class LocalNotificationService {
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
 
-      // Pošalji potvrdu notifikaciju
-      await showRealtimeNotification(
+      // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
+      await RealtimeNotificationService.sendNotificationToPutnik(
+        putnikId: putnikId,
         title: '✅ Mesto osigurano!',
         body: '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
-        payload: 'bc_alternativa_confirmed',
+        data: {'type': 'bc_alternativa_confirmed', 'termin': termin},
       );
     } catch (e) {
       // 🔇 Ignore errors
@@ -657,12 +704,13 @@ class LocalNotificationService {
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
 
-      // Pošalji potvrdu notifikaciju
-      await showRealtimeNotification(
+      // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
+      await RealtimeNotificationService.sendNotificationToPutnik(
+        putnikId: putnikId,
         title: '✅ Zahtev primljen',
         body:
             '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-        payload: 'vs_waiting_confirmed',
+        data: {'type': 'vs_waiting_confirmed', 'termin': zeljeniTermin},
       );
     } catch (e) {
       // 🔇 Ignore errors
@@ -768,6 +816,18 @@ class LocalNotificationService {
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
+            enableLights: true,
+            enableVibration: true,
+            vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+            category: AndroidNotificationCategory.message,
+            visibility: NotificationVisibility.public,
+            // 🔔 KRITIČNO: Full-screen intent za lock screen (Android 10+)
+            fullScreenIntent: true,
+            // 🔔 Dodatne opcije za garantovano prikazivanje
+            channelShowBadge: true,
+            onlyAlertOnce: false,
+            autoCancel: true,
+            ongoing: false,
             styleInformation: BigTextStyleInformation(
               bodyText, // Omogućava više redova teksta
               contentTitle: isRushHourWaiting ? '⏳ Izbor termina' : '🕐 [VS] Izaberite termin',
@@ -820,11 +880,12 @@ class LocalNotificationService {
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
 
-      // Pošalji potvrdu notifikaciju
-      await showRealtimeNotification(
+      // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
+      await RealtimeNotificationService.sendNotificationToPutnik(
+        putnikId: putnikId,
         title: '✅ [VS] Termin potvrđen',
         body: '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
-        payload: 'vs_alternativa_confirmed',
+        data: {'type': 'vs_alternativa_confirmed', 'termin': termin},
       );
     } catch (e) {
       // 🔇 Ignore
@@ -869,11 +930,13 @@ class LocalNotificationService {
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
 
-      // Pošalji potvrdu notifikaciju
-      await showRealtimeNotification(
+      // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
+      await RealtimeNotificationService.sendNotificationToPutnik(
+        putnikId: putnikId,
         title: '✅ Zahtev primljen',
         body:
             '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+        data: {'type': 'vs_waiting_confirmed', 'termin': zeljeniTermin},
       );
     } catch (e) {
       // 🔇 Ignore
@@ -918,11 +981,13 @@ class LocalNotificationService {
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
 
-      // Pošalji potvrdu notifikaciju
-      await showRealtimeNotification(
+      // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
+      await RealtimeNotificationService.sendNotificationToPutnik(
+        putnikId: putnikId,
         title: '✅ Zahtev primljen',
         body:
             '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+        data: {'type': 'vs_ceka_mesto_confirmed', 'termin': zeljeniTermin},
       );
     } catch (e) {
       // 🔇 Ignore
