@@ -647,6 +647,9 @@ class LocalNotificationService {
       polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
       (polasci[dan] as Map<String, dynamic>)['bc'] = termin;
       (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
+      (polasci[dan] as Map<String, dynamic>)['bc_resolved_at'] = DateTime.now().toUtc().toIso8601String();
+      // Očisti bc_ceka_od jer je resolved
+      (polasci[dan] as Map<String, dynamic>).remove('bc_ceka_od');
 
       // Sačuvaj u bazu
       await Supabase.instance.client.from('registrovani_putnici').update({
@@ -873,6 +876,9 @@ class LocalNotificationService {
       polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
       (polasci[dan] as Map<String, dynamic>)['vs'] = termin;
       (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
+      (polasci[dan] as Map<String, dynamic>)['vs_resolved_at'] = DateTime.now().toUtc().toIso8601String();
+      // Očisti vs_ceka_od jer je resolved
+      (polasci[dan] as Map<String, dynamic>).remove('vs_ceka_od');
 
       // Sačuvaj u bazu
       await Supabase.instance.client.from('registrovani_putnici').update({
