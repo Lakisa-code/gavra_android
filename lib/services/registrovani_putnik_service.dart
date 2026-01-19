@@ -457,7 +457,7 @@ class RegistrovaniPutnikService {
       // ✅ FIX: NE MENJAJ vozac_id pri plaćanju!
       // Naplata i dodeljivanje putnika vozaču su dve RAZLIČITE stvari.
       // vozac_id se menja SAMO kroz DodeliPutnike ekran.
-      
+
       // 💰 PLAĆANJE: Direktan UPDATE bez provere kapaciteta
       // Plaćanje ne menja termine, samo dodaje informaciju o uplati u polasci_po_danu JSON
       await _supabase.from('registrovani_putnici').update({
