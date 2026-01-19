@@ -177,7 +177,10 @@ class TimePickerCell extends StatelessWidget {
         if (isPending) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.'),
+              content: Text(
+                '⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               backgroundColor: Colors.orange,
               duration: Duration(seconds: 3),
             ),
@@ -189,7 +192,10 @@ class TimePickerCell extends StatelessWidget {
         if (isWaiting) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⏳ Vaš zahtev je na listi čekanja. Javićemo vam se kada se oslobodi mesto.'),
+              content: Text(
+                '⏳ Vaš zahtev je na listi čekanja. Javićemo vam se kada se oslobodi mesto.',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               backgroundColor: Colors.blue,
               duration: Duration(seconds: 3),
             ),

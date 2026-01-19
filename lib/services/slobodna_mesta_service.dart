@@ -194,12 +194,16 @@ class SlobodnaMestaService {
       final waiting = _countWaitingZaPolazak(putnici, 'BC', vreme, isoDate);
       final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate); // 🆕
 
+      // 🎓 BC LOGIKA: Učenici se ne broje u standardni kapacitet (vidi BC LOGIKA.md).
+      // Kapacitet (maxMesta) za BC se odnosi na radnike i dnevne putnike.
+      final regularnoZauzeto = (zauzeto - ucenici).clamp(0, zauzeto);
+
       result['BC']!.add(
         SlobodnaMesta(
           grad: 'BC',
           vreme: vreme,
           maxMesta: maxMesta,
-          zauzetaMesta: zauzeto,
+          zauzetaMesta: regularnoZauzeto,
           aktivan: true,
           waitingCount: waiting,
           uceniciCount: ucenici, // 🆕
@@ -231,7 +235,12 @@ class SlobodnaMestaService {
   }
 
   /// Proveri da li ima slobodnih mesta za određeni polazak
-  static Future<bool> imaSlobodnihMesta(String grad, String vreme, {String? datum}) async {
+  static Future<bool> imaSlobodnihMesta(String grad, String vreme, {String? datum, String? tipPutnika}) async {
+    // 🎓 BC LOGIKA: Učenici se u Beloj Crkvi uvek primaju (oni su extra / ne zauzimaju radnicima mesta)
+    if (grad.toUpperCase() == 'BC' && tipPutnika == 'ucenik') {
+      return true;
+    }
+
     final slobodna = await getSlobodnaMesta(datum: datum);
     final lista = slobodna[grad.toUpperCase()];
     if (lista == null) return false;
@@ -264,6 +273,16 @@ class SlobodnaMestaService {
       final danas = sada.toIso8601String().split('T')[0];
       final danasDan = _isoDateToDayAbbr(danas);
       final jeZaDanas = dan.toLowerCase() == danasDan.toLowerCase();
+
+      // 📅 Izračunaj ciljni datum (targetDate) za proveru kapaciteta
+      String targetIsoDate = danas;
+      if (!jeZaDanas) {
+        const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
+        final targetWeekday = daniMap[dan.toLowerCase()] ?? 1;
+        int diff = targetWeekday - sada.weekday;
+        if (diff <= 0) diff += 7; // Sledeća nedelja
+        targetIsoDate = sada.add(Duration(days: diff)).toIso8601String().split('T')[0];
+      }
 
       // Dohvati podatke putnika
       final putnikResponse = await _supabase
@@ -345,12 +364,13 @@ class SlobodnaMestaService {
         // Znaci ucenik iz BC ne proverava kapacitet nikad? (Pretpostavka: da)
 
         if (!jeUcenikBC) {
-          final imaMesta = await imaSlobodnihMesta(grad, novoVreme, datum: danas);
+          final imaMesta = await imaSlobodnihMesta(grad, novoVreme, datum: targetIsoDate);
 
           if (!imaMesta) {
             // Ako je ucenik i zakazuje kasno (posle 20h za buducnost), nudi alternativu
             if (tipPutnika == 'ucenik' && !jeZaDanas && sada.hour >= 20) {
-              final alternativnoVreme = await nadjiAlternativnoVreme(grad, datum: danas, zeljenoVreme: novoVreme);
+              final alternativnoVreme =
+                  await nadjiAlternativnoVreme(grad, datum: targetIsoDate, zeljenoVreme: novoVreme);
               if (alternativnoVreme != null) {
                 return {
                   'success': false,
