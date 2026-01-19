@@ -73,6 +73,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     _loadStatistike();
     _registerPushToken(); // 📱 Registruj push token (retry ako nije uspelo pri login-u)
     _checkAndResolvePendingRequests(); // 🆕 Proveri zaglavljene pending zahteve
+    _cleanupOldSeatRequests(); // 🧹 Očisti stare seat_requests iz baze
     WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
 
     // 📅 Proveri podsetnik za raspored
@@ -187,8 +188,29 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // Proveri BC pending
         final bcStatus = danData['bc_status']?.toString();
         final bcVreme = danData['bc']?.toString();
+        final bcCekaOd = danData['bc_ceka_od']?.toString();
+
         if (bcStatus == 'pending' && bcVreme != null && bcVreme.isNotEmpty && bcVreme != 'null') {
           debugPrint('🔍 [PendingCheck] Pronađen BC pending za $dan: $bcVreme');
+
+          // 🆕 Proveri starost pending zahteva (15 min timeout)
+          if (bcCekaOd != null) {
+            try {
+              final cekaOdTime = DateTime.parse(bcCekaOd);
+              final diff = now.difference(cekaOdTime).inMinutes;
+              if (diff > 15) {
+                // Pending zahtev je stariji od 15 minuta - automatski odbij
+                (polasci[dan] as Map<String, dynamic>)['bc'] = null;
+                (polasci[dan] as Map<String, dynamic>)['bc_status'] = null;
+                (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = null;
+                debugPrint('⏰ [PendingCheck] BC $dan $bcVreme → EXPIRED (${diff}min) - odbijeno');
+                hasChanges = true;
+                continue; // Preskoči proveru mesta za expired zahteve
+              }
+            } catch (e) {
+              debugPrint('⚠️ [PendingCheck] Greška pri parsiranju bc_ceka_od: $e');
+            }
+          }
 
           // Izračunaj ciljni datum
           final danWeekday = daniMapa[dan.toLowerCase()] ?? now.weekday;
@@ -212,8 +234,29 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // Proveri VS pending
         final vsStatus = danData['vs_status']?.toString();
         final vsVreme = danData['vs']?.toString();
+        final vsCekaOd = danData['vs_ceka_od']?.toString();
+
         if (vsStatus == 'pending' && vsVreme != null && vsVreme.isNotEmpty && vsVreme != 'null') {
           debugPrint('🔍 [PendingCheck] Pronađen VS pending za $dan: $vsVreme');
+
+          // 🆕 Proveri starost pending zahteva (15 min timeout)
+          if (vsCekaOd != null) {
+            try {
+              final cekaOdTime = DateTime.parse(vsCekaOd);
+              final diffMinutes = now.difference(cekaOdTime).inMinutes;
+              if (diffMinutes > 15) {
+                // Pending zahtev je stariji od 15 minuta - automatski odbij
+                (polasci[dan] as Map<String, dynamic>)['vs'] = null;
+                (polasci[dan] as Map<String, dynamic>)['vs_status'] = null;
+                (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = null;
+                debugPrint('⏰ [PendingCheck] VS $dan $vsVreme → EXPIRED (${diffMinutes}min) - odbijeno');
+                hasChanges = true;
+                continue; // Preskoči proveru mesta za expired zahteve
+              }
+            } catch (e) {
+              debugPrint('⚠️ [PendingCheck] Greška pri parsiranju vs_ceka_od: $e');
+            }
+          }
 
           // Izračunaj ciljni datum
           final danWeekday = daniMapa[dan.toLowerCase()] ?? now.weekday;
@@ -263,6 +306,30 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     } catch (e) {
       debugPrint('❌ [PendingCheck] Greška: $e');
+    }
+  }
+
+  /// 🧹 Očisti stare pending zahteve iz seat_requests tabele
+  /// Briše zahteve starije od 1 dana
+  Future<void> _cleanupOldSeatRequests() async {
+    try {
+      final putnikId = _putnikData['id']?.toString();
+      if (putnikId == null) return;
+
+      // Obriši pending zahteve starije od 1 dana za ovog putnika
+      final response = await Supabase.instance.client
+          .from('seat_requests')
+          .delete()
+          .eq('putnik_id', putnikId)
+          .eq('status', 'pending')
+          .lt('created_at', DateTime.now().subtract(const Duration(days: 1)).toIso8601String())
+          .select();
+
+      if (response.isNotEmpty) {
+        debugPrint('🧹 [Cleanup] Obrisano ${response.length} starih seat_requests za putnika $putnikId');
+      }
+    } catch (e) {
+      debugPrint('❌ [Cleanup] Greška pri brisanju seat_requests: $e');
     }
   }
 

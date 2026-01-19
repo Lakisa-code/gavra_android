@@ -371,6 +371,10 @@ class Putnik {
     final bcOtkazan = RegistrovaniHelpers.isOtkazanForDayAndPlace(map, normalizedTarget, 'bc');
     final vsOtkazan = RegistrovaniHelpers.isOtkazanForDayAndPlace(map, normalizedTarget, 'vs');
 
+    // 🆕 Čitaj status iz polasci_po_danu JSON-a
+    final bcStatus = RegistrovaniHelpers.getStatusForDayAndPlace(map, normalizedTarget, 'bc');
+    final vsStatus = RegistrovaniHelpers.getStatusForDayAndPlace(map, normalizedTarget, 'vs');
+
     // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan ILI ako je otkazan
     if ((polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') || bcOtkazan) {
       // ✅ KORISTI ODVOJENU KOLONU: vreme_pokupljenja_bc za Bela Crkva polazak
@@ -391,7 +395,7 @@ class Putnik {
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: mesecnaKarta, // 🆕 FIX: koristi izračunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status: bcOtkazan ? 'otkazan' : status, // 🆕 Ako je otkazan, postavi status
+          status: bcOtkazan ? 'otkazan' : (bcStatus ?? status), // 🆕 Prioritet: bcStatus iz JSON > globalni status
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaBC, // ✅ NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaBC, // ✅ FIX: Čitaj iz JSON-a za BC
@@ -447,7 +451,7 @@ class Putnik {
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: mesecnaKarta, // 🆕 FIX: koristi izračunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status: vsOtkazan ? 'otkazan' : status, // 🆕 Ako je otkazan, postavi status
+          status: vsOtkazan ? 'otkazan' : (vsStatus ?? status), // 🆕 Prioritet: vsStatus iz JSON > globalni status
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaVS, // ✅ NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaVS, // ✅ FIX: Čitaj iz JSON-a za VS

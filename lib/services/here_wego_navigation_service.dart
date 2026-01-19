@@ -3,18 +3,14 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/putnik.dart';
-import '../utils/device_utils.dart';
 
 /// 🧭 HERE WEGO NAVIGATION SERVICE
-/// Koristi ISKLJUČIVO HERE WeGo za navigaciju - konzistentno ponašanje,
-/// poštuje redosled waypointa, radi na svim uređajima (GMS i HMS)
+/// Koristi ISKLJUČIVO HERE WeGo za navigaciju - OBAVEZNA INSTALACIJA
 class HereWeGoNavigationService {
   // HERE WeGo konstante
-  static const String packageName = 'com.here.app.maps';
-  static const String urlScheme = 'here-route';
+  static const String appScheme = 'here.directions';
+  static const String webScheme = 'https://share.here.com';
   static const int maxWaypoints = 10;
-  static const String _playStoreUrl = 'market://details?id=com.here.app.maps';
-  static const String _appGalleryUrl = 'appmarket://details?id=com.here.app.maps';
 
   /// 🚀 Pokreni navigaciju sa HERE WeGo
   static Future<HereWeGoNavResult> startNavigation({
@@ -24,24 +20,20 @@ class HereWeGoNavigationService {
     Position? endDestination,
   }) async {
     try {
-      // 1. PROVERI DA LI JE HERE WEGO INSTALIRAN
-      final isInstalled = await isHereWeGoInstalled();
-
+      // ⚠️ OBAVEZNA PROVERA - Mora biti instaliran HERE WeGo
+      final isInstalled = await _isHereWeGoInstalled();
       if (!isInstalled) {
-        if (context.mounted) {
-          await _showInstallDialog(context);
-        }
-        return HereWeGoNavResult.error('HERE WeGo nije instaliran');
+        return HereWeGoNavResult.error('❌ HERE WeGo nije instaliran. Instalirajte aplikaciju za navigaciju.');
       }
 
-      // 2. FILTRIRAJ PUTNIKE SA VALIDNIM KOORDINATAMA
+      // FILTRIRAJ PUTNIKE SA VALIDNIM KOORDINATAMA
       final validPutnici = putnici.where((p) => coordinates.containsKey(p)).toList();
 
       if (validPutnici.isEmpty) {
         return HereWeGoNavResult.error('Nema putnika sa validnim koordinatama');
       }
 
-      // 3. SEGMENTACIJA AKO IMA VIŠE OD 10 PUTNIKA
+      // SEGMENTACIJA AKO IMA VIŠE OD 10 PUTNIKA
       if (validPutnici.length <= maxWaypoints) {
         return await _launchNavigation(
           putnici: validPutnici,
@@ -65,86 +57,21 @@ class HereWeGoNavigationService {
   }
 
   /// 🔍 Proveri da li je HERE WeGo instaliran
-  static Future<bool> isHereWeGoInstalled() async {
+  static Future<bool> _isHereWeGoInstalled() async {
     try {
-      final testUri = Uri.parse('$urlScheme://test');
-      return await canLaunchUrl(testUri);
+      final appUri = Uri.parse('$appScheme://test');
+      return await canLaunchUrl(appUri);
     } catch (_) {
       return false;
-    }
-  }
-
-  /// 📲 Prikaži dijalog za instalaciju HERE WeGo
-  static Future<void> _showInstallDialog(BuildContext context) async {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.navigation, color: Colors.green, size: 28),
-            SizedBox(width: 12),
-            Text('HERE WeGo'),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Za navigaciju je potreban HERE WeGo.', style: TextStyle(fontSize: 16)),
-            SizedBox(height: 16),
-            Text(
-              '✅ Besplatan\n✅ Offline mape\n✅ Radi na svim telefonima\n✅ Prati redosled putnika',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Kasnije')),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _openPlayStore();
-            },
-            icon: const Icon(Icons.download),
-            label: const Text('Instaliraj'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 🏪 Otvori Store za HERE WeGo
-  static Future<void> _openPlayStore() async {
-    final isHuawei = await DeviceUtils.isHuaweiDevice();
-
-    if (isHuawei) {
-      try {
-        final appGalleryUri = Uri.parse(_appGalleryUrl);
-        final launched = await launchUrl(appGalleryUri, mode: LaunchMode.externalApplication);
-        if (launched) return;
-      } catch (_) {}
-
-      try {
-        final webUri = Uri.parse('https://appgallery.huawei.com/app/C101397073');
-        await launchUrl(webUri, mode: LaunchMode.externalApplication);
-        return;
-      } catch (_) {}
-    }
-
-    try {
-      final uri = Uri.parse(_playStoreUrl);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      final webUri = Uri.parse('https://play.google.com/store/apps/details?id=com.here.app.maps');
-      await launchUrl(webUri, mode: LaunchMode.externalApplication);
     }
   }
 
   /// 🚀 Gradi HERE WeGo URL za navigaciju
   static String _buildUrl(List<Position> waypoints, Position destination) {
     final StringBuffer url = StringBuffer();
-    url.write('here-route://');
+
+    // Koristimo web share URL koji uvek radi (otvara web ili app ako je instaliran)
+    url.write('$webScheme/r/');
 
     for (int i = 0; i < waypoints.length; i++) {
       final wp = waypoints[i];
@@ -152,7 +79,7 @@ class HereWeGoNavigationService {
     }
 
     url.write('${destination.latitude},${destination.longitude},Destinacija');
-    url.write('?m=d');
+    url.write('?m=d'); // m=d = driving mode
 
     return url.toString();
   }
@@ -281,10 +208,9 @@ class HereWeGoNavigationService {
 
   /// 📊 Proveri status navigacije
   static Future<NavigationStatus> checkNavigationStatus() async {
-    final isInstalled = await isHereWeGoInstalled();
-    return NavigationStatus(
-      isHuaweiDevice: await DeviceUtils.isHuaweiDevice(),
-      isHereWeGoInstalled: isInstalled,
+    return const NavigationStatus(
+      isHuaweiDevice: false,
+      isHereWeGoInstalled: true, // Web scheme uvek radi
     );
   }
 }

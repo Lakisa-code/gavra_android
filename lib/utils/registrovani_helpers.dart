@@ -224,6 +224,36 @@ class RegistrovaniHelpers {
     return DateTime(lastFriday.year, lastFriday.month, lastFriday.day, 0, 0, 0);
   }
 
+  /// 🆕 HELPER: Čitaj status polaska iz polasci_po_danu JSON-a
+  /// Vraća 'pending', 'confirmed', 'waiting', ili null ako status ne postoji
+  static String? getStatusForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Ključ je npr. 'bc_status' ili 'vs_status'
+    final statusKey = '${place}_status';
+    return dayData[statusKey] as String?;
+  }
+
   /// 🆕 Proveri da li je putnik otkazan za specifičan dan i grad (polazak)
   /// Vraća true ako postoji timestamp otkazivanja POSLE poslednjeg petka u ponoć
   /// (resetuje se svake nedelje petak→subota u ponoć)
