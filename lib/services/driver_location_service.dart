@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'openrouteservice.dart';
@@ -35,9 +36,20 @@ class DriverLocationService {
   List<String>? _putniciRedosled; // 🆕 Redosled putnika (optimizovan)
   VoidCallback? _onAllPassengersPickedUp; // Callback za auto-stop
 
+  // 🚗 GPS Statistics (for ML Lab)
+  double _todayDistance = 0.0; // in meters
+  double _maxSpeed = 0.0; // in m/s
+  DateTime? _trackingStartTime;
+  final List<LatLng> _todayPositions = [];
+
   // Getteri
   bool get isTracking => _isTracking;
   String? get currentVozacId => _currentVozacId;
+  double get todayDistanceKm => _todayDistance / 1000;
+  double get maxSpeedKmh => _maxSpeed * 3.6;
+  Duration get trackingDuration => _trackingStartTime != null ? DateTime.now().difference(_trackingStartTime!) : Duration.zero;
+  double get averageSpeedKmh => trackingDuration.inSeconds > 0 ? (todayDistanceKm / trackingDuration.inHours) : 0.0;
+  List<LatLng> get todayPositions => List.unmodifiable(_todayPositions);
 
   /// Broj preostalih putnika za pokupiti (ETA >= 0)
   int get remainingPassengers => _currentPutniciEta?.values.where((v) => v >= 0).length ?? 0;
@@ -79,6 +91,12 @@ class DriverLocationService {
     _putniciRedosled = putniciRedosled != null ? List.from(putniciRedosled) : null;
     _onAllPassengersPickedUp = onAllPassengersPickedUp;
     _isTracking = true;
+
+    // 🚗 Reset daily statistics
+    _trackingStartTime = DateTime.now();
+    _todayDistance = 0.0;
+    _maxSpeed = 0.0;
+    _todayPositions.clear();
 
     await _sendCurrentLocation();
 
@@ -228,9 +246,20 @@ class DriverLocationService {
         );
         // Log distance za debugging ako treba
         debugPrint('🚐 GPS: pomeraj ${distance.toStringAsFixed(0)}m');
+        
+        // 🚗 Update daily statistics
+        _todayDistance += distance;
       }
 
       _lastPosition = position;
+      
+      // 🚗 Track max speed
+      if (position.speed > _maxSpeed) {
+        _maxSpeed = position.speed;
+      }
+      
+      // 🚗 Add position to history
+      _todayPositions.add(LatLng(position.latitude, position.longitude));
 
       await Supabase.instance.client.from('vozac_lokacije').upsert({
         'vozac_id': _currentVozacId,

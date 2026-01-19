@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../config/calendar_config.dart';
+import '../services/driver_location_service.dart';
 import '../services/ml_service.dart';
+import '../services/realtime_gps_service.dart';
 
 /// ML Lab Screen - Machine Learning Analysis and Predictions
 ///
@@ -27,7 +30,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -60,6 +63,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             Tab(icon: Icon(Icons.assessment), text: 'Performance'),
             Tab(icon: Icon(Icons.storage), text: 'Training Data'),
             Tab(icon: Icon(Icons.analytics), text: 'Features'),
+            Tab(icon: Text('🚗'), text: 'GPS Stats'),
             Tab(icon: Icon(Icons.settings), text: 'Settings'),
           ],
         ),
@@ -71,6 +75,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           _buildPerformanceTab(),
           _buildTrainingDataTab(),
           _buildFeaturesTab(),
+          _buildGpsTab(),
           _buildSettingsTab(),
         ],
       ),
@@ -612,5 +617,228 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         subtitle: Text(info),
       ),
     );
+  }
+
+  /// Tab 6: GPS Statistics
+  Widget _buildGpsTab() {
+    final driverService = DriverLocationService.instance;
+    final isTracking = driverService.isTracking;
+
+    return StreamBuilder<Position>(
+      stream: RealtimeGpsService.positionStream,
+      builder: (context, positionSnapshot) {
+        final currentSpeed = positionSnapshot.data?.speed ?? 0.0;
+        final currentSpeedKmh = currentSpeed * 3.6;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              const Row(
+                children: [
+                  Icon(Icons.speed, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text(
+                    'GPS Tracking Statistics',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Tracking status
+              Card(
+                color: isTracking ? Colors.green.shade50 : Colors.grey.shade100,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isTracking ? Icons.gps_fixed : Icons.gps_off,
+                        color: isTracking ? Colors.green : Colors.grey,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isTracking ? 'GPS Tracking Active' : 'GPS Tracking Inactive',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isTracking ? Colors.green.shade700 : Colors.grey.shade700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              isTracking
+                                  ? 'Statistics are being collected in real-time'
+                                  : 'Start a route to track GPS statistics',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isTracking ? Colors.green.shade600 : Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Statistics grid
+              if (isTracking) ...[
+                // Distance
+                _buildStatCard(
+                  'Total Distance',
+                  '${driverService.todayDistanceKm.toStringAsFixed(2)} km',
+                  Icons.route,
+                  Colors.blue,
+                ),
+                const SizedBox(height: 12),
+
+                // Current Speed
+                _buildStatCard(
+                  'Current Speed',
+                  '${currentSpeedKmh.toStringAsFixed(1)} km/h',
+                  Icons.speed,
+                  Colors.orange,
+                ),
+                const SizedBox(height: 12),
+
+                // Max Speed
+                _buildStatCard(
+                  'Max Speed',
+                  '${driverService.maxSpeedKmh.toStringAsFixed(1)} km/h',
+                  Icons.trending_up,
+                  Colors.red,
+                ),
+                const SizedBox(height: 12),
+
+                // Average Speed
+                _buildStatCard(
+                  'Average Speed',
+                  '${driverService.averageSpeedKmh.toStringAsFixed(1)} km/h',
+                  Icons.show_chart,
+                  Colors.purple,
+                ),
+                const SizedBox(height: 12),
+
+                // Tracking Duration
+                _buildStatCard(
+                  'Tracking Duration',
+                  _formatDuration(driverService.trackingDuration),
+                  Icons.timer,
+                  Colors.teal,
+                ),
+                const SizedBox(height: 12),
+
+                // GPS Points
+                _buildStatCard(
+                  'GPS Points Collected',
+                  '${driverService.todayPositions.length}',
+                  Icons.place,
+                  Colors.indigo,
+                ),
+              ] else ...[
+                // No tracking info
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        Icon(Icons.info_outline, size: 48, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No GPS data available',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'GPS statistics will appear here when you start tracking.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 32),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+    
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (minutes > 0) {
+      return '${minutes}m ${seconds}s';
+    } else {
+      return '${seconds}s';
+    }
   }
 }
