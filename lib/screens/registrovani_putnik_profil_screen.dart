@@ -66,7 +66,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     _refreshPutnikData(); // 🔄 Učitaj sveže podatke iz baze
     _loadStatistike();
     _registerPushToken(); // 📱 Registruj push token (retry ako nije uspelo pri login-u)
-    _checkAndResolvePendingRequests(); // 🆕 Proveri zaglavljene pending zahteve
+    // ❌ UKLONJENO: Client-side pending resolution - sada se radi putem Supabase cron jobs
+    // _checkAndResolvePendingRequests();
     _cleanupOldSeatRequests(); // 🧹 Očisti stare seat_requests iz baze
     WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
     _setupRealtimeListener(); // 🎯 Sluša promene statusa u realtime
@@ -249,159 +250,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
   }
 
-  /// 🆕 Proverava i rešava zaglavljene pending zahteve
-  /// Poziva se pri svakom otvaranju profila
-  Future<void> _checkAndResolvePendingRequests() async {
-    try {
-      final putnikId = _putnikData['id']?.toString();
-      if (putnikId == null) return;
-
-      // Učitaj sveže podatke iz baze
-      final response = await Supabase.instance.client
-          .from('registrovani_putnici')
-          .select('polasci_po_danu')
-          .eq('id', putnikId)
-          .maybeSingle();
-
-      if (response == null) return;
-
-      final polasci = response['polasci_po_danu'] as Map<String, dynamic>? ?? {};
-      if (polasci.isEmpty) return;
-
-      bool hasChanges = false;
-      final now = DateTime.now();
-      const daniMapa = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
-
-      for (final dan in polasci.keys) {
-        final danData = polasci[dan];
-        if (danData is! Map) continue;
-
-        // Proveri BC pending
-        final bcStatus = danData['bc_status']?.toString();
-        final bcVreme = danData['bc']?.toString();
-        final bcCekaOd = danData['bc_ceka_od']?.toString();
-
-        if (bcStatus == 'pending' && bcVreme != null && bcVreme.isNotEmpty && bcVreme != 'null') {
-          debugPrint('🔍 [PendingCheck] Pronađen BC pending za $dan: $bcVreme');
-
-          // 🆕 Proveri starost pending zahteva (15 min timeout)
-          if (bcCekaOd != null) {
-            try {
-              final cekaOdTime = DateTime.parse(bcCekaOd);
-              final diff = now.difference(cekaOdTime).inMinutes;
-              if (diff > 15) {
-                // Pending zahtev je stariji od 15 minuta - automatski odbij
-                (polasci[dan] as Map<String, dynamic>)['bc'] = null;
-                (polasci[dan] as Map<String, dynamic>)['bc_status'] = null;
-                (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = null;
-                debugPrint('⏰ [PendingCheck] BC $dan $bcVreme → EXPIRED (${diff}min) - odbijeno');
-                hasChanges = true;
-                continue; // Preskoči proveru mesta za expired zahteve
-              }
-            } catch (e) {
-              debugPrint('⚠️ [PendingCheck] Greška pri parsiranju bc_ceka_od: $e');
-            }
-          }
-
-          // Izračunaj ciljni datum
-          final danWeekday = daniMapa[dan.toLowerCase()] ?? now.weekday;
-          int diff = danWeekday - now.weekday;
-          if (diff < 0) diff += 7;
-          final targetDate = now.add(Duration(days: diff)).toIso8601String().split('T')[0];
-
-          // Proveri mesta
-          final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('BC', bcVreme,
-              datum: targetDate, tipPutnika: _putnikData['tip']?.toString());
-          if (imaMesta) {
-            (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
-            debugPrint('✅ [PendingCheck] BC $dan $bcVreme → confirmed');
-          } else {
-            (polasci[dan] as Map<String, dynamic>)['bc'] = null;
-            (polasci[dan] as Map<String, dynamic>)['bc_status'] = null;
-            debugPrint('❌ [PendingCheck] BC $dan $bcVreme → odbijeno (nema mesta)');
-          }
-          hasChanges = true;
-        }
-
-        // Proveri VS pending
-        final vsStatus = danData['vs_status']?.toString();
-        final vsVreme = danData['vs']?.toString();
-        final vsCekaOd = danData['vs_ceka_od']?.toString();
-
-        if (vsStatus == 'pending' && vsVreme != null && vsVreme.isNotEmpty && vsVreme != 'null') {
-          debugPrint('🔍 [PendingCheck] Pronađen VS pending za $dan: $vsVreme');
-
-          // 🆕 Proveri starost pending zahteva (15 min timeout)
-          if (vsCekaOd != null) {
-            try {
-              final cekaOdTime = DateTime.parse(vsCekaOd);
-              final diffMinutes = now.difference(cekaOdTime).inMinutes;
-              if (diffMinutes > 15) {
-                // Pending zahtev je stariji od 15 minuta - automatski odbij
-                (polasci[dan] as Map<String, dynamic>)['vs'] = null;
-                (polasci[dan] as Map<String, dynamic>)['vs_status'] = null;
-                (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = null;
-                debugPrint('⏰ [PendingCheck] VS $dan $vsVreme → EXPIRED (${diffMinutes}min) - odbijeno');
-                hasChanges = true;
-                continue; // Preskoči proveru mesta za expired zahteve
-              }
-            } catch (e) {
-              debugPrint('⚠️ [PendingCheck] Greška pri parsiranju vs_ceka_od: $e');
-            }
-          }
-
-          // Izračunaj ciljni datum
-          final danWeekday = daniMapa[dan.toLowerCase()] ?? now.weekday;
-          int diff = danWeekday - now.weekday;
-          if (diff < 0) diff += 7;
-          final targetDate = now.add(Duration(days: diff)).toIso8601String().split('T')[0];
-
-          // Proveri mesta
-          final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('VS', vsVreme,
-              datum: targetDate, tipPutnika: _putnikData['tip']?.toString());
-          if (imaMesta) {
-            (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
-            debugPrint('✅ [PendingCheck] VS $dan $vsVreme → confirmed');
-          } else {
-            // Za VS rush hour, stavi na čekanje umesto odbijanja
-            final isRushHour = ['13:00', '14:00', '15:30'].contains(vsVreme);
-            if (isRushHour) {
-              (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'ceka_mesto';
-              (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = DateTime.now().toUtc().toIso8601String();
-              debugPrint('⏳ [PendingCheck] VS $dan $vsVreme → ceka_mesto (rush hour)');
-            } else {
-              (polasci[dan] as Map<String, dynamic>)['vs'] = null;
-              (polasci[dan] as Map<String, dynamic>)['vs_status'] = null;
-              (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = null;
-              debugPrint('❌ [PendingCheck] VS $dan $vsVreme → odbijeno (nema mesta)');
-            }
-          }
-          hasChanges = true;
-        }
-      }
-
-      // Sačuvaj promene ako ih ima
-      if (hasChanges) {
-        // 🛡️ Merge sa postojećim markerima u bazi
-        final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
-
-        await Supabase.instance.client
-            .from('registrovani_putnici')
-            .update({'polasci_po_danu': mergedPolasci}).eq('id', putnikId);
-
-        // Ažuriraj lokalni state
-        if (mounted) {
-          setState(() {
-            _putnikData['polasci_po_danu'] = mergedPolasci;
-          });
-        }
-
-        debugPrint('💾 [PendingCheck] Ažurirano ${hasChanges ? 'DA' : 'NE'} pending zahteva');
-      }
-    } catch (e) {
-      debugPrint('❌ [PendingCheck] Greška: $e');
-    }
-  }
+  // ❌ UKLONJENO: _checkAndResolvePendingRequests() funkcija
+  // Razlog: Client-side pending resolution je konflikovao sa Supabase cron jobs
+  // Sva pending logika se sada obrađuje server-side putem:
+  // - Job #7: resolve-pending-main (svaki minut)
+  // - Job #5: resolve-pending-20h-ucenici (u 20:00)
+  // - Job #6: cleanup-expired-pending (svakih 5 minuta)
 
   /// 🧹 Očisti stare pending zahteve iz seat_requests tabele
   /// Briše zahteve starije od 1 dana
