@@ -60,10 +60,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   // ⏱️ BC zahtev Timer - čeka 10 min pre potvrde
   Timer? _bcZahtevTimer;
   Map<String, dynamic>? _pendingBcZahtev; // {dan, vreme, polasci}
+  bool _bcRequestLocked = false; // 🚫 Blokiran zbog spam-a (20 min penalti)
+  DateTime? _bcLockUntil; // Vreme do kada je blokiran
 
   // ⏱️ VS zahtev Timer - čeka 10 min pre potvrde (samo za danas)
   Timer? _vsZahtevTimer;
   Map<String, dynamic>? _pendingVsZahtev;
+  final bool _vsRequestLocked = false; // 🚫 Blokiran zbog spam-a (20 min penalti)
+  DateTime? _vsLockUntil; // Vreme do kada je blokiran
 
   @override
   void initState() {
@@ -1827,19 +1831,85 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             _putnikData['radni_dani'] = noviRadniDani;
           });
 
+          // 🚫 ANTI-SPAM: Proveri da li je već aktivan timer (drugi zahtev)
+          final jeVecAktivanTimer = _bcZahtevTimer != null && _bcZahtevTimer!.isActive;
+
+          // 🚫 Ako je blokiran zbog spam-a, odbij zahtev
+          if (_bcRequestLocked && _bcLockUntil != null) {
+            final preostaloVreme = _bcLockUntil!.difference(DateTime.now());
+            if (preostaloVreme.isNegative) {
+              // Lock je istekao, dozvoli zahtev
+              _bcRequestLocked = false;
+              _bcLockUntil = null;
+            } else {
+              // Još uvek blokiran
+              if (mounted) {
+                final minuti = preostaloVreme.inMinutes;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '🚫 Previše izmena! Molimo sačekajte još $minuti min pre sledećeg zahteva.',
+                    ),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              }
+              // Vrati stanje nazad (otkaži pending zahtev)
+              (polasci[dan] as Map<String, dynamic>)['bc'] = null;
+              (polasci[dan] as Map<String, dynamic>)['bc_status'] = null;
+              final mergedRollback = await _mergePolasciSaBazom(putnikId, polasci);
+              await Supabase.instance.client
+                  .from('registrovani_putnici')
+                  .update({'polasci_po_danu': mergedRollback}).eq('id', putnikId);
+              setState(() {
+                _putnikData['polasci_po_danu'] = polasci;
+              });
+              return; // 🛑 BLOKIRAJ zahtev
+            }
+          }
+
           //  //  // 2. Prikaži poruku "zahtev primljen"
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Vaš zahtev je primljen i trenutno je u obradi'),
-                backgroundColor: Colors.blueGrey,
-                duration: Duration(seconds: 5),
-              ),
-            );
+            if (jeVecAktivanTimer) {
+              // DRUGI zahtev - upozori da će čekati 20 min
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    '⚠️ Drugi zahtev primljen - čekanje produženо na 20 minuta\n'
+                    'Dalji zahtevi će biti blokirani dok ovaj ne bude obrađen.',
+                  ),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 7),
+                ),
+              );
+            } else {
+              // PRVI zahtev - normalna poruka
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✅ Vaš zahtev je primljen i trenutno je u obradi'),
+                  backgroundColor: Colors.blueGrey,
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            }
           }
 
           // 3. Otkaži prethodni timer ako postoji
           _bcZahtevTimer?.cancel();
+
+          // 🚫 Ako je DRUGI zahtev, postavi 20 min penalti timer + blokiraj dalje zahteve
+          Duration waitDuration;
+          if (jeVecAktivanTimer) {
+            waitDuration = const Duration(minutes: 20);
+            _bcRequestLocked = true; // Blokiraj dalje zahteve
+            _bcLockUntil = DateTime.now().add(waitDuration);
+            debugPrint('🚫 [BC] DRUGI ZAHTEV - 20 min penalti + lock do $_bcLockUntil');
+          } else {
+            // PRVI zahtev - normalan timer
+            waitDuration = const Duration(minutes: 10);
+            debugPrint('✅ [BC] PRVI ZAHTEV - 10 min timer');
+          }
 
           // 4. UČENIK BC logika:
           // - DANAŠNJI dan: uvek proverava kapacitet
@@ -1885,9 +1955,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             // Računamo vreme do 20:00
             final now = DateTime.now();
             final targetTime = DateTime(now.year, now.month, now.day, 20, 0, 0);
-            var waitDuration = targetTime.difference(now);
-            if (waitDuration.isNegative) {
-              waitDuration = const Duration(seconds: 1);
+            var waitDuration20h = targetTime.difference(now);
+            if (waitDuration20h.isNegative) {
+              waitDuration20h = const Duration(seconds: 1);
             }
 
             if (mounted) {
@@ -1901,35 +1971,50 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               );
             }
 
-            _bcZahtevTimer = Timer(waitDuration, () async {
+            _bcZahtevTimer = Timer(waitDuration20h, () async {
               debugPrint('⏰ [BC] 20:00 TIMER ISTEKAO! Pozivam _confirmBcZahtev()');
               try {
                 await _confirmBcZahtev();
+                _bcRequestLocked = false; // Otključaj posle obrade
+                _bcLockUntil = null;
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error: $e')));
                 }
               }
             });
-          } else if (jeDanas) {
-            // DANAŠNJI dan: 10 minuta
-            debugPrint('🎯 [BC] UČENIK: Pending zahtev za DANAS, timer 10 min');
-
-            _bcZahtevTimer = Timer(const Duration(minutes: 10), () async {
-              debugPrint('⏰ [BC] TIMER ISTEKAO! Pozivam _confirmBcZahtev()');
-              await _confirmBcZahtev();
-            });
           } else {
-            // BUDUĆI dan do 16h (prva izmena): 5 minuta
-            debugPrint('🎯 [BC] UČENIK: Pending zahtev za SUTRA do 16h, timer 5 min');
+            // Koristi waitDuration iz anti-spam logike (10 min za prvi, 20 min za drugi)
+            debugPrint('🎯 [BC] UČENIK: Timer ${waitDuration.inMinutes} min');
 
-            _bcZahtevTimer = Timer(const Duration(minutes: 5), () async {
+            _bcZahtevTimer = Timer(waitDuration, () async {
               debugPrint('⏰ [BC] TIMER ISTEKAO! Pozivam _confirmBcZahtev()');
               await _confirmBcZahtev();
+              _bcRequestLocked = false; // Otključaj posle obrade
+              _bcLockUntil = null;
             });
           }
         } else if (jeBcRadnikZahtev) {
           // 👷 BC RADNIK - sačuvaj kao pending, čekaj 5 minuta, proveri mesta
+          
+          // 🚫 ANTI-SPAM: Proveri da li je već aktivan timer
+          final jeVecAktivanTimer = _bcZahtevTimer != null && _bcZahtevTimer!.isActive;
+          
+          // 🚫 Ako je blokiran, odbij zahtev
+          if (_bcRequestLocked && _bcLockUntil != null && _bcLockUntil!.isAfter(DateTime.now())) {
+            final minuti = _bcLockUntil!.difference(DateTime.now()).inMinutes;
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('🚫 Previše izmena! Molimo sačekajte još $minuti min.'),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
+            return;
+          }
+          
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
@@ -1946,13 +2031,23 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           });
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Vaš zahtev je primljen i trenutno je u obradi'),
-                backgroundColor: Colors.blueGrey,
-                duration: Duration(seconds: 5),
-              ),
-            );
+            if (jeVecAktivanTimer) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('⚠️ Drugi zahtev - čekanje 20 min'),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✅ Vaš zahtev je primljen i trenutno je u obradi'),
+                  backgroundColor: Colors.blueGrey,
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            }
           }
 
           // Odredi ciljni datum i za radnika
@@ -1975,11 +2070,23 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           };
 
           debugPrint('🎯 [BC] RADNIK: Pending zahtev sačuvan za datum: $targetDate');
-          debugPrint('🎯 [BC] Pokrećem timer 5 min');
 
-          // Pokreni timer (5 min za radnike)
-          _bcZahtevTimer = Timer(const Duration(minutes: 5), () async {
+          // Otkaži prethodni timer ako postoji (anti-spam zaštita)
+          _bcZahtevTimer?.cancel();
+          
+          // Ako je drugi zahtev, postavi 20 min + lock
+          final waitDuration = jeVecAktivanTimer ? const Duration(minutes: 20) : const Duration(minutes: 5);
+          if (jeVecAktivanTimer) {
+            _bcRequestLocked = true;
+            _bcLockUntil = DateTime.now().add(waitDuration);
+          }
+          debugPrint('🎯 [BC] Timer ${waitDuration.inMinutes} min');
+
+          // Pokreni timer
+          _bcZahtevTimer = Timer(waitDuration, () async {
             await _confirmBcZahtev();
+            _bcRequestLocked = false;
+            _bcLockUntil = null;
           });
         } else if (jeBcDnevniZahtev) {
           // 📅 BC DNEVNI - Wait 10 min then check
