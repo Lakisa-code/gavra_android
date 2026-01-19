@@ -1700,10 +1700,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final jeBcUcenikZahtev = tipGrad == 'bc' && jeUcenik && novoVreme != null;
       final jeBcRadnikZahtev = tipGrad == 'bc' && jeRadnik && novoVreme != null;
       final jeBcDnevniZahtev = tipGrad == 'bc' && jeDnevni && novoVreme != null;
+      final jeVsZahtev = tipGrad == 'vs' && novoVreme != null; // 🆕 SVA VS vremena idu u pending (10 min)
 
       debugPrint('📋 [BC] tipPutnika=$tipPutnika, jeUcenik=$jeUcenik, jeRadnik=$jeRadnik, jeDnevni=$jeDnevni');
       debugPrint(
-        '📋 [BC] jeBcUcenikZahtev=$jeBcUcenikZahtev, jeBcRadnikZahtev=$jeBcRadnikZahtev, jeBcDnevniZahtev=$jeBcDnevniZahtev',
+        '📋 [BC] jeBcUcenikZahtev=$jeBcUcenikZahtev, jeBcRadnikZahtev=$jeBcRadnikZahtev, jeBcDnevniZahtev=$jeBcDnevniZahtev, jeVsZahtev=$jeVsZahtev',
       );
 
       // Ažuriraj lokalno - ČUVAJ SVE PODATKE (pokupljeno, placeno, otkazano, itd.)
@@ -1872,8 +1873,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           }
 
           debugPrint('🎯 [BC] DNEVNI: Pending zahtev sačuvan');
-        } else if (tipGrad == 'vs' && novoVreme != null && jeDnevni) {
-          // 📅 VS DNEVNI - Wait 10 min then check
+        } else if (jeVsZahtev) {
+          // 🚐 VS LOGIKA - Pending 10 minuta za SVE tipove putnika
+          debugPrint('🎯 [VS] ZAHTEV - Pending status, 10 min timer');
+
+          // Postavi status na pending
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = DateTime.now().toUtc().toIso8601String();
 
@@ -1902,46 +1906,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             );
           }
 
-          debugPrint('🎯 [VS] DNEVNI: Pending zahtev sačuvan');
-        } else if (tipGrad == 'vs' && novoVreme != null) {
-          // 🚐 VS LOGIKA - Pending + Timer + Provera mesta (za SVE dane)
-          final danas = DateTime.now();
-          const daniMapa = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
-          final danWeekday = daniMapa[dan.toLowerCase()] ?? danas.weekday;
-          final jeDanas = danWeekday == danas.weekday;
-
-          debugPrint('🎯 [VS] ZAHTEV - Pending status, 10 min timer (jeDanas=$jeDanas)');
-
-          // Postavi status na pending
-          (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
-          (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = DateTime.now().toUtc().toIso8601String();
-
-          // 🛡️ Merge sa postojećim markerima u bazi
-          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
-
-          await Supabase.instance.client
-              .from('registrovani_putnici')
-              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
-
-          setState(() {
-            _putnikData['polasci_po_danu'] = mergedPolasci;
-            _putnikData['radni_dani'] = noviRadniDani;
-          });
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '✅ Vaš zahtev je primljen i biće obrađen uskoro',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: Colors.blueGrey,
-                duration: Duration(seconds: 5),
-              ),
-            );
-          }
-
-          debugPrint('🎯 [VS] Zahtev sačuvan sa pending statusom');
+          debugPrint('🎯 [VS] Pending zahtev sačuvan');
         } else {
           // ✅ NORMAL FLOW SAVE
           // Čuva promene direktno u bazu (za otkazivanje ili ne-kritične promene)
