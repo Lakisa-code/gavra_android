@@ -215,28 +215,6 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  // 🔄 RESET OPTIMIZACIJE RUTE
-  void _resetOptimization() {
-    if (mounted) {
-      setState(() {
-        _isRouteOptimized = false;
-        _isListReordered = false;
-        _optimizedRoute.clear();
-        _currentPassengerIndex = 0;
-        _navigationStatus = '';
-        _cachedCoordinates = null;
-      });
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🔄 Optimizacija rute je isključena'),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
   // 🎯 REOPTIMIZACIJA RUTE NAKON PROMENE STATUSA PUTNIKA
   Future<void> _reoptimizeAfterStatusChange() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
@@ -661,58 +639,9 @@ class _VozacScreenState extends State<VozacScreen> {
           });
         }
 
-        // 🚐 POKRENI REALTIME TRACKING ZA PUTNIKE
-        // Šalje GPS lokaciju + ETA za svakog putnika u Supabase
+        // 🚐 AUTOMATSKI POKRENI GPS TRACKING nakon optimizacije
         if (_currentDriver != null && result.putniciEta != null) {
-          final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
-
-          // Konvertuj koordinate: Map<Putnik, Position> -> Map<String, Position>
-          Map<String, Position>? coordsByName;
-          if (_cachedCoordinates != null) {
-            coordsByName = {};
-            for (final entry in _cachedCoordinates!.entries) {
-              coordsByName[entry.key.ime] = entry.value;
-            }
-          }
-
-          // Izvuci redosled imena putnika
-          final putniciRedosled = optimizedPutnici.map((p) => p.ime).toList();
-
-          await DriverLocationService.instance.startTracking(
-            vozacId: _currentDriver!,
-            vozacIme: _currentDriver!,
-            grad: _selectedGrad,
-            vremePolaska: _selectedVreme,
-            smer: smer,
-            putniciEta: result.putniciEta,
-            putniciCoordinates: coordsByName,
-            putniciRedosled: putniciRedosled,
-            onAllPassengersPickedUp: () {
-              if (mounted) {
-                setState(() {
-                  _isGpsTracking = false;
-                  _navigationStatus = '';
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ Svi putnici pokupljeni! Tracking automatski zaustavljen.'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-          );
-
-          if (mounted) {
-            setState(() => _isGpsTracking = true);
-          }
-
-          // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA
-          await _sendTransportStartedNotifications(
-            putniciEta: result.putniciEta!,
-            vozacIme: _currentDriver!,
-          );
+          await _startGpsTracking();
         }
 
         final routeString = optimizedPutnici.take(3).map((p) => p.adresa?.split(',').first ?? p.ime).join(' → ');
@@ -863,8 +792,8 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  // 🚀 KOMPAKTNO DUGME ZA OPTIMIZACIJU
-  // ✅ ISPRAVKA: Koristi StreamBuilder + PutnikService direktno
+  // 🚀 KOMPAKTNO DUGME ZA GPS TRACKING
+  // ✅ TOGGLE: Pokreće ili zaustavlja GPS tracking u pozadini
   Widget _buildOptimizeButton() {
     return StreamBuilder<List<Putnik>>(
       // ✅ Koristi isti stream kao ostatak screen-a
@@ -944,19 +873,26 @@ class _VozacScreenState extends State<VozacScreen> {
         return SizedBox(
           height: 26,
           child: ElevatedButton(
-            onPressed: _isLoading || !hasPassengers || !isDriverValid
+            onPressed: _isLoading || !isDriverValid
                 ? null
                 : () {
-                    if (_isRouteOptimized) {
-                      _resetOptimization();
+                    if (_isGpsTracking) {
+                      // ZAUSTAVI GPS tracking
+                      _stopGpsTracking();
+                    } else if (_isRouteOptimized) {
+                      // POKRENI GPS tracking
+                      _startGpsTracking();
                     } else {
+                      // OPTIMIZUJ RUTU + POKRENI GPS tracking
                       _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: false);
                     }
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _isRouteOptimized
-                  ? Colors.green.shade600
-                  : (hasPassengers ? Theme.of(context).primaryColor : Colors.grey.shade400),
+              backgroundColor: _isGpsTracking
+                  ? Colors.orange.shade700
+                  : (_isRouteOptimized
+                      ? Colors.green.shade600
+                      : (hasPassengers ? Theme.of(context).primaryColor : Colors.grey.shade400)),
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
               elevation: hasPassengers ? 2 : 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -965,7 +901,7 @@ class _VozacScreenState extends State<VozacScreen> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                _isRouteOptimized ? 'Reset' : 'Ruta',
+                _isGpsTracking ? 'STOP' : (_isRouteOptimized ? 'START' : 'Ruta'),
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
@@ -1016,39 +952,35 @@ class _VozacScreenState extends State<VozacScreen> {
     );
   }
 
-  // 🗺️ DUGME ZA NAVIGACIJU - IDENTIČNO KAO DANAS SCREEN
+  // 🗺️ DUGME ZA NAVIGACIJU - OTVARA HERE WeGo SA REDOSLEDOM IZ OPTIMIZOVANE RUTE
   Widget _buildMapsButton() {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
     final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
     return SizedBox(
       height: 26,
       child: ElevatedButton(
-        onPressed: hasOptimizedRoute && isDriverValid
-            ? () => (_isGpsTracking ? _stopSmartNavigation() : _showNavigationOptionsDialog())
-            : null,
+        onPressed: hasOptimizedRoute && isDriverValid ? _openHereWeGoNavigation : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _isGpsTracking
-              ? Colors.orange.shade700
-              : (hasOptimizedRoute ? Theme.of(context).colorScheme.primary : Colors.grey.shade400),
+          backgroundColor: hasOptimizedRoute ? Colors.blue.shade600 : Colors.grey.shade400,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           elevation: hasOptimizedRoute ? 2 : 1,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         ),
-        child: FittedBox(
+        child: const FittedBox(
           fit: BoxFit.scaleDown,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                _isGpsTracking ? Icons.stop : Icons.navigation,
+                Icons.navigation,
                 size: 10,
-                color: Theme.of(context).colorScheme.onPrimary,
+                color: Colors.white,
               ),
-              const SizedBox(width: 2),
+              SizedBox(width: 2),
               Text(
-                _isGpsTracking ? 'STOP' : 'NAV',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
+                'NAV',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
               ),
             ],
           ),
@@ -1057,66 +989,114 @@ class _VozacScreenState extends State<VozacScreen> {
     );
   }
 
-  // 🗺️ DIJALOG SA OPCIJAMA NAVIGACIJE
-  void _showNavigationOptionsDialog() {
-    // 🎯 Koristi isti filter kao kod prikaza "Lista Reorderovana" - samo aktivni nepokupljeni putnici
-    final putnikCount = _optimizedRoute.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length;
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.navigation, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Navigacija', style: TextStyle(fontSize: 18)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Opcija 1: Samo sledeći putnik
-            ListTile(
-              leading: const Icon(Icons.person, color: Colors.green),
-              title: const Text('Sledeći putnik'),
-              subtitle: Text(
-                _optimizedRoute.isNotEmpty
-                    ? '${_optimizedRoute.first.ime} - ${_optimizedRoute.first.adresa}'
-                    : 'Nema putnika',
-                style: const TextStyle(fontSize: 12),
+  // 🚀 POKRENI GPS TRACKING (ruta je već optimizovana)
+  Future<void> _startGpsTracking() async {
+    if (!_isRouteOptimized || _optimizedRoute.isEmpty || _currentDriver == null) return;
+
+    try {
+      final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
+
+      // Konvertuj koordinate: Map<Putnik, Position> -> Map<String, Position>
+      Map<String, Position>? coordsByName;
+      if (_cachedCoordinates != null) {
+        coordsByName = {};
+        for (final entry in _cachedCoordinates!.entries) {
+          coordsByName[entry.key.ime] = entry.value;
+        }
+      }
+
+      // Izvuci redosled imena putnika
+      final putniciRedosled = _optimizedRoute.map((p) => p.ime).toList();
+
+      // Izračunaj ETA za putnike ako već nisu dostupni
+      Map<String, int>? putniciEta;
+      if (_cachedCoordinates != null && _cachedCoordinates!.isNotEmpty) {
+        // Kreiraj simulirane ETA vrednosti na osnovu redosleda (svaki putnik +3 minuta)
+        putniciEta = {};
+        int cumulativeMinutes = 3;
+        for (final putnik in _optimizedRoute) {
+          putniciEta[putnik.ime] = cumulativeMinutes;
+          cumulativeMinutes += 3;
+        }
+      }
+
+      await DriverLocationService.instance.startTracking(
+        vozacId: _currentDriver!,
+        vozacIme: _currentDriver!,
+        grad: _selectedGrad,
+        vremePolaska: _selectedVreme,
+        smer: smer,
+        putniciEta: putniciEta,
+        putniciCoordinates: coordsByName,
+        putniciRedosled: putniciRedosled,
+        onAllPassengersPickedUp: () {
+          if (mounted) {
+            setState(() {
+              _isGpsTracking = false;
+              _navigationStatus = '';
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Svi putnici pokupljeni! Tracking automatski zaustavljen.'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
               ),
-              onTap: () {
-                Navigator.of(context).pop();
-                _startSmartNavigation();
-              },
-            ),
-            const Divider(),
-            // Opcija 2: Svi putnici (multi-waypoint)
-            ListTile(
-              leading: const Icon(Icons.group, color: Colors.blue),
-              title: Text('Svi putnici ($putnikCount)'),
-              subtitle: Text(
-                putnikCount > 10 ? 'Prvih 10 kao waypoints, ostali posle' : 'Svi kao waypoints u HERE WeGo',
-                style: const TextStyle(fontSize: 12),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-                _startAllWaypointsNavigation();
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Otkaži'),
+            );
+          }
+        },
+      );
+
+      if (mounted) {
+        setState(() => _isGpsTracking = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🚀 GPS tracking pokrenut! Putnici dobijaju realtime lokaciju.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
-        ],
-      ),
-    );
+        );
+      }
+
+      // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA
+      if (putniciEta != null) {
+        await _sendTransportStartedNotifications(
+          putniciEta: putniciEta,
+          vozacIme: _currentDriver!,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Greška pri pokretanju GPS trackinga: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  // 🗺️ NAVIGACIJA SA SVIM PUTNICIMA (multi-waypoint)
-  Future<void> _startAllWaypointsNavigation() async {
+  // 🛑 ZAUSTAVI GPS TRACKING
+  void _stopGpsTracking() {
+    DriverLocationService.instance.stopTracking();
+
+    if (mounted) {
+      setState(() {
+        _isGpsTracking = false;
+        _navigationStatus = '';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🛑 GPS tracking zaustavljen'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // 🗺️ OTVORI HERE WeGo NAVIGACIJU SA OPTIMIZOVANIM REDOSLEDOM
+  Future<void> _openHereWeGoNavigation() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
     try {
@@ -1150,61 +1130,11 @@ class _VozacScreenState extends State<VozacScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Greška: $e'),
+            content: Text('❌ Greška pri otvaranju navigacije: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
-    }
-  }
-
-  // 🗺️ SAMO OTVORI NAVIGACIJU - GPS tracking je već pokrenut nakon "Ruta" dugmeta
-  Future<void> _startSmartNavigation() async {
-    if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
-
-    try {
-      final result = await SmartNavigationService.startMultiProviderNavigation(
-        context: context,
-        putnici: _optimizedRoute,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
-        cachedCoordinates: _cachedCoordinates,
-      );
-
-      if (result.success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('🗺️ ${result.message}'), backgroundColor: Colors.green),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ ${result.message}'), backgroundColor: Colors.red),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Greška pri pokretanju navigacije: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  // 🛑 STOP SMART NAVIGATION
-  void _stopSmartNavigation() {
-    // ✅ Zaustavi GPS tracking i notifikacije
-    DriverLocationService.instance.stopTracking();
-
-    if (mounted) {
-      setState(() {
-        _isGpsTracking = false;
-        _navigationStatus = '';
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('🛑 GPS tracking zaustavljen'), backgroundColor: Colors.orange),
-      );
     }
   }
 
@@ -1773,7 +1703,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
         await RealtimeNotificationService.sendPushNotification(
           title: '🚐 Kombi je krenuo!',
-          body: 'Vozač $vozacIme kreće ka vama. Stiže za ~$eta min.',
+          body: 'Vozač $vozacIme kreće ka vama. Stiže za ~$eta min.\n📍 Možete pratiti uživo klikom ovde!',
           tokens: [
             {'token': tokenInfo['token']!, 'provider': tokenInfo['provider']!}
           ],
@@ -1781,6 +1711,7 @@ class _VozacScreenState extends State<VozacScreen> {
             'type': 'transport_started',
             'eta_minutes': eta,
             'vozac': vozacIme,
+            'putnik_ime': putnikIme,
           },
         );
       }
