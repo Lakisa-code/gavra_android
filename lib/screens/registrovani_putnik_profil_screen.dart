@@ -119,7 +119,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     debugPrint('🎯 [Realtime] Listener aktivan za putnika $putnikId');
   }
 
-  /// 🔔 Hendluje promenu statusa (confirmed/null) i šalje notifikaciju
+  /// 🔔 Hendluje promenu statusa (confirmed/null) - samo osvežava UI
+  /// Notifikacije šalje Job #3 preko push sistema
   Future<void> _handleStatusChange(PostgresChangePayload payload) async {
     try {
       final newData = payload.newRecord;
@@ -135,52 +136,25 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         });
       }
 
-      // Proveri sve dane za status promene
+      // Logovanje status promena (bez slanja notifikacija - to radi Job #3)
       for (final dan in polasciPoDanu.keys) {
         final danData = polasciPoDanu[dan];
         if (danData is! Map) continue;
 
-        // BC status promena
         final bcStatus = danData['bc_status']?.toString();
         final bcVreme = danData['bc']?.toString();
-
-        if (bcStatus == 'confirmed' && bcVreme != null && bcVreme.isNotEmpty && bcVreme != 'null') {
-          // ✅ POTVRĐENO
-          await LocalNotificationService.showRealtimeNotification(
-            title: '✅ Zahtev potvrđen!',
-            body: 'Vaš zahtev za $dan $bcVreme (BC) je POTVRĐEN! 🚐',
-          );
-          debugPrint('✅ [Status] BC zahtev POTVRĐEN: $dan $bcVreme');
-        } else if (bcStatus == 'rejected' ||
-            bcStatus == 'null' ||
-            (bcStatus == null && bcVreme == null && danData.containsKey('bc_resolved_at'))) {
-          // ❌ ODBIJENO - nema mesta ili je termin obrisan po odbijanju
-          await LocalNotificationService.showRealtimeNotification(
-            title: '❌ Zahtev odbijen',
-            body: 'Vaš zahtev za $dan BC polazak je odbijen. Nema slobodnih mesta.',
-          );
-          debugPrint('❌ [Status] BC zahtev ODBIJEN: $dan');
-        }
-
-        // VS status promena
         final vsStatus = danData['vs_status']?.toString();
         final vsVreme = danData['vs']?.toString();
 
+        if (bcStatus == 'confirmed' && bcVreme != null && bcVreme.isNotEmpty && bcVreme != 'null') {
+          debugPrint('✅ [Status] BC zahtev POTVRĐEN: $dan $bcVreme');
+        } else if (bcStatus == 'rejected' || bcStatus == 'null') {
+          debugPrint('❌ [Status] BC zahtev ODBIJEN: $dan');
+        }
+
         if (vsStatus == 'confirmed' && vsVreme != null && vsVreme.isNotEmpty && vsVreme != 'null') {
-          // ✅ POTVRĐENO
-          await LocalNotificationService.showRealtimeNotification(
-            title: '✅ Zahtev potvrđen!',
-            body: 'Vaš zahtev za $dan $vsVreme (VS) je POTVRĐEN! 🚐',
-          );
           debugPrint('✅ [Status] VS zahtev POTVRĐEN: $dan $vsVreme');
-        } else if (vsStatus == 'rejected' ||
-            vsStatus == 'null' ||
-            (vsStatus == null && vsVreme == null && danData.containsKey('vs_resolved_at'))) {
-          // ❌ ODBIJENO - nema mesta
-          await LocalNotificationService.showRealtimeNotification(
-            title: '❌ Zahtev odbijen',
-            body: 'Vaš zahtev za $dan VS polazak je odbijen. Nema slobodnih mesta.',
-          );
+        } else if (vsStatus == 'rejected' || vsStatus == 'null') {
           debugPrint('❌ [Status] VS zahtev ODBIJEN: $dan');
         }
       }
