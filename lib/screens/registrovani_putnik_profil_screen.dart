@@ -150,7 +150,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             body: 'Vaš zahtev za $dan $bcVreme (BC) je POTVRĐEN! 🚐',
           );
           debugPrint('✅ [Status] BC zahtev POTVRĐEN: $dan $bcVreme');
-        } else if (bcStatus == 'rejected' || bcStatus == 'null' || (bcStatus == null && bcVreme == null && danData.containsKey('bc_resolved_at'))) {
+        } else if (bcStatus == 'rejected' ||
+            bcStatus == 'null' ||
+            (bcStatus == null && bcVreme == null && danData.containsKey('bc_resolved_at'))) {
           // ❌ ODBIJENO - nema mesta ili je termin obrisan po odbijanju
           await LocalNotificationService.showRealtimeNotification(
             title: '❌ Zahtev odbijen',
@@ -170,7 +172,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             body: 'Vaš zahtev za $dan $vsVreme (VS) je POTVRĐEN! 🚐',
           );
           debugPrint('✅ [Status] VS zahtev POTVRĐEN: $dan $vsVreme');
-        } else if (vsStatus == 'rejected' || vsStatus == 'null' || (vsStatus == null && vsVreme == null && danData.containsKey('vs_resolved_at'))) {
+        } else if (vsStatus == 'rejected' ||
+            vsStatus == 'null' ||
+            (vsStatus == null && vsVreme == null && danData.containsKey('vs_resolved_at'))) {
           // ❌ ODBIJENO - nema mesta
           await LocalNotificationService.showRealtimeNotification(
             title: '❌ Zahtev odbijen',
@@ -2680,8 +2684,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         ),
                       ),
                     ],
-                  );
-                }),
+                  ),
+                );
+              }),
           ],
         ),
       ),
