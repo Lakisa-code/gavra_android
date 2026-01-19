@@ -1844,14 +1844,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             } else {
               // Još uvek blokiran
               if (mounted) {
-                final minuti = preostaloVreme.inMinutes;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text(
-                      '🚫 Previše izmena! Molimo sačekajte još $minuti min pre sledećeg zahteva.',
+                      '⏳ Prethodni zahtev je još uvek u obradi. Molimo sačekajte.',
                     ),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 5),
+                    backgroundColor: Colors.orange,
+                    duration: Duration(seconds: 5),
                   ),
                 );
               }
@@ -1872,15 +1871,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           //  //  // 2. Prikaži poruku "zahtev primljen"
           if (mounted) {
             if (jeVecAktivanTimer) {
-              // DRUGI zahtev - upozori da će čekati 20 min
+              // DRUGI zahtev - ne otkrivaj penalti
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    '⚠️ Drugi zahtev primljen - čekanje produženо na 20 minuta\n'
-                    'Dalji zahtevi će biti blokirani dok ovaj ne bude obrađen.',
-                  ),
-                  backgroundColor: Colors.orange,
-                  duration: Duration(seconds: 7),
+                  content: Text('✅ Vaš drugi zahtev je uspešno primljen i trenutno je u obradi'),
+                  backgroundColor: Colors.blueGrey,
+                  duration: Duration(seconds: 5),
                 ),
               );
             } else {
@@ -1996,25 +1992,24 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           }
         } else if (jeBcRadnikZahtev) {
           // 👷 BC RADNIK - sačuvaj kao pending, čekaj 5 minuta, proveri mesta
-          
+
           // 🚫 ANTI-SPAM: Proveri da li je već aktivan timer
           final jeVecAktivanTimer = _bcZahtevTimer != null && _bcZahtevTimer!.isActive;
-          
+
           // 🚫 Ako je blokiran, odbij zahtev
           if (_bcRequestLocked && _bcLockUntil != null && _bcLockUntil!.isAfter(DateTime.now())) {
-            final minuti = _bcLockUntil!.difference(DateTime.now()).inMinutes;
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('🚫 Previše izmena! Molimo sačekajte još $minuti min.'),
-                  backgroundColor: Colors.red,
-                  duration: const Duration(seconds: 5),
+                const SnackBar(
+                  content: Text('⏳ Prethodni zahtev je još uvek u obradi. Molimo sačekajte.'),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 5),
                 ),
               );
             }
             return;
           }
-          
+
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
@@ -2034,8 +2029,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             if (jeVecAktivanTimer) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('⚠️ Drugi zahtev - čekanje 20 min'),
-                  backgroundColor: Colors.orange,
+                  content: Text('✅ Vaš drugi zahtev je uspešno primljen i trenutno je u obradi'),
+                  backgroundColor: Colors.blueGrey,
                   duration: Duration(seconds: 5),
                 ),
               );
@@ -2073,7 +2068,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // Otkaži prethodni timer ako postoji (anti-spam zaštita)
           _bcZahtevTimer?.cancel();
-          
+
           // Ako je drugi zahtev, postavi 20 min + lock
           final waitDuration = jeVecAktivanTimer ? const Duration(minutes: 20) : const Duration(minutes: 5);
           if (jeVecAktivanTimer) {
