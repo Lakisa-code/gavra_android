@@ -42,6 +42,14 @@ class LocalNotificationService {
       return;
     }
 
+    // 🧹 Cleanup: Cancel ALL pending/scheduled notifications (clear old cache)
+    try {
+      await flutterLocalNotificationsPlugin.cancelAll();
+      debugPrint('🧹 [LocalNotif] Cleared all scheduled notifications');
+    } catch (e) {
+      debugPrint('❌ [LocalNotif] Failed to clear notifications: $e');
+    }
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@drawable/ic_notification');
 
