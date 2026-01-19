@@ -47,7 +47,8 @@ class DriverLocationService {
   String? get currentVozacId => _currentVozacId;
   double get todayDistanceKm => _todayDistance / 1000;
   double get maxSpeedKmh => _maxSpeed * 3.6;
-  Duration get trackingDuration => _trackingStartTime != null ? DateTime.now().difference(_trackingStartTime!) : Duration.zero;
+  Duration get trackingDuration =>
+      _trackingStartTime != null ? DateTime.now().difference(_trackingStartTime!) : Duration.zero;
   double get averageSpeedKmh => trackingDuration.inSeconds > 0 ? (todayDistanceKm / trackingDuration.inHours) : 0.0;
   List<LatLng> get todayPositions => List.unmodifiable(_todayPositions);
 
@@ -246,18 +247,18 @@ class DriverLocationService {
         );
         // Log distance za debugging ako treba
         debugPrint('🚐 GPS: pomeraj ${distance.toStringAsFixed(0)}m');
-        
+
         // 🚗 Update daily statistics
         _todayDistance += distance;
       }
 
       _lastPosition = position;
-      
+
       // 🚗 Track max speed
       if (position.speed > _maxSpeed) {
         _maxSpeed = position.speed;
       }
-      
+
       // 🚗 Add position to history
       _todayPositions.add(LatLng(position.latitude, position.longitude));
 
