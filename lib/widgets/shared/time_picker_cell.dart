@@ -254,14 +254,15 @@ class TimePickerCell extends StatelessWidget {
                     if (isCancelled) ...[
                       Icon(Icons.cancel, size: 12, color: textColor),
                       const SizedBox(width: 2),
-                    ] else if (locked) ...[
-                      Icon(Icons.check_circle, size: 12, color: Colors.green),
-                      const SizedBox(width: 2),
                     ] else if (isPending) ...[
                       Icon(Icons.hourglass_empty, size: 12, color: textColor),
                       const SizedBox(width: 2),
                     ] else if (isWaiting) ...[
                       Icon(Icons.schedule, size: 12, color: textColor),
+                      const SizedBox(width: 2),
+                    ] else if (status == 'confirmed' || (hasTime && status == null)) ...[
+                      // ✅ Zelena ikonica za confirmed status (eksplicitno ili implicitno kada nema statusa ali ima vreme)
+                      Icon(Icons.check_circle, size: 12, color: Colors.green),
                       const SizedBox(width: 2),
                     ],
                     Text(
