@@ -1936,9 +1936,8 @@ class _DanasScreenState extends State<DanasScreen> {
           });
         }
 
-        // 🚐 POKRENI REALTIME TRACKING ZA PUTNIKE
-        // Šalje GPS lokaciju + ETA za svakog putnika u Supabase
-        // ETA dolazi iz OSRM (tačan, kumulativan po rutama)
+        // 🚐 ODMAH POKRENI GPS TRACKING I POŠALJI NOTIFIKACIJE
+        // ✅ Čim vozač pritisne "Ruta", putnici dobijaju notifikaciju i vide realtime ETA
         if (_currentDriver != null && result.putniciEta != null) {
           final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
 
@@ -1954,6 +1953,7 @@ class _DanasScreenState extends State<DanasScreen> {
           // 🆕 Izvuci redosled imena putnika
           final putniciRedosled = _optimizedRoute.map((p) => p.ime).toList();
 
+          // ✅ STARTUJ GPS TRACKING ODMAH - čim se ruta optimizuje
           await DriverLocationService.instance.startTracking(
             vozacId: _currentDriver!,
             vozacIme: _currentDriver!,
@@ -1981,11 +1981,19 @@ class _DanasScreenState extends State<DanasScreen> {
             },
           );
 
-          // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA
+          // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA ODMAH
+          // ✅ Putnici dobijaju "🚐 Kombi je krenuo!" čim se ruta optimizuje
           await _sendTransportStartedNotifications(
             putniciEta: result.putniciEta!,
             vozacIme: _currentDriver!,
           );
+
+          // ✅ Postavi GPS tracking flag
+          if (mounted) {
+            setState(() {
+              _isGpsTracking = true;
+            });
+          }
         }
 
         // Prikaži rezultat reorderovanja
@@ -2847,13 +2855,13 @@ class _DanasScreenState extends State<DanasScreen> {
     ); // Zatvaranje AnnotatedRegion
   }
 
-  // 🗺️ NAVIGATION HANDLING IS MANAGED BY SmartNavigationService
+  // 🗺️ SAMO OTVORI NAVIGACIJU - GPS tracking je već pokrenut nakon "Ruta" dugmeta
 
   Future<void> _startSmartNavigation() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
     try {
-      // Koristi HERE WeGo navigaciju
+      // Koristi HERE WeGo navigaciju (GPS tracking je već aktivan)
       final result = await SmartNavigationService.startMultiProviderNavigation(
         context: context,
         putnici: _optimizedRoute,
@@ -2863,23 +2871,12 @@ class _DanasScreenState extends State<DanasScreen> {
 
       if (result.success) {
         if (mounted) {
-          setState(() {
-            _optimizedRoute = result.optimizedPutnici ?? _optimizedRoute;
-            _cachedCoordinates = result.cachedCoordinates; // 🎯 Ažuriraj keširane koordinate
-            _isRouteOptimized = true;
-            _isGpsTracking = true;
-            _navigationStatus = result.message;
-          });
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('🗺️ ${result.message}'), backgroundColor: Colors.green));
         }
       } else {
         if (mounted) {
-          setState(() {
-            _isGpsTracking = false;
-            _navigationStatus = result.message;
-          });
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('❌ ${result.message}'), backgroundColor: Colors.red));
@@ -2887,10 +2884,6 @@ class _DanasScreenState extends State<DanasScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isGpsTracking = false;
-          _navigationStatus = 'Greška pri pokretanju navigacije: $e';
-        });
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('❌ Greška pri pokretanju navigacije: $e'), backgroundColor: Colors.red));
@@ -2899,13 +2892,16 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   void _stopSmartNavigation() {
+    // ✅ Zaustavi GPS tracking i notifikacije
+    DriverLocationService.instance.stopTracking();
+
     if (mounted) {
       setState(() {
         _isGpsTracking = false;
         _navigationStatus = '';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('🛑 Navigacija zaustavljena'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('🛑 GPS tracking zaustavljen'), backgroundColor: Colors.orange),
       );
     }
   }

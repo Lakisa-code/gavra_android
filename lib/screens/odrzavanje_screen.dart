@@ -53,13 +53,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
       appBar: AppBar(
         title: const Text('📖 Kolska knjiga'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadVozila,
-            tooltip: 'Osveži',
-          ),
-        ],
+        automaticallyImplyLeading: false,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

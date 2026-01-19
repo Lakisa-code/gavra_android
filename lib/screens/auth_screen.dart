@@ -384,6 +384,7 @@ class _AuthScreenState extends State<AuthScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          automaticallyImplyLeading: false,
           title: const Text(
             '🔐 Auth Admin',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

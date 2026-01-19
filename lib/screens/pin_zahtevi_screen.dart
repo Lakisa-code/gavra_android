@@ -254,21 +254,11 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          automaticallyImplyLeading: false,
           title: const Text(
             '📨 Zahtevi za PIN',
             style: TextStyle(color: Colors.white),
           ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              onPressed: _loadZahtevi,
-              tooltip: 'Osveži',
-            ),
-          ],
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator(color: Colors.amber))

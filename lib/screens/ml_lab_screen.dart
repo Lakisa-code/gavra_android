@@ -40,6 +40,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Row(
           children: [
             Icon(Icons.science, color: Colors.blue),
@@ -50,6 +51,10 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white60,
+          indicatorColor: Colors.blue,
+          indicatorWeight: 3,
           tabs: const [
             Tab(icon: Icon(Icons.lightbulb), text: 'Live Predictions'),
             Tab(icon: Icon(Icons.assessment), text: 'Performance'),

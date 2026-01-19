@@ -41,6 +41,7 @@ class _PutnikKvalitetScreenV2State extends State<PutnikKvalitetScreenV2> {
       appBar: AppBar(
         title: const Text('📊 Kvalitet Putnika'),
         centerTitle: true,
+        automaticallyImplyLeading: false,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),

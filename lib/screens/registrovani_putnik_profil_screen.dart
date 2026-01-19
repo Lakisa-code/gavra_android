@@ -1782,10 +1782,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text(
-                    '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 4),
+                content: Text('✅ Vaš zahtev je primljen i trenutno je u obradi'),
+                backgroundColor: Colors.blueGrey,
+                duration: Duration(seconds: 5),
               ),
             );
           }
@@ -1846,7 +1845,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 const SnackBar(
                   content: Text('⏳ Zahtev uspešno primljen, biće obrađen do 20:00h'),
                   backgroundColor: Colors.orange,
-                  duration: Duration(seconds: 4),
+                  duration: Duration(seconds: 5),
                 ),
               );
             }
@@ -1897,7 +1896,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               const SnackBar(
                 content: Text('✅ Vaš zahtev je primljen i trenutno je u obradi'),
                 backgroundColor: Colors.blueGrey,
-                duration: Duration(seconds: 3),
+                duration: Duration(seconds: 5),
               ),
             );
           }
@@ -1948,7 +1947,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 content: Text(
                     '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!'),
                 backgroundColor: Colors.green,
-                duration: Duration(seconds: 4),
+                duration: Duration(seconds: 5),
               ),
             );
           }
@@ -1995,7 +1994,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 content: Text(
                     '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!'),
                 backgroundColor: Colors.green,
-                duration: Duration(seconds: 4),
+                duration: Duration(seconds: 5),
               ),
             );
           }
@@ -2046,10 +2045,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text(
-                    '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 4),
+                content: Text('✅ Vaš zahtev je primljen i trenutno je u obradi'),
+                backgroundColor: Colors.blueGrey,
+                duration: Duration(seconds: 5),
               ),
             );
           }

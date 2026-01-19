@@ -50,16 +50,12 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
       appBar: AppBar(
         title: const Text('💰 Finansije'),
         centerTitle: true,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: _showTroskoviDialog,
             tooltip: 'Podesi troškove',
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-            tooltip: 'Osveži',
           ),
         ],
       ),

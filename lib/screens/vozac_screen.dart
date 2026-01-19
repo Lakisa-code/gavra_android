@@ -1158,7 +1158,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  // 🗺️ START SMART NAVIGATION
+  // 🗺️ SAMO OTVORI NAVIGACIJU - GPS tracking je već pokrenut nakon "Ruta" dugmeta
   Future<void> _startSmartNavigation() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
@@ -1172,23 +1172,12 @@ class _VozacScreenState extends State<VozacScreen> {
 
       if (result.success) {
         if (mounted) {
-          setState(() {
-            _optimizedRoute = result.optimizedPutnici ?? _optimizedRoute;
-            _cachedCoordinates = result.cachedCoordinates;
-            _isRouteOptimized = true;
-            _isGpsTracking = true;
-            _navigationStatus = result.message;
-          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('🗺️ ${result.message}'), backgroundColor: Colors.green),
           );
         }
       } else {
         if (mounted) {
-          setState(() {
-            _isGpsTracking = false;
-            _navigationStatus = result.message;
-          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('❌ ${result.message}'), backgroundColor: Colors.red),
           );
@@ -1196,9 +1185,6 @@ class _VozacScreenState extends State<VozacScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isGpsTracking = false;
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('❌ Greška pri pokretanju navigacije: $e'), backgroundColor: Colors.red),
         );
@@ -1208,13 +1194,16 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // 🛑 STOP SMART NAVIGATION
   void _stopSmartNavigation() {
+    // ✅ Zaustavi GPS tracking i notifikacije
+    DriverLocationService.instance.stopTracking();
+
     if (mounted) {
       setState(() {
         _isGpsTracking = false;
         _navigationStatus = '';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('🛑 Navigacija zaustavljena'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('🛑 GPS tracking zaustavljen'), backgroundColor: Colors.orange),
       );
     }
   }

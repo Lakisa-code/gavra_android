@@ -669,6 +669,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
             title: _buildAppBarTitle(),
             centerTitle: true,
             elevation: 0,
+            automaticallyImplyLeading: false,
             leading: _isSelectionMode
                 ? IconButton(
                     icon: const Icon(Icons.close),

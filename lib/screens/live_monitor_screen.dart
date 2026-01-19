@@ -1,7 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
+import '../models/putnik.dart';
+import '../services/putnik_service.dart';
 import '../services/slobodna_mesta_service.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 
@@ -13,33 +13,27 @@ class LiveMonitorScreen extends StatefulWidget {
 }
 
 class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
-  Timer? _timer;
-  bool _isLoading = true;
-  List<SlobodnaMesta> _timeline = [];
-  int _uceniciOtisli = 0;
-  int _uceniciVracaju = 0;
+  final PutnikService _putnikService = PutnikService();
   String _lastUpdated = '';
+  Map<String, dynamic>? _cachedStats;
+  bool _isLoadingStats = false;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-    // Refresh every 10 seconds
-    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      _loadData(silent: true);
-    });
+    _loadStats();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadData({bool silent = false}) async {
-    if (!silent) {
-      setState(() => _isLoading = true);
-    }
+  // 🔄 REALTIME: Kalkuliše statistiku
+  Future<void> _loadStats() async {
+    if (_isLoadingStats) return;
+
+    setState(() => _isLoadingStats = true);
 
     try {
       final now = DateTime.now();
@@ -53,10 +47,7 @@ class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
       }
 
       final targetDateStr = targetDate.toIso8601String().split('T')[0];
-
-      // Dobij pun naziv dana za ciljni datum (npr. "ponedeljak")
       final targetDayName = app_date_utils.DateUtils.weekdayToString(targetDate.weekday);
-      // Dobij skraćenicu (npr. "pon")
       final dayAbbr = app_date_utils.DateUtils.getDayAbbreviation(targetDayName);
 
       // 1. Fetch Slots
@@ -73,41 +64,36 @@ class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
       });
 
       // 2. Fetch Stats
-      // Note: SlobodnaMestaService methods take full day name or abbr?
-      // Looking at service code: _isoDateToDayAbbr uses ['pon', ...]
-      // passing 'pet' should work if logic uses simple string match.
       final otisli = await SlobodnaMestaService.getBrojUcenikaKojiSuOtisliUSkolu(dayAbbr);
       final vracaju = await SlobodnaMestaService.getBrojUcenikaKojiSeVracaju(dayAbbr);
 
       if (mounted) {
         setState(() {
-          _timeline = merged;
-          _uceniciOtisli = otisli;
-          _uceniciVracaju = vracaju;
+          _cachedStats = {
+            'timeline': merged,
+            'uceniciOtisli': otisli,
+            'uceniciVracaju': vracaju,
+          };
           _lastUpdated =
               "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
-          _isLoading = false;
+          _isLoadingStats = false;
         });
       }
     } catch (e) {
-      print("Error loading live monitor: $e");
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isLoadingStats = false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Diff calculation
-    final missing = _uceniciOtisli - _uceniciVracaju;
-    final missingColor = missing > 0 ? Colors.orange : (missing < 0 ? Colors.red : Colors.green);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Live Monitor'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         actions: [
           Center(
             child: Padding(
@@ -125,62 +111,95 @@ class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
         ],
       ),
       backgroundColor: Colors.grey[100],
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // 📊 UPPER DASHBOARD
-                Container(
+      // 🔄 REALTIME: StreamBuilder automatski osvežava kad se promeni putnik
+      body: StreamBuilder<List<Putnik>>(
+        stream: _putnikService.streamKombinovaniPutniciFiltered(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Greška: ${snapshot.error}'));
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text('Nema podataka'));
+          }
+
+          // 🔄 Osvježi statistike kada stream emituje nove podatke
+          if (!_isLoadingStats) {
+            _loadStats();
+          }
+
+          // Koristi keširane statistike
+          if (_cachedStats == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final stats = _cachedStats!;
+          final timeline = stats['timeline'] as List<SlobodnaMesta>? ?? [];
+          final uceniciOtisli = stats['uceniciOtisli'] as int? ?? 0;
+          final uceniciVracaju = stats['uceniciVracaju'] as int? ?? 0;
+          final missing = uceniciOtisli - uceniciVracaju;
+          final missingColor = missing > 0 ? Colors.orange : (missing < 0 ? Colors.red : Colors.green);
+
+          return Column(
+            children: [
+              // 📊 UPPER DASHBOARD
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.white,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        "Otišli u školu",
+                        uceniciOtisli.toString(),
+                        Icons.school,
+                        Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        "Planiran povratak",
+                        uceniciVracaju.toString(),
+                        Icons.bus_alert,
+                        Colors.indigo,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        "Razlika",
+                        missing > 0 ? "-$missing" : (missing == 0 ? "OK" : "+${missing.abs()}"),
+                        Icons.compare_arrows,
+                        missingColor,
+                        isAlert: missing != 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // 🚦 TIMELINE
+              Expanded(
+                child: ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  color: Colors.white,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          "Otišli u školu",
-                          _uceniciOtisli.toString(),
-                          Icons.school,
-                          Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          "Planiran povratak",
-                          _uceniciVracaju.toString(),
-                          Icons.bus_alert,
-                          Colors.indigo,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          "Razlika",
-                          missing > 0 ? "-$missing" : (missing == 0 ? "OK" : "+${missing.abs()}"),
-                          Icons.compare_arrows,
-                          missingColor,
-                          isAlert: missing != 0,
-                        ),
-                      ),
-                    ],
-                  ),
+                  itemCount: timeline.length,
+                  itemBuilder: (context, index) {
+                    final slot = timeline[index];
+                    return _buildSlotCard(slot, missing);
+                  },
                 ),
-
-                const Divider(height: 1),
-
-                // 🚦 TIMELINE
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _timeline.length,
-                    itemBuilder: (context, index) {
-                      final slot = _timeline[index];
-                      return _buildSlotCard(slot);
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -219,14 +238,13 @@ class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
     );
   }
 
-  Widget _buildSlotCard(SlobodnaMesta slot) {
+  Widget _buildSlotCard(SlobodnaMesta slot, int missing) {
     // 🎨 Determine Status Color & Mode
     Color baseColor;
     IconData statusIcon;
     String statusText;
 
     // Squeeze-in Logic
-    final int missing = _uceniciOtisli - _uceniciVracaju;
     final bool isSqueezeInCandidate = missing == 0 && slot.waitingCount == 1 && slot.jePuno;
 
     if (slot.shouldActivateSecondVan) {

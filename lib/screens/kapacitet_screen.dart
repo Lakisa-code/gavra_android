@@ -391,6 +391,7 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          automaticallyImplyLeading: false,
           iconTheme: const IconThemeData(color: Colors.white),
           bottom: TabBar(
             controller: _tabController,
@@ -402,13 +403,6 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
               Tab(text: 'Vršac'),
             ],
           ),
-          actions: [
-            IconButton(
-              onPressed: _loadKapacitet,
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              tooltip: 'Osveži',
-            ),
-          ],
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())

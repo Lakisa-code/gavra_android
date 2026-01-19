@@ -218,6 +218,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
         title: const Text('📊 Statistika Vozača'),
         centerTitle: true,
         elevation: 0,
+        automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [

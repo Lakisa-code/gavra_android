@@ -180,12 +180,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
         title: const Text('📍 Adrese'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadAdrese,
-          ),
-        ],
+        automaticallyImplyLeading: false,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -219,10 +214,11 @@ class _AdreseScreenState extends State<AdreseScreen> {
                       controller: _searchController,
                       decoration: InputDecoration(
                         hintText: 'Pretraži adrese...',
-                        prefixIcon: const Icon(Icons.search),
+                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        prefixIcon: const Icon(Icons.search, color: Colors.white70),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear),
+                                icon: const Icon(Icons.clear, color: Colors.white70),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _searchQuery = '');
@@ -231,11 +227,20 @@ class _AdreseScreenState extends State<AdreseScreen> {
                             : null,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.blue, width: 2),
                         ),
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.1),
+                        fillColor: Colors.black.withValues(alpha: 0.3),
                       ),
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                       onChanged: (value) => setState(() => _searchQuery = value),
                     ),
                     const SizedBox(height: 12),
@@ -317,10 +322,17 @@ class _AdreseScreenState extends State<AdreseScreen> {
       onSelected: (value) {
         setState(() => _filterGrad = label);
       },
-      selectedColor: Colors.blue.withValues(alpha: 0.3),
+      backgroundColor: Colors.black.withValues(alpha: 0.3),
+      selectedColor: Colors.blue.withValues(alpha: 0.6),
       checkmarkColor: Colors.white,
+      side: BorderSide(
+        color: selected ? Colors.blue : Colors.white.withValues(alpha: 0.3),
+        width: selected ? 2 : 1,
+      ),
       labelStyle: TextStyle(
-        color: selected ? Colors.white : Colors.white70,
+        color: Colors.white,
+        fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+        fontSize: 14,
       ),
     );
   }
