@@ -62,6 +62,38 @@ class TimePickerCell extends StatelessWidget {
     return DateTime(now.year, now.month, now.day).add(Duration(days: diff));
   }
 
+  /// Da li je vreme za ovaj dan već prošlo (ne može se menjati, samo otkazati)
+  bool _isTimePassed() {
+    if (value == null || value!.isEmpty || dayName == null) return false;
+
+    final now = DateTime.now();
+    final dayDate = _getDateForDay();
+    if (dayDate == null) return false;
+
+    // Ako je dan u prošlosti - vreme je prošlo
+    final todayOnly = DateTime(now.year, now.month, now.day);
+    if (dayDate.isBefore(todayOnly)) return true;
+
+    // Ako je današnji dan - proveri da li je vreme prošlo
+    if (dayDate.isAtSameMomentAs(todayOnly)) {
+      try {
+        final timeParts = value!.split(':');
+        if (timeParts.length == 2) {
+          final hour = int.parse(timeParts[0]);
+          final minute = int.parse(timeParts[1]);
+          final scheduledTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+          // Ako je trenutno vreme >= zakazano vreme - blokiran (čim otkuca 7:00, gotovo)
+          return now.isAtSameMomentAs(scheduledTime) || now.isAfter(scheduledTime);
+        }
+      } catch (e) {
+        debugPrint('⚠️ [TimePickerCell] Greška pri parsiranju vremena: $e');
+      }
+    }
+
+    return false;
+  }
+
   /// Da li je dan zaključan (prošao ili danas posle 18:00)
   /// 🆕 Za dnevne putnike: zaključano ako admin nije omogućio zakazivanje, a ako jeste, SAMO tekući dan
   bool get isLocked {
@@ -225,6 +257,8 @@ class TimePickerCell extends StatelessWidget {
   }
 
   void _showTimePickerDialog(BuildContext context) {
+    final timePassed = _isTimePassed();
+
     // Koristi navBarTypeNotifier za određivanje vremena (prati aktivan bottom nav bar)
     final navType = navBarTypeNotifier.value;
     List<String> vremena;
@@ -266,8 +300,39 @@ class TimePickerCell extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // ⚠️ VREME PROŠLO INFO BANER
+                if (timePassed)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade700,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    child: const Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.lock_clock, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'VREME JE PROŠLO',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Možete samo da otkažete termin, izmena nije moguća.',
+                          style: TextStyle(color: Colors.white, fontSize: 11),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
                 // ⚠️ PETAK INFO BANER
-                if (isFriday)
+                else if (isFriday)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -303,7 +368,7 @@ class TimePickerCell extends StatelessWidget {
                   padding: EdgeInsets.only(
                     left: 16,
                     right: 16,
-                    top: isFriday ? 12 : 16,
+                    top: (isFriday || timePassed) ? 12 : 16,
                     bottom: 16,
                   ),
                   child: Text(
@@ -320,7 +385,7 @@ class TimePickerCell extends StatelessWidget {
                   height: 350,
                   child: ListView(
                     children: [
-                      // Option to clear
+                      // Option to clear (UVEK DOSTUPNO)
                       ListTile(
                         title: const Text(
                           'Bez polaska',
@@ -359,27 +424,40 @@ class TimePickerCell extends StatelessWidget {
                         },
                       ),
                       const Divider(color: Colors.white24),
-                      // Time options
-                      ...vremena.map((vreme) {
-                        final isSelected = value == vreme;
-                        return ListTile(
-                          title: Text(
-                            vreme,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      // Time options - BLOKIRANO AKO JE VREME PROŠLO
+                      if (!timePassed)
+                        ...vremena.map((vreme) {
+                          final isSelected = value == vreme;
+                          return ListTile(
+                            title: Text(
+                              vreme,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.white70,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            leading: Icon(
+                              isSelected ? Icons.check_circle : Icons.circle_outlined,
+                              color: isSelected ? Colors.green : Colors.white54,
+                            ),
+                            onTap: () {
+                              onChanged(vreme);
+                              Navigator.of(dialogContext).pop();
+                            },
+                          );
+                        })
+                      else
+                        // Poruka kada je vreme prošlo
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(
+                            child: Text(
+                              '🔒 Izmena vremena nije moguća.\nMožete samo otkazati termin.',
+                              style: TextStyle(color: Colors.white70, fontSize: 13),
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                          leading: Icon(
-                            isSelected ? Icons.check_circle : Icons.circle_outlined,
-                            color: isSelected ? Colors.green : Colors.white54,
-                          ),
-                          onTap: () {
-                            onChanged(vreme);
-                            Navigator.of(dialogContext).pop();
-                          },
-                        );
-                      }),
+                        ),
                     ],
                   ),
                 ),

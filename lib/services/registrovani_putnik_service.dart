@@ -325,6 +325,62 @@ class RegistrovaniPutnikService {
   }) async {
     updates['updated_at'] = DateTime.now().toIso8601String();
 
+    // 🛡️ MERGE SA POSTOJEĆIM MARKERIMA U BAZI (bc_pokupljeno, bc_placeno, itd.)
+    if (updates.containsKey('polasci_po_danu')) {
+      final noviPolasci = updates['polasci_po_danu'];
+      if (noviPolasci != null && noviPolasci is Map) {
+        // Čitaj trenutno stanje iz baze
+        final trenutnoStanje =
+            await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', id).single();
+
+        final trenutniPolasci = trenutnoStanje['polasci_po_danu'] as Map<String, dynamic>?;
+
+        if (trenutniPolasci != null) {
+          // Merge novi polasci sa postojećim markerima
+          final mergedPolasci = <String, dynamic>{};
+
+          // Kopiraj sve dane iz novih podataka
+          noviPolasci.forEach((dan, noviPodaci) {
+            if (noviPodaci is Map) {
+              mergedPolasci[dan] = Map<String, dynamic>.from(noviPodaci);
+            } else {
+              mergedPolasci[dan] = noviPodaci;
+            }
+          });
+
+          // Sačuvaj postojeće markere (pokupljeno, placeno, vozac) iz baze
+          trenutniPolasci.forEach((dan, stariPodaci) {
+            if (stariPodaci is Map && mergedPolasci.containsKey(dan)) {
+              final danPolasci = mergedPolasci[dan] as Map<String, dynamic>;
+              final stariDanPolasci = stariPodaci as Map<String, dynamic>;
+
+              // Čuvaj vozačeve markere
+              if (stariDanPolasci.containsKey('bc_pokupljeno')) {
+                danPolasci['bc_pokupljeno'] = stariDanPolasci['bc_pokupljeno'];
+              }
+              if (stariDanPolasci.containsKey('bc_placeno')) {
+                danPolasci['bc_placeno'] = stariDanPolasci['bc_placeno'];
+              }
+              if (stariDanPolasci.containsKey('vs_pokupljeno')) {
+                danPolasci['vs_pokupljeno'] = stariDanPolasci['vs_pokupljeno'];
+              }
+              if (stariDanPolasci.containsKey('vs_placeno')) {
+                danPolasci['vs_placeno'] = stariDanPolasci['vs_placeno'];
+              }
+              if (stariDanPolasci.containsKey('bc_pokupljeno_vozac')) {
+                danPolasci['bc_pokupljeno_vozac'] = stariDanPolasci['bc_pokupljeno_vozac'];
+              }
+              if (stariDanPolasci.containsKey('vs_pokupljeno_vozac')) {
+                danPolasci['vs_pokupljeno_vozac'] = stariDanPolasci['vs_pokupljeno_vozac'];
+              }
+            }
+          });
+
+          updates['polasci_po_danu'] = mergedPolasci;
+        }
+      }
+    }
+
     // 🚫 PROVERA KAPACITETA - ako se menjaju termini
     if (!skipKapacitetCheck && updates.containsKey('polasci_po_danu')) {
       final polasciPoDanu = updates['polasci_po_danu'];

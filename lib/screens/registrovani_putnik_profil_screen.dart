@@ -114,6 +114,49 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
   }
 
+  /// 🛡️ HELPER: Merge-uje nove promene sa postojećim markerima u bazi
+  /// Čuva bc_pokupljeno, bc_placeno, vs_pokupljeno, vs_placeno i ostale markere
+  Future<Map<String, dynamic>> _mergePolasciSaBazom(
+    String putnikId,
+    Map<String, dynamic> noviPolasci,
+  ) async {
+    try {
+      // Učitaj trenutno stanje iz baze
+      final response = await Supabase.instance.client
+          .from('registrovani_putnici')
+          .select('polasci_po_danu')
+          .eq('id', putnikId)
+          .maybeSingle();
+
+      if (response == null) return noviPolasci;
+
+      final postojeciPolasci = response['polasci_po_danu'] as Map<String, dynamic>? ?? {};
+      final mergedPolasci = Map<String, dynamic>.from(postojeciPolasci);
+
+      // Merge svakog dana
+      for (final dan in noviPolasci.keys) {
+        if (!mergedPolasci.containsKey(dan)) {
+          mergedPolasci[dan] = noviPolasci[dan];
+        } else {
+          final postojeciDan = Map<String, dynamic>.from(mergedPolasci[dan] as Map);
+          final noviDan = noviPolasci[dan] as Map<String, dynamic>;
+
+          // Merge: novi podaci + čuvanje starih markera
+          for (final key in noviDan.keys) {
+            postojeciDan[key] = noviDan[key];
+          }
+
+          mergedPolasci[dan] = postojeciDan;
+        }
+      }
+
+      return mergedPolasci;
+    } catch (e) {
+      debugPrint('❌ [Merge] Greška: $e');
+      return noviPolasci;
+    }
+  }
+
   /// 🆕 Proverava i rešava zaglavljene pending zahteve
   /// Poziva se pri svakom otvaranju profila
   Future<void> _checkAndResolvePendingRequests() async {
@@ -202,14 +245,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // Sačuvaj promene ako ih ima
       if (hasChanges) {
+        // 🛡️ Merge sa postojećim markerima u bazi
+        final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
         await Supabase.instance.client
             .from('registrovani_putnici')
-            .update({'polasci_po_danu': polasci}).eq('id', putnikId);
+            .update({'polasci_po_danu': mergedPolasci}).eq('id', putnikId);
 
         // Ažuriraj lokalni state
         if (mounted) {
           setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['polasci_po_danu'] = mergedPolasci;
           });
         }
 
@@ -1768,9 +1814,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
+          // 🛡️ Merge sa postojećim markerima u bazi
+          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
           await Supabase.instance.client
               .from('registrovani_putnici')
-              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           // Ažuriraj lokalni state
           setState(() {
@@ -1837,7 +1886,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             final now = DateTime.now();
             final targetTime = DateTime(now.year, now.month, now.day, 20, 0, 0);
             var waitDuration = targetTime.difference(now);
-            if (waitDuration.isNegative) waitDuration = const Duration(seconds: 1);
+            if (waitDuration.isNegative) {
+              waitDuration = const Duration(seconds: 1);
+            }
 
             if (mounted) {
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -1882,12 +1933,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
+          // 🛡️ Merge sa postojećim markerima u bazi
+          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
           await Supabase.instance.client
               .from('registrovani_putnici')
-              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['polasci_po_danu'] = mergedPolasci;
             _putnikData['radni_dani'] = noviRadniDani;
           });
 
@@ -1932,12 +1986,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toIso8601String();
 
+          // 🛡️ Merge sa postojećim markerima u bazi
+          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
           await Supabase.instance.client
               .from('registrovani_putnici')
-              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['polasci_po_danu'] = mergedPolasci;
             _putnikData['radni_dani'] = noviRadniDani;
           });
 
@@ -1979,12 +2036,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 📅 VS DNEVNI - Wait 10 min then check
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
 
+          // 🛡️ Merge sa postojećim markerima u bazi
+          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
           await Supabase.instance.client
               .from('registrovani_putnici')
-              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['polasci_po_danu'] = mergedPolasci;
             _putnikData['radni_dani'] = noviRadniDani;
           });
 
@@ -2033,12 +2093,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // Postavi status na pending
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
 
+          // 🛡️ Merge sa postojećim markerima u bazi
+          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
           await Supabase.instance.client
               .from('registrovani_putnici')
-              .update({'polasci_po_danu': polasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['polasci_po_danu'] = mergedPolasci;
             _putnikData['radni_dani'] = noviRadniDani;
           });
 
@@ -2086,14 +2149,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             String? vreme,
           ) async {
             try {
+              // 🛡️ Merge sa postojećim markerima u bazi
+              final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
               await Supabase.instance.client.from('registrovani_putnici').update({
-                'polasci_po_danu': polasci,
+                'polasci_po_danu': mergedPolasci,
                 'radni_dani': radniDani,
               }).eq('id', putnikId);
 
               if (mounted) {
                 setState(() {
-                  _putnikData['polasci_po_danu'] = polasci;
+                  _putnikData['polasci_po_danu'] = mergedPolasci;
                   _putnikData['radni_dani'] = radniDani;
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -2157,15 +2223,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // ✅ IMA MESTA (ili naredni dan) - potvrdi zahtev
         (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
 
+        // 🛡️ Merge sa postojećim markerima u bazi
+        final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
         // Ažuriraj u bazi
         await Supabase.instance.client
             .from('registrovani_putnici')
-            .update({'polasci_po_danu': polasci, 'radni_dani': radniDani}).eq('id', putnikId);
+            .update({'polasci_po_danu': mergedPolasci, 'radni_dani': radniDani}).eq('id', putnikId);
 
         // Ažuriraj lokalni state ako je widget još mounted
         if (mounted) {
           setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['polasci_po_danu'] = mergedPolasci;
             _putnikData['radni_dani'] = radniDani;
           });
         }
@@ -2180,16 +2249,21 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // ❌ NEMA MESTA - odbij zahtev, vrati na prethodo
         (polasci[dan] as Map<String, dynamic>)['bc'] = null;
         (polasci[dan] as Map<String, dynamic>)['bc_status'] = null;
+        (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = null;
+        (polasci[dan] as Map<String, dynamic>)['bc_vozac'] = null; // Očisti vozača
+
+        // 🛡️ Merge sa postojećim markerima u bazi
+        final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
 
         // Ažuriraj u bazi
         await Supabase.instance.client
             .from('registrovani_putnici')
-            .update({'polasci_po_danu': polasci}).eq('id', putnikId);
+            .update({'polasci_po_danu': mergedPolasci}).eq('id', putnikId);
 
         // Ažuriraj lokalni state
         if (mounted) {
           setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['polasci_po_danu'] = mergedPolasci;
           });
         }
 
@@ -2245,13 +2319,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // ✅ IMA MESTA - potvrdi zahtev
         (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
 
+        // 🛡️ Merge sa postojećim markerima u bazi
+        final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
         await Supabase.instance.client
             .from('registrovani_putnici')
-            .update({'polasci_po_danu': polasci, 'radni_dani': radniDani}).eq('id', putnikId);
+            .update({'polasci_po_danu': mergedPolasci, 'radni_dani': radniDani}).eq('id', putnikId);
 
         if (mounted) {
           setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
+            _putnikData['polasci_po_danu'] = mergedPolasci;
             _putnikData['radni_dani'] = radniDani;
           });
         }
@@ -2273,14 +2350,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'ceka_mesto';
           (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = DateTime.now().toIso8601String();
 
+          // 🛡️ Merge sa postojećim markerima u bazi
+          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
           await Supabase.instance.client
               .from('registrovani_putnici')
-              .update({'polasci_po_danu': polasci, 'radni_dani': radniDani}).eq('id', putnikId);
+              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': radniDani}).eq('id', putnikId);
 
           // Ažuriraj lokalni UI
           if (mounted) {
             setState(() {
-              _putnikData['polasci_po_danu'] = polasci;
+              _putnikData['polasci_po_danu'] = mergedPolasci;
               _putnikData['radni_dani'] = radniDani;
             });
           }
@@ -2318,13 +2398,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
               (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
 
+              // 🛡️ Merge sa postojećim markerima u bazi
+              final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
+
               await Supabase.instance.client
                   .from('registrovani_putnici')
-                  .update({'polasci_po_danu': polasci, 'radni_dani': radniDani}).eq('id', putnikId);
+                  .update({'polasci_po_danu': mergedPolasci, 'radni_dani': radniDani}).eq('id', putnikId);
 
               if (mounted) {
                 setState(() {
-                  _putnikData['polasci_po_danu'] = polasci;
+                  _putnikData['polasci_po_danu'] = mergedPolasci;
                 });
               }
 
@@ -2395,14 +2478,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 1. Očisti trenutni zahtev (jer nema mesta)
           (polasci[dan] as Map<String, dynamic>)['vs'] = null;
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = null;
+          (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = null;
+          (polasci[dan] as Map<String, dynamic>)['vs_vozac'] = null; // Očisti vozača
+
+          // 🛡️ Merge sa postojećim markerima u bazi
+          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
 
           await Supabase.instance.client
               .from('registrovani_putnici')
-              .update({'polasci_po_danu': polasci}).eq('id', putnikId);
+              .update({'polasci_po_danu': mergedPolasci}).eq('id', putnikId);
 
           if (mounted) {
             setState(() {
-              _putnikData['polasci_po_danu'] = polasci;
+              _putnikData['polasci_po_danu'] = mergedPolasci;
             });
           }
 
