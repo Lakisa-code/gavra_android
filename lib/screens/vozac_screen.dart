@@ -1287,10 +1287,19 @@ class _VozacScreenState extends State<VozacScreen> {
                     return const Center(child: CircularProgressIndicator(color: Colors.white));
                   }
 
-                  // 🎯 FILTER: Prikaži SAMO putnike dodeljene ovom vozaču
+                  // 🎯 FILTER: Prikaži SVE putnike na kojima je vozač bio aktivan danas
+                  // (dodeljeni, pokupljeni, naplaćeni ili otkazani od strane ovog vozača)
                   final sviPutnici = snapshot.data ?? [];
                   final mojiPutnici = sviPutnici.where((p) {
-                    return p.dodeljenVozac == _currentDriver;
+                    // Dodeljeni putnike
+                    if (p.dodeljenVozac == _currentDriver) return true;
+                    // Pokupljeni od ovog vozača
+                    if (p.pokupioVozac == _currentDriver) return true;
+                    // Naplaćeni od ovog vozača
+                    if (p.naplatioVozac == _currentDriver) return true;
+                    // Otkazani od ovog vozača
+                    if (p.otkazaoVozac == _currentDriver) return true;
+                    return false;
                   }).toList();
 
                   final putnici = _isRouteOptimized && _optimizedRoute.isNotEmpty ? _optimizedRoute : mojiPutnici;
