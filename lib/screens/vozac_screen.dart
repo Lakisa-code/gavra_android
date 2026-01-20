@@ -1313,7 +1313,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
                   return Column(
                     children: [
-                      // KOCKE - Pazar, Mesečne, Dugovi, Kusur
+                      // KOCKE - Pazar, Dugovi, Kusur
                       // ✅ ISPRAVKA: Računaj statistike direktno iz liste putnika (kao DanasScreen)
                       Builder(
                         builder: (context) {
@@ -1358,23 +1358,6 @@ class _VozacScreenState extends State<VozacScreen> {
                                         'Pazar',
                                         pazar.toStringAsFixed(0),
                                         Colors.green,
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                // MESEČNE
-                                Expanded(
-                                  child: StreamBuilder<int>(
-                                    stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
-                                      vozac: _currentDriver!,
-                                    ),
-                                    builder: (context, snapshot) {
-                                      final mesecne = snapshot.data ?? 0;
-                                      return _buildStatBox(
-                                        'Mesečne',
-                                        mesecne.toString(),
-                                        Colors.purple,
                                       );
                                     },
                                   ),
