@@ -4,8 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import '../config/calendar_config.dart';
 import '../services/driver_location_service.dart';
 import '../services/ml_service.dart';
-import '../services/realtime_gps_service.dart';
 import '../services/ml_vehicle_autonomous_service.dart';
+import '../services/realtime_gps_service.dart';
 
 /// ML Lab Screen - Machine Learning Analysis and Predictions
 ///
@@ -108,33 +108,36 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                   Row(
                     children: [
                       const Icon(Icons.psychology, size: 40, color: Colors.purple),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'AUTONOMNI KORTEX',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
-                          ),
-                          Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
-                              ),
-                              const SizedBox(width: 6),
-                              const Text('ONLINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                            ],
-                          ),
-                        ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'AUTONOMNI KORTEX',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text('ONLINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('Monitoring: $interval min', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text('${targets.length} aktivnih meta', style: const TextStyle(color: Colors.grey)),
+                          Text('Min: $interval', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          Text('${targets.length} meta', style: const TextStyle(color: Colors.grey, fontSize: 11)),
                         ],
                       ),
                     ],
@@ -152,7 +155,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           ),
           const SizedBox(height: 8),
           if (targets.isEmpty)
-             const Card(
+            const Card(
               child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Text('Trenutno nema aktivnih meta. Čekam nove podatke...'),
@@ -207,7 +210,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.5,
+            childAspectRatio: 1.2,
             padding: EdgeInsets.zero,
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
@@ -238,13 +241,13 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           Center(
             child: ElevatedButton.icon(
               onPressed: () {
-                 setState(() {}); // Refresh UI
+                setState(() {}); // Refresh UI
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Osveži Prikaz'),
@@ -260,7 +263,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     if (importance >= 0.5) return Colors.orange;
     return Colors.green;
   }
-  
+
   Widget _buildKnowledgeCard(String title, String subtitle, IconData icon, Color color) {
     return Card(
       elevation: 2,
