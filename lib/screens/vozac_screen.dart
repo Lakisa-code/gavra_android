@@ -1647,31 +1647,15 @@ class _VozacScreenState extends State<VozacScreen> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _getBorderColor(color)),
       ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
