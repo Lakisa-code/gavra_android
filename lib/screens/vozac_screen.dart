@@ -1640,7 +1640,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // 📊 Statistika kocka
   Widget _buildStatBox(String label, String value, Color color) {
     return Container(
-      height: 69,
+      height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.2),
