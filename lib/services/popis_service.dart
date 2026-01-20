@@ -14,7 +14,6 @@ class PopisData {
   final int otkazaniPutnici;
   final int pokupljeniPutnici;
   final int dugoviPutnici;
-  final int mesecneKarte;
   final double kilometraza;
 
   const PopisData({
@@ -25,7 +24,6 @@ class PopisData {
     required this.otkazaniPutnici,
     required this.pokupljeniPutnici,
     required this.dugoviPutnici,
-    required this.mesecneKarte,
     required this.kilometraza,
   });
 
@@ -35,7 +33,6 @@ class PopisData {
         'otkazaniPutnici': otkazaniPutnici,
         'pokupljeniPutnici': pokupljeniPutnici,
         'dugoviPutnici': dugoviPutnici,
-        'mesecneKarte': mesecneKarte,
         'kilometraza': kilometraza,
         'automatskiGenerisan': false, // ✅ Ručni popis
       };
@@ -63,7 +60,6 @@ class PopisService {
 
     final pokupljeniPutnici = stats['voznje'] as int? ?? 0;
     final otkazaniPutnici = stats['otkazivanja'] as int? ?? 0;
-    final mesecneKarte = stats['uplate'] as int? ?? 0;
     final ukupanPazar = stats['pazar'] as double? ?? 0.0;
 
     // 2. SITAN NOVAC
@@ -91,7 +87,6 @@ class PopisService {
       otkazaniPutnici: otkazaniPutnici,
       pokupljeniPutnici: pokupljeniPutnici,
       dugoviPutnici: dugoviPutnici,
-      mesecneKarte: mesecneKarte,
       kilometraza: kilometraza,
     );
   }
@@ -156,7 +151,6 @@ class PopisService {
                     _buildStatRow('Pokupljeni', data.pokupljeniPutnici, Icons.check_circle, Colors.teal),
                     _buildStatRow('Otkazani', data.otkazaniPutnici, Icons.cancel, Colors.red),
                     _buildStatRow('Dugovi', data.dugoviPutnici, Icons.warning, Colors.orange),
-                    _buildStatRow('Mesečne karte', data.mesecneKarte, Icons.card_membership, Colors.purple),
                     _buildStatRow('Kilometraža', '${data.kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
 
                     Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24)),
