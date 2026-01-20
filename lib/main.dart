@@ -29,6 +29,7 @@ import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaci
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌨️ Upozorenja za loše vreme
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
+import 'services/ml_vehicle_autonomous_service.dart'; // 🧠 Autonomni ML Lab za vozila
 import 'supabase_client.dart';
 import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 
@@ -176,6 +177,13 @@ void main() async {
       await WeatherAlertService.checkAndSendWeatherAlerts();
     } catch (e) {
       if (kDebugMode) debugPrint('❌ [WeatherAlert] Check failed: $e');
+    }
+
+    // 🧠 POKRENI AUTONOMNI ML LAB ZA VOZILA
+    try {
+      await MLVehicleAutonomousService().start();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [MLVehicleLab] Init failed: $e');
     }
   } else {
     if (kDebugMode) debugPrint('⚠️ [Main] Skipping secondary services because Supabase is not ready');
