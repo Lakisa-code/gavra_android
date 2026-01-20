@@ -411,21 +411,21 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         } else {
           message = 'Odobravanjem GPS i notifikacija ovde će vam biti prikazano vreme dolaska prevoza do vas';
         }
-        baseColor = _imaDozvole ? Colors.blue.shade600 : Colors.orange;
+        baseColor = _imaDozvole ? Colors.blue.shade500 : Colors.orange.shade600;
         icon = _imaDozvole ? Icons.my_location : Icons.gps_not_fixed;
 
       case _WidgetFaza.cekanje:
         // Faza 1: 30 min pre polaska
         title = '🚐 PRAĆENJE UŽIVO';
         message = 'Vozač će uskoro krenuti';
-        baseColor = Colors.grey;
+        baseColor = Colors.indigo.shade400;
         icon = Icons.schedule;
 
       case _WidgetFaza.pracenje:
         // Faza 2: Realtime ETA
         title = '🚐 KOMBI STIŽE ZA';
         message = _formatEta(_etaMinutes!);
-        baseColor = Colors.blue;
+        baseColor = Colors.blue.shade600;
         icon = Icons.directions_bus;
 
       case _WidgetFaza.pokupljen:
@@ -438,14 +438,14 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         } else {
           message = 'Uživajte u vožnji!';
         }
-        baseColor = Colors.green;
+        baseColor = Colors.green.shade600;
         icon = Icons.check_circle;
 
       case _WidgetFaza.sledecaVoznja:
         // Faza 4: Sledeća vožnja
         title = '📅 SLEDEĆA VOŽNJA';
         message = widget.sledecaVoznja ?? 'Nema zakazanih vožnji';
-        baseColor = Colors.purple;
+        baseColor = Colors.purple.shade500;
         icon = Icons.event;
     }
 
@@ -479,19 +479,51 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           // 🆕 Dugme za omogućavanje dozvola (samo ako nema dozvole)
           if (faza == _WidgetFaza.potrebneDozvole && !_imaDozvole)
             Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  await _requestPermissions();
-                },
-                icon: const Icon(Icons.settings, size: 18),
-                label: const Text('Omogući praćenje'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: baseColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              padding: const EdgeInsets.only(top: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.9),
+                      Colors.white.withValues(alpha: 0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () async {
+                      await _requestPermissions();
+                    },
+                    borderRadius: BorderRadius.circular(24),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.gps_fixed, size: 20, color: baseColor),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Omogući praćenje',
+                            style: TextStyle(
+                              color: baseColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -513,23 +545,31 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   }
 
   Widget _buildContainer(Color baseColor, {required Widget child}) {
+    // 🌟 Glassmorphism stil - usklađen sa temom aplikacije
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            baseColor.withValues(alpha: 0.5),
             baseColor.withValues(alpha: 0.25),
+            baseColor.withValues(alpha: 0.10),
           ],
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: baseColor.withValues(alpha: 0.6),
-          width: 2,
+          color: Colors.white.withValues(alpha: 0.4),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
     );
