@@ -411,21 +411,21 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         } else {
           message = 'Odobravanjem GPS i notifikacija ovde će vam biti prikazano vreme dolaska prevoza do vas';
         }
-        baseColor = _imaDozvole ? Colors.blue.shade500 : Colors.orange.shade600;
+        baseColor = _imaDozvole ? Colors.white : Colors.orange.shade600;
         icon = _imaDozvole ? Icons.my_location : Icons.gps_not_fixed;
 
       case _WidgetFaza.cekanje:
         // Faza 1: 30 min pre polaska
         title = '🚐 PRAĆENJE UŽIVO';
         message = 'Vozač će uskoro krenuti';
-        baseColor = Colors.indigo.shade400;
+        baseColor = Colors.white;
         icon = Icons.schedule;
 
       case _WidgetFaza.pracenje:
         // Faza 2: Realtime ETA
         title = '🚐 KOMBI STIŽE ZA';
         message = _formatEta(_etaMinutes!);
-        baseColor = Colors.blue.shade600;
+        baseColor = Colors.white;
         icon = Icons.directions_bus;
 
       case _WidgetFaza.pokupljen:
