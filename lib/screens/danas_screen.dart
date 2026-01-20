@@ -1922,9 +1922,14 @@ class _DanasScreenState extends State<DanasScreen> {
 
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
         final optimizedPutnici = result.optimizedPutnici!;
+
+        // 🆕 Dodaj putnike BEZ ADRESE na početak liste kao podsetnik
+        final skippedPutnici = result.skippedPutnici ?? [];
+        final finalRoute = [...skippedPutnici, ...optimizedPutnici];
+
         if (mounted) {
           setState(() {
-            _optimizedRoute = optimizedPutnici;
+            _optimizedRoute = finalRoute; // Preskočeni + optimizovani
             _cachedCoordinates = result.cachedCoordinates; // 🎯 Sačuvaj koordinate za NAV
             _isRouteOptimized = true;
             _isListReordered = true; // ✅ Lista je reorderovana
@@ -2333,13 +2338,24 @@ class _DanasScreenState extends State<DanasScreen> {
                       return vremeMatch && gradMatch && statusOk;
                     }).toList();
 
-                    // 🎯 Ažuriraj _currentPutnici za Ruta dugme (bez setState u build)
-                    if (_currentPutnici.length != filtriraniPutnici.length ||
-                        !_currentPutnici.every((p) => filtriraniPutnici.any((fp) => fp.id == p.id))) {
+                    // 🎯 Ažuriraj _currentPutnici za Ruta dugme - SAMO BELE KARTICE (nepokupljeni, neotkazani, bez odsustva)
+                    final belePutnici = filtriraniPutnici.where((p) {
+                      if (p.jePokupljen) return false;
+                      if (p.jeOtkazan) return false;
+                      if (p.jeOdsustvo) return false;
+                      // Isključi tuđe putnike
+                      if (p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver) {
+                        return false;
+                      }
+                      return true;
+                    }).toList();
+
+                    if (_currentPutnici.length != belePutnici.length ||
+                        !_currentPutnici.every((p) => belePutnici.any((fp) => fp.id == p.id))) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted) {
                           setState(() {
-                            _currentPutnici = filtriraniPutnici;
+                            _currentPutnici = belePutnici;
                           });
                         }
                       });

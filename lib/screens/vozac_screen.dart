@@ -628,9 +628,13 @@ class _VozacScreenState extends State<VozacScreen> {
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
         final optimizedPutnici = result.optimizedPutnici!;
 
+        // 🆕 Dodaj putnike BEZ ADRESE na početak liste kao podsetnik
+        final skippedPutnici = result.skippedPutnici ?? [];
+        final finalRoute = [...skippedPutnici, ...optimizedPutnici];
+
         if (mounted) {
           setState(() {
-            _optimizedRoute = optimizedPutnici;
+            _optimizedRoute = finalRoute; // Preskočeni + optimizovani
             _cachedCoordinates = result.cachedCoordinates; // 🎯 Sačuvaj koordinate
             _isRouteOptimized = true;
             _isListReordered = true;
