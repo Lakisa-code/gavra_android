@@ -33,6 +33,12 @@ class MLVehicleAutonomousService {
   // 🚨 Alerts
   final List<VehicleAlert> _pendingAlerts = [];
 
+  // ⚙️ Dinamički parametri (sistem može da ih menja)
+  int _monitoringIntervalMinutes = 30;
+  int _historyLookbackDays = 90;
+  final int _warrantyWarningDays = 30;
+  double _costTrendThreshold = 2.0;
+
   /// 🚀 POKRENI AUTONOMNI SISTEM
   Future<void> start() async {
     print('🧠 [ML Lab] Pokretanje autonomnog sistema za vozila...');
@@ -40,8 +46,8 @@ class MLVehicleAutonomousService {
     // 1. Učitaj prethodne naučene obrasce
     await _loadLearnedPatterns();
 
-    // 2. Pokreni background monitoring (svakih 30 minuta)
-    _monitoringTimer = Timer.periodic(const Duration(minutes: 30), (_) {
+    // 2. Pokreni background monitoring (interval se može menjati)
+    _monitoringTimer = Timer.periodic(Duration(minutes: _monitoringIntervalMinutes), (_) {
       _monitorAndLearn();
     });
 
@@ -114,6 +120,9 @@ class MLVehicleAutonomousService {
   Future<void> _autoLearn() async {
     print('🎓 [ML Lab] Auto-learning u toku...');
 
+    // PRVO: Prilagodi dinamičke parametre na osnovu podataka
+    await _adaptParameters();
+
     // Uči obrasce za:
     await _learnFuelConsumptionPatterns();
     await _learnTireWearPatterns();
@@ -124,14 +133,106 @@ class MLVehicleAutonomousService {
     await _saveLearnedPatterns();
   }
 
+  /// 🔄 RESTARTUJ MONITORING TIMER
+  /// Poziva se automatski kada se _monitoringIntervalMinutes promeni
+  void _restartMonitoringTimer() {
+    _monitoringTimer?.cancel();
+    _monitoringTimer = Timer.periodic(Duration(minutes: _monitoringIntervalMinutes), (_) {
+      _monitorAndLearn();
+    });
+    print('🔄 [ML Lab] Monitoring timer restartovan: ${_monitoringIntervalMinutes} minuta');
+  }
+
+  /// 🎯 AUTOMATSKA ADAPTACIJA PARAMETARA
+  /// Sistem SAM prilagođava parametre na osnovu podataka!
+  Future<void> _adaptParameters() async {
+    try {
+      print('🎯 [ML Lab] Prilagođavam parametre...');
+
+      // 1. Prilagodi monitoring interval na osnovu učestalosti promena
+      final recentChanges = await _supabase
+          .from('vozila_istorija')
+          .select('datum')
+          .gte('datum', DateTime.now().subtract(const Duration(days: 7)).toIso8601String())
+          .limit(100);
+
+      if (recentChanges.length > 50) {
+        // Ako ima MNOGO promena, monitoring češće (15 min)
+        if (_monitoringIntervalMinutes != 15) {
+          _monitoringIntervalMinutes = 15;
+          _restartMonitoringTimer();
+        }
+      } else if (recentChanges.length > 20) {
+        // Prosečno (30 min)
+        if (_monitoringIntervalMinutes != 30) {
+          _monitoringIntervalMinutes = 30;
+          _restartMonitoringTimer();
+        }
+      } else {
+        // Ako ima malo promena, monitoring ređe (60 min)
+        if (_monitoringIntervalMinutes != 60) {
+          _monitoringIntervalMinutes = 60;
+          _restartMonitoringTimer();
+        }
+      }
+
+      // 2. Prilagodi lookback period na osnovu starosti podataka
+      final oldestRecord =
+          await _supabase.from('vozila_istorija').select('datum').order('datum', ascending: true).limit(1);
+
+      if (oldestRecord.isNotEmpty) {
+        final oldestDate = DateTime.parse(oldestRecord.first['datum'] as String);
+        final dataAge = DateTime.now().difference(oldestDate).inDays;
+
+        if (dataAge < 60) {
+          // Ako imaš malo podataka, gledaj kraće unazad
+          _historyLookbackDays = 30;
+        } else if (dataAge < 180) {
+          _historyLookbackDays = 90;
+        } else {
+          // Ako imaš dugu istoriju, gledaj dalje unazad
+          _historyLookbackDays = 180;
+        }
+      }
+
+      // 3. Prilagodi cost threshold na osnovu volatilnosti troškova
+      final recentCosts = await _supabase
+          .from('troskovi_unosi')
+          .select('iznos')
+          .gte('datum', DateTime.now().subtract(const Duration(days: 30)).toIso8601String());
+
+      if (recentCosts.length > 5) {
+        final amounts = recentCosts.map((c) => (c['iznos'] as num).toDouble()).toList();
+        final avg = amounts.reduce((a, b) => a + b) / amounts.length;
+        final variance = amounts.map((x) => (x - avg) * (x - avg)).reduce((a, b) => a + b) / amounts.length;
+        final stdDev = variance > 0 ? variance : 0;
+
+        if (stdDev > avg * 0.5) {
+          // Visoka volatilnost - treba veći threshold
+          _costTrendThreshold = 3.0;
+        } else if (stdDev > avg * 0.3) {
+          _costTrendThreshold = 2.5;
+        } else {
+          // Niska volatilnost - manji threshold je OK
+          _costTrendThreshold = 2.0;
+        }
+      }
+
+      print(
+          '✅ [ML Lab] Parametri: monitoring=${_monitoringIntervalMinutes}min, lookback=${_historyLookbackDays}d, costThreshold=${_costTrendThreshold.toStringAsFixed(1)}x');
+    } catch (e) {
+      print('⚠️ [ML Lab] Greška u adaptaciji parametara: $e');
+    }
+  }
+
   /// ⛽ UČI OBRASCE POTROŠNJE GORIVA
   Future<void> _learnFuelConsumptionPatterns() async {
     try {
-      // Izvuci podatke o kilometraži za poslednih 90 dana
+      // Izvuci podatke o kilometraži (dinamički period)
       final data = await _supabase
           .from('vozila_istorija')
           .select('vozilo_id, kilometraza, datum')
-          .gte('datum', DateTime.now().subtract(const Duration(days: 90)).toIso8601String())
+          .gte('datum', DateTime.now().subtract(Duration(days: _historyLookbackDays)).toIso8601String())
           .order('datum');
 
       if (data.isEmpty) {
@@ -260,7 +361,7 @@ class MLVehicleAutonomousService {
           final expiryDate = montageDate.add(Duration(days: warrantyMonths * 30));
           final daysUntilExpiry = expiryDate.difference(DateTime.now()).inDays;
 
-          if (daysUntilExpiry < 30 && daysUntilExpiry > 0) {
+          if (daysUntilExpiry < _warrantyWarningDays && daysUntilExpiry > 0) {
             alert = 'Garancija ističe za $daysUntilExpiry dana';
           } else if (daysUntilExpiry <= 0) {
             alert = 'Garancija istekla';
@@ -359,11 +460,11 @@ class MLVehicleAutonomousService {
   /// 💰 UČI TRENDOVE TROŠKOVA
   Future<void> _learnCostTrends() async {
     try {
-      // Izvuci troškove za poslednjih 90 dana
+      // Izvuci troškove (dinamički period)
       final costs = await _supabase
           .from('troskovi_unosi')
           .select('vozilo_id, iznos, datum, opis')
-          .gte('datum', DateTime.now().subtract(const Duration(days: 90)).toIso8601String())
+          .gte('datum', DateTime.now().subtract(Duration(days: _historyLookbackDays)).toIso8601String())
           .order('datum');
 
       if (costs.isEmpty) {
@@ -427,17 +528,17 @@ class MLVehicleAutonomousService {
         String trend = 'stable';
         String? alert;
 
-        // Detektuj samo ZNAČAJNE promene (2x ili više)
-        if (secondHalfAvg > firstHalfAvg * 2.0) {
+        // Detektuj samo ZNAČAJNE promene (dinamički threshold)
+        if (secondHalfAvg > firstHalfAvg * _costTrendThreshold) {
           trend = 'increasing';
           alert =
               'Troškovi rastu - prosek sa ${firstHalfAvg.toStringAsFixed(0)} na ${secondHalfAvg.toStringAsFixed(0)} din';
-        } else if (secondHalfAvg < firstHalfAvg * 0.5) {
+        } else if (secondHalfAvg < firstHalfAvg / _costTrendThreshold) {
           trend = 'decreasing';
         }
 
         patterns[vehicleId] = {
-          'total_cost_90_days': totalCost.toStringAsFixed(2),
+          'total_cost_period_days': totalCost.toStringAsFixed(2),
           'avg_cost_per_entry': avgCostPerEntry.toStringAsFixed(2),
           'entry_count': costList.length,
           'trend': trend,
