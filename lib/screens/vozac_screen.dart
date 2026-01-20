@@ -1459,8 +1459,14 @@ class _VozacScreenState extends State<VozacScreen> {
           builder: (context, snapshot) {
             final allPutnici = snapshot.data ?? <Putnik>[];
 
-            // 🎯 FILTER: Samo putnici dodeljeni ovom vozaču
-            final mojiPutnici = allPutnici.where((p) => p.dodeljenVozac == _currentDriver).toList();
+            // 🎯 FILTER: Svi putnici na kojima je vozač bio aktivan
+            final mojiPutnici = allPutnici.where((p) {
+              if (p.dodeljenVozac == _currentDriver) return true;
+              if (p.pokupioVozac == _currentDriver) return true;
+              if (p.naplatioVozac == _currentDriver) return true;
+              if (p.otkazaoVozac == _currentDriver) return true;
+              return false;
+            }).toList();
 
             // 🔧 REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
             final targetDateIso = _getWorkingDateIso();
