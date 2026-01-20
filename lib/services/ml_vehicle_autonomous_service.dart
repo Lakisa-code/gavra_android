@@ -250,41 +250,21 @@ class MLVehicleAutonomousService {
         final age = DateTime.now().difference(montageDate);
         final monthsOld = age.inDays / 30.0;
 
-        // Predvidi kada će gume trebati zamenu
-        String status = 'good';
+        // Samo prати podatke - bez fiksnih pravila!
+        // Sistem će SAM naučiti šta je normalno
+        String status = 'active';
         String? alert;
 
-        // Pravilo 1: Garancija ističe
+        // Jedino realno pravilo: garancija (to je faktički podatak)
         if (warrantyMonths != null) {
           final expiryDate = montageDate.add(Duration(days: warrantyMonths * 30));
           final daysUntilExpiry = expiryDate.difference(DateTime.now()).inDays;
 
           if (daysUntilExpiry < 30 && daysUntilExpiry > 0) {
-            status = 'warning';
             alert = 'Garancija ističe za $daysUntilExpiry dana';
           } else if (daysUntilExpiry <= 0) {
-            status = 'expired';
             alert = 'Garancija istekla';
           }
-        }
-
-        // Pravilo 2: Predjeni kilometri
-        // Prosek: gume traju 40,000-80,000 km
-        if (traveledKm > 60000) {
-          status = 'critical';
-          alert = 'Predjeno ${traveledKm.toStringAsFixed(0)} km - razmotri zamenu';
-        } else if (traveledKm > 50000) {
-          status = 'warning';
-          alert = 'Predjeno ${traveledKm.toStringAsFixed(0)} km - blizu krajnje granice';
-        }
-
-        // Pravilo 3: Starost (gume starije od 6 godina treba menajti)
-        if (monthsOld > 72) {
-          status = 'critical';
-          alert = 'Gume stare ${(monthsOld / 12).toStringAsFixed(1)} godina - HITNO MENJAJ';
-        } else if (monthsOld > 60) {
-          status = 'warning';
-          alert = 'Gume stare ${(monthsOld / 12).toStringAsFixed(1)} godina';
         }
 
         patterns[tireId] = {
@@ -297,12 +277,12 @@ class MLVehicleAutonomousService {
           'montage_date': montageDate.toIso8601String(),
         };
 
-        // Dodaj alert ako je kritično
-        if (status == 'critical' || status == 'warning') {
+        // Alert samo ako garancija ističe (to je jedini objektivan kriterijum)
+        if (alert != null && alert.contains('Garancija')) {
           _pendingAlerts.add(VehicleAlert(
             type: 'tire',
-            severity: status == 'critical' ? 'high' : 'medium',
-            message: alert ?? 'Gume zahtevaju pažnju',
+            severity: 'low',
+            message: alert,
             vehicleId: vehicleId ?? 'unknown',
             timestamp: DateTime.now(),
           ));
@@ -338,44 +318,23 @@ class MLVehicleAutonomousService {
         final lastServiceDate = vehicle['datum_poslednjeg_servisa'] != null
             ? DateTime.parse(vehicle['datum_poslednjeg_servisa'] as String)
             : null;
-        final serviceIntervalKm = (vehicle['interval_servisa_km'] as num?)?.toDouble() ?? 15000.0;
+        final serviceIntervalKm =
+            vehicle['interval_servisa_km'] != null ? (vehicle['interval_servisa_km'] as num).toDouble() : null;
 
-        String status = 'good';
+        String status = 'monitoring';
         String? alert;
         double? kmUntilService;
-        int? daysUntilService;
+        int? daysSinceService;
 
-        // Ako ima datum servisa, izračunaj koliko vremena je prošlo
+        // Samo prati podatke - bez arbitrarnih pravila!
         if (lastServiceDate != null) {
-          final daysSinceService = DateTime.now().difference(lastServiceDate).inDays;
-
-          // Pravilo 1: Vreme od servisa (servis na svakih 12 meseci ili 365 dana)
-          if (daysSinceService > 365) {
-            status = 'critical';
-            alert = 'Servis nije rađen ${(daysSinceService / 365).toStringAsFixed(1)} godine!';
-            daysUntilService = 0;
-          } else if (daysSinceService > 300) {
-            status = 'warning';
-            alert = 'Servis je blizu (${365 - daysSinceService} dana do godinu dana)';
-            daysUntilService = 365 - daysSinceService;
-          } else {
-            daysUntilService = 365 - daysSinceService;
-          }
+          daysSinceService = DateTime.now().difference(lastServiceDate).inDays;
         }
 
-        // Pravilo 2: Kilometraža (prosečan interval 15,000 km)
-        // Pretpostavimo da je na prethodnom servisu bilo 0 km nakon servisa
-        final kmSinceService = currentKm % serviceIntervalKm;
-        kmUntilService = serviceIntervalKm - kmSinceService;
-
-        if (kmUntilService < 1000 && kmUntilService >= 0) {
-          if (status != 'critical') {
-            status = 'warning';
-            alert = 'Servis za ${kmUntilService.toStringAsFixed(0)} km';
-          }
-        } else if (kmUntilService < 0) {
-          status = 'critical';
-          alert = 'Servis prekoračen za ${(-kmUntilService).toStringAsFixed(0)} km!';
+        // Ako postoji interval iz baze, izračunaj do sledećeg
+        if (serviceIntervalKm != null && serviceIntervalKm > 0) {
+          final kmSinceService = currentKm % serviceIntervalKm;
+          kmUntilService = serviceIntervalKm - kmSinceService;
         }
 
         patterns[vehicleId] = {
@@ -383,22 +342,11 @@ class MLVehicleAutonomousService {
           'current_km': currentKm,
           'last_service_date': lastServiceDate?.toIso8601String(),
           'service_interval_km': serviceIntervalKm,
-          'km_until_service': kmUntilService.toStringAsFixed(0),
-          'days_until_service': daysUntilService,
+          'km_until_service': kmUntilService?.toStringAsFixed(0),
+          'days_since_service': daysSinceService,
           'status': status,
           'alert': alert,
         };
-
-        // Dodaj alert ako je potreban servis
-        if (status == 'critical' || status == 'warning') {
-          _pendingAlerts.add(VehicleAlert(
-            type: 'maintenance',
-            severity: status == 'critical' ? 'high' : 'medium',
-            message: alert ?? 'Servis potreban',
-            vehicleId: vehicleId,
-            timestamp: DateTime.now(),
-          ));
-        }
       }
 
       _learnedPatterns['maintenance'] = patterns;
@@ -479,11 +427,12 @@ class MLVehicleAutonomousService {
         String trend = 'stable';
         String? alert;
 
-        if (secondHalfAvg > firstHalfAvg * 1.5) {
+        // Detektuj samo ZNAČAJNE promene (2x ili više)
+        if (secondHalfAvg > firstHalfAvg * 2.0) {
           trend = 'increasing';
           alert =
               'Troškovi rastu - prosek sa ${firstHalfAvg.toStringAsFixed(0)} na ${secondHalfAvg.toStringAsFixed(0)} din';
-        } else if (secondHalfAvg < firstHalfAvg * 0.7) {
+        } else if (secondHalfAvg < firstHalfAvg * 0.5) {
           trend = 'decreasing';
         }
 

@@ -19,6 +19,7 @@ import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
+import 'services/ml_vehicle_autonomous_service.dart'; // 🧠 Autonomni ML Lab za vozila
 import 'services/payment_reminder_service.dart'; // 💰 Automatski payment reminder (27. i 5.)
 import 'services/putnik_service.dart'; // 🔄 DODATO za nedeljni reset
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
@@ -29,7 +30,6 @@ import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaci
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌨️ Upozorenja za loše vreme
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
-import 'services/ml_vehicle_autonomous_service.dart'; // 🧠 Autonomni ML Lab za vozila
 import 'supabase_client.dart';
 import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 
