@@ -864,6 +864,9 @@ class _VozacScreenState extends State<VozacScreen> {
           // Status filter - samo aktivni
           if (!TextUtils.isStatusActive(p.status)) return false;
 
+          // 🎯 Boja filter - samo bele kartice (nepokupljeni)
+          if (p.jePokupljen) return false;
+
           return true;
         }).toList();
 
