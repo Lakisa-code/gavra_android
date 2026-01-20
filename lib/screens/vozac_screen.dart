@@ -30,7 +30,6 @@ import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
-import 'dugovi_screen.dart';
 import 'welcome_screen.dart';
 
 /// 🚗 VOZAČ SCREEN - Za Ivan-a
@@ -1354,10 +1353,20 @@ class _VozacScreenState extends State<VozacScreen> {
                                     ),
                                     builder: (context, snapshot) {
                                       final pazar = snapshot.data ?? 0.0;
-                                      return _buildStatBox(
-                                        'Pazar',
-                                        pazar.toStringAsFixed(0),
-                                        Colors.green,
+                                      return InkWell(
+                                        onTap: () {
+                                          _showStatPopup(
+                                            context,
+                                            'Pazar',
+                                            pazar.toStringAsFixed(0),
+                                            Colors.green,
+                                          );
+                                        },
+                                        child: _buildStatBox(
+                                          'Pazar',
+                                          pazar.toStringAsFixed(0),
+                                          Colors.green,
+                                        ),
                                       );
                                     },
                                   ),
@@ -1367,11 +1376,11 @@ class _VozacScreenState extends State<VozacScreen> {
                                 Expanded(
                                   child: InkWell(
                                     onTap: () {
-                                      Navigator.push(
+                                      _showStatPopup(
                                         context,
-                                        MaterialPageRoute<void>(
-                                          builder: (context) => DugoviScreen(currentDriver: _currentDriver!),
-                                        ),
+                                        'Dugovi',
+                                        filteredDuznici.length.toString(),
+                                        Colors.red,
                                       );
                                     },
                                     child: _buildStatBox(
@@ -1388,10 +1397,20 @@ class _VozacScreenState extends State<VozacScreen> {
                                     stream: DailyCheckInService.streamTodayAmount(_currentDriver!),
                                     builder: (context, snapshot) {
                                       final kusur = snapshot.data ?? 0.0;
-                                      return _buildStatBox(
-                                        'Kusur',
-                                        kusur > 0 ? kusur.toStringAsFixed(0) : '-',
-                                        Colors.orange,
+                                      return InkWell(
+                                        onTap: () {
+                                          _showStatPopup(
+                                            context,
+                                            'Kusur',
+                                            kusur > 0 ? kusur.toStringAsFixed(0) : '0',
+                                            Colors.orange,
+                                          );
+                                        },
+                                        child: _buildStatBox(
+                                          'Kusur',
+                                          kusur > 0 ? kusur.toStringAsFixed(0) : '-',
+                                          Colors.orange,
+                                        ),
                                       );
                                     },
                                   ),
@@ -1656,6 +1675,58 @@ class _VozacScreenState extends State<VozacScreen> {
             color: color,
           ),
           textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  // 📊 POPUP ZA PRIKAZ STATISTIKE
+  void _showStatPopup(BuildContext context, String label, String value, Color color) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _getBorderColor(color), width: 2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Zatvori',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
