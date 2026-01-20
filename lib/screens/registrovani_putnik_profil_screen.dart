@@ -236,28 +236,22 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   Future<void> _cleanupOldSeatRequests() async {
     try {
       final yesterday = DateTime.now().toUtc().subtract(const Duration(days: 1)).toIso8601String();
-      
+
       // 🆕 Prvo obriši vezane notifikacije (foreign key constraint)
-      final oldRequests = await Supabase.instance.client
-          .from('seat_requests')
-          .select('id')
-          .lt('created_at', yesterday);
-      
+      final oldRequests = await Supabase.instance.client.from('seat_requests').select('id').lt('created_at', yesterday);
+
       if (oldRequests.isNotEmpty) {
         final requestIds = oldRequests.map((r) => r['id']).toList();
-        
+
         // Obriši notifikacije za te zahteve
         await Supabase.instance.client
             .from('seat_request_notifications')
             .delete()
             .inFilter('seat_request_id', requestIds);
-        
+
         // Sada obriši zahteve
-        await Supabase.instance.client
-            .from('seat_requests')
-            .delete()
-            .lt('created_at', yesterday);
-        
+        await Supabase.instance.client.from('seat_requests').delete().lt('created_at', yesterday);
+
         debugPrint('✅ [Cleanup] Obrisano ${requestIds.length} starih zahteva');
       }
     } catch (e) {
