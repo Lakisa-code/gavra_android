@@ -1396,19 +1396,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
                     ),
 
-                    // 🚐 ETA Widget sa 4 faze:
+                    // 🚐 ETA Widget sa fazama:
+                    // 0. Nema dozvola: "Odobravanjem GPS i notifikacija ovde će vam biti prikazano vreme dolaska prevoza"
                     // 1. 30 min pre polaska: "Vozač će uskoro krenuti"
                     // 2. Vozač startovao rutu: Realtime ETA praćenje
                     // 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min) - ČITA IZ BAZE!
                     // 4. Nakon 60 min: "Vaša sledeća vožnja: dan, vreme"
-                    if (_sledeciPolazak != null || _sledecaVoznjaInfo != null)
-                      KombiEtaWidget(
-                        putnikIme: fullName,
-                        grad: grad,
-                        vremePolaska: _sledeciPolazak,
-                        sledecaVoznja: _sledecaVoznjaInfo,
-                        putnikId: _putnikData['id']?.toString(), // 🆕 Za čitanje pokupljenja iz baze
-                      ),
+                    KombiEtaWidget(
+                      putnikIme: fullName,
+                      grad: grad,
+                      vremePolaska: _sledeciPolazak,
+                      sledecaVoznja: _sledecaVoznjaInfo,
+                      putnikId: _putnikData['id']?.toString(), // 🆕 Za čitanje pokupljenja iz baze
+                    ),
 
                     // ─────────── Divider ───────────
                     Padding(

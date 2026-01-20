@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/realtime/realtime_manager.dart';
@@ -33,6 +34,7 @@ class KombiEtaWidget extends StatefulWidget {
 
 /// Faze prikaza widgeta
 enum _WidgetFaza {
+  potrebneDozvole, // Faza 0: Putnik treba da odobri GPS i notifikacije
   cekanje, // Faza 1: 30 min pre polaska - "Vozač će uskoro krenuti"
   pracenje, // Faza 2: Vozač startovao rutu - realtime ETA
   pokupljen, // Faza 3: Pokupljen - prikazuje vreme pokupljenja 60 min
@@ -49,10 +51,12 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   String? _vozacIme;
   DateTime? _vremePokupljenja; // 🆕 ČITA SE IZ BAZE - tačno vreme kada je vozač pritisnuo
   bool _jePokupljenIzBaze = false; // 🆕 Flag iz baze
+  bool _imaDozvole = false; // 🆕 Da li putnik ima GPS i notifikacije dozvole
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions(); // 🆕 Proveri dozvole prvo
     _startListening();
   }
 
@@ -209,6 +213,45 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     return grad.toUpperCase();
   }
 
+  /// 🔓 Zatraži dozvole za GPS
+  Future<void> _requestPermissions() async {
+    try {
+      final permission = await Geolocator.requestPermission();
+      final hasGps = permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+
+      setState(() {
+        _imaDozvole = hasGps;
+      });
+
+      // Ako su dozvole odobrene, osvježi GPS podatke
+      if (hasGps) {
+        await _loadGpsData();
+      }
+    } catch (e) {
+      // Greška pri traženju dozvola
+    }
+  }
+
+  /// 🔐 Proveri da li putnik ima potrebne dozvole (GPS i notifikacije)
+  Future<void> _checkPermissions() async {
+    try {
+      // Proveri GPS dozvolu
+      final locationPermission = await Geolocator.checkPermission();
+      final hasGps =
+          locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse;
+
+      // Za notifikacije, pretpostavljamo da su potrebne ali ne blokira UI
+      // (user može da ih omogući kasnije kroz sistemske podešavanja)
+      setState(() {
+        _imaDozvole = hasGps;
+      });
+    } catch (e) {
+      setState(() {
+        _imaDozvole = false;
+      });
+    }
+  }
+
   void _startListening() {
     _loadGpsData();
     _loadPokupljenjeIzBaze(); // 🆕 Učitaj status pokupljenja iz baze
@@ -314,13 +357,14 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       return _WidgetFaza.pracenje;
     }
 
-    // Faza 1: Čekanje (vozač aktivan ali nije startovao rutu, ili nema ETA za ovog putnika)
-    if (_isActive || widget.vremePolaska != null) {
+    // Faza 1: Čekanje - SAMO ako vozač je aktivan
+    if (_isActive) {
       return _WidgetFaza.cekanje;
     }
 
-    // Default: Čekanje
-    return _WidgetFaza.cekanje;
+    // 🆕 PRIORITET 0: Ako nema aktivnog vozača, prikaži info o dozvolama (bez obzira da li ih ima)
+    // Ovime widget postaje "obaveštajni" a ne "sivi i ružni"
+    return _WidgetFaza.potrebneDozvole;
   }
 
   @override
@@ -349,14 +393,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       return const SizedBox.shrink();
     }
 
-    // 🔧 FIX: Sakrij widget ako nema aktivnog vozača i nismo pokupljeni
-    // Widget se prikazuje SAMO kad:
-    // 1. Vozač je aktivan (šalje GPS) - praćenje uživo
-    // 2. Putnik je pokupljen (iz baze) - zeleni status
-    // 3. Prikazujemo sledeću vožnju - ljubičasti status
-    if (!_isActive && faza == _WidgetFaza.cekanje) {
-      return const SizedBox.shrink();
-    }
+    // 🔧 Widget se UVEK prikazuje - ili kao info o dozvolama ili kao ETA tracking
+    // Više se ne sakriva kada nema aktivnog vozača
 
     // Odredi sadržaj na osnovu faze
     final String title;
@@ -365,6 +403,17 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     final IconData? icon;
 
     switch (faza) {
+      case _WidgetFaza.potrebneDozvole:
+        // Faza 0: Info widget (nema aktivnog vozača)
+        title = '📍 GPS PRAĆENJE UŽIVO';
+        if (_imaDozvole) {
+          message = 'Ovde će biti prikazano vreme dolaska prevoza kada vozač krene';
+        } else {
+          message = 'Odobravanjem GPS i notifikacija ovde će vam biti prikazano vreme dolaska prevoza do vas';
+        }
+        baseColor = _imaDozvole ? Colors.blue.shade600 : Colors.orange;
+        icon = _imaDozvole ? Icons.my_location : Icons.gps_not_fixed;
+
       case _WidgetFaza.cekanje:
         // Faza 1: 30 min pre polaska
         title = '🚐 PRAĆENJE UŽIVO';
@@ -422,11 +471,31 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
             message,
             style: TextStyle(
               color: Colors.white,
-              fontSize: faza == _WidgetFaza.pracenje ? 28 : 18,
-              fontWeight: FontWeight.bold,
+              fontSize: faza == _WidgetFaza.pracenje ? 28 : (faza == _WidgetFaza.potrebneDozvole ? 14 : 18),
+              fontWeight: faza == _WidgetFaza.potrebneDozvole ? FontWeight.w500 : FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
+          // 🆕 Dugme za omogućavanje dozvola (samo ako nema dozvole)
+          if (faza == _WidgetFaza.potrebneDozvole && !_imaDozvole)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await _requestPermissions();
+                },
+                icon: const Icon(Icons.settings, size: 18),
+                label: const Text('Omogući praćenje'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: baseColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ),
           if (_vozacIme != null && faza == _WidgetFaza.pracenje)
             Padding(
               padding: const EdgeInsets.only(top: 4),
