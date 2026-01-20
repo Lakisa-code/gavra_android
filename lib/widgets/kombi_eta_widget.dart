@@ -545,7 +545,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   }
 
   Widget _buildContainer(Color baseColor, {required Widget child}) {
-    // 🌟 Glassmorphism stil - ultra providno i delikatno
+    // 🌟 Glassmorphism stil - ultra providno bez senke
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -563,13 +563,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           color: Colors.white.withValues(alpha: 0.25),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: child,
     );
