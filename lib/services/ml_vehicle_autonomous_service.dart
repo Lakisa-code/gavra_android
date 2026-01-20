@@ -33,6 +33,9 @@ class MLVehicleAutonomousService {
   // 🚨 Alerts
   final List<VehicleAlert> _pendingAlerts = [];
 
+  // 🎯 Meta-učenje: Šta sistem prati i zašto
+  final Map<String, MonitoringTarget> _monitoringTargets = {};
+
   // ⚙️ Dinamički parametri (sistem SAM računa i menja!)
   // Start sa neutralnim vrednostima - biće automatski prilagođeni nakon prvog učenja
   int _monitoringIntervalMinutes = 60; // Start sa ređim monitoringom
@@ -132,6 +135,9 @@ class MLVehicleAutonomousService {
 
     // NOVO: Uči dublje obrasce (krosrelacije između podataka)
     await _learnDeepPatterns();
+
+    // META: Odluči šta treba da prati u budućnosti
+    await _decideWhatToMonitor();
 
     // Sačuvaj naučene obrasce
     await _saveLearnedPatterns();
@@ -680,6 +686,147 @@ class MLVehicleAutonomousService {
     }
   }
 
+  /// 🎯 ODLUČI ŠTA DA PRATI
+  /// Sistem SAM odlučuje koje podatke treba da prati u budućnosti!
+  Future<void> _decideWhatToMonitor() async {
+    try {
+      print('🎯 [ML Lab] Odlučujem šta da pratim...');
+
+      // 1. Očisti stare nebitne targetove
+      _monitoringTargets.removeWhere((key, target) => !target.isStillRelevant());
+
+      // 2. GUME: Ako vidi gume, počni da prati njihovo habanje
+      if (_learnedPatterns.containsKey('tire_wear')) {
+        final tirePatterns = _learnedPatterns['tire_wear'] as Map<String, dynamic>;
+
+        for (final entry in tirePatterns.entries) {
+          final tireId = entry.key;
+          final tire = entry.value as Map<String, dynamic>;
+          final traveledKm = tire['traveled_km'] as double;
+          final ageMonths = double.parse(tire['age_months'] as String);
+
+          // Ako guma ima značajnu kilometražu ili starost, POČNI DA PRATIŠ
+          if (traveledKm > 1000 || ageMonths > 1) {
+            if (!_monitoringTargets.containsKey('tire_$tireId')) {
+              _monitoringTargets['tire_$tireId'] = MonitoringTarget(
+                id: 'tire_$tireId',
+                type: 'tire',
+                reason: 'Nova guma detektovana - pratim habanje',
+                importance: 0.6,
+                startedMonitoring: DateTime.now(),
+              );
+              print('   🆕 Počinjem da pratim gumu $tireId');
+            } else {
+              // Već prati - ažuriraj checkCount
+              _monitoringTargets['tire_$tireId']!.checkCount++;
+            }
+          }
+        }
+      }
+
+      // 3. VOZILA: Ako vidi vozilo sa anomalijama u kilometraži, POVEĆAJ VAŽNOST
+      if (_learnedPatterns.containsKey('fuel_consumption')) {
+        final fuelPatterns = _learnedPatterns['fuel_consumption'] as Map<String, dynamic>;
+
+        for (final entry in fuelPatterns.entries) {
+          final vehicleId = entry.key;
+          final fuel = entry.value as Map<String, dynamic>;
+          final anomalies = fuel['anomalies'] as List<dynamic>;
+
+          if (anomalies.isNotEmpty) {
+            // Vozilo ima anomalije - POVEĆAJ VAŽNOST praćenja
+            if (_monitoringTargets.containsKey('vehicle_$vehicleId')) {
+              final target = _monitoringTargets['vehicle_$vehicleId']!;
+              target.importance = (target.importance + 0.2).clamp(0.0, 1.0);
+              target.lastSignificantChange = DateTime.now();
+              print('   ⬆️ Povećao važnost praćenja vozila $vehicleId na ${target.importance.toStringAsFixed(2)}');
+            } else {
+              _monitoringTargets['vehicle_$vehicleId'] = MonitoringTarget(
+                id: 'vehicle_$vehicleId',
+                type: 'vehicle',
+                reason: 'Detektovane anomalije u kilometraži',
+                importance: 0.8,
+                startedMonitoring: DateTime.now(),
+                lastSignificantChange: DateTime.now(),
+              );
+              print('   🚨 Počinjem da pratim vozilo $vehicleId (anomalije)');
+            }
+          }
+        }
+      }
+
+      // 4. TROŠKOVI: Ako troškovi rastu, PRATI ČEŠĆE
+      if (_learnedPatterns.containsKey('cost_trends')) {
+        final costPatterns = _learnedPatterns['cost_trends'] as Map<String, dynamic>;
+
+        for (final entry in costPatterns.entries) {
+          final vehicleId = entry.key;
+          final cost = entry.value as Map<String, dynamic>;
+          final trend = cost['trend'] as String;
+
+          if (trend == 'increasing') {
+            if (!_monitoringTargets.containsKey('cost_$vehicleId')) {
+              _monitoringTargets['cost_$vehicleId'] = MonitoringTarget(
+                id: 'cost_$vehicleId',
+                type: 'cost',
+                reason: 'Troškovi rastu - pratim trend',
+                importance: 0.7,
+                startedMonitoring: DateTime.now(),
+                lastSignificantChange: DateTime.now(),
+              );
+              print('   💰 Počinjem da pratim troškove vozila $vehicleId');
+            }
+          } else if (trend == 'stable' && _monitoringTargets.containsKey('cost_$vehicleId')) {
+            // Troškovi stabilni - SMANJI VAŽNOST
+            final target = _monitoringTargets['cost_$vehicleId']!;
+            target.importance = (target.importance - 0.1).clamp(0.0, 1.0);
+            print(
+                '   ⬇️ Smanjio važnost praćenja troškova vozila $vehicleId na ${target.importance.toStringAsFixed(2)}');
+          }
+        }
+      }
+
+      // 5. OTKRIĆA: Ako otkrije nešto važno, POVEŽI SA TARGETOM
+      if (_learnedPatterns.containsKey('discoveries')) {
+        final discoveries = _learnedPatterns['discoveries'] as List<dynamic>;
+
+        for (final discovery in discoveries) {
+          final discoveryStr = discovery as String;
+
+          // Ako je otkriće o gumama, poveži sa tim gumama
+          if (discoveryStr.contains('gume') || discoveryStr.contains('guma')) {
+            // Ekstraktuj vozilo ID iz otkrića
+            final match = RegExp(r'Vozilo (\w+)').firstMatch(discoveryStr);
+            if (match != null) {
+              final vehicleId = match.group(1);
+              final targetId = 'tires_$vehicleId';
+
+              if (!_monitoringTargets.containsKey(targetId)) {
+                _monitoringTargets[targetId] = MonitoringTarget(
+                  id: targetId,
+                  type: 'tire_group',
+                  reason: discoveryStr,
+                  importance: 0.9,
+                  startedMonitoring: DateTime.now(),
+                  lastSignificantChange: DateTime.now(),
+                );
+                print('   ✨ Počinjem da pratim grupu guma vozila $vehicleId (razlog: $discoveryStr)');
+              }
+            }
+          }
+        }
+      }
+
+      print('📊 [ML Lab] Trenutno pratim ${_monitoringTargets.length} stvari:');
+      final sortedTargets = _monitoringTargets.values.toList()..sort((a, b) => b.importance.compareTo(a.importance));
+      for (final target in sortedTargets.take(5)) {
+        print('   - ${target.id} (važnost: ${target.importance.toStringAsFixed(2)}) - ${target.reason}');
+      }
+    } catch (e) {
+      print('❌ [ML Lab] Greška u odlučivanju: $e');
+    }
+  }
+
   /// 🚨 DETEKCIJA ANOMALIJA
   Future<void> _detectAnomalies() async {
     print('🚨 [ML Lab] Detekcija anomalija...');
@@ -1062,4 +1209,36 @@ class VehicleAlert {
     required this.vehicleId,
     required this.timestamp,
   });
+}
+
+/// 🎯 MODEL ZA MONITORING TARGET
+/// Opisuje šta sistem prati, zašto i koliko je važno
+class MonitoringTarget {
+  final String id; // npr. 'tire_gume_123'
+  final String type; // 'tire', 'vehicle', 'cost'
+  final String reason; // Zašto sistem prati ovo?
+  double importance; // 0.0-1.0 - koliko je važno (može se menjati!)
+  final DateTime startedMonitoring; // Kada je počeo da prati
+  int checkCount; // Koliko puta je proverio
+  DateTime? lastSignificantChange; // Kada je zadnji put video promenu
+
+  MonitoringTarget({
+    required this.id,
+    required this.type,
+    required this.reason,
+    required this.importance,
+    required this.startedMonitoring,
+    this.checkCount = 0,
+    this.lastSignificantChange,
+  });
+
+  // Da li je monitoring još relevantan?
+  bool isStillRelevant() {
+    // Ako je prošlo > 90 dana bez promene i važnost je niska, prestani da pratiš
+    if (importance < 0.3 && lastSignificantChange != null) {
+      final daysSinceChange = DateTime.now().difference(lastSignificantChange!).inDays;
+      return daysSinceChange < 90;
+    }
+    return true;
+  }
 }
