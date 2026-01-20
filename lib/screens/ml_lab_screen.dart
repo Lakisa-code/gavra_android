@@ -703,7 +703,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         title: Text(date),
         subtitle: Text(samples),
         trailing: Text(accuracy, style: const TextStyle(fontWeight: FontWeight.bold)),
-      },
+      ),
     );
   }
 
@@ -713,7 +713,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         leading: Icon(icon, color: Colors.blue),
         title: Text(title),
         trailing: Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      },
+      ),
     );
   }
 
