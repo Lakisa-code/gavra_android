@@ -766,9 +766,9 @@ class _PutnikCardState extends State<PutnikCard> {
         (imeLower.contains('yu auto') || imeLower.contains('pošiljka') || imeLower.contains('posiljka'))
             ? 500.0
             : 600.0;
-    
+
     final int brojMesta = _putnik.brojMesta;
-    
+
     // Naplaćujemo mesto po mesto
     for (int i = 1; i <= brojMesta; i++) {
       final bool? confirmed = await showDialog<bool>(
@@ -919,18 +919,19 @@ class _PutnikCardState extends State<PutnikCard> {
         cenaPoMestu,
         isRegistrovani: false,
       );
-      
+
       // Kratka pauza između naplate
       if (i < brojMesta) {
         await Future.delayed(const Duration(milliseconds: 500));
       }
     }
-    
+
     // Prikaz završne poruke
     if (mounted && brojMesta > 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Naplaćeno svih $brojMesta mesta - Ukupno: ${(cenaPoMestu * brojMesta).toStringAsFixed(0)} RSD'),
+          content:
+              Text('✅ Naplaćeno svih $brojMesta mesta - Ukupno: ${(cenaPoMestu * brojMesta).toStringAsFixed(0)} RSD'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),

@@ -808,6 +808,7 @@ class PutnikService {
           'tip': 'voznja',
           'iznos': 0,
           'vozac_id': vozacUuid,
+          'broj_mesta': putnik.brojMesta, // 🆕 Dodaj broj mesta za tačan obračun
         });
       } catch (logError) {
         // Log insert not critical

@@ -41,6 +41,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   // 📊 Statistike - detaljno po datumima (Set za jedinstvene datume)
   Map<String, Set<String>> _voznjeDetaljno = {}; // mesec -> set jedinstvenih datuma vožnji
   Map<String, Set<String>> _otkazivanjaDetaljno = {}; // mesec -> set jedinstvenih datuma otkazivanja
+  Map<String, int> _brojMestaPoVoznji = {}; // datum -> broj_mesta (za tačan obračun)
   double _ukupnoZaduzenje = 0.0; // ukupno zaduženje za celu godinu
   String? _adresaBC; // BC adresa
   String? _adresaVS; // VS adresa
@@ -457,11 +458,35 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // Izračunaj ukupno zaduženje
       final tipPutnika = _putnikData['tip'] ?? 'radnik';
       final cenaPoVoznji = CenaObracunService.getDefaultCenaByTip(tipPutnika);
-      double ukupnoVoznji = 0;
-      for (final lista in voznjeDetaljnoMap.values) {
-        ukupnoVoznji += lista.length;
+
+      // 🔧 ISPRAVKA: Umesto COUNT(*) × cenaPoVoznji, koristi SUM(broj_mesta × cenaPoVoznji)
+      // Dohvati SVE vožnje sa broj_mesta jednim upitom
+      double ukupnoZaplacanje = 0;
+      final Map<String, int> brojMestaPoVoznji = {};
+      try {
+        final sveVoznjeZaObracun = await Supabase.instance.client
+            .from('voznje_log')
+            .select('datum, broj_mesta')
+            .eq('putnik_id', putnikId)
+            .eq('tip', 'voznja')
+            .gte('datum', pocetakGodine.toIso8601String().split('T')[0]);
+
+        for (final voznja in sveVoznjeZaObracun) {
+          final datum = voznja['datum'] as String?;
+          final brojMesta = (voznja['broj_mesta'] as int?) ?? 1;
+          if (datum != null) {
+            brojMestaPoVoznji[datum] = brojMesta;
+          }
+          ukupnoZaplacanje += brojMesta * cenaPoVoznji;
+        }
+      } catch (e) {
+        // Fallback na stari način ako query padne
+        double ukupnoVoznji = 0;
+        for (final lista in voznjeDetaljnoMap.values) {
+          ukupnoVoznji += lista.length;
+        }
+        ukupnoZaplacanje = ukupnoVoznji * cenaPoVoznji;
       }
-      final ukupnoZaplacanje = ukupnoVoznji * cenaPoVoznji;
 
       // Ukupno plaćeno
       double ukupnoPlaceno = 0;
@@ -478,6 +503,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         _istorijaPl = istorija;
         _voznjeDetaljno = voznjeDetaljnoMap;
         _otkazivanjaDetaljno = otkazivanjaDetaljnoMap;
+        _brojMestaPoVoznji = brojMestaPoVoznji; // 🆕 Sačuvaj broj mesta po vožnji
         _ukupnoZaduzenje = zaduzenje;
         _adresaBC = adresaBcNaziv;
         _adresaVS = adresaVsNaziv;
@@ -2306,7 +2332,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 final brojVoznji = voznjeList.length;
                 final brojOtkazivanja = otkazivanjaList.length;
 
-                final ukupnoZaMesec = brojVoznji * cenaPoVoznji;
+                // 🔧 ISPRAVKA: Umesto brojVoznji × cenaPoVoznji, saberi broj_mesta za svaki datum
+                double ukupnoZaMesec = 0;
+                for (final datumStr in voznjeSet) {
+                  final brojMesta = _brojMestaPoVoznji[datumStr] ?? 1;
+                  ukupnoZaMesec += brojMesta * cenaPoVoznji;
+                }
 
                 // Plaćeno za ovaj mesec
                 final placenoZaMesec = _istorijaPl
@@ -2354,7 +2385,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       ],
                     ),
                     subtitle: Text(
-                      '$brojVoznji vožnji × ${cenaPoVoznji.toStringAsFixed(0)} = ${ukupnoZaMesec.toStringAsFixed(0)} RSD',
+                      brojVoznji > 0 && ukupnoZaMesec > 0
+                          ? '$brojVoznji ${brojVoznji == 1 ? 'vožnja' : 'vožnji'} = ${ukupnoZaMesec.toStringAsFixed(0)} RSD'
+                          : 'Nema vožnji',
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
                     ),
                     children: [
