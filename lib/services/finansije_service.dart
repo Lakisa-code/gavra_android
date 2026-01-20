@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
+
 /// 💰 FINANSIJE SERVICE
 /// Računa prihode, troškove i neto zaradu
 class FinansijeService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Dohvati ukupan prihod za period
   static Future<double> getPrihodZaPeriod(DateTime from, DateTime to) async {

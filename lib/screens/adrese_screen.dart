@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../theme.dart';
 
 /// 📍 ADRESE SCREEN - Upravljanje dozvoljenim adresama
@@ -34,7 +34,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
   Future<void> _loadAdrese() async {
     setState(() => _isLoading = true);
     try {
-      final response = await Supabase.instance.client.from('adrese').select().order('grad').order('naziv');
+      final response = await supabase.from('adrese').select().order('grad').order('naziv');
 
       setState(() {
         _adrese = List<Map<String, dynamic>>.from(response);
@@ -70,7 +70,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
 
     if (result != null) {
       try {
-        await Supabase.instance.client.from('adrese').insert({
+        await supabase.from('adrese').insert({
           'naziv': result['naziv'],
           'grad': result['grad'],
           'ulica': result['ulica'],
@@ -106,7 +106,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
 
     if (result != null) {
       try {
-        await Supabase.instance.client.from('adrese').update({
+        await supabase.from('adrese').update({
           'naziv': result['naziv'],
           'grad': result['grad'],
           'ulica': result['ulica'],
@@ -130,41 +130,19 @@ class _AdreseScreenState extends State<AdreseScreen> {
   }
 
   Future<void> _deleteAdresa(Map<String, dynamic> adresa) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Obriši adresu?'),
-        content: Text('Da li ste sigurni da želite obrisati "${adresa['naziv']}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Otkaži'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Obriši'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await Supabase.instance.client.from('adrese').delete().eq('id', adresa['id']);
-
-        await _loadAdrese();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('🗑️ Adresa obrisana'), backgroundColor: Colors.orange),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-          );
-        }
+    try {
+      await supabase.from('adrese').delete().eq('id', adresa['id']);
+      await _loadAdrese();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('🗑️ Adresa obrisana'), backgroundColor: Colors.orange),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }

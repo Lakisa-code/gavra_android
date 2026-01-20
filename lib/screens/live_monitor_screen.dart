@@ -12,20 +12,23 @@ class LiveMonitorScreen extends StatefulWidget {
   State<LiveMonitorScreen> createState() => _LiveMonitorScreenState();
 }
 
-class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
+class _LiveMonitorScreenState extends State<LiveMonitorScreen> with SingleTickerProviderStateMixin {
   final PutnikService _putnikService = PutnikService();
   String _lastUpdated = '';
   Map<String, dynamic>? _cachedStats;
   bool _isLoadingStats = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadStats();
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -109,6 +112,16 @@ class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
             ),
           )
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white60,
+          tabs: const [
+            Tab(text: 'BELA CRKVA', icon: Icon(Icons.location_city)),
+            Tab(text: 'VRŠAC', icon: Icon(Icons.location_city)),
+          ],
+        ),
       ),
       backgroundColor: Colors.grey[100],
       // 🔄 REALTIME: StreamBuilder automatski osvežava kad se promeni putnik
@@ -144,58 +157,15 @@ class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
           final missing = uceniciOtisli - uceniciVracaju;
           final missingColor = missing > 0 ? Colors.orange : (missing < 0 ? Colors.red : Colors.green);
 
-          return Column(
+          // Filtriraj timeline po gradovima
+          final bcTimeline = timeline.where((slot) => slot.grad == 'BC').toList();
+          final vsTimeline = timeline.where((slot) => slot.grad == 'VS').toList();
+
+          return TabBarView(
+            controller: _tabController,
             children: [
-              // 📊 UPPER DASHBOARD
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: Colors.white,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        "Otišli u školu",
-                        uceniciOtisli.toString(),
-                        Icons.school,
-                        Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        "Planiran povratak",
-                        uceniciVracaju.toString(),
-                        Icons.bus_alert,
-                        Colors.indigo,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        "Razlika",
-                        missing > 0 ? "-$missing" : (missing == 0 ? "OK" : "+${missing.abs()}"),
-                        Icons.compare_arrows,
-                        missingColor,
-                        isAlert: missing != 0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(height: 1),
-
-              // 🚦 TIMELINE
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: timeline.length,
-                  itemBuilder: (context, index) {
-                    final slot = timeline[index];
-                    return _buildSlotCard(slot, missing);
-                  },
-                ),
-              ),
+              _buildTabContent(bcTimeline, uceniciOtisli, uceniciVracaju, missing, missingColor),
+              _buildTabContent(vsTimeline, uceniciOtisli, uceniciVracaju, missing, missingColor),
             ],
           );
         },
@@ -203,35 +173,110 @@ class _LiveMonitorScreenState extends State<LiveMonitorScreen> {
     );
   }
 
+  Widget _buildTabContent(
+    List<SlobodnaMesta> timeline,
+    int uceniciOtisli,
+    int uceniciVracaju,
+    int missing,
+    Color missingColor,
+  ) {
+    return Column(
+      children: [
+        // 📊 UPPER DASHBOARD
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.white,
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  "Otišli u školu",
+                  uceniciOtisli.toString(),
+                  Icons.school,
+                  Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  "Planiran povratak",
+                  uceniciVracaju.toString(),
+                  Icons.bus_alert,
+                  Colors.indigo,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  "Razlika",
+                  missing > 0 ? "-$missing" : (missing == 0 ? "OK" : "+${missing.abs()}"),
+                  Icons.compare_arrows,
+                  missingColor,
+                  isAlert: missing != 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(height: 1),
+
+        // 🚦 TIMELINE
+        Expanded(
+          child: timeline.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Nema polazaka',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: timeline.length,
+                  itemBuilder: (context, index) {
+                    final slot = timeline[index];
+                    return _buildSlotCard(slot, missing);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatCard(String label, String value, IconData icon, Color color, {bool isAlert = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 4),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: color,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               color: Colors.grey[700],
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

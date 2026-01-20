@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
+
 /// 📱 Unificirani servis za registraciju push tokena
 /// Zamenjuje dupliciranu logiku iz FirebaseService, HuaweiPushService i PutnikPushService
 ///
@@ -12,18 +14,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// - Pending token mehanizam za offline scenarije
 class PushTokenService {
   /// Lazy getter - pristupa Supabase tek kada je potrebno i inicijalizovan
-  static SupabaseClient get _supabase => Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Proveri da li je Supabase inicijalizovan
-  static bool get _isSupabaseReady {
-    try {
-      // ignore: unnecessary_statements
-      Supabase.instance.client;
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
+  static bool get _isSupabaseReady => isSupabaseReady;
 
   /// Ključ za čuvanje pending tokena u SharedPreferences
   static const _pendingTokenKey = 'pending_push_token';

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import 'auth_manager.dart';
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
@@ -34,7 +34,6 @@ class RealtimeNotificationService {
         'data': data ?? {},
       };
 
-      final supabase = Supabase.instance.client;
       final response = await supabase.functions.invoke(
         'send-push-notification',
         body: payload,
@@ -51,7 +50,9 @@ class RealtimeNotificationService {
       try {
         await LocalNotificationService.showRealtimeNotification(
             title: title, body: body, payload: jsonEncode(data ?? {}));
-      } catch (_) {}
+      } catch (_) {
+        // Ignoriši greške pri fallback lokalnoj notifikaciji
+      }
       return false;
     }
   }
@@ -63,15 +64,11 @@ class RealtimeNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      final supabase = Supabase.instance.client;
-
-      // Dohvati tokene admina
       final response =
           await supabase.from('push_tokens').select('token, provider').inFilter('user_id', ['Bojan', 'Svetlana']);
 
       if ((response as List).isEmpty) return;
 
-      // Formatiraj tokene za slanje
       final tokens = (response)
           .map<Map<String, dynamic>>((t) => {
                 'token': t['token'] as String,
@@ -86,12 +83,11 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
-      // Ignoriši greške - notifikacija nije kritična
+      // Ignoriši greške pri slanju notifikacija adminima
     }
   }
 
-  /// 📲 Pošalji push notifikaciju putniku (za potvrdu termina)
-  /// Šalje push notifikaciju direktno na token putnika - radi čak i kad je app zatvoren
+  /// 📲 Pošalji push notifikaciju putniku
   static Future<bool> sendNotificationToPutnik({
     required String putnikId,
     required String title,
@@ -99,14 +95,10 @@ class RealtimeNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      final supabase = Supabase.instance.client;
-
-      // Dohvati token putnika
       final response =
           await supabase.from('push_tokens').select('token, provider').eq('user_id', putnikId).maybeSingle();
 
       if (response == null) {
-        // Putnik nema token - prikaži lokalnu notifikaciju kao fallback
         await LocalNotificationService.showRealtimeNotification(
           title: title,
           body: body,
@@ -115,7 +107,6 @@ class RealtimeNotificationService {
         return false;
       }
 
-      // Formatiraj token za slanje
       final tokens = [
         {
           'token': response['token'] as String,
@@ -130,21 +121,20 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
-      // Ako push ne uspe, prikaži lokalnu notifikaciju kao fallback
       try {
         await LocalNotificationService.showRealtimeNotification(
           title: title,
           body: body,
           payload: jsonEncode(data ?? {}),
         );
-      } catch (_) {}
+      } catch (_) {
+        // Ignoriši greške pri fallback lokalnoj notifikaciji
+      }
       return false;
     }
   }
 
-  /// 🎯 Pošalji notifikaciju svim vozačima (broadcast)
-  /// Push notifikacija se šalje preko Supabase Edge funkcije koja sama prikazuje notifikaciju
-  /// Lokalna notifikacija se prikazuje SAMO ako push ne uspe (fallback u sendPushNotification)
+  /// 🎯 Pošalji notifikaciju svim vozačima
   static Future<void> sendNotificationToAllDrivers({
     required String title,
     required String body,
@@ -152,19 +142,12 @@ class RealtimeNotificationService {
     String? excludeSender,
   }) async {
     try {
-      // Lista vozača - SAMO ONI dobijaju broadcast notifikacije
       const vozaci = ['Bojan', 'Svetlana', 'Bilevski', 'Bruda', 'Ivan'];
-
-      final supabase = Supabase.instance.client;
-
-      // Dohvati tokene SAMO za vozače
-      var query = supabase.from('push_tokens').select('token, provider, user_id').inFilter('user_id', vozaci);
-
-      final response = await query;
+      final response =
+          await supabase.from('push_tokens').select('token, provider, user_id').inFilter('user_id', vozaci);
 
       if ((response as List).isEmpty) return;
 
-      // Filtriraj exclude_sender
       final filteredTokens = response.where((t) {
         if (excludeSender == null) return true;
         final userId = t['user_id'] as String?;
@@ -173,7 +156,6 @@ class RealtimeNotificationService {
 
       if (filteredTokens.isEmpty) return;
 
-      // Formatiraj tokene za slanje
       final tokens = filteredTokens
           .map<Map<String, dynamic>>((t) => {
                 'token': t['token'] as String,
@@ -188,7 +170,6 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
-      // Ako broadcast ne uspe, prikaži lokalnu notifikaciju kao fallback
       try {
         final currentDriver = await AuthManager.getCurrentDriver();
         final shouldShowLocal = excludeSender == null ||
@@ -202,7 +183,9 @@ class RealtimeNotificationService {
             payload: jsonEncode(data ?? {}),
           );
         }
-      } catch (_) {}
+      } catch (_) {
+        // Ignoriši greške pri fallback lokalnoj notifikaciji
+      }
     }
   }
 
@@ -211,16 +194,12 @@ class RealtimeNotificationService {
     try {
       await _handleNotificationTap(messageData);
     } catch (e) {
-      // Ignoriši greške pri rukovanju inicijalnom porukom
+      // Ignoriši greške pri obradi inicijalnih poruka
     }
   }
 
   static Future<void> initialize() async {
-    try {
-      // Firebase messaging inicijalizacija - no-op
-    } catch (e) {
-      // Ignoriši greške
-    }
+    // Inicijalizacija se vrši u FirebaseService
   }
 
   static bool _foregroundListenerRegistered = false;
@@ -234,53 +213,44 @@ class RealtimeNotificationService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       try {
         final data = message.data;
-
-        // Izvuci title i body - prvo notification payload, pa data payload
         final title = message.notification?.title ?? data['title'] as String? ?? 'Gavra Notification';
         final body =
             message.notification?.body ?? data['body'] as String? ?? data['message'] as String? ?? 'Nova poruka';
 
-        // Prikaži notifikaciju za SVE poruke (bez filtriranja po tipu/datumu)
         LocalNotificationService.showRealtimeNotification(
           title: title,
           body: body,
-          payload: data.isNotEmpty ? data.toString() : 'firebase_foreground',
+          payload: data.isNotEmpty ? jsonEncode(data) : 'firebase_foreground',
         );
-      } catch (_) {}
+      } catch (_) {
+        // Ignoriši greške pri prikazivanju foreground notifikacija
+      }
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       try {
         _handleNotificationTap(message.data);
-      } catch (_) {}
+      } catch (_) {
+        // Ignoriši greške pri otvaranju notifikacija
+      }
     });
   }
 
   static Future<void> subscribeToDriverTopics(String? driverId) async {
-    if (driverId == null || driverId.isEmpty) {
-      return;
-    }
-
+    if (driverId == null || driverId.isEmpty) return;
     try {
-      if (Firebase.apps.isEmpty) {
-        return;
-      }
-
+      if (Firebase.apps.isEmpty) return;
       final messaging = FirebaseMessaging.instance;
-
       await messaging.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
-
       await messaging.subscribeToTopic('gavra_all_drivers');
     } catch (e) {
-      // Ignoriši greške pri pretplati na topic
+      // Ignoriši greške pri pretplati na topike
     }
   }
 
-  /// Request notification permissions for Firebase
   static Future<bool> requestNotificationPermissions() async {
     try {
       if (Firebase.apps.isEmpty) return false;
-
       final messaging = FirebaseMessaging.instance;
       final settings = await messaging.requestPermission(
         alert: true,
@@ -288,11 +258,8 @@ class RealtimeNotificationService {
         sound: true,
         provisional: false,
       );
-
-      final granted = settings.authorizationStatus == AuthorizationStatus.authorized ||
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
-
-      return granted;
     } catch (e) {
       return false;
     }
@@ -302,30 +269,26 @@ class RealtimeNotificationService {
     try {
       final notificationType = messageData['type'] ?? 'unknown';
 
-      // 🚐 Za "transport_started" - otvori putnikov profil ekran
       if (notificationType == 'transport_started') {
         await NotificationNavigationService.navigateToPassengerProfile();
         return;
       }
 
-      // 🔐 Za "pin_zahtev" - otvori PIN zahtevi ekran (admin)
       if (notificationType == 'pin_zahtev') {
         await NotificationNavigationService.navigateToPinZahtevi();
         return;
       }
 
       final putnikDataString = messageData['putnik'] as String?;
-
       if (putnikDataString != null) {
         final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
-
         await NotificationNavigationService.navigateToPassenger(
           type: notificationType as String,
           putnikData: putnikData,
         );
       }
     } catch (e) {
-      // Ignoriši greške pri navigaciji
+      // Ignoriši greške pri obradi tap akcija
     }
   }
 }

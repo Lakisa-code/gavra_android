@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../utils/vozac_boja.dart';
 
 /// 🚐 VREME VOZAC SERVICE
@@ -14,7 +15,7 @@ class VremeVozacService {
   VremeVozacService._internal();
 
   // Supabase client
-  final supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => supabase;
 
   // 🗄️ Keš za brzo čitanje - ključ je "grad|vreme|dan"
   final Map<String, String?> _cache = {};
@@ -37,7 +38,7 @@ class VremeVozacService {
     }
 
     try {
-      final response = await supabase
+      final response = await _supabase
           .from('vreme_vozac')
           .select('vozac_ime')
           .eq('grad', grad)
@@ -66,7 +67,7 @@ class VremeVozacService {
   /// Poziva se na početku aplikacije i nakon promena
   Future<void> loadAllVremeVozac() async {
     try {
-      final response = await supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime');
+      final response = await _supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime');
 
       _cache.clear();
       for (final row in response as List) {

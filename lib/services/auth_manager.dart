@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../screens/welcome_screen.dart';
@@ -136,9 +135,11 @@ class AuthManager {
 
   /// 🔍 Dohvati vozača iz Supabase po FCM/HMS tokenu
   static Future<String?> _getDriverFromSupabase() async {
+    // Dobij trenutni FCM token
+    String? token;
+
     try {
-      // Dobij trenutni FCM token
-      String? token = await FirebaseService.getFCMToken();
+      token = await FirebaseService.getFCMToken();
 
       // Ako nema FCM, probaj HMS (Huawei) - koristi cached token
       if (token == null || token.isEmpty) {
@@ -155,24 +156,30 @@ class AuthManager {
         return null;
       }
 
-      // Query push_tokens po tokenu
-      final response = await Supabase.instance.client
-          .from('push_tokens')
-          .select('user_id')
-          .eq('token', token)
-          .eq('user_type', 'vozac')
-          .maybeSingle();
+      // Query push_tokens po tokenu - zaštiti pristup preko globalnog gettera
+      try {
+        final response = await supabase
+            .from('push_tokens')
+            .select('user_id')
+            .eq('token', token)
+            .eq('user_type', 'vozac')
+            .maybeSingle();
 
-      if (response != null && response['user_id'] != null) {
-        final userId = response['user_id'] as String;
-        debugPrint('✅ [AuthManager] Vozač iz Supabase: $userId');
-        return userId;
+        if (response != null && response['user_id'] != null) {
+          final userId = response['user_id'] as String;
+          debugPrint('✅ [AuthManager] Vozač iz Supabase: $userId');
+          return userId;
+        }
+      } catch (supabaseError) {
+        // Supabase nije inicijalizovan ili je nedostupan
+        debugPrint('⚠️ [AuthManager] Supabase greška: $supabaseError');
+        return null;
       }
 
       return null;
     } catch (e) {
       debugPrint('❌ [AuthManager] Greška pri čitanju iz Supabase: $e');
-      rethrow;
+      return null;
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import 'firebase_service.dart';
 import 'huawei_push_service.dart';
 import 'push_token_service.dart';
@@ -8,7 +9,7 @@ import 'push_token_service.dart';
 /// 📱 Servis za registraciju push tokena putnika
 /// Koristi unificirani PushTokenService za registraciju
 class PutnikPushService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Registruje push token za putnika u push_tokens tabelu
   /// Koristi unificirani PushTokenService

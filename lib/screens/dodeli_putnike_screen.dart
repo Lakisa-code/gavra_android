@@ -39,6 +39,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   // Stream subscription
   StreamSubscription<List<Putnik>>? _putnikSubscription;
+  String? _currentStreamKey; // 🆕 Čuvaj ključ trenutnog streama
   List<Putnik> _putnici = [];
   bool _isLoading = true;
 
@@ -119,9 +120,21 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
 
   void _setupStream() {
+    // 🆕 Zatvori stari stream ako postoji
     _putnikSubscription?.cancel();
 
     final isoDate = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
+
+    // 🆕 Ako menjamo datum, zatvori stari stream eksplicitno
+    if (_currentStreamKey != null) {
+      // Ekstraktuj isoDate iz starog ključa
+      final oldIsoDate = _currentStreamKey!.split('|')[0];
+      if (oldIsoDate.isNotEmpty && oldIsoDate != isoDate) {
+        PutnikService.closeStream(isoDate: oldIsoDate);
+      }
+    }
+
+    _currentStreamKey = isoDate;
     final normalizedVreme = GradAdresaValidator.normalizeTime(_selectedVreme);
 
     setState(() => _isLoading = true);
@@ -147,21 +160,30 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           return vremeMatch && gradMatch;
         }).toList();
 
-        // 🔢 Sortiraj konzistentno sa PutnikList:
-        // 1. Aktivni (alfabetski)
-        // 2. Crveni (otkazani)
-        // 3. Žuti (odsustvo - bolovanje/godišnji) na dno
+        // 🔢 Sortiraj po redosledu: Nedodeljeni → Bojan → Ostali vozači
         filtered.sort((a, b) {
-          // Prioritet: aktivni=0, otkazani=1, odsustvo=2
-          int getPriority(Putnik p) {
-            if (p.jeOdsustvo) return 2; // žuti na dno
-            if (p.jeOtkazan) return 1; // crveni iznad žutih
+          // Prvo po statusu (da aktivni budu gore, otkazani i odsustvo dole)
+          int getStatusPriority(Putnik p) {
+            if (p.jeOdsustvo) return 3; // žuti na dno
+            if (p.jeOtkazan) return 2; // crveni iznad žutih
             return 0; // aktivni na vrh
           }
 
-          final priorityCompare = getPriority(a).compareTo(getPriority(b));
-          if (priorityCompare != 0) return priorityCompare;
-          // Unutar iste grupe - alfabetski
+          final statusCompare = getStatusPriority(a).compareTo(getStatusPriority(b));
+          if (statusCompare != 0) return statusCompare;
+
+          // Zatim po vozaču: Nedodeljeni=0, Bojan=1, ostali=2
+          int getVozacPriority(Putnik p) {
+            final vozac = p.dodeljenVozac ?? 'Nedodeljen';
+            if (vozac == 'Nedodeljen' || vozac.isEmpty) return 0;
+            if (vozac == 'Bojan') return 1;
+            return 2;
+          }
+
+          final vozacCompare = getVozacPriority(a).compareTo(getVozacPriority(b));
+          if (vozacCompare != 0) return vozacCompare;
+
+          // Unutar iste grupe vozača - alfabetski po imenu putnika
           return a.ime.toLowerCase().compareTo(b.ime.toLowerCase());
         });
 
@@ -274,7 +296,73 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        ...vozaci.map((vozac) {
+                        // 1️⃣ NEDODELJENI - prvi
+                        ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.grey, width: 2),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.person_off, color: Colors.grey, size: 20),
+                            ),
+                          ),
+                          title: const Text(
+                            'Nedodeljeni',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          trailing: currentVozac == 'Nedodeljen'
+                              ? const Icon(Icons.check_circle, color: Colors.grey)
+                              : const Icon(Icons.circle_outlined, color: Colors.grey),
+                          onTap: () => Navigator.pop(context, '_NONE_'),
+                        ),
+                        const Divider(),
+                        // 2️⃣ BOJAN - drugi (admin)
+                        if (vozaci.contains('Bojan')) ...[
+                          Builder(builder: (context) {
+                            final vozac = 'Bojan';
+                            final isSelected = vozac == currentVozac;
+                            final color = VozacBoja.get(vozac);
+                            return ListTile(
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: color, width: 2),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    vozac[0],
+                                    style: TextStyle(
+                                      color: color,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                vozac,
+                                style: TextStyle(
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  color: isSelected ? color : null,
+                                ),
+                              ),
+                              trailing: isSelected
+                                  ? Icon(Icons.check_circle, color: color)
+                                  : const Icon(Icons.circle_outlined, color: Colors.grey),
+                              onTap: () => Navigator.pop(context, vozac),
+                            );
+                          }),
+                          const Divider(),
+                        ],
+                        // 3️⃣ OSTALI VOZAČI
+                        ...vozaci.where((v) => v != 'Bojan').map((vozac) {
                           final isSelected = vozac == currentVozac;
                           final color = VozacBoja.get(vozac);
                           return ListTile(
@@ -310,30 +398,6 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                             onTap: () => Navigator.pop(context, vozac),
                           );
                         }),
-                        // ➖ Opcija za uklanjanje vozača
-                        const Divider(),
-                        ListTile(
-                          leading: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.grey, width: 2),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.person_off, color: Colors.grey, size: 20),
-                            ),
-                          ),
-                          title: const Text(
-                            'Bez vozača',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          trailing: currentVozac == 'Nedodeljen'
-                              ? const Icon(Icons.check_circle, color: Colors.grey)
-                              : const Icon(Icons.circle_outlined, color: Colors.grey),
-                          onTap: () => Navigator.pop(context, '_NONE_'),
-                        ),
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -689,25 +753,24 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                 tooltip: 'Dodeli termin vozaču',
                 onPressed: _showVremeVozacPicker,
               ),
-              // 🎯 Toggle selection mode
-              IconButton(
-                icon: Icon(_isSelectionMode ? Icons.check_circle : Icons.checklist),
-                tooltip: _isSelectionMode ? 'Završi selekciju' : 'Selektuj putnike',
-                onPressed: () {
-                  setState(() {
-                    _isSelectionMode = !_isSelectionMode;
-                    if (!_isSelectionMode) _selectedPutnici.clear();
-                  });
-                },
-              ),
               // Izbor dana
               PopupMenuButton<String>(
-                icon: const Icon(Icons.calendar_today),
                 tooltip: 'Izaberi dan',
                 onSelected: (day) {
                   setState(() => _selectedDay = day);
                   _setupStream();
                 },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Text(
+                    _selectedDay,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
                 itemBuilder: (context) => _dani.map((dan) {
                   final isSelected = dan == _selectedDay;
                   return PopupMenuItem<String>(
@@ -812,7 +875,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                           backgroundColor:
                                               borderColor?.withValues(alpha: 0.3) ?? vozacColor.withValues(alpha: 0.2),
                                           child: Text(
-                                            putnik.dodeljenVozac?.isNotEmpty == true ? putnik.dodeljenVozac![0] : '?',
+                                            '${index + 1}',
                                             style: TextStyle(
                                               color: borderColor ?? vozacColor,
                                               fontWeight: FontWeight.bold,
@@ -849,7 +912,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                           radius: 16,
                                           backgroundColor: vozacColor.withValues(alpha: 0.2),
                                           child: Text(
-                                            putnik.dodeljenVozac?.isNotEmpty == true ? putnik.dodeljenVozac![0] : '?',
+                                            '${index + 1}',
                                             style: TextStyle(color: vozacColor, fontSize: 12),
                                           ),
                                         )

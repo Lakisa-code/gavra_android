@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
+
 /// 📊 PUTNIK KVALITET SERVICE V2
 /// Jednostavna analiza kvaliteta putnika sa 5 nivoa boja
 /// 🟢 Zelena = Odličan, 🟡 Žuta = Dobar, 🟠 Narandžasta = Srednji, 🔴 Crvena = Loš, ⚫ Crna = Kritičan
 class PutnikKvalitetServiceV2 {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Dohvati analizu kvaliteta za sve putnike
   static Future<List<PutnikKvalitetV2>> getKvalitetAnaliza({

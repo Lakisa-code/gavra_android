@@ -1,10 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
+
 /// 📊 PUTNIK KVALITET SERVICE
 /// Analiza kvaliteta putnika za admina/vlasnika
 /// Identifikuje putnike koji zauzimaju mesto ali se retko voze
 class PutnikKvalitetService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Dohvati analizu kvaliteta za sve putnike određenog tipa
   /// Vraća listu sortiranu po kvalitetu (najgori prvi)

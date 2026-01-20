@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/gps_lokacija.dart';
 import '../services/permission_service.dart';
 import '../services/realtime/realtime_manager.dart';
@@ -102,12 +102,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       // Učitaj iz vozac_lokacije tabele - SAMO aktivne vozače sa skorašnjim podacima
       // Filter: aktivan = true I updated_at u poslednjih 4 sata (realno praćenje)
       final recentTime = DateTime.now().subtract(const Duration(hours: 4)).toUtc().toIso8601String();
-      final response = await Supabase.instance.client
-          .from('vozac_lokacije')
-          .select()
-          .eq('aktivan', true)
-          .gte('updated_at', recentTime)
-          .limit(10);
+      final response =
+          await supabase.from('vozac_lokacije').select().eq('aktivan', true).gte('updated_at', recentTime).limit(10);
       final gpsLokacije = <GPSLokacija>[];
       for (final json in response as List<dynamic>) {
         try {

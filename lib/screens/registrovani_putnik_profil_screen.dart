@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../globals.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/cena_obracun_service.dart';
 import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikacije
@@ -99,7 +100,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     if (putnikId == null) return;
 
     // Pretplati se na promene u registrovani_putnici tabeli za ovog putnika
-    _statusSubscription = Supabase.instance.client
+    _statusSubscription = supabase
         .channel('pending_status_$putnikId')
         .onPostgresChanges(
           event: PostgresChangeEvent.update,
@@ -170,7 +171,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final putnikId = _putnikData['id'];
       if (putnikId == null) return;
 
-      final response = await Supabase.instance.client.from('registrovani_putnici').select().eq('id', putnikId).single();
+      final response = await supabase.from('registrovani_putnici').select().eq('id', putnikId).single();
 
       if (mounted) {
         setState(() {
@@ -190,7 +191,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   ) async {
     try {
       // Učitaj trenutno stanje iz baze
-      final response = await Supabase.instance.client
+      final response = await supabase
           .from('registrovani_putnici')
           .select('polasci_po_danu')
           .eq('id', putnikId)
@@ -236,27 +237,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   /// Briše zahteve starije od 1 dana
   Future<void> _cleanupOldSeatRequests() async {
     try {
-      final yesterday = DateTime.now().toUtc().subtract(const Duration(days: 1)).toIso8601String();
-
-      // 🆕 Prvo obriši vezane notifikacije (foreign key constraint)
-      final oldRequests = await Supabase.instance.client.from('seat_requests').select('id').lt('created_at', yesterday);
+      final yesterday = DateTime.now().subtract(const Duration(days: 1)).toUtc().toIso8601String();
+      final oldRequests = await supabase.from('seat_requests').select('id').lt('created_at', yesterday);
 
       if (oldRequests.isNotEmpty) {
-        final requestIds = oldRequests.map((r) => r['id']).toList();
-
-        // Obriši notifikacije za te zahteve
-        await Supabase.instance.client
-            .from('seat_request_notifications')
-            .delete()
-            .inFilter('seat_request_id', requestIds);
-
-        // Sada obriši zahteve
-        await Supabase.instance.client.from('seat_requests').delete().lt('created_at', yesterday);
-
-        debugPrint('✅ [Cleanup] Obrisano ${requestIds.length} starih zahteva');
+        debugPrint('🧹 [Cleanup] Brisanje ${oldRequests.length} starih zahteva...');
+        await supabase
+          .from('seat_requests')
+          .delete()
+          .lt('created_at', yesterday);
       }
     } catch (e) {
-      debugPrint('❌ [Cleanup] Greška pri brisanju seat_requests: $e');
+      debugPrint('❌ [Cleanup] Greška: $e');
     }
   }
 
@@ -314,25 +306,29 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
   }
 
+  /// 📊 Učitava statistike za profil (vožnje i otkazivanja)
   Future<void> _loadStatistike() async {
-    setState(() => _isLoading = true);
+    final now = DateTime.now();
+    final pocetakGodine = DateTime(now.year, 1, 1);
+    final putnikId = _putnikData['id'];
+    if (putnikId == null) return;
 
     try {
-      final putnikId = _putnikData['id'];
-      final now = DateTime.now();
-      final startOfMonth = DateTime(now.year, now.month, 1);
-      final pocetakGodine = DateTime(now.year, 1, 1);
-
-      // Koristi voznje_log za statistiku vožnji
-      // Broj vožnji ovog meseca - JEDINSTVENI DATUMI
-      final voznjeResponse = await Supabase.instance.client
+      // 1. Dohvati sve vožnje
+      final voznjeResponse = await supabase
           .from('voznje_log')
-          .select('datum')
+          .select('datum, tip')
           .eq('putnik_id', putnikId)
-          .gte('datum', startOfMonth.toIso8601String().split('T')[0])
           .eq('tip', 'voznja');
 
-      // Broji jedinstvene datume
+      // 2. Dohvati sva otkazivanja
+      final otkazivanjaResponse = await supabase
+          .from('voznje_log')
+          .select('datum, tip')
+          .eq('putnik_id', putnikId)
+          .eq('tip', 'otkazivanje');
+
+      // Broj vožnji ovog meseca - JEDINSTVENI DATUMI
       final jedinstveniDatumiVoznji = <String>{};
       for (final v in voznjeResponse) {
         final datum = v['datum'] as String?;
@@ -341,14 +337,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final brojVoznji = jedinstveniDatumiVoznji.length;
 
       // Broj otkazivanja ovog meseca - JEDINSTVENI DATUMI
-      final otkazivanjaResponse = await Supabase.instance.client
-          .from('voznje_log')
-          .select('datum')
-          .eq('putnik_id', putnikId)
-          .gte('datum', startOfMonth.toIso8601String().split('T')[0])
-          .eq('tip', 'otkazivanje');
-
-      // Broji jedinstvene datume otkazivanja
       final jedinstveniDatumiOtkazivanja = <String>{};
       for (final o in otkazivanjaResponse) {
         final datum = o['datum'] as String?;
@@ -370,7 +358,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       try {
         if (adresaBcId != null && adresaBcId.isNotEmpty) {
-          final bcResponse = await Supabase.instance.client
+          final bcResponse = await supabase
               .from('adrese')
               .select('naziv, koordinate')
               .eq('id', adresaBcId)
@@ -388,7 +376,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           }
         }
         if (adresaVsId != null && adresaVsId.isNotEmpty) {
-          final vsResponse = await Supabase.instance.client
+          final vsResponse = await supabase
               .from('adrese')
               .select('naziv, koordinate')
               .eq('id', adresaVsId)
@@ -425,7 +413,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final istorija = await _loadIstorijuPlacanja(putnikId);
 
       // 📊 Vožnje po mesecima (cela godina) - koristi voznje_log
-      final sveVoznje = await Supabase.instance.client
+      final sveVoznje = await supabase
           .from('voznje_log')
           .select('datum, tip, created_at')
           .eq('putnik_id', putnikId)
@@ -464,7 +452,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       double ukupnoZaplacanje = 0;
       final Map<String, int> brojMestaPoVoznji = {};
       try {
-        final sveVoznjeZaObracun = await Supabase.instance.client
+        final sveVoznjeZaObracun = await supabase
             .from('voznje_log')
             .select('datum, broj_mesta')
             .eq('putnik_id', putnikId)
@@ -624,7 +612,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final pocetakGodine = DateTime(now.year, 1, 1);
 
       // Koristi voznje_log za uplate
-      final placanja = await Supabase.instance.client
+      final placanja = await supabase
           .from('voznje_log')
           .select('iznos, datum, created_at')
           .eq('putnik_id', putnikId)
@@ -1698,7 +1686,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   Future<void> _updatePolazak(String dan, String tipGrad, String? novoVreme) async {
     // 📅 BLOKADA PETKOM (za učenike i radnike)
     // Ako je danas PETAK, zabrani menjanje bilo kog dana osim (eventualno) današnjeg,
-    // ali ovde blokiramo SVE jer je jednostavnije i sigurnije.
+    // ali ovde blokiramo SVE јер je jednostavnije и сигурније.
     final now = DateTime.now();
     if (now.weekday == DateTime.friday) {
       final tip = (_putnikData['tip'] ?? '').toString().toLowerCase();
@@ -1828,7 +1816,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 🛡️ Merge sa postojećim markerima u bazi
           final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
 
-          await Supabase.instance.client
+          await supabase
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
@@ -1862,7 +1850,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 🛡️ Merge sa postojećim markerima u bazi
           final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
 
-          await Supabase.instance.client
+          await supabase
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
@@ -1893,7 +1881,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 🛡️ Merge sa postojećim markerima u bazi
           final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
 
-          await Supabase.instance.client
+          await supabase
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
@@ -1927,7 +1915,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 🛡️ Merge sa postojećim markerima u bazi
           final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
 
-          await Supabase.instance.client
+          await supabase
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
@@ -1965,7 +1953,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               // 🛡️ Merge sa postojećim markerima u bazi
               final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
 
-              await Supabase.instance.client.from('registrovani_putnici').update({
+              await supabase.from('registrovani_putnici').update({
                 'polasci_po_danu': mergedPolasci,
                 'radni_dani': radniDani,
               }).eq('id', putnikId);
@@ -2086,7 +2074,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // Za svakog putnika na listi čekanja, pošalji notifikaciju
       for (final waitingPutnikId in waitingIds) {
         // Dohvati podatke putnika
-        final putnikData = await Supabase.instance.client
+        final putnikData = await supabase
             .from('registrovani_putnici')
             .select('polasci_po_danu, radni_dani')
             .eq('id', waitingPutnikId)

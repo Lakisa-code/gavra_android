@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import 'push_token_service.dart';
 import 'realtime_notification_service.dart';
 import 'weather_service.dart';
@@ -12,7 +13,7 @@ import 'weather_service.dart';
 /// - ⛈️ Nevreme (grmljavina)
 /// - 🌫️ Gusta magla
 class WeatherAlertService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Glavna funkcija - proverava prognozu i šalje upozorenje ako treba
   /// Poziva se na app startup (main.dart)

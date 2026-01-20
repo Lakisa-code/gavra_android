@@ -1,10 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import 'realtime_notification_service.dart';
 
 /// 📨 Servis za upravljanje PIN zahtevima putnika
 class PinZahtevService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   static Future<bool> posaljiZahtev({
     required String putnikId,

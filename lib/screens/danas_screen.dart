@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 🎨 DODANO za SystemUiOverlayStyle
 import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
-import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 
 import '../config/route_config.dart';
 import '../globals.dart';
@@ -50,7 +49,6 @@ class DanasScreen extends StatefulWidget {
 }
 
 class _DanasScreenState extends State<DanasScreen> {
-  final supabase = Supabase.instance.client; // DODANO za direktne pozive
   final _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final Set<String> _resettingSlots = {};
   Set<String> _lastMatchingIds = {};
@@ -2197,451 +2195,450 @@ class _DanasScreenState extends State<DanasScreen> {
         decoration: BoxDecoration(
           gradient: ThemeManager().currentGradient, // Theme-aware gradijent
         ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent, // Transparentna pozadina
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(95),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).glassContainer, // Transparentni glassmorphism
-                border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
-                borderRadius:
-                    const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)),
-                // No boxShadow — AppBar should be fully transparent and show only the glass border
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // APP BAR SADRŽAJ - 3 REDA
-                      _buildDigitalDateDisplay(),
-                    ],
-                  ),
+        child: _isLoading
+            ? const Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Center(child: CircularProgressIndicator()),
+              )
+            : StreamBuilder<List<Putnik>>(
+                // 🔧 FIX: JEDAN StreamBuilder za ceo ekran (body + bottomNavigationBar)
+                stream: _putnikService.streamKombinovaniPutniciFiltered(
+                  isoDate: DateTime.now().toIso8601String().split('T')[0],
+                  // ✅ FIX: Ne prosleđujemo grad/vreme u stream - filtriramo client-side
                 ),
+                builder: (context, snapshot) {
+                  // 💓 REGISTRUJ HEARTBEAT ZA GLAVNI PUTNICI STREAM
+                  _registerStreamHeartbeat('putnici_stream');
+
+                  // Dobij podatke ili koristi praznu listu
+                  final sviPutnici = snapshot.data ?? [];
+
+                  return _buildScaffoldWithData(context, snapshot, sviPutnici);
+                },
+              ),
+      ),
+    );
+  }
+
+  // 🆕 IZDVOJENA METODA: Build Scaffold sa podacima
+  Widget _buildScaffoldWithData(BuildContext context, AsyncSnapshot<List<Putnik>> snapshot, List<Putnik> sviPutnici) {
+    return Scaffold(
+      backgroundColor: Colors.transparent, // Transparentna pozadina
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(95),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).glassContainer, // Transparentni glassmorphism
+            border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)),
+            // No boxShadow — AppBar should be fully transparent and show only the glass border
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // APP BAR SADRŽAJ - 3 REDA
+                  _buildDigitalDateDisplay(),
+                ],
               ),
             ),
           ),
-          body: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : StreamBuilder<List<Putnik>>(
-                  stream: _putnikService.streamKombinovaniPutniciFiltered(
-                    isoDate: DateTime.now().toIso8601String().split('T')[0],
-                    // ✅ FIX: Ne prosleđujemo grad/vreme u stream - filtriramo client-side
-                    // Ovo omogućava prikaz putnika na bolovanju koji imaju drugačiji grad (npr. selo)
-                  ), // 🔄 KOMBINOVANI STREAM (mesečni + dnevni)
-                  builder: (context, snapshot) {
-                    // 💓 REGISTRUJ HEARTBEAT ZA GLAVNI PUTNICI STREAM
-                    _registerStreamHeartbeat('putnici_stream');
+        ),
+      ),
+      body: _buildBody(context, snapshot, sviPutnici),
+      bottomNavigationBar: _buildBottomNavBar(context, sviPutnici),
+    );
+  }
 
-                    // Ako se lista putnika promenila, invalidiraj cache za trenutni grad/vreme/dan
-                    // Ako je lista putnika promenjena u real-time, invalidiraj cache
-                    // kako bi optimizovana ruta prema novim podacima bila ponovo kalkulisana
-                    if (snapshot.hasData) {
-                      final list = snapshot.data!;
-                      // Build set of ids that match current grad/vreme/dan
-                      final Set<String> matchingIds = {};
-                      final selectedGrad = widget.filterGrad ?? _selectedGrad;
-                      final selectedVreme = widget.filterVreme ?? _selectedVreme;
-                      final selectedDan = _getTodayForDatabase();
-                      for (final p in list) {
-                        final gradMatch = _isGradMatch(p.grad, p.adresa, selectedGrad);
-                        final vremeMatch = GradAdresaValidator.normalizeTime(p.polazak) ==
-                            GradAdresaValidator.normalizeTime(selectedVreme);
-                        final danMatch = p.dan == selectedDan ||
-                            p.datum == selectedDan ||
-                            (p.datum == null &&
-                                GradAdresaValidator.normalizeString(
-                                  p.dan,
-                                ).contains(GradAdresaValidator.normalizeString(selectedDan)));
-                        if (gradMatch && vremeMatch && danMatch) {
-                          matchingIds.add(p.id.toString());
-                        }
-                      }
+  // 🆕 IZDVOJENA METODA: Build Body
+  Widget _buildBody(BuildContext context, AsyncSnapshot<List<Putnik>> snapshot, List<Putnik> sviPutnici) {
+    // Ako se lista putnika promenila, invalidiraj cache za trenutni grad/vreme/dan
+    if (snapshot.hasData) {
+      final list = snapshot.data!;
+      // Build set of ids that match current grad/vreme/dan
+      final Set<String> matchingIds = {};
+      final selectedGrad = widget.filterGrad ?? _selectedGrad;
+      final selectedVreme = widget.filterVreme ?? _selectedVreme;
+      final selectedDan = _getTodayForDatabase();
+      for (final p in list) {
+        final gradMatch = _isGradMatch(p.grad, p.adresa, selectedGrad);
+        final vremeMatch =
+            GradAdresaValidator.normalizeTime(p.polazak) == GradAdresaValidator.normalizeTime(selectedVreme);
+        final danMatch = p.dan == selectedDan ||
+            p.datum == selectedDan ||
+            (p.datum == null &&
+                GradAdresaValidator.normalizeString(
+                  p.dan,
+                ).contains(GradAdresaValidator.normalizeString(selectedDan)));
+        if (gradMatch && vremeMatch && danMatch) {
+          matchingIds.add(p.id.toString());
+        }
+      }
 
-                      // If the set changed compared to last matching ids, refresh UI
-                      if (!_setEquals(_lastMatchingIds, matchingIds)) {
-                        _lastMatchingIds = matchingIds;
-                        // Stream automatski ažurira podatke - samo osvežimo UI
-                        // ✅ FIX: Defer setState to after build phase to avoid "setState called during build"
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) setState(() {});
-                        });
-                      }
-                    }
+      // If the set changed compared to last matching ids, refresh UI
+      if (!_setEquals(_lastMatchingIds, matchingIds)) {
+        _lastMatchingIds = matchingIds;
+        // Stream automatski ažurira podatke - samo osvežimo UI
+        // ✅ FIX: Defer setState to after build phase to avoid "setState called during build"
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() {});
+        });
+      }
+    }
 
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-                    if (snapshot.hasError) {
-                      // Heartbeat indicator shows connection status
-                      return const Center(
-                        child: Text(
-                          'Nema putnika za izabrani polazak',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
+    if (snapshot.hasError) {
+      // Heartbeat indicator shows connection status
+      return const Center(
+        child: Text(
+          'Nema putnika za izabrani polazak',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
+    // 🔄 REALTIME SYNC: Ažuriraj statuse u optimizovanoj ruti
+    if (_isRouteOptimized && sviPutnici.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _syncOptimizedRouteWithStream(sviPutnici);
+      });
+    }
+
+    final danasnjiDan = _getTodayForDatabase();
+    final todayIso = DateTime.now().toIso8601String().split('T')[0];
+
+    // Real-time filtriranje
+    final danasPutnici = sviPutnici.where((p) {
+      // Dan u nedelji filter - ISTA LOGIKA KAO HOME_SCREEN
+      // Koristimo dan ili datum za filtriranje
+      final dayMatch = p.datum != null ? p.datum == todayIso : p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
+
+      return dayMatch;
+    }).toList();
+
+    final vreme = _selectedVreme;
+    final grad = _selectedGrad;
+
+    final filtriraniPutnici = danasPutnici.where((putnik) {
+      final vremeMatch = GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(vreme);
+
+      // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - razlikuj mesečne i obične putnike
+      final gradMatch = _isGradMatch(
+        putnik.grad,
+        putnik.adresa,
+        grad,
+        isRegistrovaniPutnik: putnik.mesecnaKarta == true,
+      );
+
+      // 🔄 UJEDNAČENA LOGIKA SA HOME_SCREEN: Prikaži sve putnike osim obrisanih
+      // Otkazani SE PRIKAZUJU (crvenom bojom) - vozač treba da vidi ko je otkazao
+      final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
+      final statusOk = normalizedStatus != 'obrisan';
+      return vremeMatch && gradMatch && statusOk;
+    }).toList();
+
+    // 🎯 Ažuriraj _currentPutnici za Ruta dugme - SAMO BELE KARTICE (nepokupljeni, neotkazani, bez odsustva)
+    final belePutnici = filtriraniPutnici.where((p) {
+      if (p.jePokupljen) return false;
+      if (p.jeOtkazan) return false;
+      if (p.jeOdsustvo) return false;
+      // Isključi tuđe putnike
+      if (p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    if (_currentPutnici.length != belePutnici.length ||
+        !_currentPutnici.every((p) => belePutnici.any((fp) => fp.id == p.id))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _currentPutnici = belePutnici;
+          });
+        }
+      });
+    }
+
+    // Koristiti optimizovanu rutu ako postoji, ali filtriraj je po trenutnom polazaku
+    final finalPutnici = _isRouteOptimized
+        ? _optimizedRoute.where((putnik) {
+            final vremeMatch =
+                GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(vreme);
+
+            // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - razlikuj mesečne i obične putnike
+            final gradMatch = _isGradMatch(
+              putnik.grad,
+              putnik.adresa,
+              grad,
+              isRegistrovaniPutnik: putnik.mesecnaKarta == true,
+            );
+
+            // 🔄 UJEDNAČENA LOGIKA SA HOME_SCREEN: Prikaži sve putnike osim obrisanih
+            // Otkazani SE PRIKAZUJU (crvenom bojom) - vozač treba da vidi ko je otkazao
+            final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
+            final statusOk = normalizedStatus != 'obrisan';
+
+            return vremeMatch && gradMatch && statusOk;
+          }).toList()
+        : filtriraniPutnici;
+    // 💳 DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
+    final filteredDuzniciRaw = danasPutnici.where((putnik) {
+      final nijeMesecni = !putnik.isMesecniTip;
+      if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesečni tip
+
+      final nijePlatio = putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
+      final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
+      final pokupljen = putnik.jePokupljen;
+
+      // ✅ NOVA LOGIKA: Vozači vide SVE dužnike (mogu naplatiti bilo koji dug)
+      // Uklonjeno filtriranje po vozaču - jeOvajVozac filter
+
+      return nijePlatio && nijeOtkazan && pokupljen;
+    }).toList();
+
+    // ✅ DEDUPLIKACIJA: Jedan putnik može imati više termina, ali je jedan dužnik
+    final seenIds = <dynamic>{};
+    final filteredDuznici = filteredDuzniciRaw.where((p) {
+      final key = p.id ?? '${p.ime}_${p.dan}';
+      if (seenIds.contains(key)) return false;
+      seenIds.add(key);
+      return true;
+    }).toList();
+
+    // Sortiraj po vremenu pokupljenja (najnoviji na vrhu)
+    filteredDuznici.sort((a, b) {
+      final aTime = a.vremePokupljenja;
+      final bTime = b.vremePokupljenja;
+
+      if (aTime == null && bTime == null) return 0;
+      if (aTime == null) return 1;
+      if (bTime == null) return -1;
+
+      return bTime.compareTo(aTime);
+    });
+
+    return Column(
+      children: [
+        Expanded(
+          child: finalPutnici.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Nema putnika za izabrani polazak',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                )
+              : Column(
+                  children: [
+                    if (_isRouteOptimized)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: _isGpsTracking ? Colors.blue[50] : Colors.green[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _isGpsTracking ? Colors.blue[300]! : Colors.green[300]!,
+                          ),
                         ),
-                      );
-                    }
-
-                    final sviPutnici = snapshot.data ?? [];
-
-                    // 🔄 REALTIME SYNC: Ažuriraj statuse u optimizovanoj ruti
-                    if (_isRouteOptimized && sviPutnici.isNotEmpty) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _syncOptimizedRouteWithStream(sviPutnici);
-                      });
-                    }
-
-                    final danasnjiDan = _getTodayForDatabase();
-                    final todayIso = DateTime.now().toIso8601String().split('T')[0];
-
-                    // Real-time filtriranje
-                    final danasPutnici = sviPutnici.where((p) {
-                      // Dan u nedelji filter - ISTA LOGIKA KAO HOME_SCREEN
-                      // Koristimo dan ili datum za filtriranje
-                      final dayMatch = p.datum != null
-                          ? p.datum == todayIso
-                          : p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
-
-                      return dayMatch;
-                    }).toList();
-
-                    final vreme = _selectedVreme;
-                    final grad = _selectedGrad;
-
-                    final filtriraniPutnici = danasPutnici.where((putnik) {
-                      final vremeMatch =
-                          GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(vreme);
-
-                      // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - razlikuj mesečne i obične putnike
-                      final gradMatch = _isGradMatch(
-                        putnik.grad,
-                        putnik.adresa,
-                        grad,
-                        isRegistrovaniPutnik: putnik.mesecnaKarta == true,
-                      );
-
-                      // 🔄 UJEDNAČENA LOGIKA SA HOME_SCREEN: Prikaži sve putnike osim obrisanih
-                      // Otkazani SE PRIKAZUJU (crvenom bojom) - vozač treba da vidi ko je otkazao
-                      final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
-                      final statusOk = normalizedStatus != 'obrisan';
-                      return vremeMatch && gradMatch && statusOk;
-                    }).toList();
-
-                    // 🎯 Ažuriraj _currentPutnici za Ruta dugme - SAMO BELE KARTICE (nepokupljeni, neotkazani, bez odsustva)
-                    final belePutnici = filtriraniPutnici.where((p) {
-                      if (p.jePokupljen) return false;
-                      if (p.jeOtkazan) return false;
-                      if (p.jeOdsustvo) return false;
-                      // Isključi tuđe putnike
-                      if (p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver) {
-                        return false;
-                      }
-                      return true;
-                    }).toList();
-
-                    if (_currentPutnici.length != belePutnici.length ||
-                        !_currentPutnici.every((p) => belePutnici.any((fp) => fp.id == p.id))) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          setState(() {
-                            _currentPutnici = belePutnici;
-                          });
-                        }
-                      });
-                    }
-
-                    // Koristiti optimizovanu rutu ako postoji, ali filtriraj je po trenutnom polazaku
-                    final finalPutnici = _isRouteOptimized
-                        ? _optimizedRoute.where((putnik) {
-                            final vremeMatch = GradAdresaValidator.normalizeTime(putnik.polazak) ==
-                                GradAdresaValidator.normalizeTime(vreme);
-
-                            // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - razlikuj mesečne i obične putnike
-                            final gradMatch = _isGradMatch(
-                              putnik.grad,
-                              putnik.adresa,
-                              grad,
-                              isRegistrovaniPutnik: putnik.mesecnaKarta == true,
-                            );
-
-                            // 🔄 UJEDNAČENA LOGIKA SA HOME_SCREEN: Prikaži sve putnike osim obrisanih
-                            // Otkazani SE PRIKAZUJU (crvenom bojom) - vozač treba da vidi ko je otkazao
-                            final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
-                            final statusOk = normalizedStatus != 'obrisan';
-
-                            return vremeMatch && gradMatch && statusOk;
-                          }).toList()
-                        : filtriraniPutnici;
-                    // 💳 DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
-                    final filteredDuzniciRaw = danasPutnici.where((putnik) {
-                      final nijeMesecni = !putnik.isMesecniTip;
-                      if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesečni tip
-
-                      final nijePlatio = putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
-                      final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
-                      final pokupljen = putnik.jePokupljen;
-
-                      // ✅ NOVA LOGIKA: Vozači vide SVE dužnike (mogu naplatiti bilo koji dug)
-                      // Uklonjeno filtriranje po vozaču - jeOvajVozac filter
-
-                      return nijePlatio && nijeOtkazan && pokupljen;
-                    }).toList();
-
-                    // ✅ DEDUPLIKACIJA: Jedan putnik može imati više termina, ali je jedan dužnik
-                    final seenIds = <dynamic>{};
-                    final filteredDuznici = filteredDuzniciRaw.where((p) {
-                      final key = p.id ?? '${p.ime}_${p.dan}';
-                      if (seenIds.contains(key)) return false;
-                      seenIds.add(key);
-                      return true;
-                    }).toList();
-
-                    // Sortiraj po vremenu pokupljenja (najnoviji na vrhu)
-                    filteredDuznici.sort((a, b) {
-                      final aTime = a.vremePokupljenja;
-                      final bTime = b.vremePokupljenja;
-
-                      if (aTime == null && bTime == null) return 0;
-                      if (aTime == null) return 1;
-                      if (bTime == null) return -1;
-
-                      return bTime.compareTo(aTime);
-                    });
-
-                    return Column(
-                      children: [
-                        Expanded(
-                          child: finalPutnici.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    'Nema putnika za izabrani polazak',
-                                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isGpsTracking ? Icons.gps_fixed : Icons.route,
+                              color: _isGpsTracking ? Colors.blue : Colors.green,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _isListReordered
+                                        ? '🎯 Lista Reorderovana (${_currentPassengerIndex + 1}/${finalPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length})'
+                                        : (_isGpsTracking ? '🛰️ GPS Tracking AKTIVAN' : 'Ruta optimizovana'),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: _isListReordered
+                                          ? Colors.orange[700]
+                                          : (_isGpsTracking ? Colors.blue : Colors.green),
+                                    ),
                                   ),
-                                )
-                              : Column(
-                                  children: [
-                                    if (_isRouteOptimized)
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(8),
-                                        margin: const EdgeInsets.only(bottom: 8),
-                                        decoration: BoxDecoration(
-                                          color: _isGpsTracking ? Colors.blue[50] : Colors.green[50],
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: _isGpsTracking ? Colors.blue[300]! : Colors.green[300]!,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              _isGpsTracking ? Icons.gps_fixed : Icons.route,
-                                              color: _isGpsTracking ? Colors.blue : Colors.green,
-                                              size: 20,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    _isListReordered
-                                                        ? '🎯 Lista Reorderovana (${_currentPassengerIndex + 1}/${finalPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length})'
-                                                        : (_isGpsTracking
-                                                            ? '🛰️ GPS Tracking AKTIVAN'
-                                                            : 'Ruta optimizovana'),
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: _isListReordered
-                                                          ? Colors.orange[700]
-                                                          : (_isGpsTracking ? Colors.blue : Colors.green),
-                                                    ),
-                                                  ),
-                                                  // 🎯 PRIKAZ TRENUTNOG PUTNIKA
-                                                  if (_isListReordered && finalPutnici.isNotEmpty)
-                                                    Text(
-                                                      '👤 SLEDEĆI: ${finalPutnici.first.ime}',
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: Colors.orange[600],
-                                                        fontWeight: FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  // 🧭 PRIKAZ NAVIGATION STATUS-A
-                                                  if (_useAdvancedNavigation && _navigationStatus.isNotEmpty)
-                                                    Text(
-                                                      '🧭 $_navigationStatus',
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        color: Colors.indigo[600],
-                                                        fontStyle: FontStyle.italic,
-                                                      ),
-                                                    ),
-                                                  // DISABLED: Google APIs removed - StreamBuilder completely removed
-                                                  // REMOVED: Complete StreamBuilder block - Google APIs disabled
-                                                  // 🔄 REAL-TIME ROUTE STRING
-                                                  Text(
-                                                    'Optimizovana ruta: ${finalPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length} putnika',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: _isGpsTracking ? Colors.blue : Colors.green,
-                                                    ),
-                                                    maxLines: 2,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    // 🧭 RealTimeNavigationWidget UKLONJEN - koriste se samo kartice + dugme za mapu
-                                    Expanded(
-                                      child: PutnikList(
-                                        putnici: finalPutnici,
-                                        useProvidedOrder: _isListReordered,
-                                        currentDriver: _currentDriver!,
-                                        selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
-                                        selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
-                                        onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
-                                        bcVremena: _getBcVremena(),
-                                        vsVremena: _getVsVremena(),
+                                  // 🎯 PRIKAZ TRENUTNOG PUTNIKA
+                                  if (_isListReordered && finalPutnici.isNotEmpty)
+                                    Text(
+                                      '👤 SLEDEĆI: ${finalPutnici.first.ime}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.orange[600],
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  // 🧭 PRIKAZ NAVIGATION STATUS-A
+                                  if (_useAdvancedNavigation && _navigationStatus.isNotEmpty)
+                                    Text(
+                                      '🧭 $_navigationStatus',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.indigo[600],
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  // DISABLED: Google APIs removed - StreamBuilder completely removed
+                                  // REMOVED: Complete StreamBuilder block - Google APIs disabled
+                                  // 🔄 REAL-TIME ROUTE STRING
+                                  Text(
+                                    'Optimizovana ruta: ${finalPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length} putnika',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: _isGpsTracking ? Colors.blue : Colors.green,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    );
-                  },
+                      ),
+                    // 🧭 RealTimeNavigationWidget UKLONJEN - koriste se samo kartice + dugme za mapu
+                    Expanded(
+                      child: PutnikList(
+                        putnici: finalPutnici,
+                        useProvidedOrder: _isListReordered,
+                        currentDriver: _currentDriver!,
+                        selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
+                        selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
+                        onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
+                        bcVremena: _getBcVremena(),
+                        vsVremena: _getVsVremena(),
+                      ),
+                    ),
+                  ],
                 ),
-          bottomNavigationBar: StreamBuilder<List<Putnik>>(
-            // 🔧 IDENTIČAN PRISTUP KAO HOME_SCREEN: dobijamo SVE putničke za dan, bez filtera
-            stream: _putnikService.streamKombinovaniPutniciFiltered(
-              isoDate: DateTime.now().toIso8601String().split('T')[0],
-              // UKLONJENO grad/vreme filteri da bi brojevi bili identični kao u home_screen
-            ),
-            builder: (context, snapshot) {
-              // Koristi prazan lista putnika ako nema podataka
-              final allPutnici = snapshot.hasData ? snapshot.data! : <Putnik>[];
+        ),
+      ],
+    );
+  }
 
-              // 🔧 REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
-              final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
-              final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
-              final countHelper = PutnikCountHelper.fromPutnici(
-                putnici: allPutnici,
-                targetDateIso: targetDateIso,
-                targetDayAbbr: targetDayAbbr,
-              );
+  // 🆕 IZDVOJENA METODA: Build Bottom Navigation Bar
+  Widget _buildBottomNavBar(BuildContext context, List<Putnik> allPutnici) {
+    // 🔧 REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
+    final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
+    final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
+    final countHelper = PutnikCountHelper.fromPutnici(
+      putnici: allPutnici,
+      targetDateIso: targetDateIso,
+      targetDayAbbr: targetDayAbbr,
+    );
 
-              // Helper funkcija za brojanje putnika
-              int getPutnikCount(String grad, String vreme) {
-                return countHelper.getCount(grad, vreme);
-              }
+    // Helper funkcija za brojanje putnika
+    int getPutnikCount(String grad, String vreme) {
+      return countHelper.getCount(grad, vreme);
+    }
 
-              // Return Widget - Helper funkcija za kreiranje nav bar-a
-              Widget buildNavBar(String navType) {
-                // Get full day name for VremeVozacService
-                final dayNames = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
-                final selectedDan = dayNames[DateTime.now().weekday - 1];
+    // Return Widget - Helper funkcija za kreiranje nav bar-a
+    Widget buildNavBar(String navType) {
+      // Get full day name for VremeVozacService
+      final dayNames = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+      final selectedDan = dayNames[DateTime.now().weekday - 1];
 
-                void onChanged(String grad, String vreme) {
-                  DriverLocationService.instance.stopTracking();
-                  if (mounted) {
-                    setState(() {
-                      _selectedGrad = grad;
-                      _selectedVreme = vreme;
-                      if (_isRouteOptimized) {
-                        _isRouteOptimized = false;
-                        _isListReordered = false;
-                        _optimizedRoute.clear();
-                        _currentPassengerIndex = 0;
-                      }
-                    });
-                  }
-                  TimerManager.debounce('danas_screen_reset_debounce', const Duration(milliseconds: 150), () async {
-                    final key = '$grad|$vreme';
-                    if (mounted) setState(() => _resettingSlots.add(key));
-                    try {
-                      await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver!);
-                    } finally {
-                      if (mounted) setState(() => _resettingSlots.remove(key));
-                    }
-                  });
-                }
+      void onChanged(String grad, String vreme) {
+        DriverLocationService.instance.stopTracking();
+        if (mounted) {
+          setState(() {
+            _selectedGrad = grad;
+            _selectedVreme = vreme;
+            if (_isRouteOptimized) {
+              _isRouteOptimized = false;
+              _isListReordered = false;
+              _optimizedRoute.clear();
+              _currentPassengerIndex = 0;
+            }
+          });
+        }
+        TimerManager.debounce('danas_screen_reset_debounce', const Duration(milliseconds: 150), () async {
+          final key = '$grad|$vreme';
+          if (mounted) setState(() => _resettingSlots.add(key));
+          try {
+            await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver!);
+          } finally {
+            if (mounted) setState(() => _resettingSlots.remove(key));
+          }
+        });
+      }
 
-                switch (navType) {
-                  case 'praznici':
-                    return BottomNavBarPraznici(
-                      sviPolasci: _sviPolasci,
-                      selectedGrad: _selectedGrad,
-                      selectedVreme: _selectedVreme,
-                      getPutnikCount: getPutnikCount,
-                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                      isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
-                      onPolazakChanged: onChanged,
-                      selectedDan: selectedDan,
-                    );
-                  case 'zimski':
-                    return BottomNavBarZimski(
-                      sviPolasci: _sviPolasci,
-                      selectedGrad: _selectedGrad,
-                      selectedVreme: _selectedVreme,
-                      getPutnikCount: getPutnikCount,
-                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                      isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
-                      onPolazakChanged: onChanged,
-                      selectedDan: selectedDan,
-                    );
-                  case 'letnji':
-                    return BottomNavBarLetnji(
-                      sviPolasci: _sviPolasci,
-                      selectedGrad: _selectedGrad,
-                      selectedVreme: _selectedVreme,
-                      getPutnikCount: getPutnikCount,
-                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                      isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
-                      onPolazakChanged: onChanged,
-                      selectedDan: selectedDan,
-                    );
-                  default: // 'auto'
-                    return isZimski(DateTime.now())
-                        ? BottomNavBarZimski(
-                            sviPolasci: _sviPolasci,
-                            selectedGrad: _selectedGrad,
-                            selectedVreme: _selectedVreme,
-                            getPutnikCount: getPutnikCount,
-                            getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                            isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
-                            onPolazakChanged: onChanged,
-                            selectedDan: selectedDan,
-                          )
-                        : BottomNavBarLetnji(
-                            sviPolasci: _sviPolasci,
-                            selectedGrad: _selectedGrad,
-                            selectedVreme: _selectedVreme,
-                            getPutnikCount: getPutnikCount,
-                            getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                            isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
-                            onPolazakChanged: onChanged,
-                            selectedDan: selectedDan,
-                          );
-                }
-              }
+      switch (navType) {
+        case 'praznici':
+          return BottomNavBarPraznici(
+            sviPolasci: _sviPolasci,
+            selectedGrad: _selectedGrad,
+            selectedVreme: _selectedVreme,
+            getPutnikCount: getPutnikCount,
+            getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+            isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+            onPolazakChanged: onChanged,
+            selectedDan: selectedDan,
+          );
+        case 'zimski':
+          return BottomNavBarZimski(
+            sviPolasci: _sviPolasci,
+            selectedGrad: _selectedGrad,
+            selectedVreme: _selectedVreme,
+            getPutnikCount: getPutnikCount,
+            getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+            isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+            onPolazakChanged: onChanged,
+            selectedDan: selectedDan,
+          );
+        case 'letnji':
+          return BottomNavBarLetnji(
+            sviPolasci: _sviPolasci,
+            selectedGrad: _selectedGrad,
+            selectedVreme: _selectedVreme,
+            getPutnikCount: getPutnikCount,
+            getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+            isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+            onPolazakChanged: onChanged,
+            selectedDan: selectedDan,
+          );
+        default: // 'auto'
+          return isZimski(DateTime.now())
+              ? BottomNavBarZimski(
+                  sviPolasci: _sviPolasci,
+                  selectedGrad: _selectedGrad,
+                  selectedVreme: _selectedVreme,
+                  getPutnikCount: getPutnikCount,
+                  getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                  isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+                  onPolazakChanged: onChanged,
+                  selectedDan: selectedDan,
+                )
+              : BottomNavBarLetnji(
+                  sviPolasci: _sviPolasci,
+                  selectedGrad: _selectedGrad,
+                  selectedVreme: _selectedVreme,
+                  getPutnikCount: getPutnikCount,
+                  getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+                  isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+                  onPolazakChanged: onChanged,
+                  selectedDan: selectedDan,
+                );
+      }
+    }
 
-              return ValueListenableBuilder<String>(
-                valueListenable: navBarTypeNotifier,
-                builder: (context, navType, _) => buildNavBar(navType),
-              );
-            },
-          ),
-        ), // Zatvaranje Scaffold
-      ), // Zatvaranje Container
-    ); // Zatvaranje AnnotatedRegion
+    return ValueListenableBuilder<String>(
+      valueListenable: navBarTypeNotifier,
+      builder: (context, navType, _) => buildNavBar(navType),
+    );
   }
 
   // 🗺️ SAMO OTVORI NAVIGACIJU - GPS tracking je već pokrenut nakon "Ruta" dugmeta

@@ -1,11 +1,14 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/vozac.dart';
 
 /// Servis za upravljanje vozačima
 class VozacService {
-  VozacService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? Supabase.instance.client;
-  final SupabaseClient _supabase;
+  VozacService({SupabaseClient? supabaseClient}) : _supabaseOverride = supabaseClient;
+  final SupabaseClient? _supabaseOverride;
+
+  SupabaseClient get _supabase => _supabaseOverride ?? supabase;
 
   /// Dohvata sve vozače
   Future<List<Vozac>> getAllVozaci() async {

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../utils/grad_adresa_validator.dart';
 import 'realtime/realtime_manager.dart';
@@ -13,8 +14,10 @@ import 'voznje_log_service.dart'; // 🔄 DODATO za istoriju vožnji
 
 /// Servis za upravljanje mesečnim putnicima (normalizovana šema)
 class RegistrovaniPutnikService {
-  RegistrovaniPutnikService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? Supabase.instance.client;
-  final SupabaseClient _supabase;
+  RegistrovaniPutnikService({SupabaseClient? supabaseClient}) : _supabaseOverride = supabaseClient;
+  final SupabaseClient? _supabaseOverride;
+
+  SupabaseClient get _supabase => _supabaseOverride ?? supabase;
 
   // 🔧 SINGLETON PATTERN za realtime stream - koristi RealtimeManager
   static StreamController<List<RegistrovaniPutnik>>? _sharedController;
@@ -69,7 +72,6 @@ class RegistrovaniPutnikService {
   /// Dohvata mesečnog putnika po imenu (legacy compatibility)
   static Future<RegistrovaniPutnik?> getRegistrovaniPutnikByIme(String ime) async {
     try {
-      final supabase = Supabase.instance.client;
       final response =
           await supabase.from('registrovani_putnici').select().eq('putnik_ime', ime).eq('obrisan', false).single();
 
@@ -101,8 +103,6 @@ class RegistrovaniPutnikService {
 
     // Kreiraj novi shared controller
     _sharedController = StreamController<List<RegistrovaniPutnik>>.broadcast();
-
-    final supabase = Supabase.instance.client;
 
     // Učitaj inicijalne podatke
     _fetchAndEmit(supabase);
@@ -610,7 +610,6 @@ class RegistrovaniPutnikService {
   /// 🔄 POJEDNOSTAVLJENO: Koristi registrovani_putnici direktno
   static Future<List<Map<String, dynamic>>> getZakupljenoDanas() async {
     try {
-      final supabase = Supabase.instance.client;
       final response = await supabase
           .from('registrovani_putnici')
           .select()
@@ -636,7 +635,6 @@ class RegistrovaniPutnikService {
     String mesecniPutnikId,
   ) async {
     try {
-      final supabase = Supabase.instance.client;
       final response =
           await supabase.from('voznje_log').select('datum').eq('putnik_id', mesecniPutnikId).eq('tip', 'voznja');
 
@@ -658,7 +656,6 @@ class RegistrovaniPutnikService {
     String mesecniPutnikId,
   ) async {
     try {
-      final supabase = Supabase.instance.client;
       final response =
           await supabase.from('voznje_log').select('datum').eq('putnik_id', mesecniPutnikId).eq('tip', 'otkazivanje');
 
@@ -704,7 +701,6 @@ class RegistrovaniPutnikService {
   /// 🔥 Stream poslednjeg plaćanja za putnika (iz voznje_log)
   /// Vraća Map sa 'vozac_ime', 'datum' i 'iznos'
   static Stream<Map<String, dynamic>?> streamPoslednjePlacanje(String putnikId) async* {
-    final supabase = Supabase.instance.client;
     try {
       final response = await supabase
           .from('voznje_log')
@@ -740,7 +736,6 @@ class RegistrovaniPutnikService {
 
   /// 💰 Dohvati UKUPNO plaćeno za putnika (svi uplate)
   static Future<double> dohvatiUkupnoPlaceno(String putnikId) async {
-    final supabase = Supabase.instance.client;
     try {
       final response = await supabase
           .from('voznje_log')
@@ -772,7 +767,6 @@ class RegistrovaniPutnikService {
     }
 
     _sharedSviController = StreamController<List<RegistrovaniPutnik>>.broadcast();
-    final supabase = Supabase.instance.client;
 
     _fetchAndEmitSvi(supabase);
     _setupRealtimeSubscriptionSvi(supabase);

@@ -9,6 +9,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
+
 /// Servis za generisanje i štampanje računa za fizička lica
 class RacunService {
   // ========== FONTOVI SA PODRŠKOM ZA SRPSKA SLOVA ==========
@@ -44,7 +46,7 @@ class RacunService {
       'Račun je punovažan bez pečata i potpisa u skladu sa Zakonom o privrednim društvima';
 
   // ========== AUTO-INCREMENT BROJ RAČUNA (BAZA) ==========
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Vraća sledeći broj računa u formatu "X/YYYY" i automatski uvećava brojač u BAZI
   /// Atomska operacija - sprečava duplikate između vozača

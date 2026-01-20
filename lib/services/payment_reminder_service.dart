@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import 'cena_obracun_service.dart';
 import 'push_token_service.dart';
@@ -10,7 +11,7 @@ import 'realtime_notification_service.dart';
 /// - 27. u mesecu: podsetnik pre roka
 /// - 5. u mesecu: podsetnik posle roka
 class PaymentReminderService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Glavna funkcija - proverava i šalje podsetnik ako treba
   /// Poziva se na app startup (main.dart)

@@ -1,9 +1,8 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
@@ -17,7 +16,6 @@ import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
 import '../services/local_notification_service.dart';
-import '../services/popis_service.dart'; // 📊 Centralizovani popis servis
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/racun_service.dart';
@@ -56,7 +54,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Logging using dlog function from logging.dart
   final PutnikService _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
-  final SupabaseClient supabase = Supabase.instance.client;
 
   bool _isLoading = true;
   // bool _isAddingPutnik = false; // previously used loading state; now handled local to dialog
@@ -68,8 +65,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // (removed overlay support for now) - will use DropdownButton2 built-in overlay
 
   String? _currentDriver;
-
-  bool _isPopisLoading = false; // 📊 Loading state za POPIS dugme
 
   // 👆 Biometrija
   bool _biometricAvailable = false;
@@ -724,7 +719,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// Prikazuje dijalog za ručni unos računa (za nekoga ko nije registrovan)
   void _showNoviRacunDialog(BuildContext context) {
     final imeController = TextEditingController();
     final iznosController = TextEditingController();
@@ -937,60 +931,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     if (shouldLogout == true && mounted) {
       await AuthManager.logout(context);
-    }
-  }
-
-  // 📊 POPIS DANA - KORISTI CENTRALIZOVANI POPIS SERVICE
-  Future<void> _showPopisDana() async {
-    if (_currentDriver == null || _currentDriver!.isEmpty || !VozacBoja.isValidDriver(_currentDriver)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Morate biti ulogovani i ovlašćeni da biste koristili Popis.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
-    final vozac = _currentDriver!;
-
-    // Pokreni loading indikator
-    if (mounted) setState(() => _isPopisLoading = true);
-
-    try {
-      // 1. UČITAJ PODATKE PREKO POPIS SERVICE
-      final popisData = await PopisService.loadPopisData(
-        vozac: vozac,
-        selectedGrad: _selectedGrad,
-        selectedVreme: _selectedVreme,
-      );
-
-      // 2. PRIKAŽI DIALOG
-      if (!mounted) return;
-      final bool sacuvaj = await PopisService.showPopisDialog(context, popisData);
-
-      // 3. SAČUVAJ AKO JE POTVRĐEN
-      if (sacuvaj) {
-        await PopisService.savePopis(popisData);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Popis je uspešno sačuvan!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Greška pri učitavanju popisa: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isPopisLoading = false);
     }
   }
 
@@ -2616,30 +2556,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     builder: (ctx) => PromenaSifreScreen(vozacIme: vozac),
                                   ),
                                 );
-                              } else if (value == 'popis') {
-                                _showPopisDana();
                               } else if (value == 'biometric') {
                                 _toggleBiometric();
                               }
                             },
                             itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'popis',
-                                enabled: !_isPopisLoading,
-                                child: Row(
-                                  children: [
-                                    _isPopisLoading
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(strokeWidth: 2),
-                                          )
-                                        : const Icon(Icons.list_alt, color: Colors.teal),
-                                    const SizedBox(width: 8),
-                                    const Text('Popis'),
-                                  ],
-                                ),
-                              ),
                               const PopupMenuItem(
                                 value: 'sifra',
                                 child: Row(

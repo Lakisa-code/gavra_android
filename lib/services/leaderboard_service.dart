@@ -1,10 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
+
 /// 🏆💀 LEADERBOARD SERVICE
 /// Wall of Fame / Wall of Shame sistem
 /// Računa uspešnost putnika po tipu (učenik/radnik) za tekući mesec
 class LeaderboardService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Dohvati leaderboard za određeni tip putnika
   /// Vraća Top 5 (najbolji) i Bottom 5 (najgori)

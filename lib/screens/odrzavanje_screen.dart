@@ -403,13 +403,13 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
               icon: '🛞',
               label: 'Gume prednje',
               value: v.gumePrednjeOpis ?? v.gumeOpis ?? '-',
-              subtitle: v.gumePrednjeDatum != null
-                  ? 'Menjane: ${Vozilo.formatDatum(v.gumePrednjeDatum)}'
-                  : v.gumeDatum != null
-                      ? 'Menjane: ${Vozilo.formatDatum(v.gumeDatum)}'
-                      : null,
-              onEdit: () =>
-                  _editGumeField('prednje', v.gumePrednjeDatum ?? v.gumeDatum, v.gumePrednjeOpis ?? v.gumeOpis),
+              subtitle: _formatGumeSubtitle(v.gumePrednjeDatum ?? v.gumeDatum, v.gumePrednjeKm),
+              onEdit: () => _editGumeField(
+                'prednje',
+                v.gumePrednjeDatum ?? v.gumeDatum,
+                v.gumePrednjeOpis ?? v.gumeOpis,
+                v.gumePrednjeKm,
+              ),
             ),
 
             // Gume zadnje
@@ -417,8 +417,8 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
               icon: '🛞',
               label: 'Gume zadnje',
               value: v.gumeZadnjeOpis ?? '-',
-              subtitle: v.gumeZadnjeDatum != null ? 'Menjane: ${Vozilo.formatDatum(v.gumeZadnjeDatum)}' : null,
-              onEdit: () => _editGumeField('zadnje', v.gumeZadnjeDatum, v.gumeZadnjeOpis),
+              subtitle: _formatGumeSubtitle(v.gumeZadnjeDatum, v.gumeZadnjeKm),
+              onEdit: () => _editGumeField('zadnje', v.gumeZadnjeDatum, v.gumeZadnjeOpis, v.gumeZadnjeKm),
             ),
 
             const Divider(height: 32),
@@ -442,6 +442,14 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     if (datum == null && km == null) return '-';
     final parts = <String>[];
     if (datum != null) parts.add(Vozilo.formatDatum(datum));
+    if (km != null) parts.add('${_formatBroja.format(km)} km');
+    return parts.join(' • ');
+  }
+
+  String? _formatGumeSubtitle(DateTime? datum, int? km) {
+    if (datum == null && km == null) return null;
+    final parts = <String>[];
+    if (datum != null) parts.add('Menjane: ${Vozilo.formatDatum(datum)}');
     if (km != null) parts.add('${_formatBroja.format(km)} km');
     return parts.join(' • ');
   }
@@ -698,9 +706,10 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     );
   }
 
-  void _editGumeField(String pozicija, DateTime? datum, String? opis) {
+  void _editGumeField(String pozicija, DateTime? datum, String? opis, int? km) {
     DateTime? selectedDatum = datum;
     final opisController = TextEditingController(text: opis ?? '');
+    final kmController = TextEditingController(text: km?.toString() ?? '');
     final isPrednje = pozicija == 'prednje';
     final label = isPrednje ? 'Gume prednje' : 'Gume zadnje';
 
@@ -821,6 +830,20 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Kilometraža
+                  TextField(
+                    controller: kmController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Kilometraža',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.speed),
+                      suffixText: 'km',
+                      hintText: 'npr. 85000',
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   ElevatedButton.icon(
@@ -839,15 +862,19 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                         finalOpis += finalOpis.isNotEmpty ? ' ${opisController.text}' : opisController.text;
                       }
 
+                      final kmValue = int.tryParse(kmController.text);
+
                       // Sačuvaj u vozila tabelu
                       final updateData = isPrednje
                           ? {
                               'gume_prednje_datum': selectedDatum?.toIso8601String().split('T')[0],
                               'gume_prednje_opis': finalOpis.isEmpty ? null : finalOpis,
+                              'gume_prednje_km': kmValue,
                             }
                           : {
                               'gume_zadnje_datum': selectedDatum?.toIso8601String().split('T')[0],
                               'gume_zadnje_opis': finalOpis.isEmpty ? null : finalOpis,
+                              'gume_zadnje_km': kmValue,
                             };
 
                       final success = await VozilaService.updateKolskaKnjiga(
@@ -861,6 +888,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                           voziloId: _selectedVozilo!.id,
                           tip: isPrednje ? 'gume_prednje' : 'gume_zadnje',
                           datum: selectedDatum,
+                          km: kmValue,
                           opis: finalOpis.isEmpty ? null : finalOpis,
                           pozicija: pozicija,
                         );

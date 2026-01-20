@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 
 /// 💰 Servis za obračun mesečne cene za putnike
@@ -10,7 +11,7 @@ import '../models/registrovani_putnik.dart';
 /// - DNEVNI: Po dogovoru (mora imati custom cenu)
 /// - CUSTOM CENA PO DANU: Ako putnik ima postavljenu custom cenu, koristi se ona
 class CenaObracunService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Default cenovnik po tipu putnika (po danu)
   static const double defaultCenaRadnikPoDanu = 700.0;

@@ -1,11 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/constants.dart';
+import '../globals.dart';
 
 /// 🕵️ ADMIN AUDIT SERVICE
 /// Beleži sve akcije admina radi sigurnosti i istorije promena.
 class AdminAuditService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Loguje admin akciju
   static Future<void> logAction({

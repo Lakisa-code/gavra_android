@@ -15,7 +15,18 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// Globalna instanca Supabase klijenta
 /// Koristi se u svim servisima umesto kreiranja novih instanci
-final SupabaseClient supabase = Supabase.instance.client;
+/// 🛡️ Koristi GETTER da izbegneš crash pri library load-u pre Supabase.initialize()
+SupabaseClient get supabase => Supabase.instance.client;
+
+/// 🛡️ Provera da li je Supabase spreman za rad (da ne bi pucao call stack)
+bool get isSupabaseReady {
+  try {
+    Supabase.instance.client;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 /// 🚌 NAV BAR TYPE - tip bottom navigation bara
 /// 'auto' = automatski (zimski/letnji po datumu)

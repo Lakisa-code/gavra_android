@@ -1,12 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import 'vozac_mapping_service.dart';
 
 /// Servis za upravljanje istorijom vožnji
 /// MINIMALNA tabela: putnik_id, datum, tip (voznja/otkazivanje/uplata), iznos, vozac_id
 /// ✅ TRAJNO REŠENJE: Sve statistike se čitaju iz ove tabele
 class VoznjeLogService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// 📊 STATISTIKE ZA POPIS - Broj vožnji, otkazivanja i uplata po vozaču za određeni datum
   /// Vraća mapu: {voznje: X, otkazivanja: X, uplate: X, pazar: X.X}

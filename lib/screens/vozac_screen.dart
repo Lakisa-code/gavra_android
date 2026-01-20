@@ -81,6 +81,7 @@ class _VozacScreenState extends State<VozacScreen> {
   bool _isListReordered = false;
   bool _isGpsTracking = false; // 🛰️ GPS tracking status
   bool _isPopisLoading = false; // 📋 Loading state za POPIS dugme
+  bool _isPopisSaved = false; // 📋 Da li je popis već sačuvan danas
 
   // 🕒 THROTTLING ZA REALTIME SYNC - sprečava prekomerne UI rebuilde
   // ✅ Povećano na 800ms da spreči race conditions, ali i dalje dovoljno brzo za UX
@@ -134,6 +135,7 @@ class _VozacScreenState extends State<VozacScreen> {
     _initializeCurrentDriver();
     _initializeNotifications();
     _initializeGpsTracking();
+    _checkIfPopisSaved();
   }
 
   // 🛰️ GPS TRACKING INICIJALIZACIJA
@@ -143,6 +145,15 @@ class _VozacScreenState extends State<VozacScreen> {
 
     // Subscribe to driver position updates
     _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {});
+  }
+
+  // 📋 PROVERA DA LI JE POPIS SAČUVAN
+  Future<void> _checkIfPopisSaved() async {
+    if (_currentDriver == null) return;
+    final isSaved = await DailyCheckInService.isPopisSavedToday(_currentDriver!);
+    if (mounted) {
+      setState(() => _isPopisSaved = isSaved);
+    }
   }
 
   @override
@@ -427,7 +438,7 @@ class _VozacScreenState extends State<VozacScreen> {
       return; // Ne ažuriraj state ovde, _autoReoptimizeRoute će to uraditi
     }
 
-    // Samo ažuriraj ako ima promena (bez novih/otkazanih putnika)
+    // Samo ažuraj ako ima promena (bez novih/otkazanih putnika)
     if (hasChanges && mounted) {
       setState(() {
         _optimizedRoute = updatedRoute;
@@ -805,18 +816,18 @@ class _VozacScreenState extends State<VozacScreen> {
       builder: (context, snapshot) {
         // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return SizedBox(
-            height: 26,
-            child: ElevatedButton(
-              onPressed: null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey.shade400,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              ),
-              child: const SizedBox(
-                width: 16,
-                height: 16,
+          return Container(
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _getBorderColor(Colors.grey)),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 14,
+                height: 14,
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               ),
             ),
@@ -825,16 +836,19 @@ class _VozacScreenState extends State<VozacScreen> {
 
         // Error state
         if (snapshot.hasError) {
-          return SizedBox(
-            height: 26,
-            child: ElevatedButton(
-              onPressed: null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          return Container(
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _getBorderColor(Colors.red)),
+            ),
+            child: const Center(
+              child: Text(
+                '!',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
               ),
-              child: const Text('!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           );
         }
@@ -874,42 +888,46 @@ class _VozacScreenState extends State<VozacScreen> {
           return true;
         }).toList();
 
-        final hasPassengers = filtriraniPutnici.isNotEmpty;
         final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
+        final bool canPress = !_isLoading && isDriverValid;
 
-        return SizedBox(
-          height: 26,
-          child: ElevatedButton(
-            onPressed: _isLoading || !isDriverValid
-                ? null
-                : () {
-                    if (_isGpsTracking) {
-                      // ZAUSTAVI GPS tracking
-                      _stopGpsTracking();
-                    } else if (_isRouteOptimized) {
-                      // POKRENI GPS tracking
-                      _startGpsTracking();
-                    } else {
-                      // OPTIMIZUJ RUTU + POKRENI GPS tracking
-                      _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: false);
-                    }
-                  },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _isGpsTracking
-                  ? Colors.orange.shade700
-                  : (_isRouteOptimized
-                      ? Colors.green.shade600
-                      : (hasPassengers ? Theme.of(context).primaryColor : Colors.grey.shade400)),
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              elevation: hasPassengers ? 2 : 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                _isGpsTracking ? 'STOP' : 'START',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        final baseColor = _isGpsTracking ? Colors.orange : (_isRouteOptimized ? Colors.green : Colors.white);
+
+        return InkWell(
+          onTap: canPress
+              ? () {
+                  if (_isGpsTracking) {
+                    _stopGpsTracking();
+                  } else if (_isRouteOptimized) {
+                    _startGpsTracking();
+                  } else {
+                    _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: false);
+                  }
+                }
+              : null,
+          borderRadius: BorderRadius.circular(8),
+          child: Opacity(
+            opacity: 1.0,
+            child: Container(
+              height: 30,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: baseColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _getBorderColor(baseColor)),
+              ),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _isGpsTracking ? 'STOP' : 'START',
+                    style: TextStyle(
+                      color: baseColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -930,27 +948,42 @@ class _VozacScreenState extends State<VozacScreen> {
                 ? Colors.orange
                 : speed > 0
                     ? Colors.green
-                    : Theme.of(context).colorScheme.onSurface;
+                    : Colors.white; // ⚪ Koristi čisto belu, pa ćemo je 'utišati' sa alpha na pozadini
 
-        return SizedBox(
-          height: 26,
+        return Opacity(
+          opacity: 1.0,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: speedColor.withValues(alpha: 0.4)),
+              color: speedColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _getBorderColor(speedColor)),
             ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                speed.toStringAsFixed(0),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: speedColor,
-                  fontFamily: 'monospace',
-                ),
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      speed.toStringAsFixed(0),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: speedColor,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                  if (speed > 0) ...[
+                    const SizedBox(width: 2),
+                    const Text(
+                      'km/h',
+                      style: TextStyle(color: Colors.white54, fontSize: 8),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -963,33 +996,34 @@ class _VozacScreenState extends State<VozacScreen> {
   Widget _buildMapsButton() {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
     final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
-    return SizedBox(
-      height: 26,
-      child: ElevatedButton(
-        onPressed: hasOptimizedRoute && isDriverValid ? _openHereWeGoNavigation : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: hasOptimizedRoute ? Colors.blue.shade600 : Colors.grey.shade400,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          elevation: hasOptimizedRoute ? 2 : 1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        ),
-        child: const FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.navigation,
-                size: 10,
-                color: Colors.white,
+    final bool canPress = hasOptimizedRoute && isDriverValid;
+    final baseColor = hasOptimizedRoute ? Colors.blue : Colors.white;
+
+    return InkWell(
+      onTap: canPress ? _openHereWeGoNavigation : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Opacity(
+        opacity: 1.0,
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: baseColor.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _getBorderColor(baseColor)),
+          ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                'MAPA',
+                style: TextStyle(
+                  color: baseColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
-              SizedBox(width: 2),
-              Text(
-                'NAV',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1148,27 +1182,42 @@ class _VozacScreenState extends State<VozacScreen> {
   // 📋 POPIS DUGME - IDENTIČNO KAO DANAS SCREEN
   Widget _buildPopisButton() {
     final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
-    return SizedBox(
-      height: 26,
-      child: ElevatedButton(
-        onPressed: (!isDriverValid || _isPopisLoading) ? null : () => _showPopisDana(),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _isPopisLoading ? Colors.grey.shade400 : Theme.of(context).colorScheme.secondary,
-          foregroundColor: Theme.of(context).colorScheme.onSecondary,
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    final bool canPress = isDriverValid && !_isPopisLoading;
+    final baseColor = _isPopisSaved ? Colors.green : Colors.white;
+
+    return InkWell(
+      onTap: canPress ? () => _showPopisDana() : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Opacity(
+        opacity: 1.0,
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: baseColor.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _getBorderColor(baseColor)),
+          ),
+          child: Center(
+            child: _isPopisLoading
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'POPIS',
+                      style: TextStyle(
+                        color: baseColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+          ),
         ),
-        child: _isPopisLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text('POPIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
-              ),
       ),
     );
   }
@@ -1207,6 +1256,7 @@ class _VozacScreenState extends State<VozacScreen> {
       if (sacuvaj) {
         await PopisService.savePopis(popisData);
         if (mounted) {
+          setState(() => _isPopisSaved = true);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('✅ Popis je uspešno sačuvan!'),
@@ -1293,18 +1343,18 @@ class _VozacScreenState extends State<VozacScreen> {
                     return const Center(child: CircularProgressIndicator(color: Colors.white));
                   }
 
-                  // 🎯 FILTER: Prikaži SVE putnike na kojima je vozač bio aktivan danas
+                  // 🎯 FILTER: Prikaži SVE putnike na kojima je vozač bio aktivan DANAS
                   // (dodeljeni, pokupljeni, naplaćeni ili otkazani od strane ovog vozača)
                   final sviPutnici = snapshot.data ?? [];
                   final mojiPutnici = sviPutnici.where((p) {
                     // Dodeljeni putnike
                     if (p.dodeljenVozac == _currentDriver) return true;
-                    // Pokupljeni od ovog vozača
-                    if (p.pokupioVozac == _currentDriver) return true;
-                    // Naplaćeni od ovog vozača
-                    if (p.naplatioVozac == _currentDriver) return true;
-                    // Otkazani od ovog vozača
-                    if (p.otkazaoVozac == _currentDriver) return true;
+                    // Pokupljeni od ovog vozača DANAS (proveri da li postoji vremePokupljenja)
+                    if (p.pokupioVozac == _currentDriver && p.vremePokupljenja != null) return true;
+                    // Naplaćeni od ovog vozača DANAS (proveri da li postoji vremePlacanja)
+                    if (p.naplatioVozac == _currentDriver && p.vremePlacanja != null) return true;
+                    // Otkazani od ovog vozača DANAS (proveri da li postoji vremeOtkazivanja)
+                    if (p.otkazaoVozac == _currentDriver && p.vremeOtkazivanja != null) return true;
                     return false;
                   }).toList();
 
@@ -1484,12 +1534,15 @@ class _VozacScreenState extends State<VozacScreen> {
           builder: (context, snapshot) {
             final allPutnici = snapshot.data ?? <Putnik>[];
 
-            // 🎯 FILTER: Svi putnici na kojima je vozač bio aktivan
+            // 🎯 FILTER: Svi putnici na kojima je vozač bio aktivan DANAS
             final mojiPutnici = allPutnici.where((p) {
               if (p.dodeljenVozac == _currentDriver) return true;
-              if (p.pokupioVozac == _currentDriver) return true;
-              if (p.naplatioVozac == _currentDriver) return true;
-              if (p.otkazaoVozac == _currentDriver) return true;
+              // Pokupljeni od ovog vozača DANAS (proveri da li postoji vremePokupljenja)
+              if (p.pokupioVozac == _currentDriver && p.vremePokupljenja != null) return true;
+              // Naplaćeni od ovog vozača DANAS (proveri da li postoji vremePlacanja)
+              if (p.naplatioVozac == _currentDriver && p.vremePlacanja != null) return true;
+              // Otkazani od ovog vozača DANAS (proveri da li postoji vremeOtkazivanja)
+              if (p.otkazaoVozac == _currentDriver && p.vremeOtkazivanja != null) return true;
               return false;
             }).toList();
 
@@ -1648,21 +1701,22 @@ class _VozacScreenState extends State<VozacScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        height: 26,
+        height: 30,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
+          color: color.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _getBorderColor(color)),
         ),
         child: Center(
           child: icon != null
-              ? Icon(icon, color: Colors.white, size: 14)
+              ? Icon(icon, color: color, size: 14)
               : Text(
                   label ?? '',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: color,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),

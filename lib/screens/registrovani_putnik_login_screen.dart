@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../services/biometric_service.dart';
 import '../services/pin_zahtev_service.dart';
 import '../services/putnik_push_service.dart';
 import '../theme.dart';
 import 'registrovani_putnik_profil_screen.dart';
 
-/// 📱 REGISTROVANI PUTNIK LOGIN SCREEN
-/// Flow: telefon → (ako nema email) email → (ako nema PIN) zahtev ili (ako ima) unos PIN-a
 class RegistrovaniPutnikLoginScreen extends StatefulWidget {
   const RegistrovaniPutnikLoginScreen({Key? key}) : super(key: key);
 
@@ -123,11 +121,11 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       final normalizedInput = _normalizePhone(telefon);
 
       // Traži putnika - dohvati sve i uporedi normalizovane brojeve
-      final allPutnici = await Supabase.instance.client.from('registrovani_putnici').select().eq('obrisan', false);
+      final allPutnici = await supabase.from('registrovani_putnici').select().eq('obrisan', false);
 
       // Pronađi putnika sa istim normalizovanim brojem
       Map<String, dynamic>? response;
-      for (final p in allPutnici as List) {
+      for (final p in allPutnici) {
         final storedPhone = p['broj_telefona'] as String? ?? '';
         if (_normalizePhone(storedPhone) == normalizedInput) {
           response = Map<String, dynamic>.from(p);
@@ -363,12 +361,11 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       final normalizedInput = _normalizePhone(telefon);
 
       // Traži putnika - dohvati sve sa PIN-om i uporedi normalizovane brojeve
-      final allPutnici =
-          await Supabase.instance.client.from('registrovani_putnici').select().eq('pin', pin).eq('obrisan', false);
+      final allPutnici = await supabase.from('registrovani_putnici').select().eq('pin', pin).eq('obrisan', false);
 
       // Pronađi putnika sa istim normalizovanim brojem
       Map<String, dynamic>? response;
-      for (final p in allPutnici as List) {
+      for (final p in allPutnici) {
         final storedPhone = p['broj_telefona'] as String? ?? '';
         if (_normalizePhone(storedPhone) == normalizedInput) {
           response = Map<String, dynamic>.from(p);

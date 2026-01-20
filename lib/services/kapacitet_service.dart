@@ -11,7 +11,7 @@ import 'realtime/realtime_manager.dart';
 /// 🎫 Servis za upravljanje kapacitetom polazaka
 /// Omogućava realtime prikaz slobodnih mesta i admin kontrolu
 class KapacitetService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   // Cache za kapacitet da smanjimo upite
   static Map<String, Map<String, int>>? _kapacitetCache;

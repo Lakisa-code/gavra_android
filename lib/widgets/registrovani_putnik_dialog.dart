@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/registrovani_putnik_service.dart';
@@ -1449,10 +1449,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     final normalized = _normalizePhoneNumber(telefon);
 
     try {
-      final response = await Supabase.instance.client
-          .from('registrovani_putnici')
-          .select('id, putnik_ime, broj_telefona')
-          .eq('obrisan', false);
+      final response =
+          await supabase.from('registrovani_putnici').select('id, putnik_ime, broj_telefona').eq('obrisan', false);
 
       for (final row in response as List) {
         final existingPhone = row['broj_telefona'] as String?;

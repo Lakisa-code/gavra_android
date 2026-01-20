@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/calendar_config.dart';
+import '../globals.dart';
 
 /// 🤖 Machine Learning Service
 ///
@@ -13,7 +14,7 @@ import '../config/calendar_config.dart';
 /// - Trenira modele automatski
 
 class MLService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
   static Map<String, double> _modelCoefficients = {};
   static final Map<String, PassengerScore> _passengerScoreCache = {};
   static DateTime? _lastCacheUpdate;

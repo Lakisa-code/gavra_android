@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart' as globals_file;
 import '../models/putnik.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
@@ -40,7 +41,7 @@ class _StreamParams {
 }
 
 class PutnikService {
-  final supabase = Supabase.instance.client;
+  SupabaseClient get supabase => globals_file.supabase;
 
   static final Map<String, StreamController<List<Putnik>>> _streams = {};
   static final Map<String, List<Putnik>> _lastValues = {};
@@ -63,6 +64,19 @@ class PutnikService {
     RealtimeManager.instance.unsubscribe('registrovani_putnici');
     _globalSubscription = null;
     _isSubscribed = false;
+  }
+
+  /// 🆕 Zatvori specifičan stream po ključu
+  static void closeStream({String? isoDate, String? grad, String? vreme}) {
+    final key = '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
+    final controller = _streams[key];
+    if (controller != null && !controller.isClosed) {
+      controller.close();
+    }
+    _streams.remove(key);
+    _lastValues.remove(key);
+    _streamParams.remove(key);
+    print('🔴 DEBUG: Stream zatvoren key=$key');
   }
 
   String _streamKey({String? isoDate, String? grad, String? vreme}) {

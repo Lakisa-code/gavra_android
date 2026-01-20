@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import 'openrouteservice.dart';
 import 'permission_service.dart';
 
@@ -110,34 +110,20 @@ class DriverLocationService {
     return true;
   }
 
-  /// Zaustavi praćenje lokacije
+  /// Ručno stopiranje tracking-a
   Future<void> stopTracking() async {
-    if (!_isTracking) return;
-
-    // 🆕 Sačuvaj vozacId pre cleanup-a
-    final vozacIdToDeactivate = _currentVozacId;
-
     _locationTimer?.cancel();
-    _locationTimer = null;
-
     _etaTimer?.cancel();
-    _etaTimer = null;
+    _positionSubscription?.cancel();
 
-    await _positionSubscription?.cancel();
-    _positionSubscription = null;
-
-    // 🆕 Deaktiviraj vozača u Supabase - putnici više neće videti stari ETA
-    if (vozacIdToDeactivate != null) {
+    if (_isTracking && _currentVozacId != null) {
       try {
-        debugPrint('🛑 Deaktiviram vozača: $vozacIdToDeactivate');
-        await Supabase.instance.client.from('vozac_lokacije').update({
+        await supabase.from('vozac_lokacije').update({
           'aktivan': false,
-          'putnici_eta': null,
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('vozac_id', vozacIdToDeactivate);
-        debugPrint('✅ Vozač deaktiviran uspešno');
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('vozac_id', _currentVozacId!);
       } catch (e) {
-        debugPrint('❌ Greška pri deaktivaciji vozača: $e');
+        debugPrint('❌ [DriverLocation] Stop error: $e');
       }
     }
 
@@ -262,7 +248,7 @@ class DriverLocationService {
       // 🚗 Add position to history
       _todayPositions.add(LatLng(position.latitude, position.longitude));
 
-      await Supabase.instance.client.from('vozac_lokacije').upsert({
+      await supabase.from('vozac_lokacije').upsert({
         'vozac_id': _currentVozacId,
         'vozac_ime': _currentVozacIme,
         'lat': position.latitude,
@@ -302,7 +288,7 @@ class DriverLocationService {
     if (!_isTracking || _currentVozacId == null) return;
 
     try {
-      await Supabase.instance.client.from('vozac_lokacije').upsert({
+      await supabase.from('vozac_lokacije').upsert({
         'vozac_id': _currentVozacId,
         'vozac_ime': _currentVozacIme,
         'lat': position.latitude,
@@ -319,6 +305,30 @@ class DriverLocationService {
     }
   }
 
+  /// 🔄 RESET VOZAC LOKACIJA (poziva se pri odjavi ili u ponoć)
+  static Future<void> resetAllVozacLokacije() async {
+    try {
+      await supabase.from('vozac_lokacije').upsert({
+        'aktivan': false,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('❌ [DriverLocation] Global reset error: $e');
+    }
+  }
+
+  /// Dohvati sve aktivne vozače (za screening)
+  static Future<List<Map<String, dynamic>>> getAktivniVozaci() async {
+    try {
+      var query = supabase.from('vozac_lokacije').select().eq('aktivan', true);
+
+      final response = await query;
+      return response;
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// Dohvati aktivnu lokaciju vozača (za putnika)
   static Future<Map<String, dynamic>?> getActiveDriverLocation({
     required String grad,
@@ -326,7 +336,7 @@ class DriverLocationService {
     String? smer,
   }) async {
     try {
-      var query = Supabase.instance.client
+      var query = supabase
           .from('vozac_lokacije')
           .select()
           .eq('aktivan', true) // ✅ Filtrira samo aktivne vozače

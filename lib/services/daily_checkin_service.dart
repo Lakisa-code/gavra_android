@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import 'realtime/realtime_manager.dart';
 import 'statistika_service.dart';
 import 'voznje_log_service.dart';
@@ -52,7 +52,6 @@ class DailyCheckInService {
     StreamController<double> controller,
   ) async {
     try {
-      final supabase = Supabase.instance.client;
       debugPrint('🔍 [Kusur] Fetching kusur for vozac=$vozac, datum=$today');
       final data = await supabase
           .from('daily_reports')
@@ -152,7 +151,7 @@ class DailyCheckInService {
     final todayStr = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
 
     try {
-      final response = await Supabase.instance.client
+      final response = await supabase
           .from('daily_reports')
           .select('sitan_novac')
           .eq('vozac', vozac)
@@ -201,7 +200,7 @@ class DailyCheckInService {
   static Future<double?> getTodayAmount(String vozac) async {
     try {
       final today = DateTime.now().toIso8601String().split('T')[0];
-      final data = await Supabase.instance.client
+      final data = await supabase
           .from('daily_reports')
           .select('sitan_novac')
           .eq('vozac', vozac)
@@ -213,13 +212,29 @@ class DailyCheckInService {
     }
   }
 
+  /// 📋 Proveri da li je popis već sačuvan za danas
+  static Future<bool> isPopisSavedToday(String vozac) async {
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final data = await supabase
+          .from('daily_reports')
+          .select('pokupljeni_putnici')
+          .eq('vozac', vozac)
+          .eq('datum', today)
+          .maybeSingle();
+      // Popis je sačuvan ako postoji zapis sa pokupljenim putnicima
+      return data != null && data['pokupljeni_putnici'] != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Sačuvaj u Supabase tabelu daily_reports
   static Future<Map<String, dynamic>?> _saveToSupabase(
     String vozac,
     double sitanNovac,
     DateTime datum,
   ) async {
-    final supabase = Supabase.instance.client;
     try {
       final response = await supabase
           .from('daily_reports')
@@ -258,7 +273,7 @@ class DailyCheckInService {
   /// 📊 NOVI: Dohvati poslednji popis za vozača - DIREKTNO IZ BAZE
   static Future<Map<String, dynamic>?> getLastDailyReport(String vozac) async {
     try {
-      final data = await Supabase.instance.client
+      final data = await supabase
           .from('daily_reports')
           .select()
           .eq('vozac', vozac)
@@ -282,12 +297,7 @@ class DailyCheckInService {
   static Future<Map<String, dynamic>?> getDailyReportForDate(String vozac, DateTime datum) async {
     try {
       final datumStr = datum.toIso8601String().split('T')[0];
-      final data = await Supabase.instance.client
-          .from('daily_reports')
-          .select()
-          .eq('vozac', vozac)
-          .eq('datum', datumStr)
-          .maybeSingle();
+      final data = await supabase.from('daily_reports').select().eq('vozac', vozac).eq('datum', datumStr).maybeSingle();
 
       if (data != null) {
         return {
@@ -396,7 +406,6 @@ class DailyCheckInService {
     Map<String, dynamic> popisPodaci,
     DateTime datum,
   ) async {
-    final supabase = Supabase.instance.client;
     try {
       await supabase.from('daily_reports').upsert(
         {
@@ -419,5 +428,116 @@ class DailyCheckInService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Proveri da li je vozač čekiran za danas
+  static Future<bool> isCheckedIn(String vozac) async {
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final response =
+          await supabase.from('daily_reports').select('id').eq('vozac', vozac).eq('datum', today).maybeSingle();
+      return response != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Čekiraj vozača i postavi sitan novac
+  static Future<bool> checkIn(String vozac, double amount) async {
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final data = await supabase
+          .from('daily_reports')
+          .upsert({
+            'vozac': vozac,
+            'datum': today,
+            'sitan_novac': amount,
+            'vreme_pocetka': DateTime.now().toIso8601String(),
+          })
+          .select()
+          .maybeSingle();
+
+      return data != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 💰 Dohvati sve sitne novce za vozača (istorija)
+  static Future<List<Map<String, dynamic>>> getKusurHistory(String vozac) async {
+    try {
+      final data = await supabase
+          .from('daily_reports')
+          .select('datum, sitan_novac')
+          .eq('vozac', vozac)
+          .order('datum', ascending: false);
+
+      return (data as List)
+          .map<Map<String, dynamic>>((item) => {
+                'datum': DateTime.parse(item['datum']),
+                'sitanNovac': (item['sitan_novac'] as num?)?.toDouble() ?? 0.0,
+              })
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 💰 Update sitan novac (kusur)
+  static Future<bool> updateKusur(String vozac, double newAmount) async {
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final data = await supabase
+          .from('daily_reports')
+          .upsert({
+            'vozac': vozac,
+            'datum': today,
+            'sitan_novac': newAmount,
+          })
+          .select()
+          .maybeSingle();
+
+      return data != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 📊 Dohvati sve sitan novac podatke za danas (za admina)
+  static Future<List<Map<String, dynamic>>> getTodayKusurAdmin() async {
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final data = await supabase.from('daily_reports').select('vozac, sitan_novac').eq('datum', today);
+
+      return (data as List)
+          .map<Map<String, dynamic>>((item) => {
+                'vozac': item['vozac'],
+                'sitanNovac': (item['sitan_novac'] as num?)?.toDouble() ?? 0.0,
+              })
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 📊 Generiši izveštaj za kraj dana
+  static Future<void> generateEndOfDayReport(String vozac) async {
+    try {
+      final today = DateTime.now();
+      final todayStr = today.toIso8601String().split('T')[0];
+      final stats = await VoznjeLogService.getStatistikePoVozacu(
+        vozacIme: vozac,
+        datum: today,
+      );
+
+      await supabase
+          .from('daily_reports')
+          .update({
+            'vreme_kraja': DateTime.now().toIso8601String(),
+            'statistika': stats,
+          })
+          .eq('vozac', vozac)
+          .eq('datum', todayStr);
+    } catch (_) {}
   }
 }

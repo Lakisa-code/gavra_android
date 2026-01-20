@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../services/realtime/realtime_manager.dart';
 
 /// Widget koji prikazuje ETA dolaska kombija sa 4 faze:
@@ -73,7 +73,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   Future<void> _loadGpsData() async {
     try {
-      final supabase = Supabase.instance.client;
       final normalizedGrad = _normalizeGrad(widget.grad);
 
       var query = supabase.from('vozac_lokacije').select().eq('aktivan', true);
@@ -271,7 +270,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     if (widget.putnikId == null) return;
 
     try {
-      final supabase = Supabase.instance.client;
       final response = await supabase
           .from('registrovani_putnici')
           .select('polasci_po_danu')

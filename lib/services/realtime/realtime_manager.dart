@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../globals.dart';
 import 'realtime_config.dart';
 import 'realtime_status.dart';
 
@@ -27,7 +28,7 @@ class RealtimeManager {
   static final RealtimeManager _instance = RealtimeManager._internal();
   static RealtimeManager get instance => _instance;
 
-  final SupabaseClient _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => supabase;
 
   /// Jedan channel po tabeli
   final Map<String, RealtimeChannel> _channels = {};
@@ -199,7 +200,7 @@ class RealtimeManager {
 
         // 🔁 RETRY LOOP: Сачекај да SDK стварно очисти канал
         int retries = 0;
-        const maxRetries = 20; // 20 x 50ms = 1 sekunda max
+        const maxRetries = 20; // 20 x 50ms = 1 sekунда max
         final initialChannelCount = _supabase.getChannels().length;
 
         while (retries < maxRetries) {

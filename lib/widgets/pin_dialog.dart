@@ -2,9 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../globals.dart';
 import '../services/admin_audit_service.dart';
 
 /// PIN DIALOG za mesečne putnike
@@ -48,10 +48,10 @@ class _PinDialogState extends State<PinDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await Supabase.instance.client.from('registrovani_putnici').update({'pin': newPin}).eq('id', widget.putnikId);
+      await supabase.from('registrovani_putnici').update({'pin': newPin}).eq('id', widget.putnikId);
 
       // 🛡️ AUDIT LOG
-      final currentUser = Supabase.instance.client.auth.currentUser;
+      final currentUser = supabase.auth.currentUser;
       await AdminAuditService.logAction(
         adminName: currentUser?.email ?? 'Unknown Admin',
         actionType: 'change_pin',

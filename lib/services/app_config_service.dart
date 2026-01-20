@@ -1,10 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
+
 /// ⚙️ APP CONFIG SERVICE
 /// Upravlja konfiguracijom aplikacije koja se može menjati dinamički
 /// BEZ potrebe za izmenom koda i novom verzijom aplikacije.
 class AppConfigService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   // Singleton
   static final AppConfigService _instance = AppConfigService._internal();

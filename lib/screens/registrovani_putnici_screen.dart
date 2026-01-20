@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/admin_audit_service.dart';
 import '../services/adresa_supabase_service.dart';
@@ -41,9 +41,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
   // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon čuvanja
   int _streamRefreshKey = 0;
-
-  // Supabase klijent
-  final SupabaseClient supabase = Supabase.instance.client;
 
   // Novi servis instance
   final RegistrovaniPutnikService _registrovaniPutnikService = RegistrovaniPutnikService();
@@ -2772,7 +2769,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
     final int putovanja = daniSaVoznjom.length;
     final int otkazivanja = daniSamoOtkazivanje.length;
-    final ukupno = putovanja + otkazivanja;
+    final int ukupno = putovanja + otkazivanja;
     final uspesnost = ukupno > 0 ? ((putovanja / ukupno) * 100).round() : 0;
 
     return {
@@ -2934,7 +2931,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       final String endStr = mesecEnd.toIso8601String().split('T')[0];
 
       // Dohvati sve zapise iz voznje_log za dati mesec
-      final response = await Supabase.instance.client
+      final response = await supabase
           .from('voznje_log')
           .select('datum, tip, created_at')
           .eq('putnik_id', putnikId)
@@ -3073,7 +3070,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       final String endStr = mesecEnd.toIso8601String().split('T')[0];
 
       // Dohvati sve zapise iz voznje_log za trenutni mesec
-      final response = await Supabase.instance.client
+      final response = await supabase
           .from('voznje_log')
           .select('datum, tip, created_at')
           .eq('putnik_id', putnikId)

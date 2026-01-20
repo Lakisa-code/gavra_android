@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../screens/danas_screen.dart';
@@ -23,7 +22,7 @@ class NotificationNavigationService {
       if (putnikId == null) return;
 
       // Dohvati putnikove podatke iz baze
-      final response = await Supabase.instance.client.from('registrovani_putnici').select().eq('id', putnikId).single();
+      final response = await supabase.from('registrovani_putnici').select().eq('id', putnikId).single();
 
       if (context.mounted) {
         Navigator.of(context).push(

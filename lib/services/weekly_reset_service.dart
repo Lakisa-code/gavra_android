@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../globals.dart';
 
 /// 🔄 SERVIS ZA NEDELJNI RESET RASPOREDA
 /// U petak u ponoć (00:00 subota) resetuje polasci_po_danu za sve putnike
@@ -83,8 +84,6 @@ class WeeklyResetService {
     debugPrint('🔄 [WeeklyReset] Pokrećem nedeljni reset rasporeda...');
 
     try {
-      final supabase = Supabase.instance.client;
-
       // Učitaj sve aktivne putnike - dodao i 'tip' za selektivni reset
       final putnici =
           await supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').eq('aktivan', true);

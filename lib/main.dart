@@ -46,6 +46,16 @@ void main() async {
   // 🌍 INICIJALIZACIJA LOCALE ZA FORMATIRANJE DATUMA
   await initializeDateFormatting('sr_RS', null);
 
+  // 🌐 SUPABASE INICIJALIZACIJA - PRVO!
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    ).timeout(const Duration(seconds: 10));
+  } catch (e) {
+    if (kDebugMode) debugPrint('❌ [Supabase] Init failed: $e');
+  }
+
   // 🔥 CLOUD/NOTIFICATION PROVIDER INITIALIZATION
   // Decide which push provider to use depending on device capabilities.
   // bool firebaseAvailable = false; // track if Firebase/FCM inited (kept for future use)
@@ -109,28 +119,8 @@ void main() async {
     } catch (_) {}
   }
 
-  // 🌐 SUPABASE INICIJALIZACIJA
-  try {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-    ).timeout(const Duration(seconds: 5));
-
-    // If Huawei Push initialized earlier and a token arrived before
-    // Supabase was ready, attempt to register that token now.
-    try {
-      await HuaweiPushService().tryRegisterPendingToken();
-    } catch (e) {
-      // Error registering pending Huawei token after Supabase init
-    }
-
-    // 📲 Pokušaj registrovati pending FCM token ako postoji
-    try {
-      await FirebaseService.tryRegisterPendingToken();
-    } catch (e) {
-      // Error registering pending FCM token after Supabase init
-    }
-
+  // 🛡️ INICIJALIZACIJA SEKUNDARNIH SERVISA (samo ako je Supabase spreman)
+  if (isSupabaseReady) {
     // 🗂️ INICIJALIZUJ VOZAC MAPPING CACHE
     try {
       await VozacMappingService.initialize();
@@ -164,44 +154,38 @@ void main() async {
     try {
       KapacitetService.startGlobalRealtimeListener();
     } catch (e) {
-      // Nastavi bez realtime listenera - kapacitet će raditi ali bez real-time update
-      if (kDebugMode) debugPrint('❌ [Kapacitet] Global listener failed: $e');
+      // Nastavi bez realtime listenera
     }
 
-    // 🔄 NEDELJNI RESET - Proveri da li treba resetovati polasci_po_danu
-    // Izvršava se u subotu ujutru, NE resetuje bolovanje/godišnji
+    // 🔄 NEDELJNI RESET
     try {
       await PutnikService().checkAndPerformWeeklyReset();
     } catch (e) {
-      // Weekly reset check failed - silent
+      // Weekly reset check failed
     }
 
-    // 💰 PAYMENT REMINDER - Proveri da li treba poslati podsetnik za plaćanje
-    // 27. u mesecu: pre deadline-a, 5. u mesecu: posle deadline-a
-    // Šalje se samo jednom dnevno (prvi korisnik koji otvori app)
+    // 💰 PAYMENT REMINDER
     try {
       await PaymentReminderService.checkAndSendReminders();
     } catch (e) {
       if (kDebugMode) debugPrint('❌ [PaymentReminder] Check failed: $e');
     }
 
-    // 🌨️ WEATHER ALERT - Proveri da li treba poslati upozorenje za loše vreme
-    // Šalje vozačima ako se očekuje sneg, led, nevreme ili magla
-    // Šalje se samo jednom dnevno (prvi korisnik koji otvori app)
+    // 🌨️ WEATHER ALERT
     try {
       await WeatherAlertService.checkAndSendWeatherAlerts();
     } catch (e) {
       if (kDebugMode) debugPrint('❌ [WeatherAlert] Check failed: $e');
     }
-
-    // 🔄 REALTIME se inicijalizuje lazy kroz PutnikService
-    // Ne treba eksplicitna pretplata ovde - PutnikService.streamKombinovaniPutniciFiltered()
-    // će se pretplatiti kad neki ekran zatraži stream
-
-    // GPS Learn će naučiti prave koordinate kada vozač pokupi putnika
-  } catch (e) {
-    // Continue without Supabase if it fails
+  } else {
+    if (kDebugMode) debugPrint('⚠️ [Main] Skipping secondary services because Supabase is not ready');
   }
+
+  // 🔄 REALTIME se inicijalizuje lazy kroz PutnikService
+  // Ne treba eksplicitna pretplata ovde - PutnikService.streamKombinovaniPutniciFiltered()
+  // će se pretplatiti kad neki ekran zatraži stream
+
+  // GPS Learn će naučiti prave koordinate kada vozač pokupi putnika
 
   // 🛠️ GPS MANAGER - centralizovani GPS singleton
   // GpsManager.instance se koristi lazy - ne treba inicijalizacija ovde

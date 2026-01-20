@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_helpers.dart';
@@ -54,7 +55,7 @@ class SlobodnaMesta {
 
 /// 🎫 Servis za računanje slobodnih mesta (kapacitet - zauzeto)
 class SlobodnaMestaService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
   static final _putnikService = PutnikService();
 
   /// Izračunaj broj zauzetih mesta za određeni grad/vreme/datum

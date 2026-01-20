@@ -1,9 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
+
 /// 🚗 VOZILA SERVICE - Kolska knjiga
 /// Evidencija vozila i njihovo tehničko stanje
 class VozilaService {
-  static final _supabase = Supabase.instance.client;
+  static SupabaseClient get _supabase => supabase;
 
   /// Dohvati sva vozila
   static Future<List<Vozilo>> getVozila() async {
@@ -233,8 +235,10 @@ class Vozilo {
   final String? gumeOpis;
   final DateTime? gumePrednjeDatum;
   final String? gumePrednjeOpis;
+  final int? gumePrednjeKm;
   final DateTime? gumeZadnjeDatum;
   final String? gumeZadnjeOpis;
+  final int? gumeZadnjeKm;
   final String? napomena;
   // Nova polja
   final DateTime? akumulatorDatum;
@@ -265,8 +269,10 @@ class Vozilo {
     this.gumeOpis,
     this.gumePrednjeDatum,
     this.gumePrednjeOpis,
+    this.gumePrednjeKm,
     this.gumeZadnjeDatum,
     this.gumeZadnjeOpis,
+    this.gumeZadnjeKm,
     this.napomena,
     this.akumulatorDatum,
     this.akumulatorKm,
@@ -298,8 +304,10 @@ class Vozilo {
       gumeOpis: json['gume_opis'] as String?,
       gumePrednjeDatum: _parseDate(json['gume_prednje_datum']),
       gumePrednjeOpis: json['gume_prednje_opis'] as String?,
+      gumePrednjeKm: json['gume_prednje_km'] as int?,
       gumeZadnjeDatum: _parseDate(json['gume_zadnje_datum']),
       gumeZadnjeOpis: json['gume_zadnje_opis'] as String?,
+      gumeZadnjeKm: json['gume_zadnje_km'] as int?,
       akumulatorDatum: _parseDate(json['akumulator_datum']),
       akumulatorKm: json['akumulator_km'] as int?,
       plociceDatum: _parseDate(json['plocice_datum']),

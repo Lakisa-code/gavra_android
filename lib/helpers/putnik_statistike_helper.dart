@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../services/registrovani_putnik_service.dart';
 
 /// 📊 Helper za prikazivanje detaljnih statistika putnika
@@ -520,7 +520,7 @@ class PutnikStatistikeHelper {
     final startOfYearStr = '$currentYear-01-01';
     final endOfYearStr = '$currentYear-12-31';
 
-    final response = await Supabase.instance.client
+    final response = await supabase
         .from('voznje_log')
         .select()
         .eq('putnik_id', putnikId)
@@ -570,11 +570,8 @@ class PutnikStatistikeHelper {
   }
 
   static Future<Map<String, dynamic>> _getUkupneStatistike(String putnikId) async {
-    final response = await Supabase.instance.client
-        .from('voznje_log')
-        .select()
-        .eq('putnik_id', putnikId)
-        .order('created_at', ascending: false);
+    final response =
+        await supabase.from('voznje_log').select().eq('putnik_id', putnikId).order('created_at', ascending: false);
 
     List<String> daniSaVoznjom = [];
     int otkazivanja = 0;
@@ -614,51 +611,75 @@ class PutnikStatistikeHelper {
     };
   }
 
+  /// 📊 DOHVATI DETALJNE STATISTIKE ZA MESEC
   static Future<Map<String, dynamic>> _getStatistikeZaMesec(String putnikId, int mesec, int godina) async {
-    final DateTime mesecStart = DateTime(godina, mesec);
-    final DateTime mesecEnd = DateTime(godina, mesec + 1, 0, 23, 59, 59);
+    try {
+      final startOfMonth = DateTime(godina, mesec, 1).toUtc().toIso8601String();
+      final endOfMonth = DateTime(godina, mesec + 1, 0, 23, 59, 59).toUtc().toIso8601String();
 
-    final String startStr = mesecStart.toIso8601String().split('T')[0];
-    final String endStr = mesecEnd.toIso8601String().split('T')[0];
+      // 🔍 1. Dohvati sve logove vožnji za putnika u tom mesecu
+      final response = await supabase
+          .from('voznje_log')
+          .select()
+          .eq('putnik_id', putnikId)
+          .gte('created_at', startOfMonth)
+          .lte('created_at', endOfMonth)
+          .order('created_at', ascending: false);
 
-    final response = await Supabase.instance.client
-        .from('voznje_log')
-        .select('datum, tip, created_at')
-        .eq('putnik_id', putnikId)
-        .gte('datum', startStr)
-        .lte('datum', endStr)
-        .order('created_at', ascending: false);
+      final voznje = List<Map<String, dynamic>>.from(response);
 
-    List<String> uspesniDatumi = [];
-    int brojOtkazivanja = 0;
-    String? poslednjiDatum;
+      // 📊 2. Agregiraj podatke
+      double ukupanPrihodData = 0;
+      int brojPutovanja = 0;
+      int brojOtkazivanja = 0;
+      String? poslednjiDatum;
 
-    for (final zapis in response) {
-      final datum = zapis['datum'] as String;
-      final tip = zapis['tip'] as String?;
+      for (final voznja in voznje) {
+        final tip = voznja['tip'] as String?;
+        final double iznos = ((voznja['iznos'] ?? 0) as num).toDouble();
+        final String? datumStr = voznja['datum'] as String?;
+        final datum = datumStr ?? voznja['created_at']?.toString().split('T')[0];
 
-      if (tip == 'voznja') {
-        poslednjiDatum ??= datum;
-        if (!uspesniDatumi.contains(datum)) {
-          uspesniDatumi.add(datum);
+        if (tip == 'voznja') {
+          ukupanPrihodData += iznos;
+          brojPutovanja++;
+          poslednjiDatum ??= datum;
+        } else if (tip == 'otkazivanje') {
+          brojOtkazivanja++;
         }
-      } else if (tip == 'otkazivanje') {
-        brojOtkazivanja++;
       }
+
+      final int ukupno = brojPutovanja + brojOtkazivanja;
+      final double uspesnost = ukupno > 0 ? ((brojPutovanja / ukupno) * 100).roundToDouble() : 0;
+
+      return {
+        'putovanja': brojPutovanja,
+        'otkazivanja': brojOtkazivanja,
+        'uspesnost': uspesnost.toStringAsFixed(0),
+        'poslednje': poslednjiDatum != null ? _formatDatum(DateTime.parse(poslednjiDatum)) : 'Nema podataka',
+        'ukupan_prihod': '${ukupanPrihodData.toStringAsFixed(0)} RSD',
+      };
+    } catch (e) {
+      return {'error': true, ..._emptyStats()};
     }
-
-    final int brojPutovanja = uspesniDatumi.length;
-    final int ukupno = brojPutovanja + brojOtkazivanja;
-    final double uspesnost = ukupno > 0 ? ((brojPutovanja / ukupno) * 100).roundToDouble() : 0;
-
-    return {
-      'putovanja': brojPutovanja,
-      'otkazivanja': brojOtkazivanja,
-      'uspesnost': uspesnost.toStringAsFixed(0),
-      'poslednje': poslednjiDatum != null ? _formatDatum(DateTime.parse(poslednjiDatum)) : 'Nema podataka',
-    };
   }
 
+  /// 📊 DOHVATI ISTORIJU UPLATA
+  static Future<List<Map<String, dynamic>>> getUplateHistory(String putnikId) async {
+    try {
+      final response = await supabase
+          .from('voznje_log')
+          .select()
+          .eq('putnik_id', putnikId)
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']).order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 🏥 DOHVATI MEDICINSKU POMOĆ LOGS - dodato kao fensi opcija
   static Map<String, dynamic> _emptyStats() {
     return {
       'putovanja': 0,

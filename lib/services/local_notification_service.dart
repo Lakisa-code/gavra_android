@@ -552,8 +552,6 @@ class LocalNotificationService {
     String putnikIme,
   ) async {
     try {
-      final supabase = Supabase.instance.client;
-
       const registrovaniFields = '*,'
           'polasci_po_danu';
 
@@ -660,7 +658,7 @@ class LocalNotificationService {
       (polasci[dan] as Map<String, dynamic>).remove('bc_ceka_od');
 
       // Sačuvaj u bazu
-      await Supabase.instance.client.from('registrovani_putnici').update({
+      await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
@@ -710,7 +708,7 @@ class LocalNotificationService {
       (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'waiting';
 
       // Sačuvaj u bazu
-      await Supabase.instance.client.from('registrovani_putnici').update({
+      await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
@@ -889,7 +887,7 @@ class LocalNotificationService {
       (polasci[dan] as Map<String, dynamic>).remove('vs_ceka_od');
 
       // Sačuvaj u bazu
-      await Supabase.instance.client.from('registrovani_putnici').update({
+      await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
@@ -939,7 +937,7 @@ class LocalNotificationService {
       (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'waiting';
 
       // Sačuvaj u bazu
-      await Supabase.instance.client.from('registrovani_putnici').update({
+      await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
@@ -990,7 +988,7 @@ class LocalNotificationService {
       (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'ceka_mesto';
 
       // Sačuvaj u bazu
-      await Supabase.instance.client.from('registrovani_putnici').update({
+      await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);

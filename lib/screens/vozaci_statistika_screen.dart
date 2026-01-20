@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/vozac_boja.dart';
@@ -15,7 +16,7 @@ class VozaciStatistikaScreen extends StatefulWidget {
 }
 
 class _VozaciStatistikaScreenState extends State<VozaciStatistikaScreen> {
-  final _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => supabase;
 
   // Filter opcije
   String _selectedFilter = 'dan'; // dan, nedelja, mesec, godina
