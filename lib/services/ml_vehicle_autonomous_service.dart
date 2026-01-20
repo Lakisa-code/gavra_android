@@ -33,11 +33,12 @@ class MLVehicleAutonomousService {
   // 🚨 Alerts
   final List<VehicleAlert> _pendingAlerts = [];
 
-  // ⚙️ Dinamički parametri (sistem može da ih menja)
-  int _monitoringIntervalMinutes = 30;
-  int _historyLookbackDays = 90;
-  final int _warrantyWarningDays = 30;
-  double _costTrendThreshold = 2.0;
+  // ⚙️ Dinamički parametri (sistem SAM računa i menja!)
+  // Start sa neutralnim vrednostima - biće automatski prilagođeni nakon prvog učenja
+  int _monitoringIntervalMinutes = 60; // Start sa ređim monitoringom
+  int _historyLookbackDays = 30; // Start sa kratkim periodom
+  final int _warrantyWarningDays = 30; // Jedini statički (garancija je objektivan podatak)
+  double _costTrendThreshold = 1.8; // Start sa osetljivijim threshold-om
 
   /// 🚀 POKRENI AUTONOMNI SISTEM
   Future<void> start() async {
@@ -156,24 +157,14 @@ class MLVehicleAutonomousService {
           .gte('datum', DateTime.now().subtract(const Duration(days: 7)).toIso8601String())
           .limit(100);
 
-      if (recentChanges.length > 50) {
-        // Ako ima MNOGO promena, monitoring češće (15 min)
-        if (_monitoringIntervalMinutes != 15) {
-          _monitoringIntervalMinutes = 15;
-          _restartMonitoringTimer();
-        }
-      } else if (recentChanges.length > 20) {
-        // Prosečno (30 min)
-        if (_monitoringIntervalMinutes != 30) {
-          _monitoringIntervalMinutes = 30;
-          _restartMonitoringTimer();
-        }
-      } else {
-        // Ako ima malo promena, monitoring ređe (60 min)
-        if (_monitoringIntervalMinutes != 60) {
-          _monitoringIntervalMinutes = 60;
-          _restartMonitoringTimer();
-        }
+      // Kontinualno računanje: što više promena, to češći monitoring
+      // Formula: interval = max(10, min(120, 120 - promena))
+      final changesPerDay = recentChanges.length / 7.0;
+      final calculatedInterval = (120 - changesPerDay * 2).clamp(10, 120).toInt();
+
+      if (_monitoringIntervalMinutes != calculatedInterval) {
+        _monitoringIntervalMinutes = calculatedInterval;
+        _restartMonitoringTimer();
       }
 
       // 2. Prilagodi lookback period na osnovu starosti podataka
@@ -184,15 +175,9 @@ class MLVehicleAutonomousService {
         final oldestDate = DateTime.parse(oldestRecord.first['datum'] as String);
         final dataAge = DateTime.now().difference(oldestDate).inDays;
 
-        if (dataAge < 60) {
-          // Ako imaš malo podataka, gledaj kraće unazad
-          _historyLookbackDays = 30;
-        } else if (dataAge < 180) {
-          _historyLookbackDays = 90;
-        } else {
-          // Ako imaš dugu istoriju, gledaj dalje unazad
-          _historyLookbackDays = 180;
-        }
+        // Kontinualno računanje: lookback = min(dataAge * 0.5, 365)
+        // Gleda nazad 50% od ukupne starosti podataka, ali max 1 godina
+        _historyLookbackDays = (dataAge * 0.5).clamp(14, 365).toInt();
       }
 
       // 3. Prilagodi cost threshold na osnovu volatilnosti troškova
@@ -206,16 +191,11 @@ class MLVehicleAutonomousService {
         final avg = amounts.reduce((a, b) => a + b) / amounts.length;
         final variance = amounts.map((x) => (x - avg) * (x - avg)).reduce((a, b) => a + b) / amounts.length;
         final stdDev = variance > 0 ? variance : 0;
+        final coefficientOfVariation = avg > 0 ? stdDev / avg : 0;
 
-        if (stdDev > avg * 0.5) {
-          // Visoka volatilnost - treba veći threshold
-          _costTrendThreshold = 3.0;
-        } else if (stdDev > avg * 0.3) {
-          _costTrendThreshold = 2.5;
-        } else {
-          // Niska volatilnost - manji threshold je OK
-          _costTrendThreshold = 2.0;
-        }
+        // Kontinualno računanje: threshold = 1.5 + (CV * 3.0)
+        // Što veća volatilnost, to veći threshold
+        _costTrendThreshold = (1.5 + coefficientOfVariation * 3.0).clamp(1.5, 5.0);
       }
 
       print(
