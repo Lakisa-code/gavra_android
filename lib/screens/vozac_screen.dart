@@ -30,6 +30,7 @@ import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
+import 'dugovi_screen.dart';
 import 'welcome_screen.dart';
 
 /// 🚗 VOZAČ SCREEN - Za Ivan-a
@@ -1376,11 +1377,11 @@ class _VozacScreenState extends State<VozacScreen> {
                                 Expanded(
                                   child: InkWell(
                                     onTap: () {
-                                      _showStatPopup(
+                                      Navigator.push(
                                         context,
-                                        'Dugovi',
-                                        filteredDuznici.length.toString(),
-                                        Colors.red,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => DugoviScreen(currentDriver: _currentDriver!),
+                                        ),
                                       );
                                     },
                                     child: _buildStatBox(
