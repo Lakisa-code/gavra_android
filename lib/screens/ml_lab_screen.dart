@@ -31,13 +31,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -47,38 +41,27 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         automaticallyImplyLeading: false,
         title: const Row(
           children: [
-            Icon(Icons.science, color: Colors.blue),
+            Icon(Icons.psychology, color: Colors.blue),
             SizedBox(width: 8),
-            Text('ML Lab'),
+            Text('ML - Autonomni Sistem'),
           ],
         ),
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: true,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
           indicatorColor: Colors.blue,
           indicatorWeight: 3,
           tabs: const [
-            Tab(icon: Icon(Icons.auto_mode), text: 'Vehicle Autonomy'), // 🧠 NOVI TAB
-            Tab(icon: Icon(Icons.lightbulb), text: 'Live Predictions'),
-            Tab(icon: Icon(Icons.assessment), text: 'Performance'),
-            Tab(icon: Icon(Icons.storage), text: 'Training Data'),
-            Tab(icon: Icon(Icons.analytics), text: 'Features'),
-            Tab(icon: Text('🚗'), text: 'GPS Stats'),
-            Tab(icon: Icon(Icons.settings), text: 'Settings'),
+            Tab(icon: Icon(Icons.auto_mode), text: 'Vozila (AI)'),
+            Tab(icon: Icon(Icons.settings), text: 'Podešavanja'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildVehicleAITab(), // 🧠 NOVI TAB
-          _buildLivePredictionsTab(),
-          _buildPerformanceTab(),
-          _buildTrainingDataTab(),
-          _buildFeaturesTab(),
-          _buildGpsTab(),
+          _buildVehicleAITab(),
           _buildSettingsTab(),
         ],
       ),
@@ -282,209 +265,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     );
   }
 
-  /// Tab 1: Live Predictions
-  Widget _buildLivePredictionsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Real-time predictions using MLService
-          FutureBuilder<List<OccupancyPrediction>>(
-            future: MLService.predictNext3Hours(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final predictions = snapshot.data!;
-
-              if (predictions.isEmpty) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Nema polazaka u naredna 3 sata'),
-                  ),
-                );
-              }
-
-              return Column(
-                children: predictions.map((pred) {
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.blue,
-                        child: Text(
-                          pred.predicted.toStringAsFixed(0),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      title: Text('${pred.grad} ${pred.vreme}'),
-                      subtitle: Text(
-                        'Confidence: ${(pred.confidence * 100).toStringAsFixed(0)}%',
-                      ),
-                      trailing: Text(
-                        '${pred.timestamp.hour}:${pred.timestamp.minute.toString().padLeft(2, '0')}',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          _buildPredictionCard(
-            title: 'Route Optimization',
-            icon: Icons.route,
-            color: Colors.green,
-            predictions: [
-              'Suggested first pickup: Adresa ID 45',
-              'Estimated time saving: 8 minutes',
-              'Fuel efficiency: +12%',
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildPredictionCard(
-            title: 'Payment Prediction',
-            icon: Icons.payment,
-            color: Colors.orange,
-            predictions: [
-              'High risk non-payment: 3 passengers',
-              'Expected monthly revenue: 124,500 RSD',
-              'Payment trend: ↑ 5% this month',
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Tab 2: Model Performance
-  Widget _buildPerformanceTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Model Accuracy Metrics',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          // Real-time metrics from MLService
-          FutureBuilder<ModelMetrics>(
-            future: MLService.getModelMetrics(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final metrics = snapshot.data!;
-
-              return Column(
-                children: [
-                  _buildMetricCard(
-                    'Occupancy Model',
-                    'Accuracy: ${metrics.accuracyPercent}',
-                    Colors.blue,
-                  ),
-                  _buildMetricCard(
-                    'MAE (Mean Absolute Error)',
-                    metrics.maeFormatted,
-                    Colors.orange,
-                  ),
-                  _buildMetricCard(
-                    'Sample Size',
-                    '${metrics.sampleSize} records',
-                    Colors.green,
-                  ),
-                  _buildMetricCard(
-                    'Last Updated',
-                    '${metrics.lastUpdated.day}/${metrics.lastUpdated.month} ${metrics.lastUpdated.hour}:${metrics.lastUpdated.minute.toString().padLeft(2, '0')}',
-                    Colors.purple,
-                  ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Recent Training Sessions',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _buildTrainingSessionCard('2026-01-15', '850 samples', '87.3% acc'),
-          _buildTrainingSessionCard('2026-01-10', '720 samples', '85.1% acc'),
-          _buildTrainingSessionCard('2026-01-05', '690 samples', '83.9% acc'),
-        ],
-      ),
-    );
-  }
-
-  /// Tab 3: Training Data
-  Widget _buildTrainingDataTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Data Collection Statistics',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _buildDataStatsCard('Total Trips', '2,458', Icons.directions_bus),
-          _buildDataStatsCard('Unique Passengers', '187', Icons.person),
-          _buildDataStatsCard('Payment Records', '3,214', Icons.payment),
-          _buildDataStatsCard('Route Variations', '42', Icons.route),
-          const SizedBox(height: 24),
-          const Text(
-            'Data Quality',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _buildQualityIndicator('Completeness', 0.94, Colors.green),
-          _buildQualityIndicator('Consistency', 0.89, Colors.blue),
-          _buildQualityIndicator('Timeliness', 0.97, Colors.purple),
-        ],
-      ),
-    );
-  }
-
-  /// Tab 4: Features Explorer
-  Widget _buildFeaturesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Feature Importance',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _buildFeatureBar('Day of Week', 0.85, Colors.blue),
-          _buildFeatureBar('Time of Day', 0.78, Colors.green),
-          _buildFeatureBar('Weather Conditions', 0.62, Colors.orange),
-          _buildFeatureBar('School Calendar', 0.71, Colors.purple),
-          _buildFeatureBar('Past Behavior', 0.68, Colors.red),
-          _buildFeatureBar('Payment History', 0.55, Colors.teal),
-          const SizedBox(height: 24),
-          const Text(
-            'Calendar Context',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          // Real calendar data from CalendarConfig
-          _buildCalendarInfo(),
-        ],
-      ),
-    );
-  }
-
-  /// Tab 5: Settings
+  /// Tab 2: Settings
   Widget _buildSettingsTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -695,7 +476,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         leading: CircleAvatar(backgroundColor: color, child: const Icon(Icons.analytics, color: Colors.white)),
         title: Text(title),
         trailing: Text(metric, style: const TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      },
     );
   }
 
@@ -706,7 +487,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         title: Text(date),
         subtitle: Text(samples),
         trailing: Text(accuracy, style: const TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      },
     );
   }
 
@@ -716,7 +497,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         leading: Icon(icon, color: Colors.blue),
         title: Text(title),
         trailing: Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      ),
+      },
     );
   }
 
@@ -817,228 +598,5 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         subtitle: Text(info),
       ),
     );
-  }
-
-  /// Tab 6: GPS Statistics
-  Widget _buildGpsTab() {
-    final driverService = DriverLocationService.instance;
-    final isTracking = driverService.isTracking;
-
-    return StreamBuilder<Position>(
-      stream: RealtimeGpsService.positionStream,
-      builder: (context, positionSnapshot) {
-        final currentSpeed = positionSnapshot.data?.speed ?? 0.0;
-        final currentSpeedKmh = currentSpeed * 3.6;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              const Row(
-                children: [
-                  Icon(Icons.speed, color: Colors.green),
-                  SizedBox(width: 8),
-                  Text(
-                    'GPS Tracking Statistics',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Tracking status
-              Card(
-                color: isTracking ? Colors.green.shade50 : Colors.grey.shade100,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isTracking ? Icons.gps_fixed : Icons.gps_off,
-                        color: isTracking ? Colors.green : Colors.grey,
-                        size: 32,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isTracking ? 'GPS Tracking Active' : 'GPS Tracking Inactive',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isTracking ? Colors.green.shade700 : Colors.grey.shade700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isTracking
-                                  ? 'Statistics are being collected in real-time'
-                                  : 'Start a route to track GPS statistics',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isTracking ? Colors.green.shade600 : Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Statistics grid
-              if (isTracking) ...[
-                // Distance
-                _buildStatCard(
-                  'Total Distance',
-                  '${driverService.todayDistanceKm.toStringAsFixed(2)} km',
-                  Icons.route,
-                  Colors.blue,
-                ),
-                const SizedBox(height: 12),
-
-                // Current Speed
-                _buildStatCard(
-                  'Current Speed',
-                  '${currentSpeedKmh.toStringAsFixed(1)} km/h',
-                  Icons.speed,
-                  Colors.orange,
-                ),
-                const SizedBox(height: 12),
-
-                // Max Speed
-                _buildStatCard(
-                  'Max Speed',
-                  '${driverService.maxSpeedKmh.toStringAsFixed(1)} km/h',
-                  Icons.trending_up,
-                  Colors.red,
-                ),
-                const SizedBox(height: 12),
-
-                // Average Speed
-                _buildStatCard(
-                  'Average Speed',
-                  '${driverService.averageSpeedKmh.toStringAsFixed(1)} km/h',
-                  Icons.show_chart,
-                  Colors.purple,
-                ),
-                const SizedBox(height: 12),
-
-                // Tracking Duration
-                _buildStatCard(
-                  'Tracking Duration',
-                  _formatDuration(driverService.trackingDuration),
-                  Icons.timer,
-                  Colors.teal,
-                ),
-                const SizedBox(height: 12),
-
-                // GPS Points
-                _buildStatCard(
-                  'GPS Points Collected',
-                  '${driverService.todayPositions.length}',
-                  Icons.place,
-                  Colors.indigo,
-                ),
-              ] else ...[
-                // No tracking info
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        Icon(Icons.info_outline, size: 48, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No GPS data available',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'GPS statistics will appear here when you start tracking.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade500),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 32),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    } else {
-      return '${seconds}s';
-    }
   }
 }
