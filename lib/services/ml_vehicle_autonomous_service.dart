@@ -130,6 +130,9 @@ class MLVehicleAutonomousService {
     await _learnMaintenancePatterns();
     await _learnCostTrends();
 
+    // NOVO: Uči dublje obrasce (krosrelacije između podataka)
+    await _learnDeepPatterns();
+
     // Sačuvaj naučene obrasce
     await _saveLearnedPatterns();
   }
@@ -545,6 +548,138 @@ class MLVehicleAutonomousService {
     }
   }
 
+  /// 🧠 UČI DUBLJE OBRASCE (Cross-Pattern Analysis)
+  /// Ovde sistem SAM otkriva veze između različitih podataka!
+  Future<void> _learnDeepPatterns() async {
+    try {
+      print('🧠 [ML Lab] Učim dublje obrasce...');
+
+      final discoveries = <String>[];
+
+      // 1. ANALIZA GUMA: Da li prednje brže habaju od zadnjih?
+      if (_learnedPatterns.containsKey('tire_wear')) {
+        final tirePatterns = _learnedPatterns['tire_wear'] as Map<String, dynamic>;
+
+        // Grupiši gume po vozilima
+        final Map<String, List<Map<String, dynamic>>> tiresByVehicle = {};
+        for (final entry in tirePatterns.entries) {
+          final tire = entry.value as Map<String, dynamic>;
+          final vehicleId = tire['vehicle_id'] as String?;
+          if (vehicleId == null) continue;
+
+          tiresByVehicle.putIfAbsent(vehicleId, () => []);
+          tiresByVehicle[vehicleId]!.add(tire);
+        }
+
+        // Za svako vozilo, uporedi habanje
+        for (final vehicleEntry in tiresByVehicle.entries) {
+          final vehicleId = vehicleEntry.key;
+          final tires = vehicleEntry.value;
+
+          if (tires.length < 2) continue;
+
+          // Izračunaj prosečno habanje (km po mesecu starosti)
+          final wearRates = tires.map((t) {
+            final km = t['traveled_km'] as double;
+            final months = double.parse(t['age_months'] as String);
+            return months > 0 ? km / months : 0.0;
+          }).toList();
+
+          if (wearRates.isEmpty) continue;
+
+          final avgWear = wearRates.reduce((a, b) => a + b) / wearRates.length;
+
+          // Detektuj da li neke gume habaju ZNAČAJNO brže
+          int fasterCount = 0;
+          int slowerCount = 0;
+          for (final rate in wearRates) {
+            if (rate > avgWear * 1.3) fasterCount++;
+            if (rate < avgWear * 0.7) slowerCount++;
+          }
+
+          if (fasterCount > 0 && slowerCount > 0) {
+            discoveries.add('Vozilo $vehicleId: $fasterCount guma(e) habaju brže od prosjeka');
+          }
+        }
+      }
+
+      // 2. KORELACIJA: Troškovi vs Kilometraža
+      if (_learnedPatterns.containsKey('cost_trends') && _learnedPatterns.containsKey('fuel_consumption')) {
+        final costPatterns = _learnedPatterns['cost_trends'] as Map<String, dynamic>;
+        final fuelPatterns = _learnedPatterns['fuel_consumption'] as Map<String, dynamic>;
+
+        for (final vehicleId in costPatterns.keys) {
+          if (!fuelPatterns.containsKey(vehicleId)) continue;
+
+          final costData = costPatterns[vehicleId] as Map<String, dynamic>;
+          final fuelData = fuelPatterns[vehicleId] as Map<String, dynamic>;
+
+          final costTrend = costData['trend'] as String;
+          final fuelTrend = fuelData['trend'] as String;
+
+          // Da li se troškovi povećavaju dok se kilometraža smanjuje? (Sumnjivo!)
+          if (costTrend == 'increasing' && fuelTrend == 'decreasing') {
+            discoveries.add('Vozilo $vehicleId: Troškovi rastu dok kilometraža pada - moguć problem');
+          }
+
+          // Da li se i troškovi i kilometraža povećavaju? (Normalno)
+          if (costTrend == 'increasing' && fuelTrend == 'increasing') {
+            // Ovo je OK - više se vozi, više troškovi
+          }
+        }
+      }
+
+      // 3. SERVISNI INTERVAL: Da li je predugo/prekratko za stvarnu upotrebu?
+      if (_learnedPatterns.containsKey('maintenance') && _learnedPatterns.containsKey('fuel_consumption')) {
+        final maintenancePatterns = _learnedPatterns['maintenance'] as Map<String, dynamic>;
+        final fuelPatterns = _learnedPatterns['fuel_consumption'] as Map<String, dynamic>;
+
+        for (final vehicleId in maintenancePatterns.keys) {
+          if (!fuelPatterns.containsKey(vehicleId)) continue;
+
+          final maintenance = maintenancePatterns[vehicleId] as Map<String, dynamic>;
+          final fuel = fuelPatterns[vehicleId] as Map<String, dynamic>;
+
+          final serviceIntervalKm = maintenance['service_interval_km'] as double?;
+          final avgKmPerDay = double.tryParse(fuel['avg_km_per_day'] as String);
+
+          if (serviceIntervalKm != null && avgKmPerDay != null && avgKmPerDay > 0) {
+            final daysToService = serviceIntervalKm / avgKmPerDay;
+
+            // Ako je interval < 30 dana ili > 400 dana, možda nije optimalan
+            if (daysToService < 30) {
+              discoveries.add('Vozilo $vehicleId: Servisni interval prekratak (${daysToService.toInt()} dana)');
+            } else if (daysToService > 400) {
+              discoveries.add('Vozilo $vehicleId: Servisni interval predugačak (${daysToService.toInt()} dana)');
+            }
+          }
+        }
+      }
+
+      // Sačuvaj otkrića
+      if (discoveries.isNotEmpty) {
+        _learnedPatterns['discoveries'] = discoveries;
+        print('🔍 [ML Lab] Otkrio ${discoveries.length} obrazaca:');
+        for (final discovery in discoveries) {
+          print('   - $discovery');
+        }
+
+        // Pošalji notifikaciju sa najvažnijim otkrićem
+        if (discoveries.isNotEmpty) {
+          await LocalNotificationService.showRealtimeNotification(
+            title: '🔍 ML Lab Otkriće',
+            body: discoveries.first,
+            payload: 'ml_discovery',
+          );
+        }
+      } else {
+        print('💤 [ML Lab] Nema novih otkrića.');
+      }
+    } catch (e) {
+      print('❌ [ML Lab] Greška u dubokom učenju: $e');
+    }
+  }
+
   /// 🚨 DETEKCIJA ANOMALIJA
   Future<void> _detectAnomalies() async {
     print('🚨 [ML Lab] Detekcija anomalija...');
@@ -675,7 +810,10 @@ class MLVehicleAutonomousService {
       // 2. Generisanje mesečnih izveštaja
       await _generateMonthlyReport();
 
-      // 3. Optimizacija modela
+      // 3. Evolucija učenja (uporedi sa prethodnim danima)
+      await _evolveKnowledge();
+
+      // 4. Optimizacija modela
       await _optimizeModels();
 
       print('✅ [ML Lab] Noćna analiza završena.');
@@ -800,6 +938,83 @@ class MLVehicleAutonomousService {
       print('✅ [ML Lab] Modeli optimizovani.');
     } catch (e) {
       print('❌ [ML Lab] Greška u optimizaciji: $e');
+    }
+  }
+
+  /// 🔄 EVOLUCIJA ZNANJA
+  /// Uporedi današnje obrasce sa prethodnim - DA LI JE SISTEM NAUČIO NEŠTO NOVO?
+  Future<void> _evolveKnowledge() async {
+    try {
+      print('🔄 [ML Lab] Evolucija znanja...');
+
+      // Učitaj prethodna otkrića iz baze
+      final previousResult =
+          await _supabase.from('ml_config').select().eq('id', 'vehicle_patterns_history').maybeSingle();
+
+      if (previousResult == null) {
+        // Nema prethodnih podataka - sačuvaj trenutne kao prvi set
+        await _supabase.from('ml_config').upsert({
+          'id': 'vehicle_patterns_history',
+          'config': {
+            'timestamp': DateTime.now().toIso8601String(),
+            'patterns': _learnedPatterns,
+          },
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+        print('💾 [ML Lab] Sačuvao prvi snapshot znanja.');
+        return;
+      }
+
+      final previousConfig = previousResult['config'] as Map<String, dynamic>;
+      final previousPatterns = previousConfig['patterns'] as Map<String, dynamic>?;
+      final previousTimestamp = DateTime.parse(previousConfig['timestamp'] as String);
+      final daysSinceLast = DateTime.now().difference(previousTimestamp).inDays;
+
+      if (previousPatterns == null || daysSinceLast < 7) {
+        return; // Predugo prošlo ili nema podataka
+      }
+
+      // Uporedi trenutna otkrića sa prethodnim
+      final currentDiscoveries = _learnedPatterns['discoveries'] as List<dynamic>?;
+      final previousDiscoveries = previousPatterns['discoveries'] as List<dynamic>?;
+
+      if (currentDiscoveries != null && previousDiscoveries != null) {
+        // Pronađi NOVA otkrića (nisu bila u prethodnoj iteraciji)
+        final newDiscoveries = <String>[];
+        for (final discovery in currentDiscoveries) {
+          if (!previousDiscoveries.contains(discovery)) {
+            newDiscoveries.add(discovery as String);
+          }
+        }
+
+        if (newDiscoveries.isNotEmpty) {
+          print('🆕 [ML Lab] Naučio ${newDiscoveries.length} novih obrazaca:');
+          for (final discovery in newDiscoveries) {
+            print('   ✨ $discovery');
+          }
+
+          // Pošalji notifikaciju
+          await LocalNotificationService.showRealtimeNotification(
+            title: '✨ ML Lab Evolucija',
+            body: 'Naučio ${newDiscoveries.length} novih obrazaca u poslednjih $daysSinceLast dana',
+            payload: 'ml_evolution',
+          );
+        }
+      }
+
+      // Sačuvaj trenutno stanje kao novo
+      await _supabase.from('ml_config').upsert({
+        'id': 'vehicle_patterns_history',
+        'config': {
+          'timestamp': DateTime.now().toIso8601String(),
+          'patterns': _learnedPatterns,
+        },
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      print('✅ [ML Lab] Evolucija završena.');
+    } catch (e) {
+      print('❌ [ML Lab] Greška u evoluciji: $e');
     }
   }
 
