@@ -11,7 +11,6 @@ import '../models/putnik.dart';
 // url_launcher unused here - navigacija delegirana SmartNavigationService
 
 import '../models/registrovani_putnik.dart';
-import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
 import '../services/driver_location_service.dart'; // 🚐 DODANO za realtime ETA putnicima
 import '../services/firebase_service.dart';
 import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
@@ -22,7 +21,6 @@ import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS trackin
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/smart_navigation_service.dart';
-import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
 import '../services/weather_service.dart'; // 🌤️ DODANO za vremensku prognozu
@@ -37,7 +35,6 @@ import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
-import 'dugovi_screen.dart';
 import 'welcome_screen.dart';
 
 // Using centralized logger
@@ -1666,11 +1663,6 @@ class _DanasScreenState extends State<DanasScreen> {
       }
       if (_currentDriver != null && _currentDriver!.isNotEmpty) {
         try {
-          // Initialize kusur stream to show current value
-          DailyCheckInService.initializeStreamForVozac(_currentDriver!);
-
-          _dailyCheckinSub = DailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
-
           // 💓 POKRENI HEARTBEAT MONITORING
           _startHealthMonitoring();
         } catch (e) {
@@ -2418,331 +2410,112 @@ class _DanasScreenState extends State<DanasScreen> {
 
                       return bTime.compareTo(aTime);
                     });
-                    // KORISTI NOVU STANDARDIZOVANU LOGIKU ZA PAZAR 💰
-                    // ✅ UVEK KORISTI SAMO DANAŠNJI DAN
-                    final today = DateTime.now();
-                    final dayStart = DateTime(today.year, today.month, today.day);
-                    final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
-                    return StreamBuilder<double>(
-                      stream: StatistikaService.streamPazarZaVozaca(
-                        vozac: _currentDriver!,
-                        from: dayStart,
-                        to: dayEnd,
-                      ),
-                      builder: (context, pazarSnapshot) {
-                        // Pazar vrednost - 0.0 ako nema podataka
-                        final ukupnoPazarVozac = pazarSnapshot.data ?? 0.0;
 
-                        return Column(
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: 45,
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.green[300]!),
-                                      ),
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: finalPutnici.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    'Nema putnika za izabrani polazak',
+                                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                                  ),
+                                )
+                              : Column(
+                                  children: [
+                                    if (_isRouteOptimized)
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(8),
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: _isGpsTracking ? Colors.blue[50] : Colors.green[50],
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: _isGpsTracking ? Colors.blue[300]! : Colors.green[300]!,
+                                          ),
+                                        ),
+                                        child: Row(
                                           children: [
-                                            const Text(
-                                              'Pazar',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.green,
-                                              ),
+                                            Icon(
+                                              _isGpsTracking ? Icons.gps_fixed : Icons.route,
+                                              color: _isGpsTracking ? Colors.blue : Colors.green,
+                                              size: 20,
                                             ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              ukupnoPazarVozac.toStringAsFixed(0),
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.green,
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    _isListReordered
+                                                        ? '🎯 Lista Reorderovana (${_currentPassengerIndex + 1}/${finalPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length})'
+                                                        : (_isGpsTracking
+                                                            ? '🛰️ GPS Tracking AKTIVAN'
+                                                            : 'Ruta optimizovana'),
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: _isListReordered
+                                                          ? Colors.orange[700]
+                                                          : (_isGpsTracking ? Colors.blue : Colors.green),
+                                                    ),
+                                                  ),
+                                                  // 🎯 PRIKAZ TRENUTNOG PUTNIKA
+                                                  if (_isListReordered && finalPutnici.isNotEmpty)
+                                                    Text(
+                                                      '👤 SLEDEĆI: ${finalPutnici.first.ime}',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.orange[600],
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  // 🧭 PRIKAZ NAVIGATION STATUS-A
+                                                  if (_useAdvancedNavigation && _navigationStatus.isNotEmpty)
+                                                    Text(
+                                                      '🧭 $_navigationStatus',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors.indigo[600],
+                                                        fontStyle: FontStyle.italic,
+                                                      ),
+                                                    ),
+                                                  // DISABLED: Google APIs removed - StreamBuilder completely removed
+                                                  // REMOVED: Complete StreamBuilder block - Google APIs disabled
+                                                  // 🔄 REAL-TIME ROUTE STRING
+                                                  Text(
+                                                    'Optimizovana ruta: ${finalPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length} putnika',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: _isGpsTracking ? Colors.blue : Colors.green,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
                                               ),
-                                              textAlign: TextAlign.center,
                                             ),
                                           ],
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Container(
-                                      height: 45,
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.purple.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.purple[300]!),
-                                      ),
-                                      child: StreamBuilder<int>(
-                                        stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
-                                          vozac: _currentDriver!,
-                                        ),
-                                        builder: (context, registrovaniSnapshot) {
-                                          final brojRegistrovanih = registrovaniSnapshot.data ?? 0;
-                                          return FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Text(
-                                                  'Mesečne',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.purple,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  brojRegistrovanih.toString(),
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.purple,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
+                                    // 🧭 RealTimeNavigationWidget UKLONJEN - koriste se samo kartice + dugme za mapu
+                                    Expanded(
+                                      child: PutnikList(
+                                        putnici: finalPutnici,
+                                        useProvidedOrder: _isListReordered,
+                                        currentDriver: _currentDriver!,
+                                        selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
+                                        selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
+                                        onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
+                                        bcVremena: _getBcVremena(),
+                                        vsVremena: _getVsVremena(),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Container(
-                                      height: 45,
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.red[300]!),
-                                      ),
-                                      child: InkWell(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute<void>(
-                                              builder: (context) => DugoviScreen(currentDriver: _currentDriver!),
-                                            ),
-                                          );
-                                        },
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Text(
-                                                'Dugovi',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                filteredDuznici.length.toString(),
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.red,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  // 🌅 NOVA KOCKA ZA SITAN NOVAC
-                                  Expanded(
-                                    child: Container(
-                                      height: 45,
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.orange[300]!),
-                                      ),
-                                      child: StreamBuilder<double>(
-                                        stream: DailyCheckInService.streamTodayAmount(_currentDriver!),
-                                        builder: (context, sitanSnapshot) {
-                                          final sitanNovac = sitanSnapshot.data ?? 0.0;
-                                          return FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Text(
-                                                  'Kusur',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.orange,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  sitanNovac > 0 ? sitanNovac.toStringAsFixed(0) : '-',
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.orange,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: finalPutnici.isEmpty
-                                  ? const Center(
-                                      child: Text(
-                                        'Nema putnika za izabrani polazak',
-                                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                                      ),
-                                    )
-                                  : Column(
-                                      children: [
-                                        if (_isRouteOptimized)
-                                          Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.all(8),
-                                            margin: const EdgeInsets.only(bottom: 8),
-                                            decoration: BoxDecoration(
-                                              color: _isGpsTracking ? Colors.blue[50] : Colors.green[50],
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(
-                                                color: _isGpsTracking ? Colors.blue[300]! : Colors.green[300]!,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  _isGpsTracking ? Icons.gps_fixed : Icons.route,
-                                                  color: _isGpsTracking ? Colors.blue : Colors.green,
-                                                  size: 20,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        _isListReordered
-                                                            ? '🎯 Lista Reorderovana (${_currentPassengerIndex + 1}/${finalPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length})'
-                                                            : (_isGpsTracking
-                                                                ? '🛰️ GPS Tracking AKTIVAN'
-                                                                : 'Ruta optimizovana'),
-                                                        style: TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: _isListReordered
-                                                              ? Colors.orange[700]
-                                                              : (_isGpsTracking ? Colors.blue : Colors.green),
-                                                        ),
-                                                      ),
-                                                      // 🎯 PRIKAZ TRENUTNOG PUTNIKA
-                                                      if (_isListReordered && finalPutnici.isNotEmpty)
-                                                        Text(
-                                                          '👤 SLEDEĆI: ${finalPutnici.first.ime}',
-                                                          style: TextStyle(
-                                                            fontSize: 11,
-                                                            color: Colors.orange[600],
-                                                            fontWeight: FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                      // 🧭 PRIKAZ NAVIGATION STATUS-A
-                                                      if (_useAdvancedNavigation && _navigationStatus.isNotEmpty)
-                                                        Text(
-                                                          '🧭 $_navigationStatus',
-                                                          style: TextStyle(
-                                                            fontSize: 10,
-                                                            color: Colors.indigo[600],
-                                                            fontStyle: FontStyle.italic,
-                                                          ),
-                                                        ),
-                                                      // DISABLED: Google APIs removed - StreamBuilder completely removed
-                                                      // REMOVED: Complete StreamBuilder block - Google APIs disabled
-                                                      // 🔄 REAL-TIME ROUTE STRING
-                                                      StreamBuilder<String>(
-                                                        stream: Stream.fromIterable([finalPutnici]).map(
-                                                          (putnici) =>
-                                                              'Optimizovana ruta: ${putnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length} putnika',
-                                                        ),
-                                                        initialData: 'Pripremi rutu...',
-                                                        builder: (context, snapshot) {
-                                                          if (snapshot.hasData) {
-                                                            return Text(
-                                                              snapshot.data!,
-                                                              style: TextStyle(
-                                                                fontSize: 10,
-                                                                color: _isGpsTracking ? Colors.blue : Colors.green,
-                                                              ),
-                                                              maxLines: 2,
-                                                              overflow: TextOverflow.ellipsis,
-                                                            );
-                                                          } else {
-                                                            return const Text(
-                                                              'Učitavanje...',
-                                                              style: TextStyle(fontSize: 10, color: Colors.green),
-                                                            );
-                                                          }
-                                                        },
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        // 🧭 RealTimeNavigationWidget UKLONJEN - koriste se samo kartice + dugme za mapu
-                                        Expanded(
-                                          child: PutnikList(
-                                            putnici: finalPutnici,
-                                            useProvidedOrder: _isListReordered,
-                                            currentDriver: _currentDriver!,
-                                            selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
-                                            selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
-                                            onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
-                                            bcVremena: _getBcVremena(),
-                                            vsVremena: _getVsVremena(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ],
-                        );
-                      },
+                                  ],
+                                ),
+                        ),
+                      ],
                     );
                   },
                 ),

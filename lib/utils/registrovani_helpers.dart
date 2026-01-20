@@ -172,14 +172,16 @@ class RegistrovaniHelpers {
     return dayData[adresaKey] as String?;
   }
 
-  /// 🆕 Dobij dodeljenog vozača za specifičan dan i pravac (bc ili vs)
+  /// 🆕 Dobij dodeljenog vozača za specifičan dan, pravac (bc ili vs) i vreme
   /// Vraća ime vozača ako je postavljen u polasci_po_danu JSON-u
-  /// Ključ je npr. 'bc_vozac' ili 'vs_vozac'
+  /// Ključ je npr. 'bc_5:00_vozac' ili 'vs_14:00_vozac'
+  /// Ako nema specifičnog vozača za vreme, vraća generičkog vozača za pravac (fallback na 'bc_vozac' ili 'vs_vozac')
   static String? getDodeljenVozacForDayAndPlace(
     Map<String, dynamic> rawMap,
     String dayKratica,
-    String place,
-  ) {
+    String place, {
+    String? vreme, // 🆕 Opcioni parametar za specifično vreme (npr. '5:00', '14:00')
+  }) {
     final raw = rawMap['polasci_po_danu'];
     if (raw == null) return null;
 
@@ -198,7 +200,19 @@ class RegistrovaniHelpers {
     final dayData = decoded[dayKratica];
     if (dayData == null || dayData is! Map) return null;
 
-    // Ključ je npr. 'bc_vozac' ili 'vs_vozac'
+    // 🆕 PRIORITET 1: Ako je vreme prosleđeno, pokušaj prvo specifičan ključ za vreme
+    if (vreme != null && vreme.isNotEmpty) {
+      final normalizedVreme = normalizeTime(vreme);
+      if (normalizedVreme != null) {
+        final vremeVozacKey = '${place}_${normalizedVreme}_vozac';
+        final vremeVozac = dayData[vremeVozacKey] as String?;
+        if (vremeVozac != null && vremeVozac.isNotEmpty) {
+          return vremeVozac;
+        }
+      }
+    }
+
+    // 🆕 PRIORITET 2: Fallback na generički vozač za pravac (bez vremena)
     final vozacKey = '${place}_vozac';
     return dayData[vozacKey] as String?;
   }

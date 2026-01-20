@@ -1286,8 +1286,7 @@ class _VozacScreenState extends State<VozacScreen> {
             : StreamBuilder<List<Putnik>>(
                 stream: _putnikService.streamKombinovaniPutniciFiltered(
                   isoDate: _getWorkingDateIso(),
-                  grad: _selectedGrad,
-                  vreme: _selectedVreme,
+                  // ✅ BEZ FILTERA - filtriraj client-side
                 ),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1309,7 +1308,22 @@ class _VozacScreenState extends State<VozacScreen> {
                     return false;
                   }).toList();
 
-                  final putnici = _isRouteOptimized && _optimizedRoute.isNotEmpty ? _optimizedRoute : mojiPutnici;
+                  // ✅ CLIENT-SIDE FILTER za grad i vreme - kao u DanasScreen
+                  final filteredByGradVreme = mojiPutnici.where((p) {
+                    // Filter po gradu
+                    final gradMatch =
+                        _selectedGrad.isEmpty || GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
+
+                    // Filter po vremenu
+                    final vremeMatch = _selectedVreme.isEmpty ||
+                        GradAdresaValidator.normalizeTime(p.polazak) ==
+                            GradAdresaValidator.normalizeTime(_selectedVreme);
+
+                    return gradMatch && vremeMatch;
+                  }).toList();
+
+                  final putnici =
+                      _isRouteOptimized && _optimizedRoute.isNotEmpty ? _optimizedRoute : filteredByGradVreme;
 
                   return Column(
                     children: [
@@ -1396,6 +1410,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                 Expanded(
                                   child: StreamBuilder<double>(
                                     stream: DailyCheckInService.streamTodayAmount(_currentDriver!),
+                                    initialData: 0.0,
                                     builder: (context, snapshot) {
                                       final kusur = snapshot.data ?? 0.0;
                                       return InkWell(

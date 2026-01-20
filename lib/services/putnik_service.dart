@@ -1267,11 +1267,17 @@ class PutnikService {
   /// [putnikId] - ID putnika
   /// [noviVozac] - Ime vozača (npr. "Bilevski") ili null za uklanjanje
   /// [place] - 'bc' za Bela Crkva pravac ili 'vs' za Vršac pravac
+  /// 🆕 AŽURIRANO: Dodeli putnika vozaču za specifičan pravac (bc/vs), dan i VREME
+  /// [putnikId] - UUID putnika iz registrovani_putnici
+  /// [noviVozac] - Ime vozača (npr. "Ivan", "Svetlana") ili null za uklanjanje
+  /// [place] - Pravac: "bc" za Bela Crkva, "vs" za Vršac
+  /// [vreme] - Vreme polaska (npr. "5:00", "14:00") - obavezno za specifično dodeljivanje
   /// [selectedDan] - Dan u nedelji (npr. "pon", "Ponedeljak") - opcionalno, default je danas
   Future<void> dodelPutnikaVozacuZaPravac(
     String putnikId,
     String? noviVozac,
     String place, {
+    String? vreme, // 🆕 OBAVEZAN parametar za vreme polaska
     String? selectedDan,
   }) async {
     try {
@@ -1309,14 +1315,26 @@ class PutnikService {
         }
       }
 
-      // Dodaj/ažuriraj vozača za specifičan dan i pravac
+      // Dodaj/ažuriraj vozača za specifičan dan, pravac i vreme
       if (!polasci.containsKey(danKratica)) {
         polasci[danKratica] = <String, dynamic>{};
       }
       final dayData = polasci[danKratica] as Map<String, dynamic>;
 
-      // Ključ je npr. 'bc_vozac' ili 'vs_vozac'
-      final vozacKey = '${place}_vozac';
+      // 🆕 Ključ uključuje vreme: 'bc_5:00_vozac' ili 'vs_14:00_vozac'
+      String vozacKey;
+      if (vreme != null && vreme.isNotEmpty) {
+        final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
+        if (normalizedVreme.isNotEmpty) {
+          vozacKey = '${place}_${normalizedVreme}_vozac';
+        } else {
+          vozacKey = '${place}_vozac'; // fallback ako normalizacija ne uspe
+        }
+      } else {
+        // Fallback na stari format (bez vremena) ako vreme nije prosleđeno
+        vozacKey = '${place}_vozac';
+      }
+
       if (noviVozac != null) {
         dayData[vozacKey] = noviVozac;
       } else {

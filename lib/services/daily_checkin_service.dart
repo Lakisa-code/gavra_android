@@ -8,25 +8,33 @@ import 'statistika_service.dart';
 import 'voznje_log_service.dart';
 
 class DailyCheckInService {
-  static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
-
   // 🔧 SINGLETON PATTERN za kusur stream - koristi JEDAN RealtimeManager channel za sve vozače
   static final Map<String, StreamController<double>> _kusurControllers = {};
+  static final Map<String, double> _kusurCache = {}; // 💾 Cache poslednje vrednosti
   static StreamSubscription? _globalSubscription;
   static bool _isSubscribed = false;
 
   /// Stream za real-time ažuriranje kusura - SINGLETON sa RealtimeManager
   static Stream<double> streamTodayAmount(String vozac) {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+
     // Ako već postoji aktivan controller za ovog vozača, koristi ga
     if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
-      // debugPrint('📊 [DailyCheckInService] Reusing existing kusur stream for $vozac'); // Disabled - too spammy
-      return _kusurControllers[vozac]!.stream;
+      debugPrint('📊 [DailyCheckInService] Reusing existing kusur stream for $vozac');
+      final controller = _kusurControllers[vozac]!;
+
+      // 🔥 FIX: UVEK fetchuj podatke kada se stream reuse-uje
+      // Ovo osigurava da novi StreamBuilder dobije trenutnu vrednost
+      _fetchKusurForVozac(vozac, today, controller);
+
+      return controller.stream;
     }
 
+    debugPrint('🆕 [DailyCheckInService] Creating NEW kusur stream for $vozac');
     final controller = StreamController<double>.broadcast();
     _kusurControllers[vozac] = controller;
 
-    final today = DateTime.now().toIso8601String().split('T')[0];
+    debugPrint('📅 [DailyCheckInService] Today date: $today');
 
     // Učitaj inicijalne podatke
     _fetchKusurForVozac(vozac, today, controller);
@@ -57,6 +65,7 @@ class DailyCheckInService {
       if (!controller.isClosed) {
         final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
         debugPrint('🔍 [Kusur] Adding amount to stream: $amount');
+        _kusurCache[vozac] = amount; // 💾 Sačuvaj u cache
         controller.add(amount);
       }
     } catch (e) {
@@ -66,16 +75,27 @@ class DailyCheckInService {
 
   /// 🔌 Osiguraj globalni subscription preko RealtimeManager
   static void _ensureGlobalSubscription(String today) {
-    if (_isSubscribed && _globalSubscription != null) return;
+    if (_isSubscribed && _globalSubscription != null) {
+      debugPrint('♻️ [DailyCheckInService] Realtime subscription already exists');
+      return;
+    }
+
+    debugPrint('🔌 [DailyCheckInService] Creating realtime subscription for daily_reports');
 
     // Koristi centralizovani RealtimeManager - JEDAN channel za sve vozače!
     _globalSubscription = RealtimeManager.instance.subscribe('daily_reports').listen((payload) {
-      // Osvježi sve aktivne vozače
+      debugPrint('🔔 [DailyCheckInService] Realtime event received: ${payload.eventType}');
+
+      // Osvježi sve aktivne vozače - UVEK KORISTI TRENUTNI DATUM!
+      final currentDate = DateTime.now().toIso8601String().split('T')[0];
+      debugPrint('🔄 [DailyCheckInService] Refreshing ${_kusurControllers.length} vozac streams');
+
       for (final entry in _kusurControllers.entries) {
         final vozac = entry.key;
         final controller = entry.value;
         if (!controller.isClosed) {
-          _fetchKusurForVozac(vozac, today, controller);
+          debugPrint('🔄 [DailyCheckInService] Refreshing kusur for $vozac');
+          _fetchKusurForVozac(vozac, currentDate, controller);
         }
       }
     });
@@ -87,6 +107,7 @@ class DailyCheckInService {
   static void clearKusurCache(String vozac) {
     _kusurControllers[vozac]?.close();
     _kusurControllers.remove(vozac);
+    _kusurCache.remove(vozac); // 💾 Obriši i cached vrednost
 
     // Ako nema više aktivnih controllera, zatvori globalni subscription
     if (_kusurControllers.isEmpty && _globalSubscription != null) {
@@ -103,6 +124,7 @@ class DailyCheckInService {
       controller.close();
     }
     _kusurControllers.clear();
+    _kusurCache.clear(); // 💾 Obriši sve cached vrednosti
 
     // Zatvori globalni subscription
     _globalSubscription?.cancel();
@@ -114,8 +136,8 @@ class DailyCheckInService {
   /// Initialize stream with current value
   static Future<void> initializeStreamForVozac(String vozac) async {
     final currentAmount = await getTodayAmount(vozac) ?? 0.0;
-    if (!_sitanNovacController.isClosed) {
-      _sitanNovacController.add(currentAmount);
+    if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
+      _kusurControllers[vozac]!.add(currentAmount);
     }
   }
 
@@ -141,9 +163,7 @@ class DailyCheckInService {
       if (response != null) {
         // Emituj update za stream
         final sitanNovac = (response['sitan_novac'] as num?)?.toDouble() ?? 0.0;
-        if (!_sitanNovacController.isClosed) {
-          _sitanNovacController.add(sitanNovac);
-        }
+        _kusurCache[vozac] = sitanNovac; // 💾 Sačuvaj u cache
         if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
           _kusurControllers[vozac]!.add(sitanNovac);
         }
@@ -168,8 +188,9 @@ class DailyCheckInService {
       await _saveToSupabase(vozac, sitanNovac, today).timeout(const Duration(seconds: 8));
 
       // Ažuriraj stream za UI
-      if (!_sitanNovacController.isClosed) {
-        _sitanNovacController.add(sitanNovac);
+      _kusurCache[vozac] = sitanNovac; // 💾 Sačuvaj u cache
+      if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
+        _kusurControllers[vozac]!.add(sitanNovac);
       }
     } catch (e) {
       rethrow; // Propagiraj grešku da UI zna da nije uspelo

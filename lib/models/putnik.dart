@@ -634,10 +634,15 @@ class Putnik {
     required String grad,
     required String vreme,
   }) {
-    // 1️⃣ NAJVIŠI PRIORITET: Per-putnik per-pravac (bc_vozac ili vs_vozac)
-    final perPutnik = RegistrovaniHelpers.getDodeljenVozacForDayAndPlace(map, danKratica, place);
-    if (perPutnik != null && perPutnik.isNotEmpty) {
-      return perPutnik;
+    // 1️⃣ NAJVIŠI PRIORITET: Per-putnik per-pravac per-vreme (bc_5:00_vozac ili vs_14:00_vozac)
+    final perPutnikPerVreme = RegistrovaniHelpers.getDodeljenVozacForDayAndPlace(
+      map,
+      danKratica,
+      place,
+      vreme: vreme, // 🆕 Prosleđivanje vremena za specifično dodeljivanje
+    );
+    if (perPutnikPerVreme != null && perPutnikPerVreme.isNotEmpty) {
+      return perPutnikPerVreme;
     }
 
     // 2️⃣ SREDNJI PRIORITET: Per-vreme (iz vreme_vozac tabele)

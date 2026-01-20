@@ -353,11 +353,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         final pravac = _currentPlaceKratica; // 'bc' ili 'vs'
         final dan = _currentDayKratica; // 'pon', 'uto', itd.
 
-        // 🆕 Sačuvaj per-pravac (bc_vozac ili vs_vozac u polasci_po_danu)
+        // 🆕 Sačuvaj per-pravac per-vreme (bc_5:00_vozac ili vs_14:00_vozac u polasci_po_danu)
         await _putnikService.dodelPutnikaVozacuZaPravac(
           putnik.id!,
           noviVozac,
           pravac,
+          vreme: _selectedVreme, // 🆕 Prosleđivanje vremena
           selectedDan: dan,
         );
 
@@ -967,11 +968,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     for (final id in _selectedPutnici.toList()) {
       try {
-        // 🆕 Koristi per-pravac dodeljivanje
+        // 🆕 Koristi per-pravac per-vreme dodeljivanje
         await _putnikService.dodelPutnikaVozacuZaPravac(
           id,
           noviVozac,
           pravac,
+          vreme: _selectedVreme, // 🆕 Prosleđivanje vremena
           selectedDan: dan,
         );
         uspesno++;
