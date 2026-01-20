@@ -545,7 +545,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   }
 
   Widget _buildContainer(Color baseColor, {required Widget child}) {
-    // 🌟 Glassmorphism stil - usklađen sa temom aplikacije
+    // 🌟 Glassmorphism stil - ultra providno i delikatno
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -554,20 +554,20 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            baseColor.withValues(alpha: 0.25),
-            baseColor.withValues(alpha: 0.10),
+            baseColor.withValues(alpha: 0.15),
+            baseColor.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.4),
-          width: 1.5,
+          color: Colors.white.withValues(alpha: 0.25),
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
