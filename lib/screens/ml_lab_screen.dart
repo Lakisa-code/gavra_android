@@ -5,6 +5,7 @@ import '../config/calendar_config.dart';
 import '../services/driver_location_service.dart';
 import '../services/ml_service.dart';
 import '../services/realtime_gps_service.dart';
+import '../services/ml_vehicle_autonomous_service.dart';
 
 /// ML Lab Screen - Machine Learning Analysis and Predictions
 ///
@@ -30,7 +31,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -59,6 +60,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           indicatorColor: Colors.blue,
           indicatorWeight: 3,
           tabs: const [
+            Tab(icon: Icon(Icons.auto_mode), text: 'Vehicle Autonomy'), // 🧠 NOVI TAB
             Tab(icon: Icon(Icons.lightbulb), text: 'Live Predictions'),
             Tab(icon: Icon(Icons.assessment), text: 'Performance'),
             Tab(icon: Icon(Icons.storage), text: 'Training Data'),
@@ -71,6 +73,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
       body: TabBarView(
         controller: _tabController,
         children: [
+          _buildVehicleAITab(), // 🧠 NOVI TAB
           _buildLivePredictionsTab(),
           _buildPerformanceTab(),
           _buildTrainingDataTab(),
@@ -78,6 +81,200 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           _buildGpsTab(),
           _buildSettingsTab(),
         ],
+      ),
+    );
+  }
+
+  /// Tab 1: Vehicle Autonomy (The New Brain)
+  Widget _buildVehicleAITab() {
+    final service = MLVehicleAutonomousService();
+    final targets = service.activeMonitoringTargets;
+    final knowledge = service.currentKnowledge;
+    final interval = service.currentInterval;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🧠 BRAIN STATUS CARD
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.psychology, size: 40, color: Colors.purple),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'AUTONOMNI KORTEX',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text('ONLINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('Monitoring: $interval min', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text('${targets.length} aktivnih meta', style: const TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // 🎯 ACTIVE MONITORING TARGETS
+          const Text(
+            'Šta trenutno pratim? (Meta-Učenje)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          if (targets.isEmpty)
+             const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Trenutno nema aktivnih meta. Čekam nove podatke...'),
+              ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: targets.length,
+              itemBuilder: (context, index) {
+                final target = targets.values.toList()[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: _getImportanceColor(target.importance),
+                      child: Text(
+                        (target.importance * 10).toStringAsFixed(0),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    title: Text(target.id),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(target.reason),
+                        const SizedBox(height: 4),
+                        LinearProgressIndicator(
+                          value: target.importance > 1.0 ? 1.0 : target.importance, // Clamp visual
+                          backgroundColor: Colors.grey[200],
+                          color: _getImportanceColor(target.importance),
+                          minHeight: 4,
+                        ),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.remove_red_eye_outlined),
+                  ),
+                );
+              },
+            ),
+
+          const SizedBox(height: 24),
+
+          // 📚 KNOWLEDGE BASE
+          const Text(
+            'Naučeni Obrasci',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1.5,
+            padding: EdgeInsets.zero,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            children: [
+              _buildKnowledgeCard(
+                'Gume',
+                '${(knowledge['tire_wear'] as Map?)?.length ?? 0} guma',
+                Icons.tire_repair,
+                Colors.blue,
+              ),
+              _buildKnowledgeCard(
+                'Gorivo',
+                '${(knowledge['fuel_consumption'] as Map?)?.length ?? 0} vozila',
+                Icons.local_gas_station,
+                Colors.orange,
+              ),
+              _buildKnowledgeCard(
+                'Troškovi',
+                '${(knowledge['cost_trends'] as Map?)?.length ?? 0} vozila',
+                Icons.euro,
+                Colors.green,
+              ),
+              _buildKnowledgeCard(
+                'Otkrića',
+                '${(knowledge['discoveries'] as List?)?.length ?? 0} novih',
+                Icons.lightbulb_outline,
+                Colors.purple,
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                 setState(() {}); // Refresh UI
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Osveži Prikaz'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getImportanceColor(double importance) {
+    if (importance >= 0.8) return Colors.red;
+    if (importance >= 0.5) return Colors.orange;
+    return Colors.green;
+  }
+  
+  Widget _buildKnowledgeCard(String title, String subtitle, IconData icon, Color color) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 8),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(subtitle, style: const TextStyle(color: Colors.grey)),
+          ],
+        ),
       ),
     );
   }
@@ -506,7 +703,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         title: Text(date),
         subtitle: Text(samples),
         trailing: Text(accuracy, style: const TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      },
     );
   }
 
@@ -516,7 +713,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         leading: Icon(icon, color: Colors.blue),
         title: Text(title),
         trailing: Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      ),
+      },
     );
   }
 

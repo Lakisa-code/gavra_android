@@ -43,6 +43,12 @@ class MLVehicleAutonomousService {
   final int _warrantyWarningDays = 30; // Jedini statički (garancija je objektivan podatak)
   double _costTrendThreshold = 1.8; // Start sa osetljivijim threshold-om
 
+  // 🔓 PUBLIC API ZA UI (DA VIDIMO ŠTA MOZAK RADI)
+  Map<String, MonitoringTarget> get activeMonitoringTargets => Map.unmodifiable(_monitoringTargets);
+  Map<String, dynamic> get currentKnowledge => Map.unmodifiable(_learnedPatterns);
+  int get currentInterval => _monitoringIntervalMinutes;
+  List<VehicleAlert> get recentAlerts => List.unmodifiable(_pendingAlerts);
+
   /// 🚀 POKRENI AUTONOMNI SISTEM
   Future<void> start() async {
     print('🧠 [ML Lab] Pokretanje autonomnog sistema za vozila...');
