@@ -810,7 +810,7 @@ class _DanasScreenState extends State<DanasScreen> {
                 ),
                 const SizedBox(width: 2),
                 Text(
-                  _isRouteOptimized ? 'Reset' : 'Ruta',
+                  'START',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,

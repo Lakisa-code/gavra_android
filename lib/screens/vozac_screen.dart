@@ -908,7 +908,7 @@ class _VozacScreenState extends State<VozacScreen> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                _isGpsTracking ? 'STOP' : (_isRouteOptimized ? 'START' : 'Ruta'),
+                _isGpsTracking ? 'STOP' : 'START',
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
