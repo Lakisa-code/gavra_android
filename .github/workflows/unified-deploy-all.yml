@@ -275,7 +275,7 @@ jobs:
     env:
       BUNDLE_ID: 'com.gavra013.gavra013ios'
       APP_ID: '6757114361'
-      VERSION_ID: 'a4397448-6ed5-4220-82df-1b84e1a63657'
+      # VERSION_ID removed - determined dynamically
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
       APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
@@ -378,30 +378,99 @@ jobs:
       - name: Link and Submit (Optional)
         id: link_build
         if: ${{ inputs.dry_run == false && inputs.submit_for_review_ios == true }}
+        shell: bash
         run: |
            # Use the version code we built with
+           VERSION_STRING=$(echo "${{ needs.bump-and-tag.outputs.new_version }}" | cut -d+ -f1)
            BUILD_NUM=$(echo "${{ needs.bump-and-tag.outputs.new_version }}" | cut -d+ -f2)
-           echo "🔍 Looking for build $BUILD_NUM..."
            
-           # Try to find the build
-           BUILD_ID=$(app-store-connect builds list \
-             --app-id "$APP_ID" \
-             --build-version-number "$BUILD_NUM" \
-             --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
+           echo "🔍 looking for BUILD_NUM: $BUILD_NUM and VERSION_STRING: $VERSION_STRING (App ID: $APP_ID)"
 
-           if [ -n "$BUILD_ID" ]; then
-             echo "✅ Found build ID: $BUILD_ID"
-             
-             # Link build to version
-             echo "🔗 Linking build to version (id: $VERSION_ID)..."
-             app-store-connect app-store-versions modify \
-               --id "$VERSION_ID" \
-               --build-id "$BUILD_ID" || echo "⚠️ Warning: Linking failed"
+           python3 -c "
+import sys, json, subprocess, time
 
-             echo "🚀 Submitting for App Store review..."
-             app-store-connect app-store-version-submissions create \
-               --app-store-version-id "$VERSION_ID" || echo "⚠️ Could not auto-submit."
-           else
-             echo "❌ Could not find build $BUILD_NUM in App Store Connect yet."
-           fi
+def run_cmd(args):
+    try:
+        print(f'Running: {\" \".join(args)}')
+        return subprocess.check_output(args).decode('utf-8')
+    except subprocess.CalledProcessError as e:
+        print(f'Command failed with output: {e.output.decode(\"utf-8\") if e.output else \"\"}')
+        return None
+
+app_id = '$APP_ID'
+build_num = '$BUILD_NUM'
+version_string = '$VERSION_STRING'
+
+# 1. FIND THE BUILD ID
+print(f'--> 1. Finding Build ID for build number {build_num}...')
+build_id = None
+for i in range(3): # Retry loop
+    out = run_cmd(['app-store-connect', 'builds', 'list', '--app-id', app_id, '--build-version-number', build_num, '--json'])
+    if out:
+        try:
+            data = json.loads(out)
+            if data and len(data) > 0:
+                build_id = data[0]['id']
+                print(f'✅ Found Build ID: {build_id}')
+                break
+        except:
+            pass
+    print('... build not found yet, waiting 30s ...')
+    time.sleep(30)
+
+if not build_id:
+    print('❌ Could not find build ID after retries. Skipping submission.')
+    sys.exit(0) # Exit success but skip
+
+# 2. FIND OR CREATE APP STORE VERSION
+print(f'--> 2. Finding App Store Version for {version_string}...')
+version_id = None
+
+# List versions
+out = run_cmd(['app-store-connect', 'app-store-versions', 'list', '--app-id', app_id, '--json'])
+if out:
+    versions = json.loads(out)
+    # Check for editable version
+    for v in versions:
+        state = v.get('attributes', {}).get('appStoreState', '')
+        v_string = v.get('attributes', {}).get('versionString', '')
+        print(f'Found version: {v_string} (State: {state}) (ID: {v[\"id\"]})')
+        
+        if state in ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED']:
+            version_id = v['id']
+            print(f'✅ Found editable version: {version_id}')
+            # Update version string if it doesn't match
+            if v_string != version_string:
+                print(f'Updating version string from {v_string} to {version_string}...')
+                run_cmd(['app-store-connect', 'app-store-versions', 'modify', '--id', version_id, '--version-string', version_string])
+            break
+
+if not version_id:
+    print(f'No editable version found. Creating new version {version_string}...')
+    try:
+        out = run_cmd(['app-store-connect', 'app-store-versions', 'create', 
+                       '--app-id', app_id, 
+                       '--version-string', version_string, 
+                       '--platform', 'IOS', 
+                       '--json'])
+        if out:
+             new_v = json.loads(out)
+             version_id = new_v['id']
+             print(f'✅ Created new version: {version_id}')
+    except Exception as e:
+        print(f'⚠️ Failed to create version: {e}')
+        sys.exit(1)
+
+if not version_id:
+    print('❌ Could not determine Version ID. Exiting.')
+    sys.exit(1)
+
+# 3. LINK BUILD TO VERSION
+print(f'--> 3. Linking Build {build_id} to Version {version_id}...')
+run_cmd(['app-store-connect', 'app-store-versions', 'modify', '--id', version_id, '--build-id', build_id])
+
+# 4. SUBMIT FOR REVIEW
+print(f'--> 4. Submitting Version {version_id} for Review...')
+run_cmd(['app-store-connect', 'app-store-version-submissions', 'create', '--app-store-version-id', version_id])
+"
 
