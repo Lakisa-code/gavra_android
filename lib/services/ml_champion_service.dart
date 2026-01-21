@@ -73,35 +73,30 @@ class MLChampionService {
   /// 📊 ANALIZIRAJ SPECIFIČNOG PUTNIKA
   Future<void> analyzePassenger(String userId, String name) async {
     try {
-      // Gledamo vožnje (završene vs otkazane)
-      final dynamic history = await _supabase.from('voznje_log').select('tip').eq('putnik_id', userId);
+      // Optimizacija: Koristimo count() umesto fetch-ovanja cele istorije
+      // 1. Broj uspešnih vožnji
+      final int combinedTrips =
+          await _supabase.from('voznje_log').count(CountOption.exact).eq('putnik_id', userId).eq('tip', 'voznja');
 
-      if (history is List) {
-        double score = 4.5; // Startno poverenje je visoko
-        int combinedTrips = 0;
-        int cancellations = 0;
+      // 2. Broj otkazivanja (storno ili otkazano)
+      final int cancellations = await _supabase
+          .from('voznje_log')
+          .count(CountOption.exact)
+          .eq('putnik_id', userId)
+          .inFilter('tip', ['storno', 'otkazano']);
 
-        for (final dynamic entry in history) {
-          if (entry is! Map) continue;
-          final String tip = entry['tip']?.toString() ?? '';
+      // Računanje skora
+      double score = 4.5; // Startno poverenje
+      score += (combinedTrips * 0.05);
+      score -= (cancellations * 0.3);
 
-          if (tip == 'voznja') {
-            score += 0.05;
-            combinedTrips++;
-          } else if (tip == 'storno' || tip == 'otkazano') {
-            score -= 0.3;
-            cancellations++;
-          }
-        }
-
-        _statsMap[userId] = PassengerStats(
-          id: userId,
-          name: name,
-          score: score.clamp(0.0, 5.0),
-          totalTrips: combinedTrips,
-          cancellations: cancellations,
-        );
-      }
+      _statsMap[userId] = PassengerStats(
+        id: userId,
+        name: name,
+        score: score.clamp(0.0, 5.0),
+        totalTrips: combinedTrips,
+        cancellations: cancellations,
+      );
     } catch (e) {
       if (kDebugMode) print('⚠️ [ML Champion] Greška pri analizi putnika $name: $e');
     }

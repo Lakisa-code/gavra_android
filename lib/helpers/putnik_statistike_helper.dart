@@ -345,9 +345,9 @@ class PutnikStatistikeHelper {
                 stats['poslednje'] as String? ?? 'Nema podataka',
               ),
               _buildStatRow('📊 Uspešnost:', '${stats['uspesnost'] ?? 0}%'),
-              if (period == 'Ukupno' && stats['ukupan_prihod'] != null)
+              if (stats['ukupan_prihod'] != null)
                 _buildStatRow(
-                  '💰 Ukupan prihod:',
+                  '💰 Ukupan trošak:',
                   '${stats['ukupan_prihod']}',
                 ),
             ],

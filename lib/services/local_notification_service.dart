@@ -33,6 +33,7 @@ class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   static final Map<String, DateTime> _recentNotificationIds = {};
+  static final Map<String, bool> _processingLocks = {}; // 🔒 Lock za deduplikaciju
   static const Duration _dedupeDuration = Duration(seconds: 30);
 
   static Future<void> initialize(BuildContext context) async {
@@ -96,8 +97,9 @@ class LocalNotificationService {
     String? payload,
     bool playCustomSound = false, // 🔇 ONEMOGUĆENO: Custom zvuk ne radi
   }) async {
+    String dedupeKey = ''; // 🔑 Premesteno izvan try-catch da bude dostupno u finally bloku
+
     try {
-      String dedupeKey = '';
       try {
         if (payload != null && payload.isNotEmpty) {
           final Map<String, dynamic> parsed = jsonDecode(payload);
@@ -109,13 +111,22 @@ class LocalNotificationService {
         // 🔇 Ignore
       }
       if (dedupeKey.isEmpty) {
-        // fallback: simple hash of title+body+payload
-        dedupeKey = '$title|$body|${payload ?? ''}';
+        // fallback: simple hash of title+body (ignoring payload which may contain timestamps)
+        // Ovo rešava problem duplih notifikacija kada backend stavi timestamp u payload.
+        dedupeKey = '$title|$body';
       }
+
+      // 🔒 MUTEX LOCK - Sprečava race condition kada Firebase i Huawei primaju istu notifikaciju istovremeno
+      if (_processingLocks[dedupeKey] == true) {
+        return; // Druga instanca već obrađuje ovu notifikaciju
+      }
+      _processingLocks[dedupeKey] = true;
+
       final now = DateTime.now();
       if (_recentNotificationIds.containsKey(dedupeKey)) {
         final last = _recentNotificationIds[dedupeKey]!;
         if (now.difference(last) < _dedupeDuration) {
+          _processingLocks.remove(dedupeKey); // 🔓 Oslobodi lock
           return;
         }
       }
@@ -168,8 +179,12 @@ class LocalNotificationService {
         ),
         payload: payload,
       );
+
+      // 🔓 Oslobodi lock nakon uspešnog slanja
+      _processingLocks.remove(dedupeKey);
     } catch (e) {
-      // 🔇 Ignore
+      // 🔓 Oslobodi lock i u slučaju greške
+      _processingLocks.remove(dedupeKey);
     }
   }
 
@@ -282,8 +297,9 @@ class LocalNotificationService {
     required String body,
     String? payload,
   }) async {
+    String dedupeKey = ''; // 🔑 Premesteno izvan try-catch za finally blok
+
     try {
-      String dedupeKey = '';
       try {
         if (payload != null && payload.isNotEmpty) {
           final Map<String, dynamic> parsed = jsonDecode(payload);
@@ -295,10 +311,18 @@ class LocalNotificationService {
         // 🔇 Ignore
       }
       if (dedupeKey.isEmpty) dedupeKey = '$title|$body|${payload ?? ''}';
+
+      // 🔒 MUTEX LOCK - Sprečava race condition kada foreground i background handleri rade istovremeno
+      if (_processingLocks[dedupeKey] == true) {
+        return; // Druga instanca već obrađuje ovu notifikaciju
+      }
+      _processingLocks[dedupeKey] = true;
+
       final now = DateTime.now();
       if (_recentNotificationIds.containsKey(dedupeKey)) {
         final last = _recentNotificationIds[dedupeKey]!;
         if (now.difference(last) < _dedupeDuration) {
+          _processingLocks.remove(dedupeKey); // 🔓 Oslobodi lock
           return;
         }
       }
@@ -351,8 +375,12 @@ class LocalNotificationService {
         platformChannelSpecifics,
         payload: payload,
       );
+
+      // 🔓 Oslobodi lock nakon uspešnog slanja
+      _processingLocks.remove(dedupeKey);
     } catch (e) {
-      // Can't do much in background isolate; swallow errors
+      // 🔓 Oslobodi lock i u slučaju greške
+      _processingLocks.remove(dedupeKey);
     }
   }
 

@@ -69,8 +69,7 @@ class MLDispatchAutonomousService {
 
       // Gledamo sve aktivne zahteve za danas i sutra koji možda nisu procesuirani
       // (Beba samo gleda, ne menja ništa!)
-      final dynamic pendingRequests =
-          await _supabase.from('seat_requests').select().gte('datum', today).eq('obrisan', false);
+      final dynamic pendingRequests = await _supabase.from('seat_requests').select().gte('datum', today);
 
       if (pendingRequests is List) {
         // Ako vidimo da ima zahteva a nema ih u logu vožnji ili nekoj kanti
@@ -165,31 +164,22 @@ class MLDispatchAutonomousService {
       // 1. Proveri kapacitet iz baze
       final dynamic capacityData = await _supabase
           .from('kapacitet_polazaka')
-          .select('kapacitet, drugi_kombi')
+          .select('max_mesta')
           .eq('grad', grad)
           .eq('vreme', vreme)
           .maybeSingle();
 
-      final int maxCapacity = (capacityData != null && capacityData['kapacitet'] != null)
-          ? capacityData['kapacitet'] as int
+      final int maxCapacity = (capacityData != null && capacityData['max_mesta'] != null)
+          ? capacityData['max_mesta'] as int
           : 8; // Default 8 ako ne postoji podatak
 
-      // 2. Izbroj trenutne заhteve
-      final dynamic requests = await _supabase
+      // 2. Izbroj trenutne zahteve (1 red = 1 mesto)
+      final int total = await _supabase
           .from('seat_requests')
-          .select('broj_mesta')
+          .count(CountOption.exact)
           .eq('grad', grad)
           .eq('datum', datum)
           .eq('zeljeno_vreme', vreme);
-
-      int total = 0;
-      if (requests is List) {
-        for (final dynamic r in requests) {
-          if (r is Map) {
-            total += (r['broj_mesta'] as int? ?? 1);
-          }
-        }
-      }
 
       if (total + 4 > maxCapacity) {
         if (kDebugMode) {
