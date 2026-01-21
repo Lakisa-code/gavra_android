@@ -327,18 +327,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                 );
               },
             ),
-            const SizedBox(height: 24),
           ],
-
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                setState(() {}); // Refresh UI
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Osveži Prikaz'),
-            ),
-          ),
         ],
       ),
     );
@@ -438,9 +427,21 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                       ],
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => service.start(),
-                    child: const Text('AKTIVIRAJ'),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.check_circle, size: 16, color: Colors.green),
+                        SizedBox(width: 4),
+                        Text('AKTIVAN',
+                            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
                   ),
                 ],
               ),

@@ -177,93 +177,9 @@ class FinansijeService {
       });
       debugPrint('✅ [Finansije] Trošak dodat uspešno: $naziv');
 
-      // 🔄 AUTOMATIZACIJA: Ako je trošak "kredit", smanji iznos duga "Kredit" u ličnim finansijama
-      if (tip == 'kredit') {
-        _smanjiDugZaKredit(iznos);
-      }
-
       return true;
     } catch (e) {
       debugPrint('❌ [Finansije] Greška pri dodavanju troška $naziv: $e');
-      return false;
-    }
-  }
-
-  /// Pomoćna funkcija za smanjenje duga kredita
-  static Future<void> _smanjiDugZaKredit(double iznosRata) async {
-    try {
-      // 1. Nađi stavku "Kredit" ili "kredit" u dugovima
-      final response = await _supabase
-          .from('finansije_licno')
-          .select()
-          .eq('tip', 'dug')
-          .ilike('naziv', '%kredit%') // Case-insensitive traženje "kredit" u nazivu
-          .limit(1);
-
-      if ((response as List).isNotEmpty) {
-        final dug = response.first;
-        final stariIznos = (dug['iznos'] is num) ? (dug['iznos'] as num).toDouble() : 0.0;
-        final noviIznos = stariIznos - iznosRata;
-
-        // 2. Ažuriraj iznos duga (ne ide ispod nule)
-        await _supabase.from('finansije_licno').update({'iznos': noviIznos > 0 ? noviIznos : 0}).eq('id', dug['id']);
-
-        debugPrint('📉 [Finansije] Dug za kredit smanjen za $iznosRata. Novo stanje: $noviIznos');
-      }
-    } catch (e) {
-      debugPrint('⚠️ Greška pri automatskom smanjenju duga: $e');
-    }
-  }
-
-  // ---------------- LIČNE FINANSIJE (Dugovi / Ušteđevina) ----------------
-
-  /// Dohvati sve lične stavke
-  static Future<List<LicnaStavka>> getLicneStavke() async {
-    try {
-      final response = await _supabase.from('finansije_licno').select().order('created_at');
-      return (response as List).map((row) => LicnaStavka.fromJson(row)).toList();
-    } catch (e) {
-      debugPrint('❌ Greška pri dohvatanju ličnih stavki: $e');
-      return [];
-    }
-  }
-
-  /// Dodaj ličnu stavku
-  static Future<bool> addLicnaStavka(String tip, String naziv, double iznos) async {
-    try {
-      await _supabase.from('finansije_licno').insert({
-        'tip': tip,
-        'naziv': naziv,
-        'iznos': iznos,
-      });
-      return true;
-    } catch (e) {
-      debugPrint('❌ Greška pri dodavanju lične stavke: $e');
-      return false;
-    }
-  }
-
-  /// Ažuriraj ličnu stavku
-  static Future<bool> updateLicnaStavka(String id, String tip, String naziv, double iznos) async {
-    try {
-      await _supabase.from('finansije_licno').update({
-        'tip': tip,
-        'naziv': naziv,
-        'iznos': iznos,
-      }).eq('id', id);
-      return true;
-    } catch (e) {
-      debugPrint('❌ Greška pri ažuriranju lične stavke: $e');
-      return false;
-    }
-  }
-
-  /// Obriši ličnu stavku
-  static Future<bool> deleteLicnaStavka(String id) async {
-    try {
-      await _supabase.from('finansije_licno').delete().eq('id', id);
-      return true;
-    } catch (e) {
       return false;
     }
   }
@@ -518,31 +434,5 @@ class FinansijskiIzvestaj {
   /// Formatiran datum nedelje
   String get nedeljaPeriod {
     return '${startNedelja.day}.${startNedelja.month}. - ${endNedelja.day}.${endNedelja.month}.';
-  }
-}
-
-/// Model za lične finansije (dug/ušteđevina)
-class LicnaStavka {
-  final String id;
-  final String tip; // 'stednja' ili 'dug'
-  final String naziv;
-  final double iznos;
-
-  LicnaStavka({
-    required this.id,
-    required this.tip,
-    required this.naziv,
-    required this.iznos,
-  });
-
-  factory LicnaStavka.fromJson(Map<String, dynamic> json) {
-    return LicnaStavka(
-      id: json['id'].toString(),
-      tip: json['tip'] as String,
-      naziv: json['naziv'] as String,
-      iznos: (json['iznos'] is num)
-          ? (json['iznos'] as num).toDouble()
-          : double.tryParse(json['iznos']?.toString() ?? '0') ?? 0,
-    );
   }
 }

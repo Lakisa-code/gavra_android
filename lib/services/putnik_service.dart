@@ -9,6 +9,7 @@ import '../models/putnik.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_boja.dart';
+import 'admin_audit_service.dart';
 import 'driver_location_service.dart';
 import 'realtime/realtime_manager.dart';
 import 'realtime_notification_service.dart';
@@ -1115,6 +1116,18 @@ class PutnikService {
       statusZaBazu = 'godisnji';
     }
 
+    // ?? ADMIN AUDIT LOG: Zabeleži promenu statusa (odsustvo/povratak)
+    await AdminAuditService.logAction(
+      adminName: currentDriver,
+      actionType: 'change_status',
+      details: 'Putnik $id promenjen status u $statusZaBazu',
+      metadata: {
+        'putnik_id': id,
+        'new_status': statusZaBazu,
+        'old_status': undoOdsustvo['status'],
+      },
+    );
+
     try {
       await supabase.from(tabela).update({
         'status': statusZaBazu, // 'bolovanje' ili 'godisnji'
@@ -1126,8 +1139,8 @@ class PutnikService {
     }
   }
 
-  /// 🔄 RESETUJ KARTICU U POCETNO STANJE (samo za validne vozace)
-  /// ✅ KONZISTENTNO: Prima selectedVreme i selectedGrad za tacan reset po polasku
+  /// 🔄 RESETUJ KARTICU U POCETNO STANJE (za sve)
+  /// ✅ KONZISTENTNO: Prima selectedVreme and selectedGrad za tacan reset po polasku
   /// ✅ FIX: Briše SVE markere za današnji dan iz polasci_po_danu JSON-a
   Future<void> resetPutnikCard(
     String imePutnika,
@@ -1213,6 +1226,19 @@ class PutnikService {
           print('🔄 RESET CARD: $imePutnika, place=$place, dan=$danKratica');
           // ignore: avoid_print
           print('🔄 RESET polasci_po_danu: $polasci');
+
+          // ?? ADMIN AUDIT LOG: Zabeleži resetovanje kartice
+          await AdminAuditService.logAction(
+            adminName: currentDriver,
+            actionType: 'reset_putnik_card',
+            details: 'Resetovan putnik $imePutnika sa odmora/statusa na "radi"',
+            metadata: {
+              'putnik_ime': imePutnika,
+              'place': place,
+              'dan': danKratica,
+              'previous_status': 'unknown', // Nismo sačuvali prethodni status ali znamo da je reset
+            },
+          );
 
           await supabase.from('registrovani_putnici').update({
             'aktivan': true,

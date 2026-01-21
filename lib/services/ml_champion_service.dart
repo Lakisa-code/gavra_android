@@ -28,6 +28,9 @@ class PassengerStats {
 class MLChampionService {
   static SupabaseClient get _supabase => supabase;
 
+  // 📡 REALTIME
+  RealtimeChannel? _tripsStream;
+
   // Interna keš memorija za statistiku
   final Map<String, PassengerStats> _statsMap = <String, PassengerStats>{};
 
@@ -43,6 +46,42 @@ class MLChampionService {
   /// 🚀 POKRENI ŠAMPIONA
   Future<void> start() async {
     await analyzeAll();
+    _subscribeToTrips();
+  }
+
+  /// 🛑 ZAUSTAVI
+  void stop() {
+    _tripsStream?.unsubscribe();
+  }
+
+  // 📡 SLUŠANJE VOŽNJI (Realtime Reputation Error)
+  void _subscribeToTrips() {
+    try {
+      _tripsStream = _supabase
+          .channel('public:voznje_log')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'voznje_log',
+            callback: (payload) {
+              if (kDebugMode) print('🏆 [ML Champion] Neko je upisao vožnju! Rejting se menja...');
+
+              // Ako imamo passenger ID u payloadu, osveži samo njega
+              final newRecord = payload.newRecord;
+              if (newRecord.containsKey('putnik_id')) {
+                final String pid = newRecord['putnik_id'].toString();
+                // Treba nam ime - probamo iz cache-a ili fetch
+                final String name = _statsMap[pid]?.name ?? 'Putnik';
+                analyzePassenger(pid, name);
+              } else {
+                analyzeAll(); // Fallback, osveži sve
+              }
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      if (kDebugMode) print('⚠️ [ML Champion] Greška stream-a: $e');
+    }
   }
 
   /// 📊 ANALIZIRAJ SVE PUTNIKE

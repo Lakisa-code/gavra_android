@@ -291,12 +291,20 @@ class VoznjeLogService {
     required DateTime from,
     required DateTime to,
   }) {
-    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((records) {
+    final fromStr = from.toIso8601String().split('T')[0];
+    final toStr = to.toIso8601String().split('T')[0];
+
+    // ✅ FIX: Filtriraj stream direktno da ne probijemo limit od 100 redova
+    Stream<List<Map<String, dynamic>>> query;
+    if (fromStr == toStr) {
+      query = _supabase.from('voznje_log').stream(primaryKey: ['id']).eq('datum', fromStr).limit(500);
+    } else {
+      query = _supabase.from('voznje_log').stream(primaryKey: ['id']).order('created_at', ascending: false).limit(500);
+    }
+
+    return query.map((records) {
       final Map<String, double> pazar = {};
       double ukupno = 0;
-
-      final fromStr = from.toIso8601String().split('T')[0];
-      final toStr = to.toIso8601String().split('T')[0];
 
       for (final record in records) {
         // Filtriraj po tipu i datumu
@@ -360,19 +368,34 @@ class VoznjeLogService {
     required DateTime from,
     required DateTime to,
   }) {
-    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((records) {
+    final fromStr = from.toIso8601String().split('T')[0];
+    final toStr = to.toIso8601String().split('T')[0];
+
+    // ✅ FIX: Eksplicitni tip Stream<List<...>> da podrži i filter i no-filter
+    Stream<List<Map<String, dynamic>>> query;
+
+    if (fromStr == toStr) {
+      query = _supabase.from('voznje_log').stream(primaryKey: ['id']).eq('datum', fromStr).limit(500);
+    } else {
+      query = _supabase.from('voznje_log').stream(primaryKey: ['id']).order('created_at', ascending: false).limit(500);
+    }
+
+    return query.map((records) {
       final Map<String, int> brojUplata = {};
       int ukupno = 0;
 
-      final fromStr = from.toIso8601String().split('T')[0];
-      final toStr = to.toIso8601String().split('T')[0];
-
       for (final record in records) {
-        // Filtriraj po tipu ('uplata_mesecna' samo) i datumu
-        if (record['tip'] != 'uplata_mesecna') continue;
+        // Dodatna provera datuma (za svaki slučaj)
         final datum = record['datum'] as String?;
         if (datum == null) continue;
-        if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;
+
+        // Dodatna prover range-a (ako upit nije filtrirao)
+        if (fromStr != toStr) {
+          if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;
+        }
+
+        final tip = record['tip'] as String?;
+        if (tip != 'uplata_mesecna') continue;
 
         final vozacId = record['vozac_id'] as String?;
 

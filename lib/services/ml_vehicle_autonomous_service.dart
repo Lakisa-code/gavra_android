@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,6 +16,10 @@ import '../globals.dart';
 
 class MLVehicleAutonomousService {
   static SupabaseClient get _supabase => supabase;
+
+  // 📡 REALTIME STREAMS
+  RealtimeChannel? _vehicleStream;
+  RealtimeChannel? _expensesStream;
 
   // 📊 Learned patterns (keš)
   final Map<String, dynamic> _learnedPatterns = {};
@@ -60,21 +65,68 @@ class MLVehicleAutonomousService {
   Future<void> start() async {
     if (_isMonitoring) return;
     _isMonitoring = true;
-    print('🚀 [ML Lab] Autonomni sistem pokrenut.');
+    print('🚀 [ML Lab] Autonomni sistem pokrenut (Realtime Mode).');
 
     await _loadLearnedPatterns();
-    _restartMonitoringTimer();
+
+    // Inicijalno učenje (za svaki slučaj)
+    _monitorAndLearn();
     _scheduleNightlyAnalysis();
 
-    // Inicijalno učenje
-    _monitorAndLearn();
+    // 📡 POVEŽI SE NA LIVE STREAM
+    _subscribeToRealtimeChanges();
   }
 
   /// 🛑 STOP ML LAB
   void stop() {
     _monitoringTimer?.cancel();
+    _unsubscribeFromRealtime();
     _isMonitoring = false;
     print('🛑 [ML Lab] Autonomni sistem zaustavljen.');
+  }
+
+  // 📡 REALTIME SUBSCRIPTION
+  void _subscribeToRealtimeChanges() {
+    try {
+      // Slušamo promene u VOZILA_ISTORIJA
+      _vehicleStream = _supabase
+          .channel('public:vozila_istorija')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'vozila_istorija',
+            callback: (payload) {
+              print('⚡ [ML Lab] Detektovana promena u vozilima! Pokrećem analizu...');
+              _autoLearn();
+            },
+          )
+          .subscribe();
+
+      // Slušamo promene u TROSKOVI_UNOSI
+      _expensesStream = _supabase
+          .channel('public:troskovi_unosi')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'troskovi_unosi',
+            callback: (payload) {
+              print('⚡ [ML Lab] Detektovan novi trošak! Pokrećem analizu...');
+              _autoLearn();
+            },
+          )
+          .subscribe();
+
+      print('✅ [ML Lab] Uspešno povezan na Realtime Stream.');
+    } catch (e) {
+      print('⚠️ [ML Lab] Greška pri povezivanju na Realtime: $e');
+      // Fallback na stari timer ako stream pukne
+      _restartMonitoringTimer();
+    }
+  }
+
+  void _unsubscribeFromRealtime() {
+    _vehicleStream?.unsubscribe();
+    _expensesStream?.unsubscribe();
   }
 
   /// 🔍 MONITORING & AUTO-LEARNING
@@ -138,8 +190,16 @@ class MLVehicleAutonomousService {
       // Beba ne gleda red po red, već uzima "fotografiju" cele tabele
       for (final String tableName in discoveredTables) {
         try {
-          final List<Map<String, dynamic>> data =
-              List<Map<String, dynamic>>.from(await _supabase.from(tableName).select().limit(200));
+          // Beba traži najsvežije tragove (sortirano po vremenu)
+          List<Map<String, dynamic>> data;
+          try {
+            data = List<Map<String, dynamic>>.from(
+                await _supabase.from(tableName).select().order('created_at', ascending: false).limit(200));
+          } catch (_) {
+            // Fallback ako nema created_at ili order ne radi
+            data = List<Map<String, dynamic>>.from(await _supabase.from(tableName).select().limit(200));
+          }
+
           if (data.isEmpty) continue;
 
           // 1. ISTRAŽIVANJE: Gleda putokaze ka drugim tabelama (npr. kolone sa _id)
@@ -150,6 +210,10 @@ class MLVehicleAutonomousService {
 
           // 3. MASOVNA OBRADA: Šta god da su vozači/putnici uradili, beba to vidi odjednom
           _processFrequencyAnalysis(tableName, data);
+
+          // 3.5 SEKVENCIJALNA ANALIZA (Učenje ritma i brojki)
+          // Beba uči: "Aha, kad god piše 'Gorivo', kilometraža je veća za ~800km nego prošli put"
+          _analyzeSequentialPatterns(tableName, data);
 
           // 4. LOGIČKO POVEZIVANJE (Povezivanje tačkica unutar ove tabele)
           _detectCorrelations(tableName, data);
@@ -323,6 +387,63 @@ class MLVehicleAutonomousService {
     }
   }
 
+  void _analyzeSequentialPatterns(String table, List<Map<String, dynamic>> data) {
+    // Beba traži brojeve koji rastu ili se ponavljaju u ritmu (npr. kilometraža pri sipanju goriva)
+    final keys = data.first.keys.where((k) {
+      final val = data.first[k];
+      return val is num || (val is String && double.tryParse(val) != null);
+    }).toList();
+
+    for (final col in keys) {
+      final List<double> values = [];
+      for (final row in data) {
+        final val = row[col];
+        if (val is num) values.add(val.toDouble());
+        if (val is String) {
+          final d = double.tryParse(val);
+          if (d != null) values.add(d);
+        }
+      }
+
+      if (values.length < 5) continue;
+
+      // 1. Sekvencijalna razlika (Delta) - Npr. razlika između dva sipanja goriva
+      final List<double> deltas = [];
+      for (int i = 0; i < values.length - 1; i++) {
+        // Podaci su sortirani silazno (najnoviji prvi), pa oduzimamo prethodni od trenutnog da dobijemo razliku
+        // Vrednosti bi trebale biti rastuće kroz vreme (npr kilometraža), pa je Novije - Starije > 0.
+        // Ali u listi je values[i] novije, values[i+1] starije.
+        final diff = (values[i] - values[i + 1]).abs();
+        if (diff > 0) deltas.add(diff);
+      }
+
+      if (deltas.isEmpty) continue;
+
+      // Izračunaj prosek razlike (Avg Delta)
+      final avgDelta = deltas.reduce((a, b) => a + b) / deltas.length;
+
+      // Izračunaj stabilnost (Standard Deviation / Avg)
+      // Ako je devijacija mala, znači da je razlika uvek slična (npr uvek sipa na ~700km)
+      double sumSquaredDiff = 0.0;
+      for (final d in deltas) {
+        sumSquaredDiff += (d - avgDelta) * (d - avgDelta);
+      }
+      final stdDev = sqrt(sumSquaredDiff / deltas.length);
+      final stability = stdDev / (avgDelta + 0.001); // CV (Coefficient of Variation)
+
+      // Ako je stabilnost visoka (CV mali, < 0.3), pronašli smo pravilo!
+      if (stability < 0.3 && avgDelta > 10) {
+        _businessInferences.add(AIInference(
+          title: 'Otkriven Ritam ($table)',
+          description:
+              'Beba je shvatila da se "$col" menja za oko ${avgDelta.toStringAsFixed(1)} jedinica u svakom koraku. To je izgleda ciklus.',
+          probability: (1.0 - stability).clamp(0.5, 0.99),
+          type: InferenceType.routeTrend,
+        ));
+      }
+    }
+  }
+
   void _discoverCrossTableLinks() {
     // Beba traži iste ID-eve ili vrednosti u različitim tabelama
     // Ovo je "Aha!" momenat kad poveže Putnika sa Vožnjom
@@ -336,9 +457,13 @@ class MLVehicleAutonomousService {
   }
 
   void _restartMonitoringTimer() {
+    // Timer koristimo samo kao backup ili za noćno čišćenje
     _monitoringTimer?.cancel();
     _monitoringTimer = Timer.periodic(Duration(minutes: _monitoringIntervalMinutes), (_) {
-      _monitorAndLearn();
+      // Ako stream radi, timer ne mora ništa da radi, ali neka stoji kao osigurač
+      if (_vehicleStream == null) {
+        _monitorAndLearn();
+      }
     });
   }
 

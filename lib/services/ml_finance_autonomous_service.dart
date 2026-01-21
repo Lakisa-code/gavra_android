@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart'; // Dodaj ponovo za kDebugMode
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../globals.dart';
 import 'local_notification_service.dart';
 
 /// 📊 MODEL ZA STANJE GORIVA
@@ -32,8 +31,8 @@ class FuelInventory {
 /// - "Vrištanje" kad dug pređe kritičnu granicu.
 
 class MLFinanceAutonomousService {
-  static SupabaseClient get _supabase => supabase;
   Timer? _analysisTimer;
+  RealtimeChannel? _financeStream;
 
   // Interna memorija bebe
   final FuelInventory _inventory = FuelInventory();
@@ -53,14 +52,21 @@ class MLFinanceAutonomousService {
   Future<void> start() async {
     if (_isActive) return;
     _isActive = true;
-    if (kDebugMode) print('💰 [ML Finance] Beba Računovođa je budna i otvara knjige...');
+    if (kDebugMode) print('💰 [ML Finance] Beba Računovođa je budna i otvara knjige (Realtime)...');
 
     await _loadFinancialContext();
 
-    // Pokreni periodičnu proveru duga i stanja
+    // Pokreni periodičnu proveru duga i stanja (backup)
     _analysisTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      _loadFinancialContext();
+      if (_financeStream == null) _loadFinancialContext();
     });
+  }
+
+  /// 🛑 STOP
+  void stop() {
+    _isActive = false;
+    _analysisTimer?.cancel();
+    _financeStream?.unsubscribe();
   }
 
   /// ⛽ DODAJ GORIVO NA VELIKO (Nabavka)
@@ -110,12 +116,7 @@ class MLFinanceAutonomousService {
 
   Future<void> _loadFinancialContext() async {
     // Ovde bi beba mogla da čita iz finansije_licno ili troskovi_unosi da inicijalizuje stanje
-    try {
-      final dynamic res = await _supabase.from('finansije_licno').select().eq('naziv', 'Dug za gorivo').maybeSingle();
-      if (res != null && res['iznos'] != null) {
-        _inventory.totalDebt = (res['iznos'] as num).toDouble();
-      }
-    } catch (_) {}
+    // REMOVED: Licni bilans izbacen iz koda
   }
 
   void _generateAdvice(String title, String desc, {bool isCritical = false}) {

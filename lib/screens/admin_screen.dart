@@ -872,23 +872,17 @@ class _AdminScreenState extends State<AdminScreen> {
                                         child: Center(
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: const [
-                                                    Text('Vozač',
-                                                        style: TextStyle(
-                                                            fontWeight: FontWeight.w600,
-                                                            fontSize: 14,
-                                                            color: Colors.white,
-                                                            shadows: [
-                                                              Shadow(
-                                                                  offset: Offset(1, 1),
-                                                                  blurRadius: 3,
-                                                                  color: Colors.black54)
-                                                            ])),
-                                                    Icon(Icons.arrow_drop_down, color: Colors.white, size: 16),
-                                                  ],
-                                                ))),
+                                                child: const Text('Vozač',
+                                                    style: TextStyle(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                        shadows: [
+                                                          Shadow(
+                                                              offset: Offset(1, 1),
+                                                              blurRadius: 3,
+                                                              color: Colors.black54)
+                                                        ])))),
                                       ),
                                     ),
                                   ),

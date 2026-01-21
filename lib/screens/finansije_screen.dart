@@ -14,7 +14,6 @@ class FinansijeScreen extends StatefulWidget {
 
 class _FinansijeScreenState extends State<FinansijeScreen> {
   FinansijskiIzvestaj? _izvestaj;
-  List<LicnaStavka> _licneStavke = [];
 
   bool _isLoading = true;
 
@@ -29,12 +28,10 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final izvestaj = await FinansijeService.getIzvestaj();
-    final licne = await FinansijeService.getLicneStavke();
 
     if (mounted) {
       setState(() {
         _izvestaj = izvestaj;
-        _licneStavke = licne;
         _isLoading = false;
       });
     }
@@ -129,22 +126,6 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
 
                         // TROŠKOVI DETALJI
                         _buildTroskoviCard(),
-
-                        const SizedBox(height: 24),
-
-                        // ---------------- DUGOVI I UŠTEĐEVINA ----------------
-                        const Text(
-                          'LIČNE FINANSIJE',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        _buildLicneFinansijeCard(),
 
                         const SizedBox(height: 24),
                       ],
@@ -621,228 +602,5 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
       // Dozvoljava i negativne za ispravke
       await FinansijeService.addTrosak(naziv, tip, iznos);
     }
-  }
-
-  Widget _buildLicneFinansijeCard() {
-    double ukupnoDug = 0;
-    double ukupnoStednja = 0;
-
-    for (var s in _licneStavke) {
-      if (s.tip == 'dug') ukupnoDug += s.iznos;
-      if (s.tip == 'stednja') ukupnoStednja += s.iznos;
-    }
-
-    final ukupnoStanje = ukupnoStednja - ukupnoDug;
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Lični Bilans', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                IconButton(
-                  icon: const Icon(Icons.add_circle, color: Colors.blue),
-                  onPressed: _showAddLicnoDialog,
-                ),
-              ],
-            ),
-            const Divider(),
-            _buildRow('Ušteđevina', ukupnoStednja, Colors.green.shade700, isPlus: true),
-            const SizedBox(height: 8),
-            _buildRow('Dugovi', ukupnoDug, Colors.red.shade700, isMinus: true),
-            const Divider(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Slobodna sredstva', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(
-                  _formatBroja.format(ukupnoStanje),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: ukupnoStanje >= 0 ? Colors.green : Colors.red,
-                  ),
-                ),
-              ],
-            ),
-            if (_licneStavke.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Detalji:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              ),
-              const SizedBox(height: 8),
-              ..._licneStavke.map((e) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                    leading: Text(e.tip == 'dug' ? '🔴' : '🟢'),
-                    title: Text(e.naziv),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _formatBroja.format(e.iznos),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue, size: 16),
-                          constraints: const BoxConstraints(),
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          onPressed: () => _showAddLicnoDialog(stavka: e),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.grey, size: 16),
-                          constraints: const BoxConstraints(),
-                          padding: EdgeInsets.zero,
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Obriši stavku?'),
-                                content: Text('Da li želiš da obrišeš "${e.naziv}"?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Ne')),
-                                  TextButton(
-                                      onPressed: () => Navigator.pop(context, true),
-                                      child: const Text('Da', style: TextStyle(color: Colors.red))),
-                                ],
-                              ),
-                            );
-
-                            if (confirm == true) {
-                              await FinansijeService.deleteLicnaStavka(e.id);
-                              _loadData();
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  )),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAddLicnoDialog({LicnaStavka? stavka}) {
-    String tip = stavka?.tip ?? 'stednja';
-    String valuta = 'RSD';
-    final nazivController = TextEditingController(text: stavka?.naziv ?? '');
-    final iznosController =
-        TextEditingController(text: stavka?.iznos != null ? (stavka?.iznos ?? 0).toStringAsFixed(0) : '');
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(stavka == null ? 'Nova lična stavka' : 'Izmeni stavku'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioGroup<String>(
-                groupValue: tip,
-                onChanged: (String? v) {
-                  if (v != null) setState(() => tip = v);
-                },
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: RadioListTile<String>(
-                        title: const Text('Dug'),
-                        value: 'dug',
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    Expanded(
-                      child: RadioListTile<String>(
-                        title: const Text('Štednja'),
-                        value: 'stednja',
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              TextField(
-                controller: nazivController,
-                decoration: const InputDecoration(labelText: 'Naziv (npr. "Za sobu")'),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      controller: iznosController,
-                      decoration: const InputDecoration(labelText: 'Iznos'),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 1,
-                    child: DropdownButtonFormField<String>(
-                      initialValue: valuta,
-                      decoration: const InputDecoration(labelText: 'Valuta'),
-                      items: const [
-                        DropdownMenuItem(value: 'RSD', child: Text('RSD')),
-                        DropdownMenuItem(value: 'EUR', child: Text('EUR')),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) setState(() => valuta = v);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              if (valuta == 'EUR')
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Računam kurs: 1 EUR = 117.2 RSD',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Otkaži'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final naziv = nazivController.text.trim();
-                var iznos = double.tryParse(iznosController.text) ?? 0;
-
-                if (valuta == 'EUR') {
-                  iznos = iznos * 117.2; // Konverzija
-                }
-
-                if (naziv.isNotEmpty && iznos > 0) {
-                  if (stavka == null) {
-                    await FinansijeService.addLicnaStavka(tip, naziv, iznos);
-                  } else {
-                    await FinansijeService.updateLicnaStavka(stavka.id, tip, naziv, iznos);
-                  }
-
-                  if (context.mounted) Navigator.pop(context);
-                  _loadData();
-                }
-              },
-              child: const Text('Sačuvaj'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

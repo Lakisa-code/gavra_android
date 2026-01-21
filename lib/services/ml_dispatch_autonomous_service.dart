@@ -17,6 +17,9 @@ import 'local_notification_service.dart';
 class MLDispatchAutonomousService {
   static SupabaseClient get _supabase => supabase;
 
+  // 📡 REALTIME
+  RealtimeChannel? _bookingStream;
+
   // Interna memorija bebe
   final Map<String, dynamic> _dispatchKnowledge = <String, dynamic>{};
   bool _isActive = false;
@@ -39,16 +42,45 @@ class MLDispatchAutonomousService {
     }
     _isActive = true;
     if (kDebugMode) {
-      print('👨‍✈️ [ML Dispatch] Beba Dispečer je budna i posmatra tablu...');
+      print('👨‍✈️ [ML Dispatch] Beba Dispečer je budna i posmatra tablu (Realtime)...');
     }
 
     await _loadHistoricalDemand();
     _startVelocityMonitoring();
-    _startIntegrityCheck(); // 🛡️ Nova zaštita "da niko ne bude zaboravljen"
+    _startIntegrityCheck();
+
+    // ⚡ REALTIME LIVE MONITORING
+    _subscribeToBookingStream();
+  }
+
+  void _subscribeToBookingStream() {
+    try {
+      _bookingStream = _supabase
+          .channel('public:seat_requests')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert, // Samo nove rezervacije nas zanimaju za velocity
+            schema: 'public',
+            table: 'seat_requests',
+            callback: (payload) {
+              if (kDebugMode) print('⚡ [ML Dispatch] NOVA REZERVACIJA! Proveravam gužvu...');
+              _analyzeRealtimeDemand(); // Odmah okidamo analizu
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      if (kDebugMode) print('⚠️ [ML Dispatch] Greška stream-a: $e');
+    }
+  }
+
+  /// 🛑 ZAUSTAVI
+  void stop() {
+    _isActive = false;
+    _velocityTimer?.cancel();
+    _bookingStream?.unsubscribe();
   }
 
   void _startVelocityMonitoring() {
-    // Proverava svaka 2 minuta brzinu popunjavanja
+    // Proverava svaka 2 minuta brzinu popunjavanja (Backup za stream)
     _velocityTimer = Timer.periodic(const Duration(minutes: 2), (Timer timer) async {
       await _analyzeRealtimeDemand();
     });
@@ -217,11 +249,6 @@ class MLDispatchAutonomousService {
 
   Future<void> _loadHistoricalDemand() async {
     _dispatchKnowledge['last_sync'] = DateTime.now().toIso8601String();
-  }
-
-  void stop() {
-    _velocityTimer?.cancel();
-    _isActive = false;
   }
 }
 
