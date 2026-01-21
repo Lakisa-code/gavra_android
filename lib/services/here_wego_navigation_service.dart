@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/putnik.dart';
+import '../utils/device_utils.dart'; // DODAJ OVO
 
 /// 🧭 HERE WEGO NAVIGATION SERVICE
 /// Koristi ISKLJUČIVO HERE WeGo za navigaciju - OBAVEZNA INSTALACIJA
@@ -23,7 +26,15 @@ class HereWeGoNavigationService {
       // ⚠️ OBAVEZNA PROVERA - Mora biti instaliran HERE WeGo
       final isInstalled = await _isHereWeGoInstalled();
       if (!isInstalled) {
-        return HereWeGoNavResult.error('❌ HERE WeGo nije instaliran. Instalirajte aplikaciju za navigaciju.');
+        if (!context.mounted) {
+          return HereWeGoNavResult.error('HERE WeGo nije instaliran.');
+        }
+
+        final shouldInstall = await _showInstallDialog(context);
+        if (shouldInstall) {
+          await _openStore();
+        }
+        return HereWeGoNavResult.error('⚠️ Molimo instalirajte HERE WeGo aplikaciju pre nastavka.');
       }
 
       // FILTRIRAJ PUTNIKE SA VALIDNIM KOORDINATAMA
@@ -59,10 +70,81 @@ class HereWeGoNavigationService {
   /// 🔍 Proveri da li je HERE WeGo instaliran
   static Future<bool> _isHereWeGoInstalled() async {
     try {
-      final appUri = Uri.parse('$appScheme://test');
-      return await canLaunchUrl(appUri);
+      // Proveravamo više poznatih šema da budemo sigurni
+      final schemes = [
+        '$appScheme://test',
+        'here-route://test',
+        'here-location://test',
+      ];
+
+      for (final s in schemes) {
+        if (await canLaunchUrl(Uri.parse(s))) return true;
+      }
+      return false;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// 📥 Dijalog za instalaciju
+  static Future<bool> _showInstallDialog(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('🧭 HERE WeGo Navigacija'),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Za rad sa putnicima koristimo ISKLJUČIVO HERE WeGo navigaciju.'),
+                SizedBox(height: 12),
+                Text('Aplikacija trenutno nije nađena na vašem telefonu.'),
+                SizedBox(height: 12),
+                Text('Da li želite da je preuzmete sada?'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Odustani'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                child: const Text('Preuzmi (Install)'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  /// 🏬 Otvori Store za download
+  static Future<void> _openStore() async {
+    String url = '';
+
+    if (Platform.isAndroid) {
+      final isHuawei = await DeviceUtils.isHuaweiDevice();
+
+      if (isHuawei) {
+        // AppGallery link za HERE WeGo
+        url = 'https://appgallery.huawei.com/app/C101452907';
+        // Možemo probati i direktnu šemu za AppGallery ako je podržano
+        final marketUri = Uri.parse('appmarket://details?id=com.here.app.maps');
+        if (await canLaunchUrl(marketUri)) {
+          await launchUrl(marketUri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } else {
+        url = 'https://play.google.com/store/apps/details?id=com.here.app.maps';
+      }
+    } else if (Platform.isIOS) {
+      url = 'https://apps.apple.com/app/here-wego-maps-navigation/id955837609';
+    }
+
+    if (url.isNotEmpty) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
   }
 
@@ -176,7 +258,7 @@ class HereWeGoNavigationService {
         final shouldContinue = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text('Segment ${currentSegment}/${segments.length} završen'),
+            title: Text('Segment $currentSegment/${segments.length} završen'),
             content: Text(
               'Pokupljeno: ${launchedPutnici.length} putnika\n'
               'Preostalo: $remainingCount putnika\n\n'
@@ -208,9 +290,11 @@ class HereWeGoNavigationService {
 
   /// 📊 Proveri status navigacije
   static Future<NavigationStatus> checkNavigationStatus() async {
-    return const NavigationStatus(
-      isHuaweiDevice: false,
-      isHereWeGoInstalled: true, // Web scheme uvek radi
+    final installed = await _isHereWeGoInstalled();
+    final isHuawei = await DeviceUtils.isHuaweiDevice();
+    return NavigationStatus(
+      isHuaweiDevice: isHuawei,
+      isHereWeGoInstalled: installed,
     );
   }
 }

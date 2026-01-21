@@ -296,3 +296,20 @@ Deo Gavra Android aplikacije - internal use only.
 **Napravljeno sa ❤️ za Gavra Transport**  
 **Verzija:** 1.0.0  
 **Datum:** January 18, 2026
+
+## 👶 "Baby Pilot" Protocol (Sandbox Rules)
+
+Od 21. januara 2026, ML sistem je proširen na autonomne "bebe" koje uče u sandbox okruženju.
+
+### 🛡️ Sigurnosna Pravila (Pesak)
+1. **READ-ONLY po defaultu**: Bebe (servisi) smeju samo da čitaju iz produkcionih tabela (`seat_requests`, `putnici`, `voznje_log`).
+2. **NEMA BRISANJA**: Autonomni servisi nikada ne smeju pozvati `.delete()` na radnim tabelama.
+3. **NEMA MENJANJA PUTNIKA**: Bebe ne smeju same menjati `broj_mesta` ili `vreme` u `seat_requests`.
+4. **PROPOSE-ONLY (Test Faza)**: SVE što bi beba uradila (zakazala, otkazala, poslala poruku) mora prvo biti prikazano kao **Predlog**. Beba **ne sme** vršiti side-effekte na produkciji bez tvog AMIN-a.
+5. **IZOLACIJA**: Sve kalkulacije i state-ovi beba moraju ostati unutar njihovih servisa ili `ML Lab` ekrana.
+
+## 🚀 Logika "Tata, proveri me!"
+Sistem je sada podešen za tvoje testiranje i upoređivanje preciznosti:
+- **Lokalne Notifikacije**: Kad god beba nešto "smeisli", dobićeš notifikaciju na telefon.
+- **Predlozi u Lab-u**: U svakom tabu ćeš videti **"Beba želi: ..."** pored trenutnog stanja u bazi.
+- **Upoređivanje**: Možeš uživo da vidiš koliko su bebi-predlozi bolji ili lošiji od onoga što si ti uradio ručno.

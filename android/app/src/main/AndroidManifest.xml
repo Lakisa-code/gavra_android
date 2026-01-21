@@ -122,6 +122,7 @@
     <!-- 🗺️ NAVIGATION APPS - Required for Android 11+ to query navigation intents -->
     <!-- Google Maps (explicit package for GBox compatibility) -->
     <package android:name="com.google.android.apps.maps"/>
+    <package android:name="com.here.app.maps"/>
     
     <!-- Google Maps intent -->
     <intent>
@@ -145,6 +146,10 @@
     <intent>
       <action android:name="android.intent.action.VIEW"/>
       <data android:scheme="here-route"/>
+    </intent>
+    <intent>
+      <action android:name="android.intent.action.VIEW"/>
+      <data android:scheme="here.directions"/>
     </intent>
     
     <!-- Yandex Maps -->

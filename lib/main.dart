@@ -19,8 +19,11 @@ import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
-import 'services/ml_vehicle_autonomous_service.dart'; // 🧠 Autonomni ML Lab za vozila
-import 'services/payment_reminder_service.dart'; // 💰 Automatski payment reminder (27. i 5.)
+import 'services/ml_champion_service.dart';
+import 'services/ml_dispatch_autonomous_service.dart';
+import 'services/ml_finance_autonomous_service.dart';
+import 'services/ml_vehicle_autonomous_service.dart';
+import 'services/payment_reminder_service.dart';
 import 'services/putnik_service.dart'; // 🔄 DODATO za nedeljni reset
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
@@ -179,11 +182,15 @@ void main() async {
       if (kDebugMode) debugPrint('❌ [WeatherAlert] Check failed: $e');
     }
 
-    // 🧠 POKRENI AUTONOMNI ML LAB ZA VOZILA
+    // 👶 AI BABIES (Autonomous Services)
+    // One se pale same i uče u svom pesku (ML Lab), ne diraju produkcione podatke.
     try {
-      await MLVehicleAutonomousService().start();
+      MLVehicleAutonomousService().start();
+      MLDispatchAutonomousService().start();
+      MLChampionService().start();
+      MLFinanceAutonomousService().start(); // DODAJ OVO
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [MLVehicleLab] Init failed: $e');
+      if (kDebugMode) debugPrint('⚠️ [AI Babies] Neuspešan start u pozadini: $e');
     }
   } else {
     if (kDebugMode) debugPrint('⚠️ [Main] Skipping secondary services because Supabase is not ready');
@@ -239,7 +246,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   /// 🔋 Show battery optimization warning for Huawei/Xiaomi phones
   Future<void> _checkBatteryOptimization() async {
     try {
-      await Future.delayed(const Duration(seconds: 3)); // Wait for app to fully load
+      await Future<void>.delayed(const Duration(seconds: 3)); // Wait for app to fully load
       if (!mounted) return;
 
       final shouldShow = await BatteryOptimizationService.shouldShowWarning();
@@ -253,7 +260,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Future<void> _forceSubscribeToTopics() async {
     try {
-      await Future.delayed(const Duration(seconds: 2)); // Wait for Firebase init
+      await Future<void>.delayed(const Duration(seconds: 2)); // Wait for Firebase init
       if (!mounted) return; // 🛡️ Zaštita od poziva nakon dispose
       await RealtimeNotificationService.subscribeToDriverTopics('test_driver');
     } catch (e) {
@@ -319,7 +326,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           debugShowCheckedModeBanner: false,
           theme: themeData, // Light tema
           // Samo jedna tema - nema dark mode
-          navigatorObservers: [],
+          navigatorObservers: const [],
           home: _buildHome(),
         );
       },

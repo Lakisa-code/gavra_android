@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 
-import '../config/calendar_config.dart';
-import '../services/driver_location_service.dart';
-import '../services/ml_service.dart';
+import '../services/ml_champion_service.dart';
+import '../services/ml_dispatch_autonomous_service.dart';
+import '../services/ml_finance_autonomous_service.dart';
 import '../services/ml_vehicle_autonomous_service.dart';
-import '../services/realtime_gps_service.dart';
 
 /// ML Lab Screen - Machine Learning Analysis and Predictions
 ///
@@ -31,29 +29,32 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Row(
-          children: [
-            Icon(Icons.psychology, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('ML - Autonomni Sistem'),
-          ],
-        ),
+        title: const Text('Gavra AI Lab 🧪'),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
           indicatorColor: Colors.blue,
           indicatorWeight: 3,
           tabs: const [
-            Tab(icon: Icon(Icons.auto_mode), text: 'Vozila (AI)'),
+            Tab(icon: Icon(Icons.psychology), text: 'Fizičar'),
+            Tab(icon: Icon(Icons.hail), text: 'Dispečer'),
+            Tab(icon: Icon(Icons.emoji_events), text: 'Šampion'),
+            Tab(icon: Icon(Icons.calculate), text: 'Računovođa'),
             Tab(icon: Icon(Icons.settings), text: 'Podešavanja'),
           ],
         ),
@@ -62,6 +63,9 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         controller: _tabController,
         children: [
           _buildVehicleAITab(),
+          _buildDispatcherTab(),
+          _buildChampionTab(),
+          _buildAccountantTab(),
           _buildSettingsTab(),
         ],
       ),
@@ -73,6 +77,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     final service = MLVehicleAutonomousService();
     final targets = service.activeMonitoringTargets;
     final knowledge = service.currentKnowledge;
+    final inferences = service.businessInferences;
     final interval = service.currentInterval;
 
     return SingleChildScrollView(
@@ -185,7 +190,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
 
           // 📚 KNOWLEDGE BASE
           const Text(
-            'Naučeni Obrasci',
+            'Digitalna Mapa Uma (Otkriveni Svet)',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -199,33 +204,131 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             crossAxisSpacing: 10,
             children: [
               _buildKnowledgeCard(
-                'Gume',
-                '${(knowledge['tire_wear'] as Map?)?.length ?? 0} guma',
-                Icons.tire_repair,
+                'Sobe',
+                '${(knowledge['discovered_tables'] as List?)?.length ?? 0} tabela',
+                Icons.door_sliding,
                 Colors.blue,
               ),
               _buildKnowledgeCard(
-                'Gorivo',
-                '${(knowledge['fuel_consumption'] as Map?)?.length ?? 0} vozila',
-                Icons.local_gas_station,
+                'Bioritmi',
+                (knowledge['temporal_patterns'] as Map?)?.isNotEmpty == true ? 'Aktivno' : 'Učenje...',
+                Icons.access_time_filled,
                 Colors.orange,
               ),
               _buildKnowledgeCard(
-                'Troškovi',
-                '${(knowledge['cost_trends'] as Map?)?.length ?? 0} vozila',
-                Icons.euro,
+                'Veze',
+                '${(knowledge['correlations'] as Map?)?.length ?? 0} korelacija',
+                Icons.hub,
                 Colors.green,
               ),
               _buildKnowledgeCard(
-                'Otkrića',
-                '${(knowledge['discoveries'] as List?)?.length ?? 0} novih',
-                Icons.lightbulb_outline,
+                'Radoznalost',
+                '${((1 - service.confidenceThreshold) * 100).toStringAsFixed(0)}%',
+                Icons.psychology,
                 Colors.purple,
               ),
             ],
           ),
 
+          const SizedBox(height: 16),
+
+          // 🕒 TEMPORAL BIORHYTHMS (NEW SECTION)
+          if ((knowledge['temporal_patterns'] as Map?)?.isNotEmpty == true) ...[
+            const Text(
+              'Bioritmi (Kada se šta dešava?)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 120,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _buildPatternCard('Špicevi dana', Icons.flash_on,
+                      ((knowledge['temporal_patterns'] as Map?)?['hour'] as Map? ?? {}).keys.take(3).join(', ')),
+                  _buildPatternCard('Sezonalnost', Icons.calendar_month,
+                      ((knowledge['temporal_patterns'] as Map?)?['month'] as Map? ?? {}).keys.take(3).join(', ')),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 24),
+
+          // 👶 BEBA UČI (BIZNIS OTKRIĆA)
+          if (inferences.isNotEmpty) ...[
+            const Row(
+              children: [
+                Icon(Icons.child_care, color: Colors.blue),
+                SizedBox(width: 8),
+                Text(
+                  'Bebina Otkrića (Pasivno Učenje)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Ovi predlozi ne menjaju podatke - beba samo posmatra i uči za tebe.',
+              style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+            ),
+            const SizedBox(height: 12),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: inferences.length,
+              itemBuilder: (context, index) {
+                final inference = inferences[index];
+                return Card(
+                  elevation: 0,
+                  color: Colors.blue.withAlpha(13), // 0.05 * 255 ≈ 13
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.blue.withAlpha(51)), // 0.2 * 255 ≈ 51
+                  ),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              inference.title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: _getInferenceColor(inference.type),
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'Pouzdanost: ${(inference.probability * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          inference.description,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        LinearProgressIndicator(
+                          value: inference.probability,
+                          backgroundColor: Colors.white,
+                          color: _getInferenceColor(inference.type),
+                          minHeight: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
 
           Center(
             child: ElevatedButton.icon(
@@ -247,6 +350,19 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     return Colors.green;
   }
 
+  Color _getInferenceColor(InferenceType type) {
+    switch (type) {
+      case InferenceType.driverPreference:
+        return Colors.purple;
+      case InferenceType.capacity:
+        return Colors.orange;
+      case InferenceType.passengerQuality:
+        return Colors.green;
+      case InferenceType.routeTrend:
+        return Colors.blue;
+    }
+  }
+
   Widget _buildKnowledgeCard(String title, String subtitle, IconData icon, Color color) {
     return Card(
       elevation: 2,
@@ -265,7 +381,574 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     );
   }
 
-  /// Tab 2: Settings
+  Widget _buildPatternCard(String title, IconData icon, String value) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(right: 12),
+      child: Card(
+        color: Colors.orange.withAlpha(20),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.orange, size: 20),
+              const SizedBox(height: 8),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              Text(
+                value.isEmpty ? 'Analiza u toku...' : value,
+                style: const TextStyle(fontSize: 14, color: Colors.orange),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Tab 2: Dispatcher (The Baby Dispatcher)
+  Widget _buildDispatcherTab() {
+    final MLDispatchAutonomousService service = MLDispatchAutonomousService();
+    final List<DispatchAdvice> advices = service.activeAdvice;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 👨‍✈️ DISPATCHER STATUS
+          Card(
+            color: Colors.blue.shade50,
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.support_agent, size: 40, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('MALI DISPEČER', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('Aktivno posmatram brzinu rezervacija...',
+                            style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => service.start(),
+                    child: const Text('AKTIVIRAJ'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text('Saveti Male Bebe:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          if (advices.isEmpty)
+            const Center(
+                child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Text('Nema kritičnih gužvi za sada. Tabela je čista.'),
+            ))
+          else
+            ...advices
+                .map((DispatchAdvice advice) => Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        leading: Icon(
+                          advice.priority == AdvicePriority.critical ? Icons.warning : Icons.lightbulb,
+                          color: advice.priority == AdvicePriority.critical ? Colors.red : Colors.orange,
+                        ),
+                        title: Text(advice.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(advice.description),
+                            if (advice.originalStatus != null || advice.proposedChange != null) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (advice.originalStatus != null)
+                                      Text('Trenutno: ${advice.originalStatus}',
+                                          style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                                    if (advice.proposedChange != null)
+                                      Text('Beba želi: ${advice.proposedChange}',
+                                          style: const TextStyle(
+                                              fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        trailing: ElevatedButton(
+                          onPressed: () {}, // Akcija će zavisiti od tipa saveta
+                          child: Text(advice.action),
+                        ),
+                      ),
+                    ))
+                .toList(),
+        ],
+      ),
+    );
+  }
+
+  /// Tab 3: Champion (Passenger Reputation)
+  Widget _buildChampionTab() {
+    final MLChampionService service = MLChampionService();
+    final List<PassengerStats> legends = service.topLegends;
+    final List<PassengerStats> problematic = service.problematicOnes;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBabyTalkPanel('Šampion kaže:', [
+            'Danas su svi bili dobri, ponosan sam! 👶',
+            if (service.proposedMessages.isNotEmpty)
+              'Imam ${service.proposedMessages.length} predloženih poruka koje čekaju tvoj AMIN. 📝',
+            'Ovaj puca na 5.0, daj mu popust sledeći put.',
+          ]),
+          const SizedBox(height: 16),
+          if (service.proposedMessages.isNotEmpty) ...[
+            const Text('Predložene Poruke (Test Faza):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            ...service.proposedMessages.map((msg) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: const Icon(Icons.chat_bubble_outline, color: Colors.purple),
+                    title: Text('Za: ${msg.userName} (${msg.context})'),
+                    subtitle: Text('"${msg.message}"'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () {}),
+                        IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () {}),
+                      ],
+                    ),
+                  ),
+                )),
+            const Divider(),
+          ],
+          Card(
+            color: Colors.amber.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.stars, size: 40, color: Colors.amber),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('ŠAMPION (COMMUNITY AI)', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('Analiziram ponašanje i vaspitavam putnike.', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      await service.analyzeAll();
+                      if (mounted) setState(() {});
+                    },
+                    child: const Text('SKENIRAJ SVE'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text('Top Legende (5.0)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+          const SizedBox(height: 8),
+          if (legends.isEmpty)
+            const Text('Nema podataka. Pokreni skeniranje.', style: TextStyle(fontStyle: FontStyle.italic))
+          else
+            ...legends
+                .map((PassengerStats p) => ListTile(
+                      leading: CircleAvatar(
+                          backgroundColor: Colors.green.shade100, child: const Icon(Icons.person, color: Colors.green)),
+                      title: Text(p.name),
+                      subtitle: Text('Skor: ${p.score.toStringAsFixed(1)} | Vožnji: ${p.totalTrips}'),
+                      trailing: const Icon(Icons.verified, color: Colors.green),
+                    ))
+                .toList(),
+          if (problematic.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const Text('Problematični (Ispod 4.0)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+            const SizedBox(height: 8),
+            ...problematic
+                .map((PassengerStats p) => ListTile(
+                      leading: CircleAvatar(
+                          backgroundColor: Colors.red.shade100, child: const Icon(Icons.person, color: Colors.red)),
+                      title: Text(p.name),
+                      subtitle: Text('Skor: ${p.score.toStringAsFixed(1)} | Otkazano: ${p.cancellations}'),
+                      trailing: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+                    ))
+                .toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBabyTalkPanel(String title, List<String> thoughts) {
+    // Provera integriteta za "zaboravljene putnike"
+    final bool isEverythingOk =
+        MLDispatchAutonomousService().activeAdvice.every((a) => a.priority != AdvicePriority.critical);
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isEverythingOk ? Colors.green.withAlpha(20) : Colors.red.withAlpha(20),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: isEverythingOk ? Colors.green.withAlpha(51) : Colors.red.withAlpha(51)),
+          ),
+          child: Row(
+            children: [
+              Icon(isEverythingOk ? Icons.verified_user : Icons.warning_amber_rounded,
+                  size: 16, color: isEverythingOk ? Colors.green : Colors.red),
+              const SizedBox(width: 8),
+              Text(
+                isEverythingOk ? 'BEZBEDNOST: Svi putnici su na broju ✅' : 'UPOZORENJE: Proveri tablu! ⚠️',
+                style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.bold, color: isEverythingOk ? Colors.green : Colors.red),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.purple.withAlpha(20),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.purple.withAlpha(51)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.child_care, size: 20, color: Colors.purple),
+                  const SizedBox(width: 8),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...thoughts.map((t) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• $t', style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 13)),
+                  )),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Tab 4: Accountant (Finance AI)
+  Widget _buildAccountantTab() {
+    final service = MLFinanceAutonomousService();
+    final inventory = service.inventory;
+    final adviceList = service.activeAdvice;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 💰 FINANCIAL STATUS CARD
+          Card(
+            elevation: 8,
+            shadowColor: Colors.green.withOpacity(0.5),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.green, width: 2)),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                    colors: [Colors.green.shade900, Colors.black87],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('TRENUTNI DUG (GORIVO)',
+                              style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 4),
+                          Text('BEBA RAČUNA...',
+                              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15)),
+                        child: const Icon(Icons.account_balance_wallet, color: Colors.greenAccent, size: 30),
+                      ),
+                    ],
+                  ),
+                  const Divider(color: Colors.white24, height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem(
+                          'Zalihe', '${inventory.litersInStock.toStringAsFixed(1)} L', Icons.local_gas_station),
+                      _buildStatItem('Ukupno Dug', '${inventory.totalDebt.toStringAsFixed(0)} din', Icons.money_off),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // 🛠️ ANALITIČKE RADNJE
+          const Text('Brze Akcije (Beba beleži)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionCard(
+                  'Nabavka na veliko',
+                  Icons.add_shopping_cart,
+                  Colors.blue,
+                  () => _showBulkPurchaseDialog(context, service),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionCard(
+                  'Sipanje u kombi',
+                  Icons.local_gas_station,
+                  Colors.purple,
+                  () => _showVanRefillDialog(context, service),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionCard(
+                  'Isplata duga',
+                  Icons.payment,
+                  Colors.orange,
+                  () => _showPaymentDialog(context, service),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // 📜 SAVETI BEBE RAČUNOVEĐE
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.amber),
+              SizedBox(width: 8),
+              Text('Knjiga Beba-Logike', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (adviceList.isEmpty)
+            const Center(child: Text('Beba još uvek slaže račune. Sve je pod kontrolom!'))
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: adviceList.length,
+              itemBuilder: (context, index) {
+                final advice = adviceList[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: Icon(
+                      advice.isCritical ? Icons.report_problem : Icons.info,
+                      color: advice.isCritical ? Colors.red : Colors.blue,
+                    ),
+                    title: Text(advice.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(advice.description),
+                    trailing: Text(
+                      '${advice.timestamp.hour}:${advice.timestamp.minute.toString().padLeft(2, '0')}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white54, size: 20),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+      ],
+    );
+  }
+
+  Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(height: 8),
+            Text(title,
+                textAlign: TextAlign.center, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBulkPurchaseDialog(BuildContext context, MLFinanceAutonomousService service) {
+    final litersController = TextEditingController();
+    final priceController = TextEditingController(text: service.inventory.fuelPrice.toString());
+
+    showDialog<dynamic>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Nabavka Goriva (Na veliko)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+                controller: litersController,
+                decoration: const InputDecoration(labelText: 'Litarska (L)', hintText: 'npr. 1000'),
+                keyboardType: TextInputType.number),
+            TextField(
+                controller: priceController,
+                decoration: const InputDecoration(labelText: 'Cena po litru', hintText: 'npr. 200'),
+                keyboardType: TextInputType.number),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+          ElevatedButton(
+            onPressed: () {
+              final liters = double.tryParse(litersController.text) ?? 0;
+              final price = double.tryParse(priceController.text) ?? 0;
+              if (liters > 0 && price > 0) {
+                setState(() {
+                  service.recordBulkPurchase(liters: liters, pricePerLiter: price);
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Evidentiraj'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPaymentDialog(BuildContext context, MLFinanceAutonomousService service) {
+    final amountController = TextEditingController();
+    showDialog<dynamic>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Isplata Duga'),
+        content: TextField(
+            controller: amountController,
+            decoration: const InputDecoration(labelText: 'Iznos isplate (din)'),
+            keyboardType: TextInputType.number),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+          ElevatedButton(
+            onPressed: () {
+              final amount = double.tryParse(amountController.text) ?? 0;
+              if (amount > 0) {
+                setState(() {
+                  service.recordPayment(amount);
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Potvrdi Isplatu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showVanRefillDialog(BuildContext context, MLFinanceAutonomousService service) {
+    final litersController = TextEditingController();
+    final vehicleController = TextEditingController();
+
+    showDialog<dynamic>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Sipanje iz zaliha'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+                controller: vehicleController,
+                decoration: const InputDecoration(labelText: 'Kombi (ID/Ime)', hintText: 'npr. BG-123'),
+                keyboardType: TextInputType.text),
+            TextField(
+                controller: litersController,
+                decoration: const InputDecoration(labelText: 'Litara (L)', hintText: 'npr. 50'),
+                keyboardType: TextInputType.number),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+          ElevatedButton(
+            onPressed: () {
+              final liters = double.tryParse(litersController.text) ?? 0;
+              final vehicle = vehicleController.text;
+              if (liters > 0 && vehicle.isNotEmpty) {
+                setState(() {
+                  service.recordVanRefill(vehicleId: vehicle, liters: liters);
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Sipano!'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tab 5: Settings
   Widget _buildSettingsTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -337,7 +1020,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             subtitle: const Text('Force retrain with latest data'),
             trailing: ElevatedButton(
               onPressed: () async {
-                showDialog(
+                showDialog<void>(
                   context: context,
                   barrierDismissible: false,
                   builder: (context) => const AlertDialog(
@@ -351,7 +1034,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                   ),
                 );
 
-                await Future.delayed(const Duration(seconds: 2));
+                await Future<void>.delayed(const Duration(seconds: 2));
 
                 if (mounted) {
                   Navigator.of(context).pop();
@@ -373,7 +1056,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             trailing: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () {
-                showDialog(
+                showDialog<void>(
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Clear Training Data?'),
@@ -416,8 +1099,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             '• Praznici sutra (kombiji ne voze)\n'
             '• Početak školskog raspusta\n'
             '• Očekivani prebuking (18+ putnika)\n\n'
-            'Implementacija: lib/examples/ml_usage_examples.dart\n'
-            'Funkcija: MLNotificationService.checkAndNotify()',
+            'Implementacija: lib/services/ml_vehicle_autonomous_service.dart',
             style: TextStyle(color: Colors.grey, fontSize: 12),
           ),
           const SizedBox(height: 24),
@@ -431,171 +1113,6 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             style: TextStyle(color: Colors.grey),
           ),
         ],
-      ),
-    );
-  }
-
-  // Helper Widgets
-
-  Widget _buildPredictionCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required List<String> predictions,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 28),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...predictions.map((p) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('• $p'),
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(String title, String metric, Color color) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(backgroundColor: color, child: const Icon(Icons.analytics, color: Colors.white)),
-        title: Text(title),
-        trailing: Text(metric, style: const TextStyle(fontWeight: FontWeight.bold)),
-      },
-    );
-  }
-
-  Widget _buildTrainingSessionCard(String date, String samples, String accuracy) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.model_training),
-        title: Text(date),
-        subtitle: Text(samples),
-        trailing: Text(accuracy, style: const TextStyle(fontWeight: FontWeight.bold)),
-      },
-    );
-  }
-
-  Widget _buildDataStatsCard(String title, String value, IconData icon) {
-    return Card(
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blue),
-        title: Text(title),
-        trailing: Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      },
-    );
-  }
-
-  Widget _buildQualityIndicator(String label, double value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-              Text('${(value * 100).toStringAsFixed(1)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          LinearProgressIndicator(value: value, backgroundColor: Colors.grey.shade300, color: color),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeatureBar(String feature, double importance, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(feature),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: LinearProgressIndicator(
-                  value: importance,
-                  backgroundColor: Colors.grey.shade300,
-                  color: color,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text('${(importance * 100).toStringAsFixed(0)}%'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCalendarInfo() {
-    final now = DateTime.now();
-    final nextPraznik = CalendarConfig.getNextPraznik(now);
-    final nextRaspust = CalendarConfig.getNextRaspust(now);
-    final isPraznikToday = CalendarConfig.isPraznik(now);
-    final isRaspustToday = CalendarConfig.isSkolskiRaspust(now);
-
-    return Column(
-      children: [
-        if (isPraznikToday)
-          _buildCalendarInfoCard(
-            'Danas je praznik',
-            CalendarConfig.getOpis(now) ?? 'Državni praznik',
-            Icons.celebration,
-          ),
-        if (isRaspustToday)
-          _buildCalendarInfoCard(
-            'Školski raspust',
-            'Trenutno traje školski raspust',
-            Icons.school_outlined,
-          ),
-        if (nextPraznik != null)
-          _buildCalendarInfoCard(
-            'Sledeći praznik',
-            '${nextPraznik.value} - ${nextPraznik.key.day}/${nextPraznik.key.month}',
-            Icons.celebration_outlined,
-          ),
-        if (nextRaspust != null)
-          _buildCalendarInfoCard(
-            'Sledeći raspust',
-            '${nextRaspust.value} - ${nextRaspust.key.day}/${nextRaspust.key.month}',
-            Icons.school,
-          ),
-        if (!isPraznikToday && !isRaspustToday && nextPraznik == null)
-          _buildCalendarInfoCard(
-            'Calendar Status',
-            'Redovan radni dan - nema posebnih događaja',
-            Icons.event,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildCalendarInfoCard(String title, String info, IconData icon) {
-    return Card(
-      child: ListTile(
-        leading: Icon(icon, color: Colors.purple),
-        title: Text(title),
-        subtitle: Text(info),
       ),
     );
   }
