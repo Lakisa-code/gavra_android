@@ -11,7 +11,7 @@ on:
       release_notes:
         description: 'Release notes (What is new)'
         required: false
-        default: 'Ispravke grešaka i poboljšanja performansi.'
+        default: 'Automatsko ažuriranje (Performance Fixes)'
       submit_for_review_huawei:
         description: 'Huawei: Submit for review?'
         required: false
