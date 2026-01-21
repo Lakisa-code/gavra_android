@@ -412,7 +412,7 @@ jobs:
                    print('Running: ' + ' '.join(args))
                    return subprocess.check_output(args, stderr=subprocess.STDOUT).decode('utf-8')
                except subprocess.CalledProcessError as e:
-                   print('Command failed with output:\\n' + (e.output.decode("utf-8") if e.output else "No output"))
+                   print('Command failed with output:\\n' + (e.output.decode('utf-8') if e.output else 'No output'))
                    return None
            
            app_id = '$APP_ID'
