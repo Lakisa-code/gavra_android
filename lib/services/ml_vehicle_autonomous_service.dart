@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -13,8 +14,9 @@ import '../globals.dart';
 /// - Predviđa slobodna mesta i potrebe
 ///
 /// Radi u pozadini i SAM odlučuje šta je važno!
+/// 100% UNSUPERVISED: Beba uči strukturu baze i ritam održavanja.
 
-class MLVehicleAutonomousService {
+class MLVehicleAutonomousService extends ChangeNotifier {
   static SupabaseClient get _supabase => supabase;
 
   // 📡 REALTIME STREAMS
@@ -176,6 +178,7 @@ class MLVehicleAutonomousService {
     await _adaptParameters();
     await _autonomousDiscovery();
     await _saveLearnedPatterns();
+    notifyListeners();
   }
 
   Future<void> _autonomousDiscovery() async {

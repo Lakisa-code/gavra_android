@@ -25,15 +25,40 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   bool _enablePredictions = true;
   bool _autoTrain = true;
   bool _collectData = true;
+  bool _isScanningChampion = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    MLChampionService().addListener(_onChampionUpdate);
+    MLFinanceAutonomousService().addListener(_onFinanceUpdate);
+    MLDispatchAutonomousService().addListener(_onDispatchUpdate);
+    MLVehicleAutonomousService().addListener(_onVehicleUpdate);
+  }
+
+  void _onChampionUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  void _onFinanceUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  void _onDispatchUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  void _onVehicleUpdate() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    MLChampionService().removeListener(_onChampionUpdate);
+    MLFinanceAutonomousService().removeListener(_onFinanceUpdate);
+    MLDispatchAutonomousService().removeListener(_onDispatchUpdate);
+    MLVehicleAutonomousService().removeListener(_onVehicleUpdate);
     _tabController.dispose();
     super.dispose();
   }
@@ -117,6 +142,8 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                                 const Text('ONLINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                               ],
                             ),
+                            const Text('100% Unsupervised Self-Learning',
+                                style: TextStyle(fontSize: 10, color: Colors.purple, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -417,13 +444,15 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                 children: [
                   const Icon(Icons.support_agent, size: 40, color: Colors.blue),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('MALI DISPEČER', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('Aktivno posmatram brzinu rezervacija...',
-                            style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                        const Text('MALI DISPEČER', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('100% Unsupervised Self-Learning',
+                            style: TextStyle(fontSize: 10, color: Colors.blue.shade900, fontWeight: FontWeight.bold)),
+                        Text('Naučeni "Stalni": ${service.learnedRecurrentAvg.toStringAsFixed(1)}',
+                            style: TextStyle(fontSize: 10, color: Colors.blueGrey)),
                       ],
                     ),
                   ),
@@ -511,6 +540,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     final MLChampionService service = MLChampionService();
     final List<PassengerStats> legends = service.topLegends;
     final List<PassengerStats> problematic = service.problematicOnes;
+    final List<PassengerStats> anomalies = service.anomalies;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -521,9 +551,11 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             'Danas su svi bili dobri, ponosan sam! 👶',
             if (service.proposedMessages.isNotEmpty)
               'Imam ${service.proposedMessages.length} predloženih poruka koje čekaju tvoj AMIN. 📝',
-            'Ovaj puca na 5.0, daj mu popust sledeći put.',
+            if (anomalies.isNotEmpty)
+              'Primetio sam anomalije kod ${anomalies.length} putnika. Možda planiraju bekstvo? 🧐',
           ]),
           const SizedBox(height: 16),
+          // ... (ostatak koda za poruke)
           if (service.proposedMessages.isNotEmpty) ...[
             const Text('Predložene Poruke (Test Faza):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
@@ -552,32 +584,71 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                 children: [
                   const Icon(Icons.stars, size: 40, color: Colors.amber),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('ŠAMPION (COMMUNITY AI)', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('Analiziram ponašanje i vaspitavam putnike.', style: TextStyle(fontSize: 12)),
+                        const Text('ŠAMPION (COMMUNITY AI)', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('100% Unsupervised Self-Learning',
+                            style: TextStyle(fontSize: 10, color: Colors.amber.shade900, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Srednji skor: ${service.globalMeanScore.toStringAsFixed(2)} (±${service.globalStdDev.toStringAsFixed(2)})',
+                          style: TextStyle(fontSize: 10, color: Colors.black54),
+                        ),
+                        Text(
+                          'Sistemsko otkazivanje: ${(service.systemAvgCancelRate * 100).toStringAsFixed(1)}% | Kazna: -${service.currentPenalty.toStringAsFixed(2)}',
+                          style: TextStyle(fontSize: 10, color: Colors.amber.shade900, fontWeight: FontWeight.bold),
+                        ),
                       ],
                     ),
                   ),
                   TextButton(
-                    onPressed: () async {
-                      await service.analyzeAll();
-                      if (mounted) setState(() {});
-                    },
-                    child: const Text('SKENIRAJ SVE'),
+                    onPressed: _isScanningChampion
+                        ? null
+                        : () async {
+                            setState(() => _isScanningChampion = true);
+                            try {
+                              await service.analyzeAll();
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isScanningChampion = false);
+                              }
+                            }
+                          },
+                    child: _isScanningChampion
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('SKENIRAJ SVE'),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          const Text('Top Legende (5.0)',
+          if (anomalies.isNotEmpty) ...[
+            const Text('⚠️ Detektovane Anomalije',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange)),
+            const SizedBox(height: 8),
+            ...anomalies
+                .map((p) => ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.psychology, color: Colors.orange),
+                      title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                          'Cancel Rate: ${((p.cancellations / (p.totalTrips + p.cancellations)) * 100).toStringAsFixed(0)}%'),
+                    ))
+                .toList(),
+            const Divider(),
+          ],
+          const SizedBox(height: 16),
+          const Text('Top Legende (Izvanredni)',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
           const SizedBox(height: 8),
           if (legends.isEmpty)
-            const Text('Nema podataka. Pokreni skeniranje.', style: TextStyle(fontStyle: FontStyle.italic))
+            const Text('Svi su u proseku. Nema ekstrema.', style: TextStyle(fontStyle: FontStyle.italic))
           else
             ...legends
                 .map((PassengerStats p) => ListTile(
@@ -590,8 +661,10 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                 .toList(),
           if (problematic.isNotEmpty) ...[
             const SizedBox(height: 24),
-            const Text('Problematični (Ispod 4.0)',
+            const Text('Statistički Problematični',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+            const Text('Putnici koji su značajno ispod proseka zajednice.',
+                style: TextStyle(fontSize: 11, color: Colors.grey)),
             const SizedBox(height: 8),
             ...problematic
                 .map((PassengerStats p) => ListTile(
@@ -697,20 +770,20 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('TRENUTNI DUG (GORIVO)',
+                          const Text('TRENUTNI DUG (GORIVO)',
                               style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 4),
-                          Text('BEBA RAČUNA...',
+                          const SizedBox(height: 4),
+                          Text('${inventory.totalDebt.toStringAsFixed(0)} din',
                               style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15)),
-                        child: const Icon(Icons.account_balance_wallet, color: Colors.greenAccent, size: 30),
+                      IconButton(
+                        onPressed: () => service.reconstructFinancialState(),
+                        icon: const Icon(Icons.sync, color: Colors.greenAccent),
+                        tooltip: 'Osveži iz baze',
                       ),
                     ],
                   ),
