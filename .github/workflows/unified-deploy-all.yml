@@ -32,6 +32,21 @@ on:
         required: true
         default: 'false'
         type: boolean
+      run_google_play:
+        description: 'Execute Google Play Job?'
+        required: false
+        default: 'true'
+        type: boolean
+      run_huawei_appgallery:
+        description: 'Execute Huawei AppGallery Job?'
+        required: false
+        default: 'true'
+        type: boolean
+      run_ios_app_store:
+        description: 'Execute iOS App Store Job?'
+        required: false
+        default: 'true'
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -110,6 +125,7 @@ jobs:
   # ==============================================================================
   deploy-google:
     name: 🤖 Google Play (Alpha)
+    if: ${{ inputs.run_google_play == true }}
     needs: bump-and-tag
     runs-on: ubuntu-latest
     steps:
@@ -178,6 +194,7 @@ jobs:
   # ==============================================================================
   deploy-huawei:
     name: 📱 Huawei AppGallery
+    if: ${{ inputs.run_huawei_appgallery == true }}
     needs: bump-and-tag
     runs-on: ubuntu-latest
     steps:
@@ -270,6 +287,7 @@ jobs:
   # ==============================================================================
   deploy-ios:
     name: 🍎 iOS App Store
+    if: ${{ inputs.run_ios_app_store == true }}
     needs: bump-and-tag
     runs-on: macos-latest
     env:
