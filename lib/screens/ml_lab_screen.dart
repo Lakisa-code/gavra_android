@@ -4,6 +4,7 @@ import '../services/ml_champion_service.dart';
 import '../services/ml_dispatch_autonomous_service.dart';
 import '../services/ml_finance_autonomous_service.dart';
 import '../services/ml_vehicle_autonomous_service.dart';
+import '../services/vozila_service.dart';
 
 /// ML Lab Screen - Machine Learning Analysis and Predictions
 ///
@@ -25,7 +26,6 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   bool _enablePredictions = true;
   bool _autoTrain = true;
   bool _collectData = true;
-  bool _isScanningChampion = false;
 
   @override
   void initState() {
@@ -142,7 +142,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                                 const Text('ONLINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                               ],
                             ),
-                            const Text('100% Unsupervised Self-Learning',
+                            const Text('HYBRID NEURAL LINK ACTIVE 🧠🔗',
                                 style: TextStyle(fontSize: 10, color: Colors.purple, fontWeight: FontWeight.bold)),
                           ],
                         ),
@@ -162,6 +162,105 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             ),
           ),
           const SizedBox(height: 24),
+
+          _buildBabyTalkPanel('Fizičar kaže:', [
+            'Primećujem korelacije između brzine i potrošnje. 📉',
+            if (knowledge['correlations'] != null)
+              'Našao sam ${(knowledge['correlations'] as Map).length} zanimljivih veza u podacima. 🔗',
+            'Svemir (baza podataka) se širi, pratim nove objekte. 🌌',
+          ]),
+          const SizedBox(height: 24),
+
+          // 📜 KNJIGA BEBA-LOGIKE (FIZIČAR)
+          if (inferences.isNotEmpty) ...[
+            const Row(
+              children: [
+                Icon(Icons.auto_awesome, color: Colors.amber),
+                SizedBox(width: 8),
+                Text(
+                  'Knjiga Beba-Logike (Fizičar)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Ovi predlozi ne menjaju podatke - beba samo posmatra i uči za tebe.',
+              style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+            ),
+            const SizedBox(height: 12),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: inferences.length,
+              itemBuilder: (context, index) {
+                final inference = inferences[index];
+                return Card(
+                  elevation: 0,
+                  color: Colors.blue.withAlpha(13), // 0.05 * 255 ≈ 13
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.blue.withAlpha(51)), // 0.2 * 255 ≈ 51
+                  ),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              inference.title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: _getInferenceColor(inference.type),
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'Pouzdanost: ${(inference.probability * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          inference.description,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${inference.timestamp.hour}:${inference.timestamp.minute.toString().padLeft(2, '0')}',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
+                            ),
+                            Container(
+                              height: 2,
+                              width: 100,
+                              decoration: BoxDecoration(
+                                color: _getInferenceColor(inference.type).withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(1),
+                              ),
+                              child: FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: inference.probability,
+                                child: Container(color: _getInferenceColor(inference.type)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
 
           // 🎯 ACTIVE MONITORING TARGETS
           const Text(
@@ -279,85 +378,15 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
               ),
             ),
           ],
-
-          const SizedBox(height: 24),
-
-          // 👶 BEBA UČI (BIZNIS OTKRIĆA)
-          if (inferences.isNotEmpty) ...[
-            const Row(
-              children: [
-                Icon(Icons.child_care, color: Colors.blue),
-                SizedBox(width: 8),
-                Text(
-                  'Bebina Otkrića (Pasivno Učenje)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Ovi predlozi ne menjaju podatke - beba samo posmatra i uči za tebe.',
-              style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
-            ),
-            const SizedBox(height: 12),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: inferences.length,
-              itemBuilder: (context, index) {
-                final inference = inferences[index];
-                return Card(
-                  elevation: 0,
-                  color: Colors.blue.withAlpha(13), // 0.05 * 255 ≈ 13
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.blue.withAlpha(51)), // 0.2 * 255 ≈ 51
-                  ),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              inference.title,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: _getInferenceColor(inference.type),
-                                fontSize: 13,
-                              ),
-                            ),
-                            Text(
-                              'Pouzdanost: ${(inference.probability * 100).toStringAsFixed(0)}%',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          inference.description,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 4),
-                        LinearProgressIndicator(
-                          value: inference.probability,
-                          backgroundColor: Colors.white,
-                          color: _getInferenceColor(inference.type),
-                          minHeight: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
         ],
       ),
     );
+  }
+
+  Color _getFuelColor(double liters) {
+    if (liters < 100) return Colors.redAccent;
+    if (liters < 300) return Colors.orangeAccent;
+    return Colors.greenAccent;
   }
 
   Color _getImportanceColor(double importance) {
@@ -449,26 +478,10 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('MALI DISPEČER', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('100% Unsupervised Self-Learning',
+                        Text('100% AUTONOMNA (Data Flow)',
                             style: TextStyle(fontSize: 10, color: Colors.blue.shade900, fontWeight: FontWeight.bold)),
-                        Text('Naučeni "Stalni": ${service.learnedRecurrentAvg.toStringAsFixed(1)}',
+                        Text('Naučeni afiniteti: ${service.learnedAffinityCount.toStringAsFixed(0)}',
                             style: TextStyle(fontSize: 10, color: Colors.blueGrey)),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.green),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.check_circle, size: 16, color: Colors.green),
-                        SizedBox(width: 4),
-                        Text('AKTIVAN',
-                            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -477,7 +490,14 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             ),
           ),
           const SizedBox(height: 24),
-          const Text('Saveti Male Bebe:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          // 📜 KNJIGA BEBA-LOGIKE (DISPEČER)
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.amber),
+              SizedBox(width: 8),
+              Text('Knjiga Beba-Logike (Dispečer)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
           const SizedBox(height: 12),
           if (advices.isEmpty)
             const Center(
@@ -499,6 +519,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(advice.description),
+                            const SizedBox(height: 4),
                             if (advice.originalStatus != null || advice.proposedChange != null) ...[
                               const SizedBox(height: 8),
                               Container(
@@ -521,11 +542,20 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                                 ),
                               ),
                             ],
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () {}, // Akcija će zavisiti od tipa saveta
+                              style: ElevatedButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                              ),
+                              child: Text(advice.action, style: const TextStyle(fontSize: 12)),
+                            ),
                           ],
                         ),
-                        trailing: ElevatedButton(
-                          onPressed: () {}, // Akcija će zavisiti od tipa saveta
-                          child: Text(advice.action),
+                        trailing: Text(
+                          '${advice.timestamp.hour}:${advice.timestamp.minute.toString().padLeft(2, '0')}',
+                          style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ))
@@ -547,37 +577,10 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBabyTalkPanel('Šampion kaže:', [
-            'Danas su svi bili dobri, ponosan sam! 👶',
-            if (service.proposedMessages.isNotEmpty)
-              'Imam ${service.proposedMessages.length} predloženih poruka koje čekaju tvoj AMIN. 📝',
-            if (anomalies.isNotEmpty)
-              'Primetio sam anomalije kod ${anomalies.length} putnika. Možda planiraju bekstvo? 🧐',
-          ]),
-          const SizedBox(height: 16),
-          // ... (ostatak koda za poruke)
-          if (service.proposedMessages.isNotEmpty) ...[
-            const Text('Predložene Poruke (Test Faza):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 8),
-            ...service.proposedMessages.map((msg) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: const Icon(Icons.chat_bubble_outline, color: Colors.purple),
-                    title: Text('Za: ${msg.userName} (${msg.context})'),
-                    subtitle: Text('"${msg.message}"'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () {}),
-                        IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () {}),
-                      ],
-                    ),
-                  ),
-                )),
-            const Divider(),
-          ],
+          // 🏆 CHAMPION STATUS CARD
           Card(
             color: Colors.amber.shade50,
+            elevation: 2,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -589,61 +592,116 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('ŠAMPION (COMMUNITY AI)', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('100% Unsupervised Self-Learning',
+                        Text('HYBRID (Stats + Reputation)',
                             style: TextStyle(fontSize: 10, color: Colors.amber.shade900, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         Text(
                           'Srednji skor: ${service.globalMeanScore.toStringAsFixed(2)} (±${service.globalStdDev.toStringAsFixed(2)})',
                           style: TextStyle(fontSize: 10, color: Colors.black54),
                         ),
-                        Text(
-                          'Sistemsko otkazivanje: ${(service.systemAvgCancelRate * 100).toStringAsFixed(1)}% | Kazna: -${service.currentPenalty.toStringAsFixed(2)}',
-                          style: TextStyle(fontSize: 10, color: Colors.amber.shade900, fontWeight: FontWeight.bold),
-                        ),
                       ],
                     ),
-                  ),
-                  TextButton(
-                    onPressed: _isScanningChampion
-                        ? null
-                        : () async {
-                            setState(() => _isScanningChampion = true);
-                            try {
-                              await service.analyzeAll();
-                            } finally {
-                              if (mounted) {
-                                setState(() => _isScanningChampion = false);
-                              }
-                            }
-                          },
-                    child: _isScanningChampion
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('SKENIRAJ SVE'),
                   ),
                 ],
               ),
             ),
           ),
-          if (anomalies.isNotEmpty) ...[
-            const Text('⚠️ Detektovane Anomalije',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange)),
-            const SizedBox(height: 8),
-            ...anomalies
-                .map((p) => ListTile(
+          const SizedBox(height: 24),
+
+          _buildBabyTalkPanel('Šampion kaže:', [
+            'Danas su svi bili dobri, ponosan sam! 👶',
+            if (service.proposedMessages.isNotEmpty)
+              'Imam ${service.proposedMessages.length} predloženih poruka koje čekaju tvoj AMIN. 📝',
+            if (anomalies.isNotEmpty)
+              'Primetio sam anomalije kod ${anomalies.length} putnika. Možda planiraju bekstvo? 🧐',
+          ]),
+          const SizedBox(height: 24),
+
+          // 📜 KNJIGA BEBA-LOGIKE (ŠAMPION)
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.amber),
+              SizedBox(width: 8),
+              Text('Knjiga Beba-Logike (Šampion)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (service.proposedMessages.isEmpty && anomalies.isEmpty)
+            const Center(child: Text('Knjiga je trenutno prazna. Svi su uzorni građani!'))
+          else ...[
+            if (service.proposedMessages.isNotEmpty) ...[
+              const Text('Predložene Poruke:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 8),
+              ...service.proposedMessages.map((msg) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: const Icon(Icons.chat_bubble_outline, color: Colors.purple),
+                      title: Text('Za: ${msg.userName}',
+                          overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Kontekst: ${msg.context}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                          const SizedBox(height: 4),
+                          Text('"${msg.message}"', style: const TextStyle(fontStyle: FontStyle.italic)),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: () {},
+                                icon: const Icon(Icons.check, size: 14),
+                                label: const Text('Odobri', style: TextStyle(fontSize: 12)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green.withOpacity(0.1),
+                                  foregroundColor: Colors.green,
+                                  elevation: 0,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                onPressed: () {},
+                                icon: const Icon(Icons.close, size: 14),
+                                label: const Text('Odbij', style: TextStyle(fontSize: 12)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.withOpacity(0.1),
+                                  foregroundColor: Colors.red,
+                                  elevation: 0,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      trailing: Text(
+                        '${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
+                        style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  )),
+            ],
+            if (anomalies.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text('Detektovane Anomalije:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 8),
+              ...anomalies.map((p) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
                       dense: true,
                       leading: const Icon(Icons.psychology, color: Colors.orange),
                       title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text(
                           'Cancel Rate: ${((p.cancellations / (p.totalTrips + p.cancellations)) * 100).toStringAsFixed(0)}%'),
-                    ))
-                .toList(),
-            const Divider(),
+                      trailing: const Text('Anomalija',
+                          style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                    ),
+                  )),
+            ],
           ],
-          const SizedBox(height: 16),
+
+          const Divider(height: 40),
           const Text('Top Legende (Izvanredni)',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
           const SizedBox(height: 8),
@@ -750,50 +808,91 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 💰 FINANCIAL STATUS CARD
+          // 🆕 HYBRID HEADER
+          Row(
+            children: [
+              const Icon(Icons.account_balance, color: Colors.green),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('BEBA RAČUNOVOĐA', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('HYBRID (Finance + Physics)',
+                      style: TextStyle(fontSize: 10, color: Colors.green.shade900, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // 💰 STVARNO STANJE (FINANCE)
           Card(
             elevation: 8,
-            shadowColor: Colors.green.withOpacity(0.5),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.green, width: 2)),
+            shadowColor: Colors.green.withOpacity(0.3),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 gradient: LinearGradient(
-                    colors: [Colors.green.shade900, Colors.black87],
+                    colors: [Colors.green.shade800, Colors.black87],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight),
               ),
               child: Column(
                 children: [
+                  // 1. DUG
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('TRENUTNI DUG (GORIVO)',
-                              style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
+                          const Text('TRENUTNI DUG',
+                              style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
                           Text('${inventory.totalDebt.toStringAsFixed(0)} din',
-                              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       IconButton(
                         onPressed: () => service.reconstructFinancialState(),
                         icon: const Icon(Icons.sync, color: Colors.greenAccent),
-                        tooltip: 'Osveži iz baze',
+                        tooltip: 'Osveži',
                       ),
                     ],
                   ),
                   const Divider(color: Colors.white24, height: 30),
+                  // 2. ZALIHE LARI
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildStatItem(
-                          'Zalihe', '${inventory.litersInStock.toStringAsFixed(1)} L', Icons.local_gas_station),
-                      _buildStatItem('Ukupno Dug', '${inventory.totalDebt.toStringAsFixed(0)} din', Icons.money_off),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('NA STANJU (ZALIHE)',
+                              style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      Text('${inventory.litersInStock.toStringAsFixed(1)} L',
+                          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // 3. BROJČANIK ZALIHA (VIZUELNO)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: (inventory.litersInStock / 1000).clamp(0.0, 1.0),
+                          backgroundColor: Colors.white10,
+                          color: _getFuelColor(inventory.litersInStock),
+                          minHeight: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('Procenat popunjenosti: ${((inventory.litersInStock / 1000) * 100).toStringAsFixed(0)}%',
+                          style: const TextStyle(color: Colors.white38, fontSize: 10)),
                     ],
                   ),
                 ],
@@ -805,37 +904,106 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           // 🛠️ ANALITIČKE RADNJE
           const Text('Brze Akcije (Beba beleži)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 48) / 3,
                 child: _buildActionCard(
-                  'Nabavka na veliko',
+                  'Nabavka',
                   Icons.add_shopping_cart,
                   Colors.blue,
                   () => _showBulkPurchaseDialog(context, service),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 48) / 3,
                 child: _buildActionCard(
-                  'Sipanje u kombi',
+                  'Sipanje',
                   Icons.local_gas_station,
                   Colors.purple,
                   () => _showVanRefillDialog(context, service),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 48) / 3,
                 child: _buildActionCard(
-                  'Isplata duga',
+                  'Isplata',
                   Icons.payment,
                   Colors.orange,
                   () => _showPaymentDialog(context, service),
                 ),
               ),
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 48) / 3,
+                child: _buildActionCard(
+                  'Kalibracija',
+                  Icons.tune,
+                  Colors.red,
+                  () => _showCalibrationDialog(context, service),
+                ),
+              ),
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 48) / 3,
+                child: _buildActionCard(
+                  'Sveska',
+                  Icons.menu_book,
+                  Colors.brown,
+                  () => _showMilestoneDialog(context, service),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
+
+          // 📔 ARHIVA IZ SVESKE
+          if (service.milestones.isNotEmpty) ...[
+            const Row(
+              children: [
+                Icon(Icons.history_edu, color: Colors.brown),
+                SizedBox(width: 8),
+                Text('Dnevnik iz sveske', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 110,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: service.milestones.length,
+                itemBuilder: (context, index) {
+                  final m = service.milestones[index];
+                  return Container(
+                    width: 170, // Slightly wider
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Card(
+                      color: Colors.brown.withAlpha(20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${m.date.day}.${m.date.month}.${m.date.year}.',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.brown)),
+                            const Spacer(),
+                            if (m.debt != null)
+                              Text('Dug: ${m.debt!.toInt()} din', style: const TextStyle(fontSize: 10)),
+                            if (m.meterReading != null)
+                              Text('Brojilo: ${m.meterReading!.toInt()} L',
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                            if (m.litersInStock != null)
+                              Text('Zalihe: ${m.litersInStock!.toInt()} L', style: const TextStyle(fontSize: 10)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
 
           // 📜 SAVETI BEBE RAČUNOVEĐE
           const Row(
@@ -874,17 +1042,6 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white54, size: 20),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
-      ],
     );
   }
 
@@ -983,39 +1140,123 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
 
   void _showVanRefillDialog(BuildContext context, MLFinanceAutonomousService service) {
     final litersController = TextEditingController();
-    final vehicleController = TextEditingController();
+    final kmController = TextEditingController();
+    String? selectedVehicleId;
+    String? selectedVehicleName;
+
+    showDialog<dynamic>(
+      context: context,
+      builder: (BuildContext context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Sipanje u kombi (Sa stanja)'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FutureBuilder<List<Vozilo>>(
+                future: VozilaService.getVozila(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const CircularProgressIndicator();
+                  final vozila = snapshot.data!;
+                  return DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Izaberi kombi'),
+                    items: vozila.map((v) {
+                      return DropdownMenuItem(
+                        value: v.id,
+                        child: Text(v.displayNaziv),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      final v = vozila.firstWhere((element) => element.id == val);
+                      selectedVehicleId = v.id;
+                      selectedVehicleName = v.displayNaziv;
+                      setDialogState(() {});
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                  controller: kmController,
+                  decoration:
+                      const InputDecoration(labelText: 'Trenutna kilometraža (Brojač)', hintText: 'npr. 254300'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: litersController,
+                  decoration: const InputDecoration(labelText: 'Litara (L)', hintText: 'npr. 50'),
+                  keyboardType: TextInputType.number),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+            ElevatedButton(
+              onPressed: () {
+                final liters = double.tryParse(litersController.text) ?? 0;
+                final km = double.tryParse(kmController.text);
+                if (liters > 0 && selectedVehicleId != null) {
+                  setState(() {
+                    service.recordVanRefill(
+                      vehicleId: selectedVehicleName ?? selectedVehicleId!,
+                      liters: liters,
+                      km: km,
+                    );
+                  });
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Sipano!'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCalibrationDialog(BuildContext context, MLFinanceAutonomousService service) {
+    final litersController = TextEditingController(text: service.inventory.litersInStock.toString());
+    final debtController = TextEditingController(text: service.inventory.totalDebt.toString());
 
     showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
-        title: const Text('Sipanje iz zaliha'),
+        title: const Row(
+          children: [
+            Icon(Icons.tune, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Ručna Kalibracija'),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-                controller: vehicleController,
-                decoration: const InputDecoration(labelText: 'Kombi (ID/Ime)', hintText: 'npr. BG-123'),
-                keyboardType: TextInputType.text),
+            const Text(
+              'Unesi trenutno "stvarno" stanje (okvirno). Beba će odavde nastaviti učenje.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
             TextField(
                 controller: litersController,
-                decoration: const InputDecoration(labelText: 'Litara (L)', hintText: 'npr. 50'),
+                decoration: const InputDecoration(labelText: 'Stvarne Zalihe (L)', border: OutlineInputBorder()),
+                keyboardType: TextInputType.number),
+            const SizedBox(height: 12),
+            TextField(
+                controller: debtController,
+                decoration: const InputDecoration(labelText: 'Stvarni Dug (din)', border: OutlineInputBorder()),
                 keyboardType: TextInputType.number),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade800, foregroundColor: Colors.white),
             onPressed: () {
-              final liters = double.tryParse(litersController.text) ?? 0;
-              final vehicle = vehicleController.text;
-              if (liters > 0 && vehicle.isNotEmpty) {
-                setState(() {
-                  service.recordVanRefill(vehicleId: vehicle, liters: liters);
-                });
-                Navigator.pop(context);
-              }
+              final liters = double.tryParse(litersController.text);
+              final debt = double.tryParse(debtController.text);
+              setState(() {
+                service.calibrate(liters: liters, debt: debt);
+              });
+              Navigator.pop(context);
             },
-            child: const Text('Sipano!'),
+            child: const Text('KALIBRIŠI'),
           ),
         ],
       ),
@@ -1187,6 +1428,76 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             style: TextStyle(color: Colors.grey),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showMilestoneDialog(BuildContext context, MLFinanceAutonomousService service) {
+    final debtController = TextEditingController();
+    final meterController = TextEditingController();
+    final stockController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+
+    showDialog<dynamic>(
+      context: context,
+      builder: (BuildContext context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Podatak iz sveske'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text('Datum: ${selectedDate.day}.${selectedDate.month}.${selectedDate.year}.',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => selectedDate = picked);
+                  }
+                },
+              ),
+              TextField(
+                  controller: debtController,
+                  decoration: const InputDecoration(labelText: 'Dug iz sveske (din)'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: meterController,
+                  decoration: const InputDecoration(labelText: 'Stanje Brojila (Mehaničko)', hintText: 'npr. 90953'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: stockController,
+                  decoration: const InputDecoration(
+                      labelText: 'Stanje Zaliha (L)', hintText: 'Ostaviti prazno ako je nepoznato'),
+                  keyboardType: TextInputType.number),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+            ElevatedButton(
+              onPressed: () {
+                final debt = double.tryParse(debtController.text);
+                final meter = double.tryParse(meterController.text);
+                final stock = double.tryParse(stockController.text);
+                setState(() {
+                  service.recordMilestone(
+                    date: selectedDate,
+                    debt: debt,
+                    meterReading: meter,
+                    litersInStock: stock,
+                  );
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Sačuvaj u arhivu'),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -4,15 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'local_notification_service.dart';
 
 /// 👨‍✈️ BEBA DISPEČER (ML Dispatch Autonomous Service)
 ///
-/// Treća beba u porodici. Njen posao je:
-/// - Da te zamenjuje u razmišljanju o logistici.
-/// - Da sama "oseti" kad se sprema gužva (booking velocity).
-/// - Da predlaže prebacivanje putnika (load balancing).
-/// - 100% UNSUPERVISED: Sama uči koliko ima "stalnih" putnika.
+/// 100% AUTONOMNA: Ne veruje u fiksne sektore ili "human" kategorije.
+/// Uči isključivo iz protoka podataka i istorijskih afiniteta putnika.
 
 class MLDispatchAutonomousService extends ChangeNotifier {
   static SupabaseClient get _supabase => supabase;
@@ -20,10 +16,10 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   // 📡 REALTIME
   RealtimeChannel? _bookingStream;
 
-  // Interna memorija bebe (100% Unsupervised Learning)
-  final Map<String, double> _recurrentFactors = {}; // "vreme_dan" -> Learned Count
+  // Interna memorija bebe (100% Unsupervised)
+  final Map<String, double> _recurrentFactors = {};
+  final Map<String, String> _passengerAffinity = {}; // putnik_id -> vozac_ime (Naučeno)
   double _avgHourlyBookings = 0.5;
-  double _velocityStdDev = 0.2;
 
   bool _isActive = false;
   Timer? _velocityTimer;
@@ -37,53 +33,49 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   MLDispatchAutonomousService._internal();
 
   List<DispatchAdvice> get activeAdvice => List<DispatchAdvice>.unmodifiable(_currentAdvice);
-  double get learnedRecurrentAvg => _recurrentFactors.values.isEmpty 
-      ? 4.0 
-      : _recurrentFactors.values.reduce((a, b) => a + b) / _recurrentFactors.length;
 
-  /// 🎓 LEARN FROM HISTORY (Unsupervised Recurrent Factors)
+  /// Broj putnika za koje je sistem naučio afinitet iz istorije (Pure Data)
+  double get learnedAffinityCount => _passengerAffinity.length.toDouble();
+
+  /// 🎓 LEARN FLOW (Unsupervised Affinity Learning)
   Future<void> _learnFromHistory() async {
     try {
-      if (kDebugMode) print('🎓 [ML Dispatch] Skeniram istoriju za učenje stalnih putnika...');
-      
-      // 1. Nauči o "stalnim" putnicima (oni koji se ne upisuju u seat_requests svaki put)
-      // Gledamo razliku između voznje_log (stvarnost) i seat_requests (najave)
-      final List<dynamic> logs = await _supabase.from('voznje_log')
-          .select('vreme, created_at')
+      if (kDebugMode) print('🎓 [ML Dispatch] Beba uči afinitete iz istorije...');
+
+      // 1. Nauči ko s kim najčešće putuje (80% Overlap Pattern)
+      final List<dynamic> logs = await _supabase
+          .from('voznje_log')
+          .select('putnik_id, vozac_id')
           .eq('tip', 'voznja')
-          .limit(500);
+          .order('created_at', ascending: false)
+          .limit(1000);
 
-      final Map<String, List<int>> distribution = {};
-
+      final Map<String, Map<String, int>> counts = {};
       for (var log in logs) {
-        final time = log['vreme']?.toString() ?? 'Unknown';
-        // Grupišemo po satu/terminu
-        distribution[time] = (distribution[time] ?? [])..add(1);
+        final pId = log['putnik_id']?.toString();
+        final vId = log['vozac_id']?.toString();
+        if (pId == null || vId == null) continue;
+
+        counts.putIfAbsent(pId, () => {});
+        counts[pId]![vId] = (counts[pId]![vId] ?? 0) + 1;
       }
 
-      distribution.forEach((time, occurrences) {
-        // Jednostavan prosek pojavljivanja po terminu (kao baseline)
-        // U realnom sistemu bismo oduzimali seat_requests count odavde
-        _recurrentFactors[time] = occurrences.length / 10.0; // Simulacija proseka na 10 dana
+      counts.forEach((pId, drivers) {
+        final sorted = drivers.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+        if (sorted.isNotEmpty && sorted.first.value >= 3) {
+          _passengerAffinity[pId] = sorted.first.key;
+        }
       });
 
-      // 2. Nauči o Booking Velocity (brzina rezervacija)
-      final List<dynamic> recentRequests = await _supabase.from('seat_requests')
-          .select('created_at')
-          .order('created_at', ascending: false)
-          .limit(100);
+      // 2. Nauči Booking Velocity
+      final List<dynamic> recentRequests =
+          await _supabase.from('seat_requests').select('created_at').order('created_at', ascending: false).limit(100);
 
       if (recentRequests.length > 10) {
-        // Računaj prosečan broj rezervacija po satu u poslednjih 48h
         _avgHourlyBookings = recentRequests.length / 48.0;
-        _velocityStdDev = _avgHourlyBookings * 0.5; // Aproksimacija varijanse
-      }
-
-      if (kDebugMode) {
-        print('🎓 [ML Dispatch] Učenje završeno. Prosečna brzina: ${_avgHourlyBookings.toStringAsFixed(2)} req/h');
       }
     } catch (e) {
-      if (kDebugMode) print('⚠️ [ML Dispatch] Greška pri učenju istorije: $e');
+      if (kDebugMode) print('⚠️ [ML Dispatch] Greška pri učenju: $e');
     } finally {
       notifyListeners();
     }
@@ -93,7 +85,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   Future<void> start() async {
     if (_isActive) return;
     _isActive = true;
-    
+
     await _learnFromHistory();
     _startVelocityMonitoring();
     _startIntegrityCheck();
@@ -106,21 +98,17 @@ class MLDispatchAutonomousService extends ChangeNotifier {
       _bookingStream = _supabase
           .channel('public:seat_requests')
           .onPostgresChanges(
-            event: PostgresChangeEvent.insert, // Samo nove rezervacije nas zanimaju za velocity
+            event: PostgresChangeEvent.insert,
             schema: 'public',
             table: 'seat_requests',
-            callback: (payload) {
-              if (kDebugMode) print('⚡ [ML Dispatch] NOVA REZERVACIJA! Proveravam gužvu...');
-              _analyzeRealtimeDemand(); // Odmah okidamo analizu
-            },
+            callback: (payload) => _analyzeRealtimeDemand(),
           )
           .subscribe();
     } catch (e) {
-      if (kDebugMode) print('⚠️ [ML Dispatch] Greška stream-a: $e');
+      if (kDebugMode) print('⚠️ [ML Dispatch] Stream error: $e');
     }
   }
 
-  /// 🛑 ZAUSTAVI
   void stop() {
     _isActive = false;
     _velocityTimer?.cancel();
@@ -128,173 +116,119 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   }
 
   void _startVelocityMonitoring() {
-    // Proverava svaka 2 minuta brzinu popunjavanja (Backup za stream)
-    _velocityTimer = Timer.periodic(const Duration(minutes: 2), (Timer timer) async {
+    _velocityTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
       await _analyzeRealtimeDemand();
     });
   }
 
   void _startIntegrityCheck() {
-    // Svakih 5 minuta beba proverava da li smo nekog zaboravili
     Timer.periodic(const Duration(minutes: 5), (timer) async {
-      await _keepPassengersSafe();
+      await _analyzeMultiVanSplits();
     });
   }
 
-  /// 🛡️ PROTECT PASSENGERS FROM BEING FORGOTTEN
-  /// Ova metoda samo proverava bazu i "vrišti" ako vidi nešto sumnjivo u pesku.
-  Future<void> _keepPassengersSafe() async {
+  String _getDanKratica() {
+    final now = DateTime.now();
+    const dani = ['pon', 'pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    return dani[now.weekday];
+  }
+
+  /// 🚐 AUTONOMNI SPLIT (Shadow Matrix)
+  Future<void> _analyzeMultiVanSplits() async {
     try {
-      final String today = DateTime.now().toIso8601String().split('T')[0];
+      final String danDanas = _getDanKratica();
+      final dynamic shadowData = await _supabase.from('registrovani_putnici').select('id, putnik_ime, polasci_po_danu');
 
-      // Gledamo sve aktivne zahteve za danas i sutra koji možda nisu procesuirani
-      // (Beba samo gleda, ne menja ništa!)
-      final dynamic pendingRequests = await _supabase.from('seat_requests').select().gte('datum', today);
+      Map<String, Set<String>> overlaps = {};
 
-      if (pendingRequests is List) {
-        // Ako vidimo da ima zahteva a nema ih u logu vožnji ili nekoj kanti
-        // Beba podiže zastavicu u Lab-u
-        if (pendingRequests.length > 20 && _currentAdvice.every((a) => a.title != 'PREBUKING ALERT')) {
+      if (shadowData is List) {
+        for (var p in shadowData) {
+          // Bezbedno izvlačenje JSON podataka (izbegavamo cast greške ako je u bazi String)
+          dynamic rawAllDays = p['polasci_po_danu'];
+          if (rawAllDays == null || rawAllDays is! Map) continue;
+          final allDays = Map<String, dynamic>.from(rawAllDays);
+
+          dynamic rawDayData = allDays[danDanas];
+          if (rawDayData == null || rawDayData is! Map) continue;
+          final dayData = Map<String, dynamic>.from(rawDayData);
+
+          for (var gradCode in ['bc', 'vs']) {
+            String? vreme = dayData[gradCode]?.toString();
+            if (vreme == null || vreme == 'null') continue;
+
+            String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
+            String fullGrad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
+
+            final String? vozac =
+                dayData['${gradCode}_${normTime}_vozac']?.toString() ?? dayData['${gradCode}_vozac']?.toString();
+
+            if (vozac != null && vozac != 'null') {
+              final key = '${fullGrad}_$normTime';
+              overlaps.putIfAbsent(key, () => {}).add(vozac);
+            }
+          }
+        }
+      }
+
+      for (var entry in overlaps.entries) {
+        if (entry.value.length >= 2) {
+          final grad = entry.key.split('_')[0];
+          final vreme = entry.key.split('_')[1];
+          final drivers = entry.value.toList();
+
+          int countA = 0;
+          int countB = 0;
+
+          for (var p in shadowData as List) {
+            final pId = p['id']?.toString();
+            final affinity = _passengerAffinity[pId];
+            if (affinity != null) {
+              if (affinity.contains(drivers[0])) {
+                countA++;
+              } else if (affinity.contains(drivers[1])) {
+                countB++;
+              }
+            }
+          }
+
           _currentAdvice.add(DispatchAdvice(
-            title: 'PREBUKING ALERT',
+            title: 'AUTONOMNI SPLIT ($vreme)',
             description:
-                'Tata, imamo ukupno ${pendingRequests.length} zahteva u sistemu. Proveri da li su svi u kombijima!',
+                'Beba detektovala duo: ${drivers.join(' & ')}. \nAfinitet: ${drivers[0]} ($countA), ${drivers[1]} ($countB).',
             priority: AdvicePriority.critical,
-            action: 'Proveri listu',
+            action: 'Sinhronizuj listu',
           ));
-          if (kDebugMode) print('👶 [ML Dispatch] Tata, tata! Gledaj koliko putnika imamo! 📢');
         }
       }
     } catch (e) {
-      if (kDebugMode) print('⚠️ [ML Dispatch] Greška u integrity check-u: $e');
+      if (kDebugMode) print('⚠️ [ML Dispatch] Split error: $e');
+    } finally {
+      notifyListeners();
     }
   }
 
-  /// 📈 ANALIZA BRZINE REZERVACIJA (Booking Velocity)
   Future<void> _analyzeRealtimeDemand() async {
     try {
-      final DateTime now = DateTime.now();
-      final DateTime oneHourAgo = now.subtract(const Duration(hours: 1));
-
-      // Gledamo nove zahteve u poslednjih sat vremena
-      final dynamic recentRequests =
+      final DateTime oneHourAgo = DateTime.now().subtract(const Duration(hours: 1));
+      final dynamic recent =
           await _supabase.from('seat_requests').select().gt('created_at', oneHourAgo.toIso8601String());
 
-      if (recentRequests is List && recentRequests.length >= 5) {
-        _triggerAlert('BUĐENJE!',
-            'Tata, tata! U zadnjih sat vremena je uletelo ${recentRequests.length} novih putnika. Sprema se gužva!');
+      if (recent is List && recent.length >= 5) {
+        _triggerAlert('REALTIME DEMAND', 'Nagli skok rezervacija (${recent.length}/h).');
       }
-
-      // Provera za sutrašnje polaske
-      await _predictTomorrowNeeds();
     } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ [ML Dispatch] Greška u analizi brzine: $e');
-      }
-    }
-  }
-
-  /// 🔮 PREDVIĐANJE ZA SUTRA (Potreba za 2 kombija)
-  Future<void> _predictTomorrowNeeds() async {
-    final DateTime tomorrow = DateTime.now().add(const Duration(days: 1));
-    final String dateStr =
-        '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}';
-
-    // Skeniramo sve polaske za sutra
-    final List<String> departures = <String>['05:00', '06:00', '13:00', '14:00', '15:30'];
-
-    _currentAdvice.clear();
-
-    for (final String vreme in departures) {
-      // Izbroj putnike (registrovani + novi zahtevi)
-      final int count = await _calculateTotalDemand('BC', vreme, dateStr);
-
-      if (count >= 12) {
-        _currentAdvice.add(DispatchAdvice(
-          title: 'DVA KOMBIJA ZA $vreme',
-          description: 'Sutra će u $vreme biti bar $count putnika. Ne možeš jednim kombijem, planiraj drugi odmah!',
-          priority: AdvicePriority.critical,
-          action: 'Aktiviraj drugi kombi',
-        ));
-      } else if (count >= 7 && count <= 8) {
-        // Balansiranje: Ako je 13h pun, a 14h ima mesta
-        await _checkBalancingPossibility('BC', vreme, dateStr, count);
-      }
-    }
-  }
-
-  /// ⚖️ LOAD BALANCING (Prebacivanje putnika)
-  Future<void> _checkBalancingPossibility(String grad, String vreme, String datum, int currentCount) async {
-    if (vreme == '15:30') {
-      final int earlierCount = await _calculateTotalDemand(grad, '14:00', datum);
-      if (earlierCount < 5) {
-        _currentAdvice.add(DispatchAdvice(
-          title: 'PREBACI PUTNIKE (15:30 -> 14:00)',
-          description:
-              'U 15:30 je skoro puno ($currentCount), a u 14:00 imaš samo $earlierCount putnika. Probaj da nagovoriš dvoje da krenu ranije.',
-          priority: AdvicePriority.smart,
-          action: 'Nazovi putnike',
-        ));
-      }
-    }
-  }
-
-  Future<int> _calculateTotalDemand(String grad, String vreme, String datum) async {
-    int current = 0;
-    try {
-      // 1. Proveri kapacitet iz baze
-      final dynamic capacityData = await _supabase
-          .from('kapacitet_polazaka')
-          .select('max_mesta')
-          .eq('grad', grad)
-          .eq('vreme', vreme)
-          .maybeSingle();
-
-      final int maxCapacity = (capacityData != null && capacityData['max_mesta'] != null)
-          ? capacityData['max_mesta'] as int
-          : 8; // Default 8 ako ne postoji podatak
-
-      // 2. Izbroj trenutne zahteve (1 red = 1 mesto)
-      current = await _supabase
-          .from('seat_requests')
-          .count(CountOption.exact)
-          .eq('grad', grad)
-          .eq('datum', datum)
-          .eq('zeljeno_vreme', vreme);
-
-      if (current + 4 > maxCapacity) {
-        if (kDebugMode) {
-          print('⚠️ [ML Dispatch] Kapacitet za $vreme je $maxCapacity, a imamo procenjeno ${current + 4}.');
-        }
-      }
-
-      // 3. Dodaj procenu stalnih (Beba Dispečer uči ovaj broj)
-      final double recurrentEstimation = _recurrentFactors[vreme] ?? 4.0;
-      
-      return current + recurrentEstimation.round();
-    } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ [ML Dispatch] Greška pri računanju tražnje: $e');
-      }
-      return (current + 4);
+      if (kDebugMode) print('⚠️ [ML Dispatch] Velocity error: $e');
     }
   }
 
   void _triggerAlert(String title, String body) {
-    if (kDebugMode) {
-      print('🚨 [NOTIFIKACIJA] $title: $body');
-    }
-
-    // 🔔 ŠALJI LOKALNU NOTIFIKACIJU TATU DA PROVERI
-    try {
-      LocalNotificationService.showRealtimeNotification(
-        title: 'Beba Dispečer: $title',
-        body: body,
-        payload: 'ml_lab',
-      );
-    } catch (e) {
-      if (kDebugMode) print('❌ [ML Dispatch] Slanje notifikacije nije uspelo: $e');
-    }
+    _currentAdvice.add(DispatchAdvice(
+      title: title,
+      description: body,
+      priority: AdvicePriority.smart,
+      action: 'Vidi',
+    ));
+    notifyListeners();
   }
 }
 
@@ -305,8 +239,8 @@ class DispatchAdvice {
   final String description;
   final AdvicePriority priority;
   final String action;
-  final String? originalStatus; // Šta je trenutno u sistemu
-  final String? proposedChange; // Šta beba želi da uradi
+  final String? originalStatus;
+  final String? proposedChange;
   final DateTime timestamp;
 
   DispatchAdvice({

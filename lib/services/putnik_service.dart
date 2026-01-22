@@ -769,9 +769,9 @@ class PutnikService {
     final undoPickup = Map<String, dynamic>.from(response);
     _addToUndoStack('pickup', id, undoPickup);
 
-    // 🧠 AUTO-LEARNING: Pokušaj da naučiš koordinate ako ih nema
+    // 🧠 AUTO-LEARNING: Pokušaj da naučiš koordinate i loguj pickup lokaciju
     // Ovo radimo asinhrono (bez await) da ne kočimo UI
-    UnifiedGeocodingService.tryLearnFromDriverLocation(putnik);
+    UnifiedGeocodingService.tryLearnFromDriverLocation(putnik, vozacId: currentDriver);
 
     if (tabela == 'registrovani_putnici') {
       final now = DateTime.now();

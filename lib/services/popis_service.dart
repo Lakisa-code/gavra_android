@@ -13,8 +13,11 @@ class PopisData {
   final double sitanNovac;
   final int otkazaniPutnici;
   final int pokupljeniPutnici;
+  final int naplaceniDnevni;
+  final int naplaceniMesecni;
   final int dugoviPutnici;
   final double kilometraza;
+  final bool automatskiGenerisan;
 
   const PopisData({
     required this.vozac,
@@ -23,18 +26,26 @@ class PopisData {
     required this.sitanNovac,
     required this.otkazaniPutnici,
     required this.pokupljeniPutnici,
+    this.naplaceniDnevni = 0,
+    this.naplaceniMesecni = 0,
     required this.dugoviPutnici,
     required this.kilometraza,
+    this.automatskiGenerisan = false,
   });
 
   Map<String, dynamic> toMap() => {
+        'vozac': vozac,
+        'datum': datum.toIso8601String(),
         'ukupanPazar': ukupanPazar,
         'sitanNovac': sitanNovac,
         'otkazaniPutnici': otkazaniPutnici,
         'pokupljeniPutnici': pokupljeniPutnici,
+        'naplaceniPutnici': naplaceniDnevni, // Kompatibilnost
+        'mesecneKarte': naplaceniMesecni, // Kompatibilnost
         'dugoviPutnici': dugoviPutnici,
         'kilometraza': kilometraza,
-        'automatskiGenerisan': false, // ✅ Ručni popis
+        'automatskiGenerisan': automatskiGenerisan,
+        'timestamp': DateTime.now().toIso8601String(),
       };
 }
 
@@ -60,6 +71,8 @@ class PopisService {
 
     final pokupljeniPutnici = stats['voznje'] as int? ?? 0;
     final otkazaniPutnici = stats['otkazivanja'] as int? ?? 0;
+    final naplaceniDnevni = stats['uplate'] as int? ?? 0;
+    final naplaceniMesecni = stats['mesecne'] as int? ?? 0;
     final ukupanPazar = stats['pazar'] as double? ?? 0.0;
 
     // 2. SITAN NOVAC
@@ -86,6 +99,8 @@ class PopisService {
       sitanNovac: sitanNovac,
       otkazaniPutnici: otkazaniPutnici,
       pokupljeniPutnici: pokupljeniPutnici,
+      naplaceniDnevni: naplaceniDnevni,
+      naplaceniMesecni: naplaceniMesecni,
       dugoviPutnici: dugoviPutnici,
       kilometraza: kilometraza,
     );
@@ -98,21 +113,23 @@ class PopisService {
   }
 
   /// Prikaži popis dialog i vrati true ako korisnik želi da sačuva
-  static Future<bool> showPopisDialog(BuildContext context, PopisData data) async {
+  static Future<bool> showPopisDialog(BuildContext context, PopisData data, {bool isAutomatic = false}) async {
     final vozacColor = VozacBoja.get(data.vozac);
 
     final result = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: isAutomatic,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.person, color: vozacColor, size: 20),
+            Icon(isAutomatic ? Icons.auto_awesome : Icons.person, color: vozacColor, size: 20),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                'POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                isAutomatic
+                    ? 'AUTOMATSKI POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}'
+                    : 'POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[800]),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -151,6 +168,19 @@ class PopisService {
                     _buildStatRow('Pokupljeni', data.pokupljeniPutnici, Icons.check_circle, Colors.teal),
                     _buildStatRow('Otkazani', data.otkazaniPutnici, Icons.cancel, Colors.red),
                     _buildStatRow('Dugovi', data.dugoviPutnici, Icons.warning, Colors.orange),
+
+                    if (data.naplaceniDnevni > 0 || data.naplaceniMesecni > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (data.naplaceniDnevni > 0)
+                            Expanded(child: _buildSmallStat('Dnevne: ${data.naplaceniDnevni}', Colors.blueGrey)),
+                          if (data.naplaceniMesecni > 0)
+                            Expanded(child: _buildSmallStat('Mesečne: ${data.naplaceniMesecni}', Colors.purple)),
+                        ],
+                      ),
+                    ],
+
                     _buildStatRow('Kilometraža', '${data.kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
 
                     Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24)),
@@ -208,11 +238,11 @@ class PopisService {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Otkaži')),
+          if (!isAutomatic) TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Otkaži')),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.save),
-            label: const Text('Sačuvaj popis'),
+            icon: Icon(isAutomatic ? Icons.check : Icons.save),
+            label: Text(isAutomatic ? 'U redu' : 'Sačuvaj popis'),
             style: ElevatedButton.styleFrom(
               backgroundColor: vozacColor,
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -240,6 +270,24 @@ class PopisService {
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Helper za manju statistiku (uplate)
+  static Widget _buildSmallStat(String text, Color color) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }

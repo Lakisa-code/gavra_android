@@ -28,6 +28,11 @@ class MLService {
     required DateTime date,
   }) async {
     try {
+      // Load patterns if not already loaded
+      if (_modelCoefficients.isEmpty) {
+        await _loadModelCoefficients();
+      }
+
       // Extract features
       final features = _extractFeatures(grad, vreme, date);
 
@@ -124,8 +129,9 @@ class MLService {
       // Train linear regression coefficients
       final coefficients = _trainLinearRegression(trainingSet);
 
-      // Store coefficients in memory (TODO: Persist to Supabase)
+      // Store coefficients in memory and persist to Supabase
       _modelCoefficients = coefficients;
+      await _saveModelCoefficients(coefficients);
 
       // Calculate and log statistics
       final stats = _analyzeTrainingData(data);
@@ -478,7 +484,7 @@ class MLService {
         final features = _extractPassengerFeatures(history);
 
         // LABELA: Realnost - da li je putnik zaista DOBAR?
-        // (platio 90%+ posledjih 20 vožnji = dobar)
+        // (platio 90%+ poslednjih 20 vožnji = dobar)
         final recent = history.take(20).toList();
         final goodPassenger = recent
                 .where((v) =>
@@ -1424,6 +1430,33 @@ class MLService {
     final parts = time.split(':');
     return int.parse(parts[0]) * 60 + int.parse(parts[1]);
   }
+
+  static Future<void> _saveModelCoefficients(Map<String, double> coefficients) async {
+    try {
+      await _supabase.from('ml_config').upsert({
+        'id': 'occupancy_model_coefficients',
+        'data': coefficients.map((k, v) => MapEntry(k, v.toString())),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      print('💾 Model coefficients persisted to Supabase');
+    } catch (e) {
+      print('❌ Failed to save model coefficients: $e');
+    }
+  }
+
+  static Future<void> _loadModelCoefficients() async {
+    try {
+      final result = await _supabase.from('ml_config').select().eq('id', 'occupancy_model_coefficients').maybeSingle();
+
+      if (result != null && result['data'] != null) {
+        final data = result['data'] as Map<String, dynamic>;
+        _modelCoefficients = data.map((k, v) => MapEntry(k, double.tryParse(v.toString()) ?? 0.0));
+        print('📂 Loaded ${_modelCoefficients.length} coefficients from Supabase');
+      }
+    } catch (e) {
+      print('⚠️ Failed to load model coefficients: $e');
+    }
+  }
 }
 
 // 📊 DATA MODELS
@@ -1551,8 +1584,8 @@ class DemandForecast {
 
   String get statusIcon => isOverbooking ? '🚨' : '✅';
   String get statusText => isOverbooking
-      ? 'PREBUKING! ${predictedRequests.toStringAsFixed(0)}/${capacity}'
-      : 'OK ${predictedRequests.toStringAsFixed(0)}/${capacity}';
+      ? 'PREBUKING! ${predictedRequests.toStringAsFixed(0)}/$capacity'
+      : 'OK ${predictedRequests.toStringAsFixed(0)}/$capacity';
 }
 
 class TimeSuggestion {

@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 
 import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
@@ -273,6 +274,29 @@ class UnifiedGeocodingService {
     }
   }
 
+  /// Trajno loguj lokaciju gde je putnik pokupljen u tabelu putnik_pickup_lokacije
+  static Future<void> logPickupLocation({
+    required Putnik putnik,
+    required String vozacId,
+    required double lat,
+    required double lng,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+      await supabase.from('putnik_pickup_lokacije').insert({
+        'putnik_id': putnik.id,
+        'putnik_ime': putnik.ime,
+        'lat': lat,
+        'lng': lng,
+        'vozac_id': vozacId,
+        'datum': DateTime.now().toIso8601String().split('T')[0],
+      });
+      print('📍 [Geocoding] Lokacija pokupljenja logovana za ${putnik.ime}');
+    } catch (e) {
+      print('⚠️ [Geocoding] Greška pri logovanju lokacije: $e');
+    }
+  }
+
   /// Izvršava taskove sekvencijalno sa pauzom između zahteva
   static Future<List<GeocodingResult>> _executeWithRateLimit(
     List<Future<GeocodingResult> Function()> tasks, {
@@ -340,19 +364,11 @@ class UnifiedGeocodingService {
   /// Pokušaj da naučiš koordinate adrese na osnovu trenutne lokacije vozača
   /// Poziva se kada vozač označi putnika kao "Pokupljen"
   static Future<void> tryLearnFromDriverLocation(
-    Putnik putnik,
-  ) async {
-    // 1. Proveri da li adresa već ima koordinate (ne menjaj ako ima)
-    if (_hasValidAddress(putnik)) {
-      // Proveri da li već postoje u bazi pre nego što ih pregazimo
-      final existing = await AdresaSupabaseService.getAdresaByUuid(putnik.adresaId ?? '');
-      if (existing != null && existing.latitude != null && existing.latitude != 0) {
-        return; // Već imamo koordinate, ne menjaj
-      }
-    }
-
+    Putnik putnik, {
+    String? vozacId,
+  }) async {
     try {
-      // 2. Proveri GPS dozvole i dobij lokaciju
+      // 1. Proveri GPS dozvole i dobij lokaciju
       final locationPermission = await Geolocator.checkPermission();
       if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
         return;
@@ -365,7 +381,28 @@ class UnifiedGeocodingService {
         ),
       );
 
-      // 3. Proveri da li je vozač blizu grada (da ne upišemo lokaciju na autoputu)
+      // 2. LOGUJ U TABELU ZA PRACENJE (uvek, ako imamo poziciju)
+      if (vozacId != null) {
+        unawaited(logPickupLocation(
+          putnik: putnik,
+          vozacId: vozacId,
+          lat: position.latitude,
+          lng: position.longitude,
+        ));
+      }
+
+      // 3. AUTO-LEARNING ADRESE: Proveri da li adresa već ima koordinate (ne menjaj ako ima)
+      bool shouldUpdateAddress = true;
+      if (_hasValidAddress(putnik)) {
+        final existing = await AdresaSupabaseService.getAdresaByUuid(putnik.adresaId ?? '');
+        if (existing != null && existing.latitude != null && existing.latitude != 0) {
+          shouldUpdateAddress = false;
+        }
+      }
+
+      if (!shouldUpdateAddress) return;
+
+      // 4. Proveri da li je vozač blizu grada (da ne upišemo lokaciju na autoputu)
       // Koristimo RouteConfig za koordinate centara gradova
       // Max distanca od centra: 5km (radijus grada)
 
@@ -383,10 +420,7 @@ class UnifiedGeocodingService {
         return;
       }
 
-      // 4. Upiši u bazu
-      // Ako putnik ima adresaId, ažuriraj tu adresu
-      // Ako nema (dnevni putnik), kreiraj novu adresu u bazi
-
+      // 5. Upiši u bazu adresa
       if (putnik.adresa != null && putnik.adresa!.isNotEmpty) {
         await _saveCoordinatesToDatabase(
           putnik: putnik,

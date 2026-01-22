@@ -758,7 +758,7 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  // 💵 PLAĆANJE DNEVNOG PUTNIKA - cena × broj mesta (YU auto, Pošiljka = 500 RSD po mestu)
+  // 💵 PLAĆANJE DNEVNOG PUTNIKA - ukupna suma odjednom (YU auto, Pošiljka = 500 RSD po mestu)
   Future<void> _handleDnevniPayment() async {
     // YU auto i Pošiljka imaju specijalnu cenu od 500 RSD po mestu
     final imeLower = _putnik.ime.toLowerCase();
@@ -768,139 +768,122 @@ class _PutnikCardState extends State<PutnikCard> {
             : 600.0;
 
     final int brojMesta = _putnik.brojMesta;
+    final double ukupnaSuma = cenaPoMestu * brojMesta;
 
-    // Naplaćujemo mesto po mesto
-    for (int i = 1; i <= brojMesta; i++) {
-      final bool? confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) {
-          return AlertDialog(
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.outline,
-                width: 2,
+    // Naplaćujemo sve odjednom
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.outline,
+              width: 2,
+            ),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.today,
+                color: Theme.of(context).colorScheme.primary,
               ),
-            ),
-            title: Row(
-              children: [
-                Icon(
-                  Icons.today,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    brojMesta > 1 ? 'Dnevna karta - Mesto $i/$brojMesta' : 'Dnevna karta',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Dnevna karta',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
                   ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Putnik: ${_putnik.ime}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Relacija: ${_putnik.grad}',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                Text(
-                  'Polazak: ${_putnik.polazak}',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                if (brojMesta > 1) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange),
-                    ),
-                    child: Text(
-                      '📌 Rezervisano $brojMesta mesta - Naplaćuje se $brojMesta × ${cenaPoMestu.toStringAsFixed(0)} RSD',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.attach_money,
-                        size: 32,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${cenaPoMestu.toStringAsFixed(0)} RSD',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Odustani'),
-              ),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                icon: const Icon(Icons.payment),
-                label: Text(brojMesta > 1 ? 'Potvrdi ($i/$brojMesta)' : 'Potvrdi plaćanje'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
                 ),
               ),
             ],
-          );
-        },
-      );
-
-      if (confirmed != true) {
-        // Korisnik odustao - prekini petlju
-        if (mounted && i > 1) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Naplaćeno ${i - 1} od $brojMesta mesta'),
-              backgroundColor: Colors.orange,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Putnik: ${_putnik.ime}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Relacija: ${_putnik.grad}',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              Text(
+                'Polazak: ${_putnik.polazak}',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    if (brojMesta > 1)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Text(
+                          'Ukupno za $brojMesta mesta:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.attach_money,
+                          size: 32,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${ukupnaSuma.toStringAsFixed(0)} RSD',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Odustani'),
             ),
-          );
-        }
-        return;
-      }
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              icon: const Icon(Icons.payment),
+              label: const Text('Potvrdi plaćanje'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    );
 
+    if (confirmed == true) {
       // Provjeri da li putnik ima valjan ID
       if (_putnik.id == null || _putnik.id.toString().isEmpty) {
         if (mounted) {
@@ -914,28 +897,21 @@ class _PutnikCardState extends State<PutnikCard> {
         return;
       }
 
-      // Izvrši plaćanje za jedno mesto
+      // Izvrši plaćanje za sve odjednom
       await _executePayment(
-        cenaPoMestu,
+        ukupnaSuma,
         isRegistrovani: false,
       );
 
-      // Kratka pauza između naplate
-      if (i < brojMesta) {
-        await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Naplaćeno $brojMesta mesta - Ukupno: ${ukupnaSuma.toStringAsFixed(0)} RSD'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
-    }
-
-    // Prikaz završne poruke
-    if (mounted && brojMesta > 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text('✅ Naplaćeno svih $brojMesta mesta - Ukupno: ${(cenaPoMestu * brojMesta).toStringAsFixed(0)} RSD'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
-      );
     }
   }
 
@@ -1884,9 +1860,9 @@ class _PutnikCardState extends State<PutnikCard> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    'x${_putnik.brojMesta}',
+                                    'x${_putnik.brojMesta} (${((_putnik.ime.toLowerCase().contains('yu auto') || _putnik.ime.toLowerCase().contains('pošiljka') || _putnik.ime.toLowerCase().contains('posiljka')) ? 500 : 600) * _putnik.brojMesta} RSD)',
                                     style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: textColor,
                                     ),

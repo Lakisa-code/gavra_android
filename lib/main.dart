@@ -185,10 +185,10 @@ void main() async {
     // 👶 AI BABIES (Autonomous Services)
     // One se pale same i uče u svom pesku (ML Lab), ne diraju produkcione podatke.
     try {
-      MLVehicleAutonomousService().start();
-      MLDispatchAutonomousService().start();
-      MLChampionService().start();
-      MLFinanceAutonomousService().start(); // DODAJ OVO
+      unawaited(MLVehicleAutonomousService().start());
+      unawaited(MLDispatchAutonomousService().start());
+      unawaited(MLChampionService().start());
+      unawaited(MLFinanceAutonomousService().start()); // DODAJ OVO
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ [AI Babies] Neuspešan start u pozadini: $e');
     }
