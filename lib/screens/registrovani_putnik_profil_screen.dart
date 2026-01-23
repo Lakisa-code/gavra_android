@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert'; // Added for safe JSON parsing
 
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -14,6 +15,7 @@ import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putn
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera slobodnih mesta
 import '../services/theme_manager.dart';
+import '../services/voznje_log_service.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
 import '../utils/schedule_utils.dart';
@@ -44,9 +46,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   List<Map<String, dynamic>> _istorijaPl = [];
 
   // 📊 Statistike - detaljno po datumima (Set za jedinstvene datume)
-  Map<String, Set<String>> _voznjeDetaljno = {}; // mesec -> set jedinstvenih datuma vožnji
-  Map<String, Set<String>> _otkazivanjaDetaljno = {}; // mesec -> set jedinstvenih datuma otkazivanja
-  Map<String, int> _brojMestaPoVoznji = {}; // datum -> broj_mesta (za tačan obračun)
+  final Map<String, Set<String>> _voznjeDetaljno = {}; // mesec -> set jedinstvenih datuma vožnji
+  final Map<String, Set<String>> _otkazivanjaDetaljno = {}; // mesec -> set jedinstvenih datuma otkazivanja
+  final Map<String, int> _brojMestaPoVoznji = {}; // datum -> broj_mesta (za tačan obračun)
   double _ukupnoZaduzenje = 0.0; // ukupno zaduženje za celu godinu
   String? _adresaBC; // BC adresa
   String? _adresaVS; // VS adresa
@@ -64,6 +66,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   // 🎯 Realtime subscription za status promene
   RealtimeChannel? _statusSubscription;
+
+  /// HELPER za bezbedno kastovanje JSONB podataka koji mogu doći kao String ili Map
+  Map<String, dynamic> _safeMap(dynamic raw) {
+    if (raw == null) return {};
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String) {
+      try {
+        final decoded = json.decode(raw);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return {};
+  }
 
   @override
   void initState() {
@@ -169,8 +184,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final newData = payload.newRecord;
       if (newData.isEmpty) return;
 
-      final polasciPoDanu = newData['polasci_po_danu'] as Map<String, dynamic>?;
-      if (polasciPoDanu == null) return;
+      final polasciPoDanu = _safeMap(newData['polasci_po_danu']);
+      if (polasciPoDanu.isEmpty) return;
 
       // Osvježi lokalne podatke
       if (mounted) {
@@ -237,7 +252,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       if (response == null) return noviPolasci;
 
-      final postojeciPolasci = response['polasci_po_danu'] as Map<String, dynamic>? ?? {};
+      final postojeciPolasci = _safeMap(response['polasci_po_danu']);
       final mergedPolasci = Map<String, dynamic>.from(postojeciPolasci);
 
       // Merge svakog dana
@@ -350,34 +365,48 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   /// 📊 Učitava statistike za profil (vožnje i otkazivanja)
   Future<void> _loadStatistike() async {
     final now = DateTime.now();
+    final pocetakMeseca = DateTime(now.year, now.month, 1).toUtc().toIso8601String();
     final pocetakGodine = DateTime(now.year, 1, 1);
     final putnikId = _putnikData['id'];
     if (putnikId == null) return;
 
     try {
-      // 1. Dohvati sve vožnje
-      final voznjeResponse =
-          await supabase.from('voznje_log').select('datum, tip').eq('putnik_id', putnikId).eq('tip', 'voznja');
+      final tipPutnikaRaw = (_putnikData['tip'] ?? 'radnik').toString().toLowerCase();
+      final jeDnevni = tipPutnikaRaw.contains('dnevni');
 
-      // 2. Dohvati sva otkazivanja
-      final otkazivanjaResponse =
-          await supabase.from('voznje_log').select('datum, tip').eq('putnik_id', putnikId).eq('tip', 'otkazivanje');
+      // 1. Dohvati vožnje za TEKUĆI MESEC
+      final voznjeResponse = await supabase
+          .from('voznje_log')
+          .select('datum, tip')
+          .eq('putnik_id', putnikId)
+          .eq('tip', 'voznja')
+          .gte('created_at', pocetakMeseca);
 
-      // Broj vožnji ovog meseca - JEDINSTVENI DATUMI
+      // 2. Dohvati otkazivanja za TEKUĆI MESEC
+      final otkazivanjaResponse = await supabase
+          .from('voznje_log')
+          .select('datum, tip')
+          .eq('putnik_id', putnikId)
+          .eq('tip', 'otkazivanje')
+          .gte('created_at', pocetakMeseca);
+
+      // Broj vožnji ovog meseca
+      // Ako je DNEVNI: svako pokupljenje = 1 vožnja
+      // Ako je RADNIK/UCENIK: unikatni dani = 1 vožnja
       final jedinstveniDatumiVoznji = <String>{};
       for (final v in voznjeResponse) {
         final datum = v['datum'] as String?;
         if (datum != null) jedinstveniDatumiVoznji.add(datum);
       }
-      final brojVoznji = jedinstveniDatumiVoznji.length;
+      int brojVoznjiTotal = jeDnevni ? voznjeResponse.length : jedinstveniDatumiVoznji.length;
 
-      // Broj otkazivanja ovog meseca - JEDINSTVENI DATUMI
+      // Broj otkazivanja ovog meseca (unikatni dani)
       final jedinstveniDatumiOtkazivanja = <String>{};
       for (final o in otkazivanjaResponse) {
         final datum = o['datum'] as String?;
         if (datum != null) jedinstveniDatumiOtkazivanja.add(datum);
       }
-      final brojOtkazivanja = jedinstveniDatumiOtkazivanja.length;
+      int brojOtkazivanjaTotal = jeDnevni ? otkazivanjaResponse.length : jedinstveniDatumiOtkazivanja.length;
 
       // Dugovanje
       final dug = _putnikData['dug'] ?? 0;
@@ -514,13 +543,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final zaduzenje = ukupnoZaplacanje - ukupnoPlaceno;
 
       setState(() {
-        _brojVoznji = brojVoznji;
-        _brojOtkazivanja = brojOtkazivanja;
-        _dugovanje = (dug is int) ? dug.toDouble() : (dug as double);
+        _brojVoznji = brojVoznjiTotal;
+        _brojOtkazivanja = brojOtkazivanjaTotal;
+        _dugovanje = zaduzenje; // ✅ Koristi izračunato zaduženje umesto nepostojeće kolone 'dug'
         _istorijaPl = istorija;
-        _voznjeDetaljno = voznjeDetaljnoMap;
-        _otkazivanjaDetaljno = otkazivanjaDetaljnoMap;
-        _brojMestaPoVoznji = brojMestaPoVoznji; // 🆕 Sačuvaj broj mesta po vožnji
+        // _voznjeDetaljno koristimo za UI - ovde nam treba lista datuma za kalendarski prikaz
+        // pa ćemo konvertovati broj_voznji nazad u set datuma ako treba, ili samo koristiti broj
         _ukupnoZaduzenje = zaduzenje;
         _adresaBC = adresaBcNaziv;
         _adresaVS = adresaVsNaziv;
@@ -1221,6 +1249,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     // ignore: unused_local_variable
     final grad = _putnikData['grad'] as String? ?? 'BC';
     final tip = _putnikData['tip'] as String? ?? 'radnik';
+    final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
     // ignore: unused_local_variable
     final aktivan = _putnikData['aktivan'] as bool? ?? true;
 
@@ -1360,7 +1389,35 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                           // Ime
                           Text(
                             fullName,
-                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Badge - tip putnika
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            child: Text(
+                              // 🎓 Prikazujemo ulogu (Učenik/Radnik) ali dodajemo "Dnevni" ako je takav način prikaza
+                              (tipPrikazivanja == 'DNEVNI' || tip == 'dnevni')
+                                  ? (tip == 'ucenik'
+                                      ? '📅 Dnevni Učenik'
+                                      : (tip == 'radnik' ? '📅 Dnevni Radnik' : '📅 Dnevni'))
+                                  : (tip == 'ucenik' ? '🎓 Učenik' : '💼 Radnik'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 4),
 
@@ -1499,25 +1556,27 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     ),
                     const SizedBox(height: 8),
 
-                    // Statistike
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard('🚌', 'Vožnje', _brojVoznji.toString(), Colors.blue, 'ovaj mesec'),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildStatCard(
-                            '❌',
-                            'Otkazano',
-                            _brojOtkazivanja.toString(),
-                            Colors.orange,
-                            'ovaj mesec',
+                    // Statistike - Sakriveno za Dnevne putnike
+                    if (_putnikData['tip']?.toString().toLowerCase() != 'dnevni') ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard('🚌', 'Vožnje', _brojVoznji.toString(), Colors.blue, 'ovaj mesec'),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildStatCard(
+                              '❌',
+                              'Otkazano',
+                              _brojOtkazivanja.toString(),
+                              Colors.orange,
+                              'ovaj mesec',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // 🏖️ Bolovanje/Godišnji dugme - SAMO za radnike
                     if (_putnikData['tip']?.toString().toLowerCase() == 'radnik') ...[
@@ -1525,53 +1584,57 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       const SizedBox(height: 16),
                     ],
 
-                    // 💰 TRENUTNO ZADUŽENJE
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: _ukupnoZaduzenje > 0
-                              ? [Colors.red.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.05)]
-                              : [Colors.green.withValues(alpha: 0.2), Colors.green.withValues(alpha: 0.05)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    // 💰 TRENUTNO ZADUŽENJE - Sakriveno za Dnevne putnike (plaćaju na licu mesta)
+                    if (_putnikData['tip']?.toString().toLowerCase() != 'dnevni') ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: _ukupnoZaduzenje > 0
+                                ? [Colors.red.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.05)]
+                                : [Colors.green.withValues(alpha: 0.2), Colors.green.withValues(alpha: 0.05)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _ukupnoZaduzenje > 0
+                                ? Colors.red.withValues(alpha: 0.3)
+                                : Colors.green.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _ukupnoZaduzenje > 0
-                              ? Colors.red.withValues(alpha: 0.3)
-                              : Colors.green.withValues(alpha: 0.3),
-                          width: 1,
+                        child: Column(
+                          children: [
+                            Text(
+                              'TRENUTNO STANJE',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontSize: 11,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
+                              style: TextStyle(
+                                color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          Text(
-                            'TRENUTNO STANJE',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 11,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
-                            style: TextStyle(
-                              color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
 
-                    // 📊 Detaljne statistike - dugme za dijalog
-                    _buildDetaljneStatistikeDugme(),
-                    const SizedBox(height: 16),
+                    // 📊 Detaljne statistike - dugme za dijalog - Sakriveno za Dnevne
+                    if (_putnikData['tip']?.toString().toLowerCase() != 'dnevni') ...[
+                      _buildDetaljneStatistikeDugme(),
+                      const SizedBox(height: 16),
+                    ],
 
                     // 📅 Raspored polazaka
                     _buildRasporedCard(),
@@ -1604,6 +1667,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   /// 📅 Widget za prikaz rasporeda polazaka po danima - GRID STIL kao "Vremena polaska"
   Widget _buildRasporedCard() {
+    final tip = _putnikData['tip'] as String? ?? 'radnik';
+    final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
     // Parsiranje polasci_po_danu iz putnikData
     final polasciRaw = _putnikData['polasci_po_danu'];
     Map<String, Map<String, String?>> polasci = {};
@@ -1723,7 +1788,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         status: bcStatus,
                         dayName: dan,
                         isCancelled: bcOtkazano,
-                        tipPutnika: _putnikData['tip']?.toString(), // 🆕 Za proveru dnevnog zakazivanja
+                        tipPutnika: tip.toString(), // 🆕 Za proveru dnevnog zakazivanja
+                        tipPrikazivanja: tipPrikazivanja, // 🆕 Režim prikaza
                         onChanged: (newValue) => _updatePolazak(dan, 'bc', newValue),
                       ),
                     ),
@@ -1737,7 +1803,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         status: vsStatus,
                         dayName: dan,
                         isCancelled: vsOtkazano,
-                        tipPutnika: _putnikData['tip']?.toString(), // 🆕 Za proveru dnevnog zakazivanja
+                        tipPutnika: tip.toString(), // 🆕 Za proveru dnevnog zakazivanja
+                        tipPrikazivanja: tipPrikazivanja, // 🆕 Režim prikaza
                         onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
                       ),
                     ),
@@ -1757,10 +1824,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   /// - VS svi: odmah čuvanje bez provere
   Future<void> _updatePolazak(String dan, String tipGrad, String? novoVreme) async {
     // 📅 BLOKADA PETKOM (za učenike i radnike)
-    // Ako je danas PETAK, zabrani menjanje bilo kog dana osim (eventualno) današnjeg,
-    // ali ovde blokiramo SVE јер је једноставније и сигурније.
+    // Ako je danas PETAK, zabrani menjanje bilo kog dana osim današnjeg (petka),
+    // jer se petkom vrši priprema za sledeću nedelju.
     final now = DateTime.now();
-    if (now.weekday == DateTime.friday) {
+    if (now.weekday == DateTime.friday && dan != 'pet') {
       final tip = (_putnikData['tip'] ?? '').toString().toLowerCase();
 
       // Samo za radnike i učenike
@@ -1877,6 +1944,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         }
         debugPrint('🔴 [$tipGrad] Putnik otkazao za $dan (staro vreme: $staroVreme)');
 
+        // 📝 LOG U DNEVNIK
+        try {
+          VoznjeLogService.logGeneric(
+            tip: 'otkazivanje_putnika',
+            putnikId: putnikId,
+            detalji: 'Otkazan termin (${tipGrad.toUpperCase()}) za $dan ($staroVremeStr)',
+          );
+        } catch (_) {}
+
         // 🆕 AKO JE VS RUSH HOUR OTKAZIVANJE - obavesti sve koji čekaju
         if (tipGrad == 'vs' && ['13:00', '14:00', '15:30'].contains(staroVremeStr)) {
           debugPrint('🔔 [VS] Rush Hour otkazivanje - proveravamo ko čeka za $staroVremeStr');
@@ -1929,6 +2005,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
+          // 📝 LOG U DNEVNIK
+          try {
+            VoznjeLogService.logGeneric(
+              tip: 'zakazivanje_putnika',
+              putnikId: putnikId,
+              detalji: 'Zahtev za BC termin: $dan u $novoVreme',
+            );
+          } catch (_) {}
+
           // Ažuriraj lokalni state
           setState(() {
             _putnikData['polasci_po_danu'] = polasci;
@@ -1963,6 +2048,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
+          // 📝 LOG U DNEVNIK
+          try {
+            VoznjeLogService.logGeneric(
+              tip: 'zakazivanje_putnika',
+              putnikId: putnikId,
+              detalji: 'Zahtev za BC termin (Radnik): $dan u $novoVreme',
+            );
+          } catch (_) {}
+
           setState(() {
             _putnikData['polasci_po_danu'] = mergedPolasci;
             _putnikData['radni_dani'] = noviRadniDani;
@@ -1993,6 +2087,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           await supabase
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+
+          // 📝 LOG U DNEVNIK
+          try {
+            VoznjeLogService.logGeneric(
+              tip: 'zakazivanje_putnika',
+              putnikId: putnikId,
+              detalji: 'Zahtev za BC termin (Dnevni): $dan u $novoVreme',
+            );
+          } catch (_) {}
 
           setState(() {
             _putnikData['polasci_po_danu'] = mergedPolasci;
@@ -2027,6 +2130,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           await supabase
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+
+          // 📝 LOG U DNEVNIK
+          try {
+            VoznjeLogService.logGeneric(
+              tip: 'zakazivanje_putnika',
+              putnikId: putnikId,
+              detalji: 'Zahtev za VS termin: $dan u $novoVreme',
+            );
+          } catch (_) {}
 
           setState(() {
             _putnikData['polasci_po_danu'] = mergedPolasci;
@@ -2066,6 +2178,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 'polasci_po_danu': mergedPolasci,
                 'radni_dani': radniDani,
               }).eq('id', putnikId);
+
+              // 📝 LOG U DNEVNIK (ako nije null, znači da je zakazivanje, inače je već logovano u otkazivanju)
+              if (vreme != null) {
+                try {
+                  VoznjeLogService.logGeneric(
+                    tip: 'zakazivanje_putnika',
+                    putnikId: putnikId,
+                    detalji: 'Promena termina (${tipGrad.toUpperCase()}): $dan u $vreme',
+                  );
+                } catch (_) {}
+              }
 
               if (mounted) {
                 setState(() {
@@ -2191,7 +2314,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         if (putnikData == null) continue;
 
-        final polasci = Map<String, dynamic>.from(putnikData['polasci_po_danu'] ?? {});
+        final polasci = _safeMap(putnikData['polasci_po_danu']);
         final radniDani = putnikData['radni_dani'] as String? ?? '';
 
         // Pošalji notifikaciju sa ponudom

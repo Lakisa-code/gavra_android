@@ -5,6 +5,7 @@ import '../services/ml_dispatch_autonomous_service.dart';
 import '../services/ml_finance_autonomous_service.dart';
 import '../services/ml_vehicle_autonomous_service.dart';
 import '../services/vozila_service.dart';
+import 'ml_dnevnik_screen.dart';
 
 /// ML Lab Screen - Machine Learning Analysis and Predictions
 ///
@@ -30,7 +31,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     MLChampionService().addListener(_onChampionUpdate);
     MLFinanceAutonomousService().addListener(_onFinanceUpdate);
     MLDispatchAutonomousService().addListener(_onDispatchUpdate);
@@ -51,6 +52,25 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
 
   void _onVehicleUpdate() {
     if (mounted) setState(() {});
+  }
+
+  // --- AUTOPILOT TOGGLES ---
+  void _toggleDispatchAutopilot(bool val) {
+    setState(() {
+      MLDispatchAutonomousService().toggleAutopilot(val);
+    });
+  }
+
+  void _toggleChampionAutopilot(bool val) {
+    setState(() {
+      MLChampionService().toggleAutopilot(val);
+    });
+  }
+
+  void _toggleFinanceAutopilot(bool val) {
+    setState(() {
+      MLFinanceAutonomousService().toggleAutopilot(val);
+    });
   }
 
   @override
@@ -80,6 +100,8 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             Tab(icon: Icon(Icons.hail), text: 'Dispečer'),
             Tab(icon: Icon(Icons.emoji_events), text: 'Šampion'),
             Tab(icon: Icon(Icons.calculate), text: 'Računovođa'),
+            Tab(icon: Icon(Icons.history_edu), text: 'Dnevnik'),
+            Tab(icon: Icon(Icons.people), text: 'Putnici'),
             Tab(icon: Icon(Icons.settings), text: 'Podešavanja'),
           ],
         ),
@@ -91,6 +113,8 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           _buildDispatcherTab(),
           _buildChampionTab(),
           _buildAccountantTab(),
+          const MLDnevnikScreen(),
+          const MLDnevnikScreen(showOnlyPutnici: true),
           _buildSettingsTab(),
         ],
       ),
@@ -463,6 +487,24 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 🤖 AUTOPILOT CONTROL
+          Card(
+            color: service.isAutopilotEnabled ? Colors.green.shade50 : Colors.blueGrey.shade50,
+            child: SwitchListTile(
+              title: const Text('100% AUTONOMIJA (Autopilot)', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(service.isAutopilotEnabled
+                  ? 'Beba sama donosi odluke i rešava probleme.'
+                  : 'Beba samo daje savete. Ti odlučuješ.'),
+              value: service.isAutopilotEnabled,
+              activeColor: Colors.green,
+              onChanged: _toggleDispatchAutopilot,
+              secondary: Icon(
+                service.isAutopilotEnabled ? Icons.auto_mode : Icons.pan_tool,
+                color: service.isAutopilotEnabled ? Colors.green : Colors.blueGrey,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           // 👨‍✈️ DISPATCHER STATUS
           Card(
             color: Colors.blue.shade50,
@@ -577,6 +619,24 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 🤖 AUTOPILOT CONTROL
+          Card(
+            color: service.isAutopilotEnabled ? Colors.amber.shade50 : Colors.blueGrey.shade50,
+            child: SwitchListTile(
+              title: const Text('100% AUTONOMIJA (Autopilot)', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(service.isAutopilotEnabled
+                  ? 'Beba sama šalje poruke i nagrađuje putnike.'
+                  : 'Beba samo predlaže poruke. Ti ih šalješ.'),
+              value: service.isAutopilotEnabled,
+              activeColor: Colors.amber,
+              onChanged: _toggleChampionAutopilot,
+              secondary: Icon(
+                service.isAutopilotEnabled ? Icons.auto_awesome : Icons.pan_tool,
+                color: service.isAutopilotEnabled ? Colors.amber : Colors.blueGrey,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           // 🏆 CHAMPION STATUS CARD
           Card(
             color: Colors.amber.shade50,
@@ -824,6 +884,24 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             ],
           ),
           const SizedBox(height: 16),
+          // 🤖 AUTOPILOT CONTROL
+          Card(
+            color: service.isAutopilotEnabled ? Colors.green.shade50 : Colors.blueGrey.shade50,
+            child: SwitchListTile(
+              title: const Text('100% AUTONOMIJA (Autopilot)', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(service.isAutopilotEnabled
+                  ? 'Beba sama prati dugove i upozorava admine.'
+                  : 'Beba samo predlaže radnje. Ti odlučuješ.'),
+              value: service.isAutopilotEnabled,
+              activeColor: Colors.green,
+              onChanged: _toggleFinanceAutopilot,
+              secondary: Icon(
+                service.isAutopilotEnabled ? Icons.auto_mode : Icons.pan_tool,
+                color: service.isAutopilotEnabled ? Colors.green : Colors.blueGrey,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           // 💰 STVARNO STANJE (FINANCE)
           Card(
             elevation: 8,
@@ -884,14 +962,14 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
-                          value: (inventory.litersInStock / 1000).clamp(0.0, 1.0),
+                          value: (inventory.litersInStock / 3000).clamp(0.0, 1.0),
                           backgroundColor: Colors.white10,
                           color: _getFuelColor(inventory.litersInStock),
                           minHeight: 12,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text('Procenat popunjenosti: ${((inventory.litersInStock / 1000) * 100).toStringAsFixed(0)}%',
+                      Text('Procenat popunjenosti: ${((inventory.litersInStock / 3000) * 100).toStringAsFixed(0)}%',
                           style: const TextStyle(color: Colors.white38, fontSize: 10)),
                     ],
                   ),
@@ -944,66 +1022,9 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                   () => _showCalibrationDialog(context, service),
                 ),
               ),
-              SizedBox(
-                width: (MediaQuery.of(context).size.width - 48) / 3,
-                child: _buildActionCard(
-                  'Sveska',
-                  Icons.menu_book,
-                  Colors.brown,
-                  () => _showMilestoneDialog(context, service),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 24),
-
-          // 📔 ARHIVA IZ SVESKE
-          if (service.milestones.isNotEmpty) ...[
-            const Row(
-              children: [
-                Icon(Icons.history_edu, color: Colors.brown),
-                SizedBox(width: 8),
-                Text('Dnevnik iz sveske', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 110,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: service.milestones.length,
-                itemBuilder: (context, index) {
-                  final m = service.milestones[index];
-                  return Container(
-                    width: 170, // Slightly wider
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Card(
-                      color: Colors.brown.withAlpha(20),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${m.date.day}.${m.date.month}.${m.date.year}.',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.brown)),
-                            const Spacer(),
-                            if (m.debt != null)
-                              Text('Dug: ${m.debt!.toInt()} din', style: const TextStyle(fontSize: 10)),
-                            if (m.meterReading != null)
-                              Text('Brojilo: ${m.meterReading!.toInt()} L',
-                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                            if (m.litersInStock != null)
-                              Text('Zalihe: ${m.litersInStock!.toInt()} L', style: const TextStyle(fontSize: 10)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
 
           // 📜 SAVETI BEBE RAČUNOVEĐE
           const Row(
@@ -1141,6 +1162,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   void _showVanRefillDialog(BuildContext context, MLFinanceAutonomousService service) {
     final litersController = TextEditingController();
     final kmController = TextEditingController();
+    final pumpController = TextEditingController(); // Mehanički brojač na pumpi
     String? selectedVehicleId;
     String? selectedVehicleName;
 
@@ -1177,8 +1199,11 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
               const SizedBox(height: 12),
               TextField(
                   controller: kmController,
-                  decoration:
-                      const InputDecoration(labelText: 'Trenutna kilometraža (Brojač)', hintText: 'npr. 254300'),
+                  decoration: const InputDecoration(labelText: 'Kilometar sat (kombi)', hintText: 'npr. 254300'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: pumpController,
+                  decoration: const InputDecoration(labelText: 'Stanje brojila (pumpa)', hintText: 'Mehanički brojač'),
                   keyboardType: TextInputType.number),
               TextField(
                   controller: litersController,
@@ -1192,12 +1217,14 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
               onPressed: () {
                 final liters = double.tryParse(litersController.text) ?? 0;
                 final km = double.tryParse(kmController.text);
+                final pump = double.tryParse(pumpController.text);
                 if (liters > 0 && selectedVehicleId != null) {
                   setState(() {
                     service.recordVanRefill(
-                      vehicleId: selectedVehicleName ?? selectedVehicleId!,
+                      vehicleId: selectedVehicleId!,
                       liters: liters,
                       km: km,
+                      pumpMeter: pump,
                     );
                   });
                   Navigator.pop(context);
@@ -1271,233 +1298,63 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'ML Configuration',
+            'Globalna Podešavanja Lab-a',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          SwitchListTile(
-            title: const Text('Enable Predictions'),
-            subtitle: const Text('Allow ML models to make predictions'),
-            value: _enablePredictions,
-            onChanged: (value) {
-              setState(() {
-                _enablePredictions = value;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(value ? 'Predictions enabled' : 'Predictions disabled'),
-                  duration: const Duration(seconds: 2),
+          Card(
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Omogući Predviđanja'),
+                  subtitle: const Text('Live analize i predviđanja budućih događaja.'),
+                  value: _enablePredictions,
+                  onChanged: (val) => setState(() => _enablePredictions = val),
+                  secondary: const Icon(Icons.bolt, color: Colors.amber),
                 ),
-              );
-            },
-          ),
-          SwitchListTile(
-            title: const Text('Auto-Train Models'),
-            subtitle: const Text('Automatically retrain with new data'),
-            value: _autoTrain,
-            onChanged: (value) {
-              setState(() {
-                _autoTrain = value;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(value ? 'Auto-train enabled' : 'Auto-train disabled'),
-                  duration: const Duration(seconds: 2),
+                const Divider(),
+                SwitchListTile(
+                  title: const Text('Automatski Trening'),
+                  subtitle: const Text('Redovno ažuriranje neuronskih mreža.'),
+                  value: _autoTrain,
+                  onChanged: (val) => setState(() => _autoTrain = val),
+                  secondary: const Icon(Icons.model_training, color: Colors.blue),
                 ),
-              );
-            },
-          ),
-          SwitchListTile(
-            title: const Text('Collect Training Data'),
-            subtitle: const Text('Record trips for model training'),
-            value: _collectData,
-            onChanged: (value) {
-              setState(() {
-                _collectData = value;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(value ? 'Data collection enabled' : 'Data collection disabled'),
-                  duration: const Duration(seconds: 2),
+                const Divider(),
+                SwitchListTile(
+                  title: const Text('Prikupljanje Podataka'),
+                  subtitle: const Text('Učenje iz akcija u realnom vremenu.'),
+                  value: _collectData,
+                  onChanged: (val) => setState(() => _collectData = val),
+                  secondary: const Icon(Icons.storage, color: Colors.green),
                 ),
-              );
-            },
-          ),
-          const Divider(height: 32),
-          const Text(
-            'Model Management',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            leading: const Icon(Icons.refresh, color: Colors.blue),
-            title: const Text('Retrain All Models'),
-            subtitle: const Text('Force retrain with latest data'),
-            trailing: ElevatedButton(
-              onPressed: () async {
-                showDialog<void>(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const AlertDialog(
-                    content: Row(
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(width: 16),
-                        Text('Training models...'),
-                      ],
-                    ),
-                  ),
-                );
-
-                await Future<void>.delayed(const Duration(seconds: 2));
-
-                if (mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Models retrained successfully'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-              child: const Text('Train'),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('Clear Training Data'),
-            subtitle: const Text('Delete all collected ML data'),
-            trailing: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () {
-                showDialog<void>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Clear Training Data?'),
-                    content: const Text(
-                      'This will delete all collected ML training data. '
-                      'This action cannot be undone. Continue?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Training data cleared'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        },
-                        child: const Text('Clear', style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              child: const Text('Clear'),
+              ],
             ),
           ),
           const SizedBox(height: 24),
           const Text(
-            'Smart Notifications',
+            'Sistemska Dijagnostika',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'ML sistem može slati smart notifikacije za:\n'
-            '• Praznici sutra (kombiji ne voze)\n'
-            '• Početak školskog raspusta\n'
-            '• Očekivani prebuking (18+ putnika)\n\n'
-            'Implementacija: lib/services/ml_vehicle_autonomous_service.dart',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ListTile(
+            leading: const Icon(Icons.memory, color: Colors.purple),
+            title: const Text('Status Neuronskih Linkova'),
+            subtitle: const Text('Svi čvorovi operativni (Hybrid Mode)'),
+            trailing: const Icon(Icons.check_circle, color: Colors.green),
+            onTap: () {},
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'About ML Lab',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'ML Lab is a passive learning system that observes patterns and provides insights without interfering with normal operations. All predictions are advisory only.',
-            style: TextStyle(color: Colors.grey),
+          ListTile(
+            leading: const Icon(Icons.cleaning_services, color: Colors.red),
+            title: const Text('Očisti AI Cache'),
+            subtitle: const Text('Resetuje kratkoročnu memoriju beba-logike.'),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('AI Cache očišćen! 🧼')),
+              );
+            },
           ),
         ],
-      ),
-    );
-  }
-
-  void _showMilestoneDialog(BuildContext context, MLFinanceAutonomousService service) {
-    final debtController = TextEditingController();
-    final meterController = TextEditingController();
-    final stockController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
-
-    showDialog<dynamic>(
-      context: context,
-      builder: (BuildContext context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Podatak iz sveske'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: Text('Datum: ${selectedDate.day}.${selectedDate.month}.${selectedDate.year}.',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: selectedDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setDialogState(() => selectedDate = picked);
-                  }
-                },
-              ),
-              TextField(
-                  controller: debtController,
-                  decoration: const InputDecoration(labelText: 'Dug iz sveske (din)'),
-                  keyboardType: TextInputType.number),
-              TextField(
-                  controller: meterController,
-                  decoration: const InputDecoration(labelText: 'Stanje Brojila (Mehaničko)', hintText: 'npr. 90953'),
-                  keyboardType: TextInputType.number),
-              TextField(
-                  controller: stockController,
-                  decoration: const InputDecoration(
-                      labelText: 'Stanje Zaliha (L)', hintText: 'Ostaviti prazno ako je nepoznato'),
-                  keyboardType: TextInputType.number),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
-            ElevatedButton(
-              onPressed: () {
-                final debt = double.tryParse(debtController.text);
-                final meter = double.tryParse(meterController.text);
-                final stock = double.tryParse(stockController.text);
-                setState(() {
-                  service.recordMilestone(
-                    date: selectedDate,
-                    debt: debt,
-                    meterReading: meter,
-                    litersInStock: stock,
-                  );
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Sačuvaj u arhivu'),
-            ),
-          ],
-        ),
       ),
     );
   }

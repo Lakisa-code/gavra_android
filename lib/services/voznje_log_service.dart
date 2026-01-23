@@ -123,6 +123,52 @@ class VoznjeLogService {
     });
   }
 
+  /// 📊 STREAM BROJA DUŽNIKA - Realtime verzija
+  static Stream<int> streamBrojDuznikaPoVozacu({
+    required String vozacIme,
+    required DateTime datum,
+  }) {
+    final datumStr = datum.toIso8601String().split('T')[0];
+    final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+
+    if (vozacUuid == null || vozacUuid.isEmpty) {
+      return Stream.value(0);
+    }
+
+    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((records) {
+      // Grupiši po putnik_id samo za ovog vozača i datum
+      final Map<String, Set<String>> putnikTipovi = {};
+      for (final record in records) {
+        if (record['vozac_id'] != vozacUuid) continue;
+        if (record['datum'] != datumStr) continue;
+
+        final putnikId = record['putnik_id'] as String?;
+        final tip = record['tip'] as String?;
+        if (putnikId == null || tip == null) continue;
+
+        putnikTipovi.putIfAbsent(putnikId, () => {});
+        putnikTipovi[putnikId]!.add(tip);
+      }
+
+      // Pronađi putnike koji imaju 'voznja' ali nemaju bilo kakvu 'uplatu'
+      int brojDuznika = 0;
+      for (final entry in putnikTipovi.entries) {
+        final tipovi = entry.value;
+        final imaVoznju = tipovi.contains('voznja');
+        final imaUplatu = tipovi.any((t) => t.contains('uplata'));
+
+        if (imaVoznju && !imaUplatu) {
+          // Ovde bi idealno trebali proveriti i tip='dnevni' u registrovani_putnici,
+          // ali to je teško uraditi sinhrono u stream map-u.
+          // Za potrebe realtime brojača na ekranu, voznja bez uplate je dovoljna indikacija.
+          brojDuznika++;
+        }
+      }
+
+      return brojDuznika;
+    });
+  }
+
   /// 📊 DUŽNICI - Broj DNEVNIH putnika koji su pokupljeni ali NISU platili za dati datum
   /// Dužnik = tip='dnevni', ima 'voznja' zapis ali NEMA 'uplata' zapis za isti datum
   static Future<int> getBrojDuznikaPoVozacu({
@@ -150,10 +196,14 @@ class VoznjeLogService {
         putnikTipovi[putnikId]!.add(tip);
       }
 
-      // Pronađi potencijalne dužnike (ima 'voznja' ali NEMA 'uplata')
+      // Pronađi potencijalne dužnike (ima 'voznja' ali NEMA bilo kakvu 'uplatu')
       final potencijalniDuznici = <String>[];
       for (final entry in putnikTipovi.entries) {
-        if (entry.value.contains('voznja') && !entry.value.contains('uplata')) {
+        final tipovi = entry.value;
+        final imaVoznju = tipovi.contains('voznja');
+        final imaUplatu = tipovi.any((t) => t.contains('uplata'));
+
+        if (imaVoznju && !imaUplatu) {
           potencijalniDuznici.add(entry.key);
         }
       }
@@ -413,5 +463,88 @@ class VoznjeLogService {
       brojUplata['_ukupno'] = ukupno;
       return brojUplata;
     });
+  }
+
+  /// 🕒 STREAM POSLEDNJIH AKCIJA - Za Dnevnik vozača
+  /// ✅ ISPRAVKA: Uključuje i akcije putnika (gde je vozac_id NULL) ako su povezani sa ovim vozačem
+  static Stream<List<Map<String, dynamic>>> streamRecentLogs({
+    required String vozacIme,
+    int limit = 10,
+  }) {
+    final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+    if (vozacUuid == null || vozacUuid.isEmpty) {
+      return Stream.value([]);
+    }
+
+    // Bilješka: realtime stream u supabase_flutter se obično koristi bez .order() i .limit()
+    // unutar .stream() poziva ako se koristi tabela direktno, ali .order() se može dodati naknavno u map().
+    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((List<Map<String, dynamic>> logs) {
+      // Filtriraj logove:
+      // 1. Logovi koji imaju ovaj vozac_id
+      // 2. Logovi koji nemaju vozac_id (direktna akcija putnika), ali putnik je vezan za ovog vozača
+      // NAPOMENA: Za punu filtraciju putnika bismo morali da znamo listu putnika ovog vozača.
+      // Za sada, administrator u ML Labu želi sve, a vozač svoje.
+      // Ako je vozacIme 'Admin' ili slično, pokazujemo sve.
+
+      final List<Map<String, dynamic>> filtered = logs.where((log) {
+        if (log['vozac_id'] == vozacUuid) return true;
+
+        // Ako nema vozac_id, to je direktna akcija putnika (prijava, odsustvo)
+        // Prikazujemo je u personalnom dnevniku vozača samo ako je taj putnik bio dodeljen njemu.
+        // Pošto nemamo listu putnika ovde, a logGeneric trenutno ne čuva "vlasnika" akcije kad putnik klikne,
+        // najsigurnije je prikazati sve akcije putnika koje su "sistemske" u globalnom dnevniku.
+        if (log['vozac_id'] == null) return true;
+
+        return false;
+      }).toList();
+
+      // Sortiraj po vremenu (created_at) silazno
+      filtered.sort((a, b) {
+        final DateTime dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
+        final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+      return filtered.take(limit).toList();
+    });
+  }
+
+  /// 🕒 GLOBALNI STREAM SVIH AKCIJA - Za Gavra Lab Admin Dnevnik
+  /// ✅ ISPRAVKA: Uklonjen filter koji je možda ograničavao prikaz i dodato ručno sortiranje
+  static Stream<List<Map<String, dynamic>>> streamAllRecentLogs({int limit = 50}) {
+    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((List<Map<String, dynamic>> logs) {
+      // Sortiraj po vremenu (created_at) silazno
+      final List<Map<String, dynamic>> sorted = List.from(logs);
+      sorted.sort((a, b) {
+        final DateTime dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
+        final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+      return sorted.take(limit).toList();
+    });
+  }
+
+  /// 📝 LOGOVANJE GENERIČKE AKCIJE
+  static Future<void> logGeneric({
+    required String tip,
+    String? putnikId,
+    String? vozacId,
+    double iznos = 0,
+    String? detalji,
+  }) async {
+    try {
+      final datumStr = DateTime.now().toIso8601String().split('T')[0];
+      await _supabase.from('voznje_log').insert({
+        'tip': tip,
+        'putnik_id': putnikId,
+        'vozac_id': vozacId,
+        'iznos': iznos,
+        'datum': datumStr,
+        'detalji': detalji,
+        'placeni_mesec': DateTime.now().month,
+        'placena_godina': DateTime.now().year,
+      });
+    } catch (e) {
+      print(' Greška pri logovanju akcije ($tip): $e');
+    }
   }
 }
