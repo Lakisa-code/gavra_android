@@ -23,6 +23,7 @@ class TimePickerCell extends StatelessWidget {
   final String? dayName; // 🆕 Dan u nedelji (pon, uto, sre...) za zaključavanje prošlih dana
   final bool isCancelled; // 🆕 Da li je otkazan (crveno)
   final String? tipPutnika; // 🆕 Tip putnika: radnik, ucenik, dnevni
+  final String? tipPrikazivanja; // 🆕 Režim prikaza: standard, DNEVNI
 
   const TimePickerCell({
     Key? key,
@@ -35,6 +36,7 @@ class TimePickerCell extends StatelessWidget {
     this.dayName,
     this.isCancelled = false,
     this.tipPutnika,
+    this.tipPrikazivanja,
   }) : super(key: key);
 
   /// Vraća DateTime za određeni dan u tekućoj nedelji
@@ -101,8 +103,8 @@ class TimePickerCell extends StatelessWidget {
     final todayOnly = DateTime(now.year, now.month, now.day);
     final dayDate = _getDateForDay();
 
-    // 🆕 DNEVNI PUTNICI:
-    if (tipPutnika == 'dnevni') {
+    // 🆕 DNEVNI PUTNICI I REŽIM:
+    if (tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') {
       // 1. Ako admin nije omogućio globalno - zaključaj sve
       if (!isDnevniZakazivanjeAktivno) return true;
 

@@ -962,14 +962,15 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
-                          value: (inventory.litersInStock / 3000).clamp(0.0, 1.0),
+                          value: (inventory.litersInStock / inventory.maxCapacity).clamp(0.0, 1.0),
                           backgroundColor: Colors.white10,
                           color: _getFuelColor(inventory.litersInStock),
                           minHeight: 12,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text('Procenat popunjenosti: ${((inventory.litersInStock / 3000) * 100).toStringAsFixed(0)}%',
+                      Text(
+                          'Procenat popunjenosti: ${((inventory.litersInStock / inventory.maxCapacity) * 100).toStringAsFixed(0)}%',
                           style: const TextStyle(color: Colors.white38, fontSize: 10)),
                     ],
                   ),
@@ -1028,10 +1029,23 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
 
           // 📜 SAVETI BEBE RAČUNOVEĐE
           const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.auto_awesome, color: Colors.amber),
-              SizedBox(width: 8),
-              Text('Knjiga Beba-Logike', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_awesome, color: Colors.amber),
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Knjiga Beba-Logike',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1115,8 +1129,10 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           ElevatedButton(
             onPressed: () {
               final liters = double.tryParse(litersController.text) ?? 0;
-              final price = double.tryParse(priceController.text) ?? 0;
-              if (liters > 0 && price > 0) {
+              final priceInput = double.tryParse(priceController.text);
+              final price = (priceInput == null || priceInput == 0) ? null : priceInput;
+
+              if (liters > 0) {
                 setState(() {
                   service.recordBulkPurchase(liters: liters, pricePerLiter: price);
                 });

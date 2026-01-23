@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../globals.dart';
-import '../screens/danas_screen.dart';
+import '../screens/home_screen.dart';
 import '../screens/pin_zahtevi_screen.dart';
 import '../screens/registrovani_putnik_profil_screen.dart';
 
@@ -173,11 +173,7 @@ class NotificationNavigationService {
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => DanasScreen(
-          highlightPutnikIme: putnikIme as String?,
-          filterGrad: putnikGrad as String?,
-          filterVreme: putnikVreme as String?,
-        ),
+        builder: (context) => const HomeScreen(),
       ),
     );
   }

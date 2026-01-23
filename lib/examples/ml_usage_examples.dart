@@ -72,7 +72,7 @@ class KapacitetScreenWithML extends StatelessWidget {
 }
 
 // ====================================================================
-// PRIMER 2: Calendar Alert u DanasScreen
+// PRIMER 2: Calendar Alert
 // ====================================================================
 
 class CalendarAlertWidget extends StatelessWidget {

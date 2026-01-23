@@ -652,8 +652,8 @@ class Putnik {
       return perVreme;
     }
 
-    // 3️⃣ NAJNIŽI PRIORITET: Globalni vozac_id
-    return _getVozacIme(map['vozac_id'] as String?);
+    // ❌ UKLONJEN NAJNIŽI PRIORITET: Globalni vozac_id (reset u ponoć)
+    return null;
   }
 
   // ✅ CENTRALIZOVANO: Konvertuj UUID u ime vozača sa fallback-om

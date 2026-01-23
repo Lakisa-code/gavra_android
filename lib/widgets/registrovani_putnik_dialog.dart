@@ -439,7 +439,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             value: _tip,
             label: 'Tip putnika',
             icon: Icons.category,
-            items: const ['radnik', 'ucenik', 'dnevni'],
+            items: const ['radnik', 'ucenik', 'dnevni', 'posiljka'],
             onChanged: (value) => setState(() => _tip = value ?? 'radnik'),
           ),
           if (_tip == 'ucenik') ...[
@@ -578,7 +578,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Cena po danu (opciono)',
+                        'Cena obračuna (opciono)',
                         style: TextStyle(
                           color: Colors.amber,
                           fontWeight: FontWeight.w600,
@@ -591,7 +591,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ako ostavite prazno, cena se računa automatski:\n• Radnik: 700 RSD po danu\n• Učenik: 600 RSD po danu\n• Dnevni: po dogovoru',
+                  'Ako ostavite prazno, cena se računa automatski (700 RSD radnik, 600 RSD učenik, 600 RSD dnevni).\n• Svi tipovi (Radnik, Učenik, Dnevni): 1 dan sa bar jednim pokupljenjem = 1 vožnja/naplata.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12,
@@ -602,7 +602,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                   controller: _cenaPoDanuController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Cena po danu (RSD)',
+                    labelText: 'Iznos za obračun (RSD)',
                     hintText: 'npr. 500',
                     prefixIcon: const Icon(Icons.payments),
                     suffixText: 'RSD',
@@ -1300,10 +1300,27 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       ),
       dropdownColor: Theme.of(context).colorScheme.surface,
       items: items.map((String item) {
+        // Mapiranje internih vrednosti u lepše labele za prikaz
+        String displayLabel = item;
+        switch (item) {
+          case 'radnik':
+            displayLabel = 'Radnik';
+            break;
+          case 'ucenik':
+            displayLabel = 'Učenik';
+            break;
+          case 'dnevni':
+            displayLabel = 'Dnevni';
+            break;
+          case 'posiljka':
+            displayLabel = 'Pošiljka';
+            break;
+        }
+
         return DropdownMenuItem<String>(
           value: item,
           child: Text(
-            item,
+            displayLabel,
             style: const TextStyle(color: Colors.black87),
           ),
         );

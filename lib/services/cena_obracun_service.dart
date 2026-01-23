@@ -9,6 +9,7 @@ import '../models/registrovani_putnik.dart';
 /// - RADNIK: 700 RSD po danu (default)
 /// - UČENIK: 600 RSD po danu (default)
 /// - DNEVNI: Po dogovoru (mora imati custom cenu)
+/// - POŠILJKA: 500 RSD po danu (fiksno)
 /// - CUSTOM CENA PO DANU: Ako putnik ima postavljenu custom cenu, koristi se ona
 class CenaObracunService {
   static SupabaseClient get _supabase => supabase;
@@ -16,10 +17,17 @@ class CenaObracunService {
   /// Default cenovnik po tipu putnika (po danu)
   static const double defaultCenaRadnikPoDanu = 700.0;
   static const double defaultCenaUcenikPoDanu = 600.0;
-  static const double defaultCenaDnevniPoDanu = 0.0; // Dnevni mora imati custom cenu
+  static const double defaultCenaDnevniPoDanu = 600.0;
+  static const double defaultCenaPosiljkaPoDanu = 500.0; // Pošiljka je 500 RSD
 
   /// Dobija cenu po danu za putnika (custom ili default)
   static double getCenaPoDanu(RegistrovaniPutnik putnik) {
+    // TIP DNEVNI/POSILJKA uvek ima fiksnu cenu (osim ako je eksplicitno postavljena drugačija)
+    if (putnik.tip.toLowerCase() == 'dnevni' || putnik.tip.toLowerCase() == 'posiljka') {
+      return putnik.cenaPoDanu ??
+          (putnik.tip.toLowerCase() == 'posiljka' ? defaultCenaPosiljkaPoDanu : defaultCenaDnevniPoDanu);
+    }
+
     // Ako ima custom cenu, koristi je
     if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
       return putnik.cenaPoDanu!;
@@ -36,6 +44,9 @@ class CenaObracunService {
         return defaultCenaUcenikPoDanu;
       case 'dnevni':
         return defaultCenaDnevniPoDanu;
+      case 'posiljka':
+      case 'pošiljka':
+        return defaultCenaPosiljkaPoDanu;
       case 'radnik':
       default:
         return defaultCenaRadnikPoDanu;
@@ -54,26 +65,29 @@ class CenaObracunService {
   /// [mesec] - Mesec za koji se računa (1-12)
   /// [godina] - Godina za koju se računa
   ///
-  /// Vraća: broj_dana * cena_po_danu
+  /// Vraća: broj_jedinica * cena_po_jedinici
   static Future<double> izracunajMesecnuCenu({
     required RegistrovaniPutnik putnik,
     required int mesec,
     required int godina,
   }) async {
-    final brojDana = await _prebrojDaneSaPokupljenjima(
+    final brojJedinica = await _prebrojJediniceObracuna(
       putnikId: putnik.id,
+      tip: putnik.tip,
       mesec: mesec,
       godina: godina,
     );
 
-    final cenaPoDanu = getCenaPoDanu(putnik);
-    return brojDana * cenaPoDanu;
+    final cenaPoJedinici = getCenaPoDanu(putnik);
+    return brojJedinica * cenaPoJedinici;
   }
 
-  /// Prebroji broj dana sa pokupljenjima u mesecu
-  /// (jedno ili više pokupljenja u danu = 1 dan)
-  static Future<int> _prebrojDaneSaPokupljenjima({
+  /// Prebroji broj jedinica za obračun
+  /// Pravilo: Jedno ili više pokupljenja u istom danu = jedna vožnja/jedinica obračuna.
+  /// Važi za SVE tipove putnika (Radnik, Učenik, Dnevni).
+  static Future<int> _prebrojJediniceObracuna({
     required String putnikId,
+    required String tip,
     required int mesec,
     required int godina,
   }) async {
@@ -90,15 +104,26 @@ class CenaObracunService {
           .gte('datum', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum', krajMeseca.toIso8601String().split('T')[0]);
 
-      // Prebroji UNIKALNE dane
-      final Set<String> uniqueDays = {};
-      for (final record in response) {
-        final datum = record['datum'] as String?;
-        if (datum != null) {
-          uniqueDays.add(datum.split('T')[0]); // Samo datum bez vremena
-        }
+      final records = response as List;
+
+      if (records.isEmpty) return 0;
+
+      final jeDnevni = tip.toLowerCase() == 'dnevni';
+
+      // Ako je DNEVNI, brojimo SVAKO POKUPLJENJE (600 RSD po puta)
+      if (jeDnevni) {
+        return records.length;
       }
 
+      // Za ostale (Radnik/Učenik) brojimo UNIKATNE DANE
+      // 1 pokupljenje = 1 vožnja, 2 ili 3 pokupljenja = i dalje 1 vožnja (dan)
+      final Set<String> uniqueDays = {};
+      for (final record in records) {
+        final datum = record['datum'] as String?;
+        if (datum != null) {
+          uniqueDays.add(datum.split('T')[0]);
+        }
+      }
       return uniqueDays.length;
     } catch (e) {
       return 0;
@@ -111,22 +136,23 @@ class CenaObracunService {
     required int mesec,
     required int godina,
   }) async {
-    final brojDana = await _prebrojDaneSaPokupljenjima(
+    final brojJedinica = await _prebrojJediniceObracuna(
       putnikId: putnik.id,
+      tip: putnik.tip,
       mesec: mesec,
       godina: godina,
     );
 
-    final cenaPoDanu = getCenaPoDanu(putnik);
-    final izracunataCena = brojDana * cenaPoDanu;
+    final cenaPoUnit = getCenaPoDanu(putnik);
+    final izracunataCena = brojJedinica * cenaPoUnit;
     final imaCustomCenu = putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0;
 
     return {
       'putnikId': putnik.id,
       'putnikIme': putnik.putnikIme,
       'tip': putnik.tip,
-      'cenaPoDanu': cenaPoDanu,
-      'brojDanaSaPokupljenjima': brojDana,
+      'cenaPoDanu': cenaPoUnit,
+      'brojDanaSaPokupljenjima': brojJedinica, // Zadržavamo ključ zbog UI kompatibilnosti
       'izracunataCena': izracunataCena,
       'customCenaPoDanu': putnik.cenaPoDanu,
       'imaCustomCenu': imaCustomCenu,
@@ -161,13 +187,16 @@ class CenaObracunService {
   static String formatirajCenuZaSms({
     required double cena,
     required String tip,
-    required int brojDana,
+    required int brojDana, // Zadržavamo naziv parametra zbog kompatibilnosti
     double? customCenaPoDanu,
   }) {
-    final cenaPoDanuValue = customCenaPoDanu ?? _getDefaultCenaPoDanu(tip);
+    final jeDnevni = tip.toLowerCase() == 'dnevni';
+    final labela = jeDnevni ? 'dana' : 'vožnji';
+    final cenaPoUnit = customCenaPoDanu ?? _getDefaultCenaPoDanu(tip);
+
     if (customCenaPoDanu != null) {
-      return '${cena.toStringAsFixed(0)} RSD ($brojDana dana x ${cenaPoDanuValue.toStringAsFixed(0)} RSD - specijalna cena)';
+      return '${cena.toStringAsFixed(0)} RSD ($brojDana $labela x ${cenaPoUnit.toStringAsFixed(0)} RSD - specijalna cena)';
     }
-    return '${cena.toStringAsFixed(0)} RSD ($brojDana dana x ${cenaPoDanuValue.toStringAsFixed(0)} RSD)';
+    return '${cena.toStringAsFixed(0)} RSD ($brojDana $labela x ${cenaPoUnit.toStringAsFixed(0)} RSD)';
   }
 }

@@ -1,3 +1,4 @@
+import '../globals.dart';
 import 'voznje_log_service.dart';
 
 /// Servis za statistiku
@@ -42,7 +43,10 @@ class StatistikaService {
 
   /// Stream broja dužnika
   static Stream<int> streamBrojDuznikaZaVozaca({required String vozac}) {
-    return Stream.value(0);
+    return VoznjeLogService.streamBrojDuznikaPoVozacu(
+      vozacIme: vozac,
+      datum: DateTime.now(),
+    );
   }
 
   /// Detaljne statistike po vozačima
@@ -75,7 +79,26 @@ class StatistikaService {
 
   /// Dohvati kilometražu za vozača
   Future<double> getKilometrazu(String vozac, DateTime from, DateTime to) async {
-    // Placeholder - kilometraža se ne prati trenutno
-    return 0.0;
+    try {
+      final fromStr = from.toIso8601String().split('T')[0];
+      final toStr = to.toIso8601String().split('T')[0];
+
+      final response = await supabase
+          .from('daily_reports')
+          .select('kilometraza')
+          .eq('vozac', vozac)
+          .gte('datum', fromStr)
+          .lte('datum', toStr);
+
+      if (response.isEmpty) return 0.0;
+
+      double total = 0;
+      for (var row in response) {
+        total += (row['kilometraza'] as num?)?.toDouble() ?? 0.0;
+      }
+      return total;
+    } catch (e) {
+      return 0.0;
+    }
   }
 }

@@ -157,6 +157,70 @@ class PutnikService {
     return controller.stream;
   }
 
+  /// 🚀 FETCH PUTNIKA ZA CEO DAN (bez filtriranja grada/vremena)
+  Future<List<Putnik>> getPutniciByDayIso(String isoDate) async {
+    try {
+      final combined = <Putnik>[];
+
+      // Fetch monthly rows for the relevant day (if isoDate provided, convert)
+      String? danKratica;
+      try {
+        final dt = DateTime.parse(isoDate);
+        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        danKratica = dani[dt.weekday - 1];
+      } catch (_) {
+        danKratica = _getDayAbbreviationFromName(_getTodayName());
+      }
+
+      final todayDate = isoDate;
+
+      // 🆕 Učitaj otkazivanja iz voznje_log za sve putnike
+      final otkazivanja = await VoznjeLogService.getOtkazivanjaZaSvePutnike();
+
+      final registrovani = await supabase
+          .from('registrovani_putnici')
+          .select(registrovaniFields)
+          .eq('aktivan', true)
+          .eq('obrisan', false);
+
+      for (final m in registrovani) {
+        // Kreiraj putnike SAMO za ciljani dan
+        final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica);
+
+        // Dohvati uklonjene termine za ovog putnika
+        final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
+
+        for (var p in putniciZaDan) {
+          // Proveri da li je putnik uklonjen iz ovog termina
+          final jeUklonjen = uklonjeniTermini.any((ut) {
+            final utMap = ut as Map<String, dynamic>;
+            final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
+            final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
+            final utDatum = utMap['datum']?.toString().split('T')[0];
+            return utDatum == todayDate && utVreme == pVreme && utMap['grad'] == p.grad;
+          });
+          if (jeUklonjen) continue;
+
+          // Dopuni otkazivanje iz voznje_log
+          if (p.jeOtkazan && p.vremeOtkazivanja == null && p.id != null) {
+            final otkazivanjeData = otkazivanja[p.id];
+            if (otkazivanjeData != null) {
+              p = p.copyWith(
+                vremeOtkazivanja: otkazivanjeData['datum'] as DateTime?,
+                otkazaoVozac: otkazivanjeData['vozacIme'] as String?,
+              );
+            }
+          }
+
+          combined.add(p);
+        }
+      }
+      return combined;
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// ?? Helper metoda za fetch podataka za stream
   Future<void> _doFetchForStream(
     String key,
@@ -1116,7 +1180,14 @@ class PutnikService {
       statusZaBazu = 'godisnji';
     }
 
-    // ?? ADMIN AUDIT LOG: Zabeleži promenu statusa (odsustvo/povratak)
+    // 📝 LOG U DNEVNIK
+    await VoznjeLogService.logGeneric(
+      tip: statusZaBazu == 'radi' ? 'povratak_na_posao' : 'odsustvo',
+      putnikId: id.toString(),
+      vozacId: currentDriver == 'self' ? null : await VozacMappingService.getVozacUuid(currentDriver),
+    );
+
+    // 🛠️ ADMIN AUDIT LOG: Zabeleži promenu statusa (odsustvo/povratak)
     await AdminAuditService.logAction(
       adminName: currentDriver,
       actionType: 'change_status',

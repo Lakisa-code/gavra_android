@@ -33,6 +33,9 @@ class PutnikHelpers {
     // 🆕 Ne računaj ako je status 'waiting' (zahtev čeka mesto)
     if (p.status == 'waiting') return false;
 
+    // 🆕 POŠILJKE NE ZAUZIMAJU MESTA
+    if (p.tipPutnika == 'posiljka') return false;
+
     return true;
   }
 

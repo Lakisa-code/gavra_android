@@ -47,7 +47,6 @@ class VozacScreen extends StatefulWidget {
 }
 
 class _VozacScreenState extends State<VozacScreen> {
-  final String _vozacIme = 'Ivan';
   final PutnikService _putnikService = PutnikService();
 
   StreamSubscription<Position>? _driverPositionSubscription;
@@ -60,6 +59,7 @@ class _VozacScreenState extends State<VozacScreen> {
   List<Putnik> _optimizedRoute = [];
   bool _isLoading = false;
   Map<Putnik, Position>? _cachedCoordinates; // 🎯 Keširane koordinate
+  Map<String, int>? _cachedEta; // 🕒 Keširani ETA iz OSRM-a
 
   /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak
   String _getWorkingDateIso() {
@@ -185,12 +185,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }
 
     _currentDriver = await FirebaseService.getCurrentDriver();
-    // 🆘 FALLBACK: Ako FirebaseService ne vrati vozača, koristi _vozacIme (Ivan)
-    if (_currentDriver == null || _currentDriver!.isEmpty) {
-      _currentDriver = _vozacIme; // 'Ivan'
-      // ✅ FIX: Koristi AuthManager da bi se ažurirao i push token
-      await AuthManager.setCurrentDriver(_vozacIme);
-    }
+
     if (mounted) setState(() {});
   }
 
@@ -1343,19 +1338,10 @@ class _VozacScreenState extends State<VozacScreen> {
                     return const Center(child: CircularProgressIndicator(color: Colors.white));
                   }
 
-                  // 🎯 FILTER: Prikaži SVE putnike na kojima je vozač bio aktivan DANAS
-                  // (dodeljeni, pokupljeni, naplaćeni ili otkazani od strane ovog vozača)
+                  // 🎯 FILTER: Prikaži ISKLJUČIVO putnike koje je admin dodelio ovom vozaču
                   final sviPutnici = snapshot.data ?? [];
                   final mojiPutnici = sviPutnici.where((p) {
-                    // Dodeljeni putnike
-                    if (p.dodeljenVozac == _currentDriver) return true;
-                    // Pokupljeni od ovog vozača DANAS (proveri da li postoji vremePokupljenja)
-                    if (p.pokupioVozac == _currentDriver && p.vremePokupljenja != null) return true;
-                    // Naplaćeni od ovog vozača DANAS (proveri da li postoji vremePlacanja)
-                    if (p.naplatioVozac == _currentDriver && p.vremePlacanja != null) return true;
-                    // Otkazani od ovog vozača DANAS (proveri da li postoji vremeOtkazivanja)
-                    if (p.otkazaoVozac == _currentDriver && p.vremeOtkazivanja != null) return true;
-                    return false;
+                    return p.dodeljenVozac == _currentDriver;
                   }).toList();
 
                   // ✅ CLIENT-SIDE FILTER za grad i vreme - kao u DanasScreen
@@ -1534,16 +1520,9 @@ class _VozacScreenState extends State<VozacScreen> {
           builder: (context, snapshot) {
             final allPutnici = snapshot.data ?? <Putnik>[];
 
-            // 🎯 FILTER: Svi putnici na kojima je vozač bio aktivan DANAS
+            // 🎯 FILTER: Svi putnici koje je admin dodelio ovom vozaču za izabrani dan
             final mojiPutnici = allPutnici.where((p) {
-              if (p.dodeljenVozac == _currentDriver) return true;
-              // Pokupljeni od ovog vozača DANAS (proveri da li postoji vremePokupljenja)
-              if (p.pokupioVozac == _currentDriver && p.vremePokupljenja != null) return true;
-              // Naplaćeni od ovog vozača DANAS (proveri da li postoji vremePlacanja)
-              if (p.naplatioVozac == _currentDriver && p.vremePlacanja != null) return true;
-              // Otkazani od ovog vozača DANAS (proveri da li postoji vremeOtkazivanja)
-              if (p.otkazaoVozac == _currentDriver && p.vremeOtkazivanja != null) return true;
-              return false;
+              return p.dodeljenVozac == _currentDriver;
             }).toList();
 
             // 🔧 REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje

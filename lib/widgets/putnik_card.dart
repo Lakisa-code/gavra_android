@@ -761,11 +761,8 @@ class _PutnikCardState extends State<PutnikCard> {
   // 💵 PLAĆANJE DNEVNOG PUTNIKA - ukupna suma odjednom (YU auto, Pošiljka = 500 RSD po mestu)
   Future<void> _handleDnevniPayment() async {
     // YU auto i Pošiljka imaju specijalnu cenu od 500 RSD po mestu
-    final imeLower = _putnik.ime.toLowerCase();
     final double cenaPoMestu =
-        (imeLower.contains('yu auto') || imeLower.contains('pošiljka') || imeLower.contains('posiljka'))
-            ? 500.0
-            : 600.0;
+        (_putnik.tipPutnika == 'posiljka' || _putnik.ime.toLowerCase().contains('yu auto')) ? 500.0 : 600.0;
 
     final int brojMesta = _putnik.brojMesta;
     final double ukupnaSuma = cenaPoMestu * brojMesta;
@@ -1394,7 +1391,29 @@ class _PutnikCardState extends State<PutnikCard> {
     required bool isRegistrovani,
     String? mesec,
   }) async {
+    // 🔒 GLOBALNI LOCK - ako BILO KOJA kartica procesira, ignoriši
+    if (_globalProcessingLock) return;
+    // 🔒 ZAŠTITA OD DUPLOG KLIKA - ako već procesiramo, ignoriši
+    if (_isProcessing) return;
+
     try {
+      // 🔒 POSTAVI OBA LOCK-A
+      _globalProcessingLock = true;
+      if (mounted) {
+        setState(() {
+          _isProcessing = true;
+        });
+      }
+
+      // ⏱️ SAČEKAJ 1.5 SEKUNDE - zaštita od slučajnog klika (isto kao kod pokupljanja)
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+
+      // Ako je korisnik otišao sa ekrana tokom čekanja, prekini
+      if (!mounted) {
+        _globalProcessingLock = false;
+        return;
+      }
+
       // Pozovi odgovarajući service za plaćanje
       if (isRegistrovani && mesec != null) {
         // Validacija da putnik ime nije prazno
@@ -1432,7 +1451,10 @@ class _PutnikCardState extends State<PutnikCard> {
       }
 
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _isProcessing = false; // Resetuj lokalni lock
+        });
+        _globalProcessingLock = false; // Resetuj globalni lock
 
         // Pozovi callback za refresh parent widget-a
         if (widget.onChanged != null) {
@@ -1454,6 +1476,11 @@ class _PutnikCardState extends State<PutnikCard> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        _globalProcessingLock = false;
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Greška pri plaćanju: $e'),
@@ -1860,7 +1887,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    'x${_putnik.brojMesta} (${((_putnik.ime.toLowerCase().contains('yu auto') || _putnik.ime.toLowerCase().contains('pošiljka') || _putnik.ime.toLowerCase().contains('posiljka')) ? 500 : 600) * _putnik.brojMesta} RSD)',
+                                    'x${_putnik.brojMesta} (${((_putnik.tipPutnika == 'posiljka' || _putnik.ime.toLowerCase().contains('yu auto')) ? 500 : 600) * _putnik.brojMesta} RSD)',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
@@ -2462,7 +2489,7 @@ class _PutnikCardState extends State<PutnikCard> {
   }
 
   // HELPER FUNKCIJE - ISTO kao u registrovani_putnici_screen.dart
-  static String _getMonthNameStatic(int month) {
+  String _getMonthNameStatic(int month) {
     const months = [
       '',
       'Januar',
@@ -2481,7 +2508,7 @@ class _PutnikCardState extends State<PutnikCard> {
     return months[month];
   }
 
-  static int _getMonthNumberStatic(String monthName) {
+  int _getMonthNumberStatic(String monthName) {
     const months = {
       'Januar': 1,
       'Februar': 2,
@@ -2499,7 +2526,7 @@ class _PutnikCardState extends State<PutnikCard> {
     return months[monthName] ?? 0;
   }
 
-  static List<String> _getMonthOptionsStatic() {
+  List<String> _getMonthOptionsStatic() {
     final now = DateTime.now();
     List<String> options = [];
 

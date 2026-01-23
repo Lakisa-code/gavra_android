@@ -304,6 +304,30 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                         'Godina: ${v.godinaProizvodnje}',
                         style: TextStyle(color: Colors.grey.shade700),
                       ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.speed, size: 16, color: Colors.blue),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Trenutna kilometraža: ',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
+                          Text(
+                            '${_formatBroja.format(v.kilometraza ?? 0)} km',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -380,12 +404,22 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
               onEdit: () => _editServisField('akumulator', 'Akumulator', v.akumulatorDatum, v.akumulatorKm),
             ),
 
-            // Pločice
+            // Pločice prednje
             _buildEditableField(
               icon: '🛑',
-              label: 'Pločice (kočnice)',
-              value: _formatServis(v.plociceDatum, v.plociceKm),
-              onEdit: () => _editServisField('plocice', 'Pločice', v.plociceDatum, v.plociceKm),
+              label: 'Pločice prednje',
+              value: _formatServis(v.plocicePrednjeDatum, v.plocicePrednjeKm),
+              onEdit: () =>
+                  _editServisField('plocice_prednje', 'Pločice prednje', v.plocicePrednjeDatum, v.plocicePrednjeKm),
+            ),
+
+            // Pločice zadnje
+            _buildEditableField(
+              icon: '🛑',
+              label: 'Pločice zadnje',
+              value: _formatServis(v.plociceZadnjeDatum, v.plociceZadnjeKm),
+              onEdit: () =>
+                  _editServisField('plocice_zadnje', 'Pločice zadnje', v.plociceZadnjeDatum, v.plociceZadnjeKm),
             ),
 
             // Trap
@@ -589,8 +623,9 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
   }
 
   void _editServisField(String prefix, String label, DateTime? datum, int? km) {
-    DateTime? selectedDatum = datum;
-    final kmController = TextEditingController(text: km?.toString() ?? '');
+    DateTime? selectedDatum = datum ?? DateTime.now();
+    final currentVanKm = _selectedVozilo?.kilometraza?.toInt();
+    final kmController = TextEditingController(text: (km ?? currentVanKm)?.toString() ?? '');
 
     showModalBottomSheet(
       context: context,
@@ -609,95 +644,106 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
             top: false,
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
 
-                  // Datum
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDatum ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setStateDialog(() => selectedDatum = picked);
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Datum',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.calendar_today),
-                      ),
-                      child: Text(
-                        selectedDatum != null
-                            ? '${selectedDatum!.day}.${selectedDatum!.month}.${selectedDatum!.year}'
-                            : 'Izaberi datum',
+                    // Datum
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDatum ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setStateDialog(() => selectedDatum = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Datum',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_today),
+                        ),
+                        child: Text(
+                          selectedDatum != null
+                              ? '${selectedDatum!.day}.${selectedDatum!.month}.${selectedDatum!.year}'
+                              : 'Izaberi datum',
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // Kilometraža
-                  TextField(
-                    controller: kmController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Kilometraža',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.speed),
-                      suffixText: 'km',
+                    // Kilometraža
+                    TextField(
+                      controller: kmController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Kilometraža servisa',
+                        hintText: currentVanKm != null ? 'Trenutno: $currentVanKm km' : null,
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.speed),
+                        suffixText: 'km',
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final kmValue = int.tryParse(kmController.text);
-                      final success = await VozilaService.updateKolskaKnjiga(
-                        _selectedVozilo!.id,
-                        {
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final kmValue = int.tryParse(kmController.text);
+
+                        final Map<String, dynamic> updateData = {
                           '${prefix}_datum': selectedDatum?.toIso8601String().split('T')[0],
                           '${prefix}_km': kmValue,
-                        },
-                      );
+                        };
 
-                      // Dodaj u istoriju
-                      if (success && (selectedDatum != null || kmValue != null)) {
-                        await VozilaService.addIstorijuServisa(
-                          voziloId: _selectedVozilo!.id,
-                          tip: prefix,
-                          datum: selectedDatum,
-                          km: kmValue,
-                        );
-                      }
+                        // Ako je uneta kilometraža veća od trenutne u bazi, ažuriraj i nju
+                        if (kmValue != null && kmValue > (_selectedVozilo?.kilometraza ?? 0)) {
+                          updateData['kilometraza'] = kmValue.toDouble();
+                        }
 
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                      if (success) {
-                        _loadVozila();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('✅ Sačuvano')),
+                        final success = await VozilaService.updateKolskaKnjiga(
+                          _selectedVozilo!.id,
+                          updateData,
                         );
-                      }
-                    },
-                    icon: const Icon(Icons.save),
-                    label: const Text('Sačuvaj'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+
+                        // Dodaj u istoriju
+                        if (success && (selectedDatum != null || kmValue != null)) {
+                          await VozilaService.addIstorijuServisa(
+                            voziloId: _selectedVozilo!.id,
+                            tip: prefix,
+                            datum: selectedDatum,
+                            km: kmValue,
+                          );
+                        }
+
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        if (success) {
+                          _loadVozila();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('✅ Sačuvano')),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.save),
+                      label: const Text('Sačuvaj'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -707,9 +753,10 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
   }
 
   void _editGumeField(String pozicija, DateTime? datum, String? opis, int? km) {
-    DateTime? selectedDatum = datum;
+    DateTime? selectedDatum = datum ?? DateTime.now();
     final opisController = TextEditingController(text: opis ?? '');
-    final kmController = TextEditingController(text: km?.toString() ?? '');
+    final currentVanKm = _selectedVozilo?.kilometraza?.toInt();
+    final kmController = TextEditingController(text: (km ?? currentVanKm)?.toString() ?? '');
     final isPrednje = pozicija == 'prednje';
     final label = isPrednje ? 'Gume prednje' : 'Gume zadnje';
 
@@ -745,171 +792,178 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
             top: false,
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    '🛞 $label',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Tip guma - brzi izbor
-                  const Text('Tip guma:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTipGumaChip(
-                          '☀️ Letnje',
-                          'letnje',
-                          selectedTip,
-                          (tip) => setStateDialog(() => selectedTip = tip),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildTipGumaChip(
-                          '❄️ Zimske',
-                          'zimske',
-                          selectedTip,
-                          (tip) => setStateDialog(() => selectedTip = tip),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildTipGumaChip(
-                          '🌤️ M+S',
-                          'ms',
-                          selectedTip,
-                          (tip) => setStateDialog(() => selectedTip = tip),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Opis guma
-                  TextField(
-                    controller: opisController,
-                    decoration: const InputDecoration(
-                      labelText: 'Marka i dimenzija',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.description),
-                      hintText: 'npr. Michelin 215/65 R16',
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      '🛞 $label',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
                     ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
-                  // Datum zamene
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDatum ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setStateDialog(() => selectedDatum = picked);
-                      }
-                    },
-                    child: InputDecorator(
+                    // Tip guma - brzi izbor
+                    const Text('Tip guma:', style: TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTipGumaChip(
+                            '☀️ Letnje',
+                            'letnje',
+                            selectedTip,
+                            (tip) => setStateDialog(() => selectedTip = tip),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildTipGumaChip(
+                            '❄️ Zimske',
+                            'zimske',
+                            selectedTip,
+                            (tip) => setStateDialog(() => selectedTip = tip),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildTipGumaChip(
+                            '🌤️ M+S',
+                            'ms',
+                            selectedTip,
+                            (tip) => setStateDialog(() => selectedTip = tip),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Opis guma
+                    TextField(
+                      controller: opisController,
                       decoration: const InputDecoration(
-                        labelText: 'Datum zamene',
+                        labelText: 'Marka i dimenzija',
                         border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.calendar_today),
+                        prefixIcon: Icon(Icons.description),
+                        hintText: 'npr. Michelin 215/65 R16',
                       ),
-                      child: Text(
-                        selectedDatum != null
-                            ? '${selectedDatum!.day}.${selectedDatum!.month}.${selectedDatum!.year}'
-                            : 'Izaberi datum',
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Datum zamene
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDatum ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setStateDialog(() => selectedDatum = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Datum zamene',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_today),
+                        ),
+                        child: Text(
+                          selectedDatum != null
+                              ? '${selectedDatum!.day}.${selectedDatum!.month}.${selectedDatum!.year}'
+                              : 'Izaberi datum',
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // Kilometraža
-                  TextField(
-                    controller: kmController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Kilometraža',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.speed),
-                      suffixText: 'km',
-                      hintText: 'npr. 85000',
+                    // Kilometraža
+                    TextField(
+                      controller: kmController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Kilometraža zamene',
+                        hintText: currentVanKm != null ? 'Trenutno: $currentVanKm km' : null,
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.speed),
+                        suffixText: 'km',
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      // Složi opis sa tipom guma
-                      String finalOpis = '';
-                      if (selectedTip != null) {
-                        final tipEmoji = selectedTip == 'letnje'
-                            ? '☀️'
-                            : selectedTip == 'zimske'
-                                ? '❄️'
-                                : '🌤️';
-                        finalOpis = tipEmoji;
-                      }
-                      if (opisController.text.isNotEmpty) {
-                        finalOpis += finalOpis.isNotEmpty ? ' ${opisController.text}' : opisController.text;
-                      }
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        // Složi opis sa tipom guma
+                        String finalOpis = '';
+                        if (selectedTip != null) {
+                          final tipEmoji = selectedTip == 'letnje'
+                              ? '☀️'
+                              : selectedTip == 'zimske'
+                                  ? '❄️'
+                                  : '🌤️';
+                          finalOpis = tipEmoji;
+                        }
+                        if (opisController.text.isNotEmpty) {
+                          finalOpis += finalOpis.isNotEmpty ? ' ${opisController.text}' : opisController.text;
+                        }
 
-                      final kmValue = int.tryParse(kmController.text);
+                        final kmValue = int.tryParse(kmController.text);
 
-                      // Sačuvaj u vozila tabelu
-                      final updateData = isPrednje
-                          ? {
-                              'gume_prednje_datum': selectedDatum?.toIso8601String().split('T')[0],
-                              'gume_prednje_opis': finalOpis.isEmpty ? null : finalOpis,
-                              'gume_prednje_km': kmValue,
-                            }
-                          : {
-                              'gume_zadnje_datum': selectedDatum?.toIso8601String().split('T')[0],
-                              'gume_zadnje_opis': finalOpis.isEmpty ? null : finalOpis,
-                              'gume_zadnje_km': kmValue,
-                            };
+                        // Sačuvaj u vozila tabelu
+                        final Map<String, dynamic> updateData = isPrednje
+                            ? {
+                                'gume_prednje_datum': selectedDatum?.toIso8601String().split('T')[0],
+                                'gume_prednje_opis': finalOpis.isEmpty ? null : finalOpis,
+                                'gume_prednje_km': kmValue,
+                              }
+                            : {
+                                'gume_zadnje_datum': selectedDatum?.toIso8601String().split('T')[0],
+                                'gume_zadnje_opis': finalOpis.isEmpty ? null : finalOpis,
+                                'gume_zadnje_km': kmValue,
+                              };
 
-                      final success = await VozilaService.updateKolskaKnjiga(
-                        _selectedVozilo!.id,
-                        updateData,
-                      );
+                        // Ako je uneta kilometraža veća od trenutne u bazi, ažuriraj i nju
+                        if (kmValue != null && kmValue > (_selectedVozilo?.kilometraza ?? 0)) {
+                          updateData['kilometraza'] = kmValue.toDouble();
+                        }
 
-                      // Dodaj u istoriju
-                      if (success && selectedDatum != null) {
-                        await VozilaService.addIstorijuServisa(
-                          voziloId: _selectedVozilo!.id,
-                          tip: isPrednje ? 'gume_prednje' : 'gume_zadnje',
-                          datum: selectedDatum,
-                          km: kmValue,
-                          opis: finalOpis.isEmpty ? null : finalOpis,
-                          pozicija: pozicija,
+                        final success = await VozilaService.updateKolskaKnjiga(
+                          _selectedVozilo!.id,
+                          updateData,
                         );
-                      }
 
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                      if (success) {
-                        _loadVozila();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('✅ Sačuvano')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.save),
-                    label: const Text('Sačuvaj'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                        // Dodaj u istoriju
+                        if (success && selectedDatum != null) {
+                          await VozilaService.addIstorijuServisa(
+                            voziloId: _selectedVozilo!.id,
+                            tip: isPrednje ? 'gume_prednje' : 'gume_zadnje',
+                            datum: selectedDatum,
+                            km: kmValue,
+                            opis: finalOpis.isEmpty ? null : finalOpis,
+                            pozicija: pozicija,
+                          );
+                        }
+
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        if (success) {
+                          _loadVozila();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('✅ Sačuvano')),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.save),
+                      label: const Text('Sačuvaj'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

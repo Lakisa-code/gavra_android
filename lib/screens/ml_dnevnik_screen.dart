@@ -101,7 +101,8 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
     final type = log['tip']?.toString() ?? 'nepoznato';
     final createdAtStr = log['created_at']?.toString() ?? '';
     // Supabase vraća UTC vreme, .toLocal() ga konvertuje u lokalno vreme telefona
-    final createdAt = (DateTime.tryParse(createdAtStr) ?? DateTime.now()).toLocal();
+    // Korisnik je tražio da vreme ide 1 sat unapred u odnosu na regularno lokalno
+    final createdAt = (DateTime.tryParse(createdAtStr) ?? DateTime.now()).toLocal().add(const Duration(hours: 1));
     final vozacId = log['vozac_id']?.toString();
     final putnikId = log['putnik_id'];
     final iznos = log['iznos']?.toString();

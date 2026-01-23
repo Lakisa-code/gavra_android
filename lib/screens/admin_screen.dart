@@ -25,7 +25,6 @@ import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
 import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
-import 'live_monitor_screen.dart'; // 🖥️ LIVE MONITOR
 import 'ml_lab_screen.dart'; // 🧪 ML LAB
 import 'odrzavanje_screen.dart'; // 📖 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
@@ -889,39 +888,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
                                                 child: Text('Mesta',
-                                                    style: TextStyle(
-                                                        fontWeight: FontWeight.w600,
-                                                        fontSize: 14,
-                                                        color: Colors.white,
-                                                        shadows: [
-                                                          Shadow(
-                                                              offset: Offset(1, 1),
-                                                              blurRadius: 3,
-                                                              color: Colors.black54)
-                                                        ])))),
-                                      ),
-                                    ),
-                                  ),
-
-                                  // MONITOR
-                                  SizedBox(
-                                    width: buttonWidth,
-                                    child: InkWell(
-                                      onTap: () => Navigator.push(context,
-                                          MaterialPageRoute<void>(builder: (context) => const LiveMonitorScreen())),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        height: 28,
-                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).glassContainer,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
-                                        ),
-                                        child: const Center(
-                                            child: FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Text('Monitor',
                                                     style: TextStyle(
                                                         fontWeight: FontWeight.w600,
                                                         fontSize: 14,

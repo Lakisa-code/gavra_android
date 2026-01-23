@@ -175,16 +175,17 @@ class DailyCheckInService {
     return false;
   }
 
-  /// Sačuvaj daily check-in (sitan novac)
+  /// Sačuvaj daily check-in (sitan novac i kilometraža)
   static Future<void> saveCheckIn(
     String vozac,
-    double sitanNovac,
-  ) async {
+    double sitanNovac, {
+    double? kilometraza,
+  }) async {
     final today = DateTime.now();
 
     // 🌐 DIREKTNO U BAZU - upsert će ažurirati ako već postoji za danas
     try {
-      await _saveToSupabase(vozac, sitanNovac, today).timeout(const Duration(seconds: 8));
+      await _saveToSupabase(vozac, sitanNovac, today, kilometraza: kilometraza).timeout(const Duration(seconds: 8));
 
       // Ažuriraj stream za UI
       _kusurCache[vozac] = sitanNovac; // 💾 Sačuvaj u cache
@@ -233,18 +234,25 @@ class DailyCheckInService {
   static Future<Map<String, dynamic>?> _saveToSupabase(
     String vozac,
     double sitanNovac,
-    DateTime datum,
-  ) async {
+    DateTime datum, {
+    double? kilometraza,
+  }) async {
     try {
+      final updateData = {
+        'vozac': vozac,
+        'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
+        'sitan_novac': sitanNovac,
+        'checkin_vreme': DateTime.now().toIso8601String(),
+      };
+
+      if (kilometraza != null) {
+        updateData['kilometraza'] = kilometraza;
+      }
+
       final response = await supabase
           .from('daily_reports')
           .upsert(
-            {
-              'vozac': vozac,
-              'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
-              'sitan_novac': sitanNovac,
-              'checkin_vreme': DateTime.now().toIso8601String(),
-            },
+            updateData,
             onConflict: 'vozac,datum', // 🎯 Ključno za upsert!
           )
           .select()
@@ -539,5 +547,22 @@ class DailyCheckInService {
           .eq('vozac', vozac)
           .eq('datum', todayStr);
     } catch (_) {}
+  }
+
+  /// Dohvati poslednju zabeleženu kilometražu za vozača
+  static Future<double> getLastKm(String vozac) async {
+    try {
+      final data = await supabase
+          .from('daily_reports')
+          .select('kilometraza')
+          .eq('vozac', vozac)
+          .order('datum', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      return (data?['kilometraza'] as num?)?.toDouble() ?? 0.0;
+    } catch (e) {
+      return 0.0;
+    }
   }
 }

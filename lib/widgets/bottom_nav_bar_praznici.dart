@@ -19,6 +19,8 @@ class BottomNavBarPraznici extends StatefulWidget {
     required this.getPutnikCount,
     this.getKapacitet,
     this.isSlotLoading,
+    this.bcVremena,
+    this.vsVremena,
     this.selectedDan,
   });
   final List<String> sviPolasci;
@@ -28,6 +30,8 @@ class BottomNavBarPraznici extends StatefulWidget {
   final int Function(String grad, String vreme) getPutnikCount;
   final int Function(String grad, String vreme)? getKapacitet;
   final bool Function(String grad, String vreme)? isSlotLoading;
+  final List<String>? bcVremena;
+  final List<String>? vsVremena;
   final String? selectedDan;
 
   @override
@@ -59,8 +63,8 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
   void _scrollToSelected() {
     const double itemWidth = 60.0;
 
-    final bcVremena = RouteConfig.bcVremenaPraznici;
-    final vsVremena = RouteConfig.vsVremenaPraznici;
+    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaPraznici;
+    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaPraznici;
 
     if (widget.selectedGrad == 'Bela Crkva') {
       final index = bcVremena.indexOf(widget.selectedVreme);
@@ -94,8 +98,8 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
 
   @override
   Widget build(BuildContext context) {
-    final bcVremena = RouteConfig.bcVremenaPraznici;
-    final vsVremena = RouteConfig.vsVremenaPraznici;
+    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaPraznici;
+    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaPraznici;
     final currentThemeId = ThemeManager().currentThemeId;
 
     return Container(

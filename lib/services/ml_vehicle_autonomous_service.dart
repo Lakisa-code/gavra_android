@@ -195,7 +195,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
       // Tražimo korelaciju između održavanja i potrošnje
       final List<dynamic> history = await _supabase
           .from('vozila_istorija')
-          .select('vozilo_id, km_stanje, datum')
+          .select('vozilo_id, km, datum') // Promenjeno km_stanje u km
           .order('datum', ascending: false)
           .limit(50);
 
@@ -209,7 +209,23 @@ class MLVehicleAutonomousService extends ChangeNotifier {
         ));
       }
 
-      // 2. LINK SA DISPEČEROM (Predictive Wear & Tear)
+      // 3. NOVI LINK: Dnevni izveštaji i kilometraža (Aktivnost vozača)
+      final List<dynamic> dailyReports = await _supabase
+          .from('daily_reports')
+          .select('vozac, kilometraza, datum')
+          .order('datum', ascending: false)
+          .limit(30);
+
+      if (dailyReports.isNotEmpty) {
+        _businessInferences.add(AIInference(
+          title: 'Operativni Ritam',
+          description: 'Povezano! Pratim dnevne unose kilometraže od vozača za predikciju servisa.',
+          probability: 0.95,
+          type: InferenceType.capacity,
+        ));
+      }
+
+      // 4. LINK SA DISPEČEROM (Predictive Wear & Tear)
       // Ako Dispečer vidi gužvu sutra, mi vidimo opterećenje motora
       _businessInferences.add(AIInference(
         title: 'Prediktivni Zamor',

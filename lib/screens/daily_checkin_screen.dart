@@ -78,7 +78,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     super.dispose();
   }
 
-  Future<void> _submitKusur() async {
+  Future<void> _submitCheckIn() async {
     if (_kusurController.text.trim().isEmpty) {
       _showError('Unesite iznos sitnog novca!');
       return;
@@ -86,15 +86,15 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
     final double? iznos = double.tryParse(_kusurController.text.trim());
 
-    if (iznos == null || iznos <= 0) {
-      _showError('Unesite valjan iznos veći od 0!');
+    if (iznos == null || iznos < 0) {
+      _showError('Unesite valjan iznos za kusur!');
       return;
     }
 
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      // 🚀 DIREKTAN POZIV - saveCheckIn već ima 8s timeout
+      // 🚀 DIREKTAN POZIV - Opet bez kilometraže
       await DailyCheckInService.saveCheckIn(widget.vozac, iznos);
 
       if (mounted) {
@@ -328,7 +328,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
                       const SizedBox(height: 32),
 
-                      // Input field
+                      // Input field - Kusur
                       Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
@@ -352,6 +352,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           ),
                           textAlign: TextAlign.center,
                           decoration: InputDecoration(
+                            labelText: 'Sitan novac (kusur)',
+                            labelStyle: TextStyle(color: vozacColor, fontSize: 14),
                             hintText: '0',
                             hintStyle: TextStyle(
                               color: primaryTextColor.withValues(alpha: 0.4),
@@ -381,7 +383,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                               vertical: 20,
                             ),
                           ),
-                          onSubmitted: (_) => _submitKusur(),
+                          onSubmitted: (_) => _submitCheckIn(),
                         ),
                       ),
 
@@ -396,7 +398,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                               ? null
                               : () {
                                   HapticFeedback.mediumImpact(); // Dodaj haptic feedback
-                                  _submitKusur();
+                                  _submitCheckIn();
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: vozacColor,

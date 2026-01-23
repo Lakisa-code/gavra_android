@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -5,6 +6,7 @@ import '../globals.dart';
 import '../services/biometric_service.dart';
 import '../services/pin_zahtev_service.dart';
 import '../services/putnik_push_service.dart';
+import '../services/voznje_log_service.dart';
 import '../theme.dart';
 import 'registrovani_putnik_profil_screen.dart';
 
@@ -15,7 +17,7 @@ class RegistrovaniPutnikLoginScreen extends StatefulWidget {
   State<RegistrovaniPutnikLoginScreen> createState() => _RegistrovaniPutnikLoginScreenState();
 }
 
-enum _LoginStep { telefon, email, pin, zahtevPoslat }
+enum _LoginStep { telefon, email, pin, izborPutnika, zahtevPoslat }
 
 class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginScreen> {
   final _telefonController = TextEditingController();
@@ -29,6 +31,8 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
 
   // Podaci o pronađenom putniku
   Map<String, dynamic>? _putnikData;
+  // Lista mogućih putnika (kod deljenih brojeva/pina)
+  List<Map<String, dynamic>>? _putnikCandidates;
 
   // 🔐 Biometrija
   bool _biometricAvailable = false;
@@ -363,62 +367,85 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       // Traži putnika - dohvati sve sa PIN-om i uporedi normalizovane brojeve
       final allPutnici = await supabase.from('registrovani_putnici').select().eq('pin', pin).eq('obrisan', false);
 
-      // Pronađi putnika sa istim normalizovanim brojem
-      Map<String, dynamic>? response;
+      // Pronađi SVE putnike sa istim normalizovanim brojem i istim PIN-om
+      List<Map<String, dynamic>> matches = [];
       for (final p in allPutnici) {
         final storedPhone = p['broj_telefona'] as String? ?? '';
         if (_normalizePhone(storedPhone) == normalizedInput) {
-          response = Map<String, dynamic>.from(p);
-          break;
+          matches.add(Map<String, dynamic>.from(p));
         }
       }
+
+      if (matches.length > 1) {
+        // Postoji više putnika na istom broju i PIN-u (npr. radnici koriste broj vlasnika)
+        setState(() {
+          _putnikCandidates = matches;
+          _currentStep = _LoginStep.izborPutnika;
+          _infoMessage = 'Pronađeno je više korisnika na ovom broju. Izaberite svoj profil:';
+        });
+        return;
+      }
+
+      final response = matches.isNotEmpty ? matches.first : null;
 
       if (response != null) {
-        // Sačuvaj za auto-login
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('registrovani_putnik_telefon', telefon);
-        await prefs.setString('registrovani_putnik_pin', pin);
-
-        // 📱 Registruj push token za notifikacije
-        final putnikId = response['id'];
-        if (putnikId != null) {
-          await PutnikPushService.registerPutnikToken(putnikId);
-        }
-
-        // 🔐 Ponudi biometrijsku prijavu ako je dostupna i nije već uključena
-        if (showBiometricPrompt && _biometricAvailable && !_biometricEnabled && mounted) {
-          await _showBiometricSetupDialog(telefon, pin);
-        }
-
-        if (mounted) {
-          // Idi na profil ekran
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RegistrovaniPutnikProfilScreen(
-                putnikData: response!,
-              ),
-            ),
-          );
-        }
+        _performLogin(response, telefon, pin, showBiometricPrompt);
       } else {
         setState(() {
-          _errorMessage = 'Pogrešan PIN. Pokušajte ponovo.';
-          // Očisti saved PIN jer nije tačan
+          _errorMessage = 'Pogrešan PIN ili broj telefona. Pokušajte ponovo.';
         });
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('registrovani_putnik_pin');
-        // Takođe očisti biometrijske kredencijale
-        await BiometricService.clearCredentials();
+        // ... (očisti saved credentials ako treba)
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Greška pri povezivanju: $e';
-      });
+      if (kDebugMode) print('Login error: $e');
+      setState(() => _errorMessage = 'Greška pri povezivanju: $e');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Pomoćna funkcija za izvršavanje logina nakon uspešne identifikacije
+  Future<void> _performLogin(
+    Map<String, dynamic> response,
+    String telefon,
+    String pin,
+    bool showBiometricPrompt,
+  ) async {
+    try {
+      // Sačuvaj za auto-login
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('registrovani_putnik_telefon', telefon);
+      await prefs.setString('registrovani_putnik_pin', pin);
+
+      // 📱 Registruj push token za notifikacije
+      final putnikId = response['id'];
+      if (putnikId != null) {
+        await PutnikPushService.registerPutnikToken(putnikId);
+        // 📝 LOG PRIJAVE
+        await VoznjeLogService.logGeneric(
+          tip: 'prijava',
+          putnikId: putnikId,
+        );
       }
+
+      // 🔐 Ponudi biometrijsku prijavu ako je dostupna i nije već uključena
+      if (showBiometricPrompt && _biometricAvailable && !_biometricEnabled && mounted) {
+        await _showBiometricSetupDialog(telefon, pin);
+      }
+
+      if (mounted) {
+        // Idi na profil ekran
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RegistrovaniPutnikProfilScreen(
+              putnikData: response,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Greška pri prijavi: $e');
     }
   }
 
@@ -477,6 +504,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       _errorMessage = null;
       _infoMessage = null;
       _putnikData = null;
+      _putnikCandidates = null;
       _emailController.clear();
       _pinController.clear();
     });
@@ -728,9 +756,75 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         return _buildEmailInput();
       case _LoginStep.pin:
         return _buildPinInput();
+      case _LoginStep.izborPutnika:
+        return _buildIzborPutnikaContent();
       case _LoginStep.zahtevPoslat:
         return _buildZahtevPoslatContent();
     }
+  }
+
+  Widget _buildIzborPutnikaContent() {
+    if (_putnikCandidates == null) return const SizedBox();
+
+    return Column(
+      children: _putnikCandidates!.map((p) {
+        final ime = p['putnik_ime'] as String? ?? 'Nepoznat';
+        final tip = p['tip'] as String? ?? '';
+        final id = p['id'] as String? ?? '';
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _performLogin(
+                p,
+                _telefonController.text.trim(),
+                _pinController.text.trim(),
+                true,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.amber,
+                      child: Text(
+                        ime.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ime,
+                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            tip.toUpperCase(),
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Colors.amber),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildTelefonInput() {
@@ -989,6 +1083,8 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         return Icons.email;
       case _LoginStep.pin:
         return Icons.lock;
+      case _LoginStep.izborPutnika:
+        return Icons.people;
       case _LoginStep.zahtevPoslat:
         return Icons.mark_email_read;
     }
@@ -1002,6 +1098,8 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         return 'Vaš email';
       case _LoginStep.pin:
         return 'Unesite PIN';
+      case _LoginStep.izborPutnika:
+        return 'Ko se prijavljuje?';
       case _LoginStep.zahtevPoslat:
         return 'Zahtev poslat';
     }
@@ -1015,6 +1113,8 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         return 'Potreban nam je vaš email za kontakt';
       case _LoginStep.pin:
         return 'Unesite svoj 4-cifreni PIN';
+      case _LoginStep.izborPutnika:
+        return 'Izaberite svoj profil sa liste ispod';
       case _LoginStep.zahtevPoslat:
         return 'Sačekajte odobrenje od admina';
     }
@@ -1028,6 +1128,8 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         return '→ Sačuvaj email';
       case _LoginStep.pin:
         return '🔓 Pristupi';
+      case _LoginStep.izborPutnika:
+        return '';
       case _LoginStep.zahtevPoslat:
         return '';
     }
@@ -1041,6 +1143,8 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         return _saveEmail;
       case _LoginStep.pin:
         return _loginWithPin;
+      case _LoginStep.izborPutnika:
+        return null;
       case _LoginStep.zahtevPoslat:
         return null;
     }
@@ -1054,6 +1158,8 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         return 'Email koristimo za obaveštenja i Google Play interno testiranje.';
       case _LoginStep.pin:
         return 'PIN ste dobili od admina. Ako ste ga zaboravili, kontaktirajte nas.';
+      case _LoginStep.izborPutnika:
+        return 'Više osoba koristi isti broj telefona. Kliknite na svoje ime za ulaz.';
       case _LoginStep.zahtevPoslat:
         return 'Možete zatvoriti aplikaciju. Obavestićemo vas kada PIN bude dodeljen.';
     }

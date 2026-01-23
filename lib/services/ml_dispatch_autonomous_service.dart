@@ -1,11 +1,12 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'dart:convert'; // Added for safe JSON parsing
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 
-/// 👨‍✈️ BEBA DISPEČER (ML Dispatch Autonomous Service)
+///  BEBA DISPEČER (ML Dispatch Autonomous Service)
 ///
 /// 100% AUTONOMNA: Ne veruje u fiksne sektore ili "human" kategorije.
 /// Uči isključivo iz protoka podataka i istorijskih afiniteta putnika.
@@ -13,7 +14,7 @@ import '../globals.dart';
 class MLDispatchAutonomousService extends ChangeNotifier {
   static SupabaseClient get _supabase => supabase;
 
-  // 📡 REALTIME
+  //  REALTIME
   RealtimeChannel? _bookingStream;
 
   // Interna memorija bebe (100% Unsupervised)
@@ -22,6 +23,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   double _avgHourlyBookings = 0.5;
 
   bool _isActive = false;
+  bool _isAutopilotEnabled = false; //  100% Autonomija
   Timer? _velocityTimer;
 
   // Rezultati analize za UI
@@ -33,16 +35,36 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   MLDispatchAutonomousService._internal();
 
   List<DispatchAdvice> get activeAdvice => List<DispatchAdvice>.unmodifiable(_currentAdvice);
+  bool get isAutopilotEnabled => _isAutopilotEnabled;
+
+  /// Prekidač za 100% Autonomiju
+  void toggleAutopilot(bool value) {
+    _isAutopilotEnabled = value;
+    if (kDebugMode) print(' [ML Dispatch] Autopilot: ');
+    notifyListeners();
+  }
 
   /// Broj putnika za koje je sistem naučio afinitet iz istorije (Pure Data)
   double get learnedAffinityCount => _passengerAffinity.length.toDouble();
 
-  /// 🎓 LEARN FLOW (Unsupervised Affinity Learning)
+  /// HELPER za bezbedno kastovanje JSONB podataka koji mogu doći kao String ili Map
+  Map<String, dynamic> _safeMap(dynamic raw) {
+    if (raw == null) return {};
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String) {
+      try {
+        final decoded = json.decode(raw);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return {};
+  }
+
+  ///  LEARN FLOW (Unsupervised Affinity Learning)
   Future<void> _learnFromHistory() async {
     try {
-      if (kDebugMode) print('🎓 [ML Dispatch] Beba uči afinitete iz istorije...');
+      if (kDebugMode) print(' [ML Dispatch] Beba uči afinitete iz istorije...');
 
-      // 1. Nauči ko s kim najčešće putuje (80% Overlap Pattern)
       final List<dynamic> logs = await _supabase
           .from('voznje_log')
           .select('putnik_id, vozac_id')
@@ -67,7 +89,6 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         }
       });
 
-      // 2. Nauči Booking Velocity
       final List<dynamic> recentRequests =
           await _supabase.from('seat_requests').select('created_at').order('created_at', ascending: false).limit(100);
 
@@ -75,13 +96,13 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         _avgHourlyBookings = recentRequests.length / 48.0;
       }
     } catch (e) {
-      if (kDebugMode) print('⚠️ [ML Dispatch] Greška pri učenju: $e');
+      if (kDebugMode) print(' [ML Dispatch] Greška pri učenju: ');
     } finally {
       notifyListeners();
     }
   }
 
-  /// 🚀 POKRENI DISPEČERA
+  ///  POKRENI DISPEČERA
   Future<void> start() async {
     if (_isActive) return;
     _isActive = true;
@@ -105,7 +126,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
           )
           .subscribe();
     } catch (e) {
-      if (kDebugMode) print('⚠️ [ML Dispatch] Stream error: $e');
+      if (kDebugMode) print(' [ML Dispatch] Stream error: ');
     }
   }
 
@@ -123,8 +144,93 @@ class MLDispatchAutonomousService extends ChangeNotifier {
 
   void _startIntegrityCheck() {
     Timer.periodic(const Duration(minutes: 5), (timer) async {
+      _currentAdvice.clear();
       await _analyzeMultiVanSplits();
+      await _analyzeOptimalGrouping();
+      await _analyzeCapacityOverflow();
+
+      if (_isAutopilotEnabled) {
+        await _executeAutopilotActions();
+      }
+
+      notifyListeners();
     });
+  }
+
+  ///  AUTOPILOT EXECUTION
+  Future<void> _executeAutopilotActions() async {
+    for (var advice in _currentAdvice) {
+      if (advice.priority == AdvicePriority.critical) {
+        if (kDebugMode) print(' [Autopilot] REŠAVAM KRITIČNO: ');
+        if (advice.title.contains('Preopterećenje')) {
+          await _sendAutonomousAlert('Potreban rezervni kombi za ');
+        }
+      }
+    }
+  }
+
+  Future<void> _sendAutonomousAlert(String message) async {
+    try {
+      await _supabase.from('admin_audit_logs').insert({
+        'action': 'AUTOPILOT_ACTION',
+        'details': message,
+        'severity': 'critical',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
+  }
+
+  ///  TATA, TATA! (Capacity Overflow Alert)
+  Future<void> _analyzeCapacityOverflow() async {
+    try {
+      final String danDanas = _getDanKratica();
+      final dynamic shadowData =
+          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').neq('tip', 'posiljka');
+
+      Map<String, List<String>> demandMap = {};
+      Map<String, Set<String>> driverMap = {};
+
+      if (shadowData is List) {
+        for (var p in shadowData) {
+          final allDays = _safeMap(p['polasci_po_danu']);
+          if (allDays.isEmpty) continue;
+
+          final dayData = _safeMap(allDays[danDanas]);
+          if (dayData.isEmpty) continue;
+
+          for (var gradCode in ['bc', 'vs']) {
+            String? vreme = dayData[gradCode]?.toString();
+            if (vreme == null || vreme == 'null') continue;
+            String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
+            String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
+
+            final key = '_';
+            demandMap.putIfAbsent(key, () => []).add(p['id'].toString());
+
+            final String? vozac = dayData['__vozac']?.toString() ?? dayData['_vozac']?.toString();
+            if (vozac != null && vozac != 'null') {
+              driverMap.putIfAbsent(key, () => {}).add(vozac);
+            }
+          }
+        }
+      }
+
+      demandMap.forEach((key, passengers) {
+        int count = passengers.length;
+        int drivers = driverMap[key]?.length ?? 1;
+
+        if (count > (drivers * 8)) {
+          _currentAdvice.add(DispatchAdvice(
+            title: ' TATA, TATA! (Preopterećenje)',
+            description: 'U terminu  ima  putnika na  van-a. Kapacitet premašen!',
+            priority: AdvicePriority.critical,
+            action: 'Dodaj vozilo',
+          ));
+        }
+      });
+    } catch (e) {
+      if (kDebugMode) print(' [ML Dispatch] Overflow error: ');
+    }
   }
 
   String _getDanKratica() {
@@ -133,7 +239,75 @@ class MLDispatchAutonomousService extends ChangeNotifier {
     return dani[now.weekday];
   }
 
-  /// 🚐 AUTONOMNI SPLIT (Shadow Matrix)
+  ///  SMART GROUPING (Spajanje Vans-ova)
+  Future<void> _analyzeOptimalGrouping() async {
+    try {
+      final String danDanas = _getDanKratica();
+      final dynamic shadowData =
+          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').neq('tip', 'posiljka');
+
+      Map<String, List<String>> demandMap = {};
+
+      if (shadowData is List) {
+        for (var p in shadowData) {
+          final allDays = _safeMap(p['polasci_po_danu']);
+          if (allDays.isEmpty) continue;
+
+          final dayData = _safeMap(allDays[danDanas]);
+          if (dayData.isEmpty) continue;
+
+          for (var gradCode in ['bc', 'vs']) {
+            String? vreme = dayData[gradCode]?.toString();
+            if (vreme == null || vreme == 'null') continue;
+            String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
+            String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
+
+            final key = '_';
+            demandMap.putIfAbsent(key, () => []).add(p['id'].toString());
+          }
+        }
+      }
+
+      List<String> sortedKeys = demandMap.keys.toList()..sort();
+      for (int i = 0; i < sortedKeys.length - 1; i++) {
+        String keyA = sortedKeys[i];
+        String keyB = sortedKeys[i + 1];
+
+        String gradA = keyA.split('_')[0];
+        String gradB = keyB.split('_')[0];
+        if (gradA != gradB) continue;
+
+        DateTime timeA = _parseTime(keyA.split('_')[1]);
+        DateTime timeB = _parseTime(keyB.split('_')[1]);
+
+        if (timeB.difference(timeA).inMinutes <= 35) {
+          int totalCount = demandMap[keyA]!.length + demandMap[keyB]!.length;
+          if (totalCount <= 8) {
+            _currentAdvice.add(DispatchAdvice(
+              title: 'PRILIKA ZA SPAJANJE',
+              description: 'Termini  i  imaju ukupno  putnika. Može jedan van.',
+              priority: AdvicePriority.smart,
+              action: 'Spoji rute',
+              proposedChange: 'Spoji u ',
+            ));
+          }
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print(' [ML Dispatch] Grouping error: ');
+    }
+  }
+
+  DateTime _parseTime(String t) {
+    try {
+      final parts = t.split(':');
+      return DateTime(2024, 1, 1, int.parse(parts[0]), int.parse(parts[1]));
+    } catch (_) {
+      return DateTime(2024, 1, 1, 0, 0);
+    }
+  }
+
+  ///  AUTONOMNI SPLIT
   Future<void> _analyzeMultiVanSplits() async {
     try {
       final String danDanas = _getDanKratica();
@@ -143,67 +317,38 @@ class MLDispatchAutonomousService extends ChangeNotifier {
 
       if (shadowData is List) {
         for (var p in shadowData) {
-          // Bezbedno izvlačenje JSON podataka (izbegavamo cast greške ako je u bazi String)
-          dynamic rawAllDays = p['polasci_po_danu'];
-          if (rawAllDays == null || rawAllDays is! Map) continue;
-          final allDays = Map<String, dynamic>.from(rawAllDays);
+          final allDays = _safeMap(p['polasci_po_danu']);
+          if (allDays.isEmpty) continue;
 
-          dynamic rawDayData = allDays[danDanas];
-          if (rawDayData == null || rawDayData is! Map) continue;
-          final dayData = Map<String, dynamic>.from(rawDayData);
+          final dayData = _safeMap(allDays[danDanas]);
+          if (dayData.isEmpty) continue;
 
           for (var gradCode in ['bc', 'vs']) {
             String? vreme = dayData[gradCode]?.toString();
             if (vreme == null || vreme == 'null') continue;
-
             String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
-            String fullGrad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
+            String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
 
-            final String? vozac =
-                dayData['${gradCode}_${normTime}_vozac']?.toString() ?? dayData['${gradCode}_vozac']?.toString();
-
+            final String? vozac = dayData['__vozac']?.toString() ?? dayData['_vozac']?.toString();
             if (vozac != null && vozac != 'null') {
-              final key = '${fullGrad}_$normTime';
-              overlaps.putIfAbsent(key, () => {}).add(vozac);
+              overlaps.putIfAbsent('_', () => {}).add(vozac);
             }
           }
         }
       }
 
-      for (var entry in overlaps.entries) {
-        if (entry.value.length >= 2) {
-          final grad = entry.key.split('_')[0];
-          final vreme = entry.key.split('_')[1];
-          final drivers = entry.value.toList();
-
-          int countA = 0;
-          int countB = 0;
-
-          for (var p in shadowData as List) {
-            final pId = p['id']?.toString();
-            final affinity = _passengerAffinity[pId];
-            if (affinity != null) {
-              if (affinity.contains(drivers[0])) {
-                countA++;
-              } else if (affinity.contains(drivers[1])) {
-                countB++;
-              }
-            }
-          }
-
+      overlaps.forEach((key, drivers) {
+        if (drivers.length >= 2) {
           _currentAdvice.add(DispatchAdvice(
-            title: 'AUTONOMNI SPLIT ($vreme)',
-            description:
-                'Beba detektovala duo: ${drivers.join(' & ')}. \nAfinitet: ${drivers[0]} ($countA), ${drivers[1]} ($countB).',
+            title: 'AUTONOMNI SPLIT ()',
+            description: 'Detektovano više vozača: . Optimizuj raspored.',
             priority: AdvicePriority.critical,
-            action: 'Sinhronizuj listu',
+            action: 'Sinhronizuj',
           ));
         }
-      }
+      });
     } catch (e) {
-      if (kDebugMode) print('⚠️ [ML Dispatch] Split error: $e');
-    } finally {
-      notifyListeners();
+      if (kDebugMode) print(' [ML Dispatch] Split error: ');
     }
   }
 
@@ -214,10 +359,10 @@ class MLDispatchAutonomousService extends ChangeNotifier {
           await _supabase.from('seat_requests').select().gt('created_at', oneHourAgo.toIso8601String());
 
       if (recent is List && recent.length >= 5) {
-        _triggerAlert('REALTIME DEMAND', 'Nagli skok rezervacija (${recent.length}/h).');
+        _triggerAlert('REALTIME DEMAND', 'Nagli skok rezervacija (/h).');
       }
     } catch (e) {
-      if (kDebugMode) print('⚠️ [ML Dispatch] Velocity error: $e');
+      if (kDebugMode) print(' [ML Dispatch] Velocity error: ');
     }
   }
 

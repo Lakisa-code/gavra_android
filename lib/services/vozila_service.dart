@@ -176,6 +176,10 @@ class IstorijaSevisa {
         return '🔋';
       case 'plocice':
         return '🛑';
+      case 'plocice_prednje':
+        return '🛑';
+      case 'plocice_zadnje':
+        return '🛑';
       case 'trap':
         return '🔩';
       case 'registracija':
@@ -202,6 +206,10 @@ class IstorijaSevisa {
         return 'Akumulator';
       case 'plocice':
         return 'Pločice';
+      case 'plocice_prednje':
+        return 'Pločice prednje';
+      case 'plocice_zadnje':
+        return 'Pločice zadnje';
       case 'trap':
         return 'Trap';
       case 'registracija':
@@ -245,9 +253,14 @@ class Vozilo {
   final int? akumulatorKm;
   final DateTime? plociceDatum;
   final int? plociceKm;
+  final DateTime? plocicePrednjeDatum;
+  final int? plocicePrednjeKm;
+  final DateTime? plociceZadnjeDatum;
+  final int? plociceZadnjeKm;
   final DateTime? trapDatum;
   final int? trapKm;
   final String? radio;
+  final double? kilometraza;
 
   Vozilo({
     required this.id,
@@ -278,9 +291,14 @@ class Vozilo {
     this.akumulatorKm,
     this.plociceDatum,
     this.plociceKm,
+    this.plocicePrednjeDatum,
+    this.plocicePrednjeKm,
+    this.plociceZadnjeDatum,
+    this.plociceZadnjeKm,
     this.trapDatum,
     this.trapKm,
     this.radio,
+    this.kilometraza,
   });
 
   factory Vozilo.fromJson(Map<String, dynamic> json) {
@@ -312,10 +330,15 @@ class Vozilo {
       akumulatorKm: json['akumulator_km'] as int?,
       plociceDatum: _parseDate(json['plocice_datum']),
       plociceKm: json['plocice_km'] as int?,
+      plocicePrednjeDatum: _parseDate(json['plocice_prednje_datum']),
+      plocicePrednjeKm: json['plocice_prednje_km'] as int?,
+      plociceZadnjeDatum: _parseDate(json['plocice_zadnje_datum']),
+      plociceZadnjeKm: json['plocice_zadnje_km'] as int?,
       trapDatum: _parseDate(json['trap_datum']),
       trapKm: json['trap_km'] as int?,
       radio: json['radio'] as String?,
       napomena: json['napomena'] as String?,
+      kilometraza: (json['kilometraza'] as num?)?.toDouble(),
     );
   }
 

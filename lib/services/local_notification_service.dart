@@ -7,7 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
-import '../screens/danas_screen.dart';
+import '../screens/home_screen.dart';
 import '../supabase_client.dart';
 import 'notification_navigation_service.dart';
 import 'realtime_notification_service.dart';
@@ -497,11 +497,7 @@ class LocalNotificationService {
       if (context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (context) => DanasScreen(
-              highlightPutnikIme: putnikIme,
-              filterGrad: putnikGrad,
-              filterVreme: putnikVreme,
-            ),
+            builder: (context) => const HomeScreen(),
           ),
         );
       }
@@ -553,7 +549,7 @@ class LocalNotificationService {
       if (context != null && context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (context) => const DanasScreen(),
+            builder: (context) => const HomeScreen(),
           ),
         );
       }
