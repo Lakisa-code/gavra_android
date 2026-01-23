@@ -1437,7 +1437,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                     child: _buildStatBox(
                                       'Dugovi',
                                       filteredDuznici.length.toString(),
-                                      Colors.red,
+                                      filteredDuznici.isEmpty ? Colors.blue : Colors.red,
                                     ),
                                   ),
                                 ),
@@ -1634,6 +1634,10 @@ class _VozacScreenState extends State<VozacScreen> {
     final monthStr = now.month.toString().padLeft(2, '0');
     final yearStr = now.year.toString().substring(2);
 
+    // 🎯 Izračunaj boju za dan (ako smo u admin preview modu)
+    final isPreview = widget.previewAsDriver != null && widget.previewAsDriver!.isNotEmpty;
+    final driverColor = isPreview ? VozacBoja.get(widget.previewAsDriver!) : Theme.of(context).colorScheme.onPrimary;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -1653,7 +1657,7 @@ class _VozacScreenState extends State<VozacScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Theme.of(context).colorScheme.onPrimary,
+            color: driverColor, // 🎯 Koristi boju vozača ako je preview
             shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
           ),
         ),
