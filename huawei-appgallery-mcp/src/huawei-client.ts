@@ -28,23 +28,20 @@ export interface TokenResponse {
 
 export interface AppInfo {
     appId: string;
-    appName: string;
-    packageName: string;
-    versionCode: string;
-    versionName: string;
+    appName?: string;
+    packageName?: string;
+    versionCode?: number;
+    versionName?: string;
+    versionNumber?: string;
     releaseState: number;
-    languages: string[];
-    // Additional fields (may not always be present)
-    minSdkVersion?: string;
-    targetSdkVersion?: string;
-    categoryId?: number;
-    categoryName?: string;
-    contentRating?: string;
-    fileSize?: number;
-    sha256?: string;
-    permissions?: string[];
-    downloads?: string;
-    rating?: string;
+    // Additional fields from API
+    defaultLang?: string;
+    updateTime?: string;
+    onShelfVersionNumber?: string;
+    onShelfVersionCode?: number;
+    onShelfVersionId?: string;
+    projectId?: string;
+    // ...existing code...
 }
 
 export interface UploadUrlResponse {
