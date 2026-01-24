@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../theme.dart';
+import '../utils/putnik_helpers.dart';
 import '../widgets/putnik_list.dart';
 
 class DugoviScreen extends StatefulWidget {
@@ -119,7 +120,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
     _dugoviSubscription = PutnikService()
         .streamKombinovaniPutniciFiltered(
-      isoDate: DateTime.now().toIso8601String().split('T')[0],
+      isoDate: PutnikHelpers.getWorkingDateIso(),
     )
         .listen(
       (putnici) {

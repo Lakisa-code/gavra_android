@@ -22,6 +22,7 @@ import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
+import '../utils/putnik_helpers.dart'; // 🎯 Centralizovani helperi
 import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart'; // 🎯 Za TextUtils.isStatusActive
 import '../utils/vozac_boja.dart'; // 🎯 Za validaciju vozača
@@ -62,16 +63,10 @@ class _VozacScreenState extends State<VozacScreen> {
   Map<String, int>? _cachedEta; // 🕒 Keširani ETA iz OSRM-a
 
   /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak
-  String _getWorkingDateIso() {
-    final today = DateTime.now();
-    // Vikendom (subota=6, nedelja=7) koristi naredni ponedeljak
-    if (today.weekday == DateTime.saturday) {
-      return today.add(const Duration(days: 2)).toIso8601String().split('T')[0];
-    } else if (today.weekday == DateTime.sunday) {
-      return today.add(const Duration(days: 1)).toIso8601String().split('T')[0];
-    }
-    return today.toIso8601String().split('T')[0];
-  }
+  String _getWorkingDateIso() => PutnikHelpers.getWorkingDateIso();
+
+  /// 📅 HELPER: Vraća radni DateTime - vikendom vraća naredni ponedeljak
+  DateTime _getWorkingDateTime() => PutnikHelpers.getWorkingDateTime();
 
   String? _currentDriver; // 🎯 Trenutni vozač
 
@@ -150,7 +145,8 @@ class _VozacScreenState extends State<VozacScreen> {
   // 📋 PROVERA DA LI JE POPIS SAČUVAN
   Future<void> _checkIfPopisSaved() async {
     if (_currentDriver == null) return;
-    final isSaved = await DailyCheckInService.isPopisSavedToday(_currentDriver!);
+    final workingDate = _getWorkingDateTime();
+    final isSaved = await DailyCheckInService.isPopisSavedToday(_currentDriver!, date: workingDate);
     if (mounted) {
       setState(() => _isPopisSaved = isSaved);
     }
@@ -1241,6 +1237,7 @@ class _VozacScreenState extends State<VozacScreen> {
         vozac: vozac,
         selectedGrad: _selectedGrad,
         selectedVreme: _selectedVreme,
+        date: _getWorkingDateTime(), // 📅 Koristi radni datum (ponedeljak ako je vikend)
       );
 
       // 2. PRIKAŽI DIALOG
@@ -1274,7 +1271,12 @@ class _VozacScreenState extends State<VozacScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
+    // 📅 KORISTI RADNI DATUM (Vikendom prebacuje na ponedeljak)
+    final workingDateIso = _getWorkingDateIso();
+    final parts = workingDateIso.split('-');
+    final today =
+        parts.length == 3 ? DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2])) : DateTime.now();
+
     final dayStart = DateTime(today.year, today.month, today.day);
     final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
@@ -1390,6 +1392,30 @@ class _VozacScreenState extends State<VozacScreen> {
                             return true;
                           }).toList();
 
+                          // 🔄 TRANZIT LOGIKA (X/Y) - Svi koji imaju oba smera danas
+                          final Map<String, List<Putnik>> tranzitMap = {};
+                          for (var p in sviPutnici) {
+                            if (p.jeOtkazan || p.jeOdsustvo || p.obrisan) continue;
+                            if (p.tipPutnika == 'posiljka') continue;
+                            tranzitMap.putIfAbsent(p.ime, () => []).add(p);
+                          }
+
+                          int tranzitUkupno = 0;
+                          int tranzitZavrseno = 0;
+
+                          tranzitMap.forEach((ime, trips) {
+                            final imaBC = trips.any((t) => t.grad == 'Bela Crkva');
+                            final imaVS = trips.any((t) => t.grad == 'Vršac');
+
+                            if (imaBC && imaVS) {
+                              tranzitUkupno++;
+                              // Završio ako je pokupljen u svim svojim današnjim terminima
+                              if (trips.every((t) => t.jePokupljen)) {
+                                tranzitZavrseno++;
+                              }
+                            }
+                          });
+
                           return Container(
                             margin: const EdgeInsets.all(12),
                             child: Row(
@@ -1442,29 +1468,20 @@ class _VozacScreenState extends State<VozacScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 6),
-                                // KUSUR
+                                // 🔄 TRANZIT (Samo brojevi bez teksta)
                                 Expanded(
-                                  child: StreamBuilder<double>(
-                                    stream: DailyCheckInService.streamTodayAmount(_currentDriver!),
-                                    initialData: 0.0,
-                                    builder: (context, snapshot) {
-                                      final kusur = snapshot.data ?? 0.0;
-                                      return InkWell(
-                                        onTap: () {
-                                          _showStatPopup(
-                                            context,
-                                            'Kusur',
-                                            kusur > 0 ? kusur.toStringAsFixed(0) : '0',
-                                            Colors.orange,
-                                          );
-                                        },
-                                        child: _buildStatBox(
-                                          'Kusur',
-                                          kusur > 0 ? kusur.toStringAsFixed(0) : '-',
-                                          Colors.orange,
-                                        ),
+                                  child: InkWell(
+                                    onTap: () {
+                                      // Ovde će ići novi ekran sa detaljima
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Uskoro: Detaljan pregled tranzita')),
                                       );
                                     },
+                                    child: _buildStatBox(
+                                      '',
+                                      '$tranzitZavrseno/$tranzitUkupno',
+                                      Colors.orange,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1627,7 +1644,11 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // 📅 Digitalni datum display
   Widget _buildDigitalDateDisplay() {
-    final now = DateTime.now();
+    final workingDateIso = _getWorkingDateIso();
+    final parts = workingDateIso.split('-');
+    final now =
+        parts.length == 3 ? DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2])) : DateTime.now();
+
     final dayNames = ['PONEDELJAK', 'UTORAK', 'SREDA', 'ČETVRTAK', 'PETAK', 'SUBOTA', 'NEDELJA'];
     final dayName = dayNames[now.weekday - 1];
     final dayStr = now.day.toString().padLeft(2, '0');
@@ -1721,7 +1742,7 @@ class _VozacScreenState extends State<VozacScreen> {
       ),
       child: Center(
         child: Text(
-          label,
+          label.isEmpty ? value : label,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,

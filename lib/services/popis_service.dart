@@ -58,8 +58,9 @@ class PopisService {
     required String vozac,
     required String selectedGrad,
     required String selectedVreme,
+    DateTime? date, // 📅 Dodato za radne datume vikendom
   }) async {
-    final today = DateTime.now();
+    final today = date ?? DateTime.now();
     final dayStart = DateTime(today.year, today.month, today.day);
     final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
@@ -109,7 +110,7 @@ class PopisService {
   /// Sačuvaj popis u bazu
   static Future<void> savePopis(PopisData data) async {
     await DailyCheckInService.saveDailyReport(data.vozac, data.datum, data.toMap());
-    await DailyCheckInService.saveCheckIn(data.vozac, data.sitanNovac);
+    await DailyCheckInService.saveCheckIn(data.vozac, data.sitanNovac, date: data.datum);
   }
 
   /// Prikaži popis dialog i vrati true ako korisnik želi da sačuva

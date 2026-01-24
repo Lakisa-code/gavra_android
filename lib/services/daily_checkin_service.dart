@@ -145,10 +145,11 @@ class DailyCheckInService {
     return Stream<dynamic>.empty().listen((_) {});
   }
 
-  /// Proveri da li je vozač već uradio check-in danas
+  /// Proveri da li je vozač već uradio check-in za dati datum (podrazumevano danas)
   /// Proverava DIREKTNO BAZU - source of truth
-  static Future<bool> hasCheckedInToday(String vozac) async {
-    final todayStr = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
+  static Future<bool> hasCheckedInToday(String vozac, {DateTime? date}) async {
+    final targetDate = date ?? DateTime.now();
+    final todayStr = targetDate.toIso8601String().split('T')[0]; // YYYY-MM-DD
 
     try {
       final response = await supabase
@@ -180,8 +181,9 @@ class DailyCheckInService {
     String vozac,
     double sitanNovac, {
     double? kilometraza,
+    DateTime? date,
   }) async {
-    final today = DateTime.now();
+    final today = date ?? DateTime.now();
 
     // 🌐 DIREKTNO U BAZU - upsert će ažurirati ako već postoji za danas
     try {
@@ -197,10 +199,11 @@ class DailyCheckInService {
     }
   }
 
-  /// Dohvati iznos za danas - DIREKTNO IZ BAZE
-  static Future<double?> getTodayAmount(String vozac) async {
+  /// Dohvati iznos za dati datum - DIREKTNO IZ BAZE
+  static Future<double?> getTodayAmount(String vozac, {DateTime? date}) async {
     try {
-      final today = DateTime.now().toIso8601String().split('T')[0];
+      final targetDate = date ?? DateTime.now();
+      final today = targetDate.toIso8601String().split('T')[0];
       final data = await supabase
           .from('daily_reports')
           .select('sitan_novac')
@@ -213,10 +216,11 @@ class DailyCheckInService {
     }
   }
 
-  /// 📋 Proveri da li je popis već sačuvan za danas
-  static Future<bool> isPopisSavedToday(String vozac) async {
+  /// 📋 Proveri da li je popis već sačuvan za dati datum (podrazumevano danas)
+  static Future<bool> isPopisSavedToday(String vozac, {DateTime? date}) async {
     try {
-      final today = DateTime.now().toIso8601String().split('T')[0];
+      final targetDate = date ?? DateTime.now();
+      final today = targetDate.toIso8601String().split('T')[0];
       final data = await supabase
           .from('daily_reports')
           .select('pokupljeni_putnici')

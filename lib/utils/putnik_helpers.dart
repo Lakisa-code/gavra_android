@@ -73,4 +73,21 @@ class PutnikHelpers {
   static int countTotalSeats(List<Putnik> putnici) {
     return filterForSeatCounting(putnici).fold(0, (sum, p) => sum + p.brojMesta);
   }
+
+  /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak
+  static DateTime getWorkingDateTime() {
+    final today = DateTime.now();
+    // Vikendom (subota=6, nedelja=7) koristi naredni ponedeljak
+    if (today.weekday == DateTime.saturday) {
+      return today.add(const Duration(days: 2));
+    } else if (today.weekday == DateTime.sunday) {
+      return today.add(const Duration(days: 1));
+    }
+    return today;
+  }
+
+  /// 📅 HELPER: Vraća radni ISO datum (yyyy-MM-dd)
+  static String getWorkingDateIso() {
+    return getWorkingDateTime().toIso8601String().split('T')[0];
+  }
 }
