@@ -213,9 +213,14 @@ class RegistrovaniPutnikService {
     // Preskači ako admin uređuje (skipKapacitetCheck=true)
     final putnikMap = putnik.toMap();
     if (!skipKapacitetCheck) {
-      final rawPolasci = putnikMap['polasci_po_danu'] as Map<String, dynamic>?;
-      if (rawPolasci != null) {
-        await _validateKapacitetForRawPolasci(rawPolasci, brojMesta: putnik.brojMesta, tipPutnika: putnik.tip);
+      final rawPolasci = putnikMap['polasci_po_danu'];
+      Map<String, dynamic>? polasci;
+      if (rawPolasci is Map) {
+        polasci = Map<String, dynamic>.from(rawPolasci);
+      }
+
+      if (polasci != null) {
+        await _validateKapacitetForRawPolasci(polasci, brojMesta: putnik.brojMesta, tipPutnika: putnik.tip);
       }
     }
 
@@ -336,7 +341,18 @@ class RegistrovaniPutnikService {
         final trenutnoStanje =
             await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', id).single();
 
-        final trenutniPolasci = trenutnoStanje['polasci_po_danu'] as Map<String, dynamic>?;
+        final rawPolasciDB = trenutnoStanje['polasci_po_danu'];
+        Map<String, dynamic>? trenutniPolasci;
+
+        if (rawPolasciDB is String) {
+          try {
+            trenutniPolasci = json.decode(rawPolasciDB) as Map<String, dynamic>?;
+          } catch (e) {
+            debugPrint('Greška pri parsu polasci_po_danu stringa: $e');
+          }
+        } else if (rawPolasciDB is Map) {
+          trenutniPolasci = Map<String, dynamic>.from(rawPolasciDB);
+        }
 
         if (trenutniPolasci != null) {
           // Merge novi polasci sa postojećim markerima

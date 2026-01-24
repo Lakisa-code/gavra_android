@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,7 +93,17 @@ class WeeklyResetService {
 
       for (final putnik in putnici) {
         final putnikId = putnik['id'] as String;
-        final polasci = putnik['polasci_po_danu'] as Map<String, dynamic>? ?? {};
+        final rawPolasci = putnik['polasci_po_danu'];
+        Map<String, dynamic> polasci = {};
+
+        if (rawPolasci is String) {
+          try {
+            polasci = json.decode(rawPolasci) as Map<String, dynamic>? ?? {};
+          } catch (_) {}
+        } else if (rawPolasci is Map) {
+          polasci = Map<String, dynamic>.from(rawPolasci);
+        }
+
         final tip = putnik['tip'] as String? ?? 'radnik';
 
         if (polasci.isEmpty) continue;

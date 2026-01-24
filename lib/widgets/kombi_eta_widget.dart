@@ -140,7 +140,15 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       }
 
       final driver = filteredList.first;
-      final putniciEta = driver['putnici_eta'] as Map<String, dynamic>?;
+      final rawEta = driver['putnici_eta'];
+      Map<String, dynamic>? putniciEta;
+      if (rawEta is String) {
+        try {
+          putniciEta = json.decode(rawEta) as Map<String, dynamic>?;
+        } catch (_) {}
+      } else if (rawEta is Map) {
+        putniciEta = Map<String, dynamic>.from(rawEta);
+      }
       final vozacIme = driver['vozac_ime'] as String?;
 
       // 🆕 Proveri da li vozač ima putnike u ETA mapi (znači da je startovao rutu)

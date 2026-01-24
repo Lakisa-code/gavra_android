@@ -538,7 +538,7 @@ class SlobodnaMestaService {
 
       int count = 0;
       for (final row in response) {
-        final polasci = row['polasci_po_danu'] as Map<String, dynamic>?;
+        final polasci = _getPolasciMap(row['polasci_po_danu']);
         if (polasci == null) continue;
 
         final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
@@ -568,7 +568,7 @@ class SlobodnaMestaService {
       int confirmedCount = 0;
       for (final row in response) {
         final putnikId = row['id'] as String;
-        final polasci = Map<String, dynamic>.from(row['polasci_po_danu'] as Map);
+        final polasci = _getPolasciMap(row['polasci_po_danu']) ?? {};
 
         final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
         if (danData == null) continue;
@@ -603,7 +603,7 @@ class SlobodnaMestaService {
       final List<MapEntry<String, DateTime>> waitingList = [];
 
       for (final row in response) {
-        final polasci = row['polasci_po_danu'] as Map<String, dynamic>?;
+        final polasci = _getPolasciMap(row['polasci_po_danu']);
         if (polasci == null) continue;
 
         final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
@@ -688,7 +688,7 @@ class SlobodnaMestaService {
         if (!radniDani.contains(normalizedDan)) continue;
 
         // 4. Proveri da li ima JUTARNJI (BC) polazak
-        final polasci = row['polasci_po_danu'] as Map<String, dynamic>?;
+        final polasci = _getPolasciMap(row['polasci_po_danu']);
         if (polasci == null) continue;
 
         final danData = polasci[normalizedDan] as Map<String, dynamic>?;
@@ -730,7 +730,7 @@ class SlobodnaMestaService {
         final radniDani = radniDaniStr.toLowerCase().split(',').map((s) => s.trim()).toList();
         if (!radniDani.contains(normalizedDan)) continue;
 
-        final polasci = row['polasci_po_danu'] as Map<String, dynamic>?;
+        final polasci = _getPolasciMap(row['polasci_po_danu']);
         if (polasci == null) continue;
 
         final danData = polasci[normalizedDan] as Map<String, dynamic>?;
@@ -769,7 +769,7 @@ class SlobodnaMestaService {
       final results = <Map<String, dynamic>>[];
 
       for (var row in response) {
-        final polasci = row['polasci_po_danu'] as Map<String, dynamic>?;
+        final polasci = _getPolasciMap(row['polasci_po_danu']);
         if (polasci == null || polasci[danDanas] == null) continue;
 
         final danas = polasci[danDanas] as Map<String, dynamic>;
@@ -833,5 +833,20 @@ class SlobodnaMestaService {
         'missing_count': 0,
       };
     }
+  }
+
+  /// 🛡️ Sigurno parsira polasci_po_danu (Map ili String)
+  static Map<String, dynamic>? _getPolasciMap(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String) {
+      try {
+        return json.decode(raw) as Map<String, dynamic>?;
+      } catch (e) {
+        debugPrint('Greška pri parsu polasci_po_danu: $e');
+        return null;
+      }
+    }
+    return null;
   }
 }
