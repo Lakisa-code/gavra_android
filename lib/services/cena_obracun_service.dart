@@ -98,7 +98,7 @@ class CenaObracunService {
       // Koristi voznje_log za brojanje vožnji
       final response = await _supabase
           .from('voznje_log')
-          .select('datum')
+          .select('datum, broj_mesta') // Dodat broj_mesta
           .eq('putnik_id', putnikId)
           .eq('tip', 'voznja')
           .gte('datum', pocetakMeseca.toIso8601String().split('T')[0])
@@ -109,22 +109,35 @@ class CenaObracunService {
       if (records.isEmpty) return 0;
 
       final jeDnevni = tip.toLowerCase() == 'dnevni';
+      final jePosiljka = tip.toLowerCase() == 'posiljka' || tip.toLowerCase() == 'pošiljka';
 
-      // Ako je DNEVNI, brojimo SVAKO POKUPLJENJE (600 RSD po puta)
-      if (jeDnevni) {
-        return records.length;
+      // Ako je DNEVNI ili POSILJKA, brojimo SVAKO POKUPLJENJE (ali uzimamo u obzir broj mesta!)
+      if (jeDnevni || jePosiljka) {
+        int totalUnits = 0;
+        for (final record in records) {
+          totalUnits += (record['broj_mesta'] as num?)?.toInt() ?? 1;
+        }
+        return totalUnits;
       }
 
       // Za ostale (Radnik/Učenik) brojimo UNIKATNE DANE
       // 1 pokupljenje = 1 vožnja, 2 ili 3 pokupljenja = i dalje 1 vožnja (dan)
-      final Set<String> uniqueDays = {};
+      // FIX: Ako jedan dan ima više mesta Rezervisano na svim vožnjama, uzimamo MAX broj mesta za taj dan
+      final Map<String, int> dailyMaxSeats = {};
       for (final record in records) {
-        final datum = record['datum'] as String?;
-        if (datum != null) {
-          uniqueDays.add(datum.split('T')[0]);
+        final datumStr = record['datum'] as String?;
+        if (datumStr != null) {
+          final datum = datumStr.split('T')[0];
+          final bm = (record['broj_mesta'] as num?)?.toInt() ?? 1;
+          if (bm > (dailyMaxSeats[datum] ?? 0)) {
+            dailyMaxSeats[datum] = bm;
+          }
         }
       }
-      return uniqueDays.length;
+
+      int totalUnits = 0;
+      dailyMaxSeats.forEach((key, value) => totalUnits += value);
+      return totalUnits;
     } catch (e) {
       return 0;
     }

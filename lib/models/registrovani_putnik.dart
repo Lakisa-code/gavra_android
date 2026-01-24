@@ -40,9 +40,112 @@ class RegistrovaniPutnik {
     this.firmaMb,
     this.firmaZiro,
     this.firmaAdresa,
+    this.brojMesta = 1, // 🆕 Broj rezervisanih mesta
     // Uklonjeno: ime, prezime, datumPocetka, datumKraja - duplikati
     // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
   });
+
+  /// Identifikator putnika
+  final String id;
+
+  /// Kombinovano ime i prezime putnika
+  final String putnikIme;
+
+  /// Broj telefona putnika
+  final String? brojTelefona;
+
+  /// Drugi/alternativni telefon za radnike i dnevne
+  final String? brojTelefona2;
+
+  /// Dodatni telefon oca (za učenike)
+  final String? brojTelefonaOca;
+
+  /// Dodatni telefon majke (za učenike)
+  final String? brojTelefonaMajke;
+
+  /// Tip putnika (radnik, učenik, itd.)
+  final String tip;
+
+  /// Tip škole (samo za učenike)
+  final String? tipSkole;
+
+  /// Polasci po danu - mapa gde je ključ dan, a vrednost lista vremena polaska
+  final Map<String, List<String>> polasciPoDanu;
+
+  /// UUID reference za adresu u Beloj Crkvi
+  final String? adresaBelaCrkvaId;
+
+  /// UUID reference za adresu u Vršcu
+  final String? adresaVrsacId;
+
+  /// Radni dani u formatu string (npr. pon,uto,sre,cet,pet)
+  final String radniDani;
+
+  /// Datum početka meseca
+  final DateTime datumPocetkaMeseca;
+
+  /// Datum kraja meseca
+  final DateTime datumKrajaMeseca;
+
+  /// Datum i vreme kreiranja zapisa
+  final DateTime createdAt;
+
+  /// Datum i vreme poslednje izmene zapisa
+  final DateTime updatedAt;
+
+  /// Da li je putnik aktivan
+  final bool aktivan;
+
+  /// Status putnika (aktivan, neaktivan, itd.)
+  final String status;
+
+  /// Da li je putnik obrisan (logičko brisanje)
+  final bool obrisan;
+
+  // Nova polja iz baze
+  /// Tip prikazivanja putnika (standard, detaljno, itd.)
+  final String tipPrikazivanja;
+
+  /// ID vozača (ako je dodeljen)
+  final String? vozacId;
+
+  // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
+  /// Adresa putnika (izračunata polja)
+  final String? adresa;
+
+  /// Grad putnika (izračunata polja)
+  final String? grad;
+
+  // Tracking polja - UKLONJENO: pokupljen, placeno, vremePokupljenja - sada u voznje_log
+  /// PIN za login
+  final String? pin;
+
+  /// Email za kontakt i Google Play testing
+  final String? email;
+
+  /// Custom cena po danu (NULL = default 700/600)
+  final double? cenaPoDanu;
+  // 🧾 Polja za račune
+  /// Da li je potreban račun
+  final bool trebaRacun;
+
+  /// Naziv firme za račun
+  final String? firmaNaziv;
+
+  /// PIB firme za račun
+  final String? firmaPib;
+
+  /// MB firme za račun
+  final String? firmaMb;
+
+  /// Žiro račun firme za račun
+  final String? firmaZiro;
+
+  /// Adresa firme za račun
+  final String? firmaAdresa;
+
+  /// Broj rezervisanih mesta
+  final int brojMesta;
 
   factory RegistrovaniPutnik.fromMap(Map<String, dynamic> map) {
     // Parse polasciPoDanu using helper
@@ -98,50 +201,13 @@ class RegistrovaniPutnik {
       firmaMb: map['firma_mb'] as String?,
       firmaZiro: map['firma_ziro'] as String?,
       firmaAdresa: map['firma_adresa'] as String?,
+      brojMesta: (map['broj_mesta'] as num?)?.toInt() ?? 1, // 🆕 Čitaj broj mesta
       // Uklonjeno: ime, prezime - koristi se putnikIme
       // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
     );
   }
-  final String id;
-  final String putnikIme; // kombinovano ime i prezime
-  final String? brojTelefona;
-  final String? brojTelefona2; // drugi/alternativni telefon za radnike i dnevne
-  final String? brojTelefonaOca; // dodatni telefon oca (za učenike)
-  final String? brojTelefonaMajke; // dodatni telefon majke (za učenike)
-  final String tip; // direktno string umesto enum-a
-  final String? tipSkole;
-  final Map<String, List<String>> polasciPoDanu; // dan -> lista vremena polaska
-  final String? adresaBelaCrkvaId; // UUID reference u tabelu adrese
-  final String? adresaVrsacId; // UUID reference u tabelu adrese
-  final String radniDani;
-  final DateTime datumPocetkaMeseca;
-  final DateTime datumKrajaMeseca;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final bool aktivan;
-  final String status;
-  final bool obrisan;
 
-  // Nova polja iz baze
-  final String tipPrikazivanja;
-  final String? vozacId;
-
-  // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
-  final String? adresa;
-  final String? grad;
-
-  // Tracking polja - UKLONJENO: pokupljen, placeno, vremePokupljenja - sada u voznje_log
-  final String? pin; // 🔐 PIN za login
-  final String? email; // 📧 Email za kontakt i Google Play testing
-  final double? cenaPoDanu; // 🆕 Custom cena po danu (NULL = default 700/600)
-  // 🧾 Polja za račune
-  final bool trebaRacun;
-  final String? firmaNaziv;
-  final String? firmaPib;
-  final String? firmaMb;
-  final String? firmaZiro;
-  final String? firmaAdresa;
-
+  /// Konvertuje objekat u Map za bazu
   Map<String, dynamic> toMap() {
     // Build normalized polasci_po_danu structure
     final Map<String, Map<String, String?>> normalizedPolasci = {};
@@ -190,6 +256,7 @@ class RegistrovaniPutnik {
       'firma_mb': firmaMb,
       'firma_ziro': firmaZiro,
       'firma_adresa': firmaAdresa,
+      'broj_mesta': brojMesta, // 🆕 Sačuvaj broj mesta
       // UKLONJENO iz baze: ukupna_cena_meseca, cena, broj_putovanja, broj_otkazivanja,
       // vreme_placanja, pokupljen, placeno - sada u voznje_log
     };

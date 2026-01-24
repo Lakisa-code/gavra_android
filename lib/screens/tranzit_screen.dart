@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
+import '../services/slobodna_mesta_service.dart'; // 🚢 SMART TRANZIT
 import '../services/theme_manager.dart';
 import '../utils/putnik_helpers.dart';
 import '../utils/vozac_boja.dart';
@@ -21,21 +22,35 @@ class TranzitScreen extends StatefulWidget {
   State<TranzitScreen> createState() => _TranzitScreenState();
 }
 
-class _TranzitScreenState extends State<TranzitScreen> {
+class _TranzitScreenState extends State<TranzitScreen> with SingleTickerProviderStateMixin {
   StreamSubscription<List<Putnik>>? _subscription;
   List<Map<String, dynamic>> _tranzitniPutnici = [];
+  List<Map<String, dynamic>> _missingReturnPutnici = []; // 🚢 NEDOSTAJE POVRATAK
   bool _isLoading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _startStream();
+    _loadMissingReturns();
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
+    _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMissingReturns() async {
+    final missing = await SlobodnaMestaService.getMissingTransitPassengers();
+    if (mounted) {
+      setState(() {
+        _missingReturnPutnici = missing;
+      });
+    }
   }
 
   void _startStream() {
@@ -85,6 +100,18 @@ class _TranzitScreenState extends State<TranzitScreen> {
     });
   }
 
+  Future<void> _pingAllMissing() async {
+    final count = await SlobodnaMestaService.triggerTransitReminders();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🔔 Poslato $count podsetnika putnicima.'),
+        backgroundColor: Colors.blueAccent,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final driverColor = VozacBoja.get(widget.currentDriver);
@@ -116,12 +143,65 @@ class _TranzitScreenState extends State<TranzitScreen> {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
+          actions: [
+            if (_missingReturnPutnici.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.notification_add, color: Colors.orange),
+                onPressed: _pingAllMissing,
+                tooltip: 'Pošalji podsetnik svima',
+              ),
+          ],
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: Colors.white,
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Kompletni'),
+                    const SizedBox(width: 6),
+                    _buildBadge(_tranzitniPutnici.length, Colors.green),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Bez povratka'),
+                    const SizedBox(width: 6),
+                    _buildBadge(_missingReturnPutnici.length, Colors.orange),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator(color: Colors.white))
-            : _tranzitniPutnici.isEmpty
-                ? _buildEmptyState()
-                : _buildList(),
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  _tranzitniPutnici.isEmpty ? _buildEmptyState() : _buildList(_tranzitniPutnici),
+                  _missingReturnPutnici.isEmpty ? _buildEmptyState() : _buildMissingList(),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(int count, Color color) {
+    if (count == 0) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$count',
+        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -142,12 +222,12 @@ class _TranzitScreenState extends State<TranzitScreen> {
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(List<Map<String, dynamic>> items) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: _tranzitniPutnici.length,
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final item = _tranzitniPutnici[index];
+        final item = items[index];
         final String ime = item['ime'];
         final bool isZavrseno = item['isZavrseno'];
         final List<Putnik> trips = item['trips'];
@@ -200,6 +280,48 @@ class _TranzitScreenState extends State<TranzitScreen> {
                 ),
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMissingList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: _missingReturnPutnici.length,
+      itemBuilder: (context, index) {
+        final putnik = _missingReturnPutnici[index];
+        return Card(
+          color: Colors.white.withValues(alpha: 0.1),
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Colors.orange, width: 1),
+          ),
+          child: ListTile(
+            leading: const Icon(Icons.warning, color: Colors.orange),
+            title: Text(
+              putnik['ime'] ?? 'Nepoznat putnik',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              'Tip: ${putnik['tip']?.toString().toUpperCase()}',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.send, color: Colors.blue),
+              onPressed: () async {
+                final count = await SlobodnaMestaService.triggerTransitReminders();
+                // Ovdje bi bilo bolje imati single-user ping, ali rpc okida sve.
+                // Za sada je OK jer rpc proverava uslove.
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('🔔 Podsetnik poslat!')),
+                  );
+                }
+              },
+            ),
           ),
         );
       },

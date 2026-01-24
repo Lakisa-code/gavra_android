@@ -215,7 +215,7 @@ class RegistrovaniPutnikService {
     if (!skipKapacitetCheck) {
       final rawPolasci = putnikMap['polasci_po_danu'] as Map<String, dynamic>?;
       if (rawPolasci != null) {
-        await _validateKapacitetForRawPolasci(rawPolasci);
+        await _validateKapacitetForRawPolasci(rawPolasci, brojMesta: putnik.brojMesta, tipPutnika: putnik.tip);
       }
     }
 
@@ -230,7 +230,8 @@ class RegistrovaniPutnikService {
 
   /// 🚫 Validira da ima slobodnih mesta za sve termine putnika
   /// Prima raw polasci_po_danu map iz baze (format: { "pon": { "bc": "8:00", "vs": null }, ... })
-  Future<void> _validateKapacitetForRawPolasci(Map<String, dynamic> polasciPoDanu) async {
+  Future<void> _validateKapacitetForRawPolasci(Map<String, dynamic> polasciPoDanu,
+      {int brojMesta = 1, String? tipPutnika}) async {
     if (polasciPoDanu.isEmpty) return;
 
     final danas = DateTime.now();
@@ -253,7 +254,8 @@ class RegistrovaniPutnikService {
         final datumStr = targetDate.toIso8601String().split('T')[0];
 
         final normalizedVreme = GradAdresaValidator.normalizeTime(bcVreme);
-        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('BC', normalizedVreme, datum: datumStr);
+        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('BC', normalizedVreme,
+            datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta);
         if (!imaMesta) {
           final danPunoIme = _getDanPunoIme(danKratica);
           throw Exception(
@@ -276,7 +278,8 @@ class RegistrovaniPutnikService {
         final datumStr = targetDate.toIso8601String().split('T')[0];
 
         final normalizedVreme = GradAdresaValidator.normalizeTime(vsVreme);
-        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('VS', normalizedVreme, datum: datumStr);
+        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('VS', normalizedVreme,
+            datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta);
         if (!imaMesta) {
           final danPunoIme = _getDanPunoIme(danKratica);
           throw Exception(
@@ -385,8 +388,15 @@ class RegistrovaniPutnikService {
     if (!skipKapacitetCheck && updates.containsKey('polasci_po_danu')) {
       final polasciPoDanu = updates['polasci_po_danu'];
       if (polasciPoDanu != null && polasciPoDanu is Map) {
+        // Dohvati broj_mesta i tip za proveru kapaciteta
+        final currentData =
+            await _supabase.from('registrovani_putnici').select('broj_mesta, tip').eq('id', id).single();
+        final bm = updates['broj_mesta'] ?? currentData['broj_mesta'] ?? 1;
+        final t = updates['tip'] ?? currentData['tip'];
+
         // Direktno koristi raw polasci_po_danu map za validaciju
-        await _validateKapacitetForRawPolasci(Map<String, dynamic>.from(polasciPoDanu));
+        await _validateKapacitetForRawPolasci(Map<String, dynamic>.from(polasciPoDanu),
+            brojMesta: bm is num ? bm.toInt() : 1, tipPutnika: t?.toString().toLowerCase());
       }
     }
 
@@ -589,6 +599,29 @@ class RegistrovaniPutnikService {
       }
 
       return svaPlacanja;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Dohvata sva plaćanja za mesečnog putnika po ID-u
+  Future<List<Map<String, dynamic>>> dohvatiPlacanjaZaPutnikaById(String putnikId) async {
+    try {
+      final placanjaIzLoga = await _supabase.from('voznje_log').select().eq('putnik_id', putnikId).inFilter(
+          'tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']).order('datum', ascending: false) as List<dynamic>;
+
+      List<Map<String, dynamic>> results = [];
+      for (var placanje in placanjaIzLoga) {
+        results.add({
+          'cena': placanje['iznos'],
+          'created_at': placanje['created_at'],
+          // 'vozac_ime': await _getVozacImeByUuid(placanje['vozac_id'] as String?), // Preskočimo vozača za performanse ako nije potreban
+          'datum': placanje['datum'],
+          'placeniMesec': placanje['placeni_mesec'],
+          'placenaGodina': placanje['placena_godina'],
+        });
+      }
+      return results;
     } catch (e) {
       return [];
     }

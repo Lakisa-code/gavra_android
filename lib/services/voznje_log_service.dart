@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -529,6 +530,7 @@ class VoznjeLogService {
     String? putnikId,
     String? vozacId,
     double iznos = 0,
+    int brojMesta = 1, // 🆕 Dodato broj mesta
     String? detalji,
   }) async {
     try {
@@ -538,13 +540,14 @@ class VoznjeLogService {
         'putnik_id': putnikId,
         'vozac_id': vozacId,
         'iznos': iznos,
+        'broj_mesta': brojMesta, // 🆕 Obavezno polje u bazi
         'datum': datumStr,
         'detalji': detalji,
         'placeni_mesec': DateTime.now().month,
         'placena_godina': DateTime.now().year,
       });
     } catch (e) {
-      print(' Greška pri logovanju akcije ($tip): $e');
+      debugPrint('❌ Greška pri logovanju akcije ($tip): $e');
     }
   }
 }

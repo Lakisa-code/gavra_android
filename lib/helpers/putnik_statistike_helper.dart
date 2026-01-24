@@ -197,6 +197,26 @@ class PutnikStatistikeHelper {
     );
   }
 
+  // 💰 DOHVATI PLAĆENE MESECE ZA PUTNIKA
+  static Future<Set<String>> _getPlaceniMeseci(String putnikId) async {
+    try {
+      final RegistrovaniPutnikService service = RegistrovaniPutnikService();
+      final svaPlacanja = await service.dohvatiPlacanjaZaPutnikaById(putnikId);
+      final Set<String> placeni = {};
+
+      for (var placanje in svaPlacanja) {
+        final mesec = placanje['placeniMesec'];
+        final godina = placanje['placenaGodina'];
+        if (mesec != null && godina != null) {
+          placeni.add('$mesec-$godina');
+        }
+      }
+      return placeni;
+    } catch (e) {
+      return {};
+    }
+  }
+
   // 📊 KREIRANJE SADRŽAJA STATISTIKA
   static Widget _buildStatistikeContent({
     required String putnikIme,
@@ -261,101 +281,59 @@ class PutnikStatistikeHelper {
         const SizedBox(height: 16),
 
         // 💰 FINANSIJSKE INFORMACIJE
+        _buildFinancialSection(putnikId, tip),
+
+        const SizedBox(height: 16),
+
+        // 💰 PLAĆENI MESECI
+        _buildPlaceniMeseciSection(tip, stats['placeniMeseci'] ?? {}),
+
+        const SizedBox(height: 16),
+
+        // 📈 STATISTIKE PUTOVANJA - DINAMICKI PERIOD
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
+            color: periodColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+            border: Border.all(color: periodColor.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '💰 Finansijske informacije',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
-                  fontSize: 16,
-                ),
+              Row(
+                children: [
+                  Icon(periodIcon, size: 16, color: periodColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    '📈 Statistike',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: periodColor,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
-              // 🔥 REALTIME: Datum, iznos i vozač poslednjeg plaćanja
-              StreamBuilder<Map<String, dynamic>?>(
-                stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnikId),
-                builder: (context, snapshot) {
-                  final placanje = snapshot.data;
-                  final datum = placanje?['datum'] as String?;
-                  final vozacIme = placanje?['vozac_ime'] as String?;
-                  final iznos = (placanje?['iznos'] as num?)?.toDouble() ?? 0.0;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStatRow(
-                        '💵 Poslednje plaćanje:',
-                        iznos > 0 ? '${iznos.toStringAsFixed(0)} RSD' : 'Nema podataka',
-                      ),
-                      _buildStatRow(
-                        '📅 Datum plaćanja:',
-                        datum ?? 'Nema podataka o datumu',
-                      ),
-                      _buildStatRow('🚗 Vozač (naplata):', vozacIme ?? 'Nema podataka'),
-                    ],
-                  );
-                },
+              _buildStatRow('🚗 Putovanja:', '${stats['putovanja'] ?? 0}'),
+              _buildStatRow('❌ Otkazivanja:', '${stats['otkazivanja'] ?? 0}'),
+              _buildStatRow(
+                '🔄 Poslednje putovanje:',
+                stats['poslednje'] as String? ?? 'Nema podataka',
               ),
+              _buildStatRow('📊 Uspešnost:', '${stats['uspesnost'] ?? 0}%'),
+              if (stats['ukupan_prihod'] != null)
+                _buildStatRow(
+                  '💰 Ukupan prihod:',
+                  '${stats['ukupan_prihod']}',
+                ),
             ],
           ),
         ),
 
         const SizedBox(height: 16),
-
-        // 📈 STATISTIKE PUTOVANJA - DINAMICKI PERIOD (Sakriveno za Dnevne putnike)
-        if (tip.toLowerCase() != 'dnevni')
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: periodColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: periodColor.withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(periodIcon, size: 16, color: periodColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      '📈 Statistike',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: periodColor,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildStatRow('🚗 Putovanja:', '${stats['putovanja'] ?? 0}'),
-                _buildStatRow('❌ Otkazivanja:', '${stats['otkazivanja'] ?? 0}'),
-                _buildStatRow(
-                  '🔄 Poslednje putovanje:',
-                  stats['poslednje'] as String? ?? 'Nema podataka',
-                ),
-                _buildStatRow('📊 Uspešnost:', '${stats['uspesnost'] ?? 0}%'),
-                if (stats['ukupan_prihod'] != null)
-                  _buildStatRow(
-                    '💰 Ukupan trošak:',
-                    '${stats['ukupan_prihod']}',
-                  ),
-              ],
-            ),
-          ),
-
-        if (tip.toLowerCase() != 'dnevni') const SizedBox(height: 16),
 
         // 🕐 SISTEMSKE INFORMACIJE
         Container(
@@ -385,6 +363,111 @@ class PutnikStatistikeHelper {
           ),
         ),
       ],
+    );
+  }
+
+  static Widget _buildFinancialSection(String putnikId, String tip) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '💰 Finansijske informacije',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green[700],
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // 🔥 REALTIME: Datum, iznos i vozač poslednjeg plaćanja
+          StreamBuilder<Map<String, dynamic>?>(
+            stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnikId),
+            builder: (context, snapshot) {
+              final placanje = snapshot.data;
+              final datum = placanje?['datum'] as String?;
+              final vozacIme = placanje?['vozac_ime'] as String?;
+              final iznos = (placanje?['iznos'] as num?)?.toDouble() ?? 0.0;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatRow(
+                    '💵 Poslednje plaćanje:',
+                    iznos > 0 ? '${iznos.toStringAsFixed(0)} RSD' : 'Nema podataka',
+                  ),
+                  _buildStatRow(
+                    '📅 Datum plaćanja:',
+                    datum ?? 'Nema podataka o datumu',
+                  ),
+                  _buildStatRow('🚗 Vozač (naplata):', vozacIme ?? 'Nema podataka'),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildPlaceniMeseciSection(String tip, Set<String> placeniMeseci) {
+    if (tip.toLowerCase() == 'dnevni' || tip.toLowerCase() == 'posiljka') {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        ),
+        child: const Text(
+          '💡 Dnevni putnici i pošiljke plaćaju po pokupljenju. Detalji su prikazani u istoriji ispod.',
+          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '💰 Plaćeni meseci',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green[700],
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: placeniMeseci.isEmpty
+                ? [const Text('Nema evidentiranih uplata', style: TextStyle(fontSize: 12))]
+                : placeniMeseci.map((m) {
+                    return Chip(
+                      label: Text(m, style: const TextStyle(fontSize: 11)),
+                      backgroundColor: Colors.green.shade100,
+                      padding: EdgeInsets.zero,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    );
+                  }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -489,27 +572,32 @@ class PutnikStatistikeHelper {
 
   static Future<Map<String, dynamic>> _getStatistikeForPeriod(String putnikId, String period, String tipPutnika) async {
     try {
-      if (period.startsWith('Cela ')) {
-        return await _getGodisnjeStatistike(putnikId, tipPutnika);
-      }
-      if (period == 'Ukupno') {
-        return await _getUkupneStatistike(putnikId, tipPutnika);
-      }
+      final placeniMeseci = await _getPlaceniMeseci(putnikId);
 
-      // Parsiraj mesec
-      final parts = period.split(' ');
-      if (parts.length == 2) {
-        final monthName = parts[0];
-        final year = int.tryParse(parts[1]);
-        if (year != null) {
-          final monthNumber = _getMonthNumber(monthName);
-          if (monthNumber > 0) {
-            return await _getStatistikeZaMesec(putnikId, monthNumber, year, tipPutnika);
+      Map<String, dynamic> stats = {};
+
+      if (period.startsWith('Cela ')) {
+        stats = await _getGodisnjeStatistike(putnikId, tipPutnika);
+      } else if (period == 'Ukupno') {
+        stats = await _getUkupneStatistike(putnikId, tipPutnika);
+      } else {
+        // Parsiraj mesec
+        final parts = period.split(' ');
+        if (parts.length == 2) {
+          final monthName = parts[0];
+          final year = int.tryParse(parts[1]);
+          if (year != null) {
+            final monthNumber = _getMonthNumber(monthName);
+            if (monthNumber > 0) {
+              stats = await _getStatistikeZaMesec(putnikId, monthNumber, year, tipPutnika);
+            }
           }
         }
       }
 
-      return _emptyStats();
+      if (stats.isEmpty) stats = _emptyStats();
+      stats['placeniMeseci'] = placeniMeseci;
+      return stats;
     } catch (e) {
       return {'error': true, ..._emptyStats()};
     }
@@ -517,10 +605,9 @@ class PutnikStatistikeHelper {
 
   static Future<Map<String, dynamic>> _getGodisnjeStatistike(String putnikId, String tipPutnika) async {
     final currentYear = DateTime.now().year;
-    // ... existing code ...
     final startOfYearStr = '$currentYear-01-01';
     final endOfYearStr = '$currentYear-12-31';
-    final jeDnevni = tipPutnika.toLowerCase().contains('dnevni');
+    final jeDnevni = tipPutnika.toLowerCase().contains('dnevni') || tipPutnika.toLowerCase().contains('posiljka');
 
     final response = await supabase
         .from('voznje_log')
@@ -530,10 +617,8 @@ class PutnikStatistikeHelper {
         .lte('datum', endOfYearStr)
         .order('created_at', ascending: false);
 
-    List<String> daniSaVoznjom = [];
-    int brojVoznjiTotal = 0;
-    int brojOtkazivanjaTotal = 0;
-    List<String> daniSamoOtkazivanje = [];
+    Map<String, int> dailyMaxVoznje = {};
+    Map<String, int> dailyMaxOtkazivanja = {};
     String? poslednje;
     double ukupanPrihod = 0;
 
@@ -542,27 +627,43 @@ class PutnikStatistikeHelper {
       final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
       final String? datumStr = record['datum'] as String?;
       final datum = datumStr ?? record['created_at']?.toString().split('T')[0];
+      final int bm = (record['broj_mesta'] as num?)?.toInt() ?? 1;
 
       if (tip == 'voznja' && datum != null) {
         ukupanPrihod += iznos;
-        brojVoznjiTotal++;
-        if (!daniSaVoznjom.contains(datum)) {
-          daniSaVoznjom.add(datum);
+        if (jeDnevni) {
+          dailyMaxVoznje[record['id'] ?? datum + record['created_at']] = bm;
+        } else {
+          if (bm > (dailyMaxVoznje[datum] ?? 0)) {
+            dailyMaxVoznje[datum] = bm;
+          }
         }
+
         if (poslednje == null) {
           final d = DateTime.parse(datum);
           poslednje = '${d.day}/${d.month}/${d.year}';
         }
       } else if (tip == 'otkazivanje' && datum != null) {
-        brojOtkazivanjaTotal++;
-        if (!daniSaVoznjom.contains(datum) && !daniSamoOtkazivanje.contains(datum)) {
-          daniSamoOtkazivanje.add(datum);
+        if (jeDnevni) {
+          dailyMaxOtkazivanja[record['id'] ?? datum + record['created_at']] = bm;
+        } else {
+          if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
+            dailyMaxOtkazivanja[datum] = bm;
+          }
         }
       }
     }
 
-    final int putovanja = jeDnevni ? brojVoznjiTotal : daniSaVoznjom.length;
-    final int otkazivanjaData = jeDnevni ? brojOtkazivanjaTotal : daniSamoOtkazivanje.length;
+    int putovanja = 0;
+    dailyMaxVoznje.forEach((k, v) => putovanja += v);
+
+    int otkazivanjaData = 0;
+    dailyMaxOtkazivanja.forEach((datum, v) {
+      if (jeDnevni || !dailyMaxVoznje.containsKey(datum)) {
+        otkazivanjaData += v;
+      }
+    });
+
     final ukupno = putovanja + otkazivanjaData;
     final uspesnost = ukupno > 0 ? ((putovanja / ukupno) * 100).round() : 0;
 
@@ -579,40 +680,54 @@ class PutnikStatistikeHelper {
     final response =
         await supabase.from('voznje_log').select().eq('putnik_id', putnikId).order('created_at', ascending: false);
 
-    List<String> daniSaVoznjom = [];
-    List<String> daniSamoOtkazivanje = [];
-    int brojVoznjiTotal = 0;
-    int brojOtkazivanjaTotal = 0;
+    Map<String, int> dailyMaxVoznje = {};
+    Map<String, int> dailyMaxOtkazivanja = {};
     String? poslednje;
     double ukupanPrihod = 0;
-    final jeDnevni = tipPutnika.toLowerCase().contains('dnevni');
+    final jeDnevni = tipPutnika.toLowerCase().contains('dnevni') || tipPutnika.toLowerCase().contains('posiljka');
 
     for (final record in response) {
       final tip = record['tip'] as String?;
       final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
       final String? datumStr = record['datum'] as String?;
       final datum = datumStr ?? record['created_at']?.toString().split('T')[0];
+      final int bm = (record['broj_mesta'] as num?)?.toInt() ?? 1;
 
       if (tip == 'voznja' && datum != null) {
         ukupanPrihod += iznos;
-        brojVoznjiTotal++;
-        if (!daniSaVoznjom.contains(datum)) {
-          daniSaVoznjom.add(datum);
+        if (jeDnevni) {
+          dailyMaxVoznje[record['id'] ?? datum + record['created_at']] = bm;
+        } else {
+          if (bm > (dailyMaxVoznje[datum] ?? 0)) {
+            dailyMaxVoznje[datum] = bm;
+          }
         }
+
         if (poslednje == null) {
           final d = DateTime.parse(datum);
           poslednje = '${d.day}/${d.month}/${d.year}';
         }
       } else if (tip == 'otkazivanje' && datum != null) {
-        brojOtkazivanjaTotal++;
-        if (!daniSaVoznjom.contains(datum) && !daniSamoOtkazivanje.contains(datum)) {
-          daniSamoOtkazivanje.add(datum);
+        if (jeDnevni) {
+          dailyMaxOtkazivanja[record['id'] ?? datum + record['created_at']] = bm;
+        } else {
+          if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
+            dailyMaxOtkazivanja[datum] = bm;
+          }
         }
       }
     }
 
-    final int putovanja = jeDnevni ? brojVoznjiTotal : daniSaVoznjom.length;
-    final int otkazivanjaData = jeDnevni ? brojOtkazivanjaTotal : daniSamoOtkazivanje.length;
+    int putovanja = 0;
+    dailyMaxVoznje.forEach((k, v) => putovanja += v);
+
+    int otkazivanjaData = 0;
+    dailyMaxOtkazivanja.forEach((datum, v) {
+      if (jeDnevni || !dailyMaxVoznje.containsKey(datum)) {
+        otkazivanjaData += v;
+      }
+    });
+
     final ukupno = putovanja + otkazivanjaData;
     final uspesnost = ukupno > 0 ? ((putovanja / ukupno) * 100).round() : 0;
 
@@ -631,7 +746,7 @@ class PutnikStatistikeHelper {
     try {
       final startOfMonth = DateTime(godina, mesec, 1).toUtc().toIso8601String();
       final endOfMonth = DateTime(godina, mesec + 1, 0, 23, 59, 59).toUtc().toIso8601String();
-      final jeDnevni = tipPutnika.toLowerCase().contains('dnevni');
+      final jeDnevni = tipPutnika.toLowerCase().contains('dnevni') || tipPutnika.toLowerCase().contains('posiljka');
 
       // 🔍 1. Dohvati sve logove vožnji za putnika u tom mesecu
       final response = await supabase
@@ -646,10 +761,8 @@ class PutnikStatistikeHelper {
 
       // 📊 2. Agregiraj podatke
       double ukupanPrihodData = 0;
-      int brojVoznjiTotal = 0;
-      int brojOtkazivanjaTotal = 0;
-      List<String> daniSaVoznjom = [];
-      List<String> daniSamoOtkazivanje = [];
+      Map<String, int> dailyMaxVoznje = {};
+      Map<String, int> dailyMaxOtkazivanja = {};
       String? poslednjiDatum;
 
       for (final voznja in voznje) {
@@ -657,24 +770,38 @@ class PutnikStatistikeHelper {
         final double iznos = ((voznja['iznos'] ?? 0) as num).toDouble();
         final String? datumStr = voznja['datum'] as String?;
         final datum = datumStr ?? voznja['created_at']?.toString().split('T')[0];
+        final int bm = (voznja['broj_mesta'] as num?)?.toInt() ?? 1;
 
         if (tip == 'voznja' && datum != null) {
           ukupanPrihodData += iznos;
-          brojVoznjiTotal++;
-          if (!daniSaVoznjom.contains(datum)) {
-            daniSaVoznjom.add(datum);
+          if (jeDnevni) {
+            dailyMaxVoznje[voznja['id'] ?? datum + (voznja['created_at']?.toString() ?? '')] = bm;
+          } else {
+            if (bm > (dailyMaxVoznje[datum] ?? 0)) {
+              dailyMaxVoznje[datum] = bm;
+            }
           }
           poslednjiDatum ??= datum;
         } else if (tip == 'otkazivanje' && datum != null) {
-          brojOtkazivanjaTotal++;
-          if (!daniSaVoznjom.contains(datum) && !daniSamoOtkazivanje.contains(datum)) {
-            daniSamoOtkazivanje.add(datum);
+          if (jeDnevni) {
+            dailyMaxOtkazivanja[voznja['id'] ?? datum + (voznja['created_at']?.toString() ?? '')] = bm;
+          } else {
+            if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
+              dailyMaxOtkazivanja[datum] = bm;
+            }
           }
         }
       }
 
-      final int brojPutovanja = jeDnevni ? brojVoznjiTotal : daniSaVoznjom.length;
-      final int brojOtkazivanja = jeDnevni ? brojOtkazivanjaTotal : daniSamoOtkazivanje.length;
+      int brojPutovanja = 0;
+      dailyMaxVoznje.forEach((k, v) => brojPutovanja += v);
+
+      int brojOtkazivanja = 0;
+      dailyMaxOtkazivanja.forEach((datum, v) {
+        if (jeDnevni || !dailyMaxVoznje.containsKey(datum)) {
+          brojOtkazivanja += v;
+        }
+      });
 
       return {
         'putovanja': brojPutovanja,

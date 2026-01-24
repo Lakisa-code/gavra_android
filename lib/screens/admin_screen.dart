@@ -10,6 +10,7 @@ import '../services/local_notification_service.dart';
 import '../services/pin_zahtev_service.dart'; // 📨 PIN ZAHTEVI
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
+import '../services/slobodna_mesta_service.dart'; // 🚢 SMART TRANZIT
 import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
@@ -29,6 +30,7 @@ import 'ml_lab_screen.dart'; // 🧪 ML LAB
 import 'odrzavanje_screen.dart'; // 📖 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
 import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
+import 'tranzit_screen.dart'; // 🚢 SMART TRANZIT
 import 'vozac_screen.dart'; // DODANO za vozac screen
 import 'vozaci_statistika_screen_v2.dart'; // 📊 Statistika vozača
 
@@ -1655,6 +1657,114 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                             ],
                           ),
+                        ),
+                        // 🚢 SMART TRANZIT - EARLY WARNING
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: SlobodnaMestaService.getMissingTransitPassengers(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+                            final missing = snapshot.data!;
+                            return InkWell(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                    builder: (context) => const TranzitScreen(currentDriver: 'admin')),
+                              ),
+                              child: Container(
+                                margin: const EdgeInsets.only(top: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'TRANZIT ALARM: ${missing.length} PUTNIKA',
+                                            style: const TextStyle(
+                                                color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                                          ),
+                                          const Text(
+                                            'Putnici u VS su bez rezervacije povratka.',
+                                            style: TextStyle(color: Colors.white, fontSize: 13),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_forward_ios, color: Colors.orange, size: 16),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        // 📊 PROJEKTOVANO OPTEREĆENJE
+                        FutureBuilder<Map<String, dynamic>>(
+                          future: SlobodnaMestaService.getProjectedOccupancyStats(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) return const SizedBox.shrink();
+                            final stats = snapshot.data!;
+                            final totalReserved = stats['reservations_count'] ?? 0;
+                            final missing = stats['missing_count'] ?? 0;
+                            final totalProjected = totalReserved + missing;
+
+                            if (totalProjected == 0) return const SizedBox.shrink();
+
+                            return Container(
+                              margin: const EdgeInsets.only(top: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '📊 PROJEKCIJA ZA VS -> BC (DANAS)',
+                                    style:
+                                        TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Ukupno očekivano: $totalProjected',
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        'Rezervisano: $totalReserved',
+                                        style: const TextStyle(color: Colors.green, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  LinearProgressIndicator(
+                                    value: totalProjected > 0 ? totalReserved / totalProjected : 0,
+                                    backgroundColor: Colors.white10,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                                  ),
+                                  if (missing > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        '⚠️ Još $missing tranzitnih putnika treba da bukira.',
+                                        style: const TextStyle(color: Colors.orange, fontSize: 11),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

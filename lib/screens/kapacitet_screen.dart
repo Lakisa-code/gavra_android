@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/admin_audit_service.dart'; // 🕵️ ADMIN AUDIT
 import '../services/firebase_service.dart'; // 👤 CURRENT USER
 import '../services/kapacitet_service.dart';
+import '../services/slobodna_mesta_service.dart'; // 🚢 SMART TRANZIT
 import '../services/theme_manager.dart';
 import '../theme.dart';
 
@@ -270,103 +271,153 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
   }
 
   Widget _buildGradTab(String grad, List<String> vremena) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: vremena.length,
-      itemBuilder: (ctx, index) {
-        final vreme = vremena[index];
-        final maxMesta = _kapacitet[grad]?[vreme] ?? 8;
-
-        return Card(
-          color: Theme.of(ctx).glassContainer,
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            title: Text(
-              vreme,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            subtitle: Text(
-              'Kapacitet: $maxMesta mesta',
-              style: TextStyle(
-                color: maxMesta < 8 ? Colors.orange : Colors.white70,
-              ),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Brzo smanjenje
-                IconButton(
-                  onPressed: maxMesta > 1
-                      ? () async {
-                          final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta - 1);
-                          if (!mounted) return;
-                          if (success) {
-                            setState(() {
-                              _kapacitet[grad]?[vreme] = maxMesta - 1;
-                            });
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('❌ Greška pri čuvanju'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      : null,
-                  icon: const Icon(Icons.remove_circle, color: Colors.red, size: 32),
+    return Column(
+      children: [
+        // 🚢 SMART TRANZIT INFO (Samo za Vršac)
+        if (grad == 'VS')
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: SlobodnaMestaService.getMissingTransitPassengers(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+              final missingCount = snapshot.data!.length;
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
                 ),
-                // Prikaz broja
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: _getKapacitetBoja(maxMesta),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$maxMesta',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                child: Row(
+                  children: [
+                    const Icon(Icons.swap_horizontal_circle, color: Colors.orange),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'PROJEKTOVANO OPTEREĆENJE (VS)',
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            '$missingCount putnika u VS još nije rezervisalo povratak.',
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                // Brzo povećanje
-                IconButton(
-                  onPressed: maxMesta < 20
-                      ? () async {
-                          final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta + 1);
-                          if (!mounted) return;
-                          if (success) {
-                            setState(() {
-                              _kapacitet[grad]?[vreme] = maxMesta + 1;
-                            });
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('❌ Greška pri čuvanju'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      : null,
-                  icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
-                ),
-              ],
-            ),
-            onTap: () => _editKapacitet(grad, vreme, maxMesta),
+              );
+            },
           ),
-        );
-      },
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: vremena.length,
+            itemBuilder: (ctx, index) {
+              final vreme = vremena[index];
+              final maxMesta = _kapacitet[grad]?[vreme] ?? 8;
+
+              return Card(
+                color: Theme.of(ctx).glassContainer,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(
+                    vreme,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Kapacitet: $maxMesta mesta',
+                    style: TextStyle(
+                      color: maxMesta < 8 ? Colors.orange : Colors.white70,
+                    ),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Brzo smanjenje
+                      IconButton(
+                        onPressed: maxMesta > 1
+                            ? () async {
+                                final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta - 1);
+                                if (!mounted) return;
+                                if (success) {
+                                  setState(() {
+                                    _kapacitet[grad]?[vreme] = maxMesta - 1;
+                                  });
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('❌ Greška pri čuvanju'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            : null,
+                        icon: const Icon(Icons.remove_circle, color: Colors.red, size: 32),
+                      ),
+                      // Prikaz broja
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: _getKapacitetBoja(maxMesta),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$maxMesta',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Brzo povećanje
+                      IconButton(
+                        onPressed: maxMesta < 20
+                            ? () async {
+                                final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta + 1);
+                                if (!mounted) return;
+                                if (success) {
+                                  setState(() {
+                                    _kapacitet[grad]?[vreme] = maxMesta + 1;
+                                  });
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('❌ Greška pri čuvanju'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            : null,
+                        icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
+                      ),
+                    ],
+                  ),
+                  onTap: () => _editKapacitet(grad, vreme, maxMesta),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

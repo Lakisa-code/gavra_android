@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -236,7 +237,8 @@ class SlobodnaMestaService {
   }
 
   /// Proveri da li ima slobodnih mesta za određeni polazak
-  static Future<bool> imaSlobodnihMesta(String grad, String vreme, {String? datum, String? tipPutnika}) async {
+  static Future<bool> imaSlobodnihMesta(String grad, String vreme,
+      {String? datum, String? tipPutnika, int brojMesta = 1}) async {
     // 🎓 BC LOGIKA: Učenici se u Beloj Crkvi uvek primaju (oni su extra / ne zauzimaju radnicima mesta)
     if (grad.toUpperCase() == 'BC' && tipPutnika == 'ucenik') {
       return true;
@@ -248,7 +250,7 @@ class SlobodnaMestaService {
 
     for (final s in lista) {
       if (s.vreme == vreme) {
-        return !s.jePuno;
+        return s.slobodna >= brojMesta;
       }
     }
     return false;
@@ -665,7 +667,7 @@ class SlobodnaMestaService {
     try {
       final response = await _supabase
           .from('registrovani_putnici')
-          .select('id, tip, polasci_po_danu, radni_dani, status') // Dodat status
+          .select('id, tip, polasci_po_danu, radni_dani, status, broj_mesta') // Dodat broj_mesta
           .not('polasci_po_danu', 'is', null);
 
       int count = 0;
@@ -695,7 +697,8 @@ class SlobodnaMestaService {
         final bcVreme = danData['bc'] as String?;
         // Ako ima BC vreme (nije null i nije prazno), znači da je krenuo u školu
         if (bcVreme != null && bcVreme.isNotEmpty) {
-          count++;
+          final int bm = (row['broj_mesta'] as num?)?.toInt() ?? 1;
+          count += bm;
         }
       }
 
@@ -710,7 +713,7 @@ class SlobodnaMestaService {
     try {
       final response = await _supabase
           .from('registrovani_putnici')
-          .select('id, tip, polasci_po_danu, radni_dani, status')
+          .select('id, tip, polasci_po_danu, radni_dani, status, broj_mesta') // Dodat broj_mesta
           .not('polasci_po_danu', 'is', null);
 
       int count = 0;
@@ -735,13 +738,100 @@ class SlobodnaMestaService {
 
         final vsVreme = danData['vs'] as String?;
         if (vsVreme != null && vsVreme.isNotEmpty && vsVreme != 'null') {
-          count++;
+          final int bm = (row['broj_mesta'] as num?)?.toInt() ?? 1;
+          count += bm;
         }
       }
 
       return count;
     } catch (e) {
       return 0;
+    }
+  }
+
+  /// Dohvati listu putnika koji su jutros došli u VS a nisu rezervisali povratak
+  static Future<List<Map<String, dynamic>>> getMissingTransitPassengers() async {
+    try {
+      final now = DateTime.now();
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final danDanas = dani[now.weekday - 1];
+
+      // Vikendom nema standardne tranzitne logike za radnike/učenike obično
+      if (now.weekday > 5) return [];
+
+      final response = await _supabase
+          .from('registrovani_putnici')
+          .select('id, putnik_ime, tip, polasci_po_danu, broj_mesta') // Dodat broj_mesta
+          .eq('aktivan', true)
+          .eq('obrisan', false)
+          .inFilter('tip', ['ucenik', 'radnik']);
+
+      final results = <Map<String, dynamic>>[];
+
+      for (var row in response) {
+        final polasci = row['polasci_po_danu'] as Map<String, dynamic>?;
+        if (polasci == null || polasci[danDanas] == null) continue;
+
+        final danas = polasci[danDanas] as Map<String, dynamic>;
+        final bcStatus = danas['bc_status']?.toString();
+        final vsVreme = danas['vs']?.toString();
+
+        // Uslov: confirmed BC jutros AND (nema VS vremena OR VS status nije confirmed/pending)
+        if (bcStatus == 'confirmed' && (vsVreme == null || vsVreme == '' || vsVreme == 'null')) {
+          results.add({
+            'id': row['id'],
+            'ime': row['putnik_ime'],
+            'tip': row['tip'],
+            'broj_mesta': (row['broj_mesta'] as num?)?.toInt() ?? 1,
+          });
+        }
+      }
+
+      return results;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Ručno okida slanje podsetnika svim tranzitnim putnicima koji nisu rezervisali povratak
+  static Future<int> triggerTransitReminders() async {
+    try {
+      final response = await _supabase.rpc('notify_missing_transit_passengers');
+      return response as int? ?? 0;
+    } catch (e) {
+      debugPrint('❌ Greška pri slanju podsetnika: $e');
+      return 0;
+    }
+  }
+
+  /// Izračunava projektovano opterećenje za grad i vreme, uključujući i one koji nisu rezervisali
+  static Future<Map<String, dynamic>> getProjectedOccupancyStats() async {
+    try {
+      final missingList = await getMissingTransitPassengers();
+      final stats = await getSlobodnaMesta();
+
+      // 1. Zbir već potvrđenih i pending mesta za VS polaske (povratak)
+      int totalReserved = 0;
+      final vsStats = stats['VS'] ?? [];
+      for (var s in vsStats) {
+        totalReserved += s.zauzetaMesta;
+      }
+
+      // 2. Putnici koji su u VS a nemaju potvrđen povratak
+      final int missingCount = missingList.length;
+
+      return {
+        'reservations_count': totalReserved,
+        'missing_count': missingCount,
+        'missing_total': missingCount,
+        'missing_ucenici': missingList.where((p) => p['tip'] == 'ucenik').length,
+        'missing_radnici': missingList.where((p) => p['tip'] == 'radnik').length,
+      };
+    } catch (e) {
+      return {
+        'reservations_count': 0,
+        'missing_count': 0,
+      };
     }
   }
 }

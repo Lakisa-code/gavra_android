@@ -372,12 +372,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
     try {
       final tipPutnikaRaw = (_putnikData['tip'] ?? 'radnik').toString().toLowerCase();
-      final jeDnevni = tipPutnikaRaw.contains('dnevni');
+      final jeDnevni = tipPutnikaRaw.contains('dnevni') || tipPutnikaRaw.contains('posiljka');
 
       // 1. Dohvati vožnje za TEKUĆI MESEC
       final voznjeResponse = await supabase
           .from('voznje_log')
-          .select('datum, tip')
+          .select('datum, tip, broj_mesta')
           .eq('putnik_id', putnikId)
           .eq('tip', 'voznja')
           .gte('created_at', pocetakMeseca);
@@ -385,28 +385,34 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // 2. Dohvati otkazivanja za TEKUĆI MESEC
       final otkazivanjaResponse = await supabase
           .from('voznje_log')
-          .select('datum, tip')
+          .select('datum, tip, broj_mesta')
           .eq('putnik_id', putnikId)
           .eq('tip', 'otkazivanje')
           .gte('created_at', pocetakMeseca);
 
       // Broj vožnji ovog meseca
-      // Ako je DNEVNI: svako pokupljenje = 1 vožnja
+      // Ako je DNEVNI: sumiramo broj_mesta
       // Ako je RADNIK/UCENIK: unikatni dani = 1 vožnja
       final jedinstveniDatumiVoznji = <String>{};
+      int ukupnoMestaVoznje = 0;
       for (final v in voznjeResponse) {
         final datum = v['datum'] as String?;
+        final bm = (v['broj_mesta'] as num?)?.toInt() ?? 1;
         if (datum != null) jedinstveniDatumiVoznji.add(datum);
+        ukupnoMestaVoznje += bm;
       }
-      int brojVoznjiTotal = jeDnevni ? voznjeResponse.length : jedinstveniDatumiVoznji.length;
+      int brojVoznjiTotal = jeDnevni ? ukupnoMestaVoznje : jedinstveniDatumiVoznji.length;
 
-      // Broj otkazivanja ovog meseca (unikatni dani)
+      // Broj otkazivanja ovog meseca
       final jedinstveniDatumiOtkazivanja = <String>{};
+      int ukupnoMestaOtkazivanja = 0;
       for (final o in otkazivanjaResponse) {
         final datum = o['datum'] as String?;
+        final bm = (o['broj_mesta'] as num?)?.toInt() ?? 1;
         if (datum != null) jedinstveniDatumiOtkazivanja.add(datum);
+        ukupnoMestaOtkazivanja += bm;
       }
-      int brojOtkazivanjaTotal = jeDnevni ? otkazivanjaResponse.length : jedinstveniDatumiOtkazivanja.length;
+      int brojOtkazivanjaTotal = jeDnevni ? ukupnoMestaOtkazivanja : jedinstveniDatumiOtkazivanja.length;
 
       // Dugovanje
       final dug = _putnikData['dug'] ?? 0;
@@ -545,19 +551,21 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       setState(() {
         _brojVoznji = brojVoznjiTotal;
         _brojOtkazivanja = brojOtkazivanjaTotal;
-        _dugovanje = zaduzenje; // ✅ Koristi izračunato zaduženje umesto nepostojeće kolone 'dug'
+        _dugovanje = zaduzenje;
         _istorijaPl = istorija;
-        // _voznjeDetaljno koristimo za UI - ovde nam treba lista datuma za kalendarski prikaz
-        // pa ćemo konvertovati broj_voznji nazad u set datuma ako treba, ili samo koristiti broj
+        _voznjeDetaljno.clear();
+        _voznjeDetaljno.addAll(voznjeDetaljnoMap);
+        _otkazivanjaDetaljno.clear();
+        _otkazivanjaDetaljno.addAll(otkazivanjaDetaljnoMap);
+        _brojMestaPoVoznji.clear();
+        _brojMestaPoVoznji.addAll(brojMestaPoVoznji);
         _ukupnoZaduzenje = zaduzenje;
         _adresaBC = adresaBcNaziv;
         _adresaVS = adresaVsNaziv;
         _putnikLat = putnikLat;
         _putnikLng = putnikLng;
         _sledeciPolazak = sledeciPolazak;
-        // Odredi smer ture - ako je grad BC, putnik ide BC->VS, ako je VS ide VS->BC
         _smerTure = (grad == 'BC' || grad == 'Bela Crkva') ? 'BC_VS' : 'VS_BC';
-        // 🆕 Izračunaj sledeću vožnju za Fazu 4
         _sledecaVoznjaInfo = _izracunajSledecuVoznju();
         _isLoading = false;
       });
@@ -1361,12 +1369,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                 end: Alignment.bottomRight,
                                 colors: tip == 'ucenik'
                                     ? [Colors.blue.shade400, Colors.indigo.shade600]
-                                    : [Colors.orange.shade400, Colors.deepOrange.shade600],
+                                    : tip == 'posiljka'
+                                        ? [Colors.purple.shade400, Colors.deepPurple.shade600]
+                                        : [Colors.orange.shade400, Colors.deepOrange.shade600],
                               ),
                               border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
                               boxShadow: [
                                 BoxShadow(
-                                  color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.4),
+                                  color: (tip == 'ucenik'
+                                          ? Colors.blue
+                                          : tip == 'posiljka'
+                                              ? Colors.purple
+                                              : Colors.orange)
+                                      .withValues(alpha: 0.4),
                                   blurRadius: 20,
                                   spreadRadius: 2,
                                 ),
@@ -1396,30 +1411,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                               letterSpacing: 0.5,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          // Badge - tip putnika
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                            ),
-                            child: Text(
-                              // 🎓 Prikazujemo ulogu (Učenik/Radnik) ali dodajemo "Dnevni" ako je takav način prikaza
-                              (tipPrikazivanja == 'DNEVNI' || tip == 'dnevni')
-                                  ? (tip == 'ucenik'
-                                      ? '📅 Dnevni Učenik'
-                                      : (tip == 'radnik' ? '📅 Dnevni Radnik' : '📅 Dnevni'))
-                                  : (tip == 'ucenik' ? '🎓 Učenik' : '💼 Radnik'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 12),
 
                           // Tip i grad
                           Row(
@@ -1430,18 +1422,24 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                 decoration: BoxDecoration(
                                   color: tip == 'ucenik'
                                       ? Colors.blue.withValues(alpha: 0.3)
-                                      : tip == 'dnevni'
+                                      : (tip == 'dnevni' || tipPrikazivanja == 'DNEVNI')
                                           ? Colors.green.withValues(alpha: 0.3)
-                                          : Colors.orange.withValues(alpha: 0.3),
+                                          : tip == 'posiljka'
+                                              ? Colors.purple.withValues(alpha: 0.3)
+                                              : Colors.orange.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                 ),
                                 child: Text(
-                                  tip == 'ucenik'
-                                      ? '🎓 Učenik'
-                                      : tip == 'dnevni'
-                                          ? '📅 Dnevni'
-                                          : '💼 Radnik',
+                                  (tipPrikazivanja == 'DNEVNI' || tip == 'dnevni')
+                                      ? (tip == 'ucenik'
+                                          ? '📅 Dnevni Učenik'
+                                          : (tip == 'radnik' ? '📅 Dnevni Radnik' : '📅 Dnevni'))
+                                      : (tip == 'ucenik'
+                                          ? '🎓 Učenik'
+                                          : tip == 'posiljka'
+                                              ? '📦 Pošiljka'
+                                              : '💼 Radnik'),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -1556,27 +1554,25 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     ),
                     const SizedBox(height: 8),
 
-                    // Statistike - Sakriveno za Dnevne putnike
-                    if (_putnikData['tip']?.toString().toLowerCase() != 'dnevni') ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard('🚌', 'Vožnje', _brojVoznji.toString(), Colors.blue, 'ovaj mesec'),
+                    // Statistike - Prikazano za sve, ali dnevni/pošiljka broje svako pokupljenje
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard('🚌', 'Vožnje', _brojVoznji.toString(), Colors.blue, 'ovaj mesec'),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            '❌',
+                            'Otkazano',
+                            _brojOtkazivanja.toString(),
+                            Colors.orange,
+                            'ovaj mesec',
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildStatCard(
-                              '❌',
-                              'Otkazano',
-                              _brojOtkazivanja.toString(),
-                              Colors.orange,
-                              'ovaj mesec',
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
                     // 🏖️ Bolovanje/Godišnji dugme - SAMO za radnike
                     if (_putnikData['tip']?.toString().toLowerCase() == 'radnik') ...[
@@ -1584,57 +1580,53 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       const SizedBox(height: 16),
                     ],
 
-                    // 💰 TRENUTNO ZADUŽENJE - Sakriveno za Dnevne putnike (plaćaju na licu mesta)
-                    if (_putnikData['tip']?.toString().toLowerCase() != 'dnevni') ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: _ukupnoZaduzenje > 0
-                                ? [Colors.red.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.05)]
-                                : [Colors.green.withValues(alpha: 0.2), Colors.green.withValues(alpha: 0.05)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _ukupnoZaduzenje > 0
-                                ? Colors.red.withValues(alpha: 0.3)
-                                : Colors.green.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
+                    // 💰 TRENUTNO ZADUŽENJE
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: _ukupnoZaduzenje > 0
+                              ? [Colors.red.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.05)]
+                              : [Colors.green.withValues(alpha: 0.2), Colors.green.withValues(alpha: 0.05)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'TRENUTNO STANJE',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                fontSize: 11,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
-                              style: TextStyle(
-                                color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _ukupnoZaduzenje > 0
+                              ? Colors.red.withValues(alpha: 0.3)
+                              : Colors.green.withValues(alpha: 0.3),
+                          width: 1,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                    ],
+                      child: Column(
+                        children: [
+                          Text(
+                            'TRENUTNO STANJE',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 11,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
+                            style: TextStyle(
+                              color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
-                    // 📊 Detaljne statistike - dugme za dijalog - Sakriveno za Dnevne
-                    if (_putnikData['tip']?.toString().toLowerCase() != 'dnevni') ...[
-                      _buildDetaljneStatistikeDugme(),
-                      const SizedBox(height: 16),
-                    ],
+                    // 📊 Detaljne statistike - dugme za dijalog
+                    _buildDetaljneStatistikeDugme(),
+                    const SizedBox(height: 16),
 
                     // 📅 Raspored polazaka
                     _buildRasporedCard(),
@@ -1753,6 +1745,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           const SizedBox(height: 8),
 
           // Grid za svaki dan
+
           ...dani.map((dan) {
             final danPolasci = polasci[dan];
             final bcVreme = danPolasci?['bc'];
@@ -2120,6 +2113,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // 🚐 VS LOGIKA - Pending 10 minuta za SVE tipove putnika
           debugPrint('🎯 [VS] ZAHTEV - Pending status, 10 min timer');
 
+          // 🆕 PROVERA TRANZITA ZA SNACKBAR
+          final polasciMap = _putnikData['polasci_po_danu'] ?? {};
+          final danData = polasciMap[dan];
+          final jeUTranzitu = (danData is Map && danData['bc_status'] == 'confirmed' && (jeUcenik || jeRadnik));
+
           // Postavi status na pending
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = DateTime.now().toUtc().toIso8601String();
@@ -2136,7 +2134,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             VoznjeLogService.logGeneric(
               tip: 'zakazivanje_putnika',
               putnikId: putnikId,
-              detalji: 'Zahtev za VS termin: $dan u $novoVreme',
+              detalji: jeUTranzitu
+                  ? 'Prioritetni zahtev za VS termin (Tranzit): $dan u $novoVreme'
+                  : 'Zahtev za VS termin: $dan u $novoVreme',
             );
           } catch (_) {}
 
@@ -2147,13 +2147,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  jeUTranzitu
+                      ? '🚀 Prioritetna potvrda aktivirana! Rezervisali smo vam mesto za povratak (Tranzit).'
+                      : '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 5),
+                backgroundColor: jeUTranzitu ? Colors.blueAccent : Colors.green,
+                duration: const Duration(seconds: 5),
               ),
             );
           }

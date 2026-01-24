@@ -42,178 +42,111 @@ void main() async {
   WakelockPlus.enable();
 
   // 📱 EDGE-TO-EDGE PRIKAZ
-  // Za Android 15 (SDK 35+): edge-to-edge je automatski primenjen, boje system bar-a su ignorisane
-  // Za starije verzije: ovo postavlja transparentne system bar-ove
-  // NAPOMENA: statusBarColor/navigationBarColor su DEPRECATED u SDK 35, ali još uvek rade za SDK < 35
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   // 🌍 INICIJALIZACIJA LOCALE ZA FORMATIRANJE DATUMA
-  await initializeDateFormatting('sr_RS', null);
+  unawaited(initializeDateFormatting('sr_RS', null));
 
-  // 🌐 SUPABASE INICIJALIZACIJA - PRVO!
+  // 🌐 SUPABASE INICIJALIZACIJA - PRVO (ali sa kratkim timeout-om)
   try {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 5));
   } catch (e) {
-    if (kDebugMode) debugPrint('❌ [Supabase] Init failed: $e');
+    if (kDebugMode) debugPrint('⚠️ [Supabase] Init slow or failed: $e');
   }
 
+  // 🚀 POKRENI APLIKACIJU ODMAH - Ne čekaj push servise i pozadinske skripte!
+  runApp(const MyApp());
+
+  // 🏗️ SVE OSTALO SE INICIJALIZUJE U POZADINI
+  unawaited(_initializeSecondaryServices());
+}
+
+/// 🏗️ Inicijalizacija servisa koji nisu kritični za prvi prikaz (Push, AI, Cleanup)
+Future<void> _initializeSecondaryServices() async {
   // 🔥 CLOUD/NOTIFICATION PROVIDER INITIALIZATION
-  // Decide which push provider to use depending on device capabilities.
-  // bool firebaseAvailable = false; // track if Firebase/FCM inited (kept for future use)
   try {
-    final availability = await GoogleApiAvailability.instance.checkGooglePlayServicesAvailability();
+    final availability =
+        await GoogleApiAvailability.instance.checkGooglePlayServicesAvailability().timeout(const Duration(seconds: 3));
     final gmsOk = availability == GooglePlayServicesAvailability.success;
 
     if (gmsOk) {
-      // Device has Google Play services -> initialize Firebase normally
       try {
-        await Firebase.initializeApp();
-
-        // Register FCM background handler and initialize messaging helpers
+        await Firebase.initializeApp().timeout(const Duration(seconds: 10));
         try {
           FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
         } catch (_) {}
-
         await FirebaseService.initialize();
         FirebaseService.setupFCMListeners();
 
-        // 📲 REGISTRUJ FCM TOKEN NA SERVER (push_tokens tabela)
-        // Ovo omogućava slanje push notifikacija na Samsung i druge GMS uređaje
-        try {
-          final fcmToken = await FirebaseService.initializeAndRegisterToken();
-          if (kDebugMode && fcmToken != null) {
-            debugPrint('📲 [FCM] Token registered: ${fcmToken.substring(0, 20)}...');
-          }
-        } catch (e) {
-          if (kDebugMode) debugPrint('❌ [FCM] Token registration failed: $e');
-        }
+        unawaited(FirebaseService.initializeAndRegisterToken());
       } catch (e) {
-        // If Firebase init fails, fall through to Huawei initialization
+        if (kDebugMode) debugPrint('❌ [Firebase] Background init failed: $e');
       }
     } else {
-      // No GMS available — initialize Huawei Push if possible
       try {
-        await HuaweiPushService().initialize();
-        // Try to register any pending tokens from previous sessions
+        await HuaweiPushService().initialize().timeout(const Duration(seconds: 10));
         await HuaweiPushService().tryRegisterPendingToken();
       } catch (e) {
-        // HMS initialization attempt failed
+        if (kDebugMode) debugPrint('❌ [Huawei] Background init failed: $e');
       }
     }
   } catch (e) {
-    // Unexpected checks failed — attempt graceful Firebase initialization as a fallback
+    // Fallback na HMS ako GMS check pukne
     try {
-      // await Firebase.initializeApp(
-      //   options: DefaultFirebaseOptions.currentPlatform,
-      // );
-      // await FirebaseService.initialize();
-      // await AnalyticsService.initialize();
-      // FirebaseService.setupFCMListeners();
-      // firebaseAvailable = true; // fallback succeeded
-      try {
-        await HuaweiPushService().initialize();
-        // Try to register any pending tokens from previous sessions
-        await HuaweiPushService().tryRegisterPendingToken();
-      } catch (e) {
-        // HMS fallback initialization attempt failed
-      }
+      await HuaweiPushService().initialize().timeout(const Duration(seconds: 5));
     } catch (_) {}
   }
 
   // 🛡️ INICIJALIZACIJA SEKUNDARNIH SERVISA (samo ako je Supabase spreman)
   if (isSupabaseReady) {
-    // 🗂️ INICIJALIZUJ VOZAC MAPPING CACHE
     try {
-      await VozacMappingService.initialize();
-    } catch (e) {
-      // Nastavi bez vozac mapping-a ako ne uspe
-    }
+      await VozacMappingService.initialize().timeout(const Duration(seconds: 5));
+    } catch (_) {}
 
-    // 🎨 INICIJALIZUJ VOZAC BOJA CACHE (za vozac_id u push tokenima)
     try {
-      await VozacBoja.initialize();
-    } catch (e) {
-      // Nastavi bez vozac boja keša ako ne uspe - koristi fallback
-    }
+      await VozacBoja.initialize().timeout(const Duration(seconds: 5));
+    } catch (_) {}
 
-    // 🚐 INICIJALIZUJ VREME-VOZAC CACHE (za per-vreme dodeljivanje)
     try {
-      await VremeVozacService().loadAllVremeVozac();
-    } catch (e) {
-      // Nastavi bez vreme-vozac keša ako ne uspe
-    }
+      await VremeVozacService().loadAllVremeVozac().timeout(const Duration(seconds: 5));
+    } catch (_) {}
 
-    // 🔧 INICIJALIZUJ APP SETTINGS SERVICE (nav bar tip iz baze)
     try {
-      await AppSettingsService.initialize();
-    } catch (e) {
-      // Nastavi bez app settings ako ne uspe - default je 'auto'
-    }
+      await AppSettingsService.initialize().timeout(const Duration(seconds: 5));
+    } catch (_) {}
 
-    // 🎫 INICIJALIZUJ GLOBALNI KAPACITET REALTIME LISTENER
-    // Automatski ažurira cache u pozadini kada admin promeni broj mesta
     try {
       KapacitetService.startGlobalRealtimeListener();
-    } catch (e) {
-      // Nastavi bez realtime listenera
-    }
+    } catch (_) {}
 
-    // 🔄 NEDELJNI RESET
     try {
-      await PutnikService().checkAndPerformWeeklyReset();
-    } catch (e) {
-      // Weekly reset check failed
-    }
+      await PutnikService().checkAndPerformWeeklyReset().timeout(const Duration(seconds: 10));
+    } catch (_) {}
 
-    // 💰 PAYMENT REMINDER
     try {
-      await PaymentReminderService.checkAndSendReminders();
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PaymentReminder] Check failed: $e');
-    }
+      await PaymentReminderService.checkAndSendReminders().timeout(const Duration(seconds: 10));
+    } catch (_) {}
 
-    // 🌨️ WEATHER ALERT
     try {
-      await WeatherAlertService.checkAndSendWeatherAlerts();
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ [WeatherAlert] Check failed: $e');
-    }
+      await WeatherAlertService.checkAndSendWeatherAlerts().timeout(const Duration(seconds: 10));
+    } catch (_) {}
 
     // 👶 AI BABIES (Autonomous Services)
-    // One se pale same i uče u svom pesku (ML Lab), ne diraju produkcione podatke.
     try {
       unawaited(MLVehicleAutonomousService().start());
       unawaited(MLDispatchAutonomousService().start());
       unawaited(MLChampionService().start());
-      unawaited(MLFinanceAutonomousService().start()); // DODAJ OVO
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ [AI Babies] Neuspešan start u pozadini: $e');
-    }
-  } else {
-    if (kDebugMode) debugPrint('⚠️ [Main] Skipping secondary services because Supabase is not ready');
+      unawaited(MLFinanceAutonomousService().start());
+    } catch (_) {}
   }
-
-  // 🔄 REALTIME se inicijalizuje lazy kroz PutnikService
-  // Ne treba eksplicitna pretplata ovde - PutnikService.streamKombinovaniPutniciFiltered()
-  // će se pretplatiti kad neki ekran zatraži stream
-
-  // GPS Learn će naučiti prave koordinate kada vozač pokupi putnika
-
-  // 🛠️ GPS MANAGER - centralizovani GPS singleton
-  // GpsManager.instance se koristi lazy - ne treba inicijalizacija ovde
-  // Tracking se pokreće kad je potreban (danas_screen, navigation widget)
 
   // 🔐 INITIALIZE CACHE SERVICE
   try {
-    await CacheService.initialize();
-  } catch (e) {
-    // Ignoriši greške u cache - optional feature
-  }
-
-  runApp(const MyApp());
+    await CacheService.initialize().timeout(const Duration(seconds: 5));
+  } catch (_) {}
 }
 
 class MyApp extends StatefulWidget {
