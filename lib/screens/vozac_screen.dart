@@ -1393,11 +1393,12 @@ class _VozacScreenState extends State<VozacScreen> {
                             return true;
                           }).toList();
 
-                          // 🔄 TRANZIT LOGIKA (X/Y) - Svi koji imaju oba smera danas
+                          // 🔄 TRANZIT LOGIKA (X/Y) - Svi koji imaju oba smera (GLOBALNO za taj dan)
                           final Map<String, List<Putnik>> tranzitMap = {};
                           for (var p in sviPutnici) {
                             if (p.jeOtkazan || p.jeOdsustvo || p.obrisan) continue;
                             if (p.tipPutnika == 'posiljka') continue;
+                            // ✅ GLOBALNO: Brojimo sve putnike da biste videli ukupno stanje za ponedeljak
                             tranzitMap.putIfAbsent(p.ime, () => []).add(p);
                           }
 

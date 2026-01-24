@@ -50,12 +50,10 @@ class _TranzitScreenState extends State<TranzitScreen> {
       for (var p in sviPutnici) {
         if (p.jeOtkazan || p.jeOdsustvo || p.obrisan) continue;
         if (p.tipPutnika == 'posiljka') continue;
-        // Samo putnici dodeljeni ovom vozaču (kao i na glavnom ekranu)
-        if (p.dodeljenVozac != widget.currentDriver) continue;
-
+        // 🌍 GLOBALNI TRANZIT: Brojimo sve putnike u sistemu za taj dan
+        // kako bi admin video ukupno opterećenje pre nego što dodeli vozače
         tranzitMap.putIfAbsent(p.ime, () => []).add(p);
       }
-
       final List<Map<String, dynamic>> results = [];
 
       tranzitMap.forEach((ime, trips) {
