@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 📱 Za Edge-to-Edge prikaz (Android 15+)
@@ -15,7 +14,6 @@ import 'screens/welcome_screen.dart';
 import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
 import 'services/battery_optimization_service.dart'; // 🔋 Huawei/Xiaomi battery warning
 import 'services/cache_service.dart';
-import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
@@ -37,116 +35,100 @@ import 'supabase_client.dart';
 import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 
 void main() async {
+  // 🚀 TRENUTNO POKRETANJE
   WidgetsFlutterBinding.ensureInitialized();
-  // 🕯️ WAKELOCK - Sprečava gašenje ekrana dok je aplikacija aktivna
-  WakelockPlus.enable();
+  
+  if (kDebugMode) debugPrint('🚀 [Main] App starting...');
 
-  // 📱 EDGE-TO-EDGE PRIKAZ
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  // 1. Pokreni UI odmah
+  runApp(const MyApp());
 
-  // 🌍 INICIJALIZACIJA LOCALE ZA FORMATIRANJE DATUMA
+  // 2. Pokreni sve inicijalizacije potpuno asinhrono
+  unawaited(_doStartupTasks());
+}
+
+/// 🏗️ Pozadinske inicijalizacije koje ne smeju da blokiraju UI
+Future<void> _doStartupTasks() async {
+  if (kDebugMode) debugPrint('⚙️ [Main] Background tasks started');
+
+  // 🕯️ WAKELOCK & UI
+  try {
+    WakelockPlus.enable();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  } catch (_) {}
+
+  // 🌍 LOCALE
   unawaited(initializeDateFormatting('sr_RS', null));
 
-  // 🌐 SUPABASE INICIJALIZACIJA - PRVO (ali sa kratkim timeout-om)
+  // 🌐 SUPABASE - Pokušaj brzo, ali ne čekaj duže od 2 sekunde
   try {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
-    ).timeout(const Duration(seconds: 5));
+    ).timeout(const Duration(seconds: 2));
+    if (kDebugMode) debugPrint('✅ [Main] Supabase initialized');
   } catch (e) {
-    if (kDebugMode) debugPrint('⚠️ [Supabase] Init slow or failed: $e');
+    if (kDebugMode) debugPrint('⚠️ [Main] Supabase init timeout/error: $e');
   }
 
-  // 🚀 POKRENI APLIKACIJU ODMAH - Ne čekaj push servise i pozadinske skripte!
-  runApp(const MyApp());
-
-  // 🏗️ SVE OSTALO SE INICIJALIZUJE U POZADINI
-  unawaited(_initializeSecondaryServices());
+  // 🔥 SVE OSTALO POKRENI ISTOVREMENO (Paralelno)
+  unawaited(_initPushSystems());
+  unawaited(_initAppServices());
 }
 
-/// 🏗️ Inicijalizacija servisa koji nisu kritični za prvi prikaz (Push, AI, Cleanup)
-Future<void> _initializeSecondaryServices() async {
-  // 🔥 CLOUD/NOTIFICATION PROVIDER INITIALIZATION
+/// 📱 Inicijalizacija Notifikacija (GMS vs HMS)
+Future<void> _initPushSystems() async {
   try {
-    final availability =
-        await GoogleApiAvailability.instance.checkGooglePlayServicesAvailability().timeout(const Duration(seconds: 3));
-    final gmsOk = availability == GooglePlayServicesAvailability.success;
-
-    if (gmsOk) {
-      try {
-        await Firebase.initializeApp().timeout(const Duration(seconds: 10));
-        try {
-          FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-        } catch (_) {}
-        await FirebaseService.initialize();
-        FirebaseService.setupFCMListeners();
-
-        unawaited(FirebaseService.initializeAndRegisterToken());
-      } catch (e) {
-        if (kDebugMode) debugPrint('❌ [Firebase] Background init failed: $e');
-      }
+    // Provera GMS-a sa kratkim timeoutom
+    final availability = await GoogleApiAvailability.instance
+        .checkGooglePlayServicesAvailability()
+        .timeout(const Duration(seconds: 2));
+    
+    if (availability == GooglePlayServicesAvailability.success) {
+      if (kDebugMode) debugPrint('📲 [Main] Detected GMS (Google)');
+      await Firebase.initializeApp().timeout(const Duration(seconds: 5));
+      await FirebaseService.initialize();
+      FirebaseService.setupFCMListeners();
+      unawaited(FirebaseService.initializeAndRegisterToken());
     } else {
-      try {
-        await HuaweiPushService().initialize().timeout(const Duration(seconds: 10));
-        await HuaweiPushService().tryRegisterPendingToken();
-      } catch (e) {
-        if (kDebugMode) debugPrint('❌ [Huawei] Background init failed: $e');
-      }
+      if (kDebugMode) debugPrint('📲 [Main] Detected HMS (Huawei)');
+      await HuaweiPushService().initialize().timeout(const Duration(seconds: 5));
+      await HuaweiPushService().tryRegisterPendingToken();
     }
   } catch (e) {
-    // Fallback na HMS ako GMS check pukne
+    // Fallback na HMS ako bilo šta pukne
     try {
-      await HuaweiPushService().initialize().timeout(const Duration(seconds: 5));
+      await HuaweiPushService().initialize().timeout(const Duration(seconds: 2));
     } catch (_) {}
   }
+}
 
-  // 🛡️ INICIJALIZACIJA SEKUNDARNIH SERVISA (samo ako je Supabase spreman)
-  if (isSupabaseReady) {
-    try {
-      await VozacMappingService.initialize().timeout(const Duration(seconds: 5));
-    } catch (_) {}
+/// ⚙️ Inicijalizacija ostalih servisa
+Future<void> _initAppServices() async {
+  if (!isSupabaseReady) return;
 
-    try {
-      await VozacBoja.initialize().timeout(const Duration(seconds: 5));
-    } catch (_) {}
+  final services = [
+    VozacMappingService.initialize(),
+    VozacBoja.initialize(),
+    VremeVozacService().loadAllVremeVozac(),
+    AppSettingsService.initialize(),
+    CacheService.initialize(),
+  ];
 
-    try {
-      await VremeVozacService().loadAllVremeVozac().timeout(const Duration(seconds: 5));
-    } catch (_) {}
-
-    try {
-      await AppSettingsService.initialize().timeout(const Duration(seconds: 5));
-    } catch (_) {}
-
-    try {
-      KapacitetService.startGlobalRealtimeListener();
-    } catch (_) {}
-
-    try {
-      await PutnikService().checkAndPerformWeeklyReset().timeout(const Duration(seconds: 10));
-    } catch (_) {}
-
-    try {
-      await PaymentReminderService.checkAndSendReminders().timeout(const Duration(seconds: 10));
-    } catch (_) {}
-
-    try {
-      await WeatherAlertService.checkAndSendWeatherAlerts().timeout(const Duration(seconds: 10));
-    } catch (_) {}
-
-    // 👶 AI BABIES (Autonomous Services)
-    try {
-      unawaited(MLVehicleAutonomousService().start());
-      unawaited(MLDispatchAutonomousService().start());
-      unawaited(MLChampionService().start());
-      unawaited(MLFinanceAutonomousService().start());
-    } catch (_) {}
+  for (var service in services) {
+    unawaited(service.timeout(const Duration(seconds: 3), onTimeout: () => {}));
   }
 
-  // 🔐 INITIALIZE CACHE SERVICE
-  try {
-    await CacheService.initialize().timeout(const Duration(seconds: 5));
-  } catch (_) {}
+  // Realtime & AI (bez čekanja ikoga)
+  KapacitetService.startGlobalRealtimeListener();
+  unawaited(PutnikService().checkAndPerformWeeklyReset());
+  unawaited(PaymentReminderService.checkAndSendReminders());
+  unawaited(WeatherAlertService.checkAndSendWeatherAlerts());
+  
+  unawaited(MLVehicleAutonomousService().start());
+  unawaited(MLDispatchAutonomousService().start());
+  unawaited(MLChampionService().start());
+  unawaited(MLFinanceAutonomousService().start());
 }
 
 class MyApp extends StatefulWidget {

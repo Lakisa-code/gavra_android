@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart' as novi_model;
 import '../services/adresa_supabase_service.dart';
+import '../services/cena_obracun_service.dart';
 import '../services/haptic_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
@@ -976,7 +977,19 @@ class _PutnikCardState extends State<PutnikCard> {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) {
-        final controller = TextEditingController();
+        // 💰 Sugeriši cenu na osnovu tipa putnika
+        final sugerisanaCena = CenaObracunService.getCenaPoDanu(registrovaniPutnik);
+
+        final tipLower = registrovaniPutnik.tip.toLowerCase();
+        final imeLower = registrovaniPutnik.putnikIme.toLowerCase();
+
+        // 🔒 FIKSNE CENE (Vozači ne mogu da menjaju)
+        final jeZubi = tipLower == 'posiljka' && imeLower.contains('zubi');
+        final jePosiljka = tipLower == 'posiljka';
+        final jeDnevni = tipLower == 'dnevni';
+        final jeFiksna = jeZubi || jePosiljka || jeDnevni;
+
+        final controller = TextEditingController(text: sugerisanaCena.toStringAsFixed(0));
         String selectedMonth = '${_getMonthNameStatic(DateTime.now().month)} ${DateTime.now().year}';
 
         return StatefulBuilder(
@@ -992,12 +1005,12 @@ class _PutnikCardState extends State<PutnikCard> {
             title: Row(
               children: [
                 Icon(
-                  Icons.card_membership,
-                  color: Theme.of(context).colorScheme.primary,
+                  jeFiksna ? Icons.lock : Icons.card_membership,
+                  color: jeFiksna ? Colors.orange : Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Mesečna karta',
+                  jeFiksna ? 'Naplata (FIKSNO)' : 'Mesečna karta',
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                 ),
               ],
@@ -1015,6 +1028,20 @@ class _PutnikCardState extends State<PutnikCard> {
                       fontSize: 16,
                     ),
                   ),
+                  if (jeFiksna)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        jeZubi
+                            ? 'Tip: Pošiljka ZUBI (300 RSD)'
+                            : (jePosiljka ? 'Tip: Pošiljka (500 RSD)' : 'Tip: Dnevni (600 RSD)'),
+                        style: TextStyle(
+                          color: jeZubi ? Colors.purple : (jePosiljka ? Colors.blue : Colors.orange),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 4),
                   Text(
                     'Grad: ${_putnik.grad}',
@@ -1190,13 +1217,18 @@ class _PutnikCardState extends State<PutnikCard> {
                   // UNOS CENE
                   TextField(
                     controller: controller,
+                    enabled: !jeFiksna, // 🔒 Onemogući izmenu za fiksne cene
+                    readOnly: jeFiksna, // 🔒 Read only
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Iznos (RSD)',
-                      prefixIcon: Icon(Icons.attach_money),
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: jeFiksna ? 'Fiksni iznos (RSD)' : 'Iznos (RSD)',
+                      prefixIcon: const Icon(Icons.attach_money),
+                      border: const OutlineInputBorder(),
+                      fillColor: jeFiksna ? Colors.grey.withValues(alpha: 0.1) : null,
+                      filled: jeFiksna,
+                      helperText: jeFiksna ? 'Ovaj tip putnika ima fiksnu cenu.' : null,
                     ),
-                    autofocus: true,
+                    autofocus: !jeFiksna,
                   ),
                   const SizedBox(height: 12),
 

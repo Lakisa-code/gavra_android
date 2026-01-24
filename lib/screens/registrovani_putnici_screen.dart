@@ -1987,6 +1987,15 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final cenaPoDanu = CenaObracunService.getCenaPoDanu(putnik);
     iznosController.text = cenaPoDanu.toStringAsFixed(0);
 
+    final tipLower = putnik.tip.toLowerCase();
+    final imeLower = putnik.putnikIme.toLowerCase();
+
+    // 🔒 FIKSNE CENE (Vozači/Admini prate isti standard)
+    final jeZubi = tipLower == 'posiljka' && imeLower.contains('zubi');
+    final jePosiljka = tipLower == 'posiljka';
+    final jeDnevni = tipLower == 'dnevni';
+    final jeFiksna = jeZubi || jePosiljka || jeDnevni;
+
     if (!mounted) return;
 
     showDialog<void>(
@@ -1997,11 +2006,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
             return AlertDialog(
               title: Row(
                 children: [
-                  Icon(Icons.payments_outlined, color: Colors.purple.shade600),
+                  Icon(
+                    jeFiksna ? Icons.lock : Icons.payments_outlined,
+                    color: jeFiksna ? Colors.orange : Colors.purple.shade600,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Plaćanje - ${putnik.putnikIme}',
+                      jeFiksna ? 'Fiksna naplata - ${putnik.putnikIme}' : 'Plaćanje - ${putnik.putnikIme}',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
@@ -2011,6 +2023,23 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (jeFiksna)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: Text(
+                          jeZubi
+                              ? 'Tip: Pošiljka ZUBI (300 RSD po pokupljenju)'
+                              : (jePosiljka
+                                  ? 'Tip: Pošiljka (500 RSD po pokupljenju)'
+                                  : 'Tip: Dnevni (600 RSD po pokupljenju)'),
+                          style: TextStyle(
+                            color: jeZubi ? Colors.purple : (jePosiljka ? Colors.blue : Colors.orange),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     if (ukupnoPlaceno > 0) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -2181,14 +2210,19 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     // 💰 IZNOS
                     TextField(
                       controller: iznosController,
+                      enabled: !jeFiksna, // 🔒 Onemogući izmenu za fiksne cene
+                      readOnly: jeFiksna, // 🔒 Read only
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Iznos (dinari)',
+                        labelText: jeFiksna ? 'Fiksni iznos (dinari)' : 'Iznos (dinari)',
                         hintText: 'Unesite iznos plaćanja',
                         prefixIcon: Icon(
-                          Icons.attach_money,
-                          color: Colors.purple.shade600,
+                          jeFiksna ? Icons.lock_outline : Icons.attach_money,
+                          color: jeFiksna ? Colors.grey : Colors.purple.shade600,
                         ),
+                        helperText: jeFiksna ? 'Fiksna cena za ovaj tip putnika.' : null,
+                        fillColor: jeFiksna ? Colors.grey.shade100 : null,
+                        filled: jeFiksna,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -2200,7 +2234,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                           ),
                         ),
                       ),
-                      autofocus: true,
+                      autofocus: !jeFiksna,
                     ),
                   ],
                 ),

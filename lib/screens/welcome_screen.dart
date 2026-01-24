@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -80,23 +82,33 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     WidgetsBinding.instance.addObserver(this); // Dodano za lifecycle
 
     _setupAnimations();
-    // Inicijalizacija lokalnih notifikacija
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      LocalNotificationService.initialize(context);
-      // 🔐 ZAHTEVAJ SVE DOZVOLE PRI PRVOM POKRETANJU - SVIMA!
-      _requestPermissionsAndCheckLogin();
+
+    // Inicijalizacija bez blokiranja - dajemo aplikaciji vremena da "udahne"
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      _initServicesRecursively();
     });
   }
 
-  /// 🔐 PRVO DOZVOLE, PA ONDA AUTO-LOGIN
-  Future<void> _requestPermissionsAndCheckLogin() async {
-    // 1. Zahtevaj dozvole SVIMA pri prvom pokretanju
-    if (mounted) {
-      await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+  /// 🛠️ Inicijalizacija servisa jedan po jedan, bez agresivnih await-ova
+  Future<void> _initServicesRecursively() async {
+    try {
+      // 1. Notifikacije
+      unawaited(LocalNotificationService.initialize(context));
+
+      // 2. Dozvole (ovo otvara dialog, pa mora biti lagano)
+      if (mounted) {
+        await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+      }
+
+      // 3. Auto-login
+      if (mounted) {
+        _ensureNotificationPermissions();
+        _checkAutoLogin();
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [WelcomeScreen] Init failed: $e');
     }
-    // 2. Zatim proveri auto-login
-    _ensureNotificationPermissions();
-    _checkAutoLogin();
   }
 
   Future<void> _ensureNotificationPermissions() async {

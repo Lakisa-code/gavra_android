@@ -610,7 +610,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ako ostavite prazno, cena se računa automatski (700 RSD radnik, 600 RSD učenik, 600 RSD dnevni).\n• Svi tipovi (Radnik, Učenik, Dnevni): 1 dan sa bar jednim pokupljenjem = 1 vožnja/naplata.',
+                  'Ako ostavite prazno, cena se računa automatski (700 RSD radnik, 600 RSD učenik, 600 RSD dnevni, 500 RSD pošiljka).\n• Pošiljka "ZUBI" ima fiksnu cenu od 300 RSD.\n• Radnik/Učenik: naplata po danu. Dnevni/Pošiljka: naplata po svakom pokupljenju.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12,
