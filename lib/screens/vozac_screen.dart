@@ -32,6 +32,7 @@ import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
 import 'dugovi_screen.dart';
+import 'tranzit_screen.dart';
 import 'welcome_screen.dart';
 
 /// 🚗 VOZAČ SCREEN - Za Ivan-a
@@ -1472,9 +1473,11 @@ class _VozacScreenState extends State<VozacScreen> {
                                 Expanded(
                                   child: InkWell(
                                     onTap: () {
-                                      // Ovde će ići novi ekran sa detaljima
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Uskoro: Detaljan pregled tranzita')),
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => TranzitScreen(currentDriver: _currentDriver!),
+                                        ),
                                       );
                                     },
                                     child: _buildStatBox(
