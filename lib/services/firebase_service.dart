@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_manager.dart';
+import 'firebase_background_handler.dart';
 import 'local_notification_service.dart';
 import 'push_token_service.dart';
 import 'realtime_notification_service.dart';
@@ -13,13 +14,14 @@ class FirebaseService {
   /// Inicijalizuje Firebase
   static Future<void> initialize() async {
     try {
-      // Safe to call from UI code. Request permissions where appropriate.
-      // Note: Background handler is registered in main.dart to avoid duplication.
       if (Firebase.apps.isEmpty) return;
 
       final messaging = FirebaseMessaging.instance;
 
-      // Request notification permission (harmless on Android but useful for iOS)
+      // 🌙 Background Handler Registration
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+      // Request notification permission
       try {
         await messaging.requestPermission();
       } catch (_) {}

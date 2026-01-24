@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
+import '../helpers/gavra_ui.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/cena_obracun_service.dart';
 import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikacije
@@ -310,9 +311,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   // 📅 PROVERA NEDELJNOG RASPODA
   Future<void> _checkWeeklyScheduleReminder() async {
-    // 1. Proveri tip putnika (samo za radnike)
+    // 1. Proveri tip putnika (samo za radnike i ucenike)
     final tip = (_putnikData['tip'] ?? '').toString().toLowerCase();
-    if (!tip.contains('radnik')) {
+    if (!tip.contains('radnik') && !tip.contains('ucenik')) {
       return;
     }
 
@@ -332,29 +333,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
     // Ako je poslednji put prikazano PRE poslednjeg reseta -> prikaži ponovo
     if (lastShownTime.isBefore(lastResetTime) && mounted) {
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.calendar_month, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('📅 Novi raspored'),
-            ],
-          ),
-          content: const Text(
-            'Stigao je novi nedeljni ciklus!\n\n'
+      await GavraUI.showInfoDialog(
+        context,
+        title: '📅 Novi raspored',
+        message: 'Stigao je novi nedeljni ciklus!\n\n'
             'Molimo vas da potvrdite ili ažurirate vaša vremena vožnje za sledeću nedelju, '
             'kako bismo na vreme organizovali prevoz.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('UREDU', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+        icon: Icons.calendar_month,
+        buttonText: 'UREDU',
       );
 
       // 4. Ažuriraj timestamp da ne prikazuje ponovo do sledećeg reset-a
@@ -509,7 +495,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // Izračunaj ukupno zaduženje
       final tipPutnika = _putnikData['tip'] ?? 'radnik';
-      final cenaPoVoznji = CenaObracunService.getDefaultCenaByTip(tipPutnika);
+
+      // 💰 PRIORITET: Koristi custom cenu ako postoji, inače default za tip
+      final double? customCena = (_putnikData['cena_po_danu'] as num?)?.toDouble();
+      final cenaPoVoznji =
+          (customCena != null && customCena > 0) ? customCena : CenaObracunService.getDefaultCenaByTip(tipPutnika);
 
       // 🔧 ISPRAVKA: Umesto COUNT(*) × cenaPoVoznji, koristi SUM(broj_mesta × cenaPoVoznji)
       // Dohvati SVE vožnje sa broj_mesta jednim upitom
@@ -543,9 +533,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // Ukupno plaćeno
       double ukupnoPlaceno = 0;
       for (final p in istorija) {
-        ukupnoPlaceno += (p['iznos'] as double? ?? 0);
+        ukupnoPlaceno += (p['iznos'] as num? ?? 0).toDouble();
       }
 
+      // Finalno zaduženje
       final zaduzenje = ukupnoZaplacanje - ukupnoPlaceno;
 
       setState(() {
@@ -896,18 +887,24 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       if (mounted) {
         final poruka = noviStatus == 'radi'
-            ? '✅ Vraćeni ste na posao'
+            ? 'Vraćeni ste na posao'
             : noviStatus == 'godisnji'
-                ? '🏖️ Postavljeni ste na godišnji odmor'
-                : '🤒 Postavljeni ste na bolovanje';
+                ? 'Postavljeni ste na godišnji odmor'
+                : 'Postavljeni ste na bolovanje';
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(poruka), backgroundColor: noviStatus == 'radi' ? Colors.green : Colors.orange),
+        GavraUI.showSnackBar(
+          context,
+          message: poruka,
+          type: noviStatus == 'radi' ? GavraNotificationType.success : GavraNotificationType.warning,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
+        GavraUI.showSnackBar(
+          context,
+          message: 'Greška: $e',
+          type: GavraNotificationType.error,
+        );
       }
     }
   }
@@ -1431,15 +1428,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                 ),
                                 child: Text(
-                                  (tipPrikazivanja == 'DNEVNI' || tip == 'dnevni')
-                                      ? (tip == 'ucenik'
-                                          ? '📅 Dnevni Učenik'
-                                          : (tip == 'radnik' ? '📅 Dnevni Radnik' : '📅 Dnevni'))
-                                      : (tip == 'ucenik'
-                                          ? '🎓 Učenik'
-                                          : tip == 'posiljka'
-                                              ? '📦 Pošiljka'
-                                              : '💼 Radnik'),
+                                  tip == 'ucenik'
+                                      ? '🎓 Učenik'
+                                      : tip == 'posiljka'
+                                          ? '📦 Pošiljka'
+                                          : tip == 'radnik'
+                                              ? '💼 Radnik'
+                                              : tip == 'dnevni'
+                                                  ? '📅 Dnevni'
+                                                  : '👤 Putnik',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -1825,27 +1822,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // Samo za radnike i učenike
       if (tip.contains('radnik') || tip.contains('ucenik')) {
-        await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.settings_system_daydream, color: Colors.blue),
-                SizedBox(width: 8),
-                Text('Obrada podataka'),
-              ],
-            ),
-            content: const Text(
-                'Svakog petka vršimo sistemsku obradu podataka i održavanje, zbog čega su izmene rasporeda privremeno onemogućene.\n\n'
-                'Ovo je redovan nedeljni proces. Mogućnost zakazivanja termina za narednu nedelju biće ponovo dostupna od subote ujutru.',
-                style: TextStyle(fontSize: 16)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('RAZUMEM', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
+        await GavraUI.showInfoDialog(
+          context,
+          title: 'Obrada podataka',
+          message:
+              'Svakog petka vršimo sistemsku obradu podataka i održavanje, zbog čega su izmene rasporeda privremeno onemogućene.\n\n'
+              'Ovo je redovan nedeljni proces. Mogućnost zakazivanja termina za narednu nedelju biće ponovo dostupna od subote ujutru.',
+          icon: Icons.settings_system_daydream,
         );
         return; // 🛑 PREKINI IZVRŠAVANJE, NE MENJAJ NIŠTA
       }
@@ -2015,15 +1998,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // Prikaži poruku "zahtev primljen"
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '✅ Vaš zahtev je primljen i biće obrađen uskoro',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: Colors.blueGrey,
-                duration: Duration(seconds: 5),
-              ),
+            GavraUI.showSnackBar(
+              context,
+              message: 'Vaš zahtev je primljen i biće obrađen uskoro',
+              type: GavraNotificationType.info,
+              duration: const Duration(seconds: 5),
             );
           }
 
@@ -2056,15 +2035,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           });
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '✅ Vaš zahtev je primljen i trenutno je u obradi',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: Colors.blueGrey,
-                duration: Duration(seconds: 5),
-              ),
+            GavraUI.showSnackBar(
+              context,
+              message: 'Vaš zahtev je primljen i trenutno je u obradi',
+              type: GavraNotificationType.info,
+              duration: const Duration(seconds: 5),
             );
           }
 
@@ -2096,15 +2071,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           });
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 5),
-              ),
+            GavraUI.showSnackBar(
+              context,
+              message:
+                  'Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+              type: GavraNotificationType.success,
+              duration: const Duration(seconds: 5),
             );
           }
 
@@ -2146,17 +2118,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           });
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  jeUTranzitu
-                      ? '🚀 Prioritetna potvrda aktivirana! Rezervisali smo vam mesto za povratak (Tranzit).'
-                      : '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: jeUTranzitu ? Colors.blueAccent : Colors.green,
-                duration: const Duration(seconds: 5),
-              ),
+            GavraUI.showSnackBar(
+              context,
+              message: jeUTranzitu
+                  ? '🚀 Prioritetna potvrda aktivirana! Rezervisali smo vam mesto za povratak (Tranzit).'
+                  : '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+              type: jeUTranzitu ? GavraNotificationType.info : GavraNotificationType.success,
+              duration: const Duration(seconds: 5),
             );
           }
 
@@ -2197,26 +2165,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                   _putnikData['polasci_po_danu'] = mergedPolasci;
                   _putnikData['radni_dani'] = radniDani;
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      '✅ Uspešno sačuvano',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    backgroundColor: Colors.green,
-                  ),
+                GavraUI.showSnackBar(
+                  context,
+                  message: 'Uspešno sačuvano',
+                  type: GavraNotificationType.success,
                 );
               }
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '❌ Greška pri čuvanju: $e',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
+                GavraUI.showSnackBar(
+                  context,
+                  message: '❌ Greška pri čuvanju: $e',
+                  type: GavraNotificationType.error,
                 );
               }
             }
@@ -2228,9 +2188,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        GavraUI.showSnackBar(
           context,
-        ).showSnackBar(SnackBar(content: Text('❌ Greška: $e'), backgroundColor: Colors.red));
+          message: 'Greška: $e',
+          type: GavraNotificationType.error,
+        );
       }
     }
   }

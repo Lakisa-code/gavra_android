@@ -42,17 +42,13 @@ class RealtimeNotificationService {
       if (response.data != null && response.data['success'] == true) {
         return true;
       } else {
-        await LocalNotificationService.showRealtimeNotification(
-            title: title, body: body, payload: jsonEncode(data ?? {}));
+        // 🔕 UKLONJENO: Fallback na lokalnu notifikaciju (korisnik želi isključivo Supabase/Push)
+        // await LocalNotificationService.showRealtimeNotification(
+        //    title: title, body: body, payload: jsonEncode(data ?? {}));
         return false;
       }
     } catch (e) {
-      try {
-        await LocalNotificationService.showRealtimeNotification(
-            title: title, body: body, payload: jsonEncode(data ?? {}));
-      } catch (_) {
-        // Ignoriši greške pri fallback lokalnoj notifikaciji
-      }
+      // 🔕 UKLONJENO: Fallback na lokalnu notifikaciju
       return false;
     }
   }

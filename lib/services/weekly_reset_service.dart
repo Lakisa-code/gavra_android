@@ -108,29 +108,14 @@ class WeeklyResetService {
 
         if (polasci.isEmpty) continue;
 
-        // ODREDI DA LI SE BRIŠE RASPORED (za promenljive putnike)
-        // Radnici zadržavaju raspored, učenici i dnevni kreću ispočetka
-        final shouldClearSchedule = tip == 'ucenik' || tip == 'dnevni';
-
-        // Očisti statuse i otkazivanja za svaki dan
+        // 🧹 RESETUJEMO SVE PUTNIKE (brišu se vremena bc i vs)
         final resetPolasci = <String, dynamic>{};
         for (final dan in polasci.keys) {
-          final danData = polasci[dan] as Map<String, dynamic>? ?? {};
-
-          if (shouldClearSchedule) {
-            // 🧹 ZA UČENIKE I DNEVNE: Brišemo i vremena polazaka
-            resetPolasci[dan] = {
-              'bc': null,
-              'vs': null,
-            };
-          } else {
-            // 👷 ZA RADNIKE: Zadržavamo postojeća vremena
-            resetPolasci[dan] = {
-              'bc': danData['bc'],
-              'vs': danData['vs'],
-              // Briše: bc_status, vs_status, bc_otkazano, vs_otkazano, itd.
-            };
-          }
+          // Brišemo sve: i vremena i statuse i otkazivanja
+          resetPolasci[dan] = {
+            'bc': null,
+            'vs': null,
+          };
         }
 
         // Ažuriraj u bazi

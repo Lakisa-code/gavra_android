@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'local_notification_service.dart';
+import 'realtime_notification_service.dart';
 
 class FuelInventory {
   double litersInStock;
@@ -216,17 +216,23 @@ class MLFinanceAutonomousService extends ChangeNotifier {
     if (_inventory.totalDebt > 1200000) {
       _logAudit(
           'FINANCE_CRITICAL_DEBT', 'Dug: ${_inventory.totalDebt.toStringAsFixed(0)} RSD. Slanje upozorenja adminu.');
-      LocalNotificationService.showNotification(
+
+      // 📲 Prebačeno na Supabase Push (umesto lokalne notifikacije)
+      RealtimeNotificationService.sendNotificationToAdmins(
         title: '🚨 BEBA RAČUNOVOĐA: DUG!',
         body: 'Dug je prešao kritičnu granicu! Trenutno: ${_inventory.totalDebt.toStringAsFixed(0)} RSD.',
+        data: {'type': 'finance_alert', 'sub_type': 'debt'},
       );
     }
 
     if (_inventory.litersInStock < 200) {
       _logAudit('FINANCE_LOW_FUEL', 'Zalihe: ${_inventory.litersInStock.toStringAsFixed(0)}L. Alarm za nabavku.');
-      LocalNotificationService.showNotification(
+
+      // 📲 Prebačeno na Supabase Push
+      RealtimeNotificationService.sendNotificationToAdmins(
         title: '⛽ BEBA RAČUNOVOĐA: GORIVO!',
         body: 'Zalihe su kritično niske (${_inventory.litersInStock.toStringAsFixed(0)}L). Naruči odmah!',
+        data: {'type': 'finance_alert', 'sub_type': 'fuel'},
       );
     }
   }

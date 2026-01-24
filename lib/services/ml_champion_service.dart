@@ -2,7 +2,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'local_notification_service.dart';
+import 'realtime_notification_service.dart';
 
 /// 🏆 MODEL ZA REPUTACIJU PUTNIKA
 class PassengerStats {
@@ -167,9 +167,11 @@ class MLChampionService extends ChangeNotifier {
         'metadata': {'score': _statsMap[msg.passengerId]?.score},
       });
 
-      LocalNotificationService.showNotification(
+      // 📲 Prebačeno na Supabase Push (Adminima ide obaveštenje o akciji autopilota)
+      RealtimeNotificationService.sendNotificationToAdmins(
         title: '🤖 CHAMPION AUTOPILOT',
         body: 'Poslata poruka: ${msg.passengerName}',
+        data: {'type': 'champion_autopilot', 'passenger_id': msg.passengerId},
       );
     } catch (e) {
       if (kDebugMode) print('❌ [Autopilot] Greška: $e');

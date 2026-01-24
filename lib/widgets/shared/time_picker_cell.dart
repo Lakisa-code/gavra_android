@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/route_config.dart';
 import '../../globals.dart';
+import '../../helpers/gavra_ui.dart';
 import '../../services/theme_manager.dart';
 import '../../utils/schedule_utils.dart';
 
@@ -177,30 +178,20 @@ class TimePickerCell extends StatelessWidget {
 
         // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor
         if (isPending) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                '⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 3),
-            ),
+          GavraUI.showSnackBar(
+            context,
+            message: '⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.',
+            type: GavraNotificationType.warning,
           );
           return;
         }
 
         // 🚫 BLOKADA ZA WAITING STATUS - čeka se oslobađanje mesta
         if (isWaiting) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                '⏳ Vaš zahtev je na listi čekanja. Javićemo vam se kada se oslobodi mesto.',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              backgroundColor: Colors.blue,
-              duration: Duration(seconds: 3),
-            ),
+          GavraUI.showSnackBar(
+            context,
+            message: '⏳ Vaš zahtev je na listi čekanja. Javićemo vam se kada se oslobodi mesto.',
+            type: GavraNotificationType.info,
           );
           return;
         }
@@ -212,21 +203,18 @@ class TimePickerCell extends StatelessWidget {
           final dayDate = _getDateForDay();
 
           if (!isDnevniZakazivanjeAktivno) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('⛔ Zakazivanje trenutno nije omogućeno od strane administratora.'),
-                backgroundColor: Colors.redAccent,
-                duration: Duration(seconds: 3),
-              ),
+            GavraUI.showSnackBar(
+              context,
+              message: '⛔ Zakazivanje trenutno nije omogućeno od strane administratora.',
+              type: GavraNotificationType.error,
             );
           } else if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan. Hvala na razumevanju! 🚌'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
+            GavraUI.showSnackBar(
+              context,
+              message:
+                  'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan. Hvala na razumevanju! 🚌',
+              type: GavraNotificationType.warning,
+              duration: const Duration(seconds: 4),
             );
           }
           return;
