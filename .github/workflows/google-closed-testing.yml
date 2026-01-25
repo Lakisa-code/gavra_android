@@ -24,6 +24,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FLUTTER_VERSION: '3.35.6'
+
 jobs:
   build-and-upload:
     name: 🚀 Build & Upload to Google Play
