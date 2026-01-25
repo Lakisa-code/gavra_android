@@ -13,12 +13,13 @@ jobs:
         run: |
           mkdir -p build/app/outputs/bundle/release/
           echo "This is a dummy AAB for auth testing" > build/app/outputs/bundle/release/app-release.aab
+          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 -d > google-service-account.json
 
       - name: Attempt Upload (Auth Check)
         uses: r0adkll/upload-google-play@v1.1.2
         with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          serviceAccountJson: google-service-account.json
           packageName: com.gavra013.gavra_android
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: internal # Use internal to be safe, though it might fail later
-          status: draft # Keep it as draft
+          track: internal 
+          status: draft

@@ -128,6 +128,7 @@ jobs:
           channel: 'stable'
 
       - name: Prepare Secrets (Linux)
+        shell: bash
         env:
           AGC_BASE64: ${{ secrets.AGC_BASE64 }}
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -138,16 +139,19 @@ jobs:
           # 1. Restore agconnect
           mkdir -p android/app
           mkdir -p assets
-          echo "${{ secrets.AGC_BASE64 }}" | base64 -d > android/app/agconnect-services.json
+          echo "${AGC_BASE64}" | base64 -d > android/app/agconnect-services.json
           cp android/app/agconnect-services.json assets/agconnect-services.json
 
           # 2. Restore Keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+          echo "${KEYSTORE_BASE64}" | base64 -d > android/app/upload-keystore.jks
 
           # 3. Create key.properties
           echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          
+          echo "[OK] Secrets configured"
           echo "storeFile=upload-keystore.jks" >> android/key.properties
           
           echo "[OK] Secrets configured"
