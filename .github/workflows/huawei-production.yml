@@ -232,6 +232,8 @@ jobs:
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "client_id: $HUAWEI_CLIENT_ID")
           
+          echo "Debug: UPLOAD_URL_RESPONSE=$UPLOAD_URL_RESPONSE"
+          
           UPLOAD_URL=$(echo "$UPLOAD_URL_RESPONSE" | jq -r '.uploadUrl')
           AUTH_CODE=$(echo "$UPLOAD_URL_RESPONSE" | jq -r '.authCode')
           
