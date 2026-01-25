@@ -100,7 +100,7 @@ jobs:
           echo "storeFile=../gavra-release-key-production.keystore" >> android/key.properties
 
           # 3. Restore Google Play JSON
-          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 -d > android/google-service-account.json
+          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > android/google-service-account.json
 
           # 4. Restore AgConnect (Huawei) - Required for build even if not releasing to Huawei
           mkdir -p android/app

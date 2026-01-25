@@ -1103,11 +1103,11 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     );
   }
 
-  void _showBulkPurchaseDialog(BuildContext context, MLFinanceAutonomousService service) {
+  Future<void> _showBulkPurchaseDialog(BuildContext context, MLFinanceAutonomousService service) async {
     final litersController = TextEditingController();
     final priceController = TextEditingController(text: service.inventory.fuelPrice.toString());
 
-    showDialog<dynamic>(
+    await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
         title: const Text('Nabavka Goriva (Na veliko)'),
@@ -1146,9 +1146,11 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     );
   }
 
-  void _showPaymentDialog(BuildContext context, MLFinanceAutonomousService service) {
+  Future<void> _showPaymentDialog(BuildContext context, MLFinanceAutonomousService service) async {
     final amountController = TextEditingController();
-    showDialog<dynamic>(
+    final noteController = TextEditingController();
+
+    await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
         title: const Text('Isplata Duga'),
@@ -1175,14 +1177,14 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     );
   }
 
-  void _showVanRefillDialog(BuildContext context, MLFinanceAutonomousService service) {
+  Future<void> _showVanRefillDialog(BuildContext context, MLFinanceAutonomousService service) async {
     final litersController = TextEditingController();
     final kmController = TextEditingController();
-    final pumpController = TextEditingController(); // Mehanički brojač na pumpi
+    final pumpController = TextEditingController();
     String? selectedVehicleId;
     String? selectedVehicleName;
 
-    showDialog<dynamic>(
+    await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -1254,11 +1256,11 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     );
   }
 
-  void _showCalibrationDialog(BuildContext context, MLFinanceAutonomousService service) {
+  Future<void> _showCalibrationDialog(BuildContext context, MLFinanceAutonomousService service) async {
     final litersController = TextEditingController(text: service.inventory.litersInStock.toString());
     final debtController = TextEditingController(text: service.inventory.totalDebt.toString());
 
-    showDialog<dynamic>(
+    await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
         title: const Row(
