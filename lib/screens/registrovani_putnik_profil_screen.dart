@@ -51,6 +51,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   final Map<String, Set<String>> _otkazivanjaDetaljno = {}; // mesec -> set jedinstvenih datuma otkazivanja
   final Map<String, int> _brojMestaPoVoznji = {}; // datum -> broj_mesta (za tačan obračun)
   double _ukupnoZaduzenje = 0.0; // ukupno zaduženje za celu godinu
+  double _cenaPoVoznji = 0.0; // 💰 Cena po vožnji/danu
   String? _adresaBC; // BC adresa
   String? _adresaVS; // VS adresa
 
@@ -551,6 +552,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         _brojMestaPoVoznji.clear();
         _brojMestaPoVoznji.addAll(brojMestaPoVoznji);
         _ukupnoZaduzenje = zaduzenje;
+        _cenaPoVoznji = cenaPoVoznji;
         _adresaBC = adresaBcNaziv;
         _adresaVS = adresaVsNaziv;
         _putnikLat = putnikLat;
@@ -1616,6 +1618,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          if (_cenaPoVoznji > 0) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Cena: ${_cenaPoVoznji.toStringAsFixed(0)} RSD / ${tip.toLowerCase() == 'radnik' || tip.toLowerCase() == 'ucenik' ? 'dan' : 'vožnja'}',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                fontSize: 10,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../globals.dart';
+import '../services/cena_obracun_service.dart';
 import '../services/registrovani_putnik_service.dart';
 
 /// 📊 Helper za prikazivanje detaljnih statistika putnika
@@ -281,7 +282,7 @@ class PutnikStatistikeHelper {
         const SizedBox(height: 16),
 
         // 💰 FINANSIJSKE INFORMACIJE
-        _buildFinancialSection(putnikId, tip),
+        _buildFinancialSection(putnikId, tip, stats['cena_po_danu']),
 
         const SizedBox(height: 16),
 
@@ -366,7 +367,7 @@ class PutnikStatistikeHelper {
     );
   }
 
-  static Widget _buildFinancialSection(String putnikId, String tip) {
+  static Widget _buildFinancialSection(String putnikId, String tip, dynamic customCena) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -387,6 +388,27 @@ class PutnikStatistikeHelper {
             ),
           ),
           const SizedBox(height: 8),
+          // 💰 PRIKAZ CENE PO DANU
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '🏷️ Vaša cena:',
+                style: TextStyle(
+                  color: Colors.green[900],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '${(customCena != null && customCena > 0) ? (customCena as num).toStringAsFixed(0) : CenaObracunService.getDefaultCenaByTip(tip).toStringAsFixed(0)} RSD / ${tip.toLowerCase() == 'radnik' || tip.toLowerCase() == 'ucenik' ? 'dan' : 'vožnja'}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const Divider(),
           // 🔥 REALTIME: Datum, iznos i vozač poslednjeg plaćanja
           StreamBuilder<Map<String, dynamic>?>(
             stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnikId),
@@ -572,7 +594,9 @@ class PutnikStatistikeHelper {
 
   static Future<Map<String, dynamic>> _getStatistikeForPeriod(String putnikId, String period, String tipPutnika) async {
     try {
+      final RegistrovaniPutnikService service = RegistrovaniPutnikService();
       final placeniMeseci = await _getPlaceniMeseci(putnikId);
+      final putnikObj = await service.getRegistrovaniPutnikById(putnikId);
 
       Map<String, dynamic> stats = {};
 
@@ -597,6 +621,7 @@ class PutnikStatistikeHelper {
 
       if (stats.isEmpty) stats = _emptyStats();
       stats['placeniMeseci'] = placeniMeseci;
+      stats['cena_po_danu'] = putnikObj?.cenaPoDanu;
       return stats;
     } catch (e) {
       return {'error': true, ..._emptyStats()};

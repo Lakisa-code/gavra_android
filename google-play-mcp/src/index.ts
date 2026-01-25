@@ -6,25 +6,50 @@ import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import * as dotenv from "dotenv";
 import * as fs from "fs";
 import { google } from "googleapis";
 import { Logger } from "./logger.js";
 
+// Load environment variables from .env file
+dotenv.config();
+
 const logger = new Logger('google-play-mcp');
 
-const PACKAGE_NAME = process.env.GOOGLE_PLAY_PACKAGE_NAME;
+const PACKAGE_NAME = process.env.GOOGLE_PLAY_PACKAGE_NAME || 'com.gavra013.gavra_android';
 
 // Support both: direct JSON string OR path to JSON file
 let SERVICE_ACCOUNT_KEY = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY;
 
-if (!SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
+// Fallback search paths for service account key
+const fallbackPaths = [
+    process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH,
+    'C:/Users/Bojan/gavra_android/AI BACKUP/secrets/google/play-store-key.json',
+    './play-store-key.json',
+    '../play-store-key.json'
+];
+
+if (!SERVICE_ACCOUNT_KEY) {
+    for (const p of fallbackPaths) {
+        if (p && fs.existsSync(p)) {
+            try {
+                SERVICE_ACCOUNT_KEY = fs.readFileSync(p, "utf8");
+                logger.info(`Loaded service account key from file: ${p}`);
+                break;
+            } catch (err) {
+                logger.error(`Failed to read service account key from file: ${p}`);
+            }
+        }
+    }
+}
+
+// Handle Base64 encoded key (common in CI/CD)
+if (SERVICE_ACCOUNT_KEY && !SERVICE_ACCOUNT_KEY.trim().startsWith('{')) {
     try {
-        SERVICE_ACCOUNT_KEY = fs.readFileSync(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH, "utf8");
-        logger.info(`Loaded service account key from file: ${process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH}`);
+        SERVICE_ACCOUNT_KEY = Buffer.from(SERVICE_ACCOUNT_KEY, 'base64').toString('utf8');
+        logger.info('Decoded service account key from Base64');
     } catch (err) {
-        logger.error(`Failed to read service account key from file: ${process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH}`);
-        logger.error(String(err));
-        process.exit(1);
+        logger.error('Failed to decode SERVICE_ACCOUNT_KEY from Base64');
     }
 }
 
@@ -35,12 +60,18 @@ if (!PACKAGE_NAME) {
 }
 
 if (!SERVICE_ACCOUNT_KEY) {
-    logger.error('Missing required environment variable: GOOGLE_PLAY_SERVICE_ACCOUNT_KEY or GOOGLE_SERVICE_ACCOUNT_KEY_PATH');
-    logger.error('Set either the JSON string directly OR provide a path to the JSON file');
+    logger.error('Missing required service account key. Set GOOGLE_PLAY_SERVICE_ACCOUNT_KEY (JSON or Base64) or GOOGLE_SERVICE_ACCOUNT_KEY_PATH');
     process.exit(1);
 }
 
-logger.info('Google Play credentials loaded successfully');
+// Validate JSON
+try {
+    JSON.parse(SERVICE_ACCOUNT_KEY);
+    logger.info('Google Play credentials validated successfully');
+} catch (err) {
+    logger.error('SERVICE_ACCOUNT_KEY is not valid JSON');
+    process.exit(1);
+}
 
 interface TrackRelease {
     name?: string | null;
