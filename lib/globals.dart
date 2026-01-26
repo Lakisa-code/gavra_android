@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -23,7 +24,11 @@ bool get isSupabaseReady {
   try {
     Supabase.instance.client;
     return true;
-  } catch (_) {
+  } catch (e) {
+    if (kDebugMode) {
+      // Izbegavamo previše spama ali logujemo problem jednom
+      debugPrint('⚠️ [Globals] Supabase client NOT ready: $e');
+    }
     return false;
   }
 }

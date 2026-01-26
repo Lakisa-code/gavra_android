@@ -37,7 +37,7 @@ import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 void main() async {
   // 🚀 TRENUTNO POKRETANJE
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   if (kDebugMode) debugPrint('🚀 [Main] App starting...');
 
   // 1. Pokreni UI odmah
@@ -60,15 +60,32 @@ Future<void> _doStartupTasks() async {
   // 🌍 LOCALE
   unawaited(initializeDateFormatting('sr_RS', null));
 
-  // 🌐 SUPABASE - Pokušaj brzo, ali ne čekaj duže od 2 sekunde
-  try {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-    ).timeout(const Duration(seconds: 2));
-    if (kDebugMode) debugPrint('✅ [Main] Supabase initialized');
-  } catch (e) {
-    if (kDebugMode) debugPrint('⚠️ [Main] Supabase init timeout/error: $e');
+  // 🌐 SUPABASE - Robustna inicijalizacija sa retry mehanizmom
+  bool initialized = false;
+  int attempts = 0;
+  while (!initialized && attempts < 3) {
+    try {
+      attempts++;
+      // Proveri da li je već inicijalizovan (npr. iz background isolata ili hot restarta)
+      if (isSupabaseReady) {
+        initialized = true;
+        if (kDebugMode) debugPrint('✅ [Main] Supabase already initialized');
+        break;
+      }
+
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+      ).timeout(const Duration(seconds: 10)); // Povećan timeout na 10s
+
+      initialized = true;
+      if (kDebugMode) debugPrint('✅ [Main] Supabase initialized (Attempt $attempts)');
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Main] Supabase init attempt $attempts failed: $e');
+      if (attempts < 3) {
+        await Future.delayed(Duration(seconds: attempts)); // Exponential backoff ekvivalent
+      }
+    }
   }
 
   // 🔥 SVE OSTALO POKRENI ISTOVREMENO (Paralelno)
@@ -80,10 +97,9 @@ Future<void> _doStartupTasks() async {
 Future<void> _initPushSystems() async {
   try {
     // Provera GMS-a sa kratkim timeoutom
-    final availability = await GoogleApiAvailability.instance
-        .checkGooglePlayServicesAvailability()
-        .timeout(const Duration(seconds: 2));
-    
+    final availability =
+        await GoogleApiAvailability.instance.checkGooglePlayServicesAvailability().timeout(const Duration(seconds: 2));
+
     if (availability == GooglePlayServicesAvailability.success) {
       if (kDebugMode) debugPrint('📲 [Main] Detected GMS (Google)');
       await Firebase.initializeApp().timeout(const Duration(seconds: 5));
@@ -124,7 +140,7 @@ Future<void> _initAppServices() async {
   unawaited(PutnikService().checkAndPerformWeeklyReset());
   unawaited(PaymentReminderService.checkAndSendReminders());
   unawaited(WeatherAlertService.checkAndSendWeatherAlerts());
-  
+
   unawaited(MLVehicleAutonomousService().start());
   unawaited(MLDispatchAutonomousService().start());
   unawaited(MLChampionService().start());

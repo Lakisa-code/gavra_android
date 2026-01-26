@@ -48,6 +48,12 @@ class MLVehicleAutonomousService extends ChangeNotifier {
     targets['fuel_efficiency'] = MonitoringTarget(id: 'Potrošnja', reason: 'Anomalije u gorivu', importance: 0.85);
     targets['maintenance'] = MonitoringTarget(id: 'Servis', reason: 'Predviđanje kvarova', importance: 0.7);
 
+    // ✅ NOVO: Vizuelna potvrda da beba prati akcije
+    targets['passenger_actions'] =
+        MonitoringTarget(id: 'Putnici (Live)', reason: 'Skeniranje aktivnosti putnika', importance: 0.9);
+    targets['driver_actions'] =
+        MonitoringTarget(id: 'Vozači (Live)', reason: 'Praćenje rada i realizacije', importance: 0.9);
+
     // Dinamički dodajemo ono što je beba otkrila
     final tables = (_learnedPatterns['discovered_tables'] as List?)?.cast<String>() ?? [];
     for (var table in tables) {

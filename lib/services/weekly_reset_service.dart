@@ -108,13 +108,15 @@ class WeeklyResetService {
 
         if (polasci.isEmpty) continue;
 
-        // 🧹 RESETUJEMO SVE PUTNIKE (brišu se vremena bc i vs)
+        // 🧹 RESETUJEMO STATUS I OTKAZIVANJA, ALI ZADRŽAVAMO VREMENA (BC i VS)
         final resetPolasci = <String, dynamic>{};
         for (final dan in polasci.keys) {
-          // Brišemo sve: i vremena i statuse i otkazivanja
+          final danData = polasci[dan] as Map<String, dynamic>? ?? {};
+
+          // Zadržavamo postojeća vremena polazaka, resetujemo sve ostalo (statuse, otkazano...)
           resetPolasci[dan] = {
-            'bc': null,
-            'vs': null,
+            'bc': danData['bc'],
+            'vs': danData['vs'],
           };
         }
 

@@ -261,9 +261,9 @@ class RegistrovaniPutnik {
       // vreme_placanja, pokupljen, placeno - sada u voznje_log
     };
 
-    // Dodaj id samo ako nije prazan (za UPDATE operacije)
+    // Dodaj id samo ako nije prazan i NIJE fallback-uuid (za UPDATE operacije)
     // Za INSERT operacije, ostavi id da baza generiše UUID
-    if (id.isNotEmpty) {
+    if (id.isNotEmpty && !id.startsWith('fallback-uuid-')) {
       result['id'] = id;
     }
 

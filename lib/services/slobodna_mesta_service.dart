@@ -60,12 +60,18 @@ class SlobodnaMestaService {
   static final _putnikService = PutnikService();
 
   /// Izračunaj broj zauzetih mesta za određeni grad/vreme/datum
-  static int _countPutniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate) {
+  static int _countPutniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
+      {String? excludePutnikId}) {
     final normalizedGrad = grad.toLowerCase();
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
     for (final p in putnici) {
+      // 🛡️ AKO RADIMO UPDATE: Isključi putnika koga menjamo da ne bi sam sebi zauzimao mesto
+      if (excludePutnikId != null && p.id?.toString() == excludePutnikId.toString()) {
+        continue;
+      }
+
       // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
       // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
       if (!PutnikHelpers.shouldCountInSeats(p)) continue;
@@ -83,7 +89,7 @@ class SlobodnaMestaService {
       final jeVS = GradAdresaValidator.isVrsac(p.grad);
 
       if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
-        // ✅ FIX: Broji broj mesta (brojMesta), ne samo broj putnika
+        // ✅ NOVO: Brojimo sve putnike bez obzira na grad (BC i VS sada rade isto)
         count += p.brojMesta;
       }
     }
@@ -92,12 +98,17 @@ class SlobodnaMestaService {
   }
 
   /// 🆕 Izračunaj broj putnika na CEKANJU za određeni grad/vreme
-  static int _countWaitingZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate) {
+  static int _countWaitingZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
+      {String? excludePutnikId}) {
     final normalizedGrad = grad.toLowerCase();
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
     for (final p in putnici) {
+      if (excludePutnikId != null && p.id?.toString() == excludePutnikId.toString()) {
+        continue;
+      }
+
       // 🆕 Brojimo SAMO one koji su na čekanju
       if (p.status != 'ceka_mesto') continue;
 
@@ -122,12 +133,17 @@ class SlobodnaMestaService {
   }
 
   /// 🆕 Izračunaj broj UČENIKA za određeni grad/vreme
-  static int _countUceniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate) {
+  static int _countUceniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
+      {String? excludePutnikId}) {
     final normalizedGrad = grad.toLowerCase();
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
     for (final p in putnici) {
+      if (excludePutnikId != null && p.id?.toString() == excludePutnikId.toString()) {
+        continue;
+      }
+
       // 🔧 Isti filteri kao za putnike (bez otkazanih, itd)
       if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
@@ -165,60 +181,50 @@ class SlobodnaMestaService {
     }
   }
 
-  /// Konvertuj ISO datum u pun naziv dana
-  static String _isoDateToDayName(String isoDate) {
-    try {
-      final date = DateTime.parse(isoDate);
-      const dani = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
-      return dani[date.weekday - 1];
-    } catch (e) {
-      return 'Ponedeljak';
-    }
-  }
-
   /// Jednokratno dohvatanje slobodnih mesta
-  static Future<Map<String, List<SlobodnaMesta>>> getSlobodnaMesta({String? datum}) async {
+  static Future<Map<String, List<SlobodnaMesta>>> getSlobodnaMesta({String? datum, String? excludeId}) async {
     final isoDate = datum ?? DateTime.now().toIso8601String().split('T')[0];
 
     // Dohvati kapacitet
     final kapacitet = await KapacitetService.getKapacitet();
 
-    // Dohvati putnike
-    final danName = _isoDateToDayName(isoDate);
-    final putnici = await _putnikService.getAllPutnici(targetDay: danName);
+    // Dohvati putnike - KORISTI getPutniciByDayIso koji proverava uklonjeni_termini i otkazivanja
+    final putnici = await _putnikService.getPutniciByDayIso(isoDate);
 
     final result = <String, List<SlobodnaMesta>>{'BC': [], 'VS': []};
 
-    // Bela Crkva
-    for (final vreme in KapacitetService.bcVremena) {
-      final maxMesta = kapacitet['BC']?[vreme] ?? 8;
-      final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate);
-      final waiting = _countWaitingZaPolazak(putnici, 'BC', vreme, isoDate);
-      final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate); // 🆕
+    // Bela Crkva - Koristi SVA vremena iz kapaciteta (ne samo sezonska) za validaciju
+    final bcKapaciteti = kapacitet['BC'] ?? {};
+    final bcVremenaSorted = bcKapaciteti.keys.toList()..sort();
 
-      // 🎓 BC LOGIKA: Učenici se ne broje u standardni kapacitet (vidi BC LOGIKA.md).
-      // Kapacitet (maxMesta) za BC se odnosi na radnike i dnevne putnike.
-      final regularnoZauzeto = (zauzeto - ucenici).clamp(0, zauzeto);
+    for (final vreme in bcVremenaSorted) {
+      final maxMesta = bcKapaciteti[vreme] ?? 8;
+      final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludeId);
+      final waiting = _countWaitingZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludeId);
+      final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludeId);
 
       result['BC']!.add(
         SlobodnaMesta(
           grad: 'BC',
           vreme: vreme,
           maxMesta: maxMesta,
-          zauzetaMesta: regularnoZauzeto,
+          zauzetaMesta: zauzeto,
           aktivan: true,
           waitingCount: waiting,
-          uceniciCount: ucenici, // 🆕
+          uceniciCount: ucenici,
         ),
       );
     }
 
-    // Vršac
-    for (final vreme in KapacitetService.vsVremena) {
-      final maxMesta = kapacitet['VS']?[vreme] ?? 8;
-      final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate);
-      final waiting = _countWaitingZaPolazak(putnici, 'VS', vreme, isoDate);
-      final ucenici = _countUceniciZaPolazak(putnici, 'VS', vreme, isoDate); // 🆕
+    // Vršac - Koristi SVA vremena iz kapaciteta
+    final vsKapaciteti = kapacitet['VS'] ?? {};
+    final vsVremenaSorted = vsKapaciteti.keys.toList()..sort();
+
+    for (final vreme in vsVremenaSorted) {
+      final maxMesta = vsKapaciteti[vreme] ?? 8;
+      final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludeId);
+      final waiting = _countWaitingZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludeId);
+      final ucenici = _countUceniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludeId);
 
       result['VS']!.add(
         SlobodnaMesta(
@@ -228,7 +234,7 @@ class SlobodnaMestaService {
           zauzetaMesta: zauzeto,
           aktivan: true,
           waitingCount: waiting,
-          uceniciCount: ucenici, // 🆕
+          uceniciCount: ucenici,
         ),
       );
     }
@@ -238,13 +244,14 @@ class SlobodnaMestaService {
 
   /// Proveri da li ima slobodnih mesta za određeni polazak
   static Future<bool> imaSlobodnihMesta(String grad, String vreme,
-      {String? datum, String? tipPutnika, int brojMesta = 1}) async {
-    // 🎓 BC LOGIKA: Učenici se u Beloj Crkvi uvek primaju (oni su extra / ne zauzimaju radnicima mesta)
+      {String? datum, String? tipPutnika, int brojMesta = 1, String? excludeId}) async {
+    // 🎓 BC LOGIKA: Učenici u Beloj Crkvi se auto-prihvataju (bez provere kapaciteta)
+    // prema pravilima iz BC LOGIKA.md (za prvi zahtev do 16h).
     if (grad.toUpperCase() == 'BC' && tipPutnika == 'ucenik') {
       return true;
     }
 
-    final slobodna = await getSlobodnaMesta(datum: datum);
+    final slobodna = await getSlobodnaMesta(datum: datum, excludeId: excludeId);
     final lista = slobodna[grad.toUpperCase()];
     if (lista == null) return false;
 
@@ -316,9 +323,9 @@ class SlobodnaMestaService {
       // 🎓 OGRANIČENJA ZA UČENIKE
       // ═══════════════════════════════════════════════════════════════
       if (tipPutnika == 'ucenik') {
-        final limitSati = 24; // TESTIRANJE: Bilo 16
+        final limitSati = 16; // ✅ Vraćeno na 16h prema BC LOGIKA.md
 
-        // 1. Provera roka (do 16h / 24h) za buduće dane
+        // 1. Provera roka (do 16h) za buduće dane
         if (sada.hour < limitSati && !jeZaDanas) {
           // Prihvati bez provere kapaceta
           performCapacityCheck = false;

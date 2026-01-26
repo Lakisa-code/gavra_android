@@ -211,6 +211,7 @@ class RacunService {
   static Future<void> stampajRacuneZaFirme({
     required List<Map<String, dynamic>> racuniPodaci,
     required BuildContext context,
+    DateTime? datumPrometa,
   }) async {
     if (racuniPodaci.isEmpty) {
       if (context.mounted) {
@@ -226,7 +227,8 @@ class RacunService {
       await _loadFonts();
 
       final pdf = pw.Document();
-      final mesec = DateFormat('MMMM yyyy', 'sr_Latn').format(DateTime.now());
+      final obracunskiDatum = datumPrometa ?? DateTime.now();
+      final mesecStr = DateFormat('MMMM yyyy', 'sr_Latn').format(obracunskiDatum);
 
       for (final podaci in racuniPodaci) {
         final putnik = podaci['putnik'];
@@ -243,10 +245,11 @@ class RacunService {
           firmaZiro: putnik.firmaZiro ?? '',
           firmaAdresa: putnik.firmaAdresa ?? '',
           putnikIme: putnik.putnikIme,
-          opisUsluge: 'Prevoz putnika za $mesec',
+          opisUsluge: 'Prevoz putnika za $mesecStr',
           cenaPoDanu: cenaPoDanu,
           brojDana: brojDana,
           ukupno: ukupno,
+          datumPrometa: obracunskiDatum,
         );
 
         pdf.addPage(stranica);
@@ -290,10 +293,11 @@ class RacunService {
     required double cenaPoDanu,
     required int brojDana,
     required double ukupno,
-    String? mesecZaPlacanje,
+    DateTime? datumPrometa,
   }) async {
+    final referentniDatum = datumPrometa ?? DateTime.now();
     final danas = DateFormat('dd.MM.yyyy').format(DateTime.now());
-    final mesec = mesecZaPlacanje ?? DateFormat('MMMM yyyy', 'sr_Latn').format(DateTime.now());
+    final datumPrometaStr = DateFormat('dd.MM.yyyy').format(referentniDatum);
 
     // Kreiraj temu sa fontovima koji podržavaju srpska slova
     final theme = pw.ThemeData.withFont(
@@ -338,7 +342,7 @@ class RacunService {
             ),
             pw.SizedBox(height: 4),
             pw.Center(
-              child: pw.Text('za mesec: $mesec',
+              child: pw.Text('za mesec: ${DateFormat('MMMM yyyy', 'sr_Latn').format(referentniDatum)}',
                   style: pw.TextStyle(fontSize: 12, fontStyle: pw.FontStyle.italic, color: PdfColors.grey700)),
             ),
 
@@ -347,7 +351,7 @@ class RacunService {
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 pw.Text('Datum izdavanja: $danas', style: const pw.TextStyle(fontSize: 11)),
-                pw.Text('Datum prometa: $danas', style: const pw.TextStyle(fontSize: 11)),
+                pw.Text('Datum prometa: $datumPrometaStr', style: const pw.TextStyle(fontSize: 11)),
               ],
             ),
 

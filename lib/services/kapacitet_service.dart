@@ -107,8 +107,11 @@ class KapacitetService {
       // Popuni iz baze
       for (final row in response as List) {
         final grad = row['grad'] as String;
-        final vreme = row['vreme'] as String;
+        final rawVreme = row['vreme'] as String;
         final maxMesta = row['max_mesta'] as int;
+
+        // ✅ NORMALIZUJ VREME iz baze (osigurava konzistentnost sa RouteConfig)
+        final vreme = GradAdresaValidator.normalizeTime(rawVreme);
 
         if (result.containsKey(grad)) {
           result[grad]![vreme] = maxMesta;
@@ -146,10 +149,11 @@ class KapacitetService {
       // 🚀 PAYLOAD FILTERING: Ažuriraj cache direktno ako je moguće
       if (payload.eventType == PostgresChangeEvent.update || payload.eventType == PostgresChangeEvent.insert) {
         final grad = payload.newRecord['grad'] as String?;
-        final vreme = payload.newRecord['vreme'] as String?;
+        final rawVreme = payload.newRecord['vreme'] as String?;
         final maxMesta = payload.newRecord['max_mesta'] as int?;
 
-        if (grad != null && vreme != null && maxMesta != null && _kapacitetCache != null) {
+        if (grad != null && rawVreme != null && maxMesta != null && _kapacitetCache != null) {
+          final vreme = GradAdresaValidator.normalizeTime(rawVreme);
           if (_kapacitetCache!.containsKey(grad)) {
             _kapacitetCache![grad]![vreme] = maxMesta;
             if (!controller.isClosed) {
@@ -258,7 +262,10 @@ class KapacitetService {
       return 8;
     }
 
-    return _kapacitetCache![gradKey]?[vreme] ?? 8;
+    // ✅ NORMALIZUJ VREME za lookup (osigurava da se npr. "5:00" iz UI match-uje sa "05:00" u cache-u)
+    final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
+
+    return _kapacitetCache![gradKey]?[normalizedVreme] ?? 8;
   }
 
   /// Osiguraj da je cache popunjen (pozovi na inicijalizaciji)
@@ -286,11 +293,12 @@ class KapacitetService {
       // Ažuriraj cache direktno za performanse
       if (payload.eventType == PostgresChangeEvent.update || payload.eventType == PostgresChangeEvent.insert) {
         final grad = payload.newRecord['grad'] as String?;
-        final vreme = payload.newRecord['vreme'] as String?;
+        final rawVreme = payload.newRecord['vreme'] as String?;
         final maxMesta = payload.newRecord['max_mesta'] as int?;
         final aktivan = payload.newRecord['aktivan'] as bool? ?? true;
 
-        if (grad != null && vreme != null && maxMesta != null && _kapacitetCache != null) {
+        if (grad != null && rawVreme != null && maxMesta != null && _kapacitetCache != null) {
+          final vreme = GradAdresaValidator.normalizeTime(rawVreme);
           if (_kapacitetCache!.containsKey(grad)) {
             if (aktivan) {
               _kapacitetCache![grad]![vreme] = maxMesta;

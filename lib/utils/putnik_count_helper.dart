@@ -73,8 +73,14 @@ class PutnikCountHelper {
       final jeBelaCrkva = GradAdresaValidator.isBelaCrkva(p.grad);
       final jeVrsac = GradAdresaValidator.isVrsac(p.grad);
 
+      // 🎓 BC LOGIKA: Učenici se ne broje u standardni kapacitet polaska za Belu Crkvu
+      // (Subvencionisani od strane opštine, idu kao "ekstra" kapacitet)
+      final bool jeBCUcenik = jeBelaCrkva && p.tipPutnika == 'ucenik';
+
       if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
-        brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
+        if (!jeBCUcenik) {
+          brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
+        }
       }
       if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
         brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;

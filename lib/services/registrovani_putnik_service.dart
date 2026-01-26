@@ -236,7 +236,7 @@ class RegistrovaniPutnikService {
   /// 🚫 Validira da ima slobodnih mesta za sve termine putnika
   /// Prima raw polasci_po_danu map iz baze (format: { "pon": { "bc": "8:00", "vs": null }, ... })
   Future<void> _validateKapacitetForRawPolasci(Map<String, dynamic> polasciPoDanu,
-      {int brojMesta = 1, String? tipPutnika}) async {
+      {int brojMesta = 1, String? tipPutnika, String? excludeId}) async {
     if (polasciPoDanu.isEmpty) return;
 
     final danas = DateTime.now();
@@ -260,7 +260,7 @@ class RegistrovaniPutnikService {
 
         final normalizedVreme = GradAdresaValidator.normalizeTime(bcVreme);
         final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('BC', normalizedVreme,
-            datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta);
+            datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta, excludeId: excludeId);
         if (!imaMesta) {
           final danPunoIme = _getDanPunoIme(danKratica);
           throw Exception(
@@ -284,7 +284,7 @@ class RegistrovaniPutnikService {
 
         final normalizedVreme = GradAdresaValidator.normalizeTime(vsVreme);
         final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('VS', normalizedVreme,
-            datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta);
+            datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta, excludeId: excludeId);
         if (!imaMesta) {
           final danPunoIme = _getDanPunoIme(danKratica);
           throw Exception(
@@ -412,7 +412,7 @@ class RegistrovaniPutnikService {
 
         // Direktno koristi raw polasci_po_danu map za validaciju
         await _validateKapacitetForRawPolasci(Map<String, dynamic>.from(polasciPoDanu),
-            brojMesta: bm is num ? bm.toInt() : 1, tipPutnika: t?.toString().toLowerCase());
+            brojMesta: bm is num ? bm.toInt() : 1, tipPutnika: t?.toString().toLowerCase(), excludeId: id);
       }
     }
 

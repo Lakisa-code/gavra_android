@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../globals.dart';
@@ -60,6 +61,12 @@ class RealtimeManager {
   /// Vraća Stream koji emituje PostgresChangePayload pri svakoj promeni.
   /// Više listenera može slušati isti stream - deli se isti channel.
   Stream<PostgresChangePayload> subscribe(String table) {
+    // 🛡️ Provera pre pretplate
+    if (!isSupabaseReady) {
+      if (kDebugMode) debugPrint('❌ [RealtimeManager] Cannot subscribe to $table: Supabase not ready');
+      return const Stream.empty();
+    }
+
     _listenerCount[table] = (_listenerCount[table] ?? 0) + 1;
 
     if (!_controllers.containsKey(table) || _controllers[table]!.isClosed) {

@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import '../utils/grad_adresa_validator.dart';
+import 'kapacitet_service.dart';
 
 ///  BEBA DISPEČER (ML Dispatch Autonomous Service)
 ///
@@ -161,9 +163,9 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   Future<void> _executeAutopilotActions() async {
     for (var advice in _currentAdvice) {
       if (advice.priority == AdvicePriority.critical) {
-        if (kDebugMode) print(' [Autopilot] REŠAVAM KRITIČNO: ');
+        if (kDebugMode) print(' [Autopilot] REŠAVAM KRITIČNO: ${advice.title}');
         if (advice.title.contains('Preopterećenje')) {
-          await _sendAutonomousAlert('Potreban rezervni kombi za ');
+          await _sendAutonomousAlert('Potreban rezervni kombi za: ${advice.description}');
         }
       }
     }
@@ -201,10 +203,15 @@ class MLDispatchAutonomousService extends ChangeNotifier {
           for (var gradCode in ['bc', 'vs']) {
             String? vreme = dayData[gradCode]?.toString();
             if (vreme == null || vreme == 'null') continue;
-            String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
+
+            // ✅ NORMALIZUJ VREME za ML analizu
+            String normTime = GradAdresaValidator.normalizeTime(vreme);
             String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
 
-            final key = '_';
+            // NOVO: Đaci se sada uvek broje u kapacitetu (i za BC),
+            // jer je korisnik tražio "Mesto je Mesto" i za BC u smislu prikaza/upozorenja.
+
+            final key = '${grad}_$normTime'; // 🎯 FIX: Grupiši po terminu, ne globalno
             demandMap.putIfAbsent(key, () => []).add(p['id'].toString());
 
             final String? vozac = dayData['__vozac']?.toString() ?? dayData['_vozac']?.toString();
@@ -215,19 +222,33 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         }
       }
 
-      demandMap.forEach((key, passengers) {
-        int count = passengers.length;
-        int drivers = driverMap[key]?.length ?? 1;
+      for (var entry in demandMap.entries) {
+        final key = entry.key;
+        final passengers = entry.value;
 
-        if (count > (drivers * 8)) {
+        int count = passengers.length;
+        int driversCount = driverMap[key]?.length ?? 1;
+
+        // 🏙️ Odredi grad i vreme za lookup kapaciteta
+        final parts = key.split('_');
+        final gradIme = parts[0];
+        final vremeVrednost = parts[1];
+        final gradKod = GradAdresaValidator.isBelaCrkva(gradIme) ? 'BC' : 'VS';
+
+        // 🎫 Učitaj stvarni kapacitet iz KapacitetService (sinhrono iz cache-a)
+        final int baseKapacitet = KapacitetService.getKapacitetSync(gradKod, vremeVrednost);
+        final int totalKapacitet = driversCount * baseKapacitet;
+
+        if (count > totalKapacitet) {
           _currentAdvice.add(DispatchAdvice(
-            title: ' TATA, TATA! (Preopterećenje)',
-            description: 'U terminu  ima  putnika na  van-a. Kapacitet premašen!',
+            title: ' 🚨 TATA, TATA! (Preopterećenje)',
+            description:
+                'U terminu $gradIme $vremeVrednost ima $count putnika na $driversCount van-a (kapacitet: $totalKapacitet). Kapacitet premašen!',
             priority: AdvicePriority.critical,
             action: 'Dodaj vozilo',
           ));
         }
-      });
+      }
     } catch (e) {
       if (kDebugMode) print(' [ML Dispatch] Overflow error: ');
     }
@@ -262,7 +283,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
             String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
             String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
 
-            final key = '_';
+            final key = '${grad}_$normTime'; // 🎯 FIX: Grupiši po terminu
             demandMap.putIfAbsent(key, () => []).add(p['id'].toString());
           }
         }
@@ -284,11 +305,12 @@ class MLDispatchAutonomousService extends ChangeNotifier {
           int totalCount = demandMap[keyA]!.length + demandMap[keyB]!.length;
           if (totalCount <= 8) {
             _currentAdvice.add(DispatchAdvice(
-              title: 'PRILIKA ZA SPAJANJE',
-              description: 'Termini  i  imaju ukupno  putnika. Može jedan van.',
+              title: '💡 PRILIKA ZA SPAJANJE',
+              description:
+                  'Termini ${keyA.split('_')[1]} i ${keyB.split('_')[1]} ($gradA) imaju ukupno $totalCount putnika. Može jedan van.',
               priority: AdvicePriority.smart,
               action: 'Spoji rute',
-              proposedChange: 'Spoji u ',
+              proposedChange: 'Spoji $keyA u $keyB',
             ));
           }
         }
@@ -329,9 +351,10 @@ class MLDispatchAutonomousService extends ChangeNotifier {
             String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
             String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
 
+            final key = '${grad}_$normTime'; // 🎯 FIX: Grupiši po terminu
             final String? vozac = dayData['__vozac']?.toString() ?? dayData['_vozac']?.toString();
             if (vozac != null && vozac != 'null') {
-              overlaps.putIfAbsent('_', () => {}).add(vozac);
+              overlaps.putIfAbsent(key, () => {}).add(vozac);
             }
           }
         }
@@ -339,9 +362,11 @@ class MLDispatchAutonomousService extends ChangeNotifier {
 
       overlaps.forEach((key, drivers) {
         if (drivers.length >= 2) {
+          final grad = key.split('_')[0];
+          final vreme = key.split('_')[1];
           _currentAdvice.add(DispatchAdvice(
-            title: 'AUTONOMNI SPLIT ()',
-            description: 'Detektovano više vozača: . Optimizuj raspored.',
+            title: '🚢 AUTONOMNI SPLIT ($grad $vreme)',
+            description: 'Detektovano više vozača: ${drivers.join(", ")}. Optimizuj raspored.',
             priority: AdvicePriority.critical,
             action: 'Sinhronizuj',
           ));
