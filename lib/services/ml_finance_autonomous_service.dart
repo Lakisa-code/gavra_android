@@ -173,7 +173,7 @@ class MLFinanceAutonomousService extends ChangeNotifier {
     final List logs = response as List;
     for (var log in logs) {
       final DateTime date = DateTime.parse(log['created_at']);
-      
+
       // ✅ Uvek ažuriraj poslednje poznato stanje brojila ako postoji, nezavisno od tipa loga
       if (log['pump_meter'] != null) {
         _lastKnownPumpMeter = (log['pump_meter'] as num).toDouble();

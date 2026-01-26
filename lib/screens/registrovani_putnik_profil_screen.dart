@@ -1996,10 +1996,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 📝 LOG U DNEVNIK
           try {
-            VoznjeLogService.logGeneric(
-              tip: 'zakazivanje_putnika',
+            VoznjeLogService.logZahtev(
               putnikId: putnikId,
-              detalji: 'Zahtev za BC termin: $dan u $novoVreme',
+              dan: dan,
+              vreme: novoVreme,
+              grad: 'bc',
+              tipPutnika: 'Učenik',
             );
           } catch (_) {}
 
@@ -2035,10 +2037,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 📝 LOG U DNEVNIK
           try {
-            VoznjeLogService.logGeneric(
-              tip: 'zakazivanje_putnika',
+            VoznjeLogService.logZahtev(
               putnikId: putnikId,
-              detalji: 'Zahtev za BC termin (Radnik): $dan u $novoVreme',
+              dan: dan,
+              vreme: novoVreme,
+              grad: 'bc',
+              tipPutnika: 'Radnik',
             );
           } catch (_) {}
 
@@ -2071,10 +2075,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 📝 LOG U DNEVNIK
           try {
-            VoznjeLogService.logGeneric(
-              tip: 'zakazivanje_putnika',
+            VoznjeLogService.logZahtev(
               putnikId: putnikId,
-              detalji: 'Zahtev za BC termin (Dnevni): $dan u $novoVreme',
+              dan: dan,
+              vreme: novoVreme,
+              grad: 'bc',
+              tipPutnika: 'Dnevni',
             );
           } catch (_) {}
 
@@ -2165,10 +2171,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               // 📝 LOG U DNEVNIK (ako nije null, znači da je zakazivanje, inače je već logovano u otkazivanju)
               if (vreme != null) {
                 try {
-                  VoznjeLogService.logGeneric(
-                    tip: 'zakazivanje_putnika',
+                  VoznjeLogService.logZahtev(
                     putnikId: putnikId,
-                    detalji: 'Promena termina (${tipGrad.toUpperCase()}): $dan u $vreme',
+                    dan: dan,
+                    vreme: vreme,
+                    grad: tipGrad,
+                    tipPutnika: tipPutnika ?? 'Putnik',
                   );
                 } catch (_) {}
               }

@@ -528,8 +528,9 @@ class VoznjeLogService {
     String? putnikId,
     String? vozacId,
     double iznos = 0,
-    int brojMesta = 1, // 🆕 Dodato broj mesta
+    int brojMesta = 1,
     String? detalji,
+    Map<String, dynamic>? meta,
   }) async {
     try {
       final datumStr = DateTime.now().toIso8601String().split('T')[0];
@@ -538,14 +539,36 @@ class VoznjeLogService {
         'putnik_id': putnikId,
         'vozac_id': vozacId,
         'iznos': iznos,
-        'broj_mesta': brojMesta, // 🆕 Obavezno polje u bazi
+        'broj_mesta': brojMesta,
         'datum': datumStr,
         'detalji': detalji,
+        'meta': meta, // 🆕 Dodato meta polje za dodatne podatke (npr. grad, vreme)
         'placeni_mesec': DateTime.now().month,
         'placena_godina': DateTime.now().year,
       });
     } catch (e) {
       debugPrint('❌ Greška pri logovanju akcije ($tip): $e');
     }
+  }
+
+  /// 📝 LOGOVANJE ZAHTEVA PUTNIKA (Specijalizovana metoda)
+  static Future<void> logZahtev({
+    required String putnikId,
+    required String dan,
+    required String vreme,
+    required String grad,
+    required String tipPutnika,
+  }) async {
+    return logGeneric(
+      tip: 'zakazivanje_putnika',
+      putnikId: putnikId,
+      detalji: 'Novi zahtev ($tipPutnika): $dan u $vreme ($grad)',
+      meta: {
+        'dan': dan,
+        'vreme': vreme,
+        'grad': grad,
+        'tip_putnika': tipPutnika,
+      },
+    );
   }
 }
