@@ -11,6 +11,7 @@ import '../screens/home_screen.dart';
 import '../supabase_client.dart';
 import 'notification_navigation_service.dart';
 import 'realtime_notification_service.dart';
+import 'voznje_log_service.dart';
 import 'wake_lock_service.dart';
 
 @pragma('vm:entry-point')
@@ -681,11 +682,27 @@ class LocalNotificationService {
       // Očisti bc_ceka_od jer je resolved
       (polasci[dan] as Map<String, dynamic>).remove('bc_ceka_od');
 
+      // Dohvati tip korisnika za precizan log
+      final putnikData = await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).single();
+      final userType = putnikData['tip'] ?? 'Putnik';
+
       // Sačuvaj u bazu
       await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
+
+      // 📝 LOG U DNEVNIK
+      try {
+        await VoznjeLogService.logPotvrda(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: termin,
+          grad: 'bc',
+          tipPutnika: userType,
+          detalji: 'Prihvaćen alternativni termin (Preko notifikacije)',
+        );
+      } catch (_) {}
 
       // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
       await RealtimeNotificationService.sendNotificationToPutnik(
@@ -910,11 +927,27 @@ class LocalNotificationService {
       // Očisti vs_ceka_od jer je resolved
       (polasci[dan] as Map<String, dynamic>).remove('vs_ceka_od');
 
+      // Dohvati tip korisnika za precizan log
+      final putnikResult = await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).single();
+      final userType = putnikResult['tip'] ?? 'Putnik';
+
       // Sačuvaj u bazu
       await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
+
+      // 📝 LOG U DNEVNIK
+      try {
+        await VoznjeLogService.logPotvrda(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: termin,
+          grad: 'vs',
+          tipPutnika: userType,
+          detalji: 'Prihvaćen alternativni termin (Preko notifikacije)',
+        );
+      } catch (_) {}
 
       // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
       await RealtimeNotificationService.sendNotificationToPutnik(
@@ -966,6 +999,18 @@ class LocalNotificationService {
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
 
+      // 📝 LOG U DNEVNIK
+      try {
+        await VoznjeLogService.logZahtev(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: zeljeniTermin,
+          grad: 'vs',
+          tipPutnika: 'Putnik',
+          status: 'Na listi čekanja (Waiting)',
+        );
+      } catch (_) {}
+
       // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
@@ -1016,6 +1061,18 @@ class LocalNotificationService {
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
+
+      // 📝 LOG U DNEVNIK
+      try {
+        await VoznjeLogService.logZahtev(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: zeljeniTermin,
+          grad: 'vs',
+          tipPutnika: 'Putnik',
+          status: 'Potvrđeno čekanje na mesto',
+        );
+      } catch (_) {}
 
       // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
       await RealtimeNotificationService.sendNotificationToPutnik(

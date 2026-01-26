@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../globals.dart';
+import '../services/voznje_log_service.dart';
 
 /// Servis za globalna podešavanja aplikacije iz Supabase
 class AppSettingsService {
@@ -57,6 +58,14 @@ class AppSettingsService {
       'nav_bar_type': type,
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('id', 'global');
+
+    // 📝 LOG U DNEVNIK
+    try {
+      VoznjeLogService.logGeneric(
+        tip: 'admin_akcija',
+        detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}',
+      );
+    } catch (_) {}
   }
 
   /// Postavi dnevni_zakazivanje_aktivno (samo admin može)
@@ -65,6 +74,14 @@ class AppSettingsService {
       'dnevni_zakazivanje_aktivno': aktivno,
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('id', 'global');
+
+    // 📝 LOG U DNEVNIK
+    try {
+      VoznjeLogService.logGeneric(
+        tip: 'admin_akcija',
+        detalji: 'Zakazivanje za dnevne putnike: ${aktivno ? "UKLJUČENO" : "ISKLJUČENO"}',
+      );
+    } catch (_) {}
   }
 
   /// Cleanup

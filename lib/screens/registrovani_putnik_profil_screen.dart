@@ -2002,6 +2002,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               vreme: novoVreme,
               grad: 'bc',
               tipPutnika: 'Učenik',
+              status: 'Čeka potvrdu (Pending)',
             );
           } catch (_) {}
 
@@ -2043,6 +2044,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               vreme: novoVreme,
               grad: 'bc',
               tipPutnika: 'Radnik',
+              status: 'Čeka potvrdu (Pending)',
             );
           } catch (_) {}
 
@@ -2081,6 +2083,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               vreme: novoVreme,
               grad: 'bc',
               tipPutnika: 'Dnevni',
+              status: 'Čeka potvrdu (Pending)',
             );
           } catch (_) {}
 
@@ -2122,12 +2125,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 📝 LOG U DNEVNIK
           try {
-            VoznjeLogService.logGeneric(
-              tip: 'zakazivanje_putnika',
+            VoznjeLogService.logZahtev(
               putnikId: putnikId,
-              detalji: jeUTranzitu
-                  ? 'Prioritetni zahtev za VS termin (Tranzit): $dan u $novoVreme'
-                  : 'Zahtev za VS termin: $dan u $novoVreme',
+              dan: dan,
+              vreme: novoVreme,
+              grad: 'vs',
+              tipPutnika: jeUcenik ? 'Učenik' : 'Radnik',
+              status: jeUTranzitu ? 'Prioritetni zahtev (Tranzit)' : 'Čeka potvrdu (Pending)',
             );
           } catch (_) {}
 
@@ -2168,15 +2172,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 'radni_dani': radniDani,
               }).eq('id', putnikId);
 
-              // 📝 LOG U DNEVNIK (ako nije null, znači da je zakazivanje, inače je već logovano u otkazivanju)
+              // 📝 LOG U DNEVNIK
               if (vreme != null) {
                 try {
-                  VoznjeLogService.logZahtev(
+                  // Logujemo kao odmah uspešno obrađeno jer je prošlo proveru
+                  final pTip = _putnikData['tip']?.toString() ?? 'Putnik';
+                  VoznjeLogService.logPotvrda(
                     putnikId: putnikId,
                     dan: dan,
                     vreme: vreme,
                     grad: tipGrad,
-                    tipPutnika: tipPutnika ?? 'Putnik',
+                    tipPutnika: pTip,
+                    detalji: 'Zahtev direktno potvrđen',
                   );
                 } catch (_) {}
               }

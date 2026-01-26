@@ -7,6 +7,7 @@ import '../helpers/gavra_ui.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/registrovani_putnik_service.dart';
+import '../services/voznje_log_service.dart'; // 📝 DODATO
 import '../theme.dart';
 import '../utils/registrovani_helpers.dart';
 import '../widgets/shared/time_row.dart';
@@ -1548,10 +1549,29 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         if (widget.onSaved != null) widget.onSaved!();
       }
     } catch (e) {
+      debugPrint('❌ Greška pri čuvanju putnika: $e');
+
+      // 📝 LOG GRESKE ZA ADMINA
+      try {
+        VoznjeLogService.logGreska(
+          putnikId: widget.existingPutnik?.id, // Može biti null za nove
+          greska: e.toString(),
+          meta: {
+            'context': 'RegistrovaniPutnikDialog_save',
+            'ime': _imeController.text,
+            'tip': _tip,
+          },
+        );
+      } catch (_) {}
+
       if (mounted) {
+        String errorMsg = e.toString();
+        if (errorMsg.contains('Exception:')) {
+          errorMsg = errorMsg.split('Exception:').last.trim();
+        }
         GavraUI.showSnackBar(
           context,
-          message: 'Greška pri čuvanju: $e',
+          message: 'Greška: $errorMsg',
           type: GavraNotificationType.error,
         );
       }
@@ -1561,7 +1581,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   Map<String, dynamic> _preparePutnikData() {
+    final now = DateTime.now();
+    // Default datumi ako nedostaju
+    final pocetak = widget.existingPutnik?.datumPocetkaMeseca ?? DateTime(now.year, now.month);
+    final kraj = widget.existingPutnik?.datumKrajaMeseca ?? DateTime(now.year, now.month + 1, 0);
+
     return {
+      'id': widget.existingPutnik?.id, // Može biti null za novi insert
       'putnik_ime': _imeController.text.trim(),
       'tip': _tip,
       'broj_mesta': int.tryParse(_brojMestaController.text) ?? 1,
@@ -1573,6 +1599,12 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
       'polasci_po_danu': _getPolasciPoDanuMap(),
       'radni_dani': _getRadniDaniString(),
+      'status': (widget.existingPutnik?.status == 'aktivan' || widget.existingPutnik?.status == null) 
+                ? 'radi' 
+                : widget.existingPutnik!.status,
+      // Datumi
+      'datum_pocetka_meseca': pocetak.toIso8601String().split('T')[0],
+      'datum_kraja_meseca': kraj.toIso8601String().split('T')[0],
       // Eksplicitno postavi adrese (uključujući null za brisanje)
       'adresa_bela_crkva_id': _adresaBelaCrkvaId,
       'adresa_vrsac_id': _adresaVrsacId,

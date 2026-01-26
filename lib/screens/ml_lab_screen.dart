@@ -31,7 +31,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 9, vsync: this);
     MLChampionService().addListener(_onChampionUpdate);
     MLFinanceAutonomousService().addListener(_onFinanceUpdate);
     MLDispatchAutonomousService().addListener(_onDispatchUpdate);
@@ -100,8 +100,10 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             Tab(icon: Icon(Icons.hail), text: 'Dispečer'),
             Tab(icon: Icon(Icons.emoji_events), text: 'Šampion'),
             Tab(icon: Icon(Icons.calculate), text: 'Računovođa'),
-            Tab(icon: Icon(Icons.history_edu), text: 'Dnevnik'),
-            Tab(icon: Icon(Icons.people), text: 'Putnici'),
+            Tab(icon: Icon(Icons.local_shipping), text: 'Vozači'),
+            Tab(icon: Icon(Icons.engineering), text: 'Radnici'),
+            Tab(icon: Icon(Icons.school), text: 'Učenici'),
+            Tab(icon: Icon(Icons.calendar_today), text: 'Dnevni'),
             Tab(icon: Icon(Icons.settings), text: 'Podešavanja'),
           ],
         ),
@@ -113,8 +115,10 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           _buildDispatcherTab(),
           _buildChampionTab(),
           _buildAccountantTab(),
-          const MLDnevnikScreen(),
-          const MLDnevnikScreen(showOnlyPutnici: true),
+          const MLDnevnikScreen(showOnlyVozaci: true),
+          const MLDnevnikScreen(showOnlyPutnici: true, onlyType: 'radnik'),
+          const MLDnevnikScreen(showOnlyPutnici: true, onlyType: 'ucenik'),
+          const MLDnevnikScreen(showOnlyPutnici: true, onlyType: 'dnevni'),
           _buildSettingsTab(),
         ],
       ),

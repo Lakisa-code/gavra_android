@@ -558,17 +558,43 @@ class VoznjeLogService {
     required String vreme,
     required String grad,
     required String tipPutnika,
+    String status = 'Novi zahtev',
   }) async {
     return logGeneric(
       tip: 'zakazivanje_putnika',
       putnikId: putnikId,
-      detalji: 'Novi zahtev ($tipPutnika): $dan u $vreme ($grad)',
-      meta: {
-        'dan': dan,
-        'vreme': vreme,
-        'grad': grad,
-        'tip_putnika': tipPutnika,
-      },
+      detalji: '$status ($tipPutnika): $dan u $vreme ($grad)',
+    );
+  }
+
+  /// 📝 LOGOVANJE POTVRDE ZAHTEVA (Kada sistem ili admin potvrdi pending zahtev)
+  static Future<void> logPotvrda({
+    required String putnikId,
+    required String dan,
+    required String vreme,
+    required String grad,
+    String? tipPutnika,
+    String detalji = 'Zahtev potvrđen',
+  }) async {
+    final typeStr = tipPutnika != null ? ' ($tipPutnika)' : '';
+    return logGeneric(
+      tip: 'potvrda_zakazivanja',
+      putnikId: putnikId,
+      detalji: '$detalji$typeStr: $dan u $vreme ($grad)',
+    );
+  }
+
+  /// ❌ LOGOVANJE GREŠKE PRI OBRADI ZAHTEVA
+  static Future<void> logGreska({
+    String? putnikId, // 🔧 Može biti null za nove putnike koji nisu još sačuvani
+    required String greska,
+    Map<String, dynamic>? meta,
+  }) async {
+    return logGeneric(
+      tip: 'greska_zahteva',
+      putnikId: putnikId,
+      detalji: 'Greška: $greska',
+      meta: meta,
     );
   }
 }

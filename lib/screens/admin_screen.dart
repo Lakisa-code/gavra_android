@@ -20,6 +20,7 @@ import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
+import 'admin_zahtevi_screen.dart'; // 📨 MONITORING ZAHTEVA
 import 'adrese_screen.dart'; // 📍 Upravljanje adresama
 import 'auth_screen.dart'; // DODANO za auth admin
 import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
@@ -867,6 +868,45 @@ class _AdminScreenState extends State<AdminScreen> {
                                                               blurRadius: 3,
                                                               color: Colors.black54)
                                                         ])))),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // ZAHTEVI
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => const AdminZahteviScreen(),
+                                        ),
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+                                        ),
+                                        child: const Center(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              'Zahtevi',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                                shadows: [
+                                                  Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),

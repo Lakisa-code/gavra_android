@@ -9,6 +9,7 @@ import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_helpers.dart';
 import 'kapacitet_service.dart';
 import 'putnik_service.dart';
+import 'voznje_log_service.dart';
 
 /// 🎫 Model za slobodna mesta po polasku
 class SlobodnaMesta {
@@ -16,45 +17,25 @@ class SlobodnaMesta {
   final String vreme;
   final int maxMesta;
   final int zauzetaMesta;
+  final int waitingCount;
+  final int uceniciCount;
   final bool aktivan;
-  final int waitingCount; // 🆕 Broj ljudi na listi čekanja
-  final int uceniciCount; // 🆕 Broj učenika
 
   SlobodnaMesta({
     required this.grad,
     required this.vreme,
     required this.maxMesta,
     required this.zauzetaMesta,
-    required this.aktivan,
-    this.waitingCount = 0, // 🆕 Default 0
-    this.uceniciCount = 0, // 🆕 Default 0
+    this.waitingCount = 0,
+    this.uceniciCount = 0,
+    this.aktivan = true,
   });
 
-  /// Broj slobodnih mesta
-  int get slobodna => (maxMesta - zauzetaMesta).clamp(0, maxMesta);
-
-  /// Da li je pun kapacitet
+  int get slobodna => maxMesta - zauzetaMesta;
+  bool get imaMesta => slobodna > 0;
   bool get jePuno => slobodna <= 0;
-
-  /// 🆕 Da li je ovo "Rush Hour" (špic) vreme kada se skupljaju zahtevi za drugi kombi
-  bool get isRushHour => ['13:00', '14:00', '15:30'].contains(vreme);
-
-  /// 🆕 Da li ima dovoljno ljudi na čekanju za drugi kombi (min 3)
-  bool get shouldActivateSecondVan => waitingCount >= 3;
-
-  /// Status boja: zelena (>3), žuta (1-3), crvena (0)
-  /// Ako je PUNO ali ima waiting listu:
-  /// - Ljubicasta: Drugi kombi se puni (waiting >= 1)
-  String get statusBoja {
-    if (!aktivan) return 'grey';
-    if (jePuno && waitingCount > 0) return 'purple'; // 🆕 Indikator za waiting listu
-    if (slobodna > 3) return 'green';
-    if (slobodna > 0) return 'yellow';
-    return 'red';
-  }
 }
 
-/// 🎫 Servis za računanje slobodnih mesta (kapacitet - zauzeto)
 class SlobodnaMestaService {
   static SupabaseClient get _supabase => supabase;
   static final _putnikService = PutnikService();
@@ -64,6 +45,9 @@ class SlobodnaMestaService {
       {String? excludePutnikId}) {
     final normalizedGrad = grad.toLowerCase();
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
+
+    // 🛡️ NORMALIZUJ TARGET VREME (iz baze kapaciteta može biti npr. "6:00")
+    final targetVreme = GradAdresaValidator.normalizeTime(vreme);
 
     int count = 0;
     for (final p in putnici) {
@@ -80,9 +64,9 @@ class SlobodnaMestaService {
       final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
       if (!dayMatch) continue;
 
-      // Proveri vreme
+      // Proveri vreme - OBA MORAJU BITI NORMALIZOVANA
       final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-      if (normVreme != vreme) continue;
+      if (normVreme != targetVreme) continue;
 
       // Proveri grad
       final jeBC = GradAdresaValidator.isBelaCrkva(p.grad);
@@ -251,12 +235,17 @@ class SlobodnaMestaService {
       return true;
     }
 
+    // 🛡️ NORMALIZACIJA ULAZNOG VREMENA
+    final targetVreme = GradAdresaValidator.normalizeTime(vreme);
+
     final slobodna = await getSlobodnaMesta(datum: datum, excludeId: excludeId);
     final lista = slobodna[grad.toUpperCase()];
     if (lista == null) return false;
 
     for (final s in lista) {
-      if (s.vreme == vreme) {
+      // 🛡️ NORMALIZACIJA VREMENA IZ LISTE (Kapacitet table može imati "6:00" umesto "06:00")
+      final currentVreme = GradAdresaValidator.normalizeTime(s.vreme);
+      if (currentVreme == targetVreme) {
         return s.slobodna >= brojMesta;
       }
     }
@@ -569,12 +558,15 @@ class SlobodnaMestaService {
   /// Koristi se kada se skupi 4+ zahteva za drugi kombi
   static Future<int> potvrdiSveCekaMestoZaVsTermin(String vreme, String dan) async {
     try {
-      final response =
-          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu').not('polasci_po_danu', 'is', null);
+      final response = await _supabase
+          .from('registrovani_putnici')
+          .select('id, polasci_po_danu, tip')
+          .not('polasci_po_danu', 'is', null);
 
       int confirmedCount = 0;
       for (final row in response) {
         final putnikId = row['id'] as String;
+        final userType = row['tip'] ?? 'Putnik';
         final polasci = _getPolasciMap(row['polasci_po_danu']) ?? {};
 
         final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
@@ -588,6 +580,18 @@ class SlobodnaMestaService {
           (polasci[dan.toLowerCase()] as Map<String, dynamic>)['vs_status'] = 'confirmed';
 
           await _supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
+
+          // 📝 LOG U DNEVNIK
+          try {
+            await VoznjeLogService.logPotvrda(
+              putnikId: putnikId,
+              dan: dan,
+              vreme: vreme,
+              grad: 'vs',
+              tipPutnika: userType,
+              detalji: 'Lista čekanja potvrđena',
+            );
+          } catch (_) {}
 
           confirmedCount++;
         }

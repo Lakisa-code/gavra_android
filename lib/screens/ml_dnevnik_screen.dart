@@ -7,9 +7,17 @@ import '../services/vozac_mapping_service.dart';
 import '../services/voznje_log_service.dart';
 
 class MLDnevnikScreen extends StatefulWidget {
-  const MLDnevnikScreen({super.key, this.filterVozacIme, this.showOnlyPutnici = false});
+  const MLDnevnikScreen({
+    super.key,
+    this.filterVozacIme,
+    this.showOnlyPutnici = false,
+    this.showOnlyVozaci = false,
+    this.onlyType,
+  });
   final String? filterVozacIme;
   final bool showOnlyPutnici;
+  final bool showOnlyVozaci;
+  final String? onlyType; // 'radnik' ili 'ucenik'
 
   @override
   State<MLDnevnikScreen> createState() => _MLDnevnikScreenState();
@@ -47,11 +55,19 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.showOnlyPutnici
-                  ? 'Akcije Putnika 👥'
-                  : widget.filterVozacIme != null
-                      ? 'Dnevnik: ${widget.filterVozacIme} 📖'
-                      : 'Dnevnik Akcija 📖',
+              widget.onlyType != null
+                  ? (widget.onlyType == 'ucenik'
+                      ? 'Akcije Učenika 🎓'
+                      : widget.onlyType == 'dnevni'
+                          ? 'Dnevni Putnici 📅'
+                          : 'Akcije Radnika 👷')
+                  : widget.showOnlyPutnici
+                      ? 'Akcije Putnika 👥'
+                      : widget.showOnlyVozaci
+                          ? 'Akcije Vozača 🚐'
+                          : widget.filterVozacIme != null
+                              ? 'Dnevnik: ${widget.filterVozacIme} 📖'
+                              : 'Dnevnik Akcija 📖',
               style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             if (_searchQuery.isNotEmpty)
@@ -86,11 +102,42 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
           stream: widget.showOnlyPutnici
               ? VoznjeLogService.streamAllRecentLogs(limit: 200).map((logs) => logs.where((l) {
                     final tip = l['tip']?.toString() ?? '';
-                    return l['vozac_id'] == null && tip != 'voznja';
+                    final detalji = l['detalji']?.toString().toLowerCase() ?? '';
+                    // Putničke akcije su one koje NEMAJU vozac_id, ILI imaju putnik_id
+                    // ali isključujemo čisto vozačke tipove
+                    final isPassengerAction = (l['vozac_id'] == null || l['putnik_id'] != null) &&
+                        tip != 'voznja' &&
+                        tip != 'prijava_vozaca' &&
+                        tip != 'odjava_vozaca';
+
+                    if (!isPassengerAction) return false;
+
+                    // Filter po tipu (ako je zadat)
+                    if (widget.onlyType != null) {
+                      final target = widget.onlyType!.toLowerCase();
+                      if (target == 'ucenik') {
+                        return detalji.contains('ucenik') || detalji.contains('učenik');
+                      }
+                      if (target == 'radnik') {
+                        return detalji.contains('radnik') || tip == 'potvrda_zakazivanja';
+                      }
+                      return detalji.contains(target);
+                    }
+
+                    return true;
                   }).toList())
-              : widget.filterVozacIme != null
-                  ? VoznjeLogService.streamRecentLogs(vozacIme: widget.filterVozacIme!, limit: 100)
-                  : VoznjeLogService.streamAllRecentLogs(limit: 150),
+              : widget.showOnlyVozaci
+                  ? VoznjeLogService.streamAllRecentLogs(limit: 200).map((logs) {
+                      return logs.where((l) {
+                        final vozacId = l['vozac_id'];
+                        final tip = l['tip']?.toString() ?? '';
+                        // Vozačke akcije su one koje imaju vozac_id ILI su tipa 'admin_akcija' a tiču se vozača (mada obično imaju vozac_id)
+                        return vozacId != null || tip == 'voznja' || tip == 'prijava_vozaca' || tip == 'odjava_vozaca';
+                      }).toList();
+                    })
+                  : widget.filterVozacIme != null
+                      ? VoznjeLogService.streamRecentLogs(vozacIme: widget.filterVozacIme!, limit: 100)
+                      : VoznjeLogService.streamAllRecentLogs(limit: 150),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -239,12 +286,22 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
       case 'zakazivanje_putnika':
         iconData = Icons.notification_add;
         themeColor = Colors.indigo;
-        actionLabel = 'Novi zahtev';
+        actionLabel = 'Zahtev dodat';
+        break;
+      case 'potvrda_zakazivanja':
+        iconData = Icons.check_circle_outline;
+        themeColor = Colors.green.shade700;
+        actionLabel = 'Uspešno obrađeno';
         break;
       case 'otkazivanje_putnika':
         iconData = Icons.event_available_outlined;
         themeColor = Colors.deepOrange;
         actionLabel = 'Putnik otkazao termin';
+        break;
+      case 'admin_akcija':
+        iconData = Icons.admin_panel_settings;
+        themeColor = Colors.red.shade900;
+        actionLabel = 'Admin Akcija';
         break;
       default:
         iconData = Icons.explore;
