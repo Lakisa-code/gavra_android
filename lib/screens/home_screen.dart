@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -175,26 +176,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
   String _getDayAbbreviation(String fullDayName) {
     return app_date_utils.DateUtils.getDayAbbreviation(fullDayName);
-  }
-
-  // Normalizuj vreme format - konvertuj "05:00:00" u "5:00"
-  String _normalizeTime(String? time) {
-    if (time == null || time.isEmpty) return '';
-
-    String normalized = time.trim();
-
-    // Ukloni sekunde ako postoje (05:00:00 -> 05:00)
-    if (normalized.contains(':') && normalized.split(':').length == 3) {
-      List<String> parts = normalized.split(':');
-      normalized = '${parts[0]}:${parts[1]}';
-    }
-
-    // Ukloni leading zero (05:00 -> 5:00)
-    if (normalized.startsWith('0')) {
-      normalized = normalized.substring(1);
-    }
-
-    return normalized;
   }
 
   @override
@@ -2095,30 +2076,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           // Sortiranje se vrši u PutnikList widgetu sa istom logikom za sva tri ekrana
           final putniciZaPrikaz = sviPutniciBezDuplikata;
 
-          // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
+          // Funkcija za brojanje putnika po gradu, vremenu i danu
           int getPutnikCount(String grad, String vreme) {
             try {
               return countHelper.getCount(grad, vreme);
             } catch (e) {
-              // Log error and continue to fallback
+              if (kDebugMode) debugPrint('⚠️ [Home] Error in getPutnikCount: $e');
+              return 0;
             }
-
-            // Fallback: brzo prebroj ako grad nije standardan
-            return allPutnici.where((putnik) {
-              final gradMatch = GradAdresaValidator.isGradMatch(
-                putnik.grad,
-                putnik.adresa,
-                grad,
-              );
-              final vremeMatch = _normalizeTime(putnik.polazak) == _normalizeTime(vreme);
-              final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
-              final normalizedDanBaza = GradAdresaValidator.normalizeString(
-                _getDayAbbreviation(_selectedDay),
-              );
-              final danMatch = normalizedPutnikDan.contains(normalizedDanBaza);
-              final statusOk = TextUtils.isStatusActive(putnik.status);
-              return gradMatch && vremeMatch && danMatch && statusOk;
-            }).length;
           }
 
           // (totalFilteredCount removed)

@@ -5,37 +5,6 @@ import 'putnik_helpers.dart';
 /// 🎯 HELPER ZA BROJANJE PUTNIKA PO GRADU I VREMENU
 /// Centralizovana logika za konzistentno brojanje putnika na svim ekranima
 class PutnikCountHelper {
-  /// Standardna vremena polazaka za Belu Crkvu
-  static const Map<String, int> bcVremenaTemplate = {
-    '05:00': 0,
-    '06:00': 0,
-    '07:00': 0,
-    '08:00': 0,
-    '09:00': 0,
-    '11:00': 0,
-    '12:00': 0,
-    '13:00': 0,
-    '14:00': 0,
-    '15:00': 0,
-    '15:30': 0,
-    '18:00': 0,
-  };
-
-  /// Standardna vremena polazaka za Vršac
-  static const Map<String, int> vsVremenaTemplate = {
-    '06:00': 0,
-    '07:00': 0,
-    '08:00': 0,
-    '10:00': 0,
-    '11:00': 0,
-    '12:00': 0,
-    '13:00': 0,
-    '14:00': 0,
-    '15:30': 0,
-    '17:00': 0,
-    '19:00': 0,
-  };
-
   /// Rezultat brojanja putnika po gradovima
   final Map<String, int> brojPutnikaBC;
   final Map<String, int> brojPutnikaVS;
@@ -54,12 +23,14 @@ class PutnikCountHelper {
     required String targetDateIso,
     required String targetDayAbbr,
   }) {
-    // Kreiraj kopije template mapa
-    final brojPutnikaBC = Map<String, int>.from(bcVremenaTemplate);
-    final brojPutnikaVS = Map<String, int>.from(vsVremenaTemplate);
+    // Dinamičke mape za brojanje - ne koristimo više hardkodovane šablone
+    final brojPutnikaBC = <String, int>{};
+    final brojPutnikaVS = <String, int>{};
 
     for (final p in putnici) {
-      // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
+      // 🛡️ KORISTIMO centralizovanu logiku za utvrđivanje ko zauzima mesto
+      // Napomena: PutnikHelpers.shouldCountInSeats uključuje đake (ucenik) što je ovde poželjno
+      // jer za Nav Bar želimo da vidimo punu fizičku popunjenost vozila.
       if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
       // Provera dana
@@ -73,16 +44,12 @@ class PutnikCountHelper {
       final jeBelaCrkva = GradAdresaValidator.isBelaCrkva(p.grad);
       final jeVrsac = GradAdresaValidator.isVrsac(p.grad);
 
-      // 🎓 BC LOGIKA: Učenici se ne broje u standardni kapacitet polaska za Belu Crkvu
-      // (Subvencionisani od strane opštine, idu kao "ekstra" kapacitet)
-      final bool jeBCUcenik = jeBelaCrkva && p.tipPutnika == 'ucenik';
-
-      if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
-        if (!jeBCUcenik) {
-          brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
-        }
-      }
-      if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
+      // 🎓 BC LOGIKA (DISPLAY OVERRIDE):
+      // Za prikaz na Nav Bar-u BROJIMO SVE PUTNIKE (uključujući đake u BC)
+      // jer vozač mora da vidi koliko ljudi fizički ima u vozilu.
+      if (jeBelaCrkva) {
+        brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
+      } else if (jeVrsac) {
         brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;
       }
     }
@@ -97,10 +64,10 @@ class PutnikCountHelper {
   int getCount(String grad, String vreme) {
     final normVreme = GradAdresaValidator.normalizeTime(vreme);
     if (GradAdresaValidator.isBelaCrkva(grad)) {
-      return brojPutnikaBC[normVreme] ?? brojPutnikaBC[vreme] ?? 0;
+      return brojPutnikaBC[normVreme] ?? 0;
     }
     if (GradAdresaValidator.isVrsac(grad)) {
-      return brojPutnikaVS[normVreme] ?? brojPutnikaVS[vreme] ?? 0;
+      return brojPutnikaVS[normVreme] ?? 0;
     }
     return 0;
   }
