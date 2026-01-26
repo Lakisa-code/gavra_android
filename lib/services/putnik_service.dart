@@ -1479,9 +1479,6 @@ class PutnikService {
       for (final putnik in putnici) {
         final id = putnik['id'] as String;
         final polasciRaw = putnik['polasci_po_danu'];
-        // Proveri tip putnika
-        final tip = putnik['tip'] as String?;
-        final isVariableSchedule = tip == 'ucenik' || tip == 'dnevni';
 
         if (polasciRaw == null) continue;
 
@@ -1498,39 +1495,15 @@ class PutnikService {
 
         if (polasci == null) continue;
 
-        // Očisti dnevne podatke (pokupljeno, plaćeno, otkazano) za svaki dan
+        // Očisti dnevne podatke (pokupljeno, plaćeno, otkazano) I VREMENA za svaki dan
         bool hasChanges = false;
         for (final dayKey in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-          final dayData = polasci[dayKey];
-          if (dayData is Map<String, dynamic>) {
-            final mutableDayData = Map<String, dynamic>.from(dayData);
+          final danData = polasci[dayKey];
+          if (danData is Map<String, dynamic>) {
+            final mutableDayData = Map<String, dynamic>.from(danData);
 
             // Definiši šta se briše
-            final keysToRemove = mutableDayData.keys.where((k) {
-              // 1. Statusi (uvek briši za sve)
-              if (k.contains('_pokupljeno') ||
-                  k.contains('_placeno') ||
-                  k.contains('_otkazano') ||
-                  k.contains('_vozac') || // Briše i naplatio_vozac, pokupio_vozac
-                  k == 'placeno' ||
-                  k == 'placeno_iznos') {
-                // Dodatni check
-                return true;
-              }
-
-              // 2. Vreme (samo za ucenike i dnevne)
-              // Brišemo vreme polaska da se ne bi pojavljivali u listi sa starim vremenom
-              if (isVariableSchedule) {
-                if (['bc', 'vs', 'bela_crkva', 'vrsac'].contains(k) ||
-                    k.startsWith('polazak_') ||
-                    k.startsWith('vreme_') ||
-                    k.endsWith('_time')) {
-                  return true;
-                }
-              }
-
-              return false;
-            }).toList();
+            final keysToRemove = mutableDayData.keys.toList(); // Brišemo SVE iz JSON-a za taj dan
 
             for (final key in keysToRemove) {
               mutableDayData.remove(key);

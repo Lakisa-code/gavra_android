@@ -90,6 +90,15 @@ class MLFinanceAutonomousService extends ChangeNotifier {
   final List<HistoricalPayment> _payments = [];
   final List<HistoricalUsage> _usages = [];
 
+  // ⛽ NOVO: Pronađi poslednje stanje brojila na pumpi
+  double? get lastPumpMeter {
+    if (_usages.isEmpty) return null;
+    for (var i = _usages.length - 1; i >= 0; i--) {
+      if (_usages[i].pumpMeter != null) return _usages[i].pumpMeter;
+    }
+    return null;
+  }
+
   bool _isActive = false;
   bool _isAutopilotEnabled = false;
 
@@ -334,6 +343,50 @@ class MLFinanceAutonomousService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) print('❌ [ML Finance] Greška pri snimanju točenja: $e');
+    }
+  }
+
+  // ⛽ NOVO: Snimanje točenja za više vozila odjednom (izračunava litre iz brojila)
+  Future<void> recordMultiVanRefill({
+    required List<String> vehicleIds,
+    required double newPumpMeter,
+  }) async {
+    if (vehicleIds.isEmpty) return;
+
+    final oldMeter = lastPumpMeter;
+    if (oldMeter == null) {
+      throw Exception('Nema prethodnog stanja brojila. Prvo uradi jedno obično sipanje ili kalibraciju.');
+    }
+
+    final totalLiters = newPumpMeter - oldMeter;
+    if (totalLiters <= 0) {
+      throw Exception('Novo stanje brojila ($newPumpMeter) mora biti veće od starog ($oldMeter).');
+    }
+
+    final litersPerVan = totalLiters / vehicleIds.length;
+
+    try {
+      for (final vId in vehicleIds) {
+        await _supabase.from('fuel_logs').insert({
+          'type': 'USAGE',
+          'liters': litersPerVan,
+          'vehicle_id': vId,
+          'pump_meter': newPumpMeter, // Set the same new meter for all
+          'km': null, // KM unknown in rush
+        });
+
+        _inventory.litersInStock -= litersPerVan;
+        _usages.add(HistoricalUsage(
+          date: DateTime.now(),
+          vehicleId: vId,
+          liters: litersPerVan,
+          pumpMeter: newPumpMeter,
+        ));
+      }
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print('❌ [ML Finance] Greška pri snimanju višestrukog točenja: $e');
+      rethrow;
     }
   }
 

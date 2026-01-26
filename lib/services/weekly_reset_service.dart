@@ -94,6 +94,7 @@ class WeeklyResetService {
       for (final putnik in putnici) {
         final putnikId = putnik['id'] as String;
         final rawPolasci = putnik['polasci_po_danu'];
+
         Map<String, dynamic> polasci = {};
 
         if (rawPolasci is String) {
@@ -104,25 +105,19 @@ class WeeklyResetService {
           polasci = Map<String, dynamic>.from(rawPolasci);
         }
 
-        final tip = putnik['tip'] as String? ?? 'radnik';
-
         if (polasci.isEmpty) continue;
 
-        // 🧹 RESETUJEMO STATUS I OTKAZIVANJA, ALI ZADRŽAVAMO VREMENA (BC i VS)
+        // 🧹 RESETUJEMO SVE PODATKE (vremena, statuse, otkazivanja) ZA NOVU NEDELJU
         final resetPolasci = <String, dynamic>{};
         for (final dan in polasci.keys) {
-          final danData = polasci[dan] as Map<String, dynamic>? ?? {};
-
-          // Zadržavamo postojeća vremena polazaka, resetujemo sve ostalo (statuse, otkazano...)
-          resetPolasci[dan] = {
-            'bc': danData['bc'],
-            'vs': danData['vs'],
-          };
+          // Kreiramo potpuno prazan objekat za svaki dan tako da putnik mora ponovo da unese vreme
+          resetPolasci[dan] = {};
         }
 
         // Ažuriraj u bazi
         await supabase.from('registrovani_putnici').update({
           'polasci_po_danu': resetPolasci,
+          'aktivan': true, // Osiguravamo da ostane aktivan kako bi mogao sam da zakaže
         }).eq('id', putnikId);
 
         resetCount++;

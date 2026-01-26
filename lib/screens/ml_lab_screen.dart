@@ -1182,70 +1182,144 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
     final kmController = TextEditingController();
     final pumpController = TextEditingController();
     String? selectedVehicleId;
-    String? selectedVehicleName;
+    bool isMultiRefill = false;
+    final List<String> selectedVehicleIds = [];
+
+    // Preuzmi poslednje stanje brojila za prikaz
+    final lastMeter = service.lastPumpMeter;
 
     await showDialog<dynamic>(
       context: context,
       builder: (BuildContext context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Sipanje u kombi (Sa stanja)'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FutureBuilder<List<Vozilo>>(
-                future: VozilaService.getVozila(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const CircularProgressIndicator();
-                  final vozila = snapshot.data!;
-                  return DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Izaberi kombi'),
-                    items: vozila.map((v) {
-                      return DropdownMenuItem(
-                        value: v.id,
-                        child: Text(v.displayNaziv),
+          title: Text(isMultiRefill ? 'Višestruko sipanje (Grupno)' : 'Sipanje u kombi (Sa stanja)'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  title: const Text('Više kombija odjednom'),
+                  subtitle: const Text('Sipao sam u 2+ kombija u gužvi'),
+                  value: isMultiRefill,
+                  onChanged: (val) {
+                    setDialogState(() {
+                      isMultiRefill = val;
+                      selectedVehicleIds.clear();
+                      selectedVehicleId = null;
+                    });
+                  },
+                ),
+                const Divider(),
+                FutureBuilder<List<Vozilo>>(
+                  future: VozilaService.getVozila(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const CircularProgressIndicator();
+                    final vozila = snapshot.data!;
+
+                    if (isMultiRefill) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Izaberi kombije:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: vozila.map((v) {
+                              final isSelected = selectedVehicleIds.contains(v.id);
+                              return FilterChip(
+                                label: Text(v.registarskiBroj),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setDialogState(() {
+                                    if (selected) {
+                                      selectedVehicleIds.add(v.id);
+                                    } else {
+                                      selectedVehicleIds.remove(v.id);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       );
-                    }).toList(),
-                    onChanged: (val) {
-                      final v = vozila.firstWhere((element) => element.id == val);
-                      selectedVehicleId = v.id;
-                      selectedVehicleName = v.displayNaziv;
-                      setDialogState(() {});
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                  controller: kmController,
-                  decoration: const InputDecoration(labelText: 'Kilometar sat (kombi)', hintText: 'npr. 254300'),
-                  keyboardType: TextInputType.number),
-              TextField(
-                  controller: pumpController,
-                  decoration: const InputDecoration(labelText: 'Stanje brojila (pumpa)', hintText: 'Mehanički brojač'),
-                  keyboardType: TextInputType.number),
-              TextField(
-                  controller: litersController,
-                  decoration: const InputDecoration(labelText: 'Litara (L)', hintText: 'npr. 50'),
-                  keyboardType: TextInputType.number),
-            ],
+                    }
+
+                    return DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Izaberi kombi'),
+                      items: vozila.map((v) {
+                        return DropdownMenuItem(
+                          value: v.id,
+                          child: Text(v.registarskiBroj),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setDialogState(() {
+                          selectedVehicleId = val;
+                        });
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                if (!isMultiRefill)
+                  TextField(
+                      controller: kmController,
+                      decoration: const InputDecoration(labelText: 'Kilometar sat (kombi)', hintText: 'npr. 254300'),
+                      keyboardType: TextInputType.number),
+                TextField(
+                    controller: pumpController,
+                    decoration: InputDecoration(
+                      labelText: 'Novo stanje brojila (pumpa)',
+                      hintText: 'Zadnja cifra na satu zaliha',
+                      helperText: lastMeter != null ? 'Prethodno stanje: ${lastMeter.toStringAsFixed(1)}L' : null,
+                    ),
+                    keyboardType: TextInputType.number),
+                if (!isMultiRefill)
+                  TextField(
+                      controller: litersController,
+                      decoration: const InputDecoration(labelText: 'Litara (L)', hintText: 'npr. 50'),
+                      keyboardType: TextInputType.number),
+              ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
             ElevatedButton(
-              onPressed: () {
-                final liters = double.tryParse(litersController.text) ?? 0;
-                final km = double.tryParse(kmController.text);
+              onPressed: () async {
                 final pump = double.tryParse(pumpController.text);
-                if (liters > 0 && selectedVehicleId != null) {
-                  setState(() {
+
+                if (isMultiRefill) {
+                  // MULTI REFILL LOGIC
+                  if (selectedVehicleIds.isEmpty) return;
+                  if (pump == null) return;
+
+                  try {
+                    await service.recordMultiVanRefill(
+                      vehicleIds: selectedVehicleIds,
+                      newPumpMeter: pump,
+                    );
+                    if (mounted) Navigator.pop(context);
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Greška: ${e.toString().replaceAll('Exception: ', '')}')),
+                      );
+                    }
+                  }
+                } else {
+                  // SINGLE REFILL LOGIC
+                  final liters = double.tryParse(litersController.text) ?? 0;
+                  final km = double.tryParse(kmController.text);
+                  if (liters > 0 && selectedVehicleId != null) {
                     service.recordVanRefill(
                       vehicleId: selectedVehicleId!,
                       liters: liters,
                       km: km,
                       pumpMeter: pump,
                     );
-                  });
-                  Navigator.pop(context);
+                    Navigator.pop(context);
+                  }
                 }
               },
               child: const Text('Sipano!'),
