@@ -404,8 +404,8 @@ class SlobodnaMestaService {
       // Sačuvaj u bazu
       await _supabase.from('registrovani_putnici').update({'polasci_po_danu': jsonEncode(polasci)}).eq('id', putnikId);
 
-      // Zapiši promenu za učenike i dnevne
-      if (tipPutnika == 'ucenik' || tipPutnika == 'dnevni') {
+      // Zapiši promenu za učenike, dnevne i pošiljke
+      if (tipPutnika == 'ucenik' || tipPutnika == 'dnevni' || tipPutnika == 'posiljka') {
         await _zapisiPromenuVremena(putnikId, danas, dan);
       }
 

@@ -1892,7 +1892,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final tipPutnika = _putnikData['tip']?.toString();
       final jeUcenik = tipPutnika == 'ucenik';
       final jeRadnik = tipPutnika == 'radnik';
-      final jeDnevni = tipPutnika == 'dnevni';
+      final jeDnevni = tipPutnika == 'dnevni' || tipPutnika == 'posiljka';
       final jeBcUcenikZahtev = tipGrad == 'bc' && jeUcenik && novoVreme != null;
       final jeBcRadnikZahtev = tipGrad == 'bc' && jeRadnik && novoVreme != null;
       final jeBcDnevniZahtev = tipGrad == 'bc' && jeDnevni && novoVreme != null;
@@ -1935,7 +1935,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         // 📝 LOG U DNEVNIK
         try {
-          VoznjeLogService.logGeneric(
+          await VoznjeLogService.logGeneric(
             tip: 'otkazivanje_putnika',
             putnikId: putnikId,
             detalji: 'Otkazan termin (${tipGrad.toUpperCase()}) za $dan ($staroVremeStr)',
@@ -1996,7 +1996,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 📝 LOG U DNEVNIK
           try {
-            VoznjeLogService.logZahtev(
+            await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
               vreme: novoVreme,
@@ -2038,7 +2038,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 📝 LOG U DNEVNIK
           try {
-            VoznjeLogService.logZahtev(
+            await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
               vreme: novoVreme,
@@ -2077,7 +2077,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 📝 LOG U DNEVNIK
           try {
-            VoznjeLogService.logZahtev(
+            await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
               vreme: novoVreme,
@@ -2125,7 +2125,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // 📝 LOG U DNEVNIK
           try {
-            VoznjeLogService.logZahtev(
+            await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
               vreme: novoVreme,
@@ -2177,7 +2177,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 try {
                   // Logujemo kao odmah uspešno obrađeno jer je prošlo proveru
                   final pTip = _putnikData['tip']?.toString() ?? 'Putnik';
-                  VoznjeLogService.logPotvrda(
+                  await VoznjeLogService.logPotvrda(
                     putnikId: putnikId,
                     dan: dan,
                     vreme: vreme,

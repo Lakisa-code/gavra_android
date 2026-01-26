@@ -105,7 +105,7 @@ class TimePickerCell extends StatelessWidget {
     final dayDate = _getDateForDay();
 
     // 🆕 DNEVNI PUTNICI I REŽIM:
-    if (tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') {
+    if (tipPutnika == 'dnevni' || tipPutnika == 'posiljka' || tipPrikazivanja == 'DNEVNI') {
       // 1. Ako admin nije omogućio globalno - zaključaj sve
       if (!isDnevniZakazivanjeAktivno) return true;
 
@@ -197,7 +197,7 @@ class TimePickerCell extends StatelessWidget {
         }
 
         // 🆕 EKSPLICITNA PORUKA DNEVNIM PUTNICIMA AKO JE ZAKLJUČANO
-        if (tipPutnika == 'dnevni' && isLocked) {
+        if ((tipPutnika == 'dnevni' || tipPutnika == 'posiljka') && isLocked) {
           final now = DateTime.now();
           final todayOnly = DateTime(now.year, now.month, now.day);
           final dayDate = _getDateForDay();

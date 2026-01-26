@@ -61,7 +61,7 @@ class AppSettingsService {
 
     // 📝 LOG U DNEVNIK
     try {
-      VoznjeLogService.logGeneric(
+      await VoznjeLogService.logGeneric(
         tip: 'admin_akcija',
         detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}',
       );
@@ -77,7 +77,7 @@ class AppSettingsService {
 
     // 📝 LOG U DNEVNIK
     try {
-      VoznjeLogService.logGeneric(
+      await VoznjeLogService.logGeneric(
         tip: 'admin_akcija',
         detalji: 'Zakazivanje za dnevne putnike: ${aktivno ? "UKLJUČENO" : "ISKLJUČENO"}',
       );

@@ -83,12 +83,13 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
 
                     var logs = snapshot.data ?? [];
 
-                    // 1. Primarni filter za tipove koji nas zanimaju (Zahtevi)
+                    // 1. Primarni filter za tipove koji nas zanimaju (Zahtevi - prošireno)
                     logs = logs.where((l) {
                       final tip = l['tip']?.toString() ?? '';
                       return tip == 'zakazivanje_putnika' ||
                           tip == 'potvrda_zakazivanja' ||
                           tip == 'otkazivanje_putnika' ||
+                          tip == 'otkazivanje' || // Kompatibilnost sa starim logovima
                           tip == 'greska_zahteva';
                     }).toList();
 
@@ -98,7 +99,11 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
                         final tip = l['tip']?.toString() ?? '';
                         if (_activeFilter == 'Na čekanju') return tip == 'zakazivanje_putnika';
                         if (_activeFilter == 'Obrađeno') return tip == 'potvrda_zakazivanja';
-                        if (_activeFilter == 'Otkazano') return tip == 'otkazivanje_putnika' || tip == 'greska_zahteva';
+                        if (_activeFilter == 'Otkazano') {
+                          return tip == 'otkazivanje_putnika' ||
+                              tip == 'otkazivanje' ||
+                              tip == 'greska_zahteva';
+                        }
                         return true;
                       }).toList();
                     } // 3. Search filter

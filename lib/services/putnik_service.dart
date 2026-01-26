@@ -172,7 +172,7 @@ class PutnikService {
         danKratica = _getDayAbbreviationFromName(_getTodayName());
       }
 
-      final todayDate = isoDate;
+      final todayDate = isoDate.split('T')[0];
 
       // 🆕 Učitaj otkazivanja iz voznje_log za sve putnike
       final otkazivanja = await VoznjeLogService.getOtkazivanjaZaSvePutnike();
@@ -185,7 +185,7 @@ class PutnikService {
 
       for (final m in registrovani) {
         // Kreiraj putnike SAMO za ciljani dan
-        final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica);
+        final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica, isoDate: isoDate);
 
         // Dohvati uklonjene termine za ovog putnika
         final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
@@ -245,7 +245,7 @@ class PutnikService {
       }
       danKratica ??= _getDayAbbreviationFromName(_getTodayName());
 
-      final todayDate = isoDate ?? DateTime.now().toIso8601String().split('T')[0];
+      final todayDate = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
 
       // 🆕 Učitaj otkazivanja iz voznje_log za sve putnike
       final otkazivanja = await VoznjeLogService.getOtkazivanjaZaSvePutnike();
@@ -258,7 +258,7 @@ class PutnikService {
 
       for (final m in registrovani) {
         // ? ISPRAVKA: Kreiraj putnike SAMO za ciljani dan
-        final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica);
+        final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica, isoDate: todayDate);
 
         // ?? Dohvati uklonjene termine za ovog putnika
         final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
@@ -778,6 +778,16 @@ class PutnikService {
     // Normalizuj vrednosti pre čuvanja za konzistentno poređenje
     final normDatum = datum.split('T')[0]; // ISO format bez vremena
     final normVreme = GradAdresaValidator.normalizeTime(vreme);
+
+    // Spreči dupliranje istog termina
+    final vecPostoji = uklonjeni.any((ut) {
+      final utMap = ut as Map<String, dynamic>;
+      final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
+      final utDatum = utMap['datum']?.toString().split('T')[0];
+      return utDatum == normDatum && utVreme == normVreme && utMap['grad'] == grad;
+    });
+
+    if (vecPostoji) return;
 
     uklonjeni.add({
       'datum': normDatum,

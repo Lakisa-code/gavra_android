@@ -218,7 +218,7 @@ class VoznjeLogService {
       int brojDuznika = 0;
       for (final putnik in putniciResponse) {
         final tipPutnika = putnik['tip'] as String?;
-        if (tipPutnika == 'dnevni') {
+        if (tipPutnika == 'dnevni' || tipPutnika == 'posiljka') {
           brojDuznika++;
         }
       }

@@ -128,7 +128,7 @@ class Putnik {
       polazak: RegistrovaniHelpers.normalizeTime(polazakRaw?.toString()) ?? '6:00',
       pokupljen: jePokupljenDanas, // ✅ FIX: Koristi stvarno pokupljenje iz JSON-a
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
-      mesecnaKarta: tipPutnika != 'dnevni', // 🆕 FIX: false za dnevni tip
+      mesecnaKarta: tipPutnika != 'dnevni' && tipPutnika != 'posiljka', // 🆕 FIX: false za dnevni i posiljku
       dan: map['radni_dani'] as String? ?? 'Pon',
       status: status, // ✅ Koristi provereni status
       statusVreme: map['updated_at'] as String?,
@@ -256,13 +256,18 @@ class Putnik {
   // NOVA METODA: Kreira putnik objekte za SPECIFIČAN DAN (umesto trenutni dan)
   static List<Putnik> fromRegistrovaniPutniciMultipleForDay(
     Map<String, dynamic> map,
-    String targetDan,
-  ) {
-    return _parseAndCreatePutniciForDay(map, targetDan);
+    String targetDan, {
+    String? isoDate,
+  }) {
+    return _parseAndCreatePutniciForDay(map, targetDan, isoDate: isoDate);
   }
 
   // 🆕 HELPER: Zajednička logika za parsiranje i kreiranje putnika
-  static List<Putnik> _parseAndCreatePutniciForDay(Map<String, dynamic> map, String targetDan) {
+  static List<Putnik> _parseAndCreatePutniciForDay(
+    Map<String, dynamic> map,
+    String targetDan, {
+    String? isoDate,
+  }) {
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
     final statusIzBaze = map['status'] as String? ?? 'radi';
@@ -291,6 +296,7 @@ class Putnik {
       obrisan,
       targetDan,
       tipPutnika,
+      isoDate: isoDate,
     );
   }
 
@@ -307,11 +313,12 @@ class Putnik {
     String? vozac,
     bool obrisan,
     String targetDan,
-    String? tipPutnika,
-  ) {
+    String? tipPutnika, {
+    String? isoDate,
+  }) {
     final List<Putnik> putnici = [];
-    // 🆕 FIX: mesecnaKarta = true samo za radnik i ucenik, false za dnevni
-    final bool mesecnaKarta = tipPutnika != 'dnevni';
+    // 🆕 FIX: mesecnaKarta = true samo za radnik i ucenik, false za dnevni i posiljka
+    final bool mesecnaKarta = tipPutnika != 'dnevni' && tipPutnika != 'posiljka';
 
     // ✅ NOVA LOGIKA: Čitaj vremena iz novih kolona po danima
     // Određi da li putnik radi za targetDan
@@ -427,6 +434,7 @@ class Putnik {
           vremeOtkazivanja: RegistrovaniHelpers.getVremeOtkazivanjaForDayAndPlace(map, normalizedTarget, 'bc'),
           otkazaoVozac: RegistrovaniHelpers.getOtkazaoVozacForDayAndPlace(map, normalizedTarget, 'bc'),
           otkazanZaPolazak: bcOtkazan, // ✅ Koristi već izračunatu vrednost
+          datum: isoDate, // 🆕 FIX: Postavi datum za koji je putnik kreiran
         ),
       );
     }
@@ -483,6 +491,7 @@ class Putnik {
           vremeOtkazivanja: RegistrovaniHelpers.getVremeOtkazivanjaForDayAndPlace(map, normalizedTarget, 'vs'),
           otkazaoVozac: RegistrovaniHelpers.getOtkazaoVozacForDayAndPlace(map, normalizedTarget, 'vs'),
           otkazanZaPolazak: vsOtkazan, // ✅ Koristi već izračunatu vrednost
+          datum: isoDate, // 🆕 FIX: Postavi datum za koji je putnik kreiran
         ),
       );
     }

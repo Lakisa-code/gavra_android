@@ -833,7 +833,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           // DROPDOWN ZA BELA CRKVA
           DropdownButtonFormField<String>(
             key: ValueKey('bc_$_adresaBelaCrkvaId'),
-            initialValue: _adresaBelaCrkvaId,
+            value: _adresaBelaCrkvaId,
             decoration: InputDecoration(
               labelText: 'Adresa Bela Crkva',
               prefixIcon: const Icon(Icons.location_on),
@@ -864,7 +864,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           // DROPDOWN ZA VRŠAC
           DropdownButtonFormField<String>(
             key: ValueKey('vs_$_adresaVrsacId'),
-            initialValue: _adresaVrsacId,
+            value: _adresaVrsacId,
             decoration: InputDecoration(
               labelText: 'Adresa Vršac',
               prefixIcon: const Icon(Icons.location_city),
@@ -1299,7 +1299,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     required Function(String?) onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      value: value,
       style: const TextStyle(color: Colors.black87),
       decoration: InputDecoration(
         hintText: label,
@@ -1553,7 +1553,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
       // 📝 LOG GRESKE ZA ADMINA
       try {
-        VoznjeLogService.logGreska(
+        await VoznjeLogService.logGreska(
           putnikId: widget.existingPutnik?.id, // Može biti null za nove
           greska: e.toString(),
           meta: {
@@ -1599,9 +1599,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
       'polasci_po_danu': _getPolasciPoDanuMap(),
       'radni_dani': _getRadniDaniString(),
-      'status': (widget.existingPutnik?.status == 'aktivan' || widget.existingPutnik?.status == null) 
-                ? 'radi' 
-                : widget.existingPutnik!.status,
+      'status': (widget.existingPutnik?.status == 'aktivan' || widget.existingPutnik?.status == null)
+          ? 'radi'
+          : widget.existingPutnik!.status,
       // Datumi
       'datum_pocetka_meseca': pocetak.toIso8601String().split('T')[0],
       'datum_kraja_meseca': kraj.toIso8601String().split('T')[0],
