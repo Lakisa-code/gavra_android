@@ -477,51 +477,49 @@ class VoznjeLogService {
       return Stream.value([]);
     }
 
-    // Bilješka: realtime stream u supabase_flutter se obično koristi bez .order() i .limit()
-    // unutar .stream() poziva ako se koristi tabela direktno, ali .order() se može dodati naknavno u map().
-    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((List<Map<String, dynamic>> logs) {
-      // Filtriraj logove:
-      // 1. Logovi koji imaju ovaj vozac_id
-      // 2. Logovi koji nemaju vozac_id (direktna akcija putnika), ali putnik je vezan za ovog vozača
-      // NAPOMENA: Za punu filtraciju putnika bismo morali da znamo listu putnika ovog vozača.
-      // Za sada, administrator u ML Labu želi sve, a vozač svoje.
-      // Ako je vozacIme 'Admin' ili slično, pokazujemo sve.
+    // 🔥 FIX: Koristimo server-side order za stream da bismo dobili NAJNOVIJE logove
+    // Bez ovoga, stream vraća prvih 1000 redova (najstarijih) iz baze
+    return _supabase
+        .from('voznje_log')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .limit(limit * 5) // Uzimamo malo više pa ćemo filtrirati lokalno
+        .map((List<Map<String, dynamic>> logs) {
+          final List<Map<String, dynamic>> filtered = logs.where((log) {
+            if (log['vozac_id'] == vozacUuid) return true;
+            if (log['vozac_id'] == null) return true;
+            return false;
+          }).toList();
 
-      final List<Map<String, dynamic>> filtered = logs.where((log) {
-        if (log['vozac_id'] == vozacUuid) return true;
-
-        // Ako nema vozac_id, to je direktna akcija putnika (prijava, odsustvo)
-        // Prikazujemo je u personalnom dnevniku vozača samo ako je taj putnik bio dodeljen njemu.
-        // Pošto nemamo listu putnika ovde, a logGeneric trenutno ne čuva "vlasnika" akcije kad putnik klikne,
-        // najsigurnije je prikazati sve akcije putnika koje su "sistemske" u globalnom dnevniku.
-        if (log['vozac_id'] == null) return true;
-
-        return false;
-      }).toList();
-
-      // Sortiraj po vremenu (created_at) silazno
-      filtered.sort((a, b) {
-        final DateTime dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
-        final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
-        return dateB.compareTo(dateA);
-      });
-      return filtered.take(limit).toList();
-    });
+          // Sortiraj po vremenu (created_at) silazno
+          filtered.sort((a, b) {
+            final DateTime dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
+            final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
+            return dateB.compareTo(dateA);
+          });
+          return filtered.take(limit).toList();
+        });
   }
 
   /// 🕒 GLOBALNI STREAM SVIH AKCIJA - Za Gavra Lab Admin Dnevnik
-  /// ✅ ISPRAVKA: Uklonjen filter koji je možda ograničavao prikaz i dodato ručno sortiranje
+  /// ✅ ISPRAVKA: Dodat server-side order i limit za stream
   static Stream<List<Map<String, dynamic>>> streamAllRecentLogs({int limit = 50}) {
-    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((List<Map<String, dynamic>> logs) {
-      // Sortiraj po vremenu (created_at) silazno
-      final List<Map<String, dynamic>> sorted = List.from(logs);
-      sorted.sort((a, b) {
-        final DateTime dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
-        final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
-        return dateB.compareTo(dateA);
-      });
-      return sorted.take(limit).toList();
-    });
+    return _supabase
+        .from('voznje_log')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .limit(limit)
+        .map((List<Map<String, dynamic>> logs) {
+          // Sortiranje je već urađeno na serveru, ali Supabase stream ponekad emituje
+          // nesortirane podatke pri update-u, pa je sigurnije zadržati i lokalni sort.
+          final List<Map<String, dynamic>> sorted = List.from(logs);
+          sorted.sort((a, b) {
+            final DateTime dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
+            final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
+            return dateB.compareTo(dateA);
+          });
+          return sorted;
+        });
   }
 
   /// 📝 LOGOVANJE GENERIČKE AKCIJE

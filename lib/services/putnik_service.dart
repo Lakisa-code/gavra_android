@@ -1463,84 +1463,9 @@ class PutnikService {
     }
   }
 
-  /// 🔄 NEDELJNI RESET - Briše polasci_po_danu podatke za sve putnike
-  /// Poziva se automatski u subotu ujutru (nakon ponoći petak→subota)
-  /// NE RESETUJE: bolovanje i godišnji (oni ostaju)
-  Future<void> weeklyResetPolasciPoDanu() async {
-    try {
-      // Dohvati sve putnike koji NISU na bolovanju/godišnjem
-      final response = await supabase
-          .from('registrovani_putnici')
-          .select('id, polasci_po_danu, status, tip')
-          .not('status', 'in', '(bolovanje,godisnji)');
-
-      final putnici = response as List<dynamic>;
-
-      for (final putnik in putnici) {
-        final id = putnik['id'] as String;
-        final polasciRaw = putnik['polasci_po_danu'];
-
-        if (polasciRaw == null) continue;
-
-        Map<String, dynamic>? polasci;
-        if (polasciRaw is String) {
-          try {
-            polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
-          } catch (_) {
-            continue;
-          }
-        } else if (polasciRaw is Map<String, dynamic>) {
-          polasci = Map<String, dynamic>.from(polasciRaw);
-        }
-
-        if (polasci == null) continue;
-
-        // Očisti dnevne podatke (pokupljeno, plaćeno, otkazano) I VREMENA za svaki dan
-        bool hasChanges = false;
-        for (final dayKey in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-          final danData = polasci[dayKey];
-          if (danData is Map<String, dynamic>) {
-            final mutableDayData = Map<String, dynamic>.from(danData);
-
-            // Definiši šta se briše
-            final keysToRemove = mutableDayData.keys.toList(); // Brišemo SVE iz JSON-a za taj dan
-
-            for (final key in keysToRemove) {
-              mutableDayData.remove(key);
-              hasChanges = true;
-            }
-            polasci[dayKey] = mutableDayData;
-          }
-        }
-
-        if (hasChanges) {
-          await supabase.from('registrovani_putnici').update({
-            'polasci_po_danu': jsonEncode(polasci),
-            'updated_at': DateTime.now().toIso8601String(),
-          }).eq('id', id);
-        }
-      }
-    } catch (_) {
-      // Weekly reset error - silent
-    }
-  }
-
   /// 🔄 PROVERI I IZVRŠI NEDELJNI RESET ako je potrebno
-  /// Poziva se kad se app pokrene - proverava da li je subota (petak ponoc)
+  // ⚠️ UKLONJENO: Koristi se WeeklyResetService umesto ove metode
   Future<void> checkAndPerformWeeklyReset() async {
-    final now = DateTime.now();
-
-    // Resetuj SAMO subotom (petak ponoć)
-    if (now.weekday != DateTime.saturday) {
-      return;
-    }
-
-    try {
-      // Izvrši reset (M-F podaci)
-      // Ovo je sigurno izvršavati više puta jer briše samo M-F podatke
-      await weeklyResetPolasciPoDanu();
-    } catch (_) {
-      // Weekly reset check error - silent
-    }
+    return;
   }
 }

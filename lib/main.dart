@@ -22,7 +22,6 @@ import 'services/ml_dispatch_autonomous_service.dart';
 import 'services/ml_finance_autonomous_service.dart';
 import 'services/ml_vehicle_autonomous_service.dart';
 import 'services/payment_reminder_service.dart';
-import 'services/putnik_service.dart'; // 🔄 DODATO za nedeljni reset
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
 import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00 (bez notif)
@@ -31,6 +30,7 @@ import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaci
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌨️ Upozorenja za loše vreme
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
+import 'services/weekly_reset_service.dart'; // 🔄 NOVI SERVIS ZA RESET
 import 'supabase_client.dart';
 import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 
@@ -137,7 +137,7 @@ Future<void> _initAppServices() async {
 
   // Realtime & AI (bez čekanja ikoga)
   KapacitetService.startGlobalRealtimeListener();
-  unawaited(PutnikService().checkAndPerformWeeklyReset());
+  unawaited(WeeklyResetService.initialize()); // ✅ Koristimo novi, robusniji servis
   unawaited(PaymentReminderService.checkAndSendReminders());
   unawaited(WeatherAlertService.checkAndSendWeatherAlerts());
 

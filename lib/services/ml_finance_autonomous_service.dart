@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import 'realtime_notification_service.dart';
+import 'voznje_log_service.dart';
 
 class FuelInventory {
   double litersInStock;
@@ -383,6 +384,14 @@ class MLFinanceAutonomousService extends ChangeNotifier {
           pumpMeter: newPumpMeter,
         ));
       }
+
+      // 📝 LOGOVANJE U GENERALNI DNEVNIK
+      await VoznjeLogService.logGeneric(
+        tip: 'gorivo_refill',
+        detalji:
+            'Multi-refill: ${totalLiters.toStringAsFixed(1)} L podeljeno na ${vehicleIds.length} vozila. Pump: ${newPumpMeter.toStringAsFixed(1)}',
+      );
+
       notifyListeners();
     } catch (e) {
       if (kDebugMode) print('❌ [ML Finance] Greška pri snimanju višestrukog točenja: $e');

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../globals.dart';
+import 'voznje_log_service.dart';
 
 /// 🔄 SERVIS ZA NEDELJNI RESET RASPOREDA
 /// U petak u ponoć (00:00 subota) resetuje polasci_po_danu za sve putnike
@@ -121,6 +122,14 @@ class WeeklyResetService {
         }).eq('id', putnikId);
 
         resetCount++;
+      }
+
+      // 📝 LOGOVANJE AKCIJE U DNEVNIK
+      if (resetCount > 0) {
+        await VoznjeLogService.logGeneric(
+          tip: 'nedeljni_reset',
+          detalji: 'Automatski nedeljni reset rasporeda (prazna polja) za $resetCount putnika.',
+        );
       }
 
       // Sačuvaj datum reseta
