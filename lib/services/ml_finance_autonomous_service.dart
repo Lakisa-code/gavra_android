@@ -90,14 +90,18 @@ class MLFinanceAutonomousService extends ChangeNotifier {
   final List<HistoricalBill> _bills = [];
   final List<HistoricalPayment> _payments = [];
   final List<HistoricalUsage> _usages = [];
+  double? _lastKnownPumpMeter;
 
   // ⛽ NOVO: Pronađi poslednje stanje brojila na pumpi
   double? get lastPumpMeter {
-    if (_usages.isEmpty) return null;
-    for (var i = _usages.length - 1; i >= 0; i--) {
-      if (_usages[i].pumpMeter != null) return _usages[i].pumpMeter;
+    // 1. Prvo traži u usage listi (koja je sortirana po vremenu u reconstructFinancialState)
+    if (_usages.isNotEmpty) {
+      for (var i = _usages.length - 1; i >= 0; i--) {
+        if (_usages[i].pumpMeter != null) return _usages[i].pumpMeter;
+      }
     }
-    return null;
+    // 2. Ako nema u usage, vrati poslednji poznati iz kalibracije/milestone-a
+    return _lastKnownPumpMeter;
   }
 
   bool _isActive = false;
@@ -147,10 +151,12 @@ class MLFinanceAutonomousService extends ChangeNotifier {
       final latest = _milestones.first;
       _inventory.totalDebt = latest.debt ?? 0;
       _inventory.litersInStock = latest.litersInStock ?? 0;
+      _lastKnownPumpMeter = latest.meterReading;
       startDate = latest.date;
     } else {
       _inventory.totalDebt = 0;
       _inventory.litersInStock = 0;
+      _lastKnownPumpMeter = null;
     }
 
     // Clear lists before reconstructing to avoid duplicates
@@ -167,6 +173,12 @@ class MLFinanceAutonomousService extends ChangeNotifier {
     final List logs = response as List;
     for (var log in logs) {
       final DateTime date = DateTime.parse(log['created_at']);
+      
+      // ✅ Uvek ažuriraj poslednje poznato stanje brojila ako postoji, nezavisno od tipa loga
+      if (log['pump_meter'] != null) {
+        _lastKnownPumpMeter = (log['pump_meter'] as num).toDouble();
+      }
+
       if (log['type'] == 'BILL') {
         final liters = (log['liters'] as num).toDouble();
         final price = (log['price'] as num?)?.toDouble();
@@ -399,17 +411,19 @@ class MLFinanceAutonomousService extends ChangeNotifier {
     }
   }
 
-  Future<void> calibrate({double? liters, double? debt, double? km}) async {
+  Future<void> calibrate({double? liters, double? debt, double? km, double? pumpMeter}) async {
     try {
       await _supabase.from('fuel_logs').insert({
         'type': 'CALIBRATION',
         'liters': liters,
         'amount': debt,
         'km': km,
+        'pump_meter': pumpMeter,
       });
 
       if (liters != null) _inventory.litersInStock = liters;
       if (debt != null) _inventory.totalDebt = debt;
+      if (pumpMeter != null) _lastKnownPumpMeter = pumpMeter;
 
       notifyListeners();
     } catch (e) {
