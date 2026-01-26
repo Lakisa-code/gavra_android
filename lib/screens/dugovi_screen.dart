@@ -135,9 +135,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     (!p.isMesecniTip) && // ✅ FIX: Plava kartica = nije mesečni tip
                     (p.vremePlacanja == null) && // ✅ FIX: Nije platio ako nema vremePlacanja
                     (p.jePokupljen) &&
-                    (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')) &&
-                    // 🎯 FILTER PO VOZAČU: Prikaži samo one koje je pokupio ovaj vozač
-                    (p.pokupioVozac == widget.currentDriver),
+                    (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')),
+                // 🎯 IZMENA: Uklonjen filter po vozaču da bi se prikazali SVI dužnici (zahtev 26.01.2026)
               )
               .toList();
 
