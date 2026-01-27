@@ -17,31 +17,53 @@ class PinZahteviScreen extends StatefulWidget {
 }
 
 class _PinZahteviScreenState extends State<PinZahteviScreen> {
-  List<Map<String, dynamic>> _zahtevi = [];
-  bool _isLoading = true;
-
   @override
-  void initState() {
-    super.initState();
-    _loadZahtevi();
-  }
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: PinZahtevService.streamZahteviKojiCekaju(),
+      builder: (context, snapshot) {
+        final zahtevi = snapshot.data ?? [];
+        final isLoading = snapshot.connectionState == ConnectionState.waiting && zahtevi.isEmpty;
 
-  Future<void> _loadZahtevi() async {
-    setState(() => _isLoading = true);
-    try {
-      final zahtevi = await PinZahtevService.dohvatiZahteveKojiCekaju();
-      if (!mounted) return;
-      setState(() {
-        _zahtevi = zahtevi;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška pri učitavanju: $e'), backgroundColor: Colors.red),
-      );
-    }
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text('📋 PIN Zahtevi', style: TextStyle(fontWeight: FontWeight.bold)),
+            automaticallyImplyLeading: false,
+          ),
+          body: Container(
+            decoration: BoxDecoration(gradient: Theme.of(context).backgroundGradient),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                        : zahtevi.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Nema zahteva na čekanju.',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: zahtevi.length,
+                                itemBuilder: (context, index) {
+                                  final zahtev = zahtevi[index];
+                                  return _buildZahtevCard(zahtev);
+                                },
+                              ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// Generiši random 4-cifreni PIN
@@ -177,8 +199,6 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        _loadZahtevi(); // Refresh lista
-
         // Automatski otvori SMS da pošalje PIN
         if (brojTelefona.isNotEmpty) {
           await _posaljiPinSms(brojTelefona, rezultat, ime);
@@ -234,7 +254,6 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Zahtev od $ime je odbijen'), backgroundColor: Colors.orange),
         );
-        _loadZahtevi();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Greška pri odbijanju'), backgroundColor: Colors.red),
@@ -243,177 +262,123 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: tripleBlueFashionGradient,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          automaticallyImplyLeading: false,
-          title: const Text(
-            '📨 Zahtevi za PIN',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-            : _zahtevi.isEmpty
-                ? _buildEmptyState()
-                : _buildZahteviLista(),
-      ),
-    );
-  }
+  Widget _buildZahtevCard(Map<String, dynamic> zahtev) {
+    final putnik = zahtev['registrovani_putnici'] as Map<String, dynamic>?;
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inbox, color: Colors.white.withValues(alpha: 0.3), size: 80),
-          const SizedBox(height: 16),
-          Text(
-            'Nema zahteva koji čekaju',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 18),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Svi zahtevi su obrađeni',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
+    final ime = putnik?['putnik_ime'] ?? '';
+    final telefon = zahtev['telefon'] ?? putnik?['broj_telefona'] ?? '-';
+    final email = zahtev['email'] ?? putnik?['email'] ?? '-';
+    final tip = putnik?['tip'] ?? '-';
+    final createdAt = zahtev['created_at'] as String?;
 
-  Widget _buildZahteviLista() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _zahtevi.length,
-      itemBuilder: (context, index) {
-        final zahtev = _zahtevi[index];
-        final putnik = zahtev['registrovani_putnici'] as Map<String, dynamic>?;
+    String vremeZahteva = '-';
+    if (createdAt != null) {
+      final dt = DateTime.tryParse(createdAt);
+      if (dt != null) {
+        vremeZahteva = '${dt.day}.${dt.month}.${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+      }
+    }
 
-        final ime = putnik?['putnik_ime'] ?? '';
-        final telefon = zahtev['telefon'] ?? putnik?['broj_telefona'] ?? '-';
-        final email = zahtev['email'] ?? putnik?['email'] ?? '-';
-        final tip = putnik?['tip'] ?? '-';
-        final createdAt = zahtev['created_at'] as String?;
-
-        String vremeZahteva = '-';
-        if (createdAt != null) {
-          final dt = DateTime.tryParse(createdAt);
-          if (dt != null) {
-            vremeZahteva = '${dt.day}.${dt.month}.${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
-          }
-        }
-
-        return Card(
-          color: const Color(0xFF1a1a2e),
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      color: const Color(0xFF1a1a2e),
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header - ime i tip
+            Row(
               children: [
-                // Header - ime i tip
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.amber.withValues(alpha: 0.2),
-                      child: Text(
-                        ime.isNotEmpty ? ime[0].toUpperCase() : '?',
-                        style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ime,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            tip == 'radnik'
-                                ? '👷 Radnik'
-                                : tip == 'ucenik'
-                                    ? '🎓 Učenik'
-                                    : tip,
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        '⏳ Čeka',
-                        style: TextStyle(color: Colors.orange, fontSize: 12),
-                      ),
-                    ),
-                  ],
+                CircleAvatar(
+                  backgroundColor: Colors.amber.withValues(alpha: 0.2),
+                  child: Text(
+                    ime.isNotEmpty ? ime[0].toUpperCase() : '?',
+                    style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                const SizedBox(height: 16),
-
-                // Info redovi
-                _buildInfoRow(Icons.phone, 'Telefon', telefon),
-                const SizedBox(height: 8),
-                _buildInfoRow(Icons.email, 'Email', email),
-                const SizedBox(height: 8),
-                _buildInfoRow(Icons.access_time, 'Zahtev poslat', vremeZahteva),
-
-                const SizedBox(height: 16),
-
-                // Akcije
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _odbijZahtev(zahtev),
-                        icon: const Icon(Icons.close, size: 18),
-                        label: const Text('Odbij'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ime,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _odobriZahtev(zahtev),
-                        icon: const Icon(Icons.check, size: 18),
-                        label: const Text('Dodeli PIN'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
+                      Text(
+                        tip == 'radnik'
+                            ? '👷 Radnik'
+                            : tip == 'ucenik'
+                                ? '🎓 Učenik'
+                                : tip,
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '⏳ Čeka',
+                    style: TextStyle(color: Colors.orange, fontSize: 12),
+                  ),
                 ),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 16),
+
+            // Info redovi
+            _buildInfoRow(Icons.phone, 'Telefon', telefon),
+            const SizedBox(height: 8),
+            _buildInfoRow(Icons.email, 'Email', email),
+            const SizedBox(height: 8),
+            _buildInfoRow(Icons.access_time, 'Zahtev poslat', vremeZahteva),
+
+            const SizedBox(height: 16),
+
+            // Akcije
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _odbijZahtev(zahtev),
+                    icon: const Icon(Icons.close, size: 18),
+                    label: const Text('Odbij'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _odobriZahtev(zahtev),
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('Dodeli PIN'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

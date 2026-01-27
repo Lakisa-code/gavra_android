@@ -47,6 +47,16 @@ class AdresaSupabaseService {
     }
   }
 
+  /// 🛰️ REALTIME STREAM: Prati promene u tabeli 'adrese'
+  static Stream<List<Adresa>> streamSveAdrese() {
+    return supabase
+        .from('adrese')
+        .stream(primaryKey: ['id'])
+        .order('grad')
+        .order('naziv')
+        .map((data) => data.map((json) => Adresa.fromMap(json)).toList());
+  }
+
   /// Pronađi adresu po nazivu i gradu
   static Future<Adresa?> findAdresaByNazivAndGrad(String naziv, String grad) async {
     try {

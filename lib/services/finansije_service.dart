@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -101,9 +104,18 @@ class FinansijeService {
     }
   }
 
-  /// Dohvati ukupne troškove kreirane u zadatom periodu (po created_at)
+  /// Dohvati ukupne troškove kreirane u zadatom periodu (po created_at ili mesec/godina)
   static Future<double> getUkupniTroskoviZaPeriod(DateTime from, DateTime to) async {
     try {
+      // PROVERA: Ako period pokriva tačno jedan ceo mesec, koristi getUkupniTroskoviZaMesec
+      // Ovo omogućava bolju preciznost za unose koji nisu u voznje_log već u finansije_troskovi (fix Zadatak 1)
+      if (from.day == 1 && to.day >= 28 && from.month == to.month) {
+        final lastDayOfMonth = DateTime(to.year, to.month + 1, 0).day;
+        if (to.day == lastDayOfMonth) {
+          return getUkupniTroskoviZaMesec(from.month, from.year);
+        }
+      }
+
       final response = await _supabase
           .from('finansije_troskovi')
           .select('iznos')
@@ -194,93 +206,164 @@ class FinansijeService {
     }
   }
 
-  /// Dohvati kompletan finansijski izveštaj
+  /// Dohvati ukupna potraživanja (iznosi koji nisu plaćeni)
+  static Future<double> getPotrazivanja() async {
+    try {
+      // 1. Dohvati sve aktivne putnike
+      final response = await _supabase.from('registrovani_putnici').select('*').eq('aktivan', true);
+
+      double ukupno = 0;
+      for (final row in response) {
+        final polasciPoDanu = row['polasci_po_danu'];
+        if (polasciPoDanu == null) continue;
+
+        Map<String, dynamic> polasci;
+        if (polasciPoDanu is String) {
+          polasci = Map<String, dynamic>.from(const JsonDecoder().convert(polasciPoDanu));
+        } else {
+          polasci = Map<String, dynamic>.from(polasciPoDanu);
+        }
+
+        // Prođi kroz sve dane i gradove u JSON-u
+        polasci.forEach((dan, mesta) {
+          if (mesta is Map) {
+            mesta.forEach((mesto, podaci) {
+              if (podaci is Map) {
+                final bool jePokupljen = podaci['pokupljen'] == true;
+                final bool jePlacen = podaci['placen'] == true || podaci['placeno'] == true;
+
+                // Ako je pokupljen a nije plaćen
+                if (jePokupljen && !jePlacen) {
+                  final iznos = podaci['iznos'] ?? podaci['cena'] ?? row['cena_po_danu'] ?? 0;
+                  ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+                }
+              }
+            });
+          }
+        });
+      }
+      return ukupno;
+    } catch (e) {
+      debugPrint('❌ [Finansije] Greška pri računanju potraživanja: $e');
+      return 0;
+    }
+  }
+
+  /// Dohvati kompletan finansijski izveštaj (Optimizovano via RPC)
   static Future<FinansijskiIzvestaj> getIzvestaj() async {
+    try {
+      final now = DateTime.now();
+      final rpcResponse = await _supabase.rpc('get_full_finance_report');
+      final data = Map<String, dynamic>.from(rpcResponse);
+
+      final n = data['nedelja'];
+      final m = data['mesec'];
+      final g = data['godina'];
+      final p = data['prosla'];
+      final tPoTipuRaw = Map<String, dynamic>.from(data['troskovi_po_tipu'] ?? {});
+      final Map<String, double> troskoviPoTipu = tPoTipuRaw.map(
+        (key, value) => MapEntry(key, (value is num) ? value.toDouble() : double.tryParse(value.toString()) ?? 0),
+      );
+
+      // Potraživanja (frontend calculation for accuracy)
+      final potrazivanja = await getPotrazivanja();
+
+      // Datumi nedelje (ponedeljak - nedelja)
+      final weekday = now.weekday;
+      final mondayThisWeek = now.subtract(Duration(days: weekday - 1));
+      final sundayThisWeek = mondayThisWeek.add(const Duration(days: 6));
+
+      return FinansijskiIzvestaj(
+        prihodNedelja: _toDouble(n['prihod']),
+        troskoviNedelja: _toDouble(n['troskovi']),
+        netoNedelja: _toDouble(n['prihod']) - _toDouble(n['troskovi']),
+        voznjiNedelja: n['voznje'] ?? 0,
+        prihodMesec: _toDouble(m['prihod']),
+        troskoviMesec: _toDouble(m['troskovi']),
+        netoMesec: _toDouble(m['prihod']) - _toDouble(m['troskovi']),
+        voznjiMesec: m['voznje'] ?? 0,
+        prihodGodina: _toDouble(g['prihod']),
+        troskoviGodina: _toDouble(g['troskovi']),
+        netoGodina: _toDouble(g['prihod']) - _toDouble(g['troskovi']),
+        voznjiGodina: g['voznje'] ?? 0,
+        prihodProslaGodina: _toDouble(p['prihod']),
+        troskoviProslaGodina: _toDouble(p['troskovi']),
+        netoProslaGodina: _toDouble(p['prihod']) - _toDouble(p['troskovi']),
+        voznjiProslaGodina: p['voznje'] ?? 0,
+        proslaGodina: now.year - 1,
+        troskoviPoTipu: troskoviPoTipu,
+        ukupnoMesecniTroskovi: _toDouble(m['troskovi']),
+        potrazivanja: potrazivanja,
+        startNedelja: mondayThisWeek,
+        endNedelja: sundayThisWeek,
+      );
+    } catch (e) {
+      debugPrint('❌ [Finansije] Greška pri dohvatanju RPC izveštaja: $e');
+      // Fallback na staru metodu ili prazan izvestaj
+      return _getEmptyIzvestaj();
+    }
+  }
+
+  static double _toDouble(dynamic val) {
+    if (val == null) return 0;
+    return (val is num) ? val.toDouble() : double.tryParse(val.toString()) ?? 0;
+  }
+
+  static FinansijskiIzvestaj _getEmptyIzvestaj() {
     final now = DateTime.now();
-
-    // Ova nedelja (ponedeljak - nedelja)
-    final weekday = now.weekday;
-    final mondayThisWeek = now.subtract(Duration(days: weekday - 1));
-    final sundayThisWeek = mondayThisWeek.add(const Duration(days: 6));
-    final startOfWeek = DateTime(mondayThisWeek.year, mondayThisWeek.month, mondayThisWeek.day);
-    final endOfWeek = DateTime(sundayThisWeek.year, sundayThisWeek.month, sundayThisWeek.day, 23, 59, 59);
-
-    // Ovaj mesec
-    final startOfMonth = DateTime(now.year, now.month, 1);
-    final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-
-    // Ova godina
-    final startOfYear = DateTime(now.year, 1, 1);
-    final endOfYear = DateTime(now.year, 12, 31, 23, 59, 59);
-
-    // Prošla godina
-    final proslaGodina = now.year - 1;
-    final startOfProslaGodina = DateTime(proslaGodina, 1, 1);
-    final endOfProslaGodina = DateTime(proslaGodina, 12, 31, 23, 59, 59);
-
-    // Prihodi
-    final prihodNedelja = await getPrihodZaPeriod(startOfWeek, endOfWeek);
-    final prihodMesec = await getPrihodZaPeriod(startOfMonth, endOfMonth);
-    final prihodGodina = await getPrihodZaPeriod(startOfYear, endOfYear);
-    final prihodProslaGodina = await getPrihodZaPeriod(startOfProslaGodina, endOfProslaGodina);
-
-    // Vožnje
-    final voznjiNedelja = await getBrojVoznjiZaPeriod(startOfWeek, endOfWeek);
-    final voznjiMesec = await getBrojVoznjiZaPeriod(startOfMonth, endOfMonth);
-    final voznjiGodina = await getBrojVoznjiZaPeriod(startOfYear, endOfYear);
-    final voznjiProslaGodina = await getBrojVoznjiZaPeriod(startOfProslaGodina, endOfProslaGodina);
-
-    // 📊 TROŠKOVI - PRAVILNO PO MESECIMA/GODINAMA
-
-    // Tekući mesec - stvarni troškovi
-    final troskoviTekuciMesec = await getUkupniTroskoviZaMesec(now.month, now.year);
-    final troskoviPoTipu = await getTroskoviPoTipu(mesec: now.month, godina: now.year);
-
-    // Nedelja - stvarni troškovi uneti ove nedelje (po created_at)
-    final troskoviNedelja = await getUkupniTroskoviZaPeriod(startOfWeek, endOfWeek);
-
-    // Ova godina - zbir svih meseci ove godine
-    final troskoviOvaGodina = await getUkupniTroskoviZaGodinu(now.year);
-
-    // Prošla godina - zbir svih meseci prošle godine
-    final troskoviProslaGodinaIznos = await getUkupniTroskoviZaGodinu(proslaGodina);
-
-    // Dani u mesecu do sad (za proporciju prikaza)
-    // ❌ UKLONJENO: Proporcionalno računanje (zbunjivalo korinika)
-    // Sada prikazujemo PUNE mesečne troškove
-    // final danaUMesecu = endOfMonth.day;
-    // final danaProsloDosad = now.day;
-    // final proporcionalnaTroskoviMesec = troskoviTekuciMesec * (danaProsloDosad / danaUMesecu);
-
     return FinansijskiIzvestaj(
-      // Nedelja
-      prihodNedelja: prihodNedelja,
-      troskoviNedelja: troskoviNedelja,
-      netoNedelja: prihodNedelja - troskoviNedelja,
-      voznjiNedelja: voznjiNedelja,
-      // Mesec - KORISTI PUNE TROŠKOVE
-      prihodMesec: prihodMesec,
-      troskoviMesec: troskoviTekuciMesec,
-      netoMesec: prihodMesec - troskoviTekuciMesec,
-      voznjiMesec: voznjiMesec,
-      // Godina
-      prihodGodina: prihodGodina,
-      troskoviGodina: troskoviOvaGodina,
-      netoGodina: prihodGodina - troskoviOvaGodina,
-      voznjiGodina: voznjiGodina,
-      // Prošla godina - STVARNI troškovi iz baze
-      prihodProslaGodina: prihodProslaGodina,
-      troskoviProslaGodina: troskoviProslaGodinaIznos,
-      netoProslaGodina: prihodProslaGodina - troskoviProslaGodinaIznos,
-      voznjiProslaGodina: voznjiProslaGodina,
-      proslaGodina: proslaGodina,
-      // Detalji troškova
-      troskoviPoTipu: troskoviPoTipu,
-      ukupnoMesecniTroskovi: troskoviTekuciMesec,
-      // Datumi
-      startNedelja: startOfWeek,
-      endNedelja: endOfWeek,
+      prihodNedelja: 0,
+      troskoviNedelja: 0,
+      netoNedelja: 0,
+      voznjiNedelja: 0,
+      prihodMesec: 0,
+      troskoviMesec: 0,
+      netoMesec: 0,
+      voznjiMesec: 0,
+      prihodGodina: 0,
+      troskoviGodina: 0,
+      netoGodina: 0,
+      voznjiGodina: 0,
+      prihodProslaGodina: 0,
+      troskoviProslaGodina: 0,
+      netoProslaGodina: 0,
+      voznjiProslaGodina: 0,
+      proslaGodina: now.year - 1,
+      troskoviPoTipu: {},
+      ukupnoMesecniTroskovi: 0,
+      potrazivanja: 0,
+      startNedelja: now,
+      endNedelja: now,
     );
+  }
+
+  /// Dohvati izveštaj za specifičan period (Custom Range)
+  static Future<Map<String, dynamic>> getIzvestajZaPeriod(DateTime from, DateTime to) async {
+    try {
+      final response = await _supabase.rpc('get_custom_finance_report', params: {
+        'p_from': from.toIso8601String().split('T')[0],
+        'p_to': to.toIso8601String().split('T')[0],
+      });
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      return {'prihod': 0, 'voznje': 0, 'troskovi': 0, 'neto': 0};
+    }
+  }
+
+  /// 🛰️ REALTIME STREAM: Prati promene u relevantnim tabelama i osvežava izveštaj
+  static Stream<FinansijskiIzvestaj> streamIzvestaj() async* {
+    // Emituj inicijalne podatke
+    yield await getIzvestaj();
+
+    // Listen na promene u voznje_log i finansije_troskovi
+    final voznjeStream = supabase.from('voznje_log').stream(primaryKey: ['id']);
+    final troskoviStream = supabase.from('finansije_troskovi').stream(primaryKey: ['id']);
+
+    // Svaki put kada se bilo koja tabela promeni, osveži ceo izveštaj
+    // (Ovo je malo "skuplje", ali admin panelu je bitna tačnost)
+    await for (final _ in StreamGroup.merge([voznjeStream, troskoviStream])) {
+      yield await getIzvestaj();
+    }
   }
 }
 
@@ -402,6 +485,7 @@ class FinansijskiIzvestaj {
   // Detalji
   final Map<String, double> troskoviPoTipu;
   final double ukupnoMesecniTroskovi;
+  final double potrazivanja;
 
   // Datumi
   final DateTime startNedelja;
@@ -427,6 +511,7 @@ class FinansijskiIzvestaj {
     required this.proslaGodina,
     required this.troskoviPoTipu,
     required this.ukupnoMesecniTroskovi,
+    required this.potrazivanja,
     required this.startNedelja,
     required this.endNedelja,
   });

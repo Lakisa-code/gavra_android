@@ -3,10 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../services/vozac_mapping_service.dart';
+import '../theme.dart';
 import '../utils/vozac_boja.dart';
 
 /// 📊 VOZACI STATISTIKA SCREEN V2
-/// Moderan i lep prikaz statistika vozača
 class VozaciStatistikaScreenV2 extends StatefulWidget {
   const VozaciStatistikaScreenV2({super.key});
 
@@ -20,10 +20,6 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
   // Filter opcije
   String _selectedFilter = 'mesec'; // dan, nedelja, mesec, godina
   DateTime _selectedDate = DateTime.now();
-
-  // Podaci po vozačima
-  Map<String, VozacStatsV2> _statsPoVozacima = {};
-  bool _isLoading = true;
 
   // Fiksni redosled vozača sa emoji
   final Map<String, String> _vozaciEmoji = {
@@ -39,7 +35,6 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
   @override
   void initState() {
     super.initState();
-    _loadData();
   }
 
   /// Računaj datumski opseg na osnovu filtera
@@ -77,11 +72,9 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
     }
   }
 
-  /// Učitaj sve podatke iz voznje_log
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    try {
+  /// 🛰️ STREAM ZA STATISTIKE (Zamjenjuje _loadData)
+  Stream<Map<String, VozacStatsV2>> _streamStats() async* {
+    while (true) {
       final (from, to) = _getDateRange();
       final fromStr = from.toIso8601String().split('T')[0];
       final toStr = to.toIso8601String().split('T')[0];
@@ -113,26 +106,26 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
         if (vozacId == null) continue;
 
         String vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? 'Nepoznat';
-        stats.putIfAbsent(vozacIme, () => VozacStatsV2());
-
-        switch (tip) {
-          case 'voznja':
-            stats[vozacIme]!.pokupljeni++;
-            if (putnikId != null && putnikTip == 'dnevni') {
-              dnevniVoznjePoVozacu[putnikId] = vozacIme;
-            }
-            break;
-          case 'otkazivanje':
-            stats[vozacIme]!.otkazani++;
-            break;
-          case 'uplata':
-          case 'uplata_mesecna':
-          case 'uplata_dnevna':
-            stats[vozacIme]!.pazar += iznos;
-            if (putnikId != null) {
-              naplaceniPutnici.add(putnikId);
-            }
-            break;
+        if (stats.containsKey(vozacIme)) {
+          switch (tip) {
+            case 'voznja':
+              stats[vozacIme]!.pokupljeni++;
+              if (putnikId != null && putnikTip == 'dnevni') {
+                dnevniVoznjePoVozacu[putnikId] = vozacIme;
+              }
+              break;
+            case 'otkazivanje':
+              stats[vozacIme]!.otkazani++;
+              break;
+            case 'uplata':
+            case 'uplata_mesecna':
+            case 'uplata_dnevna':
+              stats[vozacIme]!.pazar += iznos;
+              if (putnikId != null) {
+                naplaceniPutnici.add(putnikId);
+              }
+              break;
+          }
         }
       }
 
@@ -143,17 +136,13 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
         }
       }
 
-      if (!mounted) return;
-      setState(() {
-        _statsPoVozacima = stats;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-      );
+      yield stats;
+
+      // Čekaj na promene u tabeli ili timeout
+      await Future.any([
+        _supabase.from('voznje_log').stream(primaryKey: ['id']).first,
+        Future.delayed(const Duration(seconds: 30)),
+      ]);
     }
   }
 
@@ -208,39 +197,60 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
           break;
       }
     });
-    _loadData();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text('📊 Statistika Vozača'),
-        centerTitle: true,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-      ),
-      body: Column(
-        children: [
-          // Filter i navigacija datuma
-          _buildFilterSection(),
+    return StreamBuilder<Map<String, VozacStatsV2>>(
+      stream: _streamStats(),
+      builder: (context, snapshot) {
+        final stats = snapshot.data ?? {};
+        final isLoading = snapshot.connectionState == ConnectionState.waiting && stats.isEmpty;
 
-          // Sadržaj
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
-                    onRefresh: _loadData,
-                    child: _buildContent(),
-                  ),
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text('📊 Statistike Vozača', style: TextStyle(fontWeight: FontWeight.bold)),
+            automaticallyImplyLeading: false,
           ),
-        ],
-      ),
+          body: Container(
+            decoration: BoxDecoration(gradient: Theme.of(context).backgroundGradient),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Filter header
+                  _buildFilterHeader(),
+
+                  // Lista statistika
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                        : RefreshIndicator(
+                            onRefresh: () async {
+                              setState(() {}); // Forsira ponovno pokretanje stream-a
+                            },
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _vozaciRedosled.length,
+                              itemBuilder: (context, index) {
+                                final vozac = _vozaciRedosled[index];
+                                return _buildVozacCard(vozac, stats[vozac] ?? VozacStatsV2());
+                              },
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildFilterSection() {
+  Widget _buildFilterHeader() {
     return Container(
       color: Theme.of(context).primaryColor,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -300,7 +310,6 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
     return GestureDetector(
       onTap: () {
         setState(() => _selectedFilter = value);
-        _loadData();
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -324,150 +333,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
     );
   }
 
-  Widget _buildContent() {
-    // Izračunaj ukupne statistike
-    int ukupnoPokupljeni = 0;
-    int ukupnoOtkazani = 0;
-    double ukupnoPazar = 0;
-    int ukupnoDuznici = 0;
-
-    for (final stats in _statsPoVozacima.values) {
-      ukupnoPokupljeni += stats.pokupljeni;
-      ukupnoOtkazani += stats.otkazani;
-      ukupnoPazar += stats.pazar;
-      ukupnoDuznici += stats.duznici;
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        // Ukupna statistika kartica
-        _buildUkupnoCard(ukupnoPokupljeni, ukupnoOtkazani, ukupnoPazar, ukupnoDuznici),
-
-        const SizedBox(height: 16),
-
-        // Naslov sekcije
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          child: Text(
-            'Po vozačima',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ),
-
-        // Kartice vozača
-        ..._vozaciRedosled.asMap().entries.map((entry) {
-          final index = entry.key;
-          final vozac = entry.value;
-          final stats = _statsPoVozacima[vozac] ?? VozacStatsV2();
-          return _buildVozacCard(vozac, stats, index);
-        }),
-
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _buildUkupnoCard(int pokupljeni, int otkazani, double pazar, int duznici) {
-    final uspesnost = pokupljeni + otkazani > 0 ? ((pokupljeni / (pokupljeni + otkazani)) * 100).round() : 0;
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade600, Colors.blue.shade400],
-          ),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Naslov
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('📈', style: TextStyle(fontSize: 24)),
-                SizedBox(width: 8),
-                Text(
-                  'UKUPNO',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // Glavni broj - Pazar
-            Text(
-              '${pazar.toStringAsFixed(0)} RSD',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'ukupan pazar',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 14,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Statistike u redu
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildUkupnoStat('✅', '$pokupljeni', 'pokupljeni'),
-                _buildUkupnoStat('❌', '$otkazani', 'otkazani'),
-                _buildUkupnoStat('⚠️', '$duznici', 'dužnici'),
-                _buildUkupnoStat('📊', '$uspesnost%', 'uspešnost'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUkupnoStat(String emoji, String value, String label) {
-    return Column(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 11,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVozacCard(String vozac, VozacStatsV2 stats, int index) {
+  Widget _buildVozacCard(String vozac, VozacStatsV2 stats) {
     final boja = VozacBoja.getColor(vozac);
     final emoji = _vozaciEmoji[vozac] ?? '🚗';
     final uspesnost = stats.pokupljeni + stats.otkazani > 0

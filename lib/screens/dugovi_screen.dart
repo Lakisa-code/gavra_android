@@ -23,16 +23,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
   late ValueNotifier<bool> _isNetworkConnected;
   late ValueNotifier<String> _realtimeHealthStatus;
   Timer? _healthCheckTimer;
-  StreamSubscription<List<Putnik>>? _dugoviSubscription;
   final Map<String, DateTime> _streamHeartbeats = {};
 
   // 🔍 SEARCH & FILTERING (bez RxDart)
   final TextEditingController _searchController = TextEditingController();
 
-  // 📊 PERFORMANCE STATE
-  bool _isLoading = false;
-  String? _errorMessage;
-  List<Putnik> _cachedDugovi = [];
   final String _selectedFilter = 'svi'; // 'svi', 'veliki_dug', 'mali_dug'
   final String _sortBy = 'vreme'; // 'iznos', 'vreme', 'ime', 'vozac' - default: najnoviji gore
 
@@ -41,14 +36,12 @@ class _DugoviScreenState extends State<DugoviScreen> {
     super.initState();
     _setupRealtimeMonitoring();
     _setupDebouncedSearch();
-    _loadInitialData();
   }
 
   @override
   void dispose() {
     // 🧹 V3.0 CLEANUP REALTIME MONITORING
     _healthCheckTimer?.cancel();
-    _dugoviSubscription?.cancel();
     _isRealtimeHealthy.dispose();
     _dugoviStreamHealthy.dispose();
     _isNetworkConnected.dispose();
@@ -69,13 +62,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
     _healthCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _checkStreamHealth();
     });
-
-    _initializeRealtimeStream();
-  }
-
-  // 💓 HEARTBEAT MONITORING FUNCTIONS
-  void _registerStreamHeartbeat(String streamName) {
-    _streamHeartbeats[streamName] = DateTime.now();
   }
 
   void _checkStreamHealth() {
@@ -107,89 +93,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
     }
   }
 
-  // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
-  void _initializeRealtimeStream() {
-    _dugoviSubscription?.cancel();
-
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-    }
-
-    _dugoviSubscription = PutnikService()
-        .streamKombinovaniPutniciFiltered(
-      isoDate: PutnikHelpers.getWorkingDateIso(),
-    )
-        .listen(
-      (putnici) {
-        if (mounted) {
-          _registerStreamHeartbeat('dugovi_stream');
-          _dugoviStreamHealthy.value = true;
-
-          // ✅ Filter dužnike - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
-          final duzniciRaw = putnici
-              .where(
-                (p) =>
-                    (!p.isMesecniTip) && // ✅ FIX: Plava kartica = nije mesečni tip
-                    (p.vremePlacanja == null) && // ✅ FIX: Nije platio ako nema vremePlacanja
-                    (p.jePokupljen) &&
-                    (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')),
-                // 🎯 IZMENA: Uklonjen filter po vozaču da bi se prikazali SVI dužnici (zahtev 26.01.2026)
-              )
-              .toList();
-
-          // ✅ DEDUPLIKACIJA: Jedan putnik može imati više termina, ali je jedan dužnik
-          final seenIds = <dynamic>{};
-          final duznici = duzniciRaw.where((p) {
-            final key = p.id ?? '${p.ime}_${p.dan}';
-            if (seenIds.contains(key)) return false;
-            seenIds.add(key);
-            return true;
-          }).toList();
-
-          // Sort dužnike
-          _sortDugovi(duznici);
-
-          if (mounted) {
-            setState(() {
-              _cachedDugovi = duznici;
-              _isLoading = false;
-              _errorMessage = null;
-            });
-          }
-        }
-      },
-      onError: (Object error) {
-        if (mounted) {
-          _dugoviStreamHealthy.value = false;
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-              _errorMessage = error.toString();
-            });
-          }
-// 🔄 AUTO RETRY after 5 seconds
-          Timer(const Duration(seconds: 5), () {
-            if (mounted) {
-              _initializeRealtimeStream();
-            }
-          });
-        }
-      },
-    );
-  }
-
   // 🔍 SEARCH SETUP (bez RxDart - jednostavan setState)
   void _setupDebouncedSearch() {
     _searchController.addListener(() {
       if (mounted) setState(() {});
     });
-  }
-
-  void _loadInitialData() {
-    _initializeRealtimeStream();
   }
 
   // 📊 SORT DUGOVE
@@ -224,14 +132,20 @@ class _DugoviScreenState extends State<DugoviScreen> {
     }
   }
 
-  // 🔍 FILTERED DATA GETTER
-  List<Putnik> _getFilteredDugovi() {
-    var dugovi = _cachedDugovi;
+  // 💰 CALCULATE DUG AMOUNT HELPER
+  double _calculateDugAmount(Putnik putnik) {
+    // Za dugove, koristimo standardnu cenu ili specifičnu cenu iz putnika
+    // Default cena za Bela Crkva - Vršac je 500 RSD
+    return 500.0; // Osnovni iznos karte - može se proširiti na osnovu rute
+  }
+
+  List<Putnik> _applyFiltersAndSort(List<Putnik> input) {
+    var result = input;
 
     // Apply search filter
     final searchQuery = _searchController.text.toLowerCase();
     if (searchQuery.isNotEmpty) {
-      dugovi = dugovi.where((duznik) {
+      result = result.where((duznik) {
         return duznik.ime.toLowerCase().contains(searchQuery) ||
             (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ?? false) ||
             (duznik.grad.toLowerCase().contains(searchQuery));
@@ -240,7 +154,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
     // Apply amount filter
     if (_selectedFilter != 'svi') {
-      dugovi = dugovi.where((duznik) {
+      result = result.where((duznik) {
         final iznos = _calculateDugAmount(duznik);
         switch (_selectedFilter) {
           case 'veliki_dug':
@@ -253,219 +167,93 @@ class _DugoviScreenState extends State<DugoviScreen> {
       }).toList();
     }
 
-    return dugovi;
-  }
-
-  // 💰 CALCULATE DUG AMOUNT HELPER
-  double _calculateDugAmount(Putnik putnik) {
-    // Za dugove, koristimo standardnu cenu ili specifičnu cenu iz putnika
-    // Default cena za Bela Crkva - Vršac je 500 RSD
-    return 500.0; // Osnovni iznos karte - može se proširiti na osnovu rute
+    // Sort
+    _sortDugovi(result);
+    return result;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
+    return StreamBuilder<List<Putnik>>(
+      stream: PutnikService().streamKombinovaniPutniciFiltered(
+        isoDate: PutnikHelpers.getWorkingDateIso(),
       ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent, // Transparentna pozadina
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).glassContainer, // Transparentni glassmorphism
-              border: Border.all(
-                color: Theme.of(context).glassBorder,
-                width: 1.5,
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
-              ),
-              // No boxShadow — keep AppBar fully transparent and only glass border
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Dužnici',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                              shadows: [
-                                Shadow(
-                                  offset: const Offset(1, 1),
-                                  blurRadius: 3,
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        body: Column(
-          children: [
-            // 💰 UKUPAN DUG BAR UKLONJEN PO ZAHTEVU (15.01.2026)
-            /*
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.indigo.shade50,
-                border: Border(
-                  bottom: BorderSide(color: Colors.indigo.shade200),
-                ),
-              ),
-              child: Text(
-                'Ukupan dug: ${_calculateTotalDebt().toStringAsFixed(0)} RSD',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.red.shade600,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            */
-            // 📋 LISTA DUGOVA - V3.0 REALTIME DATA
-            Expanded(
-              child: _buildRealtimeContent(),
-            ),
-          ],
-        ),
-      ), // Zatvaranje Scaffold
-    ); // Zatvaranje Container
-  }
+      builder: (context, snapshot) {
+        final putnici = snapshot.data ?? [];
+        final isLoading = snapshot.connectionState == ConnectionState.waiting && putnici.isEmpty;
 
-  // 🚀 V3.0 REALTIME CONTENT BUILDER
-  Widget _buildRealtimeContent() {
-    if (_isLoading) {
-      return _buildShimmerLoading();
-    }
+        // ✅ Filter dužnike - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
+        final duzniciRaw = putnici
+            .where(
+              (p) =>
+                  (!p.isMesecniTip) && // ✅ FIX: Plava kartica = nije mesečni tip
+                  (p.vremePlacanja == null) && // ✅ FIX: Nije platio ako nema vremePlacanja
+                  (p.jePokupljen) &&
+                  (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')),
+              // 🎯 IZMENA: Uklonjen filter po vozaču da bi se prikazali SVI dužnici (zahtev 26.01.2026)
+            )
+            .toList();
 
-    if (_errorMessage != null) {
-      // Heartbeat indicator shows connection status
-      return _buildEmptyState();
-    }
+        // ✅ DEDUPLIKACIJA: Jedan putnik može imati više termina, ali je jedan dužnik
+        final seenIds = <dynamic>{};
+        final duzniciDeduplicated = duzniciRaw.where((p) {
+          final key = p.id ?? '${p.ime}_${p.dan}';
+          if (seenIds.contains(key)) return false;
+          seenIds.add(key);
+          return true;
+        }).toList();
 
-    final filteredDugovi = _getFilteredDugovi();
+        // Apply filters and sort
+        final filteredDugovi = _applyFiltersAndSort(duzniciDeduplicated);
 
-    if (filteredDugovi.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return PutnikList(
-      putnici: filteredDugovi,
-      currentDriver: widget.currentDriver,
-    );
-  }
-
-  // ✨ SHIMMER LOADING EFFECT
-  Widget _buildShimmerLoading() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 3,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header shimmer
-                Container(
-                  height: 24,
-                  width: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+                const Text(
+                  'Dugovanja',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
-                const SizedBox(height: 16),
-                // Content shimmer
-                ...List.generate(
-                  2,
-                  (i) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: 16,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 14,
-                          width: 200,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                Text(
+                  'Svi neplaćeni putnici (Plava kartica)',
+                  style: TextStyle(fontSize: 12, color: Colors.white70.withValues(alpha: 0.8)),
                 ),
               ],
+            ),
+            automaticallyImplyLeading: false,
+          ),
+          body: Container(
+            decoration: BoxDecoration(gradient: Theme.of(context).backgroundGradient),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // ...existing code...
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                        : filteredDugovi.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Nema evidentiranih dugovanja.',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              )
+                            : PutnikList(
+                                putnici: filteredDugovi,
+                                currentDriver: widget.currentDriver,
+                                isDugovanjaMode: true,
+                              ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
-    );
-  }
-
-  // 📭 EMPTY STATE WIDGET
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.check_circle,
-            size: 64,
-            color: Colors.green.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nema neplaćenih putnika!',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.green.shade600,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Svi putnici su platili svoje karte',
-            style: TextStyle(color: Colors.grey.shade500),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 }

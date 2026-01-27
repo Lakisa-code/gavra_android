@@ -21,7 +21,6 @@ import 'services/ml_champion_service.dart';
 import 'services/ml_dispatch_autonomous_service.dart';
 import 'services/ml_finance_autonomous_service.dart';
 import 'services/ml_vehicle_autonomous_service.dart';
-import 'services/payment_reminder_service.dart';
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
 import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00 (bez notif)
@@ -138,7 +137,6 @@ Future<void> _initAppServices() async {
   // Realtime & AI (bez čekanja ikoga)
   KapacitetService.startGlobalRealtimeListener();
   unawaited(WeeklyResetService.initialize()); // ✅ Koristimo novi, robusniji servis
-  unawaited(PaymentReminderService.checkAndSendReminders());
   unawaited(WeatherAlertService.checkAndSendWeatherAlerts());
 
   unawaited(MLVehicleAutonomousService().start());

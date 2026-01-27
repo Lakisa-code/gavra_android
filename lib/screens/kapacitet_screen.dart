@@ -17,32 +17,17 @@ class KapacitetScreen extends StatefulWidget {
 
 class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isLoading = true;
-  Map<String, Map<String, int>> _kapacitet = {'BC': {}, 'VS': {}};
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadKapacitet();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadKapacitet() async {
-    setState(() => _isLoading = true);
-    try {
-      _kapacitet = await KapacitetService.getKapacitet();
-    } catch (e) {
-      // Error loading kapacitet
-    }
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
   }
 
   Future<void> _editKapacitet(String grad, String vreme, int trenutni) async {
@@ -257,7 +242,6 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
               backgroundColor: Colors.green,
             ),
           );
-          _loadKapacitet();
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -270,7 +254,7 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
     }
   }
 
-  Widget _buildGradTab(String grad, List<String> vremena) {
+  Widget _buildGradTab(String grad, List<String> vremena, Map<String, Map<String, int>> kapacitet) {
     return Column(
       children: [
         // 🚢 SMART TRANZIT INFO (Samo za Vršac)
@@ -323,7 +307,7 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
             itemCount: vremena.length,
             itemBuilder: (ctx, index) {
               final vreme = vremena[index];
-              final maxMesta = _kapacitet[grad]?[vreme] ?? 8;
+              final maxMesta = kapacitet[grad]?[vreme] ?? 8;
 
               return Card(
                 color: Theme.of(ctx).glassContainer,
@@ -352,11 +336,7 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                             ? () async {
                                 final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta - 1);
                                 if (!mounted) return;
-                                if (success) {
-                                  setState(() {
-                                    _kapacitet[grad]?[vreme] = maxMesta - 1;
-                                  });
-                                } else {
+                                if (!success) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('❌ Greška pri čuvanju'),
@@ -393,11 +373,7 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                             ? () async {
                                 final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta + 1);
                                 if (!mounted) return;
-                                if (success) {
-                                  setState(() {
-                                    _kapacitet[grad]?[vreme] = maxMesta + 1;
-                                  });
-                                } else {
+                                if (!success) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('❌ Greška pri čuvanju'),
@@ -455,15 +431,24 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
             ],
           ),
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildGradTab('BC', KapacitetService.bcVremena),
-                  _buildGradTab('VS', KapacitetService.vsVremena),
-                ],
-              ),
+        body: StreamBuilder<Map<String, Map<String, int>>>(
+          stream: KapacitetService.streamKapacitet(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final data = snapshot.data ?? {'BC': {}, 'VS': {}};
+
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                _buildGradTab('BC', KapacitetService.bcVremena, data),
+                _buildGradTab('VS', KapacitetService.vsVremena, data),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

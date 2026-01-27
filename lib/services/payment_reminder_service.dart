@@ -29,12 +29,17 @@ class PaymentReminderService {
   /// Proverava da li treba poslati podsetnik danas
   /// Vraća 'pre_roka', 'posle_roka' ili null
   static String? shouldSendReminder() {
+    // FUNKCIJA ONEMOGUĆENA - Sada koristimo "Dug Podsetnik" direktno u profilu putnika od 27. u mesecu.
+    return null;
+
+    /* Legacy logika:
     final now = DateTime.now();
 
     if (now.day == 27) return 'pre_roka';
     if (now.day == 5) return 'posle_roka';
 
     return null;
+    */
   }
 
   /// Broji vožnje/otkazivanja za određeni mesec iz voznje_log

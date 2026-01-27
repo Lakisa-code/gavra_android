@@ -102,6 +102,16 @@ class LeaderboardService {
     }
   }
 
+  /// 🛰️ REALTIME STREAM: Prati promene u voznje_log i osvežava leaderboard
+  static Stream<LeaderboardData> streamLeaderboard({required String tipPutnika}) async* {
+    yield await getLeaderboard(tipPutnika: tipPutnika);
+
+    // Slušaj promene u voznje_log
+    await for (final _ in supabase.from('voznje_log').stream(primaryKey: ['id'])) {
+      yield await getLeaderboard(tipPutnika: tipPutnika);
+    }
+  }
+
   /// Dodeli ikone po rangu
   static void _assignIcons(List<LeaderboardEntry> entries, {required bool isWallOfFame}) {
     final icons = isWallOfFame

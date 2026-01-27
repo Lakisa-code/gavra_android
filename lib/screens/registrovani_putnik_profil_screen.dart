@@ -1887,6 +1887,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     }
 
+    // 💰 GAVRA DUG PODSETNIK (od 27. u mesecu)
+    if (novoVreme != null && DateTime.now().day >= 27 && _ukupnoZaduzenje > 0) {
+      if (mounted) {
+        GavraUI.showSnackBar(
+          context,
+          message:
+              '💰 Podsetnik: Imate neizmireno dugovanje od ${_ukupnoZaduzenje.toStringAsFixed(0)} RSD. Molimo vas da izvršite uplatu do 1. u mesecu.',
+          type: GavraNotificationType.warning,
+          duration: const Duration(seconds: 6),
+        );
+      }
+    }
+
     try {
       final putnikId = _putnikData['id']?.toString();
       final tipPutnika = _putnikData['tip']?.toString();
@@ -1994,6 +2007,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
+          // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
+          await _insertSeatRequest(putnikId, dan, novoVreme, 'bc');
+
           // 📝 LOG U DNEVNIK
           try {
             await VoznjeLogService.logZahtev(
@@ -2016,7 +2032,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             GavraUI.showSnackBar(
               context,
-              message: 'Vaš zahtev je primljen i biće obrađen uskoro',
+              message: 'Vaš zahtev je primljen i biće obrađen u najkraćem mogućem roku. Poslaćemo vam obaveštenje.',
               type: GavraNotificationType.info,
               duration: const Duration(seconds: 5),
             );
@@ -2035,6 +2051,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           await supabase
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+
+          // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
+          await _insertSeatRequest(putnikId, dan, novoVreme, 'bc');
 
           // 📝 LOG U DNEVNIK
           try {
@@ -2056,7 +2075,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             GavraUI.showSnackBar(
               context,
-              message: 'Vaš zahtev je primljen i trenutno je u obradi',
+              message: 'Vaš zahtev je primljen i biće obrađen u najkraćem mogućem roku. Poslaćemo vam obaveštenje.',
               type: GavraNotificationType.info,
               duration: const Duration(seconds: 5),
             );
@@ -2074,6 +2093,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           await supabase
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
+
+          // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
+          await _insertSeatRequest(putnikId, dan, novoVreme, 'bc');
 
           // 📝 LOG U DNEVNIK
           try {
@@ -2095,9 +2117,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             GavraUI.showSnackBar(
               context,
-              message:
-                  'Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-              type: GavraNotificationType.success,
+              message: 'Vaš zahtev je primljen i biće obrađen u najkraćem mogućem roku. Poslaćemo vam obaveštenje.',
+              type: GavraNotificationType.info,
               duration: const Duration(seconds: 5),
             );
           }
@@ -2123,6 +2144,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
+          // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
+          await _insertSeatRequest(putnikId, dan, novoVreme, 'vs');
+
           // 📝 LOG U DNEVNIK
           try {
             await VoznjeLogService.logZahtev(
@@ -2143,10 +2167,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             GavraUI.showSnackBar(
               context,
-              message: jeUTranzitu
-                  ? '🚀 Prioritetna potvrda aktivirana! Rezervisali smo vam mesto za povratak (Tranzit).'
-                  : '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-              type: jeUTranzitu ? GavraNotificationType.info : GavraNotificationType.success,
+              message:
+                  'Vaš zahtev za VS je primljen i biće obrađen u najkraćem mogućem roku. Poslaćemo vam obaveštenje.',
+              type: GavraNotificationType.info,
               duration: const Duration(seconds: 5),
             );
           }
@@ -2377,5 +2400,33 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         ),
       ),
     );
+  }
+
+  // 🎯 POMOĆNE METODE ZA SEAT REQUESTS
+  Future<void> _insertSeatRequest(String putnikId, String dan, String vreme, String grad) async {
+    try {
+      final datum = _getNextDateForDay(DateTime.now(), dan);
+      await supabase.from('seat_requests').insert({
+        'putnik_id': putnikId,
+        'grad': grad.toUpperCase(),
+        'datum': datum.toIso8601String().split('T')[0],
+        'zeljeno_vreme': vreme,
+        'status': 'pending',
+      });
+      debugPrint('✅ [SeatRequest] Inserted for $grad $vreme on $dan');
+    } catch (e) {
+      debugPrint('❌ [SeatRequest] Error inserting seat request: $e');
+    }
+  }
+
+  DateTime _getNextDateForDay(DateTime fromDate, String danKratica) {
+    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
+    final targetWeekday = daniMap[danKratica.toLowerCase()] ?? 1;
+    final currentWeekday = fromDate.weekday;
+
+    int daysToAdd = targetWeekday - currentWeekday;
+    if (daysToAdd < 0) daysToAdd += 7;
+
+    return fromDate.add(Duration(days: daysToAdd));
   }
 }

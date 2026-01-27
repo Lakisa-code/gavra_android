@@ -59,6 +59,35 @@ class PinZahtevService {
     }
   }
 
+  /// 🛰️ REALTIME STREAM: Prati nove zahteve za PIN
+  static Stream<List<Map<String, dynamic>>> streamZahteviKojiCekaju() {
+    return _supabase
+        .from('pin_zahtevi')
+        .stream(primaryKey: ['id'])
+        .eq('status', 'ceka')
+        .order('created_at')
+        .asyncMap((data) async {
+          // Budući da stream() ne podržava join (select sa relacijama),
+          // moramo ručno dohvatiti podatke o putnicima za trenutnu listu zahteva
+          if (data.isEmpty) return [];
+
+          final ids = data.map((z) => z['id'] as String).toList();
+
+          // Ponovo dohvatiti sa join-om za te ID-eve
+          final fullData = await _supabase.from('pin_zahtevi').select('''
+            *,
+            registrovani_putnici (
+              id,
+              putnik_ime,
+              broj_telefona,
+              tip
+            )
+          ''').inFilter('id', ids).order('created_at');
+
+          return List<Map<String, dynamic>>.from(fullData);
+        });
+  }
+
   static Future<int> brojZahtevaKojiCekaju() async {
     try {
       final response = await _supabase.from('pin_zahtevi').select('id').eq('status', 'ceka');

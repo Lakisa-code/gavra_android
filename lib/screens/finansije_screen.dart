@@ -13,28 +13,11 @@ class FinansijeScreen extends StatefulWidget {
 }
 
 class _FinansijeScreenState extends State<FinansijeScreen> {
-  FinansijskiIzvestaj? _izvestaj;
-
-  bool _isLoading = true;
-
   final _formatBroja = NumberFormat('#,###', 'sr');
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    final izvestaj = await FinansijeService.getIzvestaj();
-
-    if (mounted) {
-      setState(() {
-        _izvestaj = izvestaj;
-        _isLoading = false;
-      });
-    }
   }
 
   String _formatIznos(double iznos) {
@@ -43,95 +26,111 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('💰 Finansije'),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _showTroskoviDialog,
-            tooltip: 'Podesi troškove',
+    return StreamBuilder<FinansijskiIzvestaj>(
+      stream: FinansijeService.streamIzvestaj(),
+      builder: (context, snapshot) {
+        final izvestaj = snapshot.data;
+        final isLoading = snapshot.connectionState == ConnectionState.waiting && izvestaj == null;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('💰 Finansije'),
+            centerTitle: true,
+            automaticallyImplyLeading: false,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.calendar_month),
+                onPressed: () => _selectCustomRange(),
+                tooltip: 'Izveštaj za period',
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () => _showTroskoviDialog(izvestaj?.troskoviPoTipu ?? {}),
+                tooltip: 'Podesi troškove',
+              ),
+            ],
           ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _izvestaj == null
-              ? const Center(child: Text('Greška pri učitavanju'))
-              : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // NEDELJA
-                        _buildPeriodCard(
-                          icon: '📅',
-                          naslov: 'Ova nedelja',
-                          podnaslov: _izvestaj!.nedeljaPeriod,
-                          prihod: _izvestaj!.prihodNedelja,
-                          troskovi: _izvestaj!.troskoviNedelja,
-                          neto: _izvestaj!.netoNedelja,
-                          voznjiLabel: '${_izvestaj!.voznjiNedelja} vožnji',
-                          color: Colors.blue,
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : izvestaj == null
+                  ? const Center(child: Text('Greška pri učitavanju'))
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        setState(() {});
+                      },
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // POTRAŽIVANJA (Dugovi putnika)
+                            _buildPotrazivanjaCard(izvestaj.potrazivanja),
+
+                            const SizedBox(height: 16),
+
+                            // NEDELJA
+                            _buildPeriodCard(
+                              icon: '📅',
+                              naslov: 'Ova nedelja',
+                              podnaslov: izvestaj.nedeljaPeriod,
+                              prihod: izvestaj.prihodNedelja,
+                              troskovi: izvestaj.troskoviNedelja,
+                              neto: izvestaj.netoNedelja,
+                              voznjiLabel: '${izvestaj.voznjiNedelja} vožnji',
+                              color: Colors.blue,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // MESEC
+                            _buildPeriodCard(
+                              icon: '🗓️',
+                              naslov: 'Ovaj mesec',
+                              podnaslov: _getMesecNaziv(DateTime.now().month),
+                              prihod: izvestaj.prihodMesec,
+                              troskovi: izvestaj.troskoviMesec,
+                              neto: izvestaj.netoMesec,
+                              voznjiLabel: '${izvestaj.voznjiMesec} vožnji',
+                              color: Colors.green,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // PROŠLA GODINA
+                            _buildPeriodCard(
+                              icon: '📊',
+                              naslov: 'Prošla godina (${izvestaj.proslaGodina})',
+                              podnaslov: 'Ceo godišnji bilans',
+                              prihod: izvestaj.prihodProslaGodina,
+                              troskovi: izvestaj.troskoviProslaGodina,
+                              neto: izvestaj.netoProslaGodina,
+                              voznjiLabel: '${izvestaj.voznjiProslaGodina} vožnji',
+                              color: Colors.grey,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // DETALJI TROŠKOVA
+                            _buildTroskoviDetailsList(izvestaj.troskoviPoTipu),
+
+                            const SizedBox(height: 16),
+
+                            // Dugme za podešavanje
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _showTroskoviDialog(izvestaj.troskoviPoTipu),
+                                icon: const Icon(Icons.edit),
+                                label: const Text('Podesi troškove'),
+                              ),
+                            ),
+                          ],
                         ),
-
-                        const SizedBox(height: 16),
-
-                        // MESEC
-                        _buildPeriodCard(
-                          icon: '🗓️',
-                          naslov: 'Ovaj mesec',
-                          podnaslov: _getMesecNaziv(DateTime.now().month),
-                          prihod: _izvestaj!.prihodMesec,
-                          troskovi: _izvestaj!.troskoviMesec,
-                          neto: _izvestaj!.netoMesec,
-                          voznjiLabel: '${_izvestaj!.voznjiMesec} vožnji',
-                          color: Colors.green,
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // PROŠLA GODINA
-                        _buildPeriodCard(
-                          icon: '📜',
-                          naslov: 'Prošla godina',
-                          podnaslov: '${_izvestaj!.proslaGodina}',
-                          prihod: _izvestaj!.prihodProslaGodina,
-                          troskovi: _izvestaj!.troskoviProslaGodina,
-                          neto: _izvestaj!.netoProslaGodina,
-                          voznjiLabel: '${_izvestaj!.voznjiProslaGodina} vožnji',
-                          color: Colors.orange,
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // GODINA
-                        _buildPeriodCard(
-                          icon: '📊',
-                          naslov: 'Ova godina',
-                          podnaslov: '${DateTime.now().year}',
-                          prihod: _izvestaj!.prihodGodina,
-                          troskovi: _izvestaj!.troskoviGodina,
-                          neto: _izvestaj!.netoGodina,
-                          voznjiLabel: '${_izvestaj!.voznjiGodina} vožnji',
-                          color: Colors.purple,
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // TROŠKOVI DETALJI
-                        _buildTroskoviCard(),
-
-                        const SizedBox(height: 24),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+        );
+      },
     );
   }
 
@@ -280,8 +279,8 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
     );
   }
 
-  Widget _buildTroskoviCard() {
-    final poTipu = _izvestaj?.troskoviPoTipu ?? {};
+  Widget _buildTroskoviDetailsList(Map<String, double> troskoviPoTipu) {
+    final ukupnoMesecniTroskovi = troskoviPoTipu.values.fold(0.0, (sum, item) => sum + item);
 
     return Card(
       elevation: 2,
@@ -304,7 +303,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                   ),
                 ),
                 Text(
-                  _formatIznos(_izvestaj?.ukupnoMesecniTroskovi ?? 0),
+                  _formatIznos(ukupnoMesecniTroskovi),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -316,28 +315,8 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
             const SizedBox(height: 16),
 
             // Lista po tipu
-            _buildTrosakRow('👷 Plate', poTipu['plata'] ?? 0),
-            _buildTrosakRow('🏦 Kredit', poTipu['kredit'] ?? 0),
-            _buildTrosakRow('⛽ Gorivo', poTipu['gorivo'] ?? 0),
-            _buildTrosakRow('🔧 Amortizacija', poTipu['amortizacija'] ?? 0),
-            _buildTrosakRow('📝 Registracija', poTipu['registracija'] ?? 0),
-            _buildTrosakRow('🚗 YU auto', poTipu['yu_auto'] ?? 0),
-            _buildTrosakRow('🛠️ Majstori', poTipu['majstori'] ?? 0),
-            _buildTrosakRow('🏛️ Porez', poTipu['porez'] ?? 0),
-            _buildTrosakRow('👶 Alimentacija', poTipu['alimentacija'] ?? 0),
-            _buildTrosakRow('🧾 Računi', poTipu['racuni'] ?? 0),
-            _buildTrosakRow('📋 Ostalo', poTipu['ostalo'] ?? 0),
-
-            const SizedBox(height: 16),
-
-            // Dugme za podešavanje
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _showTroskoviDialog,
-                icon: const Icon(Icons.edit),
-                label: const Text('Podesi troškove'),
-              ),
+            ...troskoviPoTipu.entries.map(
+              (entry) => _buildTrosakRow(entry.key, entry.value),
             ),
           ],
         ),
@@ -383,7 +362,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
     return meseci[mesec];
   }
 
-  void _showTroskoviDialog() {
+  void _showTroskoviDialog(Map<String, double> poTipu) {
     // Kontroleri za svaku kategoriju - NE POPUNJAVAJ POSTOJEĆE (SABIRANJE)
     final plateController = TextEditingController();
     final kreditController = TextEditingController();
@@ -396,9 +375,6 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
     final porezController = TextEditingController();
     final alimentacijaController = TextEditingController();
     final racuniController = TextEditingController();
-
-    // Mapping za trenutne vrednosti
-    final poTipu = _izvestaj?.troskoviPoTipu ?? {};
 
     showModalBottomSheet(
       context: context,
@@ -506,7 +482,6 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                         );
                         if (!context.mounted) return;
                         Navigator.pop(context);
-                        _loadData();
                       },
                       icon: const Icon(Icons.add_circle),
                       label: const Text('Dodaj troškove'),
@@ -602,5 +577,145 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
       // Dozvoljava i negativne za ispravke
       await FinansijeService.addTrosak(naziv, tip, iznos);
     }
+  }
+
+  Widget _buildPotrazivanjaCard(double iznos) {
+    return Card(
+      elevation: 4,
+      color: Colors.orange.shade50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.orange.shade200, width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Text('💰', style: TextStyle(fontSize: 32)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Potraživanja (Dugovi)',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                  ),
+                  Text(
+                    'Neplaćene vožnje svih putnika',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              _formatIznos(iznos),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange.shade900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectCustomRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2023),
+      lastDate: DateTime.now().add(const Duration(days: 31)),
+      saveText: 'PRIKAŽI',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue.shade700,
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && mounted) {
+      _showCustomReportDialog(picked.start, picked.end);
+    }
+  }
+
+  void _showCustomReportDialog(DateTime from, DateTime to) {
+    final dateFormat = DateFormat('dd.MM.yyyy');
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Column(
+          children: [
+            const Text('📊 Izveštaj za period'),
+            Text(
+              '${dateFormat.format(from)} - ${dateFormat.format(to)}',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Colors.grey),
+            ),
+          ],
+        ),
+        content: FutureBuilder<Map<String, dynamic>>(
+          future: FinansijeService.getIzvestajZaPeriod(from, to),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
+            }
+            if (snapshot.hasError || snapshot.data == null) {
+              return const Text('Greška pri učitavanju podataka');
+            }
+
+            final data = snapshot.data!;
+            final double prihod = (data['prihod'] as num).toDouble();
+            final double troskovi = (data['troskovi'] as num).toDouble();
+            final double neto = (data['neto'] as num).toDouble();
+            final int voznje = data['voznje'] ?? 0;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildPopupRow('Prihod', prihod, Colors.green),
+                const SizedBox(height: 8),
+                _buildPopupRow('Troškovi', troskovi, Colors.red),
+                const Divider(),
+                _buildPopupRow('NETO', neto, neto >= 0 ? Colors.green : Colors.red, isBold: true),
+                const SizedBox(height: 16),
+                Text('$voznje vožnji u ovom periodu', style: const TextStyle(fontStyle: FontStyle.italic)),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ZATVORI'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPopupRow(String label, double iznos, Color color, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+        Text(
+          _formatIznos(iznos),
+          style: TextStyle(
+            color: color,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+            fontSize: isBold ? 18 : 16,
+          ),
+        ),
+      ],
+    );
   }
 }

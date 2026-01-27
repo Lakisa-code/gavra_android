@@ -20,9 +20,11 @@ class PutnikList extends StatelessWidget {
     this.onPokupljen,
     this.selectedGrad,
     this.selectedVreme,
+    this.isDugovanjaMode = false,
   }) : super(key: key);
   final bool showActions;
   final String currentDriver;
+  final bool isDugovanjaMode;
   final Stream<List<Putnik>>? putniciStream;
   final List<Putnik>? putnici;
   final List<String>? bcVremena;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../globals.dart';
+import '../models/adresa.dart';
+import '../services/adresa_supabase_service.dart';
 import '../theme.dart';
 
 /// 📍 ADRESE SCREEN - Upravljanje dozvoljenim adresama
@@ -13,8 +15,6 @@ class AdreseScreen extends StatefulWidget {
 }
 
 class _AdreseScreenState extends State<AdreseScreen> {
-  List<Map<String, dynamic>> _adrese = [];
-  bool _isLoading = true;
   String _filterGrad = 'Svi';
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -22,7 +22,6 @@ class _AdreseScreenState extends State<AdreseScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAdrese();
   }
 
   @override
@@ -31,29 +30,10 @@ class _AdreseScreenState extends State<AdreseScreen> {
     super.dispose();
   }
 
-  Future<void> _loadAdrese() async {
-    setState(() => _isLoading = true);
-    try {
-      final response = await supabase.from('adrese').select().order('grad').order('naziv');
-
-      setState(() {
-        _adrese = List<Map<String, dynamic>>.from(response);
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška pri učitavanju: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  List<Map<String, dynamic>> get _filteredAdrese {
-    return _adrese.where((adresa) {
-      final naziv = (adresa['naziv'] ?? '').toString().toLowerCase();
-      final grad = (adresa['grad'] ?? '').toString();
+  List<Adresa> _getFilteredAdrese(List<Adresa> adrese) {
+    return adrese.where((adresa) {
+      final naziv = (adresa.naziv).toLowerCase();
+      final grad = adresa.grad ?? '';
 
       final matchesSearch = _searchQuery.isEmpty || naziv.contains(_searchQuery.toLowerCase());
       final matchesGrad = _filterGrad == 'Svi' || grad == _filterGrad;
@@ -77,7 +57,6 @@ class _AdreseScreenState extends State<AdreseScreen> {
           'broj': result['broj'],
         });
 
-        await _loadAdrese();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('✅ Adresa dodana'), backgroundColor: Colors.green),
@@ -93,14 +72,14 @@ class _AdreseScreenState extends State<AdreseScreen> {
     }
   }
 
-  Future<void> _editAdresa(Map<String, dynamic> adresa) async {
+  Future<void> _editAdresa(Adresa adresa) async {
     final result = await showDialog<Map<String, String?>>(
       context: context,
       builder: (context) => _AdresaDialog(
-        initialNaziv: adresa['naziv'],
-        initialGrad: adresa['grad'],
-        initialUlica: adresa['ulica'],
-        initialBroj: adresa['broj'],
+        initialNaziv: adresa.naziv,
+        initialGrad: adresa.grad,
+        initialUlica: adresa.ulica,
+        initialBroj: adresa.broj,
       ),
     );
 
@@ -111,9 +90,8 @@ class _AdreseScreenState extends State<AdreseScreen> {
           'grad': result['grad'],
           'ulica': result['ulica'],
           'broj': result['broj'],
-        }).eq('id', adresa['id']);
+        }).eq('id', adresa.id);
 
-        await _loadAdrese();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('✅ Adresa ažurirana'), backgroundColor: Colors.green),
@@ -129,10 +107,9 @@ class _AdreseScreenState extends State<AdreseScreen> {
     }
   }
 
-  Future<void> _deleteAdresa(Map<String, dynamic> adresa) async {
+  Future<void> _deleteAdresa(Adresa adresa) async {
     try {
-      await supabase.from('adrese').delete().eq('id', adresa['id']);
-      await _loadAdrese();
+      await supabase.from('adrese').delete().eq('id', adresa.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('🗑️ Adresa obrisana'), backgroundColor: Colors.orange),
@@ -149,128 +126,137 @@ class _AdreseScreenState extends State<AdreseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final belaCrkvaCount = _adrese.where((a) => a['grad'] == 'Bela Crkva').length;
-    final vrsacCount = _adrese.where((a) => a['grad'] == 'Vršac' || a['grad'] == 'Vrsac').length;
+    return StreamBuilder<List<Adresa>>(
+      stream: AdresaSupabaseService.streamSveAdrese(),
+      builder: (context, snapshot) {
+        final adrese = snapshot.data ?? [];
+        final isLoading = snapshot.connectionState == ConnectionState.waiting && adrese.isEmpty;
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('📍 Adrese'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: Theme.of(context).backgroundGradient,
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header sa statistikom
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).glassContainer,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).glassBorder),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatCard('Ukupno', _adrese.length.toString(), Colors.blue),
-                        _buildStatCard('B. Crkva', belaCrkvaCount.toString(), Colors.green),
-                        _buildStatCard('Vršac', vrsacCount.toString(), Colors.orange),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Search bar
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Pretraži adrese...',
-                        hintStyle: TextStyle(color: Colors.grey[400]),
-                        prefixIcon: const Icon(Icons.search, color: Colors.white70),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear, color: Colors.white70),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() => _searchQuery = '');
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.black.withValues(alpha: 0.3),
-                      ),
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                      onChanged: (value) => setState(() => _searchQuery = value),
-                    ),
-                    const SizedBox(height: 12),
-                    // Filter dugmad
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildFilterChip('Svi', _filterGrad == 'Svi'),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Bela Crkva', _filterGrad == 'Bela Crkva'),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Vršac', _filterGrad == 'Vršac'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+        final belaCrkvaCount = adrese.where((a) => a.grad == 'Bela Crkva').length;
+        final vrsacCount = adrese.where((a) => a.grad == 'Vršac' || a.grad == 'Vrsac').length;
+        final filteredAdrese = _getFilteredAdrese(adrese);
 
-              // Lista adresa
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _filteredAdrese.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Nema adresa',
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: _filteredAdrese.length,
-                            itemBuilder: (context, index) {
-                              final adresa = _filteredAdrese[index];
-                              return _buildAdresaCard(adresa);
-                            },
-                          ),
-              ),
-            ],
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: const Text('📍 Adrese'),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
           ),
-        ),
-      ),
-      // 📱 ANDROID 15 EDGE-TO-EDGE: Padding za gesture navigation bar
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
-        child: FloatingActionButton.extended(
-          onPressed: _addAdresa,
-          icon: const Icon(Icons.add),
-          label: const Text('Dodaj'),
-          backgroundColor: Colors.green,
-        ),
-      ),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: Theme.of(context).backgroundGradient,
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Header sa statistikom
+                  Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).glassContainer,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Theme.of(context).glassBorder),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatCard('Ukupno', adrese.length.toString(), Colors.blue),
+                            _buildStatCard('B. Crkva', belaCrkvaCount.toString(), Colors.green),
+                            _buildStatCard('Vršac', vrsacCount.toString(), Colors.orange),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Search bar
+                        TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Pretraži adrese...',
+                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, color: Colors.white70),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.blue, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.black.withValues(alpha: 0.3),
+                          ),
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          onChanged: (value) => setState(() => _searchQuery = value),
+                        ),
+                        const SizedBox(height: 12),
+                        // Filter dugmad
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildFilterChip('Svi', _filterGrad == 'Svi'),
+                            const SizedBox(width: 8),
+                            _buildFilterChip('Bela Crkva', _filterGrad == 'Bela Crkva'),
+                            const SizedBox(width: 8),
+                            _buildFilterChip('Vršac', _filterGrad == 'Vršac'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Lista adresa
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : filteredAdrese.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Nema adresa',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: filteredAdrese.length,
+                                itemBuilder: (context, index) {
+                                  final adresa = filteredAdrese[index];
+                                  return _buildAdresaCard(adresa);
+                                },
+                              ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 📱 ANDROID 15 EDGE-TO-EDGE: Padding za gesture navigation bar
+          floatingActionButton: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
+            child: FloatingActionButton.extended(
+              onPressed: _addAdresa,
+              icon: const Icon(Icons.add),
+              label: const Text('Dodaj'),
+              backgroundColor: Colors.green,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -315,46 +301,51 @@ class _AdreseScreenState extends State<AdreseScreen> {
     );
   }
 
-  Widget _buildAdresaCard(Map<String, dynamic> adresa) {
-    final grad = adresa['grad'] ?? '';
-    final isVrsac = grad == 'Vršac' || grad == 'Vrsac';
-
+  Widget _buildAdresaCard(Adresa adresa) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).glassContainer,
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isVrsac ? Colors.orange.withValues(alpha: 0.5) : Colors.green.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: isVrsac ? Colors.orange : Colors.green,
-          child: Text(
-            (adresa['naziv'] ?? '?')[0].toUpperCase(),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          backgroundColor:
+              adresa.grad == 'Bela Crkva' ? Colors.green.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2),
+          child: Icon(
+            Icons.location_on,
+            color: adresa.grad == 'Bela Crkva' ? Colors.green : Colors.orange,
           ),
         ),
         title: Text(
-          adresa['naziv'] ?? 'Bez naziva',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          adresa.naziv,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(
-          grad,
-          style: TextStyle(
-            color: isVrsac ? Colors.orange.shade200 : Colors.green.shade200,
-          ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${adresa.grad}',
+              style: TextStyle(color: Colors.grey[400], fontSize: 12),
+            ),
+            if (adresa.ulica != null)
+              Text(
+                '${adresa.ulica} ${adresa.broj ?? ""}',
+                style: TextStyle(color: Colors.grey[500], fontSize: 11),
+              ),
+          ],
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.edit, color: Colors.blue),
+              icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
               onPressed: () => _editAdresa(adresa),
             ),
             IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
               onPressed: () => _deleteAdresa(adresa),
             ),
           ],

@@ -244,12 +244,23 @@ class RegistrovaniPutnikService {
     if (polasciPoDanu.isEmpty) return;
 
     final danas = DateTime.now();
+    final currentWeekday = danas.weekday;
+    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
     final daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
 
     // Proveri svaki dan koji putnik ima definisan
     for (final danKratica in daniKratice) {
       final danData = polasciPoDanu[danKratica];
       if (danData == null || danData is! Map) continue;
+
+      final targetWeekday = daniMap[danKratica] ?? 1;
+
+      // 🚫 PRESKOČI PROVERU ZA PRETHODNE DANE U NEDELJI (FIX korisničkog zahteva)
+      // Ako je danas utorak, ne proveravaj ponedeljak jer je taj polazak već prošao
+      // i admin ne želi da bude blokiran ako je juče bio pun bus.
+      if (targetWeekday < currentWeekday) {
+        continue;
+      }
 
       // Proveri BC polazak - PAŽNJA: null.toString() = "null", ne prazan string!
       final bcValue = danData['bc'];

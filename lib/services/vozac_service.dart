@@ -16,4 +16,13 @@ class VozacService {
 
     return response.map((json) => Vozac.fromMap(json)).toList();
   }
+
+  /// 🛰️ REALTIME STREAM: Dohvata sve vozače u realnom vremenu
+  Stream<List<Vozac>> streamAllVozaci() {
+    return _supabase
+        .from('vozaci')
+        .stream(primaryKey: ['id'])
+        .order('ime')
+        .map((data) => data.map((json) => Vozac.fromMap(json)).toList());
+  }
 }
