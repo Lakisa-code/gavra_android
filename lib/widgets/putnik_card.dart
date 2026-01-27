@@ -6,18 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/putnik.dart';
-import '../models/registrovani_putnik.dart' as novi_model;
 import '../services/adresa_supabase_service.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/haptic_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
-import '../services/realtime_gps_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart';
 import '../utils/smart_colors.dart';
-import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart';
 
 /// Widget za prikaz putnik kartice sa podrškom za mesečne i dnevne putnike
@@ -101,634 +98,6 @@ class _PutnikCardState extends State<PutnikCard> {
 
   String _formatVreme(DateTime vreme) {
     return '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _handlePokupljen() async {
-    // 🔒 GLOBALNI LOCK - ako BILO KOJA kartica procesira, ignoriši
-    if (_globalProcessingLock) return;
-    // 🔒 ZAŠTITA OD DUPLOG KLIKA - ako već procesiramo, ignoriši
-    if (_isProcessing) return;
-
-    if (_putnik.vremePokupljenja == null && widget.showActions && !_putnik.jeOtkazan) {
-      // Sačuvaj originalno ime pre bilo kakvih operacija
-      final String originalnoIme = _putnik.ime;
-
-      try {
-        // PROVERI DA LI JE ID NULL
-        if (_putnik.id == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SmartSnackBar.error(
-                'Greška: $originalnoIme nema validno ID za pokupljanje',
-                context,
-              ),
-            );
-          }
-          return;
-        }
-
-        // 🔒 POSTAVI OBA LOCK-A
-        _globalProcessingLock = true;
-        if (mounted) {
-          setState(() {
-            _isProcessing = true;
-          });
-        }
-
-        // Uklonjena validacija vozača - prihvataju se svi vozači
-
-        // ⏱️ SAČEKAJ 1.5 SEKUNDE - zaštita od slučajnog klika
-        await Future<void>.delayed(const Duration(milliseconds: 1500));
-
-        // Ako je korisnik otišao sa ekrana tokom čekanja, prekini
-        if (!mounted) {
-          _globalProcessingLock = false;
-          return;
-        }
-
-        // 📳 Vibracija nakon 1.5s - potvrda da počinje procesiranje
-        HapticService.putnikPokupljen();
-
-        try {
-          // ⏳ Baza radi
-          await PutnikService()
-              .oznaciPokupljen(_putnik.id!, widget.currentDriver, grad: _putnik.grad, selectedDan: _putnik.dan);
-
-          // GPS LEARN: Sačuvaj koordinate ako adresa nema koordinate
-          _tryGpsLearn();
-
-          // FORSIRAJ UI REFRESH NA PARENT WIDGET
-          if (mounted && widget.onChanged != null) {
-            widget.onChanged!();
-          }
-
-          // DODAJ KRATKU PAUZU pre dohvatanja (da se baza ažurira)
-          await Future<void>.delayed(const Duration(milliseconds: 500));
-
-          final updatedPutnik = await PutnikService().getPutnikFromAnyTable(_putnik.id!);
-          if (updatedPutnik != null && mounted) {
-            if (mounted) {
-              setState(() {
-                _putnik = updatedPutnik;
-                _isProcessing = false; // 🔓 Otključaj lokalni
-              });
-            }
-            // 🔓 OTKLJUČAJ GLOBALNI - tek kad kartica pozeleni!
-            _globalProcessingLock = false;
-
-            // 🎉 PRIKAZ USPEŠNE PORUKE - koristi originalno ime
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SmartSnackBar.success('$originalnoIme je pokupljen', context),
-              );
-            }
-
-            // NAJAVI SLEDEĆEG PUTNIKA (callback na danas_screen)
-            if (widget.onPokupljen != null) {
-              widget.onPokupljen!();
-            }
-          } else {
-            // Forsiraj UI ažuriranje
-            _globalProcessingLock = false; // 🔓 Otključaj globalni
-            if (mounted) {
-              setState(() {
-                _isProcessing = false; // 🔓 Otključaj
-              });
-            }
-          }
-        } catch (e) {
-          // ❌ GREŠKA - otključaj i prikaži grešku
-          _globalProcessingLock = false; // 🔓 Otključaj globalni
-          if (mounted) {
-            setState(() {
-              _isProcessing = false; // 🔓 Otključaj
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Greška pri pokupljanju $originalnoIme: $e'),
-                backgroundColor: Theme.of(context).colorScheme.error,
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        // Greška pri označavanju kao pokupljen
-        _globalProcessingLock = false; // 🔓 Otključaj globalni
-        if (mounted) {
-          setState(() {
-            _isProcessing = false; // 🔓 Otključaj
-          });
-        }
-      }
-    }
-  }
-
-  /// GPS LEARN: Sačuvaj trenutnu GPS lokaciju za adresu putnika
-  /// Ovo omogućava da sledeći put navigacija zna tačno gde je putnik pokupljen
-  Future<void> _tryGpsLearn() async {
-    try {
-      // Proveri da li putnik ima adresaId
-      final adresaId = _putnik.adresaId;
-      if (adresaId == null || adresaId.isEmpty) {
-        return; // Nema adresu za učenje
-      }
-
-      // Dobij trenutnu GPS lokaciju
-      final position = await RealtimeGpsService.getCurrentPosition();
-
-      // 📍 UPDATE DRIVER LOCATION (Admin Map)
-      // Odmah pošalj lokaciju administratoru da zna da je putnik pokupljen baš OVDE
-
-      // Sačuvaj koordinate u bazu
-      final success = await AdresaSupabaseService.updateKoordinateFromGps(
-        adresaId: adresaId,
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
-
-      if (success && mounted) {
-        // Opciono: pokaži diskretnu notifikaciju
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.location_on, color: Colors.white, size: 16),
-                SizedBox(width: 8),
-                Text('📍 Lokacija naučena!'),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-          ),
-        );
-      }
-    } catch (e) {
-      // Silently ignore GPS learn errors - nije kritična funkcija
-    }
-  }
-
-  void _startLongPressTimer() {
-    _isLongPressActive = true;
-    _longPressTimer = Timer(const Duration(milliseconds: 1500), () async {
-      if (_isLongPressActive) {
-        // Long press = SAMO pokupljanje
-
-        if (_putnik.vremePokupljenja == null) {
-          // 📳 JAKA VIBRACIJA ODMAH KAD SE AKTIVIRA (pre await)
-          HapticService.heavyImpact();
-
-          await _handlePokupljen();
-
-          // FORSIRAJ PARENT WIDGET REFRESH
-          if (mounted && widget.onChanged != null) {
-            widget.onChanged!();
-          }
-
-          // FORSIRAJ UI REFRESH za promenu boje kartice
-          if (mounted) {
-            if (mounted) {
-              setState(() {
-                // Forsiranje rebuild-a za ažuriranje boje
-              });
-            }
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Putnik pokupljen'),
-                duration: Duration(seconds: 1),
-              ),
-            );
-          }
-        }
-      }
-    });
-  }
-
-  // Brži admin reset sa triple tap
-  void _handleTap() {
-    // 🆕 DEBUG: Proveri ko je vozač i da li može da resetuje
-    // ignore: avoid_print
-    print('🔍 TAP: currentDriver="${widget.currentDriver}", canReset=${_canResetCard()}, tapCount=$_tapCount');
-
-    // Samo za admin (Bojan i Svetlana) na kartice koje mogu da se resetuju
-    if (!['Bojan', 'Svetlana'].contains(widget.currentDriver) || !_canResetCard()) {
-      return;
-    }
-
-    _tapCount++;
-
-    // Resetuj timer za tap sequence
-    _tapTimer?.cancel();
-    _tapTimer = Timer(const Duration(milliseconds: 600), () {
-      _tapCount = 0; // Reset tap count nakon 600ms
-    });
-
-    // Triple tap = instant reset
-    if (_tapCount >= 3) {
-      _tapCount = 0;
-      _tapTimer?.cancel();
-      _handleResetCard();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Admin reset: ${_putnik.ime} (3x tap)'),
-            backgroundColor: Theme.of(context).colorScheme.tertiary,
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      }
-    }
-  }
-
-  // Proverava da li se kartica može resetovati
-  bool _canResetCard() {
-    // 👑 ADMIN JE TATA - može sve da resetuje
-    if (['Bojan', 'Svetlana'].contains(widget.currentDriver)) {
-      return true;
-    }
-
-    // Za ostale vozače - samo ako je nešto urađeno
-    // Allow reset if putnik is marked as absent (bolovanje/godišnji)
-    if (TextUtils.isStatusInCategory(_putnik.status, TextUtils.bolovanjeGodisnji)) {
-      return true;
-    }
-
-    final canReset = _putnik.jePokupljen || _putnik.jePlacen || _putnik.jeOtkazan;
-    return canReset;
-  }
-
-  // Resetuje karticu u početno (belo) stanje
-  Future<void> _handleResetCard() async {
-    try {
-      // Prosleđuj selectedVreme i selectedGrad za tačan reset
-      // ✅ FIX: Koristi _putnik.grad kao fallback ako selectedGrad nije prosleđen
-      final gradZaReset = widget.selectedGrad ?? _putnik.grad;
-      // ✅ FIX: Koristi _putnik.dan za tačan dan (ne današnji dan)
-      final danZaReset = _putnik.dan.toLowerCase().substring(0, 3); // Pon -> pon
-      // ignore: avoid_print
-      print(
-          '🔄 _handleResetCard: ime=${_putnik.ime}, grad=$gradZaReset, dan=$danZaReset, driver=${widget.currentDriver}');
-
-      await PutnikService().resetPutnikCard(
-        _putnik.ime,
-        widget.currentDriver,
-        selectedVreme: widget.selectedVreme,
-        selectedGrad: gradZaReset,
-        targetDan: danZaReset,
-      );
-
-      // Supabase realtime automatski triggeruje refresh
-      // Malo sačekaj da se podaci propagiraju
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-
-      // Refresh putnika iz baze - 🆕 prosleđujemo grad za tačan rezultat
-      final updatedPutnik = await PutnikService().getPutnikByName(
-        _putnik.ime,
-        grad: widget.selectedGrad ?? _putnik.grad,
-      );
-      if (updatedPutnik != null && mounted) {
-        setState(() {
-          _putnik = updatedPutnik;
-        });
-      } else if (mounted) {
-        // Fallback: kreiraj novo stanje putnika sa resetovanim vrednostima
-        setState(() {
-          _putnik = Putnik(
-            id: _putnik.id,
-            ime: _putnik.ime,
-            polazak: _putnik.polazak,
-            pokupljen: false,
-            vremeDodavanja: _putnik.vremeDodavanja,
-            mesecnaKarta: _putnik.mesecnaKarta,
-            dan: _putnik.dan,
-            status: 'radi', // Uvek radi kao početno stanje
-            placeno: false,
-            cena: 0,
-            dodeljenVozac: _putnik.dodeljenVozac,
-            grad: _putnik.grad,
-            adresa: _putnik.adresa,
-            priority: _putnik.priority,
-            brojTelefona: _putnik.brojTelefona,
-            otkazanZaPolazak: false, // 🆕 Reset otkazivanja
-          );
-        });
-      }
-
-      // OBAVESTI PARENT EKRAN DA OSVEŽI UI - KONZISTENTNO SA SVIM EKRANIMA
-      if (mounted && widget.onChanged != null) {
-        widget.onChanged!();
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Kartica resetovana u početno stanje: ${_putnik.ime}'),
-            backgroundColor: Theme.of(context).colorScheme.warningPrimary,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri resetovanju kartice: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Prikaži opcije za kontakt (poziv i SMS)
-  Future<void> _pozovi() async {
-    final List<Widget> opcije = [];
-
-    // Dohvati podatke o mesečnom putniku (ako je mesečni putnik)
-    novi_model.RegistrovaniPutnik? registrovaniPutnik;
-    if (_putnik.mesecnaKarta == true) {
-      try {
-        registrovaniPutnik = await RegistrovaniPutnikService.getRegistrovaniPutnikByIme(_putnik.ime);
-      } catch (e) {
-        // Ignoriši grešku, nastavi bez podataka o roditeljima
-      }
-    }
-
-    // Glavni broj telefona putnika
-    if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
-      opcije.add(
-        ListTile(
-          leading: Icon(
-            Icons.phone,
-            color: Theme.of(context).colorScheme.successPrimary,
-          ),
-          title: const Text('Pozovi putnika'),
-          subtitle: Text(_putnik.brojTelefona!),
-          onTap: () async {
-            Navigator.pop(context);
-
-            await _pozoviBroj();
-          },
-        ),
-      );
-      opcije.add(
-        ListTile(
-          leading: Icon(
-            Icons.sms,
-            color: Theme.of(context).colorScheme.successPrimary,
-          ),
-          title: const Text('SMS putnik'),
-          subtitle: Text(_putnik.brojTelefona!),
-          onTap: () async {
-            Navigator.pop(context);
-
-            await _posaljiSMS(_putnik.brojTelefona!);
-          },
-        ),
-      );
-    }
-
-    // Otac (ako postoji u mesečnim putnicima)
-    if (registrovaniPutnik != null &&
-        registrovaniPutnik.brojTelefonaOca != null &&
-        registrovaniPutnik.brojTelefonaOca!.isNotEmpty) {
-      opcije.add(
-        ListTile(
-          leading: Icon(Icons.man, color: Theme.of(context).colorScheme.primary),
-          title: const Text('Pozovi oca'),
-          subtitle: Text(registrovaniPutnik.brojTelefonaOca!),
-          onTap: () async {
-            Navigator.pop(context);
-
-            await _pozoviBrojRoditelja(registrovaniPutnik!.brojTelefonaOca!);
-          },
-        ),
-      );
-      opcije.add(
-        ListTile(
-          leading: Icon(Icons.sms, color: Theme.of(context).colorScheme.primary),
-          title: const Text('SMS otac'),
-          subtitle: Text(registrovaniPutnik.brojTelefonaOca!),
-          onTap: () async {
-            Navigator.pop(context);
-
-            await _posaljiSMS(registrovaniPutnik!.brojTelefonaOca!);
-          },
-        ),
-      );
-    }
-
-    // Majka (ako postoji u mesečnim putnicima)
-    if (registrovaniPutnik != null &&
-        registrovaniPutnik.brojTelefonaMajke != null &&
-        registrovaniPutnik.brojTelefonaMajke!.isNotEmpty) {
-      opcije.add(
-        ListTile(
-          leading: const Icon(Icons.woman, color: Colors.pink),
-          title: const Text('Pozovi majku'),
-          subtitle: Text(registrovaniPutnik.brojTelefonaMajke!),
-          onTap: () async {
-            Navigator.pop(context);
-
-            await _pozoviBrojRoditelja(registrovaniPutnik!.brojTelefonaMajke!);
-          },
-        ),
-      );
-      opcije.add(
-        ListTile(
-          leading: const Icon(Icons.sms, color: Colors.pink),
-          title: const Text('SMS majka'),
-          subtitle: Text(registrovaniPutnik.brojTelefonaMajke!),
-          onTap: () async {
-            Navigator.pop(context);
-
-            await _posaljiSMS(registrovaniPutnik!.brojTelefonaMajke!);
-          },
-        ),
-      );
-    }
-
-    if (opcije.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nema dostupnih kontakata')),
-      );
-      return;
-    }
-
-    if (!mounted) return;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => SafeArea(
-        top: false,
-        child: Container(
-          decoration: TripleBlueFashionStyles.popupDecoration.copyWith(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Kontaktiraj ${_putnik.ime}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ...opcije,
-              const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.grey.shade400,
-                      Colors.grey.shade600,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Otkaži',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Pozovi putnika na telefon
-  Future<void> _pozoviBroj() async {
-    if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
-      try {
-        // HUAWEI KOMPATIBILNO - koristi Huawei specifičnu logiku
-        final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
-        if (!hasPermission) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Dozvola za pozive je potrebna'),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          }
-          return;
-        }
-
-        final phoneUrl = Uri.parse('tel:${_putnik.brojTelefona}');
-        if (await canLaunchUrl(phoneUrl)) {
-          await launchUrl(phoneUrl);
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Nije moguće pozivanje sa ovog uređaja'),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Greška pri pozivanju: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  /// Pozovi roditelja na telefon (otac ili majka)
-  Future<void> _pozoviBrojRoditelja(String brojTelefona) async {
-    try {
-      // HUAWEI KOMPATIBILNO - koristi Huawei specifičnu logiku
-      final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
-      if (!hasPermission) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Dozvola za pozive je potrebna'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-        return;
-      }
-
-      final phoneUrl = Uri.parse('tel:$brojTelefona');
-      if (await canLaunchUrl(phoneUrl)) {
-        await launchUrl(phoneUrl);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Nije moguće pozivanje sa ovog uređaja'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri pozivanju: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Pošalji SMS
-  Future<void> _posaljiSMS(String brojTelefona) async {
-    final url = Uri.parse('sms:$brojTelefona');
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Nije moguće poslati SMS'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri slanju SMS: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
   }
 
   // 💰 UNIVERZALNA METODA ZA PLAĆANJE - custom cena za sve tipove putnika
@@ -1822,6 +1191,50 @@ class _PutnikCardState extends State<PutnikCard> {
     super.dispose();
   }
 
+  void _handleTap() {
+    _tapCount++;
+    _tapTimer?.cancel();
+    _tapTimer = Timer(const Duration(milliseconds: 300), () {
+      if (_tapCount == 3) {
+        // Triple tap - admin reset (ako je admin)
+        final bool isAdmin = widget.currentDriver == 'Bojan' || widget.currentDriver == 'Svetlana';
+        if (isAdmin) {
+          _handleBrisanje();
+        }
+      }
+      _tapCount = 0;
+    });
+  }
+
+  void _startLongPressTimer() {
+    _longPressTimer?.cancel();
+    _isLongPressActive = true;
+    _longPressTimer = Timer(const Duration(seconds: 2), () {
+      if (_isLongPressActive && mounted) {
+        final bool isAdmin = widget.currentDriver == 'Bojan' || widget.currentDriver == 'Svetlana';
+        if (isAdmin) {
+          _showAdminPopup();
+        }
+      }
+    });
+  }
+
+  Future<void> _pozovi() async {
+    if (_putnik.brojTelefona == null || _putnik.brojTelefona!.isEmpty) return;
+
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: _putnik.brojTelefona,
+    );
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      }
+    } catch (e) {
+      debugPrint('Greška pri pozivu: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Proverava uslove za prikazivanje X ikone
@@ -2810,7 +2223,7 @@ class _PutnikCardState extends State<PutnikCard> {
               vremeDodavanja: _putnik.vremeDodavanja,
               mesecnaKarta: _putnik.mesecnaKarta,
               dan: _putnik.dan,
-              status: _putnik.status, // 🆕 Ne menjaj globalni status
+              status: _putnik.status,
               statusVreme: _putnik.statusVreme,
               vremePokupljenja: _putnik.vremePokupljenja,
               vremePlacanja: _putnik.vremePlacanja,
@@ -2829,7 +2242,7 @@ class _PutnikCardState extends State<PutnikCard> {
               brojTelefona: _putnik.brojTelefona,
               brojMesta: _putnik.brojMesta,
               tipPutnika: _putnik.tipPutnika,
-              otkazanZaPolazak: true, // ✅ DODATO: Instant UI update
+              otkazanZaPolazak: true,
             );
           });
         }
@@ -2870,8 +2283,6 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (confirm == true) {
       try {
-        // Ukloni iz ovog termina (datum + vreme + grad)
-        // Supabase realtime će automatski osvežiti listu
         await PutnikService().ukloniIzTermina(
           _putnik.id!,
           datum: _putnik.datum ?? DateTime.now().toIso8601String().split('T')[0],
@@ -2879,13 +2290,11 @@ class _PutnikCardState extends State<PutnikCard> {
           grad: _putnik.grad,
         );
 
-        // POZOVI onChanged callback da forsira parent refresh
         if (widget.onChanged != null) {
           widget.onChanged!();
         }
 
         if (mounted) {
-          setState(() {});
           ScaffoldMessenger.of(context).showSnackBar(
             SmartSnackBar.success('${_putnik.ime} uklonjen/a iz termina', context),
           );
@@ -2899,4 +2308,4 @@ class _PutnikCardState extends State<PutnikCard> {
       }
     }
   }
-} // kraj klase
+}

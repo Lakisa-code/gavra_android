@@ -134,9 +134,9 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   // 💰 CALCULATE DUG AMOUNT HELPER
   double _calculateDugAmount(Putnik putnik) {
-    // Za dugove, koristimo standardnu cenu ili specifičnu cenu iz putnika
-    // Default cena za Bela Crkva - Vršac je 500 RSD
-    return 500.0; // Osnovni iznos karte - može se proširiti na osnovu rute
+    // ✅ FIX: Koristi efektivnu cenu iz modela pomnoženu sa brojem mesta
+    // Umesto hardkodovanih 500.0
+    return putnik.effectivePrice * (putnik.brojMesta > 0 ? putnik.brojMesta : 1);
   }
 
   List<Putnik> _applyFiltersAndSort(List<Putnik> input) {
@@ -158,9 +158,9 @@ class _DugoviScreenState extends State<DugoviScreen> {
         final iznos = _calculateDugAmount(duznik);
         switch (_selectedFilter) {
           case 'veliki_dug':
-            return iznos >= 500; // Veliki dug preko 500 RSD
+            return iznos >= 600; // Veliki dug (Dnevni je 600)
           case 'mali_dug':
-            return iznos < 500; // Mali dug ispod 500 RSD
+            return iznos < 600; 
           default:
             return true;
         }

@@ -252,14 +252,26 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
         statusIcon = Icons.hourglass_empty;
         break;
       case 'potvrda_zakazivanja':
-        statusColor = Colors.green;
-        statusLabel = 'OBRAĐENO';
-        statusIcon = Icons.check_circle;
+        if (detalji.contains('Sistem')) {
+          statusColor = Colors.green.shade800;
+          statusLabel = 'SISTEM POTVRDIO';
+          statusIcon = Icons.auto_awesome;
+        } else {
+          statusColor = Colors.green;
+          statusLabel = 'OBRAĐENO';
+          statusIcon = Icons.check_circle;
+        }
         break;
       case 'otkazivanje_putnika':
-        statusColor = Colors.red;
-        statusLabel = 'OTKAZANO';
-        statusIcon = Icons.cancel;
+        if (detalji.contains('Sistem')) {
+          statusColor = Colors.red.shade800;
+          statusLabel = 'SISTEM UKLONIO';
+          statusIcon = Icons.bolt;
+        } else {
+          statusColor = Colors.red;
+          statusLabel = 'OTKAZANO';
+          statusIcon = Icons.cancel;
+        }
         break;
       case 'greska_zahteva':
         statusColor = Colors.deepOrange;

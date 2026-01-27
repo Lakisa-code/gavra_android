@@ -1818,17 +1818,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
           },
         ),
       );
-      opcije.add(
-        ListTile(
-          leading: const Icon(Icons.sms, color: Colors.green),
-          title: const Text('SMS putnik'),
-          subtitle: Text(putnik.brojTelefona!),
-          onTap: () async {
-            Navigator.pop(context);
-            await _posaljiSMS(putnik.brojTelefona!);
-          },
-        ),
-      );
     }
 
     // Otac
@@ -1935,33 +1924,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška pri pozivanju: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _posaljiSMS(String brojTelefona) async {
-    final url = Uri.parse('sms:$brojTelefona');
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Nije moguće poslati SMS'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri slanju SMS: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2215,7 +2177,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: jeFiksna ? 'Fiksni iznos (dinari)' : 'Iznos (dinari)',
-                        hintText: 'Unesite iznos plaćanja',
                         prefixIcon: Icon(
                           jeFiksna ? Icons.lock_outline : Icons.attach_money,
                           color: jeFiksna ? Colors.grey : Colors.purple.shade600,

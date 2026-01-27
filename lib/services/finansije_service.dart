@@ -217,6 +217,9 @@ class FinansijeService {
         final polasciPoDanu = row['polasci_po_danu'];
         if (polasciPoDanu == null) continue;
 
+        final String tip = (row['tip'] ?? 'Radnik').toString().toLowerCase();
+        final bool jeMesecni = tip == 'radnik' || tip == 'ucenik' || tip == 'učenik';
+
         Map<String, dynamic> polasci;
         if (polasciPoDanu is String) {
           polasci = Map<String, dynamic>.from(const JsonDecoder().convert(polasciPoDanu));
@@ -224,21 +227,45 @@ class FinansijeService {
           polasci = Map<String, dynamic>.from(polasciPoDanu);
         }
 
-        // Prođi kroz sve dane i gradove u JSON-u
+        // Prođi kroz sve dane (pon, uto...)
         polasci.forEach((dan, mesta) {
           if (mesta is Map) {
-            mesta.forEach((mesto, podaci) {
-              if (podaci is Map) {
-                final bool jePokupljen = podaci['pokupljen'] == true;
-                final bool jePlacen = podaci['placen'] == true || podaci['placeno'] == true;
+            if (jeMesecni) {
+              // ZA RADNIKE/UČENIKE: Brojimo samo JEDNOM po danu ako je bilo koje pokupljeno a neplaćeno
+              bool imaDugZaOvajDan = false;
+              double cenaDug = 0;
 
-                // Ako je pokupljen a nije plaćen
-                if (jePokupljen && !jePlacen) {
-                  final iznos = podaci['iznos'] ?? podaci['cena'] ?? row['cena_po_danu'] ?? 0;
-                  ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+              mesta.forEach((mesto, podaci) {
+                if (podaci is Map) {
+                  final bool jePokupljen = podaci['pokupljen'] == true;
+                  final bool jePlacen = podaci['placen'] == true || podaci['placeno'] == true;
+
+                  if (jePokupljen && !jePlacen) {
+                    imaDugZaOvajDan = true;
+                    // Uzimamo iznos iz polaska ili iz putnika
+                    final iznos = podaci['iznos'] ?? podaci['cena'] ?? row['cena_po_danu'] ?? 0;
+                    cenaDug = (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+                  }
                 }
+              });
+
+              if (imaDugZaOvajDan) {
+                ukupno += cenaDug;
               }
-            });
+            } else {
+              // ZA DNEVNE/POŠILJKE: Brojimo SVAKI pokupljen i neplaćen polazak
+              mesta.forEach((mesto, podaci) {
+                if (podaci is Map) {
+                  final bool jePokupljen = podaci['pokupljen'] == true;
+                  final bool jePlacen = podaci['placen'] == true || podaci['placeno'] == true;
+
+                  if (jePokupljen && !jePlacen) {
+                    final iznos = podaci['iznos'] ?? podaci['cena'] ?? row['cena_po_danu'] ?? 0;
+                    ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+                  }
+                }
+              });
+            }
           }
         });
       }

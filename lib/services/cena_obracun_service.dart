@@ -273,21 +273,4 @@ class CenaObracunService {
   static Future<bool> ukloniCustomCenu(String putnikId) async {
     return postaviCenuPoDanu(putnikId: putnikId, cenaPoDanu: null);
   }
-
-  /// Dobij formatiran tekst za SMS poruku
-  static String formatirajCenuZaSms({
-    required double cena,
-    required String tip,
-    required int brojDana, // Zadržavamo naziv parametra zbog kompatibilnosti
-    double? customCenaPoDanu,
-  }) {
-    final jeDnevni = tip.toLowerCase() == 'dnevni';
-    final labela = jeDnevni ? 'dana' : 'vožnji';
-    final cenaPoUnit = customCenaPoDanu ?? _getDefaultCenaPoDanu(tip);
-
-    if (customCenaPoDanu != null) {
-      return '${cena.toStringAsFixed(0)} RSD ($brojDana $labela x ${cenaPoUnit.toStringAsFixed(0)} RSD - specijalna cena)';
-    }
-    return '${cena.toStringAsFixed(0)} RSD ($brojDana $labela x ${cenaPoUnit.toStringAsFixed(0)} RSD)';
-  }
 }

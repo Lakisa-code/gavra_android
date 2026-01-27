@@ -685,6 +685,29 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ["language", "imageType"],
                 },
             },
+            {
+                name: "google_upload_image",
+                description: "Upload an image (screenshot, icon, etc.) for a language",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        language: {
+                            type: "string",
+                            description: "Language code (e.g., 'en-US')",
+                        },
+                        imageType: {
+                            type: "string",
+                            description: "Image type",
+                            enum: ["featureGraphic", "icon", "phoneScreenshots", "sevenInchScreenshots", "tenInchScreenshots", "tvBanner", "tvScreenshots", "wearScreenshots"],
+                        },
+                        imagePath: {
+                            type: "string",
+                            description: "Absolute path to the image file",
+                        },
+                    },
+                    required: ["language", "imageType", "imagePath"],
+                },
+            },
             // === PURCHASE VERIFICATION ===
             {
                 name: "google_verify_product_purchase",
@@ -2729,6 +2752,57 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                 text: JSON.stringify({
                                     success: true,
                                     message: `All ${imageType} images deleted for ${language}`,
+                                }, null, 2),
+                            },
+                        ],
+                    };
+                } catch (error) {
+                    await androidPublisher.edits.delete({
+                        packageName: PACKAGE_NAME,
+                        editId,
+                    }).catch(() => { });
+                    throw error;
+                }
+            }
+
+            case "google_upload_image": {
+                const { language, imageType, imagePath } = args as { language: string; imageType: string; imagePath: string };
+
+                if (!fs.existsSync(imagePath)) {
+                    throw new Error(`Image file not found at path: ${imagePath}`);
+                }
+
+                const editResponse = await androidPublisher.edits.insert({
+                    packageName: PACKAGE_NAME,
+                });
+                const editId = editResponse.data.id!;
+
+                try {
+                    const mimeType = imagePath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+                    const response = await androidPublisher.edits.images.upload({
+                        packageName: PACKAGE_NAME,
+                        editId,
+                        language,
+                        imageType,
+                        media: {
+                            mimeType,
+                            body: fs.createReadStream(imagePath),
+                        },
+                    });
+
+                    await androidPublisher.edits.commit({
+                        packageName: PACKAGE_NAME,
+                        editId,
+                    });
+
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: true,
+                                    message: `Image uploaded successfully for ${language} (${imageType})`,
+                                    image: response.data.image,
                                 }, null, 2),
                             },
                         ],

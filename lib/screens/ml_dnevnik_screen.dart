@@ -315,12 +315,20 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
       case 'potvrda_zakazivanja':
         iconData = Icons.check_circle_outline;
         themeColor = Colors.green.shade700;
-        actionLabel = 'Uspešno obrađeno';
+        if (detalji.contains('Sistem')) {
+          actionLabel = 'Sistem potvrdio';
+        } else {
+          actionLabel = 'Uspešno obrađeno';
+        }
         break;
       case 'otkazivanje_putnika':
         iconData = Icons.event_available_outlined;
         themeColor = Colors.deepOrange;
-        actionLabel = 'Putnik otkazao termin';
+        if (detalji.contains('Sistem')) {
+          actionLabel = 'Sistem uklonio';
+        } else {
+          actionLabel = 'Putnik otkazao termin';
+        }
         break;
       case 'admin_akcija':
         iconData = Icons.admin_panel_settings;
@@ -411,13 +419,17 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                       else
                         Row(
                           children: [
-                            const Icon(Icons.person, size: 12, color: Colors.orange),
+                            Icon(
+                              detalji.contains('Sistem') ? Icons.bolt : Icons.person,
+                              size: 12,
+                              color: detalji.contains('Sistem') ? Colors.red : Colors.orange,
+                            ),
                             const SizedBox(width: 4),
                             Text(
-                              'Samostalna akcija',
+                              detalji.contains('Sistem') ? 'Sistemska akcija' : 'Samostalna akcija',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
-                                color: Colors.orange.shade800,
+                                color: detalji.contains('Sistem') ? Colors.red.shade800 : Colors.orange.shade800,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

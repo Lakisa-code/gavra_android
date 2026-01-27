@@ -855,7 +855,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: const Text('Odjava?', style: TextStyle(color: Colors.white)),
-        content: Text('Da li želiš da se odjaviš?', style: TextStyle(color: Colors.white.withValues(alpha: 0.8))),
+        content: Text('Da li želiš da se odjaviš?', style: TextStyle(color: Colors.white.withOpacity(0.8))),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ne')),
           ElevatedButton(
@@ -886,9 +886,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
         ),
         child: ListTile(
           leading: Icon(
@@ -903,7 +903,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             jeNaOdsustvu
                 ? 'Trenutno ste na ${status == "godisnji" ? "godišnjem odmoru" : "bolovanju"}'
                 : 'Postavite se na odsustvo',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
           ),
           trailing: const Icon(Icons.chevron_right, color: Colors.white54),
           onTap: () => _pokaziOdsustvoDialog(jeNaOdsustvu),
@@ -1114,12 +1114,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isShame
-                  ? [Colors.red.shade900.withValues(alpha: 0.15), Colors.orange.shade900.withValues(alpha: 0.1)]
-                  : [Colors.green.shade900.withValues(alpha: 0.15), Colors.teal.shade900.withValues(alpha: 0.1)],
+                  ? [Colors.red.shade900.withOpacity(0.15), Colors.orange.shade900.withOpacity(0.1)]
+                  : [Colors.green.shade900.withOpacity(0.15), Colors.teal.shade900.withOpacity(0.1)],
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: (isShame ? Colors.red : Colors.green).withValues(alpha: 0.15),
+              color: (isShame ? Colors.red : Colors.green).withOpacity(0.15),
               width: 1,
             ),
           ),
@@ -1139,7 +1139,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 Text(
                   'Nema podataka',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: Colors.white.withOpacity(0.5),
                     fontSize: 10,
                     fontStyle: FontStyle.italic,
                   ),
@@ -1164,7 +1164,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         Text(
                           '$rank.',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: Colors.white.withOpacity(0.6),
                             fontSize: 10,
                           ),
                         ),
@@ -1206,7 +1206,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             gradient: Theme.of(context).backgroundGradient,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2)],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, spreadRadius: 2)],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1245,7 +1245,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               margin: const EdgeInsets.only(bottom: 16),
                               decoration: BoxDecoration(
-                                color: Colors.blue.withValues(alpha: 0.3),
+                                color: Colors.blue.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.blue.shade200),
                               ),
@@ -1270,7 +1270,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               margin: const EdgeInsets.only(bottom: 16),
                               decoration: BoxDecoration(
-                                color: Colors.indigo.withValues(alpha: 0.3),
+                                color: Colors.indigo.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.indigo.shade200),
                               ),
@@ -1281,7 +1281,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
-                                      'KIŠA ${data.precipitationStartTime ?? 'SADA'}${data.precipitationProbability != null ? ' (${data.precipitationProbability}%)' : ''}',
+                                      'KIŠA ${data.precipitationStartTime ?? 'SADA'}${data.precipitationProbability != null ? " (${data.precipitationProbability}%)" : ''}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -1501,7 +1501,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                         ? [Colors.purple.shade400, Colors.deepPurple.shade600]
                                         : [Colors.orange.shade400, Colors.deepOrange.shade600],
                               ),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
+                              border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
                               boxShadow: [
                                 BoxShadow(
                                   color: (tip == 'ucenik'
@@ -1509,7 +1509,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                           : tip == 'posiljka'
                                               ? Colors.purple
                                               : Colors.orange)
-                                      .withValues(alpha: 0.4),
+                                      .withOpacity(0.4),
                                   blurRadius: 20,
                                   spreadRadius: 2,
                                 ),
@@ -1549,14 +1549,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: tip == 'ucenik'
-                                      ? Colors.blue.withValues(alpha: 0.3)
+                                      ? Colors.blue.withOpacity(0.3)
                                       : (tip == 'dnevni' || tipPrikazivanja == 'DNEVNI')
-                                          ? Colors.green.withValues(alpha: 0.3)
+                                          ? Colors.green.withOpacity(0.3)
                                           : tip == 'posiljka'
-                                              ? Colors.purple.withValues(alpha: 0.3)
-                                              : Colors.orange.withValues(alpha: 0.3),
+                                              ? Colors.purple.withOpacity(0.3)
+                                              : Colors.orange.withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                  border: Border.all(color: Colors.white.withOpacity(0.3)),
                                 ),
                                 child: Text(
                                   tip == 'ucenik'
@@ -1580,9 +1580,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.15),
+                                    color: Colors.white.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                    border: Border.all(color: Colors.white.withOpacity(0.3)),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -1614,7 +1614,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   const SizedBox(width: 4),
                                   Text(
                                     _adresaBC!,
-                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
                                   ),
                                 ],
                                 if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
@@ -1623,7 +1623,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   const SizedBox(width: 4),
                                   Text(
                                     _adresaVS!,
-                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
                                   ),
                                 ],
                               ],
@@ -1636,7 +1636,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     // ─────────── Divider ───────────
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                      child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
                     ),
 
                     // 🚐 ETA Widget sa fazama:
@@ -1656,7 +1656,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     // ─────────── Divider ───────────
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                      child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
                     ),
 
                     // 🏆💀 FAME | SHAME - PRIVREMENO ISKLJUČENO
@@ -1678,7 +1678,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     // ─────────── Divider ───────────
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                      child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
                     ),
                     const SizedBox(height: 8),
 
@@ -1715,16 +1715,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: _ukupnoZaduzenje > 0
-                              ? [Colors.red.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.05)]
-                              : [Colors.green.withValues(alpha: 0.2), Colors.green.withValues(alpha: 0.05)],
+                              ? [Colors.red.withOpacity(0.2), Colors.red.withOpacity(0.05)]
+                              : [Colors.green.withOpacity(0.2), Colors.green.withOpacity(0.05)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _ukupnoZaduzenje > 0
-                              ? Colors.red.withValues(alpha: 0.3)
-                              : Colors.green.withValues(alpha: 0.3),
+                              ? Colors.red.withOpacity(0.3)
+                              : Colors.green.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -1733,14 +1733,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                           Text(
                             'TRENUTNO STANJE',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: Colors.white.withOpacity(0.6),
                               fontSize: 11,
                               letterSpacing: 1,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
+                            _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO OK',
                             style: TextStyle(
                               color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
                               fontSize: 20,
@@ -1752,7 +1752,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                             Text(
                               'Cena: ${_cenaPoVoznji.toStringAsFixed(0)} RSD / ${tip.toLowerCase() == 'radnik' || tip.toLowerCase() == 'ucenik' ? 'dan' : 'vožnja'}',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
+                                color: Colors.white.withOpacity(0.5),
                                 fontSize: 10,
                                 fontStyle: FontStyle.italic,
                               ),
@@ -1789,8 +1789,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             value,
             style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11)),
-          Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10)),
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11)),
+          Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
         ],
       ),
     );
@@ -1856,9 +1856,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: Colors.white.withOpacity(0.06),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
+        border: Border.all(color: Colors.white.withOpacity(0.13)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1881,7 +1881,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                   child: Text(
                     'BC',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: Colors.white.withOpacity(0.7),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -1893,7 +1893,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                   child: Text(
                     'VS',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: Colors.white.withOpacity(0.7),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -2545,7 +2545,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_ios, color: Colors.white.withValues(alpha: 0.5), size: 16),
+              Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.5), size: 16),
             ],
           ),
         ),
