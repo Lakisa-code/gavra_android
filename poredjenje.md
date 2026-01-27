@@ -25,18 +25,20 @@
 
 ---
 
-## 📸 Upload Slika - Plan
+## 📸 Upload Slika - Status
 
-**Status:** ✅ COMPLETED - KARAMELOOOOO!
+**Google Play:** ✅ DONE - 4 nove slike uploadovane i committed
 
-**Dostupne slike za upload:**
-1. Screenshot_20260127_050102_com.gbox.android.jp.jpg
-2. Screenshot_20260127_050113_com.gbox.android.jp.jpg
-3. Screenshot_20260127_050120_com.gbox.android.jp.jpg
-4. Screenshot_20260127_050132_com.gbox.android.jp.jpg
+**Huawei:** ✅ DONE - 4 nove slike uploadovane via OAuth2 API
 
-**Planirana akcija:**
-- ✅ Google Play: 4 slike uploadovane i committed (Edit: 09263341894480726919)
-- ✅ Listing sa titleom postavljen
-- ⏳ Huawei: Sprema za upload
+**Dostupne slike:**
+1. Screenshot_20260127_050102_com.gbox.android.jp.jpg (0.91 MB)
+2. Screenshot_20260127_050113_com.gbox.android.jp.jpg (0.96 MB)
+3. Screenshot_20260127_050120_com.gbox.android.jp.jpg (1.20 MB)
+4. Screenshot_20260127_050132_com.gbox.android.jp.jpg (0.88 MB)
+
+**Completed Actions:**
+- ✅ Google Play: 4 slike uploadovane (Edit: 09263341894480726919)
+- ✅ Huawei: 4 slike uploadovane (OAuth2 API, object IDs generated)
+- ⏳ iOS: Čeka se upload (credentials configured)
 
