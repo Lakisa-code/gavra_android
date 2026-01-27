@@ -582,7 +582,9 @@ class PutnikStatistikeHelper {
       'Decembar',
     ];
     for (int i = 1; i < months.length; i++) {
-      if (months[i] == monthName) return i;
+      if (months[i] == monthName) {
+        return i;
+      }
     }
     return 0;
   }
@@ -632,7 +634,9 @@ class PutnikStatistikeHelper {
     final currentYear = DateTime.now().year;
     final startOfYearStr = '$currentYear-01-01';
     final endOfYearStr = '$currentYear-12-31';
-    final jeDnevni = tipPutnika.toLowerCase().contains('dnevni') || tipPutnika.toLowerCase().contains('posiljka');
+
+    final tp = tipPutnika.toLowerCase();
+    final bool jeDnevni = tp.contains('dnevni') || tp.contains('posiljka') || tp.contains('pošiljka');
 
     final response = await supabase
         .from('voznje_log')
@@ -640,7 +644,7 @@ class PutnikStatistikeHelper {
         .eq('putnik_id', putnikId)
         .gte('datum', startOfYearStr)
         .lte('datum', endOfYearStr)
-        .order('created_at', ascending: false);
+        .order('datum', ascending: false);
 
     Map<String, int> dailyMaxVoznje = {};
     Map<String, int> dailyMaxOtkazivanja = {};
@@ -650,27 +654,34 @@ class PutnikStatistikeHelper {
     for (final record in response) {
       final tip = record['tip'] as String?;
       final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
-      final String? datumStr = record['datum'] as String?;
-      final datum = datumStr ?? record['created_at']?.toString().split('T')[0];
+      final String? datum = record['datum'] as String?;
       final int bm = (record['broj_mesta'] as num?)?.toInt() ?? 1;
 
       if (tip == 'voznja' && datum != null) {
         ukupanPrihod += iznos;
         if (jeDnevni) {
-          dailyMaxVoznje[record['id'] ?? datum + record['created_at']] = bm;
+          // Za dnevne sabiramo svako sedište (transakciono)
+          final uniqueKey = record['id']?.toString() ?? (datum + (record['created_at']?.toString() ?? ''));
+          dailyMaxVoznje[uniqueKey] = bm;
         } else {
+          // Za radnike/učenike uzimamo max broj mesta u toku dana
           if (bm > (dailyMaxVoznje[datum] ?? 0)) {
             dailyMaxVoznje[datum] = bm;
           }
         }
 
         if (poslednje == null) {
-          final d = DateTime.parse(datum);
-          poslednje = '${d.day}/${d.month}/${d.year}';
+          try {
+            final d = DateTime.parse(datum);
+            poslednje = '${d.day}/${d.month}/${d.year}';
+          } catch (_) {
+            poslednje = datum;
+          }
         }
       } else if (tip == 'otkazivanje' && datum != null) {
         if (jeDnevni) {
-          dailyMaxOtkazivanja[record['id'] ?? datum + record['created_at']] = bm;
+          final uniqueKey = record['id']?.toString() ?? (datum + (record['created_at']?.toString() ?? ''));
+          dailyMaxOtkazivanja[uniqueKey] = bm;
         } else {
           if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
             dailyMaxOtkazivanja[datum] = bm;
@@ -683,9 +694,13 @@ class PutnikStatistikeHelper {
     dailyMaxVoznje.forEach((k, v) => putovanja += v);
 
     int otkazivanjaData = 0;
-    dailyMaxOtkazivanja.forEach((datum, v) {
-      if (jeDnevni || !dailyMaxVoznje.containsKey(datum)) {
+    dailyMaxOtkazivanja.forEach((key, v) {
+      if (jeDnevni) {
         otkazivanjaData += v;
+      } else {
+        if (!dailyMaxVoznje.containsKey(key)) {
+          otkazivanjaData += v;
+        }
       }
     });
 
@@ -703,25 +718,27 @@ class PutnikStatistikeHelper {
 
   static Future<Map<String, dynamic>> _getUkupneStatistike(String putnikId, String tipPutnika) async {
     final response =
-        await supabase.from('voznje_log').select().eq('putnik_id', putnikId).order('created_at', ascending: false);
+        await supabase.from('voznje_log').select().eq('putnik_id', putnikId).order('datum', ascending: false);
 
     Map<String, int> dailyMaxVoznje = {};
     Map<String, int> dailyMaxOtkazivanja = {};
     String? poslednje;
     double ukupanPrihod = 0;
-    final jeDnevni = tipPutnika.toLowerCase().contains('dnevni') || tipPutnika.toLowerCase().contains('posiljka');
+
+    final tp = tipPutnika.toLowerCase();
+    final bool jeDnevni = tp.contains('dnevni') || tp.contains('posiljka') || tp.contains('pošiljka');
 
     for (final record in response) {
       final tip = record['tip'] as String?;
       final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
-      final String? datumStr = record['datum'] as String?;
-      final datum = datumStr ?? record['created_at']?.toString().split('T')[0];
+      final String? datum = record['datum'] as String?;
       final int bm = (record['broj_mesta'] as num?)?.toInt() ?? 1;
 
       if (tip == 'voznja' && datum != null) {
         ukupanPrihod += iznos;
         if (jeDnevni) {
-          dailyMaxVoznje[record['id'] ?? datum + record['created_at']] = bm;
+          final uniqueKey = record['id']?.toString() ?? (datum + (record['created_at']?.toString() ?? ''));
+          dailyMaxVoznje[uniqueKey] = bm;
         } else {
           if (bm > (dailyMaxVoznje[datum] ?? 0)) {
             dailyMaxVoznje[datum] = bm;
@@ -729,12 +746,17 @@ class PutnikStatistikeHelper {
         }
 
         if (poslednje == null) {
-          final d = DateTime.parse(datum);
-          poslednje = '${d.day}/${d.month}/${d.year}';
+          try {
+            final d = DateTime.parse(datum);
+            poslednje = '${d.day}/${d.month}/${d.year}';
+          } catch (_) {
+            poslednje = datum;
+          }
         }
       } else if (tip == 'otkazivanje' && datum != null) {
         if (jeDnevni) {
-          dailyMaxOtkazivanja[record['id'] ?? datum + record['created_at']] = bm;
+          final uniqueKey = record['id']?.toString() ?? (datum + (record['created_at']?.toString() ?? ''));
+          dailyMaxOtkazivanja[uniqueKey] = bm;
         } else {
           if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
             dailyMaxOtkazivanja[datum] = bm;
@@ -747,9 +769,13 @@ class PutnikStatistikeHelper {
     dailyMaxVoznje.forEach((k, v) => putovanja += v);
 
     int otkazivanjaData = 0;
-    dailyMaxOtkazivanja.forEach((datum, v) {
-      if (jeDnevni || !dailyMaxVoznje.containsKey(datum)) {
+    dailyMaxOtkazivanja.forEach((key, v) {
+      if (jeDnevni) {
         otkazivanjaData += v;
+      } else {
+        if (!dailyMaxVoznje.containsKey(key)) {
+          otkazivanjaData += v;
+        }
       }
     });
 
@@ -769,22 +795,23 @@ class PutnikStatistikeHelper {
   static Future<Map<String, dynamic>> _getStatistikeZaMesec(
       String putnikId, int mesec, int godina, String tipPutnika) async {
     try {
-      final startOfMonth = DateTime(godina, mesec, 1).toUtc().toIso8601String();
-      final endOfMonth = DateTime(godina, mesec + 1, 0, 23, 59, 59).toUtc().toIso8601String();
-      final jeDnevni = tipPutnika.toLowerCase().contains('dnevni') || tipPutnika.toLowerCase().contains('posiljka');
+      final startOfMonthStr = "$godina-${mesec.toString().padLeft(2, '0')}-01";
+      final lastDay = DateTime(godina, mesec + 1, 0).day;
+      final endOfMonthStr = "$godina-${mesec.toString().padLeft(2, '0')}-${lastDay.toString().padLeft(2, '0')}";
 
-      // 🔍 1. Dohvati sve logove vožnji za putnika u tom mesecu
+      final tp = tipPutnika.toLowerCase();
+      final bool jeDnevni = tp.contains('dnevni') || tp.contains('posiljka') || tp.contains('pošiljka');
+
       final response = await supabase
           .from('voznje_log')
           .select()
           .eq('putnik_id', putnikId)
-          .gte('created_at', startOfMonth)
-          .lte('created_at', endOfMonth)
-          .order('created_at', ascending: false);
+          .gte('datum', startOfMonthStr)
+          .lte('datum', endOfMonthStr)
+          .order('datum', ascending: false);
 
       final voznje = List<Map<String, dynamic>>.from(response);
 
-      // 📊 2. Agregiraj podatke
       double ukupanPrihodData = 0;
       Map<String, int> dailyMaxVoznje = {};
       Map<String, int> dailyMaxOtkazivanja = {};
@@ -793,14 +820,14 @@ class PutnikStatistikeHelper {
       for (final voznja in voznje) {
         final tip = voznja['tip'] as String?;
         final double iznos = ((voznja['iznos'] ?? 0) as num).toDouble();
-        final String? datumStr = voznja['datum'] as String?;
-        final datum = datumStr ?? voznja['created_at']?.toString().split('T')[0];
+        final String? datum = voznja['datum'] as String?;
         final int bm = (voznja['broj_mesta'] as num?)?.toInt() ?? 1;
 
         if (tip == 'voznja' && datum != null) {
           ukupanPrihodData += iznos;
           if (jeDnevni) {
-            dailyMaxVoznje[voznja['id'] ?? datum + (voznja['created_at']?.toString() ?? '')] = bm;
+            final uniqueKey = voznja['id']?.toString() ?? (datum + (voznja['created_at']?.toString() ?? ''));
+            dailyMaxVoznje[uniqueKey] = bm;
           } else {
             if (bm > (dailyMaxVoznje[datum] ?? 0)) {
               dailyMaxVoznje[datum] = bm;
@@ -809,7 +836,8 @@ class PutnikStatistikeHelper {
           poslednjiDatum ??= datum;
         } else if (tip == 'otkazivanje' && datum != null) {
           if (jeDnevni) {
-            dailyMaxOtkazivanja[voznja['id'] ?? datum + (voznja['created_at']?.toString() ?? '')] = bm;
+            final uniqueKey = voznja['id']?.toString() ?? (datum + (voznja['created_at']?.toString() ?? ''));
+            dailyMaxOtkazivanja[uniqueKey] = bm;
           } else {
             if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
               dailyMaxOtkazivanja[datum] = bm;
@@ -822,9 +850,13 @@ class PutnikStatistikeHelper {
       dailyMaxVoznje.forEach((k, v) => brojPutovanja += v);
 
       int brojOtkazivanja = 0;
-      dailyMaxOtkazivanja.forEach((datum, v) {
-        if (jeDnevni || !dailyMaxVoznje.containsKey(datum)) {
+      dailyMaxOtkazivanja.forEach((key, v) {
+        if (jeDnevni) {
           brojOtkazivanja += v;
+        } else {
+          if (!dailyMaxVoznje.containsKey(key)) {
+            brojOtkazivanja += v;
+          }
         }
       });
 

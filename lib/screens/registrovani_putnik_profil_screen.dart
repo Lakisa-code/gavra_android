@@ -8,9 +8,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
-import '../models/registrovani_putnik.dart';
 import '../helpers/gavra_ui.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
+import '../models/registrovani_putnik.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikacije
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
@@ -200,7 +200,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // Logovanje status promena (bez slanja notifikacija - to radi Job #3)
       for (final dan in polasciPoDanu.keys) {
         final danData = polasciPoDanu[dan];
-        if (danData is! Map) continue;
+        if (danData is! Map) {
+          continue;
+        }
 
         final bcStatus = danData['bc_status']?.toString();
         final bcVreme = danData['bc']?.toString();
@@ -366,7 +368,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // 1. Dohvati vožnje za TEKUĆI MESEC (kroz datum kolonu, ne created_at)
       final datumPocetakMeseca = DateTime(now.year, now.month, 1).toIso8601String().split('T')[0];
       final datumKrajMeseca = DateTime(now.year, now.month + 1, 0).toIso8601String().split('T')[0];
-      
+
       final voznjeResponse = await supabase
           .from('voznje_log')
           .select('datum, tip, broj_mesta')
@@ -396,7 +398,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           final d = v['datum'] as String?;
           if (d != null) {
             final bm = (v['broj_mesta'] as num?)?.toInt() ?? 1;
-            if (bm > (dailyMaxSeats[d] ?? 0)) dailyMaxSeats[d] = bm;
+            if (bm > (dailyMaxSeats[d] ?? 0)) {
+              dailyMaxSeats[d] = bm;
+            }
           }
         }
         dailyMaxSeats.forEach((_, val) => brojVoznjiTotal += val);
@@ -414,7 +418,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           final d = o['datum'] as String?;
           if (d != null) {
             final bm = (o['broj_mesta'] as num?)?.toInt() ?? 1;
-            if (bm > (dailyMaxSeats[d] ?? 0)) dailyMaxSeats[d] = bm;
+            if (bm > (dailyMaxSeats[d] ?? 0)) {
+              dailyMaxSeats[d] = bm;
+            }
           }
         }
         dailyMaxSeats.forEach((_, val) => brojOtkazivanjaTotal += val);
@@ -496,10 +502,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       for (final v in sveVoznje) {
         final datumStr = v['datum'] as String?;
-        if (datumStr == null) continue;
+        if (datumStr == null) {
+          continue;
+        }
 
         final datum = DateTime.tryParse(datumStr);
-        if (datum == null) continue;
+        if (datum == null) {
+          continue;
+        }
 
         final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
         final tip = v['tip'] as String?;
@@ -519,22 +529,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       double ukupnoZaplacanje = 0;
       final Map<String, int> brojMestaPoVoznji = {};
       try {
-        final sveVoznjeZaDug = await supabase
-            .from('voznje_log')
-            .select('datum, broj_mesta')
-            .eq('putnik_id', putnikId)
-            .eq('tip', 'voznja');
+        final sveVoznjeZaDug =
+            await supabase.from('voznje_log').select('datum, broj_mesta').eq('putnik_id', putnikId).eq('tip', 'voznja');
 
         final tipLower = tipPutnikaRaw.toLowerCase();
-        final jeDnevniIliPosiljka = tipLower.contains('dnevni') || 
-                                    tipLower.contains('posiljka') || 
-                                    tipLower.contains('pošiljka');
+        final jeDnevniIliPosiljka =
+            tipLower.contains('dnevni') || tipLower.contains('posiljka') || tipLower.contains('pošiljka');
 
         if (jeDnevniIliPosiljka) {
           for (final voznja in sveVoznjeZaDug) {
             final bm = (voznja['broj_mesta'] as num? ?? 1).toInt();
             ukupnoZaplacanje += bm * cenaPoVoznji;
-            
+
             final dStr = voznja['datum'] as String?;
             if (dStr != null) {
               brojMestaPoVoznji[dStr] = (brojMestaPoVoznji[dStr] ?? 0) + bm;
@@ -544,9 +550,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           final Map<String, int> dnevniMaxMesta = {};
           for (final voznja in sveVoznjeZaDug) {
             final dStr = voznja['datum'] as String?;
-            if (dStr == null) continue;
+            if (dStr == null) {
+              continue;
+            }
             final bm = (voznja['broj_mesta'] as num? ?? 1).toInt();
-            if (bm > (dnevniMaxMesta[dStr] ?? 0)) dnevniMaxMesta[dStr] = bm;
+            if (bm > (dnevniMaxMesta[dStr] ?? 0)) {
+              dnevniMaxMesta[dStr] = bm;
+            }
           }
           dnevniMaxMesta.forEach((datum, maxMesta) {
             ukupnoZaplacanje += maxMesta * cenaPoVoznji;
@@ -556,7 +566,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       } catch (e) {
         // Fallback
         double ukupnoVoznji = 0;
-        for (final lista in voznjeDetaljnoMap.values) ukupnoVoznji += lista.length;
+        for (final lista in voznjeDetaljnoMap.values) {
+          ukupnoVoznji += lista.length;
+        }
         ukupnoZaplacanje = ukupnoVoznji * cenaPoVoznji;
       }
 
@@ -568,7 +580,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             .select('iznos')
             .eq('putnik_id', putnikId)
             .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']);
-        
+
         for (final u in uplateResponse) {
           ukupnoUplaceno += (u['iznos'] as num? ?? 0).toDouble();
         }
@@ -1737,7 +1749,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             'bc_otkazano': parseVreme(value['bc_otkazano']),
             'vs_otkazano': parseVreme(value['vs_otkazano']),
             'bc_otkazano_vreme': parseVreme(value['bc_otkazano_vreme']),
-           
             'vs_otkazano_vreme': parseVreme(value['vs_otkazano_vreme']),
           };
         }
@@ -1949,7 +1960,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final tipPutnika = (_putnikData['tip'] ?? '').toString().toLowerCase();
       final jeUcenik = tipPutnika.contains('ucenik');
       final jeRadnik = tipPutnika.contains('radnik');
-      final jeDnevni = tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka') || tipPutnika.contains('pošiljka');
+      final jeDnevni =
+          tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka') || tipPutnika.contains('pošiljka');
       final jeBcUcenikZahtev = tipGrad == 'bc' && jeUcenik && novoVreme != null;
       final jeBcRadnikZahtev = tipGrad == 'bc' && jeRadnik && novoVreme != null;
       final jeBcDnevniZahtev = tipGrad == 'bc' && jeDnevni && novoVreme != null;
