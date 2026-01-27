@@ -2462,14 +2462,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   Future<void> _insertSeatRequest(String putnikId, String dan, String vreme, String grad) async {
     try {
       final datum = _getNextDateForDay(DateTime.now(), dan);
+      final brojMesta = _putnikData['broj_mesta'] ?? 1;
+
       await supabase.from('seat_requests').insert({
         'putnik_id': putnikId,
         'grad': grad.toUpperCase(),
         'datum': datum.toIso8601String().split('T')[0],
         'zeljeno_vreme': vreme,
         'status': 'pending',
+        'broj_mesta': brojMesta,
       });
-      debugPrint('✅ [SeatRequest] Inserted for $grad $vreme on $dan');
+      debugPrint('✅ [SeatRequest] Inserted for $grad $vreme on $dan (Mesta: $brojMesta)');
     } catch (e) {
       debugPrint('❌ [SeatRequest] Error inserting seat request: $e');
     }
