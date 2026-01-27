@@ -229,8 +229,12 @@ class SlobodnaMestaService {
   /// Proveri da li ima slobodnih mesta za određeni polazak
   static Future<bool> imaSlobodnihMesta(String grad, String vreme,
       {String? datum, String? tipPutnika, int brojMesta = 1, String? excludeId}) async {
-    // 🎓 BC LOGIKA: Učenici u Beloj Crkvi se auto-prihvataju (bez provere kapaciteta)
-    // prema pravilima iz BC LOGIKA.md (za prvi zahtev do 16h).
+    // 📦 POŠILJKE: Ne zauzimaju mesto, pa uvek ima "mesta" za njih
+    if (tipPutnika == 'posiljka') {
+      return true;
+    }
+
+    // 🎓 BC LOGIKA: Učenici u Beloj Crkvi se auto-prihvataju (bez provere kapaceta)
     if (grad.toUpperCase() == 'BC' && tipPutnika == 'ucenik') {
       return true;
     }
@@ -395,18 +399,39 @@ class SlobodnaMestaService {
 
       final gradKey = grad.toLowerCase() == 'bc' ? 'bc' : 'vs';
 
-      // Ažuriraj vreme
+      // Ažuriraj vreme i status (očisti pending status ako postoji)
       if (polasci[dan] == null || polasci[dan] is! Map) {
         polasci[dan] = {};
       }
-      (polasci[dan] as Map)[gradKey] = novoVreme;
+      final danData = Map<String, dynamic>.from(polasci[dan] as Map);
+      danData[gradKey] = novoVreme;
+
+      // Resetuj status na 'confirmed' jer je admin/sistem upravo obradio zahtev
+      danData['${gradKey}_status'] = 'confirmed';
+      danData['${gradKey}_vreme_obrade'] = DateTime.now().toUtc().toIso8601String();
+
+      polasci[dan] = danData;
 
       // Sačuvaj u bazu
-      await _supabase.from('registrovani_putnici').update({'polasci_po_danu': jsonEncode(polasci)}).eq('id', putnikId);
+      await _supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
-      // Zapiši promenu za učenike, dnevne i pošiljke
+      // Zapiši promenu za učenike, dnevne i pošiljke u promene_vremena_log
       if (tipPutnika == 'ucenik' || tipPutnika == 'dnevni' || tipPutnika == 'posiljka') {
         await _zapisiPromenuVremena(putnikId, danas, dan);
+      }
+
+      // 📝 LOG POTVRDU U voznje_log (da se pojavi u Monitoru Zahteva)
+      try {
+        await VoznjeLogService.logPotvrda(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: novoVreme,
+          grad: gradKey,
+          tipPutnika: putnikResponse['tip']?.toString() ?? 'Putnik',
+          detalji: 'Zahtev obrađen (Vreme promenjeno)',
+        );
+      } catch (logError) {
+        debugPrint('Greška pri logovanju potvrde: $logError');
       }
 
       return {'success': true, 'message': successMessage};
@@ -529,8 +554,11 @@ class SlobodnaMestaService {
   /// Vraća broj putnika koji čekaju za određeni termin i dan
   static Future<int> brojCekaMestoZaVsTermin(String vreme, String dan) async {
     try {
-      final response =
-          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu').not('polasci_po_danu', 'is', null);
+      final response = await _supabase
+          .from('registrovani_putnici')
+          .select('id, polasci_po_danu')
+          .eq('is_duplicate', false)
+          .not('polasci_po_danu', 'is', null);
 
       int count = 0;
       for (final row in response) {
@@ -561,6 +589,7 @@ class SlobodnaMestaService {
       final response = await _supabase
           .from('registrovani_putnici')
           .select('id, polasci_po_danu, tip')
+          .eq('is_duplicate', false)
           .not('polasci_po_danu', 'is', null);
 
       int confirmedCount = 0;
@@ -607,8 +636,11 @@ class SlobodnaMestaService {
   /// Sortirano po FIFO - ko se prvi prijavio, prvi je na listi
   static Future<List<String>> dohvatiCekaMestoZaVsTermin(String vreme, String dan) async {
     try {
-      final response =
-          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu').not('polasci_po_danu', 'is', null);
+      final response = await _supabase
+          .from('registrovani_putnici')
+          .select('id, polasci_po_danu')
+          .eq('is_duplicate', false)
+          .not('polasci_po_danu', 'is', null);
 
       // Lista sa ID i timestamp za sortiranje
       final List<MapEntry<String, DateTime>> waitingList = [];
@@ -679,6 +711,7 @@ class SlobodnaMestaService {
       final response = await _supabase
           .from('registrovani_putnici')
           .select('id, tip, polasci_po_danu, radni_dani, status, broj_mesta') // Dodat broj_mesta
+          .eq('is_duplicate', false)
           .not('polasci_po_danu', 'is', null);
 
       int count = 0;
@@ -725,6 +758,7 @@ class SlobodnaMestaService {
       final response = await _supabase
           .from('registrovani_putnici')
           .select('id, tip, polasci_po_danu, radni_dani, status, broj_mesta') // Dodat broj_mesta
+          .eq('is_duplicate', false)
           .not('polasci_po_danu', 'is', null);
 
       int count = 0;
@@ -775,6 +809,7 @@ class SlobodnaMestaService {
           .select('id, putnik_ime, tip, polasci_po_danu, broj_mesta') // Dodat broj_mesta
           .eq('aktivan', true)
           .eq('obrisan', false)
+          .eq('is_duplicate', false)
           .inFilter('tip', ['ucenik', 'radnik']);
 
       final results = <Map<String, dynamic>>[];
@@ -859,5 +894,67 @@ class SlobodnaMestaService {
       }
     }
     return null;
+  }
+
+  /// 🆕 Dohvati broj zauzetih mesta za VS za dati dan i vreme
+  static Future<int> getOccupiedSeatsVs(String dan, String vreme) async {
+    try {
+      final response =
+          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').eq('is_duplicate', false);
+
+      int count = 0;
+      final targetVreme = GradAdresaValidator.normalizeTime(vreme);
+
+      for (final row in response) {
+        final polasci = _getPolasciMap(row['polasci_po_danu']);
+        if (polasci == null) continue;
+
+        final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
+        if (danData == null) continue;
+
+        final vsVreme = danData['vs'] as String?;
+        final vsStatus = danData['vs_status'] as String?;
+
+        // Proveri da li je zaista zauzeto mesto (status nije ceka_mesto)
+        if (vsVreme == vreme && vsStatus != 'ceka_mesto') {
+          count++;
+        }
+      }
+
+      return count;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// 🆕 Dohvati broj zauzetih mesta za BC za dati dan i vreme
+  static Future<int> getOccupiedSeatsBc(String dan, String vreme) async {
+    try {
+      final response =
+          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').eq('is_duplicate', false);
+
+      int count = 0;
+      final targetVreme = GradAdresaValidator.normalizeTime(vreme);
+
+      for (final row in response) {
+        final polasci = _getPolasciMap(row['polasci_po_danu']);
+        if (polasci == null) continue;
+
+        final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
+        if (danData == null) continue;
+
+        final bcVreme = danData['bc'] as String?;
+        final bcStatus = danData['bc_status'] as String?;
+
+        // Proveri da li je zaista zauzeto mesto (status nije ceka_mesto)
+        if (bcVreme == vreme && bcStatus != 'ceka_mesto') {
+          count++;
+        }
+      }
+
+      return count;
+    } catch (e) {
+      return 0;
+    }
   }
 }

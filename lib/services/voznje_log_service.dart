@@ -501,6 +501,34 @@ class VoznjeLogService {
         });
   }
 
+  /// 🕒 STREAM SAMO ZAHTEVA I NJIHOVIH OBRADA - Za Monitoring Zahteva
+  static Stream<List<Map<String, dynamic>>> streamRequestLogs({int limit = 50}) {
+    return _supabase
+        .from('voznje_log')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .limit(limit * 2) // Uzimamo malo više pa filtriramo
+        .map((logs) {
+          final relevantTypes = [
+            'zakazivanje_putnika',
+            'potvrda_zakazivanja',
+            'otkazivanje_putnika',
+            'otkazivanje',
+            'greska_zahteva'
+          ];
+
+          final filtered = logs.where((l) => relevantTypes.contains(l['tip'])).toList();
+
+          filtered.sort((a, b) {
+            final dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
+            final dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
+            return dateB.compareTo(dateA);
+          });
+
+          return filtered.take(limit).toList();
+        });
+  }
+
   /// 🕒 GLOBALNI STREAM SVIH AKCIJA - Za Gavra Lab Admin Dnevnik
   /// ✅ ISPRAVKA: Dodat server-side order i limit za stream
   static Stream<List<Map<String, dynamic>>> streamAllRecentLogs({int limit = 50}) {
@@ -564,6 +592,11 @@ class VoznjeLogService {
       tip: 'zakazivanje_putnika',
       putnikId: putnikId,
       detalji: '$status ($tipPutnika): $dan u $vreme ($grad)',
+      meta: {
+        'dan': dan.toLowerCase(),
+        'grad': grad.toLowerCase(),
+        'vreme': vreme,
+      },
     );
   }
 
@@ -581,6 +614,11 @@ class VoznjeLogService {
       tip: 'potvrda_zakazivanja',
       putnikId: putnikId,
       detalji: '$detalji$typeStr: $dan u $vreme ($grad)',
+      meta: {
+        'dan': dan.toLowerCase(),
+        'grad': grad.toLowerCase(),
+        'vreme': vreme,
+      },
     );
   }
 

@@ -21,7 +21,7 @@ class AdminAuditService {
         'action_type': actionType,
         'details': details,
         'metadata': metadata,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTime.now().toUtc().toIso8601String(),
       });
       // Ne printamo ovde da ne bi spamovali konzolu, log je u bazi.
     } catch (e) {

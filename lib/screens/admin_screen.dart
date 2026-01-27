@@ -970,7 +970,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    const Text('Dnevni ',
+                                                    const Text('Dnevni (Zakazivanje) ',
                                                         style: TextStyle(
                                                             fontWeight: FontWeight.w600,
                                                             fontSize: 12,

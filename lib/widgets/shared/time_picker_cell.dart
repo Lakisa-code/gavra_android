@@ -105,7 +105,7 @@ class TimePickerCell extends StatelessWidget {
     final dayDate = _getDateForDay();
 
     // 🆕 DNEVNI PUTNICI I REŽIM:
-    if (tipPutnika == 'dnevni' || tipPutnika == 'posiljka' || tipPrikazivanja == 'DNEVNI') {
+    if (tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') {
       // 1. Ako admin nije omogućio globalno - zaključaj sve
       if (!isDnevniZakazivanjeAktivno) return true;
 
@@ -113,6 +113,12 @@ class TimePickerCell extends StatelessWidget {
       if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
         return true;
       }
+    }
+
+    // 🆕 POŠILJKE - Mogu se zakazivati kad god (danas i unapred), ne zavise od admin prekidača
+    if (tipPutnika == 'posiljka') {
+      if (dayDate != null && dayDate.isBefore(todayOnly)) return true;
+      return false;
     }
 
     if (dayName == null) return false;
@@ -197,7 +203,7 @@ class TimePickerCell extends StatelessWidget {
         }
 
         // 🆕 EKSPLICITNA PORUKA DNEVNIM PUTNICIMA AKO JE ZAKLJUČANO
-        if ((tipPutnika == 'dnevni' || tipPutnika == 'posiljka') && isLocked) {
+        if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && isLocked) {
           final now = DateTime.now();
           final todayOnly = DateTime(now.year, now.month, now.day);
           final dayDate = _getDateForDay();
@@ -217,6 +223,16 @@ class TimePickerCell extends StatelessWidget {
               duration: const Duration(seconds: 4),
             );
           }
+          return;
+        }
+
+        // 🆕 PORUKA ZA POŠILJKE AKO JE ZAKLJUČANO (PROŠLOST)
+        if (tipPutnika == 'posiljka' && isLocked) {
+          GavraUI.showSnackBar(
+            context,
+            message: '⌛ Pošiljka se može zakazati samo za današnji polazak ili unapred.',
+            type: GavraNotificationType.warning,
+          );
           return;
         }
 

@@ -164,7 +164,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
           final List<dynamic> result = await _supabase
               .from(table)
               .select('created_at, updated_at')
-              .or('updated_at.gt.${DateTime.now().subtract(const Duration(hours: 1)).toIso8601String()},created_at.gt.${DateTime.now().subtract(const Duration(hours: 1)).toIso8601String()}')
+              .or('updated_at.gt.${DateTime.now().toUtc().subtract(const Duration(hours: 1)).toIso8601String()},created_at.gt.${DateTime.now().toUtc().subtract(const Duration(hours: 1)).toIso8601String()}')
               .limit(1);
 
           if (result.isNotEmpty) return true;

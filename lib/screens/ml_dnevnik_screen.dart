@@ -29,21 +29,38 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
   final DateFormat _dateFormat = DateFormat('dd.MM');
   String _searchQuery = '';
 
-  Future<String> _getPutnikName(dynamic id) async {
-    if (id == null) return 'Neznato';
-    final sId = id.toString();
-    if (_putnikNamesCache.containsKey(sId)) return _putnikNamesCache[sId]!;
+  /// 📦 Keširanje imena putnika u serijama
+  Future<void> _precacheNames(List<Map<String, dynamic>> logs) async {
+    final idsToFetch = <String>{};
+    for (var l in logs) {
+      final id = l['putnik_id']?.toString();
+      if (id != null && !_putnikNamesCache.containsKey(id)) {
+        idsToFetch.add(id);
+      }
+    }
+
+    if (idsToFetch.isEmpty) return;
 
     try {
-      final p = await PutnikService().getPutnikFromAnyTable(id);
-      if (p != null) {
-        final name = p.ime;
-        _putnikNamesCache[sId] = name;
-        return name;
-      }
-    } catch (_) {}
+      final List<dynamic> response = await PutnikService()
+          .supabase
+          .from('registrovani_putnici')
+          .select('id, putnik_ime')
+          .inFilter('id', idsToFetch.toList());
 
-    return 'Putnik #$sId';
+      for (var p in response) {
+        _putnikNamesCache[p['id'].toString()] = p['putnik_ime'].toString();
+      }
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('❌ Precache error (Dnevnik): $e');
+    }
+  }
+
+  String _getPutnikNameSync(dynamic id) {
+    if (id == null) return 'Sistem';
+    return _putnikNamesCache[id.toString()] ?? '...';
   }
 
   @override
@@ -115,13 +132,15 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                     // Filter po tipu (ako je zadat)
                     if (widget.onlyType != null) {
                       final target = widget.onlyType!.toLowerCase();
+                      final metaTip = l['meta']?['putnik_tip']?.toString().toLowerCase();
+
                       if (target == 'ucenik') {
-                        return detalji.contains('ucenik') || detalji.contains('učenik');
+                        return metaTip == 'ucenik' || detalji.contains('ucenik') || detalji.contains('učenik');
                       }
                       if (target == 'radnik') {
-                        return detalji.contains('radnik') || tip == 'potvrda_zakazivanja';
+                        return metaTip == 'radnik' || detalji.contains('radnik') || tip == 'potvrda_zakazivanja';
                       }
-                      return detalji.contains(target);
+                      return metaTip == target || detalji.contains(target);
                     }
 
                     return true;
@@ -146,6 +165,11 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
               return Center(child: Text('Greška: ${snapshot.error}'));
             }
             var logs = snapshot.data ?? [];
+
+            // 📦 Pokreni keširanje imena
+            if (logs.isNotEmpty) {
+              _precacheNames(logs);
+            }
 
             // SEARCH FILTER
             if (_searchQuery.isNotEmpty) {
@@ -217,7 +241,7 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
   Widget _buildLogItem(Map<String, dynamic> log) {
     final type = log['tip']?.toString() ?? 'nepoznato';
     final createdAtStr = log['created_at']?.toString() ?? '';
-    final createdAt = (DateTime.tryParse(createdAtStr) ?? DateTime.now()).toLocal().add(const Duration(hours: 1));
+    final createdAt = (DateTime.tryParse(createdAtStr) ?? DateTime.now()).toLocal();
     final vozacId = log['vozac_id']?.toString();
     final putnikId = log['putnik_id'];
     final iznos = (log['iznos'] ?? log['meta']?['iznos'])?.toString();
@@ -313,10 +337,9 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: FutureBuilder<String>(
-        future: _getPutnikName(putnikId),
-        builder: (context, snapshot) {
-          final putnikName = snapshot.data ?? '...';
+      child: Builder(
+        builder: (context) {
+          final putnikName = _getPutnikNameSync(putnikId);
           final primaryName = isDriverAction ? vozacName : putnikName;
 
           return Padding(

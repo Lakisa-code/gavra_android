@@ -103,7 +103,7 @@ class VremeVozacService {
         'vreme': vreme,
         'dan': dan,
         'vozac_ime': vozacIme,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'grad,vreme,dan');
 
       // Ažuriraj keš

@@ -36,8 +36,8 @@ class AuthManager {
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
 
-    // 📱 Ažuriraj push token sa user_id (ako token već postoji bez vlasnika)
-    await _updatePushTokenWithUserId(driverName);
+    // 📱 Ažuriraj push token u pozadini - NE BLOKIRAJ login flow
+    _updatePushTokenWithUserId(driverName);
 
     // Postavi novi cache
     _cachedDriver = driverName;

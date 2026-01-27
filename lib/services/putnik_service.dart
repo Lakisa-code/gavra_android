@@ -181,7 +181,8 @@ class PutnikService {
           .from('registrovani_putnici')
           .select(registrovaniFields)
           .eq('aktivan', true)
-          .eq('obrisan', false);
+          .eq('obrisan', false)
+          .eq('is_duplicate', false); // 🧹 Ne učitavaj duplikate
 
       for (final m in registrovani) {
         // Kreiraj putnike SAMO za ciljani dan
@@ -203,11 +204,11 @@ class PutnikService {
 
           // Dopuni otkazivanje iz voznje_log
           if (p.jeOtkazan && p.vremeOtkazivanja == null && p.id != null) {
-            final otkazivanjeData = otkazivanja[p.id];
-            if (otkazivanjeData != null) {
+            final Map<String, dynamic>? oData = otkazivanja[p.id];
+            if (oData != null) {
               p = p.copyWith(
-                vremeOtkazivanja: otkazivanjeData['datum'] as DateTime?,
-                otkazaoVozac: otkazivanjeData['vozacIme'] as String?,
+                vremeOtkazivanja: oData['datum'] as DateTime?,
+                otkazaoVozac: oData['vozacIme'] as String?,
               );
             }
           }
@@ -254,7 +255,8 @@ class PutnikService {
           .from('registrovani_putnici')
           .select(registrovaniFields)
           .eq('aktivan', true)
-          .eq('obrisan', false);
+          .eq('obrisan', false)
+          .eq('is_duplicate', false); // 🧹 Ne učitavaj duplikate
 
       for (final m in registrovani) {
         // ? ISPRAVKA: Kreiraj putnike SAMO za ciljani dan
@@ -290,11 +292,11 @@ class PutnikService {
 
           // 🆕 Dopuni otkazivanje iz voznje_log ako putnik nema vremeOtkazivanja
           if (p.jeOtkazan && p.vremeOtkazivanja == null && p.id != null) {
-            final otkazivanjeData = otkazivanja[p.id];
-            if (otkazivanjeData != null) {
+            final Map<String, dynamic>? oData = otkazivanja[p.id];
+            if (oData != null) {
               p = p.copyWith(
-                vremeOtkazivanja: otkazivanjeData['datum'] as DateTime?,
-                otkazaoVozac: otkazivanjeData['vozacIme'] as String?,
+                vremeOtkazivanja: oData['datum'] as DateTime?,
+                otkazaoVozac: oData['vozacIme'] as String?,
               );
             }
           }
@@ -420,7 +422,7 @@ class PutnikService {
   Future<Putnik?> getPutnikFromAnyTable(dynamic id) async {
     try {
       final registrovaniResponse =
-          await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', id as String).limit(1);
+          await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', id).limit(1);
 
       if (registrovaniResponse.isNotEmpty) {
         return Putnik.fromRegistrovaniPutnici(registrovaniResponse.first);
@@ -731,7 +733,7 @@ class PutnikService {
       final updateData = <String, dynamic>{
         'polasci_po_danu': polasciPoDanu,
         'radni_dani': radniDani,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       };
       // ? UKLONJENO: updated_by foreign key constraint ka users tabeli
       // if (updatedByUuid != null && updatedByUuid.isNotEmpty) {
@@ -797,7 +799,7 @@ class PutnikService {
 
     await supabase.from(tabela).update({
       'uklonjeni_termini': uklonjeni,
-      'updated_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', id);
   }
 
@@ -885,7 +887,7 @@ class PutnikService {
 
       await supabase.from(tabela).update({
         'polasci_po_danu': polasciPoDanu,
-        'updated_at': now.toIso8601String(),
+        'updated_at': now.toUtc().toIso8601String(),
       }).eq('id', id);
 
       // ?? DODAJ ZAPIS U voznje_log za pracenje vo�nji
@@ -977,7 +979,7 @@ class PutnikService {
 
     await supabase.from(tabela).update({
       'polasci_po_danu': polasciPoDanu,
-      'updated_at': now.toIso8601String(),
+      'updated_at': now.toUtc().toIso8601String(),
     }).eq('id', id);
 
     // ✅ FIX: Loguj uplatu u voznje_log tabelu za statistike
@@ -1092,7 +1094,7 @@ class PutnikService {
 
         await supabase.from('registrovani_putnici').update({
           'polasci_po_danu': polasci,
-          'updated_at': now.toIso8601String(),
+          'updated_at': now.toUtc().toIso8601String(),
         }).eq('id', id.toString());
 
         try {
@@ -1178,7 +1180,7 @@ class PutnikService {
     // ? dynamic umesto int
     final tabela = await _getTableForPutnik(id);
 
-    final response = await supabase.from(tabela).select().eq('id', id as String).maybeSingle();
+    final response = await supabase.from(tabela).select().eq('id', id).maybeSingle();
     if (response == null) return;
 
     final undoOdsustvo = response;
@@ -1211,9 +1213,8 @@ class PutnikService {
 
     try {
       await supabase.from(tabela).update({
-        'status': statusZaBazu, // 'bolovanje' ili 'godisnji'
-        'aktivan': true, // Putnik ostaje aktivan, samo je na odsustvu
-        'updated_at': DateTime.now().toIso8601String(),
+        'status': statusZaBazu,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
     } catch (e) {
       rethrow;
@@ -1322,10 +1323,8 @@ class PutnikService {
           );
 
           await supabase.from('registrovani_putnici').update({
-            'aktivan': true,
             'status': 'radi',
-            'polasci_po_danu': polasci,
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
           }).eq('putnik_ime', imePutnika);
 
           return;
@@ -1376,7 +1375,7 @@ class PutnikService {
       // 🔄 POJEDNOSTAVLJENO: Svi putnici su sada u registrovani_putnici
       await supabase.from('registrovani_putnici').update({
         'vozac_id': vozacUuid, // null ako se uklanja vozač
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', putnikId);
     } catch (e) {
       throw Exception('Greška pri prebacivanju putnika: $e');
@@ -1466,7 +1465,7 @@ class PutnikService {
       // Sačuvaj u bazu
       await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', putnikId);
     } catch (e) {
       throw Exception('Greška pri dodeljivanju vozača za pravac: $e');

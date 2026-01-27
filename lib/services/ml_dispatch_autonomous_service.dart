@@ -379,7 +379,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
 
   Future<void> _analyzeRealtimeDemand() async {
     try {
-      final DateTime oneHourAgo = DateTime.now().subtract(const Duration(hours: 1));
+      final DateTime oneHourAgo = DateTime.now().toUtc().subtract(const Duration(hours: 1));
       final dynamic recent =
           await _supabase.from('seat_requests').select().gt('created_at', oneHourAgo.toIso8601String());
 

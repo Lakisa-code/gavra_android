@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../globals.dart';
 import 'realtime/realtime_manager.dart';
 import 'statistika_service.dart';
+import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
 
 class DailyCheckInService {
@@ -18,31 +19,47 @@ class DailyCheckInService {
   static Stream<double> streamTodayAmount(String vozac) {
     final today = DateTime.now().toIso8601String().split('T')[0];
 
-    // Ako već postoji aktivan controller za ovog vozača, koristi ga
-    if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
-      debugPrint('📊 [DailyCheckInService] Reusing existing kusur stream for $vozac');
-      final controller = _kusurControllers[vozac]!;
-
-      // 🔥 FIX: UVEK fetchuj podatke kada se stream reuse-uje
-      // Ovo osigurava da novi StreamBuilder dobije trenutnu vrednost
-      _fetchKusurForVozac(vozac, today, controller);
-
-      return controller.stream;
-    }
-
-    debugPrint('🆕 [DailyCheckInService] Creating NEW kusur stream for $vozac');
+    // 🔥 Kreiramo StreamController koji će biti vraćen odmah
     final controller = StreamController<double>.broadcast();
-    _kusurControllers[vozac] = controller;
 
-    debugPrint('📅 [DailyCheckInService] Today date: $today');
-
-    // Učitaj inicijalne podatke
-    _fetchKusurForVozac(vozac, today, controller);
-
-    // Osiguraj da postoji globalni subscription (deli se između svih vozača)
-    _ensureGlobalSubscription(today);
+    // 🔥 Asinhrono normalizujemo ime i pokrećemo logiku
+    _initializeStream(vozac, today, controller);
 
     return controller.stream;
+  }
+
+  /// Pomoćna metoda za asinhronu inicijalizaciju streama sa normalizovanim imenom
+  static Future<void> _initializeStream(String vozac, String today, StreamController<double> controller) async {
+    // Normalizuj ime
+    final zvanicnoIme =
+        await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
+    // Ako već postoji aktivan controller za ovog (normalizovanog) vozača, prosledi vrednosti
+    if (_kusurControllers.containsKey(zvanicnoIme) && !_kusurControllers[zvanicnoIme]!.isClosed) {
+      debugPrint('📊 [DailyCheckInService] Reusing existing kusur stream for $zvanicnoIme');
+
+      // Pretplati se na postojeći stream da bi ovaj controller dobijao update-ove
+      final subscription = _kusurControllers[zvanicnoIme]!.stream.listen((val) {
+        if (!controller.isClosed) controller.add(val);
+      });
+
+      controller.onCancel = () {
+        subscription.cancel();
+      };
+
+      // Fetchuj trenutnu vrednost
+      await _fetchKusurForVozac(zvanicnoIme, today, controller);
+      return;
+    }
+
+    _kusurControllers[zvanicnoIme] = controller;
+    debugPrint('🆕 [DailyCheckInService] Creating NEW kusur stream for $zvanicnoIme');
+
+    // Učitaj inicijalne podatke
+    await _fetchKusurForVozac(zvanicnoIme, today, controller);
+
+    // Osiguraj globalni subscription
+    _ensureGlobalSubscription(today);
   }
 
   /// 🔧 Fetch kusur za vozača
@@ -56,7 +73,7 @@ class DailyCheckInService {
       final data = await supabase
           .from('daily_reports')
           .select('sitan_novac')
-          .eq('vozac', vozac)
+          .or('vozac.eq."$vozac",vozac.ilike."$vozac"') // Fleksibilnije poređenje imena
           .eq('datum', today)
           .maybeSingle();
 
@@ -152,25 +169,30 @@ class DailyCheckInService {
     final todayStr = targetDate.toIso8601String().split('T')[0]; // YYYY-MM-DD
 
     try {
+      // 👤 Normalizuj ime vozača koristeći mapping
+      final zvanicnoIme =
+          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
       final response = await supabase
           .from('daily_reports')
           .select('sitan_novac')
-          .eq('vozac', vozac)
+          .eq('vozac', zvanicnoIme)
           .eq('datum', todayStr)
           .maybeSingle()
-          .timeout(const Duration(seconds: 6));
+          .timeout(const Duration(seconds: 15)); // Povećan timeout na 15s
 
       if (response != null) {
         // Emituj update za stream
         final sitanNovac = (response['sitan_novac'] as num?)?.toDouble() ?? 0.0;
-        _kusurCache[vozac] = sitanNovac; // 💾 Sačuvaj u cache
-        if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
-          _kusurControllers[vozac]!.add(sitanNovac);
+        _kusurCache[zvanicnoIme] = sitanNovac; // 💾 Sačuvaj u cache
+        if (_kusurControllers.containsKey(zvanicnoIme) && !_kusurControllers[zvanicnoIme]!.isClosed) {
+          _kusurControllers[zvanicnoIme]!.add(sitanNovac);
         }
         return true;
       }
     } catch (e) {
-      // Error handled silently
+      debugPrint('⚠️ [DailyCheckIn] Check-in status check failed/timed out: $e');
+      // Ako nismo sigurni, vraćamo false da bi dozvolili unos, ali UI će hendlovati
     }
 
     return false;
@@ -185,16 +207,22 @@ class DailyCheckInService {
   }) async {
     final today = date ?? DateTime.now();
 
+    // 👤 Normalizuj ime vozača koristeći mapping
+    final zvanicnoIme =
+        await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
     // 🌐 DIREKTNO U BAZU - upsert će ažurirati ako već postoji za danas
     try {
-      await _saveToSupabase(vozac, sitanNovac, today, kilometraza: kilometraza).timeout(const Duration(seconds: 8));
+      await _saveToSupabase(zvanicnoIme, sitanNovac, today, kilometraza: kilometraza)
+          .timeout(const Duration(seconds: 20)); // Povećan timeout na 20s
 
       // Ažuriraj stream za UI
-      _kusurCache[vozac] = sitanNovac; // 💾 Sačuvaj u cache
-      if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
-        _kusurControllers[vozac]!.add(sitanNovac);
+      _kusurCache[zvanicnoIme] = sitanNovac; // 💾 Sačuvaj u cache
+      if (_kusurControllers.containsKey(zvanicnoIme) && !_kusurControllers[zvanicnoIme]!.isClosed) {
+        _kusurControllers[zvanicnoIme]!.add(sitanNovac);
       }
     } catch (e) {
+      debugPrint('❌ [DailyCheckIn] Save failed: $e');
       rethrow; // Propagiraj grešku da UI zna da nije uspelo
     }
   }
@@ -202,12 +230,16 @@ class DailyCheckInService {
   /// Dohvati iznos za dati datum - DIREKTNO IZ BAZE
   static Future<double?> getTodayAmount(String vozac, {DateTime? date}) async {
     try {
+      // 👤 Normalizuj ime
+      final zvanicnoIme =
+          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
       final targetDate = date ?? DateTime.now();
       final today = targetDate.toIso8601String().split('T')[0];
       final data = await supabase
           .from('daily_reports')
           .select('sitan_novac')
-          .eq('vozac', vozac)
+          .eq('vozac', zvanicnoIme)
           .eq('datum', today)
           .maybeSingle();
       return (data?['sitan_novac'] as num?)?.toDouble();
@@ -219,12 +251,16 @@ class DailyCheckInService {
   /// 📋 Proveri da li je popis već sačuvan za dati datum (podrazumevano danas)
   static Future<bool> isPopisSavedToday(String vozac, {DateTime? date}) async {
     try {
+      // 👤 Normalizuj ime
+      final zvanicnoIme =
+          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
       final targetDate = date ?? DateTime.now();
       final today = targetDate.toIso8601String().split('T')[0];
       final data = await supabase
           .from('daily_reports')
           .select('pokupljeni_putnici')
-          .eq('vozac', vozac)
+          .eq('vozac', zvanicnoIme)
           .eq('datum', today)
           .maybeSingle();
       // Popis je sačuvan ako postoji zapis sa pokupljenim putnicima
@@ -241,32 +277,43 @@ class DailyCheckInService {
     DateTime datum, {
     double? kilometraza,
   }) async {
-    try {
-      final updateData = {
-        'vozac': vozac,
-        'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
-        'sitan_novac': sitanNovac,
-        'checkin_vreme': DateTime.now().toIso8601String(),
-      };
+    int retryCount = 0;
+    const maxRetries = 3;
 
-      if (kilometraza != null) {
-        updateData['kilometraza'] = kilometraza;
+    while (retryCount < maxRetries) {
+      try {
+        final vozacId = await VozacMappingService.getVozacUuid(vozac);
+        final updateData = {
+          'vozac': vozac,
+          'vozac_id': vozacId,
+          'datum': datum.toIso8601String().split('T')[0],
+          'sitan_novac': sitanNovac,
+          'checkin_vreme': DateTime.now().toIso8601String(),
+        };
+
+        if (kilometraza != null) {
+          updateData['kilometraza'] = kilometraza;
+        }
+
+        final response = await supabase
+            .from('daily_reports')
+            .upsert(
+              updateData,
+              onConflict: 'vozac,datum',
+            )
+            .select()
+            .maybeSingle();
+
+        if (response is Map<String, dynamic>) return response;
+        return null;
+      } catch (e) {
+        retryCount++;
+        if (retryCount >= maxRetries) rethrow;
+        await Future.delayed(Duration(seconds: retryCount * 1));
+        debugPrint('⚠️ [DailyCheckIn] Retry $retryCount/3 due to: $e');
       }
-
-      final response = await supabase
-          .from('daily_reports')
-          .upsert(
-            updateData,
-            onConflict: 'vozac,datum', // 🎯 Ključno za upsert!
-          )
-          .select()
-          .maybeSingle();
-
-      if (response is Map<String, dynamic>) return response;
-      return null;
-    } catch (e) {
-      rethrow;
     }
+    return null;
   }
 
   /// 📊 NOVI: Sačuvaj kompletan dnevni popis - DIREKTNO U BAZU
@@ -276,7 +323,11 @@ class DailyCheckInService {
     Map<String, dynamic> popisPodaci,
   ) async {
     try {
-      await _savePopisToSupabase(vozac, popisPodaci, datum);
+      // 👤 Normalizuj ime vozača
+      final zvanicnoIme =
+          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
+      await _savePopisToSupabase(zvanicnoIme, popisPodaci, datum);
     } catch (e) {
       rethrow;
     }
@@ -285,10 +336,14 @@ class DailyCheckInService {
   /// 📊 NOVI: Dohvati poslednji popis za vozača - DIREKTNO IZ BAZE
   static Future<Map<String, dynamic>?> getLastDailyReport(String vozac) async {
     try {
+      // 👤 Normalizuj ime
+      final zvanicnoIme =
+          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
       final data = await supabase
           .from('daily_reports')
           .select()
-          .eq('vozac', vozac)
+          .eq('vozac', zvanicnoIme)
           .order('datum', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -308,8 +363,13 @@ class DailyCheckInService {
   /// 📊 NOVI: Dohvati popis za specifičan datum - DIREKTNO IZ BAZE
   static Future<Map<String, dynamic>?> getDailyReportForDate(String vozac, DateTime datum) async {
     try {
+      // 👤 Normalizuj ime
+      final zvanicnoIme =
+          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
       final datumStr = datum.toIso8601String().split('T')[0];
-      final data = await supabase.from('daily_reports').select().eq('vozac', vozac).eq('datum', datumStr).maybeSingle();
+      final data =
+          await supabase.from('daily_reports').select().eq('vozac', zvanicnoIme).eq('datum', datumStr).maybeSingle();
 
       if (data != null) {
         return {
@@ -418,27 +478,37 @@ class DailyCheckInService {
     Map<String, dynamic> popisPodaci,
     DateTime datum,
   ) async {
-    try {
-      await supabase.from('daily_reports').upsert(
-        {
-          'vozac': vozac,
-          'datum': datum.toIso8601String().split('T')[0],
-          'ukupan_pazar': popisPodaci['ukupanPazar'] ?? 0.0,
-          'sitan_novac': popisPodaci['sitanNovac'] ?? 0.0,
-          'checkin_vreme': DateTime.now().toIso8601String(),
-          'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,
-          'naplaceni_putnici': popisPodaci['naplaceniPutnici'] ?? 0,
-          'pokupljeni_putnici': popisPodaci['pokupljeniPutnici'] ?? 0,
-          'dugovi_putnici': popisPodaci['dugoviPutnici'] ?? 0,
-          'mesecne_karte': popisPodaci['mesecneKarte'] ?? 0,
-          'kilometraza': popisPodaci['kilometraza'] ?? 0.0,
-          'automatski_generisan': popisPodaci['automatskiGenerisan'] ?? true,
-          'created_at': datum.toIso8601String(),
-        },
-        onConflict: 'vozac,datum', // 🎯 Ključno za upsert - sprečava duplikate!
-      );
-    } catch (e) {
-      rethrow;
+    int retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        final vozacId = await VozacMappingService.getVozacUuid(vozac);
+        await supabase.from('daily_reports').upsert(
+          {
+            'vozac': vozac,
+            'vozac_id': vozacId,
+            'datum': datum.toIso8601String().split('T')[0],
+            'ukupan_pazar': popisPodaci['ukupanPazar'] ?? 0.0,
+            'sitan_novac': popisPodaci['sitanNovac'] ?? 0.0,
+            'checkin_vreme': DateTime.now().toIso8601String(),
+            'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,
+            'naplaceni_putnici': popisPodaci['naplaceniPutnici'] ?? 0,
+            'pokupljeni_putnici': popisPodaci['pokupljeniPutnici'] ?? 0,
+            'dugovi_putnici': popisPodaci['dugoviPutnici'] ?? 0,
+            'mesecne_karte': popisPodaci['mesecneKarte'] ?? 0,
+            'kilometraza': popisPodaci['kilometraza'] ?? 0.0,
+            'automatski_generisan': popisPodaci['automatskiGenerisan'] ?? true,
+            'created_at': datum.toIso8601String(),
+          },
+          onConflict: 'vozac,datum',
+        );
+        return;
+      } catch (e) {
+        retryCount++;
+        if (retryCount >= maxRetries) rethrow;
+        await Future.delayed(Duration(seconds: retryCount * 1));
+      }
     }
   }
 
@@ -556,10 +626,14 @@ class DailyCheckInService {
   /// Dohvati poslednju zabeleženu kilometražu za vozača
   static Future<double> getLastKm(String vozac) async {
     try {
+      // 👤 Normalizuj ime
+      final zvanicnoIme =
+          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+
       final data = await supabase
           .from('daily_reports')
           .select('kilometraza')
-          .eq('vozac', vozac)
+          .eq('vozac', zvanicnoIme)
           .order('datum', ascending: false)
           .limit(1)
           .maybeSingle();

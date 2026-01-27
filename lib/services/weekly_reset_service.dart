@@ -87,8 +87,12 @@ class WeeklyResetService {
 
     try {
       // Učitaj sve aktivne putnike - dodao i 'tip' za selektivni reset
-      final putnici =
-          await supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').eq('aktivan', true);
+      final putnici = await supabase
+          .from('registrovani_putnici')
+          .select('id, polasci_po_danu, tip')
+          .eq('aktivan', true)
+          .eq('obrisan', false)
+          .eq('is_duplicate', false);
 
       int resetCount = 0;
 

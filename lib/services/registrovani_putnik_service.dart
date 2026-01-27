@@ -33,7 +33,7 @@ class RegistrovaniPutnikService {
   Future<List<RegistrovaniPutnik>> getAllRegistrovaniPutnici() async {
     final response = await _supabase.from('registrovani_putnici').select('''
           *
-        ''').eq('obrisan', false).order('putnik_ime');
+        ''').eq('obrisan', false).eq('is_duplicate', false).order('putnik_ime');
 
     return response.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
   }
@@ -42,7 +42,7 @@ class RegistrovaniPutnikService {
   Future<List<RegistrovaniPutnik>> getAktivniregistrovaniPutnici() async {
     final response = await _supabase.from('registrovani_putnici').select('''
           *
-        ''').eq('aktivan', true).eq('obrisan', false).order('putnik_ime');
+        ''').eq('aktivan', true).eq('obrisan', false).eq('is_duplicate', false).order('putnik_ime');
 
     return response.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
   }
@@ -55,6 +55,7 @@ class RegistrovaniPutnikService {
         .eq('aktivan', true)
         .eq('obrisan', false)
         .eq('treba_racun', true)
+        .eq('is_duplicate', false)
         .order('putnik_ime');
 
     return response.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
@@ -121,6 +122,7 @@ class RegistrovaniPutnikService {
           .select()
           .eq('aktivan', true)
           .eq('obrisan', false)
+          .eq('is_duplicate', false)
           .order('putnik_ime');
 
       final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
@@ -175,13 +177,15 @@ class RegistrovaniPutnikService {
   }
 
   /// 🔍 Proveri da li već postoji putnik sa istim brojem telefona
+  /// ✅ FIX: Ignoriši duplikate i obrisane putnike
   Future<RegistrovaniPutnik?> findByPhone(String telefon) async {
     if (telefon.isEmpty) return null;
 
     final normalizedInput = _normalizePhone(telefon);
 
-    // Dohvati sve putnike i uporedi normalizovane brojeve
-    final allPutnici = await _supabase.from('registrovani_putnici').select().eq('obrisan', false);
+    // Dohvati samo ORIGINALNE (ne-duplicirane) putnike koji nisu obrisani
+    final allPutnici =
+        await _supabase.from('registrovani_putnici').select().eq('obrisan', false).eq('is_duplicate', false);
 
     for (final p in allPutnici) {
       final storedPhone = p['broj_telefona'] as String? ?? '';
@@ -331,7 +335,7 @@ class RegistrovaniPutnikService {
     Map<String, dynamic> updates, {
     bool skipKapacitetCheck = false,
   }) async {
-    updates['updated_at'] = DateTime.now().toIso8601String();
+    updates['updated_at'] = DateTime.now().toUtc().toIso8601String();
 
     // 🛡️ MERGE SA POSTOJEĆIM MARKERIMA U BAZI (bc_pokupljeno, bc_placeno, itd.)
     if (updates.containsKey('polasci_po_danu')) {
@@ -430,7 +434,7 @@ class RegistrovaniPutnikService {
     try {
       await _supabase.from('registrovani_putnici').update({
         'aktivan': aktivnost,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
 
       clearCache();
@@ -544,7 +548,7 @@ class RegistrovaniPutnikService {
       // Plaćanje ne menja termine, samo dodaje informaciju o uplati u polasci_po_danu JSON
       await _supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasciPoDanu,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', putnikId);
 
       return true;
@@ -566,7 +570,7 @@ class RegistrovaniPutnikService {
     try {
       await _supabase.from('registrovani_putnici').update({
         'obrisan': true,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
 
       clearCache();

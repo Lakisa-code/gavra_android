@@ -124,14 +124,34 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       // Normalizuj uneti broj
       final normalizedInput = _normalizePhone(telefon);
 
-      // Traži putnika - dohvati sve i uporedi normalizovane brojeve
-      final allPutnici = await supabase.from('registrovani_putnici').select().eq('obrisan', false);
+      // Traži putnika - dohvati sve koji nisu obrisani
+      // Sortiramo tako da ne-duplikati idu prvi (is_duplicate: false < true)
+      final allPutnici = await supabase
+          .from('registrovani_putnici')
+          .select()
+          .eq('obrisan', false)
+          .order('is_duplicate', ascending: true);
 
       // Pronađi putnika sa istim normalizovanim brojem
       Map<String, dynamic>? response;
       for (final p in allPutnici) {
         final storedPhone = p['broj_telefona'] as String? ?? '';
         if (_normalizePhone(storedPhone) == normalizedInput) {
+          // Ako smo našli duplikat, proveravamo da li postoji "master" zapis na koji treba preći
+          if (p['is_duplicate'] == true && p['merged_into_id'] != null) {
+            final masterId = p['merged_into_id'];
+            // Pokušaj da nađeš mastera u listi koju već imamo
+            final master = allPutnici.firstWhere(
+              (m) => m['id'] == masterId,
+              orElse: () => <String, dynamic>{},
+            );
+
+            if (master.isNotEmpty) {
+              response = Map<String, dynamic>.from(master);
+              break;
+            }
+          }
+
           response = Map<String, dynamic>.from(p);
           break;
         }

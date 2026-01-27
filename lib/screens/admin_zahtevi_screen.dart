@@ -21,21 +21,38 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
   String _activeFilter = 'Sve'; // 'Sve', 'Na čekanju', 'Obrađeno', 'Otkazano'
   String _searchQuery = '';
 
-  Future<String> _getPutnikName(dynamic id) async {
-    if (id == null) return 'Sistem/Nepoznato';
-    final sId = id.toString();
-    if (_putnikNamesCache.containsKey(sId)) return _putnikNamesCache[sId]!;
+  /// 📦 Keširanje imena putnika u serijama kako bi se izbeglo "beskonačno učitavanje"
+  Future<void> _precacheNames(List<Map<String, dynamic>> logs) async {
+    final idsToFetch = <String>{};
+    for (var l in logs) {
+      final id = l['putnik_id']?.toString();
+      if (id != null && !_putnikNamesCache.containsKey(id)) {
+        idsToFetch.add(id);
+      }
+    }
+
+    if (idsToFetch.isEmpty) return;
 
     try {
-      final p = await PutnikService().getPutnikFromAnyTable(id);
-      if (p != null) {
-        final name = p.ime;
-        _putnikNamesCache[sId] = name;
-        return name;
-      }
-    } catch (_) {}
+      final List<dynamic> response = await PutnikService()
+          .supabase
+          .from('registrovani_putnici')
+          .select('id, putnik_ime') // Fix: column is putnik_ime
+          .inFilter('id', idsToFetch.toList());
 
-    return 'Putnik #$sId';
+      for (var p in response) {
+        _putnikNamesCache[p['id'].toString()] = p['putnik_ime'].toString(); // Fix: column is putnik_ime
+      }
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('❌ Precache error: $e');
+    }
+  }
+
+  String _getPutnikNameSync(dynamic id) {
+    if (id == null) return 'Sistem/Nepoznato';
+    return _putnikNamesCache[id.toString()] ?? 'Učitavanje...';
   }
 
   @override
@@ -71,38 +88,50 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
               _buildFilterBar(),
               Expanded(
                 child: StreamBuilder<List<Map<String, dynamic>>>(
-                  stream: VoznjeLogService.streamAllRecentLogs(limit: 300),
+                  stream: VoznjeLogService.streamRequestLogs(limit: 50),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                    if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator(color: Colors.white));
                     }
                     if (snapshot.hasError) {
+                      debugPrint('❌ Monitoring Error: ${snapshot.error}');
                       return Center(
-                          child: Text('Greška: ${snapshot.error}', style: const TextStyle(color: Colors.white70)));
+                          child: Text('Greška pri učitavanju.', style: const TextStyle(color: Colors.white70)));
                     }
 
                     var logs = snapshot.data ?? [];
 
-                    // 1. Primarni filter za tipove koji nas zanimaju (Zahtevi - prošireno)
-                    logs = logs.where((l) {
-                      final tip = l['tip']?.toString() ?? '';
-                      return tip == 'zakazivanje_putnika' ||
-                          tip == 'potvrda_zakazivanja' ||
-                          tip == 'otkazivanje_putnika' ||
-                          tip == 'otkazivanje' || // Kompatibilnost sa starim logovima
-                          tip == 'greska_zahteva';
-                    }).toList();
+                    // Pokreni keširanje imena u pozadini
+                    if (logs.isNotEmpty) {
+                      _precacheNames(logs);
+                    }
+
+                    // 1. Logs su već filtrirani server-side u streamRequestLogs
 
                     // 2. Primeni UI filter (Sve, Na čekanju...)
                     if (_activeFilter != 'Sve') {
+                      // Identifikuj putnike koji imaju potvrđene ili otkazane zahteve u trenutnoj listi
+                      final handledPutnikIds = logs
+                          .where((l) =>
+                              l['tip'] == 'potvrda_zakazivanja' ||
+                              l['tip'] == 'otkazivanje_putnika' ||
+                              l['tip'] == 'otkazivanje')
+                          .map((l) => l['putnik_id']?.toString() ?? '')
+                          .where((id) => id.isNotEmpty)
+                          .toSet();
+
                       logs = logs.where((l) {
                         final tip = l['tip']?.toString() ?? '';
-                        if (_activeFilter == 'Na čekanju') return tip == 'zakazivanje_putnika';
+                        final pId = l['putnik_id']?.toString() ?? '';
+
+                        if (_activeFilter == 'Na čekanju') {
+                          // Prikazuj samo 'zakazivanje' koji nemaju odgovarajuću potvrdu/otkazivanje
+                          if (tip != 'zakazivanje_putnika') return false;
+                          return !handledPutnikIds.contains(pId);
+                        }
                         if (_activeFilter == 'Obrađeno') return tip == 'potvrda_zakazivanja';
                         if (_activeFilter == 'Otkazano') {
-                          return tip == 'otkazivanje_putnika' ||
-                              tip == 'otkazivanje' ||
-                              tip == 'greska_zahteva';
+                          return tip == 'otkazivanje_putnika' || tip == 'otkazivanje' || tip == 'greska_zahteva';
                         }
                         return true;
                       }).toList();
@@ -135,30 +164,69 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
   }
 
   Widget _buildFilterBar() {
-    final filters = ['Sve', 'Na čekanju', 'Obrađeno', 'Otkazano'];
+    final filters = [
+      {'name': 'Sve', 'icon': Icons.all_inclusive},
+      {'name': 'Na čekanju', 'icon': Icons.hourglass_top},
+      {'name': 'Obrađeno', 'icon': Icons.check_circle_outline},
+      {'name': 'Otkazano', 'icon': Icons.cancel_outlined},
+    ];
+
     return Container(
-      height: 50,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      height: 60,
+      margin: const EdgeInsets.symmetric(vertical: 12),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: filters.length,
         itemBuilder: (context, index) {
-          final f = filters[index];
-          final isActive = _activeFilter == f;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(f),
-              selected: isActive,
-              onSelected: (val) => setState(() => _activeFilter = f),
-              backgroundColor: Colors.white10,
-              selectedColor: Colors.blue.shade700,
-              labelStyle: TextStyle(
-                color: isActive ? Colors.white : Colors.white70,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          final filter = filters[index];
+          final name = filter['name'] as String;
+          final icon = filter['icon'] as IconData;
+          final isActive = _activeFilter == name;
+
+          return GestureDetector(
+            onTap: () => setState(() => _activeFilter = name),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: isActive ? Colors.white : Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: isActive ? Colors.white : Colors.white.withOpacity(0.2),
+                  width: 1.5,
+                ),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ]
+                    : [],
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: isActive ? Colors.blue.shade900 : Colors.white,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      color: isActive ? Colors.blue.shade900 : Colors.white,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -169,7 +237,7 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
   Widget _buildRequestCard(Map<String, dynamic> log) {
     final tip = log['tip']?.toString() ?? '';
     final createdAtStr = log['created_at']?.toString() ?? '';
-    final createdAt = (DateTime.tryParse(createdAtStr) ?? DateTime.now()).toLocal().add(const Duration(hours: 1));
+    final createdAt = (DateTime.tryParse(createdAtStr) ?? DateTime.now()).toLocal();
     final putnikId = log['putnik_id'];
     final detalji = log['detalji']?.toString() ?? '';
 
@@ -204,18 +272,25 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
         statusIcon = Icons.help_outline;
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: Colors.white, width: 2),
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // Ovde možemo dodati neku akciju, npr. otvaranje profila putnika
-        },
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {},
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -223,23 +298,24 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusColor.withOpacity(0.3)),
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusColor.withOpacity(0.4), width: 1),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(statusIcon, size: 14, color: statusColor),
-                        const SizedBox(width: 6),
+                        Icon(statusIcon, size: 16, color: statusColor),
+                        const SizedBox(width: 8),
                         Text(
                           statusLabel,
                           style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
                             color: statusColor,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
@@ -247,32 +323,31 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
                   ),
                   Text(
                     '${_dateFormat.format(createdAt)} ${_timeFormat.format(createdAt)}',
-                    style: GoogleFonts.robotoMono(fontSize: 11, color: Colors.grey),
+                    style: GoogleFonts.robotoMono(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.indigo.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              FutureBuilder<String>(
-                future: _getPutnikName(putnikId),
-                builder: (context, snapshot) {
-                  return Text(
-                    snapshot.data ?? 'Učitavanje...',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.indigo.shade900,
-                    ),
-                  );
-                },
+              const SizedBox(height: 16),
+              Text(
+                _getPutnikNameSync(putnikId),
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.indigo.shade900,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade200),
+                  color: Colors.indigo.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.indigo.withOpacity(0.08)),
                 ),
                 child: Text(
                   detalji,
@@ -294,11 +369,34 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_outlined, size: 80, color: Colors.white.withOpacity(0.3)),
-          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.inbox_rounded,
+              size: 80,
+              color: Colors.white.withOpacity(0.4),
+            ),
+          ),
+          const SizedBox(height: 24),
           Text(
-            _searchQuery.isEmpty ? 'Nema zahteva u ovoj kategoriji' : 'Nema rezultata za pretragu',
-            style: GoogleFonts.poppins(color: Colors.white70),
+            'Nema rezultata',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _searchQuery.isEmpty ? 'Kategorija: $_activeFilter' : 'Pretraga: $_searchQuery',
+            style: GoogleFonts.poppins(
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 16,
+            ),
           ),
         ],
       ),

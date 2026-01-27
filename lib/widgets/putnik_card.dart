@@ -759,11 +759,10 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  // 💵 PLAĆANJE DNEVNOG PUTNIKA - ukupna suma odjednom (YU auto, Pošiljka = 500 RSD po mestu)
+  // 💵 PLAĆANJE DNEVNOG PUTNIKA - ukupna suma odjednom
   Future<void> _handleDnevniPayment() async {
-    // YU auto i Pošiljka imaju specijalnu cenu od 500 RSD po mestu
-    final double cenaPoMestu =
-        (_putnik.tipPutnika == 'posiljka' || _putnik.ime.toLowerCase().contains('yu auto')) ? 500.0 : 600.0;
+    // Koristi centralizovanu logiku cena iz modela
+    final double cenaPoMestu = _putnik.effectivePrice;
 
     final int brojMesta = _putnik.brojMesta;
     final double ukupnaSuma = cenaPoMestu * brojMesta;
@@ -1919,7 +1918,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    'x${_putnik.brojMesta} (${((_putnik.tipPutnika == 'posiljka' || _putnik.ime.toLowerCase().contains('yu auto')) ? 500 : 600) * _putnik.brojMesta} RSD)',
+                                    'x${_putnik.brojMesta} (${(_putnik.effectivePrice * _putnik.brojMesta).toStringAsFixed(0)} RSD)',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,

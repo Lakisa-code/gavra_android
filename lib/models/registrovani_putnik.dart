@@ -179,8 +179,8 @@ class RegistrovaniPutnik {
       datumKrajaMeseca: map['datum_kraja_meseca'] != null
           ? DateTime.parse(map['datum_kraja_meseca'] as String)
           : DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : DateTime.now(),
-      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : DateTime.now(),
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String).toLocal() : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
       status: (map['status'] == 'aktivan' || map['status'] == null)
           ? 'radi'
@@ -242,8 +242,8 @@ class RegistrovaniPutnik {
       'radni_dani': radniDani,
       'datum_pocetka_meseca': datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
       'aktivan': aktivan,
       'status': status,
       'obrisan': obrisan,

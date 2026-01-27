@@ -155,7 +155,7 @@ class IstorijaSevisa {
       opis: json['opis'] as String?,
       cena: json['cena'] != null ? (json['cena'] as num).toDouble() : null,
       pozicija: json['pozicija'] as String?,
-      createdAt: DateTime.parse(json['created_at'].toString()),
+      createdAt: DateTime.parse(json['created_at'].toString()).toLocal(),
     );
   }
 

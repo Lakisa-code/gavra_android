@@ -37,6 +37,7 @@ class PushTokenService {
     String? userId,
     String? vozacId,
     String? putnikId,
+    int retryCount = 0,
   }) async {
     try {
       if (token.isEmpty) {
@@ -58,40 +59,36 @@ class PushTokenService {
         return false;
       }
 
-      // 🧹 PRVO: Obriši sve stare redove sa istim tokenom (sprečava duplicate key error)
-      // Ovo je potrebno jer token može postojati sa user_id=null iz prethodne sesije
-      await _supabase.from('push_tokens').delete().eq('token', token);
+      // 🧹 PRVO: Obriši stare tokene za ovog korisnika da izbegnemo duplikate
+      // Koristimo Timeout da ne bismo čekali večno ako je mreža loša
+      final timeout = const Duration(seconds: 15);
 
-      // 🧹 DRUGO: Obriši stare tokene za istog putnika (kad se app reinstalira, token se menja)
-      // Ovo garantuje da putnik ima samo JEDAN aktivan token
+      // Obriši stare tokene za istog putnika
       if (putnikId != null && putnikId.isNotEmpty) {
-        await _supabase.from('push_tokens').delete().eq('putnik_id', putnikId);
-        if (kDebugMode) debugPrint('🧹 [PushToken] Obrisani stari tokeni za putnik_id: $putnikId');
+        await _supabase.from('push_tokens').delete().eq('putnik_id', putnikId).timeout(timeout).catchError((e) => null);
       }
 
-      // 🧹 TREĆE: Obriši stare tokene za istog vozača (po vozac_id)
+      // Obriši stare tokene za istog vozača
       if (vozacId != null && vozacId.isNotEmpty) {
-        await _supabase.from('push_tokens').delete().eq('vozac_id', vozacId);
-        if (kDebugMode) debugPrint('🧹 [PushToken] Obrisani stari tokeni za vozac_id: $vozacId');
+        await _supabase.from('push_tokens').delete().eq('vozac_id', vozacId).timeout(timeout).catchError((e) => null);
       }
 
-      // 🧹 ČETVRTO: Obriši stare tokene za istog vozača (po user_id)
-      // Ovo je KLJUČNO - sprečava konflikt kad vozač menja uređaj ili reinstalira app
+      // Obriši stare tokene za istog vozača (po user_id)
       if (userId != null && userId.isNotEmpty) {
-        await _supabase.from('push_tokens').delete().eq('user_id', userId);
-        if (kDebugMode) debugPrint('🧹 [PushToken] Obrisani stari tokeni za user_id: $userId');
+        await _supabase.from('push_tokens').delete().eq('user_id', userId).timeout(timeout).catchError((e) => null);
       }
 
-      // ✅ Sada jednostavno INSERT novi token (nema potrebe za upsert jer smo obrisali stare)
-      await _supabase.from('push_tokens').insert({
+      // ✅ UPSERT novi token (ako token već postoji, ažuriraće ga, ako ne, insertovaće)
+      // Ovo je mnogo otpornije na "duplicate key" greške nego delete+insert
+      await _supabase.from('push_tokens').upsert({
         'token': token,
         'provider': provider,
         'user_type': userType,
         'user_id': userId,
         'vozac_id': vozacId,
         'putnik_id': putnikId,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'token').timeout(timeout);
 
       if (kDebugMode) {
         debugPrint('✅ [PushToken] Token registrovan: $provider/$userType/${token.substring(0, 20)}...');
@@ -102,9 +99,25 @@ class PushTokenService {
 
       return true;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri registraciji: $e');
+      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri registraciji (pokušaj ${retryCount + 1}): $e');
 
-      // Sačuvaj kao pending za kasnije
+      // 🔄 RETRY LOGIKA za 503/Timeout greške
+      final errorStr = e.toString().toLowerCase();
+      if ((errorStr.contains('503') || errorStr.contains('timeout') || errorStr.contains('upstream')) &&
+          retryCount < 2) {
+        await Future.delayed(Duration(seconds: 2 * (retryCount + 1))); // Eksperimentalni backoff
+        return registerToken(
+          token: token,
+          provider: provider,
+          userType: userType,
+          userId: userId,
+          vozacId: vozacId,
+          putnikId: putnikId,
+          retryCount: retryCount + 1,
+        );
+      }
+
+      // Ako ni retries ne pomognu, sačuvaj kao pending
       await savePendingToken(
         token: token,
         provider: provider,
@@ -137,7 +150,7 @@ class PushTokenService {
         'user_id': userId,
         'vozac_id': vozacId,
         'putnik_id': putnikId,
-        'saved_at': DateTime.now().toIso8601String(),
+        'saved_at': DateTime.now().toUtc().toIso8601String(),
       });
       await prefs.setString(_pendingTokenKey, pendingData);
 

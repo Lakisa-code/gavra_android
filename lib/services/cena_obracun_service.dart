@@ -22,11 +22,15 @@ class CenaObracunService {
 
   /// Dobija cenu po danu za putnika (custom ili default)
   static double getCenaPoDanu(RegistrovaniPutnik putnik) {
+    // 1. Ako putnik ima postavljenu custom cenu, koristi se ona (NAJVEĆI PRIORITET)
+    if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
+      return putnik.cenaPoDanu!;
+    }
+
     final tipLower = putnik.tip.toLowerCase();
     final imeLower = putnik.putnikIme.toLowerCase();
 
-    // 🔒 STROGO FIKSNE CENE (Globalna pravila)
-    // Ove cene ignorišu 'cena_po_danu' iz baze kako bi osigurali konzistentnost
+    // 2. STROGO FIKSNE CENE (Ako nema custom cenu)
     if (tipLower == 'posiljka' && imeLower.contains('zubi')) {
       return 300.0;
     }
@@ -37,10 +41,6 @@ class CenaObracunService {
       return defaultCenaDnevniPoDanu; // 600 RSD
     }
 
-    // Za ostale (Radnik/Učenik), ako ima custom cenu, koristi je
-    if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
-      return putnik.cenaPoDanu!;
-    }
     // Inače koristi default na osnovu tipa
     return _getDefaultCenaPoDanu(putnik.tip);
   }
