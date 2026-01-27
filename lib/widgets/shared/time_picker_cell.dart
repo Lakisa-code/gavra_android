@@ -25,6 +25,7 @@ class TimePickerCell extends StatelessWidget {
   final bool isCancelled; // 🆕 Da li je otkazan (crveno)
   final String? tipPutnika; // 🆕 Tip putnika: radnik, ucenik, dnevni
   final String? tipPrikazivanja; // 🆕 Režim prikaza: standard, DNEVNI
+  final DateTime? datumKrajaMeseca; // 🆕 Datum do kog je plaćeno
 
   const TimePickerCell({
     Key? key,
@@ -38,6 +39,7 @@ class TimePickerCell extends StatelessWidget {
     this.isCancelled = false,
     this.tipPutnika,
     this.tipPrikazivanja,
+    this.datumKrajaMeseca,
   }) : super(key: key);
 
   /// Vraća DateTime za određeni dan u tekućoj nedelji
@@ -77,7 +79,7 @@ class TimePickerCell extends StatelessWidget {
     final todayOnly = DateTime(now.year, now.month, now.day);
     if (dayDate.isBefore(todayOnly)) return true;
 
-    // Ako je današnji dan - proveri da li je vreme prošlo
+          // Ako je današnji dan - proveri da li je vreme prošlo
     if (dayDate.isAtSameMomentAs(todayOnly)) {
       try {
         final timeParts = value!.split(':');
@@ -86,15 +88,16 @@ class TimePickerCell extends StatelessWidget {
           final minute = int.parse(timeParts[1]);
           final scheduledTime = DateTime(now.year, now.month, now.day, hour, minute);
 
-          // Ako je trenutno vreme >= zakazano vreme - blokiran (čim otkuca 7:00, gotovo)
-          return now.isAtSameMomentAs(scheduledTime) || now.isAfter(scheduledTime);
+          // 🆕 LOCK 10 MINUTA PRE POLASKA
+          final lockTime = scheduledTime.subtract(const Duration(minutes: 10));
+
+          // Ako je trenutno vreme >= lockTime - blokiran
+          return now.isAtSameMomentAs(lockTime) || now.isAfter(lockTime);
         }
       } catch (e) {
         debugPrint('⚠️ [TimePickerCell] Greška pri parsiranju vremena: $e');
       }
-    }
-
-    return false;
+    }    return false;
   }
 
   /// Da li je dan zaključan (prošao ili danas posle 18:00)
@@ -104,14 +107,18 @@ class TimePickerCell extends StatelessWidget {
     final todayOnly = DateTime(now.year, now.month, now.day);
     final dayDate = _getDateForDay();
 
-    // 🆕 DNEVNI PUTNICI I REŽIM:
-    if (tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') {
-      // 1. Ako admin nije omogućio globalno - zaključaj sve
-      if (!isDnevniZakazivanjeAktivno) return true;
+    // 1️⃣ LOGIKA ZA PLAĆANJE (Prioritet) - važi za radnike i učenike
+    if (tipPutnika == 'radnik' || tipPutnika == 'ucenik') {
+      if (datumKrajaMeseca != null) {
+        // Da li je plaćeno za tekući mesec?
+        // Plaćeno je ako je datumKrajaMeseca u tekućem mesecu ili u budućnosti
+        final lastDayOfCurrentMonth = DateTime(now.year, now.month + 1, 0);
+        final isPaidForCurrentMonth = !datumKrajaMeseca!.isBefore(lastDayOfCurrentMonth);
 
-      // 2. Ako je omogućio - dozvoljen SAMO tekući dan
-      if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
-        return true;
+        // Od 11. u mesecu se zaključava ako nije plaćeno za tekući mesec
+        if (now.day >= 11 && !isPaidForCurrentMonth) {
+          return true;
+        }
       }
     }
 
@@ -124,13 +131,13 @@ class TimePickerCell extends StatelessWidget {
     if (dayName == null) return false;
     if (dayDate == null) return false;
 
-    // Zaključaj ako je dan pre danas
-    // TEMP TEST: Disable locking for past days
+    // 2️⃣ OSNOVNA LOGIKA (vreme/dan)
+    // Zaključaj ako je dan pre danas (prošlost)
     if (dayDate.isBefore(todayOnly)) {
-      return false; // TEMPORARY CHANGE: return false instead of true
+      return true;
     }
 
-    // 🆕 Zaključaj današnji dan posle 19:00 (nema smisla zakazivati uveče za isti dan)
+    // Zaključaj današnji dan posle 19:00 (nema smisla zakazivati uveče za isti dan)
     if (dayDate.isAtSameMomentAs(todayOnly) && now.hour >= 19) {
       return true;
     }
@@ -181,6 +188,48 @@ class TimePickerCell extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (isCancelled) return; // Otkazano - nema akcije
+
+        final now = DateTime.now();
+
+        // 🛡️ PROVERA PLAĆANJA I PORUKE (User requirement)
+        if (tipPutnika == 'radnik' || tipPutnika == 'ucenik') {
+          if (datumKrajaMeseca != null) {
+            final lastDayOfCurrentMonth = DateTime(now.year, now.month + 1, 0);
+            final lastDayOfPrevMonth = DateTime(now.year, now.month, 0);
+
+            final isPaidForCurrentMonth = !datumKrajaMeseca!.isBefore(lastDayOfCurrentMonth);
+            final isPaidForPrevMonth = !datumKrajaMeseca!.isBefore(lastDayOfPrevMonth);
+
+            // 1. 27. u mesecu do kraja meseca - Podsetnik za tekući mesec
+            if (now.day >= 27 && !isPaidForCurrentMonth) {
+              final tekuciMesec = _getSerbianMonthName(now.month);
+              GavraUI.showSnackBar(
+                context,
+                message: '🔔 podsecamo vas da imate neizmirena dugovanja za $tekuciMesec',
+                type: GavraNotificationType.info,
+              );
+            }
+
+            // 2. Od 01. do 10. u mesecu - Upozorenje za prethodni mesec
+            if (now.day >= 1 && now.day <= 10 && !isPaidForPrevMonth) {
+              GavraUI.showSnackBar(
+                context,
+                message: '⚠️ podsecamo vas da rok za placanje istice 10.',
+                type: GavraNotificationType.warning,
+              );
+            }
+
+            // 3. 11. u mesecu - Zaključavanje za prethodni mesec
+            if (now.day >= 11 && !isPaidForPrevMonth) {
+              GavraUI.showSnackBar(
+                context,
+                message: '🚫 zakazaivanja su onemogucena dok ne izmirite dugovanj',
+                type: GavraNotificationType.error,
+              );
+              return; // Ključ u bravu
+            }
+          }
+        }
 
         // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor
         if (isPending) {
@@ -512,5 +561,24 @@ class TimePickerCell extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _getSerbianMonthName(int month) {
+    const months = [
+      'Januar',
+      'Februar',
+      'Mart',
+      'April',
+      'Maj',
+      'Jun',
+      'Jul',
+      'Avgust',
+      'Septembar',
+      'Oktobar',
+      'Novembar',
+      'Decembar'
+    ];
+    if (month < 1 || month > 12) return '';
+    return months[month - 1];
   }
 }

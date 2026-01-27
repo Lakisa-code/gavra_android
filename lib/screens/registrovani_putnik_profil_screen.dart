@@ -105,6 +105,80 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     });
   }
 
+  /// 🔄 Proverava da li je vreme isteklo (za automatsko otkazivanje)
+  bool _isExpired(String vreme, DateTime now) {
+    try {
+      final parts = vreme.split(':');
+      if (parts.length >= 2) {
+        final hour = int.parse(parts[0]);
+        final min = int.parse(parts[1]);
+        final scheduled = DateTime(now.year, now.month, now.day, hour, min);
+        return now.isAfter(scheduled);
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// 📅 Proverava da li je dan "danas"
+  bool _isDanas(String danKratica) {
+    const daniMap = {
+      'pon': DateTime.monday,
+      'uto': DateTime.tuesday,
+      'sre': DateTime.wednesday,
+      'cet': DateTime.thursday,
+      'pet': DateTime.friday,
+      'sub': DateTime.saturday,
+      'ned': DateTime.sunday
+    };
+    final target = daniMap[danKratica.toLowerCase()];
+    return target == DateTime.now().weekday;
+  }
+
+  /// 🔴 Automatski otkazuje pending zahtev koji je istekao
+  Future<void> _autoCancelPending(String dan, String grad) async {
+    try {
+      final putnikId = _putnikData['id']?.toString();
+      if (putnikId == null) return;
+
+      debugPrint('🕒 [AutoCancel] Otkazivanje isteklog zahteva za $dan $grad');
+
+      final response = await supabase
+          .from('registrovani_putnici')
+          .select('polasci_po_danu')
+          .eq('id', putnikId)
+          .maybeSingle();
+
+      if (response == null) return;
+      final polasci = _safeMap(response['polasci_po_danu']);
+      if (polasci[dan] == null) return;
+
+      final danData = Map<String, dynamic>.from(polasci[dan] as Map);
+      final staroVreme = danData[grad];
+
+      danData[grad] = null;
+      danData['${grad}_status'] = 'otkazano';
+      danData['${grad}_otkazano'] = DateTime.now().toUtc().toIso8601String();
+      danData['${grad}_otkazano_vreme'] = staroVreme;
+
+      polasci[dan] = danData;
+
+      await supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
+
+      if (mounted) {
+        setState(() {
+          _putnikData['polasci_po_danu'] = polasci;
+        });
+        GavraUI.showSnackBar(
+          context,
+          message: '⌛ Zahtev za $staroVreme ($dan) je istekao.',
+          type: GavraNotificationType.warning,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ [AutoCancel] Greška: $e');
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this); // 🛑 Zatvori lifecycle observer
@@ -1741,11 +1815,32 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     if (polasciRaw != null && polasciRaw is Map) {
       polasciRaw.forEach((key, value) {
         if (value is Map) {
-          polasci[key.toString()] = {
-            'bc': parseVreme(value['bc']),
-            'vs': parseVreme(value['vs']),
-            'bc_status': parseVreme(value['bc_status']),
-            'vs_status': parseVreme(value['vs_status']),
+          final danName = key.toString();
+          final bcStatus = parseVreme(value['bc_status']);
+          final vsStatus = parseVreme(value['vs_status']);
+          String? bcVreme = parseVreme(value['bc']);
+          String? vsVreme = parseVreme(value['vs']);
+
+          // 🆕 AUTOMATSKO OTKAZIVANJE ISTEKLIH PENDING ZAHTEVA
+          final now = DateTime.now();
+          if (_isDanas(danName)) {
+            // BC Pending
+            if (bcStatus == 'pending' && bcVreme != null && _isExpired(bcVreme, now)) {
+              bcVreme = null;
+              _autoCancelPending(danName, 'bc');
+            }
+            // VS Pending
+            if (vsStatus == 'pending' && vsVreme != null && _isExpired(vsVreme, now)) {
+              vsVreme = null;
+              _autoCancelPending(danName, 'vs');
+            }
+          }
+
+          polasci[danName] = {
+            'bc': bcVreme,
+            'vs': vsVreme,
+            'bc_status': bcStatus,
+            'vs_status': vsStatus,
             'bc_otkazano': parseVreme(value['bc_otkazano']),
             'vs_otkazano': parseVreme(value['vs_otkazano']),
             'bc_otkazano_vreme': parseVreme(value['bc_otkazano_vreme']),

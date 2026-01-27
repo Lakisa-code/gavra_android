@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
@@ -18,7 +18,7 @@ extension PutnikStatusExtension on PutnikStatus {
       case PutnikStatus.bolovanje:
         return 'Bolovanje';
       case PutnikStatus.godisnji:
-        return 'Godi�nji';
+        return 'Godišnji';
     }
   }
 
@@ -27,13 +27,13 @@ extension PutnikStatusExtension on PutnikStatus {
 
     switch (status.toLowerCase()) {
       case 'otkazano':
-      case 'otkazan': // Podr�ava stare vrednosti
+      case 'otkazan': // Podržava stare vrednosti
         return PutnikStatus.otkazano;
       case 'pokupljen':
         return PutnikStatus.pokupljen;
       case 'bolovanje':
         return PutnikStatus.bolovanje;
-      case 'godi�nji':
+      case 'godišnji':
       case 'godisnji':
         return PutnikStatus.godisnji;
       default:
@@ -83,7 +83,7 @@ class Putnik {
       return Putnik.fromRegistrovaniPutnici(map);
     }
 
-    // GRE�KA - Struktura tabele nije prepoznata
+    // GREŠKA - Struktura tabele nije prepoznata
     throw Exception(
       'Struktura podataka nije prepoznata - ocekuje se putnik_ime kolona iz registrovani_putnici',
     );
@@ -95,8 +95,8 @@ class Putnik {
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     final danKratica = daniKratice[weekday - 1];
     final grad = _determineGradFromRegistrovani(map);
-    // Choose place key: 'bc' for Bela Crkva, 'vs' for Vr�ac
-    final place = grad.toLowerCase().contains('vr') ? 'vs' : 'bc';
+    // Choose place key: 'bc' for Bela Crkva, 'vs' for Vršac
+    final place = grad.toLowerCase().contains('vr') || grad.contains('Vršac') ? 'vs' : 'bc';
     // Only use explicit per-day or JSON values; do not fallback to legacy single-time columns
     final polazakRaw = RegistrovaniHelpers.getPolazakForDay(map, danKratica, place);
     // ?? Tip putnika iz baze
@@ -108,12 +108,13 @@ class Putnik {
     final vremeOtkazivanja = RegistrovaniHelpers.getVremeOtkazivanjaForDayAndPlace(map, danKratica, place);
     final otkazaoVozac = RegistrovaniHelpers.getOtkazaoVozacForDayAndPlace(map, danKratica, place);
 
-    // ? FIX: Proveri da li je otkazivanje bilo DANAS - ako nije, vrati status na 'radi'
+    // ? FIX: Proveri status. Bolovanje i godisnji su globalni, ostalo je po polasku.
     final statusIzBaze = map['status'] as String? ?? 'radi';
     String status = statusIzBaze;
-    if (statusIzBaze == 'otkazan' || statusIzBaze == 'otkazano') {
-      // Koristi otkazanZaPolazak umesto vremeOtkazivanja za proveru
-      if (!otkazanZaPolazak) {
+    if (statusIzBaze != 'bolovanje' && statusIzBaze != 'godisnji') {
+      if (otkazanZaPolazak) {
+        status = 'otkazan';
+      } else {
         status = 'radi';
       }
     }
@@ -121,6 +122,9 @@ class Putnik {
     // ? FIX: Citaj pokupljenje iz polasci_po_danu JSON-a (ne iz status kolone)
     final vremePokupljenja = RegistrovaniHelpers.getVremePokupljenjaForDayAndPlace(map, danKratica, place);
     final jePokupljenDanas = vremePokupljenja != null;
+
+    final vremePlacanja = RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, danKratica, place);
+    final isDnevni = tipPutnika == 'dnevni' || tipPutnika == 'posiljka';
 
     return Putnik(
       id: map['id'], // ? UUID iz registrovani_putnici
@@ -135,9 +139,9 @@ class Putnik {
       // ? NOVO: Citaj vremePokupljenja iz polasci_po_danu (samo DANAS)
       vremePokupljenja: vremePokupljenja,
       // ? NOVO: Citaj vremePlacanja iz polasci_po_danu (samo DANAS)
-      vremePlacanja: RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, danKratica, place),
-      placeno: RegistrovaniHelpers.priceIsPaid(map),
-      cena: _parseDouble(map['cena_po_danu'] ?? map['cena']),
+      vremePlacanja: vremePlacanja,
+      placeno: isDnevni ? (vremePlacanja != null) : RegistrovaniHelpers.priceIsPaid(map),
+      cena: isDnevni ? (vremePlacanja != null ? _parseDouble(map['cena_po_danu'] ?? map['cena']) : 0.0) : _parseDouble(map['cena_po_danu'] ?? map['cena']),
       // ? NOVO: Citaj naplatioVozac iz polasci_po_danu (samo DANAS)
       naplatioVozac: RegistrovaniHelpers.getNaplatioVozacForDayAndPlace(map, danKratica, place) ??
           _getVozacIme(map['vozac_id'] as String?),
@@ -181,7 +185,7 @@ class Putnik {
   final bool? placeno;
   final double? cena; // ? STANDARDIZOVANO: cena umesto iznosPlacanja
   final String? naplatioVozac;
-  final String? pokupioVozac; // NOVO - vozac koji je pokupljanje izvr�io
+  final String? pokupioVozac; // NOVO - vozac koji je pokupljanje izvršio
   final String? dodeljenVozac;
   final String? vozac;
   final String grad;
@@ -209,7 +213,7 @@ class Putnik {
   String get destinacija => grad;
   String get vremePolaska => polazak;
 
-  /// 💰 Izračunava efektivnu cenu po mestu za ovaj polazak
+  /// Izračunava efektivnu cenu po mestu za ovaj polazak
   double get effectivePrice {
     // 1. Custom cena iz baze (AKO JE POSTAVLJENA - NAJVEĆI PRIORITET)
     if (cena != null && cena! > 0) {
@@ -245,7 +249,7 @@ class Putnik {
 
   bool get jeBolovanje => status != null && status!.toLowerCase() == 'bolovanje';
 
-  bool get jeGodisnji => status != null && (status!.toLowerCase() == 'godi�nji' || status!.toLowerCase() == 'godisnji');
+  bool get jeGodisnji => status != null && (status!.toLowerCase() == 'godišnji' || status!.toLowerCase() == 'godisnji');
 
   bool get jeOdsustvo => jeBolovanje || jeGodisnji;
 
@@ -274,7 +278,7 @@ class Putnik {
 
   PutnikStatus? get statusEnum => PutnikStatusExtension.fromString(status);
 
-  // NOVA METODA: Kreira VI�E putnik objekata za mesecne putnike sa vi�e polazaka
+  // NOVA METODA: Kreira VIŠE putnik objekata za mesecne putnike sa više polazaka
   static List<Putnik> fromRegistrovaniPutniciMultiple(Map<String, dynamic> map) {
     final danas = DateTime.now();
     final trenutniDan = _getDanNedeljeKratica(danas.weekday);
@@ -389,7 +393,7 @@ class Putnik {
     final iznosPlacanjaBC = RegistrovaniHelpers.getIznosPlacanjaForDayAndPlace(map, normalizedTarget, 'bc');
     final iznosPlacanjaVS = RegistrovaniHelpers.getIznosPlacanjaForDayAndPlace(map, normalizedTarget, 'vs');
 
-    // ? FIX: Citaj vremena placanja iz polasci_po_danu JSON (za filter du�nika)
+    // ? FIX: Citaj vremena placanja iz polasci_po_danu JSON (za filter dužnika)
     final vremePlacanjaBC = RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, normalizedTarget, 'bc');
     final vremePlacanjaVS = RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, normalizedTarget, 'vs');
 
@@ -479,7 +483,7 @@ class Putnik {
       );
     }
 
-    // Kreiraj putnik za Vr�ac ako ima polazak za targetDan ILI ako je otkazan
+    // Kreiraj putnik za Vršac ako ima polazak za targetDan ILI ako je otkazan
     if ((polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') || vsOtkazan) {
       // ? NOVO: Citaj vreme pokupljenja iz polasci_po_danu (samo DANAS)
       bool pokupljenZaOvajPolazak = false;
@@ -515,12 +519,12 @@ class Putnik {
                   map: map,
                   danKratica: normalizedTarget,
                   place: 'vs',
-                  grad: 'Vr�ac',
+                  grad: 'Vršac',
                   vreme: polazakVS,
                 )
               : null,
           vozac: vozac,
-          grad: 'Vr�ac',
+          grad: 'Vršac',
           adresa: finalAdresaVs, // ?? PRIORITET: adresa_danas > stalna adresa
           adresaId: finalAdresaVsId, // ?? PRIORITET: adresa_danas_id > stalni ID
           obrisan: obrisan,
@@ -562,20 +566,20 @@ class Putnik {
     final bcPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'bc');
     final vsPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'vs');
 
-    // Ako ima BC polazak danas, putnik putuje IZ Bela Crkva (pokuplja� ga tamo)
+    // Ako ima BC polazak danas, putnik putuje IZ Bela Crkva (pokupljaš ga tamo)
     if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {
       return 'Bela Crkva';
     }
 
-    // Ako ima VS polazak danas, putnik putuje IZ Vr�ac (pokuplja� ga tamo)
+    // Ako ima VS polazak danas, putnik putuje IZ Vršac (pokupljaš ga tamo)
     if (vsPolazak != null && vsPolazak.toString().isNotEmpty) {
-      return 'Vr�ac';
+      return 'Vršac';
     }
 
     // Fallback: proveri da li ima VS adresu u JOIN-u
     final adresaVsObj = map['adresa_vs'] as Map<String, dynamic>?;
     if (adresaVsObj != null && adresaVsObj['naziv'] != null) {
-      return 'Vr�ac';
+      return 'Vršac';
     }
 
     return 'Bela Crkva';
@@ -604,13 +608,13 @@ class Putnik {
     }
 
     // ? FIX: Koristi grad parametar za odredivanje ispravne adrese
-    // Ako je grad Bela Crkva, koristi BC adresu (gde pokuplja� putnika)
-    // Ako je grad Vr�ac, koristi VS adresu
+    // Ako je grad Bela Crkva, koristi BC adresu (gde pokupljaš putnika)
+    // Ako je grad Vršac, koristi VS adresu
     if (grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc')) {
       return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
     }
 
-    // Za Vr�ac ili bilo koji drugi grad, koristi VS adresu
+    // Za Vršac ili bilo koji drugi grad, koristi VS adresu
     return adresaVS ?? adresaBC ?? 'Adresa nije definisana';
   }
 
@@ -633,7 +637,7 @@ class Putnik {
       // 'id': id, // Uklonjen - Supabase ce auto-generirati UUID
       'putnik_ime': ime,
       'tip': 'radnik', // ili 'ucenik' - treba logiku za odredivanje
-      'tip_skole': null, // ? NOVA KOLONA - mo�da treba logika
+      'tip_skole': null, // ? NOVA KOLONA - možda treba logika
       'broj_telefona': brojTelefona,
       // Store per-day polasci as canonical JSON
       'polasci_po_danu': jsonEncode({
@@ -682,7 +686,7 @@ class Putnik {
     required String grad,
     required String vreme,
   }) {
-    // 1?? NAJVI�I PRIORITET: Per-putnik per-pravac per-vreme (bc_5:00_vozac ili vs_14:00_vozac)
+    // 1?? NAJVIŠI PRIORITET: Per-putnik per-pravac per-vreme (bc_5:00_vozac ili vs_14:00_vozac)
     final perPutnikPerVreme = RegistrovaniHelpers.getDodeljenVozacForDayAndPlace(
       map,
       danKratica,
@@ -694,13 +698,13 @@ class Putnik {
     }
 
     // 2?? SREDNJI PRIORITET: Per-vreme (iz vreme_vozac tabele)
-    // Koristi sinhroni pristup ke�iranju - ke� MORA biti ucitan pre poziva!
+    // Koristi sinhroni pristup keširanju - keš MORA biti ucitan pre poziva!
     final perVreme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
     if (perVreme != null && perVreme.isNotEmpty) {
       return perVreme;
     }
 
-    // ? UKLONJEN NAJNI�I PRIORITET: Globalni vozac_id (reset u ponoc)
+    // ? UKLONJEN NAJNIŽI PRIORITET: Globalni vozac_id (reset u ponoc)
     return null;
   }
 
@@ -731,7 +735,7 @@ class Putnik {
   }
 
   // -----------------------------------------------------------------------
-  // ?? COPY WITH - za a�urivanje putnika sa novim podacima
+  // ?? COPY WITH - za ažurivanje putnika sa novim podacima
   // -----------------------------------------------------------------------
 
   Putnik copyWith({
@@ -834,3 +838,10 @@ class Putnik {
 
   // ?? Helper za parsiranje radnih dana (iz kolone ili JSON-a)
 }
+
+
+
+
+
+
+

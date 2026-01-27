@@ -483,12 +483,7 @@ class RegistrovaniHelpers {
     if (dayData == null || dayData is! Map) return null;
 
     // Ključ je npr. 'bc_placeno' ili 'vs_placeno'
-    // 🆕 FALLBACK LOGIKA: Proveri i drugi grad jer je dnevna karta validna za oba
-    var placenoTimestamp = dayData['${place}_placeno'] as String?;
-    if (placenoTimestamp == null) {
-      final otherPlace = place == 'bc' ? 'vs' : 'bc';
-      placenoTimestamp = dayData['${otherPlace}_placeno'] as String?;
-    }
+    final placenoTimestamp = dayData['${place}_placeno'] as String?;
 
     if (placenoTimestamp == null || placenoTimestamp.isEmpty) return null;
 
@@ -507,7 +502,6 @@ class RegistrovaniHelpers {
 
   /// 🆕 Dobij ime vozača koji je naplatio iz polasci_po_danu JSON-a
   /// NAPOMENA: Plaćanje važi za ceo mesec, pa tražimo vozača u SVIM danima
-  /// Koristi jednostavno polje 'placeno_vozac' (bez bc/vs prefiksa)
   static String? getNaplatioVozacForDayAndPlace(
     Map<String, dynamic> rawMap,
     String dayKratica,
@@ -528,26 +522,11 @@ class RegistrovaniHelpers {
     }
     if (decoded == null) return null;
 
-    // Traži u SVIM danima jer plaćanje važi za ceo mesec
-    const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    for (final dan in dani) {
-      final data = decoded[dan];
-      if (data != null && data is Map) {
-        // 1. Prvo probaj jednostavno 'placeno_vozac'
-        if (data['placeno_vozac'] != null) {
-          return data['placeno_vozac'] as String?;
-        }
-        // 2. Fallback na stare ključeve bc_placeno_vozac / vs_placeno_vozac
-        if (data['bc_placeno_vozac'] != null) {
-          return data['bc_placeno_vozac'] as String?;
-        }
-        if (data['vs_placeno_vozac'] != null) {
-          return data['vs_placeno_vozac'] as String?;
-        }
-      }
-    }
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
 
-    return null;
+    // Ključ je npr. 'bc_placeno_vozac' ili 'vs_placeno_vozac'
+    return dayData['${place}_placeno_vozac'] as String?;
   }
 
   /// 🆕 Dobij iznos plaćanja iz polasci_po_danu JSON-a za specifičan dan i grad
