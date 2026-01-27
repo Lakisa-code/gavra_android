@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
+import '../models/registrovani_putnik.dart';
 import '../helpers/gavra_ui.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../services/cena_obracun_service.dart';
@@ -377,29 +378,41 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           .eq('tip', 'otkazivanje')
           .gte('created_at', pocetakMeseca);
 
-      // Broj vožnji ovog meseca
-      // Ako je DNEVNI: sumiramo broj_mesta
-      // Ako je RADNIK/UCENIK: unikatni dani = 1 vožnja
-      final jedinstveniDatumiVoznji = <String>{};
-      int ukupnoMestaVoznje = 0;
-      for (final v in voznjeResponse) {
-        final datum = v['datum'] as String?;
-        final bm = (v['broj_mesta'] as num?)?.toInt() ?? 1;
-        if (datum != null) jedinstveniDatumiVoznji.add(datum);
-        ukupnoMestaVoznje += bm;
+      // Broj vožnji ovog meseca (Logika identična kao za obračun dugovanja)
+      int brojVoznjiTotal = 0;
+      if (jeDnevni) {
+        for (final v in voznjeResponse) {
+          brojVoznjiTotal += (v['broj_mesta'] as num?)?.toInt() ?? 1;
+        }
+      } else {
+        final Map<String, int> dailyMaxSeats = {};
+        for (final v in voznjeResponse) {
+          final d = v['datum'] as String?;
+          if (d != null) {
+            final bm = (v['broj_mesta'] as num?)?.toInt() ?? 1;
+            if (bm > (dailyMaxSeats[d] ?? 0)) dailyMaxSeats[d] = bm;
+          }
+        }
+        dailyMaxSeats.forEach((_, val) => brojVoznjiTotal += val);
       }
-      int brojVoznjiTotal = jeDnevni ? ukupnoMestaVoznje : jedinstveniDatumiVoznji.length;
 
       // Broj otkazivanja ovog meseca
-      final jedinstveniDatumiOtkazivanja = <String>{};
-      int ukupnoMestaOtkazivanja = 0;
-      for (final o in otkazivanjaResponse) {
-        final datum = o['datum'] as String?;
-        final bm = (o['broj_mesta'] as num?)?.toInt() ?? 1;
-        if (datum != null) jedinstveniDatumiOtkazivanja.add(datum);
-        ukupnoMestaOtkazivanja += bm;
+      int brojOtkazivanjaTotal = 0;
+      if (jeDnevni) {
+        for (final o in otkazivanjaResponse) {
+          brojOtkazivanjaTotal += (o['broj_mesta'] as num?)?.toInt() ?? 1;
+        }
+      } else {
+        final Map<String, int> dailyMaxSeats = {};
+        for (final o in otkazivanjaResponse) {
+          final d = o['datum'] as String?;
+          if (d != null) {
+            final bm = (o['broj_mesta'] as num?)?.toInt() ?? 1;
+            if (bm > (dailyMaxSeats[d] ?? 0)) dailyMaxSeats[d] = bm;
+          }
+        }
+        dailyMaxSeats.forEach((_, val) => brojOtkazivanjaTotal += val);
       }
-      int brojOtkazivanjaTotal = jeDnevni ? ukupnoMestaOtkazivanja : jedinstveniDatumiOtkazivanja.length;
 
       // Dugovanje
       final dug = _putnikData['dug'] ?? 0;
@@ -494,51 +507,75 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         }
       }
 
-      // Izračunaj ukupno zaduženje
-      final tipPutnika = _putnikData['tip'] ?? 'radnik';
+      // 💰 PRIORITET: Koristi centralnu logiku iz CenaObracunService (podržava custom cene i specijalne slučajeve poput "zubi")
+      final putnikModel = RegistrovaniPutnik.fromMap(_putnikData);
+      final cenaPoVoznji = CenaObracunService.getCenaPoDanu(putnikModel);
 
-      // 💰 PRIORITET: Koristi custom cenu ako postoji, inače default za tip
-      final double? customCena = (_putnikData['cena_po_danu'] as num?)?.toDouble();
-      final cenaPoVoznji =
-          (customCena != null && customCena > 0) ? customCena : CenaObracunService.getDefaultCenaByTip(tipPutnika);
-
-      // 🔧 ISPRAVKA: Umesto COUNT(*) × cenaPoVoznji, koristi SUM(broj_mesta × cenaPoVoznji)
-      // Dohvati SVE vožnje sa broj_mesta jednim upitom
+      // 🔧 ISPRAVKA: Za izračun dugovanja koristimo SVE vožnje (bez gte filters), kako ne bismo propustili dug iz prošle godine
       double ukupnoZaplacanje = 0;
       final Map<String, int> brojMestaPoVoznji = {};
       try {
-        final sveVoznjeZaObracun = await supabase
+        final sveVoznjeZaDug = await supabase
             .from('voznje_log')
             .select('datum, broj_mesta')
             .eq('putnik_id', putnikId)
-            .eq('tip', 'voznja')
-            .gte('datum', pocetakGodine.toIso8601String().split('T')[0]);
+            .eq('tip', 'voznja');
 
-        for (final voznja in sveVoznjeZaObracun) {
-          final datum = voznja['datum'] as String?;
-          final brojMesta = (voznja['broj_mesta'] as int?) ?? 1;
-          if (datum != null) {
-            brojMestaPoVoznji[datum] = brojMesta;
+        final tipLower = tipPutnikaRaw.toLowerCase();
+        final jeDnevniIliPosiljka = tipLower.contains('dnevni') || tipLower.contains('posiljka');
+
+        if (jeDnevniIliPosiljka) {
+          for (final voznja in sveVoznjeZaDug) {
+            final bm = (voznja['broj_mesta'] as num? ?? 1).toInt();
+            ukupnoZaplacanje += bm * cenaPoVoznji;
+            
+            final dStr = voznja['datum'] as String?;
+            if (dStr != null) {
+              brojMestaPoVoznji[dStr] = (brojMestaPoVoznji[dStr] ?? 0) + bm;
+            }
           }
-          ukupnoZaplacanje += brojMesta * cenaPoVoznji;
+        } else {
+          final Map<String, int> dnevniMaxMesta = {};
+          for (final voznja in sveVoznjeZaDug) {
+            final dStr = voznja['datum'] as String?;
+            if (dStr == null) continue;
+            final bm = (voznja['broj_mesta'] as num? ?? 1).toInt();
+            if (bm > (dnevniMaxMesta[dStr] ?? 0)) dnevniMaxMesta[dStr] = bm;
+          }
+          dnevniMaxMesta.forEach((datum, maxMesta) {
+            ukupnoZaplacanje += maxMesta * cenaPoVoznji;
+            brojMestaPoVoznji[datum] = maxMesta;
+          });
         }
       } catch (e) {
-        // Fallback na stari način ako query padne
+        // Fallback
         double ukupnoVoznji = 0;
-        for (final lista in voznjeDetaljnoMap.values) {
-          ukupnoVoznji += lista.length;
-        }
+        for (final lista in voznjeDetaljnoMap.values) ukupnoVoznji += lista.length;
         ukupnoZaplacanje = ukupnoVoznji * cenaPoVoznji;
       }
 
-      // Ukupno plaćeno
-      double ukupnoPlaceno = 0;
-      for (final p in istorija) {
-        ukupnoPlaceno += (p['iznos'] as num? ?? 0).toDouble();
+      // 🔧 ISPRAVKA: Dohvati SVE uplate za tačan balans
+      double ukupnoUplaceno = 0;
+      try {
+        final uplateResponse = await supabase
+            .from('voznje_log')
+            .select('iznos')
+            .eq('putnik_id', putnikId)
+            .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']);
+        
+        for (final u in uplateResponse) {
+          ukupnoUplaceno += (u['iznos'] as num? ?? 0).toDouble();
+        }
+      } catch (e) {
+        // Fallback na istoriju koja je već učitana (iako je ona možda filtrirana)
+        for (final p in istorija) {
+          ukupnoUplaceno += (p['iznos'] as num? ?? 0).toDouble();
+        }
       }
 
-      // Finalno zaduženje
-      final zaduzenje = ukupnoZaplacanje - ukupnoPlaceno;
+      // Finalno zaduženje (Uključuje i eventualni početni dug iz profila ako postoji)
+      final pocetniDug = (_putnikData['dug'] as num? ?? 0).toDouble();
+      final zaduzenje = pocetniDug + (ukupnoZaplacanje - ukupnoUplaceno);
 
       setState(() {
         _brojVoznji = brojVoznjiTotal;
@@ -1218,8 +1255,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   String _getWeatherDescription(int code) {
@@ -1694,6 +1730,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             'bc_otkazano': parseVreme(value['bc_otkazano']),
             'vs_otkazano': parseVreme(value['vs_otkazano']),
             'bc_otkazano_vreme': parseVreme(value['bc_otkazano_vreme']),
+           
             'vs_otkazano_vreme': parseVreme(value['vs_otkazano_vreme']),
           };
         }
