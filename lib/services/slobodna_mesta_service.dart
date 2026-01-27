@@ -270,6 +270,7 @@ class SlobodnaMestaService {
     required String novoVreme,
     required String grad, // 'BC' ili 'VS'
     required String dan, // 'pon', 'uto', itd.
+    bool skipKapacitetCheck = false, // 🆕 Admin bypass
   }) async {
     try {
       final sada = DateTime.now();
@@ -360,7 +361,7 @@ class SlobodnaMestaService {
       // ═══════════════════════════════════════════════════════════════
 
       // Ako treba provera kapaciteta:
-      if (performCapacityCheck) {
+      if (performCapacityCheck && !skipKapacitetCheck) {
         final jeUcenikBC = tipPutnika == 'ucenik' && grad.toUpperCase() == 'BC';
 
         // Stari kod: if (!jeUcenikBC) { final imaMesta = ... }

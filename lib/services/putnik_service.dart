@@ -598,21 +598,21 @@ class PutnikService {
     }
   }
 
-  /// ? DODAJ PUTNIKA (dnevni ili mesecni) - ??? SA VALIDACIJOM GRADOVA
-  Future<void> dodajPutnika(Putnik putnik) async {
+  /// 🆕 DODAJ PUTNIKA (dnevni ili mesecni) - 🏘️ SA VALIDACIJOM GRADOVA
+  Future<void> dodajPutnika(Putnik putnik, {bool skipKapacitetCheck = false}) async {
     try {
-      // ?? SVI PUTNICI MORAJU BITI REGISTROVANI
-      // Ad-hoc putnici vi�e ne postoje - svi tipovi (radnik, ucenik, dnevni)
+      // 🛡️ SVI PUTNICI MORAJU BITI REGISTROVANI
+      // Ad-hoc putnici više ne postoje - svi tipovi (radnik, ucenik, dnevni)
       // moraju biti u registrovani_putnici tabeli
       if (putnik.mesecnaKarta != true) {
         throw Exception(
           'NEREGISTROVAN PUTNIK!\n\n'
           'Svi putnici moraju biti registrovani u sistemu.\n'
-          'Idite na: Meni ? Mesecni putnici da kreirate novog putnika.',
+          'Idite na: Meni → Mesecni putnici da kreirate novog putnika.',
         );
       }
 
-      // ?? STRIKTNA VALIDACIJA VOZACA
+      // 🛡️ STRIKTNA VALIDACIJA VOZACA
       if (putnik.dodeljenVozac == null ||
           putnik.dodeljenVozac!.isEmpty ||
           !VozacBoja.isValidDriver(putnik.dodeljenVozac)) {
@@ -641,32 +641,34 @@ class PutnikService {
       }
 
       // 🚫 PROVERA KAPACITETA - Da li ima slobodnih mesta?
-      final gradKey = GradAdresaValidator.isBelaCrkva(putnik.grad) ? 'BC' : 'VS';
-      final polazakVremeNorm = GradAdresaValidator.normalizeTime(putnik.polazak);
-      final datumZaProveru = putnik.datum ?? DateTime.now().toIso8601String().split('T')[0];
+      // 🛡️ PRESKAČI AKO JE skipKapacitetCheck=true (Admin bypass)
+      if (!skipKapacitetCheck) {
+        final gradKey = GradAdresaValidator.isBelaCrkva(putnik.grad) ? 'BC' : 'VS';
+        final polazakVremeNorm = GradAdresaValidator.normalizeTime(putnik.polazak);
+        final datumZaProveru = putnik.datum ?? DateTime.now().toIso8601String().split('T')[0];
 
-      final slobodnaMestaData = await SlobodnaMestaService.getSlobodnaMesta(datum: datumZaProveru);
-      final listaZaGrad = slobodnaMestaData[gradKey];
+        final slobodnaMestaData = await SlobodnaMestaService.getSlobodnaMesta(datum: datumZaProveru);
+        final listaZaGrad = slobodnaMestaData[gradKey];
 
-      if (listaZaGrad != null) {
-        for (final sm in listaZaGrad) {
-          if (sm.vreme == polazakVremeNorm) {
-            final dostupnoMesta = sm.maxMesta - sm.zauzetaMesta;
-            if (putnik.brojMesta > dostupnoMesta) {
-              throw Exception(
-                'NEMA DOVOLJNO SLOBODNIH MESTA!\n\n'
-                'Polazak: ${putnik.polazak} (${putnik.grad})\n'
-                'Potrebno mesta: ${putnik.brojMesta}\n'
-                'Slobodno mesta: $dostupnoMesta / ${sm.maxMesta}\n\n'
-                'Smanjite broj mesta ili izaberite drugi polazak.',
-              );
+        if (listaZaGrad != null) {
+          for (final sm in listaZaGrad) {
+            if (sm.vreme == polazakVremeNorm) {
+              final dostupnoMesta = sm.maxMesta - sm.zauzetaMesta;
+              if (putnik.brojMesta > dostupnoMesta) {
+                throw Exception(
+                  'NEMA DOVOLJNO SLOBODNIH MESTA!\n\n'
+                  'Polazak: ${putnik.polazak} (${putnik.grad})\n'
+                  'Potrebno mesta: ${putnik.brojMesta}\n'
+                  'Slobodno mesta: $dostupnoMesta / ${sm.maxMesta}\n\n'
+                  'Admini mogu dodati preko kapaciteta.',
+                );
+              }
             }
-            break;
           }
         }
       }
 
-      // ? PROVERAVA DA LI REGISTROVANI PUTNIK VEC POSTOJI
+      // 🔍 PROVERI DUPLIKATE ZA TAJ TERMIN
       final existingPutnici = await supabase
           .from('registrovani_putnici')
           .select('id, putnik_ime, aktivan, polasci_po_danu, radni_dani')

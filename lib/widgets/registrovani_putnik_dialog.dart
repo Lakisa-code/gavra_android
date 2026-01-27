@@ -5,7 +5,9 @@ import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart
 import '../globals.dart';
 import '../helpers/gavra_ui.dart';
 import '../models/registrovani_putnik.dart';
+import '../services/admin_security_service.dart';
 import '../services/adresa_supabase_service.dart';
+import '../services/auth_manager.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/voznje_log_service.dart'; // 📝 DODATO
 import '../theme.dart';
@@ -1529,14 +1531,20 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       }
 
       final putnikData = _preparePutnikData();
+      final currentDriver = await AuthManager.getCurrentDriver();
+      final skipCheck = AdminSecurityService.isAdmin(currentDriver);
 
       if (widget.isEditing) {
         await _registrovaniPutnikService.updateRegistrovaniPutnik(
           widget.existingPutnik!.id,
           putnikData,
+          skipKapacitetCheck: skipCheck,
         );
       } else {
-        await _registrovaniPutnikService.dodajMesecnogPutnika(RegistrovaniPutnik.fromMap(putnikData));
+        await _registrovaniPutnikService.dodajMesecnogPutnika(
+          RegistrovaniPutnik.fromMap(putnikData),
+          skipKapacitetCheck: skipCheck,
+        );
       }
 
       if (mounted) {

@@ -10,6 +10,7 @@ import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
+import '../services/admin_security_service.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/auth_manager.dart';
 import '../services/cena_obracun_service.dart';
@@ -1584,7 +1585,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               onPressed: isDialogLoading
                                   ? null
                                   : () async {
-                                      // Validacija - mora biti odabran putnik
+                                      // Validacija - mora biti odabrani putnik
                                       if (selectedPutnik == null) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
@@ -1684,7 +1685,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         );
 
                                         // Duplikat provera se vrši u PutnikService.dodajPutnika()
-                                        await _putnikService.dodajPutnika(putnik);
+                                        await _putnikService.dodajPutnika(
+                                          putnik,
+                                          skipKapacitetCheck: AdminSecurityService.isAdmin(_currentDriver),
+                                        );
 
                                         // Supabase realtime automatski triggeruje refresh
 
@@ -2200,9 +2204,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ),
                                   ),
                                 ),
-
                               const SizedBox(width: 2),
-
                               // TEMA - levo-sredina
                               Expanded(
                                 flex: 25,
@@ -2243,9 +2245,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 ),
                               ),
-
                               const SizedBox(width: 2),
-
                               // DROPDOWN - desno
                               Expanded(
                                 flex: 35,
@@ -2559,7 +2559,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     ),
                   ),
-
                   // Lista putnika
                   Expanded(
                     child: putniciZaPrikaz.isEmpty
