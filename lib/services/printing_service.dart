@@ -42,7 +42,8 @@ class PrintingService {
       String? isoDate;
       try {
         isoDate = DateTime.now().toIso8601String().split('T')[0];
-      } catch (_) {
+      } catch (e) {
+        debugPrint('⚠️ Error parsing ISO date for printing: $e');
         isoDate = DateTime.now().toIso8601String().split('T')[0];
       }
 

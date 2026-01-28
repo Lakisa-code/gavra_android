@@ -59,7 +59,8 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🎯 OPTIMIZACIJA RUTE - kopirano iz DanasScreen
   bool _isRouteOptimized = false;
   List<Putnik> _optimizedRoute = [];
-  bool _isLoading = false;
+  final bool _isLoading = false;
+  bool _isOptimizing = false; // 🔄 Loading state specifically za optimizaciju rute
   Map<Putnik, Position>? _cachedCoordinates; // 🎯 Keširane koordinate
   Map<String, int>? _cachedEta; // 🕒 Keširani ETA iz OSRM-a
 
@@ -139,8 +140,11 @@ class _VozacScreenState extends State<VozacScreen> {
     // Start GPS tracking
     RealtimeGpsService.startTracking().catchError((Object e) {});
 
-    // Subscribe to driver position updates
-    _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {});
+    // Subscribe to driver position updates - ažuriraj lokaciju u realnom vremenu
+    _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {
+      // 📍 Pošalji poziciju vozača u DriverLocationService za praćenje uživu
+      DriverLocationService.instance.forceLocationUpdate(knownPosition: pos);
+    });
   }
 
   // 📋 PROVERA DA LI JE POPIS SAČUVAN
@@ -293,8 +297,8 @@ class _VozacScreenState extends State<VozacScreen> {
           );
         }
       }
-    } catch (_) {
-      // Greška pri reoptimizaciji
+    } catch (e) {
+      debugPrint('⚠️ Error auto-reoptimizing route: $e');
     }
   }
 
@@ -540,7 +544,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
     if (mounted) {
       setState(() {
-        _isLoading = true;
+        _isOptimizing = true; // ✅ USE _isOptimizing INSTEAD OF _isLoading
       });
     }
 
@@ -548,7 +552,7 @@ class _VozacScreenState extends State<VozacScreen> {
     if (isAlreadyOptimized) {
       if (putnici.isEmpty) {
         if (mounted) {
-          setState(() => _isLoading = false);
+          setState(() => _isOptimizing = false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('❌ Nema putnika sa adresama za reorder'), backgroundColor: Colors.orange),
           );
@@ -561,7 +565,7 @@ class _VozacScreenState extends State<VozacScreen> {
           _isRouteOptimized = true;
           _isListReordered = true;
           _currentPassengerIndex = 0;
-          _isLoading = false;
+          _isOptimizing = false;
         });
       }
 
@@ -613,7 +617,7 @@ class _VozacScreenState extends State<VozacScreen> {
     if (filtriraniPutnici.isEmpty) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isOptimizing = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('❌ Nema putnika sa adresama za optimizaciju'), backgroundColor: Colors.orange),
@@ -642,7 +646,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _isRouteOptimized = true;
             _isListReordered = true;
             _currentPassengerIndex = 0;
-            _isLoading = false;
+            _isOptimizing = false;
           });
         }
 
@@ -770,7 +774,7 @@ class _VozacScreenState extends State<VozacScreen> {
         // ❌ OSRM/SmartNavigationService nije uspeo - NE koristi fallback, prikaži grešku
         if (mounted) {
           setState(() {
-            _isLoading = false;
+            _isOptimizing = false;
             // NE postavljaj _isRouteOptimized = true jer ruta NIJE optimizovana!
           });
           ScaffoldMessenger.of(context).showSnackBar(
@@ -785,7 +789,7 @@ class _VozacScreenState extends State<VozacScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isOptimizing = false;
           _isRouteOptimized = false;
           _isListReordered = false;
         });
@@ -881,7 +885,7 @@ class _VozacScreenState extends State<VozacScreen> {
         }).toList();
 
         final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
-        final bool canPress = !_isLoading && isDriverValid;
+        final bool canPress = !_isOptimizing && !_isLoading && isDriverValid;
 
         final baseColor = _isGpsTracking ? Colors.orange : (_isRouteOptimized ? Colors.green : Colors.white);
 
@@ -911,14 +915,20 @@ class _VozacScreenState extends State<VozacScreen> {
               child: Center(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(
-                    _isGpsTracking ? 'STOP' : 'START',
-                    style: TextStyle(
-                      color: baseColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
+                  child: _isOptimizing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          _isGpsTracking ? 'STOP' : 'START',
+                          style: TextStyle(
+                            color: baseColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
                 ),
               ),
             ),

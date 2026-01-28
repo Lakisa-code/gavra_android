@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_manager.dart';
@@ -24,7 +25,9 @@ class FirebaseService {
       // Request notification permission
       try {
         await messaging.requestPermission();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ Error requesting FCM permission: $e');
+      }
     } catch (e) {
       // Ignoriši greške
     }
@@ -73,7 +76,9 @@ class FirebaseService {
       // Request permission
       try {
         await messaging.requestPermission();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ Error requesting FCM permission (init): $e');
+      }
 
       // Get token
       final token = await messaging.getToken();
@@ -81,9 +86,14 @@ class FirebaseService {
         await _registerTokenWithServer(token);
 
         // Listen for token refresh
-        messaging.onTokenRefresh.listen((newToken) async {
-          await _registerTokenWithServer(newToken);
-        });
+        messaging.onTokenRefresh.listen(
+          (newToken) async {
+            await _registerTokenWithServer(newToken);
+          },
+          onError: (error) {
+            debugPrint('🔴 [FirebaseService] Token refresh error: $error');
+          },
+        );
 
         return token;
       }
@@ -100,7 +110,8 @@ class FirebaseService {
     String? driverName;
     try {
       driverName = await AuthManager.getCurrentDriver();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('⚠️ Error getting current driver for FCM: $e');
       driverName = null;
     }
 
@@ -129,25 +140,37 @@ class FirebaseService {
 
     if (Firebase.apps.isEmpty) return;
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // Show a local notification when app is foreground
-      try {
-        // Prvo pokušaj notification payload, pa data payload
-        final title = message.notification?.title ?? message.data['title'] as String? ?? 'Gavra Notification';
-        final body = message.notification?.body ??
-            message.data['body'] as String? ??
-            message.data['message'] as String? ??
-            'Nova notifikacija';
-        LocalNotificationService.showRealtimeNotification(
-            title: title, body: body, payload: message.data.isNotEmpty ? message.data.toString() : null);
-      } catch (_) {}
-    });
+    FirebaseMessaging.onMessage.listen(
+      (RemoteMessage message) {
+        // Show a local notification when app is foreground
+        try {
+          // Prvo pokušaj notification payload, pa data payload
+          final title = message.notification?.title ?? message.data['title'] as String? ?? 'Gavra Notification';
+          final body = message.notification?.body ??
+              message.data['body'] as String? ??
+              message.data['message'] as String? ??
+              'Nova notifikacija';
+          LocalNotificationService.showRealtimeNotification(
+              title: title, body: body, payload: message.data.isNotEmpty ? message.data.toString() : null);
+        } catch (_) {}
+      },
+      onError: (error) {
+        debugPrint('🔴 [FirebaseService] onMessage stream error: $error');
+      },
+    );
 
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      try {
-        // Navigate or handle tap
-        RealtimeNotificationService.handleInitialMessage(message.data);
-      } catch (_) {}
-    });
+    FirebaseMessaging.onMessageOpenedApp.listen(
+      (RemoteMessage message) {
+        try {
+          // Navigate or handle tap
+          RealtimeNotificationService.handleInitialMessage(message.data);
+        } catch (e) {
+          debugPrint('🔴 [FirebaseService] onMessageOpenedApp error: $e');
+        }
+      },
+      onError: (error) {
+        debugPrint('🔴 [FirebaseService] onMessageOpenedApp stream error: $error');
+      },
+    );
   }
 }

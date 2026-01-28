@@ -458,7 +458,7 @@ class RegistrovaniHelpers {
   }
 
   /// 🆕 Dobij vreme plaćanja iz polasci_po_danu JSON-a za specifičan dan i grad
-  /// Vraća DateTime ako postoji timestamp plaćanja za DANAS, inače null
+  /// Vraća DateTime ako postoji timestamp plaćanja za bilo koji dan (plaćanje važi za ceo mesec!)
   static DateTime? getVremePlacanjaForDayAndPlace(
     Map<String, dynamic> rawMap,
     String dayKratica,
@@ -489,12 +489,9 @@ class RegistrovaniHelpers {
 
     try {
       final placenoDate = DateTime.parse(placenoTimestamp).toLocal();
-      final danas = DateTime.now();
-      // Vrati samo ako je DANAS
-      if (placenoDate.year == danas.year && placenoDate.month == danas.month && placenoDate.day == danas.day) {
-        return placenoDate;
-      }
-      return null;
+      // ✅ ISPRAVKA: Vrati timestamp čak i ako NIJE danas
+      // Plaćanje važi za ceo mesec, ne samo za dan kad je plaćeno
+      return placenoDate;
     } catch (_) {
       return null;
     }

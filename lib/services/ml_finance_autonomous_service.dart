@@ -194,7 +194,7 @@ class MLFinanceAutonomousService extends ChangeNotifier {
         _inventory.litersInStock -= liters;
         _usages.add(HistoricalUsage(
           date: date,
-          vehicleId: log['vehicle_id'] ?? 'Unknown',
+          vehicleId: log['vozilo_uuid'] ?? 'Unknown',
           liters: liters,
           km: (log['km'] as num?)?.toDouble(),
           pumpMeter: (log['pump_meter'] as num?)?.toDouble(),
@@ -324,7 +324,7 @@ class MLFinanceAutonomousService extends ChangeNotifier {
       await _supabase.from('fuel_logs').insert({
         'type': 'USAGE',
         'liters': liters,
-        'vehicle_id': vehicleId,
+        'vozilo_uuid': vehicleId,
         'km': km,
         'pump_meter': pumpMeter,
       });
@@ -383,7 +383,7 @@ class MLFinanceAutonomousService extends ChangeNotifier {
         await _supabase.from('fuel_logs').insert({
           'type': 'USAGE',
           'liters': litersPerVan,
-          'vehicle_id': vId,
+          'vozilo_uuid': vId,
           'pump_meter': newPumpMeter, // Set the same new meter for all
           'km': null, // KM unknown in rush
         });

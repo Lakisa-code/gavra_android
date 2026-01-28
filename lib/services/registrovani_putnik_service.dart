@@ -73,8 +73,17 @@ class RegistrovaniPutnikService {
   /// Dohvata mesečnog putnika po imenu (legacy compatibility)
   static Future<RegistrovaniPutnik?> getRegistrovaniPutnikByIme(String ime) async {
     try {
-      final response =
-          await supabase.from('registrovani_putnici').select().eq('putnik_ime', ime).eq('obrisan', false).single();
+      final response = await supabase
+          .from('registrovani_putnici')
+          .select()
+          .eq('putnik_ime', ime)
+          .eq('obrisan', false)
+          .limit(1)
+          .maybeSingle();
+
+      if (response == null) {
+        return null;
+      }
 
       return RegistrovaniPutnik.fromMap(response);
     } catch (e) {
@@ -131,8 +140,8 @@ class RegistrovaniPutnikService {
       if (_sharedController != null && !_sharedController!.isClosed) {
         _sharedController!.add(putnici);
       }
-    } catch (_) {
-      // Fetch error - silent
+    } catch (e) {
+      debugPrint('🔴 Error fetching registered passengers: $e');
     }
   }
 
@@ -354,7 +363,12 @@ class RegistrovaniPutnikService {
       if (noviPolasci != null && noviPolasci is Map) {
         // Čitaj trenutno stanje iz baze
         final trenutnoStanje =
-            await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', id).single();
+            await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', id).limit(1).maybeSingle();
+
+        if (trenutnoStanje == null) {
+          debugPrint('🔴 [RegistrovaniPutnikService] Passenger not found: $id');
+          throw Exception('Putnik sa ID-om $id nije pronađen');
+        }
 
         final rawPolasciDB = trenutnoStanje['polasci_po_danu'];
         Map<String, dynamic>? trenutniPolasci;
@@ -421,7 +435,12 @@ class RegistrovaniPutnikService {
       if (polasciPoDanu != null && polasciPoDanu is Map) {
         // Dohvati broj_mesta i tip za proveru kapaciteta
         final currentData =
-            await _supabase.from('registrovani_putnici').select('broj_mesta, tip').eq('id', id).single();
+            await _supabase.from('registrovani_putnici').select('broj_mesta, tip').eq('id', id).limit(1).maybeSingle();
+
+        if (currentData == null) {
+          debugPrint('🔴 [RegistrovaniPutnikService] Passenger not found for capacity check: $id');
+          throw Exception('Putnik sa ID-om $id nije pronađen za proveru kapaciteta');
+        }
         final bm = updates['broj_mesta'] ?? currentData['broj_mesta'] ?? 1;
         final t = updates['tip'] ?? currentData['tip'];
 
@@ -524,8 +543,17 @@ class RegistrovaniPutnikService {
       final now = DateTime.now();
 
       // ✅ Dohvati polasci_po_danu da bismo dodali plaćanje po danu
-      final currentData =
-          await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnikId).single();
+      final currentData = await _supabase
+          .from('registrovani_putnici')
+          .select('polasci_po_danu')
+          .eq('id', putnikId)
+          .limit(1)
+          .maybeSingle();
+
+      if (currentData == null) {
+        debugPrint('🔴 [RegistrovaniPutnikService] Passenger not found for logging: $putnikId');
+        return false;
+      }
 
       // Odredi dan
       const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
@@ -663,7 +691,10 @@ class RegistrovaniPutnikService {
     if (vozacUuid == null || vozacUuid.isEmpty) return null;
 
     try {
-      final response = await _supabase.from('vozaci').select('ime').eq('id', vozacUuid).single();
+      final response = await _supabase.from('vozaci').select('ime').eq('id', vozacUuid).limit(1).maybeSingle();
+      if (response == null) {
+        return VozacMappingService.getVozacIme(vozacUuid);
+      }
       return response['ime'] as String?;
     } catch (e) {
       return VozacMappingService.getVozacIme(vozacUuid);
@@ -793,7 +824,8 @@ class RegistrovaniPutnikService {
         'datum': datum,
         'iznos': iznos,
       };
-    } catch (_) {
+    } catch (e) {
+      debugPrint('⚠️ Error yielding vozac info: $e');
       yield null;
     }
   }
@@ -812,7 +844,8 @@ class RegistrovaniPutnikService {
         ukupno += (row['iznos'] as num?)?.toDouble() ?? 0.0;
       }
       return ukupno;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('⚠️ Error calculating total payment: $e');
       return 0.0;
     }
   }

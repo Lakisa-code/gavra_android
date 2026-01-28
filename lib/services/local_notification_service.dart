@@ -1,6 +1,6 @@
 ﻿import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -137,8 +137,8 @@ class LocalNotificationService {
       // 📱 Pali ekran kada stigne notifikacija (za lock screen)
       try {
         await WakeLockService.wakeScreen(durationMs: 5000);
-      } catch (_) {
-        // WakeLock nije dostupan - nije kritično
+      } catch (e) {
+        debugPrint('⚠️ Error waking screen: $e');
       }
 
       await flutterLocalNotificationsPlugin.show(
@@ -683,8 +683,9 @@ class LocalNotificationService {
       (polasci[dan] as Map<String, dynamic>).remove('bc_ceka_od');
 
       // Dohvati tip korisnika za precizan log
-      final putnikData = await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).single();
-      final userType = putnikData['tip'] ?? 'Putnik';
+      final putnikData =
+          await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).limit(1).maybeSingle();
+      final userType = putnikData?['tip'] ?? 'Putnik';
 
       // Sačuvaj u bazu
       await supabase.from('registrovani_putnici').update({
@@ -702,7 +703,9 @@ class LocalNotificationService {
           tipPutnika: userType,
           detalji: 'Prihvaćen alternativni termin (Preko notifikacije)',
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ Error logging BC alternative: $e');
+      }
 
       // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
       await RealtimeNotificationService.sendNotificationToPutnik(
@@ -928,8 +931,9 @@ class LocalNotificationService {
       (polasci[dan] as Map<String, dynamic>).remove('vs_ceka_od');
 
       // Dohvati tip korisnika za precizan log
-      final putnikResult = await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).single();
-      final userType = putnikResult['tip'] ?? 'Putnik';
+      final putnikResult =
+          await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).limit(1).maybeSingle();
+      final userType = putnikResult?['tip'] ?? 'Putnik';
 
       // Sačuvaj u bazu
       await supabase.from('registrovani_putnici').update({
@@ -947,7 +951,9 @@ class LocalNotificationService {
           tipPutnika: userType,
           detalji: 'Prihvaćen alternativni termin (Preko notifikacije)',
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ Error logging VS alternative: $e');
+      }
 
       // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
       await RealtimeNotificationService.sendNotificationToPutnik(
@@ -1009,7 +1015,9 @@ class LocalNotificationService {
           tipPutnika: 'Putnik',
           status: 'Na listi čekanja (Waiting)',
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ Error logging VS waiting: $e');
+      }
 
       // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
       await RealtimeNotificationService.sendNotificationToPutnik(
@@ -1072,7 +1080,9 @@ class LocalNotificationService {
           tipPutnika: 'Putnik',
           status: 'Potvrđeno čekanje na mesto',
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ Error logging final VS waiting: $e');
+      }
 
       // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
       await RealtimeNotificationService.sendNotificationToPutnik(

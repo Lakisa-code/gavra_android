@@ -1193,30 +1193,99 @@ class _PutnikCardState extends State<PutnikCard> {
 
   void _handleTap() {
     _tapCount++;
-    _tapTimer?.cancel();
-    _tapTimer = Timer(const Duration(milliseconds: 300), () {
-      if (_tapCount == 3) {
-        // Triple tap - admin reset (ako je admin)
-        final bool isAdmin = widget.currentDriver == 'Bojan' || widget.currentDriver == 'Svetlana';
-        if (isAdmin) {
-          _handleBrisanje();
-        }
+
+    // Ako je ovo prvi tap, kreni timer
+    if (_tapCount == 1) {
+      _tapTimer?.cancel();
+      _tapTimer = Timer(const Duration(milliseconds: 500), () {
+        // Ako nismo dobili 3 tap-a za 500ms, resetuj
+        _tapCount = 0;
+      });
+    }
+
+    // Ako smo dobili 3 tap-a
+    if (_tapCount == 3) {
+      _tapTimer?.cancel();
+      _tapCount = 0; // Reset odmah
+
+      // Triple tap - admin reset (ako je admin)
+      final bool isAdmin = widget.currentDriver == 'Bojan' || widget.currentDriver == 'Svetlana';
+      if (isAdmin) {
+        _handleBrisanje();
+      } else {
+        debugPrint('🔒 Triple tap dostupan samo adminu (${widget.currentDriver})');
       }
-      _tapCount = 0;
-    });
+    }
   }
 
   void _startLongPressTimer() {
     _longPressTimer?.cancel();
     _isLongPressActive = true;
-    _longPressTimer = Timer(const Duration(seconds: 2), () {
-      if (_isLongPressActive && mounted) {
-        final bool isAdmin = widget.currentDriver == 'Bojan' || widget.currentDriver == 'Svetlana';
-        if (isAdmin) {
-          _showAdminPopup();
-        }
+
+    // ✅ 1.5 sekundi long press - POKUPLJENJE PUTNIKA
+    _longPressTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (_isLongPressActive && mounted && !_putnik.jeOtkazan && _putnik.vremePokupljenja == null) {
+        _handlePickup();
       }
     });
+  }
+
+  // ✅ NOVO: Metoda za pokupljenje putnika
+  Future<void> _handlePickup() async {
+    if (_globalProcessingLock || _isProcessing) return;
+
+    _globalProcessingLock = true;
+    _isProcessing = true;
+
+    try {
+      // 🔔 Haptic feedback - da vozač zna da je akcija registrovana
+      HapticService.mediumImpact();
+
+      // Označi putnika kao pokupljenog
+      await PutnikService().oznaciPokupljen(
+        _putnik.id!,
+        widget.currentDriver,
+        grad: _putnik.grad,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        _globalProcessingLock = false;
+
+        // 📳 JAČA VIBRACIJA - dve pulsa "bip-bip" kad se pokupi
+        await HapticService.putnikPokupljen();
+
+        // Pozovi callback za refresh parent widget-a
+        if (widget.onChanged != null) {
+          widget.onChanged!();
+        }
+
+        // Prikaži success poruku
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Pokupljen: ${_putnik.ime}'),
+            backgroundColor: Theme.of(context).colorScheme.successPrimary,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        _globalProcessingLock = false;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Greška pri pokupljenju: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _pozovi() async {

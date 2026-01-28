@@ -48,7 +48,7 @@ class RealtimeNotificationService {
         return false;
       }
     } catch (e) {
-      // 🔕 UKLONJENO: Fallback na lokalnu notifikaciju
+      debugPrint('🔴 [RealtimeNotification.sendPushNotification] Error: $e');
       return false;
     }
   }
@@ -79,7 +79,7 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
-      // Ignoriši greške pri slanju notifikacija adminima
+      debugPrint('🔴 [RealtimeNotification.sendNotificationToAdmins] Error: $e');
     }
   }
 
@@ -117,14 +117,15 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
+      debugPrint('🔴 [RealtimeNotification.sendNotificationToPutnik] Error: $e');
       try {
         await LocalNotificationService.showRealtimeNotification(
           title: title,
           body: body,
           payload: jsonEncode(data ?? {}),
         );
-      } catch (_) {
-        // Ignoriši greške pri fallback lokalnoj notifikaciji
+      } catch (fallbackError) {
+        debugPrint('🔴 [RealtimeNotification.sendNotificationToPutnik.fallback] Error: $fallbackError');
       }
       return false;
     }
@@ -166,6 +167,7 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
+      debugPrint('🔴 [RealtimeNotification.sendNotificationToAllDrivers] Error: $e');
       try {
         final currentDriver = await AuthManager.getCurrentDriver();
         final shouldShowLocal = excludeSender == null ||
@@ -179,8 +181,8 @@ class RealtimeNotificationService {
             payload: jsonEncode(data ?? {}),
           );
         }
-      } catch (_) {
-        // Ignoriši greške pri fallback lokalnoj notifikaciji
+      } catch (fallbackError) {
+        debugPrint('🔴 [RealtimeNotification.sendNotificationToAllDrivers.fallback] Error: $fallbackError');
       }
     }
   }
@@ -190,7 +192,7 @@ class RealtimeNotificationService {
     try {
       await _handleNotificationTap(messageData);
     } catch (e) {
-      // Ignoriši greške pri obradi inicijalnih poruka
+      debugPrint('🔴 [RealtimeNotification.handleInitialMessage] Error: $e');
     }
   }
 
@@ -218,16 +220,16 @@ class RealtimeNotificationService {
           body: body,
           payload: data.isNotEmpty ? jsonEncode(data) : 'firebase_foreground',
         );
-      } catch (_) {
-        // Ignoriši greške pri prikazivanju foreground notifikacija
+      } catch (e) {
+        debugPrint('🔴 [RealtimeNotification.listenForForegroundNotifications.onMessage] Error: $e');
       }
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       try {
         _handleNotificationTap(message.data);
-      } catch (_) {
-        // Ignoriši greške pri otvaranju notifikacija
+      } catch (e) {
+        debugPrint('🔴 [RealtimeNotification.listenForForegroundNotifications.onMessageOpenedApp] Error: $e');
       }
     });
   }
@@ -240,7 +242,7 @@ class RealtimeNotificationService {
       await messaging.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
       await messaging.subscribeToTopic('gavra_all_drivers');
     } catch (e) {
-      // Ignoriši greške pri pretplati na topike
+      debugPrint('🔴 [RealtimeNotification.subscribeToDriverTopics] Error: $e');
     }
   }
 
@@ -257,6 +259,7 @@ class RealtimeNotificationService {
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
+      debugPrint('🔴 [RealtimeNotification.requestNotificationPermissions] Error: $e');
       return false;
     }
   }
@@ -284,7 +287,7 @@ class RealtimeNotificationService {
         );
       }
     } catch (e) {
-      // Ignoriši greške pri obradi tap akcija
+      debugPrint('🔴 [RealtimeNotification._handleNotificationTap] Error: $e');
     }
   }
 }

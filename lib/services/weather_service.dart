@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Model za vremensku prognozu
@@ -193,7 +194,9 @@ class WeatherService {
                   precipStartTime = '${hourTime.hour.toString().padLeft(2, '0')}:00';
                   break;
                 }
-              } catch (_) {}
+              } catch (e) {
+                debugPrint('⚠️ Error fetching weather: $e');
+              }
             }
           }
         }

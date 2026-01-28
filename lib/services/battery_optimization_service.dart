@@ -130,7 +130,9 @@ class BatteryOptimizationService {
       );
       await intent.launch();
       return;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error launching Huawei startup manager: $e');
+    }
 
     // Try alternative Huawei activity
     try {
@@ -141,7 +143,9 @@ class BatteryOptimizationService {
       );
       await intent.launch();
       return;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error launching Huawei protect activity: $e');
+    }
 
     // Fallback to general battery settings
     await _openDefaultBatterySettings();
@@ -156,7 +160,9 @@ class BatteryOptimizationService {
       );
       await intent.launch();
       return;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error launching Xiaomi power keeper: $e');
+    }
 
     // Try Security app
     try {
@@ -167,7 +173,9 @@ class BatteryOptimizationService {
       );
       await intent.launch();
       return;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error launching Xiaomi security center: $e');
+    }
 
     await _openDefaultBatterySettings();
   }
@@ -181,7 +189,9 @@ class BatteryOptimizationService {
       );
       await intent.launch();
       return;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error launching Oppo safe center: $e');
+    }
 
     await _openDefaultBatterySettings();
   }
@@ -195,7 +205,9 @@ class BatteryOptimizationService {
       );
       await intent.launch();
       return;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error launching Vivo permission manager: $e');
+    }
 
     await _openDefaultBatterySettings();
   }
@@ -209,7 +221,9 @@ class BatteryOptimizationService {
       );
       await intent.launch();
       return;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error launching OnePlus security: $e');
+    }
 
     await _openDefaultBatterySettings();
   }
@@ -223,7 +237,9 @@ class BatteryOptimizationService {
       );
       await intent.launch();
       return;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error launching Samsung battery: $e');
+    }
 
     await _openDefaultBatterySettings();
   }

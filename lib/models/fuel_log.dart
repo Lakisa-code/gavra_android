@@ -31,7 +31,7 @@ class FuelLog {
       liters: (json['liters'] as num?)?.toDouble(),
       price: (json['price'] as num?)?.toDouble(),
       amount: (json['amount'] as num?)?.toDouble(),
-      vehicleId: json['vehicle_id'],
+      vehicleId: json['vozilo_uuid'],
       km: (json['km'] as num?)?.toDouble(),
       pumpMeter: (json['pump_meter'] as num?)?.toDouble(),
     );
@@ -58,7 +58,7 @@ class FuelLog {
       if (liters != null) 'liters': liters,
       if (price != null) 'price': price,
       if (amount != null) 'amount': amount,
-      if (vehicleId != null) 'vehicle_id': vehicleId,
+      if (vehicleId != null) 'vozilo_uuid': vehicleId,
       if (km != null) 'km': km,
       if (pumpMeter != null) 'pump_meter': pumpMeter,
     };

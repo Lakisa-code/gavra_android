@@ -265,31 +265,37 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
   @override
   void dispose() {
-    _imeController.dispose();
-    _tipSkoleController.dispose();
-    _brojTelefonaController.dispose();
-    _brojTelefona2Controller.dispose();
-    _brojTelefonaOcaController.dispose();
-    _brojTelefonaMajkeController.dispose();
-    _adresaBelaCrkvaController.dispose();
-    _adresaVrsacController.dispose();
-    _brojMestaController.dispose();
-    _cenaPoDanuController.dispose();
-    _emailController.dispose();
-    // 🧾 Dispose račun kontrolera
-    _firmaNazivController.dispose();
-    _firmaPibController.dispose();
-    _firmaMbController.dispose();
-    _firmaZiroController.dispose();
-    _firmaAdresaController.dispose();
+    try {
+      _imeController.dispose();
+      _tipSkoleController.dispose();
+      _brojTelefonaController.dispose();
+      _brojTelefona2Controller.dispose();
+      _brojTelefonaOcaController.dispose();
+      _brojTelefonaMajkeController.dispose();
+      _adresaBelaCrkvaController.dispose();
+      _adresaVrsacController.dispose();
+      _brojMestaController.dispose();
+      _cenaPoDanuController.dispose();
+      _emailController.dispose();
+      // 🧾 Dispose račun kontrolera
+      _firmaNazivController.dispose();
+      _firmaPibController.dispose();
+      _firmaMbController.dispose();
+      _firmaZiroController.dispose();
+      _firmaAdresaController.dispose();
 
-    for (final c in _polazakBcControllers.values) {
-      c.dispose();
+      for (final c in _polazakBcControllers.values) {
+        c.dispose();
+      }
+      for (final c in _polazakVsControllers.values) {
+        c.dispose();
+      }
+
+      super.dispose();
+    } catch (e) {
+      debugPrint('🔴 Error disposing RegistrovaniPutnikDialog: $e');
+      super.dispose();
     }
-    for (final c in _polazakVsControllers.values) {
-      c.dispose();
-    }
-    super.dispose();
   }
 
   @override
@@ -1570,7 +1576,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             'tip': _tip,
           },
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ Error logging user action: $e');
+      }
 
       if (mounted) {
         String errorMsg = e.toString();

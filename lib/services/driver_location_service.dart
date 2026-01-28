@@ -279,7 +279,7 @@ class DriverLocationService {
         _sendPositionToSupabase(position);
       },
       onError: (e) {
-        // GPS Stream error
+        debugPrint('🔴 [DriverLocationService] GPS stream error: $e');
       },
     );
   }

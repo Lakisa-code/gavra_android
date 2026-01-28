@@ -146,8 +146,8 @@ class AuthManager {
         try {
           // 🛡️ KORISTI CACHED TOKEN umesto initialize() da izbegneš beskonačnu petlju
           token = HuaweiPushService().cachedToken;
-        } catch (_) {
-          // HMS nije dostupan
+        } catch (e) {
+          debugPrint('⚠️ Error getting HMS cached token: $e');
         }
       }
 
@@ -193,13 +193,12 @@ class AuthManager {
 
   /// Centralizovan logout - briše sve session podatke
   static Future<void> logout(BuildContext context) async {
-    // 🔧 FIX: Koristi GLOBALNI navigatorKey umesto context-a
-    final navigator = navigatorKey.currentState;
-    if (navigator == null) return;
+    // 🔧 FIX: Koristi context direktno + fallback na navigatorKey
+    final navigator = Navigator.of(context);
 
     // Prikaži loading
     showDialog<void>(
-      context: navigator.context,
+      context: context,
       barrierDismissible: false,
       builder: (ctx) => const Center(
         child: CircularProgressIndicator(),
@@ -220,7 +219,9 @@ class AuthManager {
       // 3. Očisti Firebase session (ako postoji)
       try {
         await FirebaseService.clearCurrentDriver();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ Error clearing Firebase session: $e');
+      }
 
       // 4. Zatvori loading i navigiraj
       navigator.pop();
@@ -228,11 +229,14 @@ class AuthManager {
         MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
         (route) => false,
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('⚠️ Error during logout: $e');
       // Logout greška - svejedno navigiraj na welcome
       try {
         navigator.pop(); // Zatvori loading
-      } catch (_) {}
+      } catch (e2) {
+        debugPrint('⚠️ Error closing loading dialog: $e2');
+      }
       navigator.pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
         (route) => false,

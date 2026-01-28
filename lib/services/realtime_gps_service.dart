@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'permission_service.dart';
@@ -35,14 +36,19 @@ class RealtimeGpsService {
       // Pokreni tracking
       _positionSubscription = Geolocator.getPositionStream(
         locationSettings: androidSettings,
-      ).listen((Position position) {
-        _positionController.add(position);
+      ).listen(
+        (Position position) {
+          _positionController.add(position);
 
-        // Kalkuliši brzinu (km/h)
-        final speedMps = position.speed; // meters per second
-        final speedKmh = speedMps * 3.6; // convert to km/h
-        _speedController.add(speedKmh);
-      });
+          // Kalkuliši brzinu (km/h)
+          final speedMps = position.speed; // meters per second
+          final speedKmh = speedMps * 3.6; // convert to km/h
+          _speedController.add(speedKmh);
+        },
+        onError: (error) {
+          debugPrint('🔴 [RealtimeGpsService] Position stream error: $error');
+        },
+      );
     } catch (e) {
       rethrow;
     }

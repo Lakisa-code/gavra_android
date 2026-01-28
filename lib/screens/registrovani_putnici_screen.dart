@@ -10,17 +10,17 @@ import '../models/registrovani_putnik.dart';
 import '../services/admin_audit_service.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/cena_obracun_service.dart';
-import '../services/geocoding_service.dart'; // 🌍 Za geocoding adresa
-import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
+import '../services/geocoding_service.dart';
+import '../services/permission_service.dart';
 import '../services/registrovani_putnik_service.dart';
-import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
+import '../services/timer_manager.dart';
 import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/pin_dialog.dart';
 import '../widgets/registrovani_putnik_dialog.dart';
 
-// 🔄 HELPER EXTENSION za Set poređenje
+// 🔌 HELPER EXTENSION za Set poredenje
 extension SetExtensions<T> on Set<T> {
   bool isEqualTo(Set<T> other) {
     if (length != other.length) return false;
@@ -40,20 +40,20 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni'
   String _paymentFilter = 'svi'; // 'svi', 'platili', 'nisu_platili'
 
-  // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon čuvanja
+  // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon cuvanja
   int _streamRefreshKey = 0;
 
   // Novi servis instance
   final RegistrovaniPutnikService _registrovaniPutnikService = RegistrovaniPutnikService();
 
-  // 🔄 OPTIMIZACIJA: Connection resilience
+  // ?? OPTIMIZACIJA: Connection resilience
   StreamSubscription<dynamic>? _connectionSubscription;
   bool _isConnected = true;
 
-  // 🔄 REALTIME MONITORING STATE (V3.0 Clean Architecture) - STANDARDIZED TIMERS
+  // ⚡ REALTIME MONITORING STATE (V3.0 Clean Architecture) - STANDARDIZED TIMERS
   late ValueNotifier<bool> _isRealtimeHealthy;
   late ValueNotifier<bool> _registrovaniPutniciStreamHealthy;
-  // ❌ UKLONJENO: Timer? _monitoringTimer; - koristi TimerManager!
+  // ? UKLONJENO: Timer? _monitoringTimer; - koristi TimerManager!
   late ValueNotifier<String> _realtimeHealthStatus;
   late ValueNotifier<bool> _isNetworkConnected;
 
@@ -86,37 +86,38 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   // Services
   final List<StreamSubscription> _subscriptions = [];
 
-  // 💰 PLAĆANJE STATE
+  // 💳 PLACANJE STATE
   Map<String, double> _stvarnaPlacanja = {};
   DateTime? _lastPaymentUpdate;
   Set<String> _lastPutnikIds = {};
+  Timer? _paymentUpdateDebounceTimer; // ⏱️ DEBOUNCE TIMER za payment updates
 
   // 📍 CACHE ZA NAZIVE ADRESA - batch loaded
   final Map<String, String> _adreseNazivi = {};
 
-  // 💰 CACHE ZA PLAĆENE MESECE - Set meseci (format: "mesec-godina") za svakog putnika
+  // 📅 CACHE ZA PLACENE MESECE - Set meseci (format: "mesec-godina") za svakog putnika
   final Map<String, Set<String>> _placeniMeseci = {};
 
-  // 🔄 CACHE za broj radnika da se izbegnu višestruki StreamBuilder-i
+  // ?? CACHE za broj radnika da se izbegnu vi�estruki StreamBuilder-i
   int _cachedBrojRadnika = 0;
   int _cachedBrojUcenika = 0;
   int _cachedBrojDnevnih = 0;
 
-  // 🔄 OPTIMIZACIJA: Update cache umesto StreamBuilder-a
+  // ⚙️ OPTIMIZACIJA: Update cache umesto StreamBuilder-a
   void _updateCacheValues(List<RegistrovaniPutnik> putnici) {
     final noviRadnici = putnici
         .where(
-          (p) => p.tip == 'radnik' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godišnje',
+          (p) => p.tip == 'radnik' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godi�nje',
         )
         .length;
     final noviUcenici = putnici
         .where(
-          (p) => p.tip == 'ucenik' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godišnje',
+          (p) => p.tip == 'ucenik' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godi�nje',
         )
         .length;
     final noviDnevni = putnici
         .where(
-          (p) => p.tip == 'dnevni' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godišnje',
+          (p) => p.tip == 'dnevni' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godi�nje',
         )
         .length;
 
@@ -159,29 +160,47 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     }
   }
 
-  // 🔄 OPTIMIZACIJA: Inicijalizacija debounced search i error handling
+  // ⚙️ OPTIMIZACIJA: Inicijalizacija debounced search i error handling
   void _initializeOptimizations() {
     // Listen za search promene - rebuild UI
     _searchController.addListener(() {
       if (mounted) setState(() {});
     });
 
-    // Connection monitoring (placeholder - možete proširiti)
-    _isConnected = true;
-    _connectionSubscription = null; // Initialize to null for now
+    // 🔌 Connection monitoring - prati konekciju ka serveru
+    _setupConnectionMonitoring();
 
-    // 🔄 V3.0 REALTIME MONITORING SETUP (Clean Architecture)
+    // ⚡ V3.0 REALTIME MONITORING SETUP (Clean Architecture)
     _setupRealtimeMonitoring();
   }
 
-  // 🔄 V3.0 REALTIME MONITORING SETUP (Backend only - no visual heartbeat)
+  // 🔌 PRAVI CONNECTION MONITORING - Periodiski ping server
+  void _setupConnectionMonitoring() {
+    // Periodiski ping server da proveri konekciju (svakih 30 sekundi)
+    _connectionSubscription = Stream.periodic(const Duration(seconds: 30)).listen((_) async {
+      try {
+        // Poku�aj da ucita� jedan registrovani putnik - brz test konekcije
+        await supabase.from('registrovani_putnici').select().limit(1).maybeSingle();
+        if (_isConnected == false && mounted) {
+          setState(() => _isConnected = true);
+        }
+      } catch (e) {
+        // Nema konekcije
+        if (_isConnected == true && mounted) {
+          setState(() => _isConnected = false);
+        }
+      }
+    });
+  }
+
+  // ⚡ V3.0 REALTIME MONITORING SETUP (Backend only - no visual heartbeat)
   void _setupRealtimeMonitoring() {
     _isRealtimeHealthy = ValueNotifier(true);
     _registrovaniPutniciStreamHealthy = ValueNotifier(true);
     _realtimeHealthStatus = ValueNotifier('healthy');
     _isNetworkConnected = ValueNotifier(_isConnected);
 
-    // 🔄 TIMER MEMORY LEAK FIX: Koristi TimerManager umesto direktnog Timer.periodic
+    // 🔒 TIMER MEMORY LEAK FIX: Koristi TimerManager umesto direktnog Timer.periodic
     TimerManager.createTimer(
       'registrovani_putnici_monitoring',
       const Duration(seconds: 5),
@@ -190,13 +209,32 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  // 💰 UČITAJ STVARNA PLAĆANJA iz voznje_log
+  // 🚀 BATCH UCITAVANJE - sve tri operacije odjednom za optimalne performanse
+  /// Učitaj stvarna plaćanja, adrese i plaćene mesece odjednom korišćenjem Future.wait()
+  Future<void> _ucitajSvePodatke(List<RegistrovaniPutnik> putnici) async {
+    if (putnici.isEmpty) return;
+
+    try {
+      // Pokreni sve tri operacije paralelno
+      await Future.wait([
+        _ucitajStvarnaPlacanja(putnici),
+        _ucitajAdreseZaPutnike(putnici),
+        _ucitajPlaceneMeseceZaSvePutnike(putnici),
+      ]);
+    } catch (e) {
+      debugPrint('🔴 [RegistrovaniPutnici._ucitajSvePodatke] Error: $e');
+    }
+  }
+
+  // 💰 UCITAJ STVARNA PLACANJA iz voznje_log
   Future<void> _ucitajStvarnaPlacanja(List<RegistrovaniPutnik> putnici) async {
     try {
-      // 🔧 FIX: Učitaj STVARNE uplate iz voznje_log tabele
+      if (putnici.isEmpty) return; // ? Early exit - nema �ta ucitavati
+
+      // ?? FIX: Ucitaj STVARNE uplate iz voznje_log tabele
       final Map<String, double> placanja = {};
 
-      // Dohvati poslednje plaćanje za svakog putnika
+      // Dohvati poslednje placanje za svakog putnika
       for (final putnik in putnici) {
         try {
           final response = await supabase
@@ -219,13 +257,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         }
       }
       if (mounted) {
-        // 🔄 ANTI-REBUILD OPTIMIZATION: Samo update ako su se podaci stvarno promenili
+        // ?? ANTI-REBUILD OPTIMIZATION: Samo update ako su se podaci stvarno promenili
         final existingKeys = _stvarnaPlacanja.keys.toSet();
         final newKeys = placanja.keys.toSet();
 
         bool hasChanges = !existingKeys.isEqualTo(newKeys);
         if (!hasChanges) {
-          // Proveri vrednosti za postojeće ključeve
+          // Proveri vrednosti za postojece kljuceve
           for (final key in existingKeys) {
             if (_stvarnaPlacanja[key] != placanja[key]) {
               hasChanges = true;
@@ -236,22 +274,24 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
         if (hasChanges) {
           _stvarnaPlacanja = placanja;
-          // 🚀 SAMO JEDNOM setState() umesto kontinuiranih rebuild-a
+          // ?? SAMO JEDNOM setState() umesto kontinuiranih rebuild-a
           if (mounted) setState(() {});
         }
       }
     } catch (e) {
-      // Greška u učitavanju stvarnih plaćanja
+      // Gre�ka u ucitavanju stvarnih placanja
     }
   }
 
-  // 💰 UČITAJ PLAĆENE MESECE ZA SVE PUTNIKE - batch load za filter
+  // ?? UCITAJ PLACENE MESECE ZA SVE PUTNIKE - batch load za filter
   Future<void> _ucitajPlaceneMeseceZaSvePutnike(List<RegistrovaniPutnik> putnici) async {
     try {
+      if (putnici.isEmpty) return; // ? Early exit - nema �ta ucitavati
+
       final now = DateTime.now();
       final startOfYear = DateTime(now.year, 1, 1);
 
-      // Dohvati sve uplate za tekuću godinu
+      // Dohvati sve uplate za tekucu godinu
       final response = await supabase
           .from('voznje_log')
           .select('putnik_id, placeni_mesec, placena_godina')
@@ -279,11 +319,11 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         });
       }
     } catch (e) {
-      // Greška u učitavanju plaćenih meseci
+      // Gre�ka u ucitavanju placenih meseci
     }
   }
 
-  // 💰 UČITAJ PLAĆENE MESECE za putnika - sva plaćanja sa placeni_mesec i placena_godina
+  // ?? UCITAJ PLACENE MESECE za putnika - sva placanja sa placeni_mesec i placena_godina
   Future<void> _ucitajPlaceneMesece(RegistrovaniPutnik putnik) async {
     try {
       final svaPlacanja = await _registrovaniPutnikService.dohvatiPlacanjaZaPutnika(putnik.putnikIme);
@@ -303,13 +343,15 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         });
       }
     } catch (e) {
-      // Greška u učitavanju plaćenih meseci
+      // Gre�ka u ucitavanju placenih meseci
     }
   }
 
-  /// 📍 BATCH UČITAVANJE ADRESA - učitaj sve adrese odjednom za performanse
+  /// ?? BATCH UCITAVANJE ADRESA - ucitaj sve adrese odjednom za performanse
   Future<void> _ucitajAdreseZaPutnike(List<RegistrovaniPutnik> putnici) async {
     try {
+      if (putnici.isEmpty) return; // ? Early exit - nema �ta ucitavati
+
       // Sakupi sve UUID-ove adresa
       final Set<String> adresaIds = {};
       for (final p in putnici) {
@@ -323,7 +365,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
       if (adresaIds.isEmpty) return;
 
-      // Batch učitavanje svih adresa
+      // Batch ucitavanje svih adresa
       final adrese = await AdresaSupabaseService.getAdreseByUuids(adresaIds.toList());
 
       // Popuni mapu naziva
@@ -362,10 +404,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
   @override
   void dispose() {
-    // � CRITICAL TIMER MEMORY LEAK FIX - KORISTI TIMER MANAGER!
+    // Cleanup debounce timer
+    _paymentUpdateDebounceTimer?.cancel();
+
+    // CRITICAL TIMER MEMORY LEAK FIX - KORISTI TIMER MANAGER!
     TimerManager.cancelTimer('registrovani_putnici_monitoring');
 
-    // 🔄 SAFE DISPOSAL ValueNotifier-a
+    // SAFE DISPOSAL ValueNotifier-a
     try {
       if (mounted) {
         _isRealtimeHealthy.dispose();
@@ -377,14 +422,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       // Warning disposing ValueNotifiers
     }
 
-    // 🔄 OPTIMIZACIJA: Cleanup resources
+    // OPTIMIZACIJA: Cleanup resources
     try {
       _connectionSubscription?.cancel();
     } catch (e) {
       // Warning disposing streams
     }
 
-    // 🧹 COMPREHENSIVE TEXTCONTROLLER CLEANUP
+    // COMPREHENSIVE TEXTCONTROLLER CLEANUP
     try {
       _searchController.dispose();
       _imeController.dispose();
@@ -395,7 +440,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       _adresaBelaCrkvaController.dispose();
       _adresaVrsacController.dispose();
 
-      // 🔄 KRITIČNI FIX: Dispose ALL time controllers
+      // CRITICAL FIX: Dispose ALL time controllers
       for (final controller in _vremenaBcControllers.values) {
         controller.dispose();
       }
@@ -419,8 +464,8 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     super.dispose();
   }
 
-  /// 🚀 DIREKTNO FILTRIRANJE - dodaje search i filterType na već filtrirane podatke iz streama
-  /// Stream već vraća aktivne putnike sa validnim statusom, ovde samo dodajemo dinamičke filtere
+  /// ?? DIREKTNO FILTRIRANJE - dodaje search i filterType na vec filtrirane podatke iz streama
+  /// Stream vec vraca aktivne putnike sa validnim statusom, ovde samo dodajemo dinamicke filtere
   List<RegistrovaniPutnik> _filterPutniciDirect(
     List<RegistrovaniPutnik> putnici,
     String searchTerm,
@@ -433,14 +478,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       filtered = filtered.where((p) => p.tip == filterType).toList();
     }
 
-    // Filter po plaćanju (samo za mesečne - radnik i ucenik)
+    // Filter po placanju (samo za mesecne - radnik i ucenik)
     if (_paymentFilter != 'svi') {
       final now = DateTime.now();
       final currentMonth = now.month;
       final currentYear = now.year;
 
       filtered = filtered.where((p) {
-        // Preskoči dnevne putnike - oni ne plaćaju mesečno
+        // Preskoci dnevne putnike - oni ne placaju mesecno
         if (p.tip == 'dnevni') {
           return false;
         }
@@ -466,7 +511,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       }).toList();
     }
 
-    // ⚔️ BINARYBITCH SORTING BLADE: A → Ž (Serbian alphabet)
+    // ?? BINARYBITCH SORTING BLADE: A ? � (Serbian alphabet)
     filtered.sort((a, b) => a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase()));
 
     return filtered;
@@ -493,7 +538,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
-              // No boxShadow — keep AppBar fully transparent and only glassBorder
+              // No boxShadow � keep AppBar fully transparent and only glassBorder
             ),
             child: SafeArea(
               child: Padding(
@@ -504,7 +549,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     const Expanded(
                       child: SizedBox.shrink(),
                     ),
-                    // Filter za plaćanja
+                    // Filter za placanja
                     IconButton(
                       icon: Icon(
                         _paymentFilter == 'svi'
@@ -602,7 +647,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                         ),
                       ],
                     ),
-                    // Filter za učenike sa brojem
+                    // Filter za ucenike sa brojem
                     Stack(
                       children: [
                         IconButton(
@@ -623,7 +668,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                               _selectedFilter = newFilter;
                             });
                           },
-                          tooltip: 'Filtriraj učenike',
+                          tooltip: 'Filtriraj ucenike',
                         ),
                         Positioned(
                           right: 0,
@@ -753,7 +798,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         ),
         body: Column(
           children: [
-            // 🔍 SEARCH BAR
+            // ?? SEARCH BAR
             Container(
               padding: const EdgeInsets.all(16),
               child: Container(
@@ -776,7 +821,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   controller: _searchController,
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
-                    hintText: 'Pretraži putnike...',
+                    hintText: 'Pretra�i putnike...',
                     hintStyle: TextStyle(color: Colors.grey[600]),
                     prefixIcon: Icon(
                       Icons.search,
@@ -805,10 +850,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
             const SizedBox(height: 16),
 
-            // 📋 LISTA PUTNIKA - direktan Supabase realtime stream
+            // ?? LISTA PUTNIKA - direktan Supabase realtime stream
             Expanded(
               child: StreamBuilder<List<RegistrovaniPutnik>>(
-                key: ValueKey(_streamRefreshKey), // 🔄 Forsira novi stream nakon čuvanja
+                // ? REMOVED: ValueKey - ispravljeno memory leak problem sa stream lifecycle-om
                 stream: RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
@@ -821,7 +866,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     // Heartbeat indicator shows connection status
                     return const Center(
                       child: Text(
-                        'Greška pri učitavanju mesečnih putnika',
+                        'Gre�ka pri ucitavanju mesecnih putnika',
                         style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                     );
@@ -836,38 +881,37 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     _selectedFilter,
                   );
 
-                  // � UPDATE CACHE VALUES za brojače (zamenjuje dodatne StreamBuilder-e)
+                  // ? UPDATE CACHE VALUES za brojace (zamenjuje dodatne StreamBuilder-e)
                   if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       _updateCacheValues(snapshot.data!);
                     });
                   }
 
-                  // �💰 UČITAJ STVARNA PLAĆANJA kada se dobiju novi podaci - DEBOUNCED
+                  // ??? UCITAJ STVARNA PLACANJA kada se dobiju novi podaci - DEBOUNCED
                   if (filteredPutnici.isNotEmpty) {
                     final currentIds = filteredPutnici.map((p) => p.id).toSet();
-                    final now = DateTime.now();
 
-                    // 🔄 DEBOUNCE: Pozovi samo ako su se putnici promenili ili je prošlo dovoljno vremena
-                    bool shouldUpdate = false;
-                    if (_lastPaymentUpdate == null ||
-                        !_lastPutnikIds.isEqualTo(currentIds) ||
-                        now.difference(_lastPaymentUpdate!).inSeconds > 10) {
-                      shouldUpdate = true;
-                      _lastPaymentUpdate = now;
+                    // ?? PRAVI DEBOUNCE: Ako se putnici promenili, resetuj timer
+                    if (!_lastPutnikIds.isEqualTo(currentIds)) {
                       _lastPutnikIds = currentIds;
-                    }
 
-                    if (shouldUpdate) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _ucitajStvarnaPlacanja(filteredPutnici);
-                        _ucitajAdreseZaPutnike(filteredPutnici); // 📍 Batch load adresa
-                        _ucitajPlaceneMeseceZaSvePutnike(filteredPutnici); // 💰 Batch load plaćenih meseci
+                      // Otka�i stari timer ako postoji
+                      _paymentUpdateDebounceTimer?.cancel();
+
+                      // Kreiraj novi timer - cekaj 2 sekunde pre nego �to ucita� podatke
+                      _paymentUpdateDebounceTimer = Timer(const Duration(seconds: 2), () {
+                        if (mounted) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            // 🚀 BATCH UCITAVANJE - sve tri operacije odjednom za performanse
+                            _ucitajSvePodatke(filteredPutnici);
+                          });
+                        }
                       });
                     }
                   }
 
-                  // Prikaži samo prvih 50 rezultata
+                  // Prika�i samo prvih 50 rezultata
                   final prikazaniPutnici =
                       filteredPutnici.length > 50 ? filteredPutnici.sublist(0, 50) : filteredPutnici;
 
@@ -883,7 +927,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _searchController.text.isNotEmpty ? 'Nema rezultata pretrage' : 'Nema mesečnih putnika',
+                            _searchController.text.isNotEmpty ? 'Nema rezultata pretrage' : 'Nema mesecnih putnika',
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey.shade600,
@@ -892,7 +936,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                           if (_searchController.text.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Text(
-                              'Pokušajte sa drugim terminom',
+                              'Poku�ajte sa drugim terminom',
                               style: TextStyle(color: Colors.grey.shade500),
                             ),
                           ],
@@ -902,6 +946,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   }
 
                   return ListView.builder(
+                    key: ValueKey(prikazaniPutnici.length),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: prikazaniPutnici.length,
                     physics: const AlwaysScrollableScrollPhysics(
@@ -910,6 +955,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     itemBuilder: (context, index) {
                       final putnik = prikazaniPutnici[index];
                       return TweenAnimationBuilder<double>(
+                        key: ValueKey(putnik.id),
                         duration: Duration(milliseconds: 300 + (index * 50)),
                         tween: Tween(begin: 0.0, end: 1.0),
                         curve: Curves.easeOutCubic,
@@ -937,7 +983,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
   Widget _buildPutnikCard(RegistrovaniPutnik putnik, int redniBroj) {
     final bool bolovanje = putnik.status == 'bolovanje';
-    // Sačuvaj sva vremena po danima (pon -> pet) i prikaži ih na kartici.
+    // Sacuvaj sva vremena po danima (pon -> pet) i prika�i ih na kartici.
     // Prethodna logika je prikazivala samo PRVI dan koji je imao vreme.
     // Sada prikazujemo sve dane koji imaju bar jedan polazak (BC i/ili VS)
     final List<String> _daniOrder = ['pon', 'uto', 'sre', 'cet', 'pet'];
@@ -970,7 +1016,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 📋 HEADER - Ime, broj i aktivnost switch
+              // ?? HEADER - Ime, broj i aktivnost switch
               Row(
                 children: [
                   // Redni broj i ime
@@ -1036,7 +1082,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
               const SizedBox(height: 12),
 
-              // 📝 OSNOVNE INFORMACIJE - tip, telefon, škola, statistike u jednom redu
+              // ?? OSNOVNE INFORMACIJE - tip, telefon, �kola, statistike u jednom redu
               Row(
                 children: [
                   // Tip putnika
@@ -1074,7 +1120,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     ),
                   ),
 
-                  // Telefon - prikaže broj dostupnih kontakata
+                  // Telefon - prika�e broj dostupnih kontakata
                   if (putnik.brojTelefona != null || putnik.brojTelefonaOca != null || putnik.brojTelefonaMajke != null)
                     Expanded(
                       flex: 3,
@@ -1112,7 +1158,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       ),
                     ),
 
-                  // Tip škole/ustanova (ako postoji)
+                  // Tip �kole/ustanova (ako postoji)
                   if (putnik.tipSkole != null)
                     Expanded(
                       flex: 3,
@@ -1140,7 +1186,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 ],
               ),
 
-              // 📍 ADRESE - BC i VS
+              // ?? ADRESE - BC i VS
               if (putnik.adresaBelaCrkvaId != null || putnik.adresaVrsacId != null)
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -1168,7 +1214,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   ),
                 ),
 
-              // 🕐 RADNO VREME - prikaži polazak vremena ako je definisan bar jedan dan
+              // ?? RADNO VREME - prika�i polazak vremena ako je definisan bar jedan dan
               if (_daniOrder
                   .any((d) => putnik.getPolazakBelaCrkvaZaDan(d) != null || putnik.getPolazakVrsacZaDan(d) != null))
                 Container(
@@ -1196,19 +1242,19 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                           }
 
                           final label =
-                              {'pon': 'Pon', 'uto': 'Uto', 'sre': 'Sre', 'cet': 'Čet', 'pet': 'Pet'}[dan] ?? dan;
+                              {'pon': 'Pon', 'uto': 'Uto', 'sre': 'Sre', 'cet': 'Cet', 'pet': 'Pet'}[dan] ?? dan;
 
-                          // Formatiranje: "Pon: 13→6" umesto dugačkog teksta
+                          // Formatiranje: "Pon: 13?6" umesto dugackog teksta
                           String timeText = '';
                           if (bc != null && vs != null) {
-                            // Oba smera - skraćeno
+                            // Oba smera - skraceno
                             final bcShort = bc.replaceAll(':00', '');
                             final vsShort = vs.replaceAll(':00', '');
-                            timeText = '$bcShort→$vsShort';
+                            timeText = '$bcShort?$vsShort';
                           } else if (bc != null) {
-                            timeText = '🅱️${bc.replaceAll(':00', '')}';
+                            timeText = '???${bc.replaceAll(':00', '')}';
                           } else if (vs != null) {
-                            timeText = '🅥${vs.replaceAll(':00', '')}';
+                            timeText = '??${vs.replaceAll(':00', '')}';
                           }
 
                           return Container(
@@ -1256,10 +1302,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   ),
                 ),
 
-              // �💰 PLAĆANJE I STATISTIKE - jednaki elementi u redu
+              // ??? PLACANJE I STATISTIKE - jednaki elementi u redu
               Row(
                 children: [
-                  // 💰 DUGME ZA PLAĆANJE
+                  // ?? DUGME ZA PLACANJE
                   Expanded(
                     child: _buildCompactActionButton(
                       onPressed: () => _prikaziPlacanje(putnik),
@@ -1274,7 +1320,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
                   const SizedBox(width: 6),
 
-                  // 📊 DUGME ZA DETALJE
+                  // ?? DUGME ZA DETALJE
                   Expanded(
                     child: _buildCompactActionButton(
                       onPressed: () => _prikaziDetaljneStatistike(putnik),
@@ -1286,7 +1332,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
                   const SizedBox(width: 6),
 
-                  // 📈 BROJAČ PUTOVANJA
+                  // ?? BROJAC PUTOVANJA
                   Expanded(
                     child: Container(
                       height: 28,
@@ -1328,7 +1374,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
                   const SizedBox(width: 6),
 
-                  // ❌ BROJAČ OTKAZIVANJA
+                  // ? BROJAC OTKAZIVANJA
                   Expanded(
                     child: Container(
                       height: 28,
@@ -1372,7 +1418,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
               const SizedBox(height: 8),
 
-              // 🎛️ ACTION BUTTONS - samo najvažnije
+              // ??? ACTION BUTTONS - samo najva�nije
               Row(
                 children: [
                   // Pozovi (ako ima bilo koji telefon)
@@ -1402,7 +1448,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
                   const SizedBox(width: 6),
 
-                  // 🔐 PIN
+                  // ?? PIN
                   Expanded(
                     child: _buildCompactActionButton(
                       onPressed: () => _showPinDialog(putnik),
@@ -1414,12 +1460,12 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
                   const SizedBox(width: 6),
 
-                  // Obriši
+                  // Obri�i
                   Expanded(
                     child: _buildCompactActionButton(
                       onPressed: () => _obrisiPutnika(putnik),
                       icon: Icons.delete_outline,
-                      label: 'Obriši',
+                      label: 'Obri�i',
                       color: Colors.red,
                     ),
                   ),
@@ -1495,10 +1541,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     double? lat = adresa.koordinate?['lat'];
     double? lng = adresa.koordinate?['lng'];
 
-    // 🎯 Odredi grad iz labela (BC -> Bela Crkva, VS -> Vršac)
-    final grad = gradLabel.toUpperCase() == 'BC' ? 'Bela Crkva' : 'Vršac';
+    // ?? Odredi grad iz labela (BC -> Bela Crkva, VS -> Vr�ac)
+    final grad = gradLabel.toUpperCase() == 'BC' ? 'Bela Crkva' : 'Vr�ac';
 
-    // 🎯 Ako nema koordinate, pokušaj geocoding
+    // ?? Ako nema koordinate, poku�aj geocoding
     if (lat == null || lng == null) {
       try {
         final coordsString = await GeocodingService.getKoordinateZaAdresu(
@@ -1510,7 +1556,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
           if (parts.length == 2) {
             lat = double.tryParse(parts[0]);
             lng = double.tryParse(parts[1]);
-            // Sačuvaj koordinate za buduće korišćenje
+            // Sacuvaj koordinate za buduce kori�cenje
             if (lat != null && lng != null) {
               await AdresaSupabaseService.updateKoordinate(
                 adresaId,
@@ -1521,16 +1567,16 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
           }
         }
       } catch (e) {
-        // Geocoding greška
+        // Geocoding gre�ka
       }
     }
 
-    // Ako i dalje nema koordinata, prikaži poruku
+    // Ako i dalje nema koordinata, prika�i poruku
     if (lat == null || lng == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Adresa "${adresa.naziv}" nema koordinate. Pokušajte ručno pretražiti.'),
+            content: Text('Adresa "${adresa.naziv}" nema koordinate. Poku�ajte rucno pretra�iti.'),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -1538,7 +1584,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       return;
     }
 
-    // HERE WeGo navigacija - besplatno, radi na svim uređajima
+    // HERE WeGo navigacija - besplatno, radi na svim uredajima
     final hereWeGoUrl = 'https://share.here.com/r/$lat,$lng';
     final uri = Uri.parse(hereWeGoUrl);
 
@@ -1611,7 +1657,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  void _toggleAktivnost(RegistrovaniPutnik putnik) async {
+  Future<void> _toggleAktivnost(RegistrovaniPutnik putnik) async {
     final success = await _registrovaniPutnikService.toggleAktivnost(putnik.id, !putnik.aktivan);
 
     if (success && mounted) {
@@ -1626,7 +1672,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Greška pri promeni statusa'),
+          content: Text('Gre�ka pri promeni statusa'),
           backgroundColor: Colors.red,
         ),
       );
@@ -1639,7 +1685,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       builder: (context) => RegistrovaniPutnikDialog(
         existingPutnik: putnik,
         onSaved: () {
-          // 🔄 REFRESH: Inkrementiraj key da forsira novi stream sa svežim podacima
+          // ?? REFRESH: Inkrementiraj key da forsira novi stream sa sve�im podacima
           if (mounted) {
             setState(() {
               _streamRefreshKey++;
@@ -1650,7 +1696,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  /// 🔐 Prikaži PIN dijalog za putnika
+  /// ?? Prika�i PIN dijalog za putnika
   void _showPinDialog(RegistrovaniPutnik putnik) {
     showDialog(
       context: context,
@@ -1676,10 +1722,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  /// 🕐 SAČUVAJ VREME POLASKA U ISTORIJU ZA AUTOCOMPLETEthere to reduce duplication)
+  /// ?? SACUVAJ VREME POLASKA U ISTORIJU ZA AUTOCOMPLETEthere to reduce duplication)
 
   void _obrisiPutnika(RegistrovaniPutnik putnik) async {
-    // Pokaži potvrdu za brisanje
+    // Poka�i potvrdu za brisanje
     final potvrda = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1689,7 +1735,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Da li ste sigurni da želite da obrišete putnika "${putnik.putnikIme}"?',
+              'Da li ste sigurni da �elite da obri�ete putnika "${putnik.putnikIme}"?',
             ),
             const SizedBox(height: 16),
             Container(
@@ -1713,16 +1759,16 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'Važne informacije:',
+                        'Va�ne informacije:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('• Putnik će biti označen kao obrisan'),
-                  const Text('• Postojeća istorija putovanja se čuva'),
-                  const Text('• Istorija vožnji ostaje u voznje_log'),
-                  const Text('• Možete kasnije ponovo aktivirati putnika'),
+                  const Text('� Putnik ce biti oznacen kao obrisan'),
+                  const Text('� Postojeca istorija putovanja se cuva'),
+                  const Text('� Istorija vo�nji ostaje u voznje_log'),
+                  const Text('� Mo�ete kasnije ponovo aktivirati putnika'),
                 ],
               ),
             ),
@@ -1731,12 +1777,12 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Otkaži'),
+            child: const Text('Otka�i'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Obriši', style: TextStyle(color: Colors.white)),
+            child: const Text('Obri�i', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1748,7 +1794,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
         if (success) {
           // logic simplified slightly if not needing immediate mount check
-          // 🛡️ AUDIT LOG
+          // ??? AUDIT LOG
           final currentUser = supabase.auth.currentUser;
           await AdminAuditService.logAction(
             adminName: currentUser?.email ?? 'Unknown Admin',
@@ -1761,14 +1807,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${putnik.putnikIme} je uspešno obrisan'),
+              content: Text('${putnik.putnikIme} je uspe�no obrisan'),
               backgroundColor: Colors.green,
             ),
           );
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Greška pri brisanju putnika'),
+              content: Text('Gre�ka pri brisanju putnika'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1777,7 +1823,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Greška: $e'),
+              content: Text('Gre�ka: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1801,7 +1847,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return brojKontakata;
   }
 
-  // 👨‍👩‍👧‍👦 NOVA FUNKCIJA - Prikazuje sve dostupne kontakte
+  // ??????????? NOVA FUNKCIJA - Prikazuje sve dostupne kontakte
   Future<void> _pokaziKontaktOpcije(RegistrovaniPutnik putnik) async {
     final List<Widget> opcije = [];
 
@@ -1881,7 +1927,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
               const SizedBox(height: 10),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Otkaži'),
+                child: const Text('Otka�i'),
               ),
             ],
           ),
@@ -1892,13 +1938,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
   Future<void> _pozovi(String brojTelefona) async {
     try {
-      // 📞 HUAWEI KOMPATIBILNO - koristi Huawei specifičnu logiku (konzistentno sa putnik_card)
+      // ?? HUAWEI KOMPATIBILNO - koristi Huawei specificnu logiku (konzistentno sa putnik_card)
       final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
       if (!hasPermission) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Dozvola za pozive je potrebna'),
+              content: Text('? Dozvola za pozive je potrebna'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1913,7 +1959,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Nije moguće pozivanje sa ovog uređaja'),
+              content: Text('? Nije moguce pozivanje sa ovog uredaja'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1923,7 +1969,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Greška pri pozivanju: $e'),
+            content: Text('? Gre�ka pri pozivanju: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1931,18 +1977,18 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     }
   }
 
-  // 💰 PRIKAZ DIJALOGA ZA PLAĆANJE
+  // ?? PRIKAZ DIJALOGA ZA PLACANJE
   Future<void> _prikaziPlacanje(RegistrovaniPutnik putnik) async {
-    // Učitaj sva plaćanja za ovog putnika da bi se prikazali plaćeni meseci zeleno
+    // Ucitaj sva placanja za ovog putnika da bi se prikazali placeni meseci zeleno
     await _ucitajPlaceneMesece(putnik);
 
-    // 🛡️ Proveri da li je widget još uvek mountovan nakon async operacije
+    // ??? Proveri da li je widget jo� uvek mountovan nakon async operacije
     if (!mounted) return;
 
     final TextEditingController iznosController = TextEditingController();
     String selectedMonth = _getCurrentMonthYear(); // Default current month
 
-    // 🔧 FIX: Učitaj stvarni ukupni iznos iz baze
+    // ?? FIX: Ucitaj stvarni ukupni iznos iz baze
     final ukupnoPlaceno = await RegistrovaniPutnikService.dohvatiUkupnoPlaceno(putnik.id);
 
     // Default cena po danu za input field
@@ -1952,7 +1998,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final tipLower = putnik.tip.toLowerCase();
     final imeLower = putnik.putnikIme.toLowerCase();
 
-    // 🔒 FIKSNE CENE (Vozači/Admini prate isti standard)
+    // ?? FIKSNE CENE (Vozaci/Admini prate isti standard)
     final jeZubi = tipLower == 'posiljka' && imeLower.contains('zubi');
     final jePosiljka = tipLower == 'posiljka';
     final jeDnevni = tipLower == 'dnevni';
@@ -1975,7 +2021,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      jeFiksna ? 'Fiksna naplata - ${putnik.putnikIme}' : 'Plaćanje - ${putnik.putnikIme}',
+                      jeFiksna ? 'Fiksna naplata - ${putnik.putnikIme}' : 'Placanje - ${putnik.putnikIme}',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
@@ -1990,9 +2036,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                         padding: const EdgeInsets.only(bottom: 12.0),
                         child: Text(
                           jeZubi
-                              ? 'Tip: Pošiljka ZUBI (300 RSD po pokupljenju)'
+                              ? 'Tip: Po�iljka ZUBI (300 RSD po pokupljenju)'
                               : (jePosiljka
-                                  ? 'Tip: Pošiljka (500 RSD po pokupljenju)'
+                                  ? 'Tip: Po�iljka (500 RSD po pokupljenju)'
                                   : 'Tip: Dnevni (600 RSD po pokupljenju)'),
                           style: TextStyle(
                             color: jeZubi ? Colors.purple : (jePosiljka ? Colors.blue : Colors.orange),
@@ -2025,13 +2071,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Ukupno plaćeno: ${ukupnoPlaceno.toStringAsFixed(0)} RSD',
+                                        'Ukupno placeno: ${ukupnoPlaceno.toStringAsFixed(0)} RSD',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: Colors.green.shade700,
                                         ),
                                       ),
-                                      // 🔥 REALTIME: Vozač i datum poslednjeg plaćanja iz voznje_log
+                                      // ?? REALTIME: Vozac i datum poslednjeg placanja iz voznje_log
                                       StreamBuilder<Map<String, dynamic>?>(
                                         stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnik.id),
                                         builder: (context, snapshot) {
@@ -2044,7 +2090,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                             children: [
                                               if (datum != null)
                                                 Text(
-                                                  'Poslednje plaćanje: $datum',
+                                                  'Poslednje placanje: $datum',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: Colors.green.shade600,
@@ -2052,10 +2098,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                                 ),
                                               if (vozacIme != null)
                                                 Text(
-                                                  'Plaćeno: $datum',
+                                                  'Placeno: $datum',
                                                   style: TextStyle(
                                                     fontSize: 12,
-                                                    // Ako imamo ime vozača iz strema, koristimo njegovu boju
+                                                    // Ako imamo ime vozaca iz strema, koristimo njegovu boju
                                                     color: VozacBoja.getColorOrDefault(
                                                       vozacIme,
                                                       Colors.green.shade600,
@@ -2101,7 +2147,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
-                                      'Dodavanje novog plaćanja (biće dodato na postojeća)',
+                                      'Dodavanje novog placanja (bice dodato na postojeca)',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.blue.shade700,
@@ -2118,7 +2164,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // 📅 IZBOR MESECA
+                    // ?? IZBOR MESECA
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -2140,7 +2186,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                             color: Colors.purple.shade700,
                             fontSize: 16,
                           ),
-                          menuMaxHeight: 300, // Ograniči visinu dropdown menija
+                          menuMaxHeight: 300, // Ogranici visinu dropdown menija
                           onChanged: (String? newValue) {
                             if (mounted) {
                               setState(() {
@@ -2149,7 +2195,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                             }
                           },
                           items: _getMonthOptions().map<DropdownMenuItem<String>>((String value) {
-                            // Proveri da li je mesec plaćen
+                            // Proveri da li je mesec placen
                             final bool isPlacen = _isMonthPaid(value, putnik);
 
                             return DropdownMenuItem<String>(
@@ -2169,11 +2215,11 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
                     const SizedBox(height: 16),
 
-                    // 💰 IZNOS
+                    // ?? IZNOS
                     TextField(
                       controller: iznosController,
-                      enabled: !jeFiksna, // 🔒 Onemogući izmenu za fiksne cene
-                      readOnly: jeFiksna, // 🔒 Read only
+                      enabled: !jeFiksna, // ?? Onemoguci izmenu za fiksne cene
+                      readOnly: jeFiksna, // ?? Read only
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: jeFiksna ? 'Fiksni iznos (dinari)' : 'Iznos (dinari)',
@@ -2203,9 +2249,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Otkaži'),
+                  child: const Text('Otka�i'),
                 ),
-                // 📊 DUGME ZA DETALJNE STATISTIKE
+                // ?? DUGME ZA DETALJNE STATISTIKE
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop(); // Zatvori trenutni dialog
@@ -2234,7 +2280,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     }
                   },
                   icon: Icon(ukupnoPlaceno > 0 ? Icons.add : Icons.save),
-                  label: Text(ukupnoPlaceno > 0 ? 'Dodaj plaćanje' : 'Sačuvaj'),
+                  label: Text(ukupnoPlaceno > 0 ? 'Dodaj placanje' : 'Sacuvaj'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple.shade600,
                     foregroundColor: Colors.white,
@@ -2246,9 +2292,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         );
       },
     );
-  } // 💾 ČUVANJE PLAĆANJA
+  } // ?? CUVANJE PLACANJA
 
-  // 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
+  // ?? PRIKA�I DETALJNE STATISTIKE PUTNIKA
   Future<void> _prikaziDetaljneStatistike(RegistrovaniPutnik putnik) async {
     await PutnikStatistikeHelper.prikaziDetaljneStatistike(
       context: context,
@@ -2270,16 +2316,16 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     String mesec,
   ) async {
     try {
-      // 🔧 FIX: Koristi IME vozača, ne UUID
+      // ?? FIX: Koristi IME vozaca, ne UUID
       final currentDriverName = await _getCurrentDriverName();
 
-      // 📅 Konvertuj string meseca u datume
+      // ?? Konvertuj string meseca u datume
       final Map<String, dynamic> datumi = _konvertujMesecUDatume(mesec);
 
       final uspeh = await _registrovaniPutnikService.azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
-        currentDriverName, // 🔧 FIX: Koristi IME vozača za prikaz boja
+        currentDriverName, // ?? FIX: Koristi IME vozaca za prikaz boja
         datumi['pocetakMeseca'] as DateTime,
         datumi['krajMeseca'] as DateTime,
       );
@@ -2289,7 +2335,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '✅ Dodato plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec',
+                '? Dodato placanje od ${iznos.toStringAsFixed(0)} RSD za $mesec',
               ),
               backgroundColor: Colors.green,
             ),
@@ -2299,7 +2345,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Greška pri čuvanju plaćanja'),
+              content: Text('? Gre�ka pri cuvanju placanja'),
               backgroundColor: Colors.red,
             ),
           );
@@ -2309,7 +2355,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Greška: $e'),
+            content: Text('? Gre�ka: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2317,7 +2363,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     }
   }
 
-  // 📅 HELPER FUNKCIJE ZA MESECE
+  // ?? HELPER FUNKCIJE ZA MESECE
   String _getCurrentMonthYear() {
     final now = DateTime.now();
     return '${_getMonthName(now.month)} ${now.year}';
@@ -2336,7 +2382,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return options;
   }
 
-  // 💰 PROVERI DA LI JE MESEC PLAĆEN
+  // ?? PROVERI DA LI JE MESEC PLACEN
   bool _isMonthPaid(String monthYear, RegistrovaniPutnik putnik) {
     // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
     final parts = monthYear.split(' ');
@@ -2349,7 +2395,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final monthNumber = _getMonthNumber(monthName);
     if (monthNumber == 0) return false;
 
-    // Proveri cache plaćenih meseci (sva plaćanja iz voznje_log)
+    // Proveri cache placenih meseci (sva placanja iz voznje_log)
     final placeniZaPutnika = _placeniMeseci[putnik.id];
     if (placeniZaPutnika != null && placeniZaPutnika.contains('$monthNumber-$year')) {
       return true;
@@ -2358,7 +2404,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return false;
   }
 
-  // 📅 HELPER: DOBIJ BROJ MESECA IZ IMENA
+  // ?? HELPER: DOBIJ BROJ MESECA IZ IMENA
   int _getMonthNumber(String monthName) {
     const months = [
       '', // 0 - ne postoji
@@ -2423,7 +2469,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     };
   }
 
-  // 📅 BUILDER ZA CHECKBOX RADNIH DANA
+  // ?? BUILDER ZA CHECKBOX RADNIH DANA
   // ignore: unused_element
   Widget _buildRadniDanCheckbox(String danKod, String danNaziv) {
     return Container(
@@ -2469,7 +2515,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  // ⏰ BUILDER ZA VREMENA POLASKA PO DANIMA
+  // ? BUILDER ZA VREMENA POLASKA PO DANIMA
   // ignore: unused_element
   Widget _buildVremenaPolaskaSekcija() {
     return Container(
@@ -2554,14 +2600,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   const PopupMenuItem(
                     value: 'skola',
                     child: Text(
-                      'Škola (07:30-14:00)',
+                      '�kola (07:30-14:00)',
                       style: TextStyle(fontSize: 12),
                     ),
                   ),
                   PopupMenuItem(
                     value: 'ocisti',
                     child: Text(
-                      'Očisti sva vremena',
+                      'Ocisti sva vremena',
                       style: TextStyle(fontSize: 13, color: Colors.red[300], fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -2570,9 +2616,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          // Dinamički prikaz samo za označene dane
+          // Dinamicki prikaz samo za oznacene dane
           ..._noviRadniDani.entries
-              .where((entry) => entry.value) // Samo označeni dani
+              .where((entry) => entry.value) // Samo oznaceni dani
               .map((entry) => _buildDanVremeInput(entry.key))
               .toList(),
         ],
@@ -2580,7 +2626,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  // Helper za dobijanje kontrolera za određeni dan i smer
+  // Helper za dobijanje kontrolera za odredeni dan i smer
   TextEditingController _getControllerBelaCrkva(String dan) {
     return _polazakBcControllers[dan] ?? TextEditingController();
   }
@@ -2589,7 +2635,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return _polazakVsControllers[dan] ?? TextEditingController();
   }
 
-  // 🔍 VALIDACIJA VREMENA POLASKA - Using standardized TimeValidator
+  // ?? VALIDACIJA VREMENA POLASKA - Using standardized TimeValidator
   String? _validateTime(String? value) {
     return TimeValidator.validateTime(value);
   }
@@ -2600,7 +2646,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       'pon': 'Pon',
       'uto': 'Uto',
       'sre': 'Sre',
-      'cet': 'Čet',
+      'cet': 'Cet',
       'pet': 'Pet',
     };
 
@@ -2637,7 +2683,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   IconButton(
                     icon: const Icon(Icons.clear, size: 12),
                     onPressed: () => _ocistiVremenaZaDan(danKod),
-                    tooltip: 'Očisti vremena',
+                    tooltip: 'Ocisti vremena',
                     style: IconButton.styleFrom(
                       padding: const EdgeInsets.all(4),
                       minimumSize: Size.zero,
@@ -2724,7 +2770,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  /// 📋 KOPIRAJ VREMENA NA DRUGE RADNE DANE
+  /// ?? KOPIRAJ VREMENA NA DRUGE RADNE DANE
   void _kopirajVremenaNaDrugeRadneDane(String izvorDan) {
     final bcVreme = _getControllerBelaCrkva(izvorDan).text.trim();
     final vsVreme = _getControllerVrsac(izvorDan).text.trim();
@@ -2741,7 +2787,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
     if (mounted) {
       setState(() {
-        // Kopiraj na sve ostale označene radne dane
+        // Kopiraj na sve ostale oznacene radne dane
         for (final dan in _noviRadniDani.entries) {
           if (dan.value && dan.key != izvorDan) {
             if (bcVreme.isNotEmpty) {
@@ -2764,7 +2810,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  /// 🗑️ OČISTI VREMENA ZA DAN
+  /// ??? OCISTI VREMENA ZA DAN
   void _ocistiVremenaZaDan(String dan) {
     if (mounted) {
       setState(() {
@@ -2774,11 +2820,11 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     }
   }
 
-  /// ⏰ POPUNI STANDARDNA VREMENA
+  /// ? POPUNI STANDARDNA VREMENA
   void _popuniStandardnaVremena(String template) {
     if (mounted) {
       setState(() {
-        // Popuni samo označene radne dane
+        // Popuni samo oznacene radne dane
         final daniZaPopunjavanje =
             _noviRadniDani.entries.where((entry) => entry.value).map((entry) => entry.key).toList();
 
@@ -2811,9 +2857,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       });
     }
 
-    // Prikaži potvrdu
+    // Prika�i potvrdu
     final message =
-        template == 'ocisti' ? 'Vremena polaska su obrisana' : 'Vremena polaska su popunjena za označene dane';
+        template == 'ocisti' ? 'Vremena polaska su obrisana' : 'Vremena polaska su popunjena za oznacene dane';
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

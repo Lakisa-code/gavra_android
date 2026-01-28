@@ -105,7 +105,9 @@ class WeeklyResetService {
         if (rawPolasci is String) {
           try {
             polasci = json.decode(rawPolasci) as Map<String, dynamic>? ?? {};
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('⚠️ Error decoding polasci_po_danu JSON: $e');
+          }
         } else if (rawPolasci is Map) {
           polasci = Map<String, dynamic>.from(rawPolasci);
         }

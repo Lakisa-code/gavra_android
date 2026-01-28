@@ -31,8 +31,12 @@ class VoznjeLogService {
 
       final datumStr = datum.toIso8601String().split('T')[0];
 
-      final response =
-          await _supabase.from('voznje_log').select('tip, iznos').eq('vozac_id', vozacUuid).eq('datum', datumStr);
+      final response = await _supabase
+          .from('voznje_log')
+          .select('tip, iznos')
+          .eq('vozac_id', vozacUuid)
+          .eq('datum', datumStr)
+          .limit(100);
 
       for (final record in response) {
         final tip = record['tip'] as String?;
@@ -73,6 +77,77 @@ class VoznjeLogService {
       'mesecne': naplaceniMesecni, // Mesečne naplate
       'pazar': pazar,
     };
+  }
+
+  /// 🚀 BATCH STATISTIKE ZA VIŠE VOZAČA - Optimizovano (2 queries umesto N+1)
+  /// Vraća mapu: {vozacUuid: {voznje: X, otkazivanja: X, uplate: X, pazar: X.X}, ...}
+  /// ✅ PERFORMANCE FIX: Koristi inFilter umesto looopa
+  static Future<Map<String, Map<String, dynamic>>> getStatistikeZaViseVozaca({
+    required List<String> vozacIds, // List UUID-a
+    required DateTime datum,
+  }) async {
+    final Map<String, Map<String, dynamic>> rezultat = {};
+
+    if (vozacIds.isEmpty) {
+      return rezultat;
+    }
+
+    try {
+      final datumStr = datum.toIso8601String().split('T')[0];
+
+      // QUERY 1: Učitaj sve logove za sve vozače odjednom
+      final response = await _supabase
+          .from('voznje_log')
+          .select('vozac_id, tip, iznos')
+          .inFilter('vozac_id', vozacIds)
+          .eq('datum', datumStr)
+          .limit(5000); // Dovoljno veliki limit za sve vozače na jedan dan
+
+      // Inicijalizuj rezultat za sve vozače
+      for (final vozacId in vozacIds) {
+        rezultat[vozacId] = {
+          'voznje': 0,
+          'otkazivanja': 0,
+          'uplate': 0,
+          'mesecne': 0,
+          'pazar': 0.0,
+        };
+      }
+
+      // PROCESS IN MEMORY: Grupiraj po vozaču (već su u memoriji)
+      for (final record in response) {
+        final vozacId = record['vozac_id'] as String?;
+        if (vozacId == null || !rezultat.containsKey(vozacId)) continue;
+
+        final tip = record['tip'] as String?;
+        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
+
+        switch (tip) {
+          case 'voznja':
+            rezultat[vozacId]!['voznje']++;
+            break;
+          case 'otkazivanje':
+            rezultat[vozacId]!['otkazivanja']++;
+            break;
+          case 'uplata':
+            rezultat[vozacId]!['uplate']++;
+            rezultat[vozacId]!['pazar'] = (rezultat[vozacId]!['pazar'] as double) + iznos;
+            break;
+          case 'uplata_dnevna':
+            rezultat[vozacId]!['uplate']++;
+            rezultat[vozacId]!['pazar'] = (rezultat[vozacId]!['pazar'] as double) + iznos;
+            break;
+          case 'uplata_mesecna':
+            rezultat[vozacId]!['mesecne']++;
+            rezultat[vozacId]!['pazar'] = (rezultat[vozacId]!['pazar'] as double) + iznos;
+            break;
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [VoznjeLogService] Greška pri batch statistici: $e');
+    }
+
+    return rezultat;
   }
 
   /// 📊 STREAM STATISTIKA ZA POPIS - Realtime verzija
@@ -183,8 +258,12 @@ class VoznjeLogService {
       final datumStr = datum.toIso8601String().split('T')[0];
 
       // Dohvati sve zapise za ovog vozača i datum
-      final response =
-          await _supabase.from('voznje_log').select('putnik_id, tip').eq('vozac_id', vozacUuid).eq('datum', datumStr);
+      final response = await _supabase
+          .from('voznje_log')
+          .select('putnik_id, tip')
+          .eq('vozac_id', vozacUuid)
+          .eq('datum', datumStr)
+          .limit(100);
 
       // Grupiši po putnik_id
       final Map<String, Set<String>> putnikTipovi = {};
@@ -212,8 +291,11 @@ class VoznjeLogService {
       if (potencijalniDuznici.isEmpty) return 0;
 
       // Proveri koji od njih su DNEVNI putnici (tip = 'dnevni')
-      final putniciResponse =
-          await _supabase.from('registrovani_putnici').select('id, tip').inFilter('id', potencijalniDuznici);
+      final putniciResponse = await _supabase
+          .from('registrovani_putnici')
+          .select('id, tip')
+          .inFilter('id', potencijalniDuznici)
+          .limit(1000);
 
       int brojDuznika = 0;
       for (final putnik in putniciResponse) {
@@ -255,7 +337,9 @@ class VoznjeLogService {
         if (createdAt != null) {
           try {
             datum = DateTime.parse(createdAt).toLocal();
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('⚠️ Error parsing timestamp: $e');
+          }
         }
 
         String? vozacIme;
@@ -337,6 +421,55 @@ class VoznjeLogService {
     return pazar;
   }
 
+  /// 🚀 BATCH PAZAR ZA VIŠE VOZAČA - Optimizovano (1 query)
+  /// Vraća mapu: {vozacUuid: iznos, ...}
+  /// ✅ PERFORMANCE FIX: Koristi inFilter umesto N queries
+  static Future<Map<String, double>> getPazarZaViseVozaca({
+    required List<String> vozacIds, // List UUID-a
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final Map<String, double> pazar = {};
+
+    if (vozacIds.isEmpty) {
+      return pazar;
+    }
+
+    try {
+      final fromStr = from.toIso8601String().split('T')[0];
+      final toStr = to.toIso8601String().split('T')[0];
+
+      // SINGLE QUERY: Učitaj sve uplate za sve vozače u period
+      final response = await _supabase
+          .from('voznje_log')
+          .select('vozac_id, iznos')
+          .inFilter('vozac_id', vozacIds)
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
+          .gte('datum', fromStr)
+          .lte('datum', toStr)
+          .limit(10000); // Dovoljno za sve vozače u periodu
+
+      // Inicijalizuj sve vozače
+      for (final vozacId in vozacIds) {
+        pazar[vozacId] = 0.0;
+      }
+
+      // PROCESS IN MEMORY: Grupiraj po vozaču
+      for (final record in response) {
+        final vozacId = record['vozac_id'] as String?;
+        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
+
+        if (vozacId != null && pazar.containsKey(vozacId) && iznos > 0) {
+          pazar[vozacId] = (pazar[vozacId] ?? 0.0) + iznos;
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [VoznjeLogService] Greška pri batch pazaru: $e');
+    }
+
+    return pazar;
+  }
+
   /// ✅ TRAJNO REŠENJE: Stream pazara po vozačima (realtime)
   static Stream<Map<String, double>> streamPazarPoVozacima({
     required DateTime from,
@@ -412,6 +545,53 @@ class VoznjeLogService {
     } catch (e) {
       return 0;
     }
+  }
+
+  /// 🚀 BATCH BROJ UPLATA - Optimizovano (1 query)
+  /// Vraća mapu: {vozacUuid: brojUplata, ...}
+  /// ✅ PERFORMANCE FIX: Koristi inFilter umesto N queries
+  static Future<Map<String, int>> getBrojUplataZaViseVozaca({
+    required List<String> vozacIds, // List UUID-a
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final Map<String, int> brojUplata = {};
+
+    if (vozacIds.isEmpty) {
+      return brojUplata;
+    }
+
+    try {
+      final fromStr = from.toIso8601String().split('T')[0];
+      final toStr = to.toIso8601String().split('T')[0];
+
+      // SINGLE QUERY: Učitaj sve mesečne uplate za sve vozače
+      final response = await _supabase
+          .from('voznje_log')
+          .select('vozac_id')
+          .inFilter('vozac_id', vozacIds)
+          .eq('tip', 'uplata_mesecna')
+          .gte('datum', fromStr)
+          .lte('datum', toStr)
+          .limit(10000);
+
+      // Inicijalizuj sve vozače
+      for (final vozacId in vozacIds) {
+        brojUplata[vozacId] = 0;
+      }
+
+      // PROCESS IN MEMORY: Grupiraj po vozaču
+      for (final record in response) {
+        final vozacId = record['vozac_id'] as String?;
+        if (vozacId != null && brojUplata.containsKey(vozacId)) {
+          brojUplata[vozacId] = (brojUplata[vozacId] ?? 0) + 1;
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [VoznjeLogService] Greška pri batch broju uplata: $e');
+    }
+
+    return brojUplata;
   }
 
   /// ✅ Stream broja uplata po vozačima (realtime) - za kocku "Mesečne"

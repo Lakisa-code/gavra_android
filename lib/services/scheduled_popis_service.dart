@@ -162,7 +162,9 @@ class ScheduledPopisService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_lastPopisDateKey, datum.toIso8601String().split('T')[0]);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ Error in scheduled popis: $e');
+    }
 
     debugPrint('📊 [ScheduledPopis] Završeno: $uspesno uspešno, $neuspesno neuspešno');
   }

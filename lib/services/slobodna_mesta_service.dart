@@ -621,7 +621,9 @@ class SlobodnaMestaService {
               tipPutnika: userType,
               detalji: 'Lista čekanja potvrđena',
             );
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('⚠️ Error parsing capacity data: $e');
+          }
 
           confirmedCount++;
         }

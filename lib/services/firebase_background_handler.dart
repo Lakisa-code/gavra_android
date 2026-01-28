@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 
 import 'local_notification_service.dart';
 
@@ -13,8 +14,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     final payload = Map<String, dynamic>.from(message.data);
     await backgroundNotificationHandler(payload);
-  } catch (_) {
-    // Ignore background handling failures
+  } catch (e) {
+    debugPrint('🔴 Error in Firebase background handler: $e');
   }
 }
 
@@ -31,7 +32,7 @@ Future<void> backgroundNotificationHandler(Map<String, dynamic> payload) async {
       body: body,
       payload: rawData?.toString(),
     );
-  } catch (_) {
-    // Swallow errors in background handler — background execution is best-effort.
+  } catch (e) {
+    debugPrint('⚠️ Error handling background notification: $e');
   }
 }

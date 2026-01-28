@@ -262,14 +262,24 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   void _startListening() {
     _loadGpsData();
     _loadPokupljenjeIzBaze(); // 🆕 Učitaj status pokupljenja iz baze
-    _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen((payload) {
-      _loadGpsData();
-    });
+    _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen(
+      (payload) {
+        _loadGpsData();
+      },
+      onError: (error) {
+        debugPrint('🔴 [KombiEtaWidget] vozac_lokacije stream error: $error');
+      },
+    );
     // 🆕 Prati promene u registrovani_putnici tabeli (kada vozač pokupi putnika)
     if (widget.putnikId != null) {
-      _putnikSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
-        _loadPokupljenjeIzBaze();
-      });
+      _putnikSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen(
+        (payload) {
+          _loadPokupljenjeIzBaze();
+        },
+        onError: (error) {
+          debugPrint('🔴 [KombiEtaWidget] registrovani_putnici stream error: $error');
+        },
+      );
     }
   }
 

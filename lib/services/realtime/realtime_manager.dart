@@ -199,8 +199,8 @@ class RealtimeManager {
             // https://pub.dev/documentation/supabase_flutter/latest/supabase_flutter/SupabaseClient/removeChannel.html
             // Ово потпуно уклања канал из SDK и спречава race conditions
             await _supabase.removeChannel(existingChannel);
-          } catch (_) {
-            // Error removing channel - silent
+          } catch (e) {
+            debugPrint('⚠️ Error removing realtime channel: $e');
           }
           _channels.remove(table);
         }
