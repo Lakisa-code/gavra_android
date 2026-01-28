@@ -534,7 +534,7 @@ class DailyCheckInService {
             'vozac': vozac,
             'datum': today,
             'sitan_novac': amount,
-            'vreme_pocetka': DateTime.now().toIso8601String(),
+            'checkin_vreme': DateTime.now().toIso8601String(),
           })
           .select()
           .maybeSingle();
@@ -615,8 +615,7 @@ class DailyCheckInService {
       await supabase
           .from('daily_reports')
           .update({
-            'vreme_kraja': DateTime.now().toIso8601String(),
-            'statistika': stats,
+            'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('vozac', vozac)
           .eq('datum', todayStr);

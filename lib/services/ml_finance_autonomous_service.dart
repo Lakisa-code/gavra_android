@@ -264,7 +264,8 @@ class MLFinanceAutonomousService extends ChangeNotifier {
       await _supabase.from('admin_audit_logs').insert({
         'action_type': action,
         'details': details,
-        'metadata': {'liters': _inventory.litersInStock, 'debt': _inventory.totalDebt},
+        'admin_name': 'system',
+        'metadata': {'inventory_liters': _inventory.litersInStock, 'total_debt': _inventory.totalDebt},
       });
     } catch (e) {
       if (kDebugMode) print('❌ [ML Finance] Greška pri logovanju audita: $e');

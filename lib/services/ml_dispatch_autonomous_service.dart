@@ -174,9 +174,10 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   Future<void> _sendAutonomousAlert(String message) async {
     try {
       await _supabase.from('admin_audit_logs').insert({
-        'action': 'AUTOPILOT_ACTION',
+        'action_type': 'AUTOPILOT_ACTION',
         'details': message,
-        'severity': 'critical',
+        'admin_name': 'system',
+        'metadata': {'severity': 'critical'},
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (_) {}
