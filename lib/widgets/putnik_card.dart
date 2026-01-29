@@ -1208,10 +1208,10 @@ class _PutnikCardState extends State<PutnikCard> {
       _tapTimer?.cancel();
       _tapCount = 0; // Reset odmah
 
-      // Triple tap - admin reset (ako je admin)
+      // Triple tap - admin reset kartice u početno stanje (ako je admin)
       final bool isAdmin = widget.currentDriver == 'Bojan' || widget.currentDriver == 'Svetlana';
       if (isAdmin) {
-        _handleBrisanje();
+        _handleReset();
       } else {
         debugPrint('🔒 Triple tap dostupan samo adminu (${widget.currentDriver})');
       }
@@ -1340,7 +1340,7 @@ class _PutnikCardState extends State<PutnikCard> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque, // ✅ FIX: Hvata tap na celoj kartici
-      onTap: _handleTap, // Triple tap za brži admin reset
+      onTap: _handleTap, // Triple tap za reset kartice u početno stanje
       onLongPressStart: (_) => _startLongPressTimer(),
       onLongPressEnd: (_) => _cancelLongPressTimer(),
       onLongPressCancel: _cancelLongPressTimer,
@@ -2324,6 +2324,55 @@ class _PutnikCardState extends State<PutnikCard> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  // 🔄 RESETUJ KARTICU U POČETNO STANJE - triple tap
+  Future<void> _handleReset() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Resetuj karticu'),
+        content: Text(
+            'Resetovati ${_putnik.ime} u početno stanje?\n\nOvo će:\n• Ukloniti vreme pokupljenja\n• Resetovati status na "radi"\n• Vratiti karticu u belo stanje'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Ne'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Da, resetuj'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await PutnikService().resetPutnikCard(
+          _putnik.ime,
+          widget.currentDriver,
+          selectedVreme: _putnik.polazak,
+          selectedGrad: _putnik.grad,
+        );
+
+        if (widget.onChanged != null) {
+          widget.onChanged!();
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SmartSnackBar.success('${_putnik.ime} resetovan/a u početno stanje', context),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SmartSnackBar.error('Greška pri resetovanju: $e', context),
           );
         }
       }
