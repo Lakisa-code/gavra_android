@@ -302,18 +302,35 @@ class UnifiedGeocodingService {
     List<Future<GeocodingResult> Function()> tasks, {
     required Duration delay,
   }) async {
-    final results = <GeocodingResult>[];
+    // ⚡ OPTIMIZACIJA 1: Parallelizuj geocodiranje sa rate limiting
+    // Umesto sekvencijalnog await (50-100 sek za 50 putnika),
+    // paralelizuj sa delayom između nominatim API poziva
 
-    for (int i = 0; i < tasks.length; i++) {
-      final result = await tasks[i]();
-      results.add(result);
+    if (tasks.isEmpty) return [];
 
-      if (result.source == 'nominatim' && i < tasks.length - 1) {
+    // Podeli zadatke na grupe da izbegnemo rate limit
+    const maxConcurrent = 5; // Max istovremenih geocoding poziva
+    final List<GeocodingResult> allResults = [];
+
+    for (int batchStart = 0; batchStart < tasks.length; batchStart += maxConcurrent) {
+      final batchEnd = (batchStart + maxConcurrent).clamp(0, tasks.length);
+      final batch = tasks.sublist(batchStart, batchEnd);
+
+      // ✅ Paralelizuj sve u batch-u istovremeno
+      final batchResults = await Future.wait(
+        batch.map((taskFn) => taskFn()),
+      );
+
+      allResults.addAll(batchResults);
+
+      // Dodaj delay između batch-eva, ali samo ako ima nominatim poziva
+      final hasNominatimInBatch = batchResults.any((r) => r.source == 'nominatim');
+      if (hasNominatimInBatch && batchEnd < tasks.length) {
         await Future.delayed(delay);
       }
     }
 
-    return results;
+    return allResults;
   }
 
   // ═══════════════════════════════════════════════════════════════════════

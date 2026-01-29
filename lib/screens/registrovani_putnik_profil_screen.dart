@@ -654,7 +654,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             .from('voznje_log')
             .select('iznos')
             .eq('putnik_id', putnikId)
-            .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']);
+            .filter('tip', 'in', '("uplata","uplata_mesecna","uplata_dnevna")');
 
         for (final u in uplateResponse) {
           ukupnoUplaceno += (u['iznos'] as num? ?? 0).toDouble();
@@ -804,7 +804,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           .from('voznje_log')
           .select('iznos, datum, created_at')
           .eq('putnik_id', putnikId)
-          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
+          .filter('tip', 'in', '("uplata","uplata_mesecna","uplata_dnevna")')
           .gte('datum', pocetakGodine.toIso8601String().split('T')[0])
           .order('datum', ascending: false);
 

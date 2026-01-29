@@ -1,5 +1,6 @@
 ﻿import 'dart:convert';
 
+import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
 import '../utils/registrovani_helpers.dart';
@@ -141,7 +142,9 @@ class Putnik {
       // ? NOVO: Citaj vremePlacanja iz polasci_po_danu (samo DANAS)
       vremePlacanja: vremePlacanja,
       placeno: isDnevni ? (vremePlacanja != null) : RegistrovaniHelpers.priceIsPaid(map),
-      cena: isDnevni ? (vremePlacanja != null ? _parseDouble(map['cena_po_danu'] ?? map['cena']) : 0.0) : _parseDouble(map['cena_po_danu'] ?? map['cena']),
+      cena: isDnevni
+          ? (vremePlacanja != null ? _parseDouble(map['cena_po_danu'] ?? map['cena']) : 0.0)
+          : _parseDouble(map['cena_po_danu'] ?? map['cena']),
       // ? NOVO: Citaj naplatioVozac iz polasci_po_danu (samo DANAS)
       naplatioVozac: RegistrovaniHelpers.getNaplatioVozacForDayAndPlace(map, danKratica, place) ??
           _getVozacIme(map['vozac_id'] as String?),
@@ -836,12 +839,30 @@ class Putnik {
     return Object.hash(ime, grad, polazak);
   }
 
+  // 🔄 FALLBACK METODA: Učitaj adresu ako je NULL (fallback za JOIN koji nije radio)
+  Future<String?> getAdresaFallback() async {
+    // Ako već imamo adresu, vrati je
+    if (adresa != null && adresa!.isNotEmpty && adresa != 'Adresa nije definisana') {
+      return adresa;
+    }
+
+    // Ako nemamo adresaId, ne možemo učitati
+    if (adresaId == null || adresaId!.isEmpty) {
+      return adresa; // vrati šta god imamo (ili null)
+    }
+
+    try {
+      // Pokušaj da učitaš adresu direktno iz baze koristeći UUID
+      final fetchedAdresa = await AdresaSupabaseService.getNazivAdreseByUuid(adresaId);
+      if (fetchedAdresa != null && fetchedAdresa.isNotEmpty) {
+        return fetchedAdresa;
+      }
+    } catch (_) {
+      // Ignore error i vrati šta god imamo
+    }
+
+    return adresa;
+  }
+
   // ?? Helper za parsiranje radnih dana (iz kolone ili JSON-a)
 }
-
-
-
-
-
-
-

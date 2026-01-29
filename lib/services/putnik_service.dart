@@ -1326,6 +1326,7 @@ class PutnikService {
 
           await supabase.from('registrovani_putnici').update({
             'status': 'radi',
+            'polasci_po_danu': polasci, // 🆕 SAČUVAJ AŽURIRANE POLASCI
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           }).eq('putnik_ime', imePutnika);
 

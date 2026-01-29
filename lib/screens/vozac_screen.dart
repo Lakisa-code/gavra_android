@@ -685,86 +685,44 @@ class _VozacScreenState extends State<VozacScreen> {
             ),
           );
 
-          // 🆕 Prikaži POSEBAN DIALOG za preskočene putnike
+          // ⚡ OPTIMIZACIJA 3: Zameni blokirajući AlertDialog sa Snackbar-om
+          // Korisnik vidi notifikaciju ali NIJE BLOKIRAN da nastavi sa akcijama
           if (hasSkipped) {
-            await Future.delayed(const Duration(milliseconds: 500));
+            // 🆕 Prikaži preskočene putnike kao SNACKBAR umesto DIALOG-a
             if (mounted) {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: Colors.orange.shade100,
-                  title: Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 32),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${skipped.length} PUTNIKA BEZ LOKACIJE',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
+              final skippedNames = skipped.take(5).map((p) => p.ime).join(', ');
+              final moreText = skipped.length > 5 ? ' +${skipped.length - 5} još' : '';
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Ovi putnici nisu uključeni u optimizovanu rutu:',
-                        style: TextStyle(fontWeight: FontWeight.w500, color: Colors.black87),
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${skipped.length} putnika BEZ adrese',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      ...skipped.take(5).map((p) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.location_off, color: Colors.red, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    p.ime,
-                                    style: const TextStyle(fontSize: 15, color: Colors.black87),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )),
-                      if (skipped.length > 5)
-                        Text(
-                          '... i još ${skipped.length - 5}',
-                          style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black54),
-                        ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.lightbulb, color: Colors.blue, size: 24),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Pokupite ih ručno!\nAplikacija će zapamtiti lokaciju za sledeći put.',
-                                style: TextStyle(fontSize: 13, color: Colors.black87),
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$skippedNames$moreText',
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('RAZUMEM', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+                  backgroundColor: Colors.orange.shade700,
+                  duration: const Duration(seconds: 6),
+                  behavior: SnackBarBehavior.floating,
                 ),
               );
             }
@@ -1855,26 +1813,31 @@ class _VozacScreenState extends State<VozacScreen> {
         return;
       }
 
-      // Pošalji notifikaciju svakom putniku
-      for (final entry in tokens.entries) {
-        final putnikIme = entry.key;
-        final tokenInfo = entry.value;
-        final eta = putniciEta[putnikIme] ?? 0;
+      // ⚡ OPTIMIZACIJA 2: Pošalji notifikacije PARALELNO, ne sekvencijalno
+      // Umesto: 50+ putnika x 1 sekunda = 50+ sekundi
+      // Sada: Future.wait([...]) = ~2-3 sekunde
+      await Future.wait(
+        tokens.entries.map((entry) async {
+          final putnikIme = entry.key;
+          final tokenInfo = entry.value;
+          final eta = putniciEta[putnikIme] ?? 0;
 
-        await RealtimeNotificationService.sendPushNotification(
-          title: '🚐 Kombi je krenuo!',
-          body: 'Vozač $vozacIme kreće ka vama. Stiže za ~$eta min.\n📍 Možete pratiti uživo klikom ovde!',
-          tokens: [
-            {'token': tokenInfo['token']!, 'provider': tokenInfo['provider']!}
-          ],
-          data: {
-            'type': 'transport_started',
-            'eta_minutes': eta,
-            'vozac': vozacIme,
-            'putnik_ime': putnikIme,
-          },
-        );
-      }
+          return await RealtimeNotificationService.sendPushNotification(
+            title: '🚐 Kombi je krenuo!',
+            body: 'Vozač $vozacIme kreće ka vama. Stiže za ~$eta min.\n📍 Možete pratiti uživo klikom ovde!',
+            tokens: [
+              {'token': tokenInfo['token']!, 'provider': tokenInfo['provider']!}
+            ],
+            data: {
+              'type': 'transport_started',
+              'eta_minutes': eta,
+              'vozac': vozacIme,
+              'putnik_ime': putnikIme,
+            },
+          );
+        }),
+        eagerError: false, // Nastavi i ako neka notifikacija padne
+      );
     } catch (e) {
       // Error sending notifications
     }

@@ -1411,23 +1411,38 @@ class _PutnikCardState extends State<PutnikCard> {
                               ),
                           ],
                         ),
-                        // ADRESA - jednostavno prikaži adresu ako postoji
-                        if (_putnik.adresa != null &&
-                            _putnik.adresa!.isNotEmpty &&
-                            _putnik.adresa != 'Adresa nije definisana')
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              _putnik.adresa!,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: secondaryTextColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
+                        // ADRESA - prikaži adresu sa fallback učitavanjem ako je NULL
+                        FutureBuilder<String?>(
+                          future: _putnik.adresa != null &&
+                                  _putnik.adresa!.isNotEmpty &&
+                                  _putnik.adresa != 'Adresa nije definisana'
+                              ? Future.value(_putnik.adresa) // Ako već imamo adresu, koristi je odmah
+                              : _putnik.getAdresaFallback(), // Inače učitaj iz baze
+                          builder: (context, snapshot) {
+                            final displayAdresa = snapshot.data;
+
+                            // Prikaži adresu samo ako je dostupna i nije placeholder
+                            if (displayAdresa != null &&
+                                displayAdresa.isNotEmpty &&
+                                displayAdresa != 'Adresa nije definisana') {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  displayAdresa,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: secondaryTextColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }
+
+                            return const SizedBox.shrink(); // Ništa ako nema adrese
+                          },
+                        ),
                       ],
                     ),
                   ),
