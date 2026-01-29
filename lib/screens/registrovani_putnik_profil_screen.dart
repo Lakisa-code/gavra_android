@@ -134,19 +134,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     return target == DateTime.now().weekday;
   }
 
-  /// 🔴 Automatski otkazuje pending zahtev koji je istekao
+  /// 🔴 Automatski postavlja pending zahtev na "pending" status ako je istekao
+  /// ✅ ISPRAVLJENO: Ne briše vreme - čuva ga i postavi napomenu "Čeka potvrdu"
   Future<void> _autoCancelPending(String dan, String grad) async {
     try {
       final putnikId = _putnikData['id']?.toString();
       if (putnikId == null) return;
 
-      debugPrint('🕒 [AutoCancel] Otkazivanje isteklog zahteva za $dan $grad');
+      debugPrint('🕒 [AutoCancel] Pending zahtev za $dan $grad ostaje na čekanju');
 
-      final response = await supabase
-          .from('registrovani_putnici')
-          .select('polasci_po_danu')
-          .eq('id', putnikId)
-          .maybeSingle();
+      final response =
+          await supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnikId).maybeSingle();
 
       if (response == null) return;
       final polasci = _safeMap(response['polasci_po_danu']);
@@ -155,10 +153,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final danData = Map<String, dynamic>.from(polasci[dan] as Map);
       final staroVreme = danData[grad];
 
-      danData[grad] = null;
-      danData['${grad}_status'] = 'otkazano';
-      danData['${grad}_otkazano'] = DateTime.now().toUtc().toIso8601String();
-      danData['${grad}_otkazano_vreme'] = staroVreme;
+      // ✅ ISPRAVLJENO: Čuva vreme, ne briši ga - samo postavlja napomenu
+      danData['${grad}_status'] = 'pending';
+      danData['${grad}_napomena'] = 'Čeka potvrdu';
+      // Čuvaj staro vreme ako je već sačuvano
+      if (danData['${grad}_otkazano_vreme'] == null && staroVreme != null) {
+        danData['${grad}_otkazano_vreme'] = staroVreme;
+      }
 
       polasci[dan] = danData;
 
@@ -170,8 +171,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         });
         GavraUI.showSnackBar(
           context,
-          message: '⌛ Zahtev za $staroVreme ($dan) je istekao.',
-          type: GavraNotificationType.warning,
+          message: '⏳ Zahtev za $staroVreme ($dan) ostaje na čekanju za potvrdu.',
+          type: GavraNotificationType.info,
         );
       }
     } catch (e) {
@@ -1722,9 +1723,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _ukupnoZaduzenje > 0
-                              ? Colors.red.withOpacity(0.3)
-                              : Colors.green.withOpacity(0.3),
+                          color: _ukupnoZaduzenje > 0 ? Colors.red.withOpacity(0.3) : Colors.green.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
