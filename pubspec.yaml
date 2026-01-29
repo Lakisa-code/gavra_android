@@ -1,7 +1,7 @@
 name: gavra_android
 description: Gavra 013 - Aplikacija zatvorenog tipa za organizaciju polazaka
 
-version: 6.0.52+422
+version: 6.0.53+423
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -104,3 +104,4 @@ flutter:
     - assets/tablica_093.png
     - assets/tablica_097.png
     - assets/tablica_102.png
+
