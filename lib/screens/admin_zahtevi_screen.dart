@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../services/putnik_service.dart';
+import '../services/seat_request_service.dart';
 import '../services/voznje_log_service.dart';
 import '../theme.dart';
 
@@ -88,70 +89,92 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
               _buildFilterBar(),
               Expanded(
                 child: StreamBuilder<List<Map<String, dynamic>>>(
-                  stream: VoznjeLogService.streamRequestLogs(limit: 50),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator(color: Colors.white));
-                    }
-                    if (snapshot.hasError) {
-                      debugPrint('❌ Monitoring Error: ${snapshot.error}');
-                      return Center(
-                          child: Text('Greška pri učitavanju.', style: const TextStyle(color: Colors.white70)));
-                    }
-
-                    var logs = snapshot.data ?? [];
-
-                    // Pokreni keširanje imena u pozadini
-                    if (logs.isNotEmpty) {
-                      _precacheNames(logs);
-                    }
-
-                    // 1. Logs su već filtrirani server-side u streamRequestLogs
-
-                    // 2. Primeni UI filter (Sve, Na čekanju...)
-                    if (_activeFilter != 'Sve') {
-                      // Identifikuj putnike koji imaju potvrđene ili otkazane zahteve u trenutnoj listi
-                      final handledPutnikIds = logs
-                          .where((l) =>
-                              l['tip'] == 'potvrda_zakazivanja' ||
-                              l['tip'] == 'otkazivanje_putnika' ||
-                              l['tip'] == 'otkazivanje')
-                          .map((l) => l['putnik_id']?.toString() ?? '')
-                          .where((id) => id.isNotEmpty)
-                          .toSet();
-
-                      logs = logs.where((l) {
-                        final tip = l['tip']?.toString() ?? '';
-                        final pId = l['putnik_id']?.toString() ?? '';
-
-                        if (_activeFilter == 'Na čekanju') {
-                          // Prikazuj samo 'zakazivanje' koji nemaju odgovarajuću potvrdu/otkazivanje
-                          if (tip != 'zakazivanje_putnika') return false;
-                          return !handledPutnikIds.contains(pId);
+                  stream: SeatRequestService.streamActiveRequests(),
+                  builder: (context, activeSnapshot) {
+                    return StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: VoznjeLogService.streamRequestLogs(limit: 50),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                          return const Center(child: CircularProgressIndicator(color: Colors.white));
                         }
-                        if (_activeFilter == 'Obrađeno') return tip == 'potvrda_zakazivanja';
-                        if (_activeFilter == 'Otkazano') {
-                          return tip == 'otkazivanje_putnika' || tip == 'otkazivanje' || tip == 'greska_zahteva';
+                        if (snapshot.hasError) {
+                          debugPrint('❌ Monitoring Error: ${snapshot.error}');
+                          return Center(
+                              child: Text('Greška pri učitavanju.', style: const TextStyle(color: Colors.white70)));
                         }
-                        return true;
-                      }).toList();
-                    } // 3. Search filter
-                    if (_searchQuery.isNotEmpty) {
-                      final q = _searchQuery.toLowerCase();
-                      logs = logs.where((l) {
-                        final detalji = l['detalji']?.toString().toLowerCase() ?? '';
-                        return detalji.contains(q);
-                      }).toList();
-                    }
 
-                    if (logs.isEmpty) {
-                      return _buildEmptyState();
-                    }
+                        final activeReqs = activeSnapshot.data ?? [];
+                        var logs = snapshot.data ?? [];
 
-                    return ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      itemCount: logs.length,
-                      itemBuilder: (context, index) => _buildRequestCard(logs[index]),
+                        // Precache names for both
+                        if (activeReqs.isNotEmpty || logs.isNotEmpty) {
+                          _precacheNames([...activeReqs, ...logs]);
+                        }
+
+                        // Map active requests to a log-like format for UI consistency
+                        final mappedActive = activeReqs
+                            .map((r) => {
+                                  'id': r['id'],
+                                  'tip': 'LIVE_REQUEST',
+                                  'putnik_id': r['putnik_id'],
+                                  'created_at': r['created_at'],
+                                  'detalji':
+                                      'AKTIVNO: ${r['grad'].toString().toUpperCase()} za ${r['dan']} (${r['vreme']})',
+                                  'is_live': true,
+                                })
+                            .toList();
+
+                        // 1. Combine lists (live first)
+                        var displayList = [...mappedActive, ...logs];
+
+                        // 2. Primeni UI filter (Sve, Na čekanju...)
+                        if (_activeFilter != 'Sve') {
+                          // Identifikuj putnike koji imaju potvrđene ili otkazane zahteve u trenutnoj listi
+                          final handledPutnikIds = logs
+                              .where((l) =>
+                                  l['tip'] == 'potvrda_zakazivanja' ||
+                                  l['tip'] == 'otkazivanje_putnika' ||
+                                  l['tip'] == 'otkazivanje')
+                              .map((l) => l['putnik_id']?.toString() ?? '')
+                              .where((id) => id.isNotEmpty)
+                              .toSet();
+
+                          displayList = displayList.where((l) {
+                            final tip = l['tip']?.toString() ?? '';
+                            final pId = l['putnik_id']?.toString() ?? '';
+
+                            if (_activeFilter == 'Na čekanju') {
+                              if (tip == 'LIVE_REQUEST') return true;
+                              if (tip != 'zakazivanje_putnika') return false;
+                              return !handledPutnikIds.contains(pId);
+                            }
+                            if (_activeFilter == 'Obrađeno') return tip == 'potvrda_zakazivanja';
+                            if (_activeFilter == 'Otkazano') {
+                              return tip == 'otkazivanje_putnika' || tip == 'otkazivanje' || tip == 'greska_zahteva';
+                            }
+                            return true;
+                          }).toList();
+                        }
+
+                        // 3. Search filter
+                        if (_searchQuery.isNotEmpty) {
+                          final q = _searchQuery.toLowerCase();
+                          displayList = displayList.where((l) {
+                            final detalji = l['detalji']?.toString().toLowerCase() ?? '';
+                            return detalji.contains(q);
+                          }).toList();
+                        }
+
+                        if (displayList.isEmpty) {
+                          return _buildEmptyState();
+                        }
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          itemCount: displayList.length,
+                          itemBuilder: (context, index) => _buildRequestCard(displayList[index]),
+                        );
+                      },
                     );
                   },
                 ),
@@ -246,9 +269,14 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
     IconData statusIcon;
 
     switch (tip) {
+      case 'LIVE_REQUEST':
+        statusColor = Colors.purple;
+        statusLabel = 'LIVE ZAHTEV';
+        statusIcon = Icons.sensors;
+        break;
       case 'zakazivanje_putnika':
         statusColor = Colors.orange;
-        statusLabel = 'NOVI ZAHTEV';
+        statusLabel = 'DNEVNIK: ZAHTEV';
         statusIcon = Icons.hourglass_empty;
         break;
       case 'potvrda_zakazivanja':

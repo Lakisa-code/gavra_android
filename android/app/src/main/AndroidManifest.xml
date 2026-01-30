@@ -118,32 +118,17 @@
     </intent>
 
     <!-- 🗺️ NAVIGATION APPS - Required for Android 11+ to query navigation intents -->
-    <!-- Google Maps (explicit package for GBox compatibility) -->
-    <package android:name="com.google.android.apps.maps"/>
+    <!-- Only HERE WeGo navigation app supported -->
     <package android:name="com.here.app.maps"/>
-    
-    <!-- Google Maps intent -->
-    <intent>
-      <action android:name="android.intent.action.VIEW"/>
-      <data android:scheme="google.navigation"/>
-    </intent>
-    
-    <!-- Waze -->
-    <intent>
-      <action android:name="android.intent.action.VIEW"/>
-      <data android:scheme="waze"/>
-    </intent>
-    
-    <!-- Petal Maps (Huawei) -->
-    <intent>
-      <action android:name="android.intent.action.VIEW"/>
-      <data android:scheme="petalmaps"/>
-    </intent>
     
     <!-- HERE WeGo -->
     <intent>
       <action android:name="android.intent.action.VIEW"/>
       <data android:scheme="here-route"/>
+    </intent>
+    <intent>
+      <action android:name="android.intent.action.VIEW"/>
+      <data android:scheme="here.directions"/>
     </intent>
     <intent>
       <action android:name="android.intent.action.VIEW"/>

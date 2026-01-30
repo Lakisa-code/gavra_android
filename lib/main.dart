@@ -30,11 +30,9 @@ import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje voza�
 import 'services/weather_alert_service.dart'; // 🌨️ Upozorenja za loše vreme
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
 import 'services/weekly_reset_service.dart'; // 🔄 NOVI SERVIS ZA RESET
-import 'supabase_client.dart';
 import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 
 void main() async {
-  // 🚀 TRENUTNO POKRETANJE
   WidgetsFlutterBinding.ensureInitialized();
 
   if (kDebugMode) debugPrint('🚀 [Main] App starting...');
@@ -73,8 +71,9 @@ Future<void> _doStartupTasks() async {
       }
 
       await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: supabaseAnonKey,
+        url: 'https://gjtabtwudbrmfeyjiicu.supabase.co',
+        anonKey:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdGFidHd1ZGJybWZleWppaWN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzQzNjI5MiwiZXhwIjoyMDYzMDEyMjkyfQ.BrwnYQ6TWGB1BrmwaE0YnhMC5wMlBRdZUs1xv2dY5r4',
       ).timeout(const Duration(seconds: 10)); // Povećan timeout na 10s
 
       initialized = true;

@@ -15,6 +15,7 @@ import '../services/cena_obracun_service.dart';
 import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikacije
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
+import '../services/seat_request_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera slobodnih mesta
 import '../services/theme_manager.dart';
 import '../services/voznje_log_service.dart';
@@ -2158,7 +2159,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
-          await _insertSeatRequest(putnikId, dan, novoVreme, 'bc');
+          await SeatRequestService.insertSeatRequest(
+            putnikId: putnikId,
+            dan: dan,
+            vreme: novoVreme,
+            grad: 'bc',
+            brojMesta: _putnikData['broj_mesta'] ?? 1,
+          );
 
           // 📝 LOG U DNEVNIK
           try {
@@ -2203,7 +2210,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
-          await _insertSeatRequest(putnikId, dan, novoVreme, 'bc');
+          await SeatRequestService.insertSeatRequest(
+            putnikId: putnikId,
+            dan: dan,
+            vreme: novoVreme,
+            grad: 'bc',
+            brojMesta: _putnikData['broj_mesta'] ?? 1,
+          );
 
           // 📝 LOG U DNEVNIK
           try {
@@ -2245,7 +2258,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
-          await _insertSeatRequest(putnikId, dan, novoVreme, 'bc');
+          await SeatRequestService.insertSeatRequest(
+            putnikId: putnikId,
+            dan: dan,
+            vreme: novoVreme,
+            grad: 'bc',
+            brojMesta: _putnikData['broj_mesta'] ?? 1,
+          );
 
           // 📝 LOG U DNEVNIK
           try {
@@ -2295,7 +2314,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
           // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
-          await _insertSeatRequest(putnikId, dan, novoVreme, 'vs');
+          await SeatRequestService.insertSeatRequest(
+            putnikId: putnikId,
+            dan: dan,
+            vreme: novoVreme,
+            grad: 'vs',
+            brojMesta: _putnikData['broj_mesta'] ?? 1,
+          );
 
           // 📝 LOG U DNEVNIK
           try {
@@ -2357,6 +2382,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     grad: tipGrad,
                     tipPutnika: pTip,
                     detalji: 'Zahtev direktno potvrđen',
+                  );
+
+                  // 🧹 Čišćenje ako je postojao zahtev (npr. pri promeni sa pending na confirmed)
+                  await SeatRequestService.deleteProcessedRequest(
+                    putnikId: putnikId,
+                    dan: dan,
+                    grad: tipGrad,
                   );
                 } catch (_) {}
               }
@@ -2553,33 +2585,4 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   }
 
   // 🎯 POMOĆNE METODE ZA SEAT REQUESTS
-  Future<void> _insertSeatRequest(String putnikId, String dan, String vreme, String grad) async {
-    try {
-      final datum = _getNextDateForDay(DateTime.now(), dan);
-      final brojMesta = _putnikData['broj_mesta'] ?? 1;
-
-      await supabase.from('seat_requests').insert({
-        'putnik_id': putnikId,
-        'grad': grad.toUpperCase(),
-        'datum': datum.toIso8601String().split('T')[0],
-        'zeljeno_vreme': vreme,
-        'status': 'pending',
-        'broj_mesta': brojMesta,
-      });
-      debugPrint('✅ [SeatRequest] Inserted for $grad $vreme on $dan (Mesta: $brojMesta)');
-    } catch (e) {
-      debugPrint('❌ [SeatRequest] Error inserting seat request: $e');
-    }
-  }
-
-  DateTime _getNextDateForDay(DateTime fromDate, String danKratica) {
-    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
-    final targetWeekday = daniMap[danKratica.toLowerCase()] ?? 1;
-    final currentWeekday = fromDate.weekday;
-
-    int daysToAdd = targetWeekday - currentWeekday;
-    if (daysToAdd < 0) daysToAdd += 7;
-
-    return fromDate.add(Duration(days: daysToAdd));
-  }
 }

@@ -138,7 +138,23 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                         return metaTip == 'ucenik' || detalji.contains('ucenik') || detalji.contains('učenik');
                       }
                       if (target == 'radnik') {
-                        return metaTip == 'radnik' || detalji.contains('radnik') || tip == 'potvrda_zakazivanja';
+                        return metaTip == 'radnik' || detalji.contains('radnik');
+                      }
+                      return metaTip == target || detalji.contains(target);
+                    }
+                    // Filter po tipu (ako je zadat)
+                    if (widget.onlyType != null) {
+                      final target = widget.onlyType!.toLowerCase();
+                      final metaTip = l['meta']?['putnik_tip']?.toString().toLowerCase();
+
+                      if (target == 'ucenik') {
+                        return metaTip == 'ucenik' || detalji.contains('ucenik') || detalji.contains('učenik');
+                      }
+                      if (target == 'radnik') {
+                        return metaTip == 'radnik' || detalji.contains('radnik');
+                      }
+                      if (target == 'dnevni') {
+                        return metaTip == 'dnevni' || detalji.contains('dnevni');
                       }
                       return metaTip == target || detalji.contains(target);
                     }

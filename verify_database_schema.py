@@ -20,7 +20,7 @@ SUPABASE_SCHEMA = {
     'adrese': ['id', 'naziv', 'grad', 'ulica', 'broj', 'koordinate'],
     'app_config': ['key', 'value', 'description', 'updated_at'],
     'app_settings': ['id', 'updated_at', 'updated_by', 'nav_bar_type', 'dnevni_zakazivanje_aktivno', 'min_version', 'latest_version', 'store_url_android', 'store_url_huawei'],
-    'daily_reports': ['id', 'vozac', 'datum', 'ukupan_pazar', 'sitan_novac', 'checkin_vreme', 'otkazani_putnici', 'naplaceni_putnici', 'pokupljeni_putnici', 'dugovi_putnici', 'mesecne_karte', 'kilometraza', 'automatski_generisan', 'created_at', 'vozac_id'],
+    'daily_reports': ['id', 'vozac', 'datum', 'ukupan_pazar', 'sitan_novac', 'checkin_vreme', 'otkazani_putnici', 'naplaceni_putnici', 'pokupljeni_putnici', 'dugovi_putnici', 'mesecne_karte', 'kilometraza', 'automatski_generisan', 'created_at', 'vozac_id', 'updated_at'],
     'finansije_licno': ['id', 'created_at', 'tip', 'naziv', 'iznos'],
     'finansije_troskovi': ['id', 'naziv', 'tip', 'iznos', 'mesecno', 'aktivan', 'vozac_id', 'created_at', 'updated_at', 'mesec', 'godina'],
     'fuel_logs': ['id', 'created_at', 'type', 'liters', 'price', 'amount', 'vozilo_uuid', 'km', 'pump_meter', 'metadata'],
@@ -111,7 +111,7 @@ def compare_schemas() -> Tuple[List[Dict], int, int]:
             print(f"   Korišćene kolone: {len(used_cols)}")
             
             # Pronađi probleme
-            unknown_cols = used_cols - set(expected_cols.keys())
+            unknown_cols = used_cols - set(expected_cols)
             if unknown_cols:
                 total_issues += len(unknown_cols)
                 for col in sorted(unknown_cols):

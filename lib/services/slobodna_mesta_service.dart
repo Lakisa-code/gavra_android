@@ -9,6 +9,7 @@ import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_helpers.dart';
 import 'kapacitet_service.dart';
 import 'putnik_service.dart';
+import 'seat_request_service.dart';
 import 'voznje_log_service.dart';
 
 /// 🎫 Model za slobodna mesta po polasku
@@ -430,6 +431,13 @@ class SlobodnaMestaService {
           grad: gradKey,
           tipPutnika: putnikResponse['tip']?.toString() ?? 'Putnik',
           detalji: 'Zahtev obrađen (Vreme promenjeno)',
+        );
+
+        // 🧹 Cleanup seat_requests tabele nakon što je zahtev potvrđen
+        await SeatRequestService.deleteProcessedRequest(
+          putnikId: putnikId,
+          dan: dan,
+          grad: gradKey,
         );
       } catch (logError) {
         debugPrint('Greška pri logovanju potvrde: $logError');

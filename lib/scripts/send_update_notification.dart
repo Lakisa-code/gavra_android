@@ -12,9 +12,9 @@ Future<void> main() async {
   // Čekaj! Video sam da se koristi 'send-push-notification' Supabase funkcija u kodu!
   // To znači da mogu da pozovem tu funkciju direktno preko HTTP-a!
 
-  const supabaseUrl = 'https://gjtabtwudbrmfeyjiicu.supabase.co';
-  const supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdGFidHd1ZGJybWZleWppaWN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0MzYyOTIsImV4cCI6MjA2MzAxMjI5Mn0.TwAfvlyLIpnVf-WOixvApaQr6NpK9u-VHpRkmbkAKYk';
+  // 🔐 SECURITY: Load from environment variables, never hardcode!
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   // Lista SVIH tokena (putnika i vozača) koje smo našli
   final tokens = [

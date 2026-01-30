@@ -5,14 +5,14 @@
 
 ✅ STATISTIKA:
    - Ukupno tabela u Supabase: 29
-   - Ukupno kolona: 287
-   - Proverenih kolona iz koda: 95
-   - Pronađenih problema: 6
+   - Ukupno kolona: 288
+   - Proverenih kolona iz koda: 136
+   - Pronađenih problema: 5
 
 ================================================================================
 
 
-❌ REZULTAT: 6 PROBLEMA PRONAĐENO
+❌ REZULTAT: 5 PROBLEMA PRONAĐENO
 
 Problematične kolone:
    - admin_audit_logs.inventory_liters: Column does not exist in schema
@@ -20,7 +20,6 @@ Problematične kolone:
    - admin_audit_logs.total_debt: Column does not exist in schema
    - adrese.lat: Column does not exist in schema
    - adrese.lng: Column does not exist in schema
-   - daily_reports.updated_at: Column does not exist in schema
 
 ================================================================================
 Izveštaj generisan: 28.01.2026
