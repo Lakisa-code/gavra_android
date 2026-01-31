@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../globals.dart';
+import 'user_audit_service.dart';
 import 'voznje_log_service.dart';
 
 /// 🔄 SERVIS ZA NEDELJNI RESET RASPOREDA
@@ -142,6 +143,9 @@ class WeeklyResetService {
       final prefs = await SharedPreferences.getInstance();
       final todayStr = DateTime.now().toIso8601String().split('T')[0];
       await prefs.setString(_lastResetDateKey, todayStr);
+
+      // 🧹 Clean up old audit records
+      await UserAuditService().cleanupOldRecords();
 
       debugPrint('🔄 [WeeklyReset] ✅ Uspešno resetovano $resetCount putnika');
     } catch (e) {

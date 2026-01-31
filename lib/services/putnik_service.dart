@@ -16,6 +16,7 @@ import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
 import 'slobodna_mesta_service.dart';
 import 'unified_geocoding_service.dart';
+import 'user_audit_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
 
@@ -746,6 +747,9 @@ class PutnikService {
 
       // 📲 NOTIFIKACIJA UKLONJENA PO NALOGU 16.01.2026.
       // Prethodno je ovde bila logika za slanje push notifikacije svim vozačima (RealtimeNotificationService.sendNotificationToAllDrivers)
+
+      // 🔍 Log user change for audit
+      await UserAuditService().logUserChange(putnikId, 'add');
     } catch (e) {
       rethrow;
     }
@@ -819,6 +823,9 @@ class PutnikService {
     await supabase.from(tabela).update({
       'obrisan': true, // ? Soft delete flag
     }).eq('id', id);
+
+    // 🔍 Log user change for audit
+    await UserAuditService().logUserChange(id, 'delete');
   }
 
   /// ? OZNACI KAO POKUPLJEN
@@ -1022,6 +1029,9 @@ class PutnikService {
       );
       debugPrint(
           '✅ markAsPaid: Uplata upisana u voznje_log - putnik: $id, vozac: $currentDriver ($vozacId), iznos: $iznos');
+
+      // 🔍 Log user change for audit
+      await UserAuditService().logUserChange(id.toString(), 'payment');
     } catch (e) {
       debugPrint('❌ markAsPaid: GREŠKA pri upisu u voznje_log: $e');
       // Re-throw da korisnik zna da je nešto pošlo naopako
@@ -1167,6 +1177,9 @@ class PutnikService {
       } catch (_) {
         // Notification error - silent
       }
+
+      // 🔍 Log user change for audit
+      await UserAuditService().logUserChange(id.toString(), 'cancel');
     } catch (e) {
       rethrow;
     }
