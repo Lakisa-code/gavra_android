@@ -1012,10 +1012,13 @@ class _AdminScreenState extends State<AdminScreen> {
           future: _putnikService.getAllPutnici().timeout(
             const Duration(seconds: 8),
             onTimeout: () {
-              // Timeout handling - logging removed for production
+              // Timeout handling - return empty list to prevent infinite loading
               return <Putnik>[];
             },
-          ),
+          ).catchError((Object error) {
+            // Handle any errors by returning empty list to prevent infinite loading
+            return <Putnik>[];
+          }),
           builder: (context, snapshot) {
             // 🩺 UPDATE PUTNIK DATA HEALTH STATUS
             if (snapshot.hasError) {
@@ -1025,14 +1028,22 @@ class _AdminScreenState extends State<AdminScreen> {
             }
 
             if (snapshot.connectionState == ConnectionState.waiting) {
-              // Loading state - logging removed for production
-              return const Center(
+              // Loading state - add refresh option to prevent infinite loading
+              return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Učitavanje admin panela...'),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    const Text('Učitavanje admin panela...'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Force rebuild to retry loading
+                        if (mounted) setState(() {});
+                      },
+                      child: const Text('Osveži'),
+                    ),
                   ],
                 ),
               );
