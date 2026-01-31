@@ -340,21 +340,8 @@ class SlobodnaMestaService {
           }
         }
 
-        // 2. Provera limita promena
-        // Brojač promena za ciljni dan
-        final brojPromena = await _brojPromenaZaDan(putnikId, danas, dan);
-
-        if (jeZaDanas) {
-          // Za DANAŠNJI dan: max 1 promena
-          if (brojPromena >= 1) {
-            return {'success': false, 'message': 'Za današnji dan možete promeniti vreme samo jednom.'};
-          }
-        } else {
-          // Za BUDUĆE dane: max 3 promene
-          if (brojPromena >= 3) {
-            return {'success': false, 'message': 'Za $dan ste već napravili 3 promene danas.'};
-          }
-        }
+        // 2. Provera limita promena - UKLONJENO
+        // Sistem sada dozvoljava neograničene promene jer korisnici ionako čekaju na proveru kapaciteta
       }
 
       // ═══════════════════════════════════════════════════════════════
@@ -417,10 +404,8 @@ class SlobodnaMestaService {
       // Sačuvaj u bazu
       await _supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
-      // Zapiši promenu za učenike, dnevne i pošiljke u promene_vremena_log
-      if (tipPutnika == 'ucenik' || tipPutnika == 'dnevni' || tipPutnika == 'posiljka') {
-        await _zapisiPromenuVremena(putnikId, danas, dan);
-      }
+      // Zapiši promenu - UKLONJENO
+      // Sistem više ne ograničava broj promena
 
       // 📝 LOG POTVRDU U voznje_log (da se pojavi u Monitoru Zahteva)
       try {
@@ -447,116 +432,6 @@ class SlobodnaMestaService {
     } catch (e) {
       return {'success': false, 'message': 'Greška: $e'};
     }
-  }
-
-  /// Javna metoda za logovanje promene (koristi se iz RegistrovaniPutnikProfilScreen)
-  static Future<void> logujPromenuVremena(String putnikId, String ciljniDan) async {
-    final danas = DateTime.now().toIso8601String().split('T')[0];
-    await _zapisiPromenuVremena(putnikId, danas, ciljniDan);
-  }
-
-  /// Broji koliko puta je putnik menjao vreme za određeni ciljni dan (danas)
-  /// Javna metoda za korišćenje iz drugih ekrana
-  static Future<int> brojPromenaZaDan(String putnikId, String ciljniDan) async {
-    final danas = DateTime.now().toIso8601String().split('T')[0];
-    return _brojPromenaZaDan(putnikId, danas, ciljniDan);
-  }
-
-  /// 🆕 Broji UKUPAN broj promena danas (svi dani zajedno)
-  /// Za učenike: max 2 promene dnevno (BC + VS ukupno)
-  static Future<int> ukupnoPromenaDanas(String putnikId) async {
-    try {
-      final danas = DateTime.now().toIso8601String().split('T')[0];
-      final response =
-          await _supabase.from('promene_vremena_log').select('id').eq('putnik_id', putnikId).eq('datum', danas);
-
-      return (response as List).length;
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  /// Privatna verzija koja prima datum
-  static Future<int> _brojPromenaZaDan(String putnikId, String datum, String ciljniDan) async {
-    try {
-      final response = await _supabase
-          .from('promene_vremena_log')
-          .select('id')
-          .eq('putnik_id', putnikId)
-          .eq('datum', datum)
-          .eq('ciljni_dan', ciljniDan.toLowerCase());
-
-      return (response as List).length;
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  /// Zapiši promenu vremena - javna verzija za korišćenje iz drugih ekrana
-  static Future<void> zapisiPromenuVremena(String putnikId, String ciljniDan) async {
-    final danas = DateTime.now().toIso8601String().split('T')[0];
-    await _zapisiPromenuVremena(putnikId, danas, ciljniDan);
-  }
-
-  /// Zapiši promenu vremena (za ograničenje učenika) - privatna verzija
-  /// Sada čuva i datum_polaska i sati_unapred za praćenje odgovornosti
-  static Future<void> _zapisiPromenuVremena(String putnikId, String datum, String ciljniDan) async {
-    try {
-      final now = DateTime.now();
-
-      // Izračunaj tačan datum polaska iz ciljnog dana
-      final datumPolaska = _izracunajDatumPolaska(ciljniDan);
-
-      // Izračunaj koliko sati unapred je zakazano
-      int satiUnapred = 0;
-      if (datumPolaska != null) {
-        final razlika = datumPolaska.difference(now);
-        satiUnapred = razlika.inHours;
-        if (satiUnapred < 0) satiUnapred = 0; // Ako je već prošlo
-      }
-
-      await _supabase.from('promene_vremena_log').insert({
-        'putnik_id': putnikId,
-        'datum': datum,
-        'ciljni_dan': ciljniDan.toLowerCase(),
-        'created_at': now.toIso8601String(),
-        'datum_polaska': datumPolaska?.toIso8601String().split('T')[0],
-        'sati_unapred': satiUnapred,
-      });
-    } catch (e) {
-      // Error writing change log
-    }
-  }
-
-  /// Izračunaj tačan datum polaska iz imena dana (pon, uto, sre, cet, pet)
-  static DateTime? _izracunajDatumPolaska(String danKratica) {
-    final daniMapa = {
-      'pon': DateTime.monday,
-      'uto': DateTime.tuesday,
-      'sre': DateTime.wednesday,
-      'cet': DateTime.thursday,
-      'pet': DateTime.friday,
-      'sub': DateTime.saturday,
-      'ned': DateTime.sunday,
-    };
-
-    final targetWeekday = daniMapa[danKratica.toLowerCase()];
-    if (targetWeekday == null) return null;
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    // Računaj razliku u danima
-    int daysUntilTarget = targetWeekday - today.weekday;
-
-    // Ako je ciljni dan danas ili ranije u nedelji, to je ovaj dan
-    // Ako je negativno, znači da je dan prošao - ali za naš slučaj
-    // gledamo tekuću nedelju (putnik može zakazati samo za tekuću nedelju)
-    if (daysUntilTarget < 0) {
-      daysUntilTarget += 7; // Sledeća nedelja
-    }
-
-    return today.add(Duration(days: daysUntilTarget));
   }
 
   /// 🆕 Broji registrovane putnike sa statusom 'ceka_mesto' za VS Rush Hour termin
