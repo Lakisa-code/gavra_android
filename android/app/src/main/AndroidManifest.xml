@@ -36,7 +36,7 @@
   <!-- 🔊 VOICE NAVIGATION PERMISSIONS -->
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
-  <application android:label="Gavra 013" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:largeHeap="true" android:enableOnBackInvokedCallback="true" android:requestLegacyExternalStorage="true">
+  <application android:label="Gavra 013" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:largeHeap="true" android:enableOnBackInvokedCallback="true">
     <!-- 🔔 FCM Notification icon and color -->
     <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_notification" />
     <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/notification_color" />

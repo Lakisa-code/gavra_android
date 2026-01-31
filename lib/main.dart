@@ -37,10 +37,23 @@ void main() async {
 
   if (kDebugMode) debugPrint('🚀 [Main] App starting...');
 
-  // 1. Pokreni UI odmah
+  // 🌐 SUPABASE - Inicijalizuj pre runApp da izbegneš crash
+  try {
+    await Supabase.initialize(
+      url: 'https://gjtabtwudbrmfeyjiicu.supabase.co',
+      anonKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdGFidHd1ZGJybWZleWppaWN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzQzNjI5MiwiZXhwIjoyMDYzMDEyMjkyfQ.BrwnYQ6TWGB1BrmwaE0YnhMC5wMlBRdZUs1xv2dY5r4',
+    );
+    if (kDebugMode) debugPrint('✅ [Main] Supabase initialized before runApp');
+  } catch (e) {
+    if (kDebugMode) debugPrint('❌ [Main] Supabase init failed: $e');
+    // Možeš dodati fallback ili crash app ako je kritično
+  }
+
+  // 1. Pokreni UI
   runApp(const MyApp());
 
-  // 2. Pokreni sve inicijalizacije potpuno asinhrono
+  // 2. Pokreni ostale inicijalizacije
   unawaited(_doStartupTasks());
 }
 
@@ -56,35 +69,6 @@ Future<void> _doStartupTasks() async {
 
   // 🌍 LOCALE
   unawaited(initializeDateFormatting('sr_RS', null));
-
-  // 🌐 SUPABASE - Robustna inicijalizacija sa retry mehanizmom
-  bool initialized = false;
-  int attempts = 0;
-  while (!initialized && attempts < 3) {
-    try {
-      attempts++;
-      // Proveri da li je već inicijalizovan (npr. iz background isolata ili hot restarta)
-      if (isSupabaseReady) {
-        initialized = true;
-        if (kDebugMode) debugPrint('✅ [Main] Supabase already initialized');
-        break;
-      }
-
-      await Supabase.initialize(
-        url: 'https://gjtabtwudbrmfeyjiicu.supabase.co',
-        anonKey:
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdGFidHd1ZGJybWZleWppaWN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzQzNjI5MiwiZXhwIjoyMDYzMDEyMjkyfQ.BrwnYQ6TWGB1BrmwaE0YnhMC5wMlBRdZUs1xv2dY5r4',
-      ).timeout(const Duration(seconds: 10)); // Povećan timeout na 10s
-
-      initialized = true;
-      if (kDebugMode) debugPrint('✅ [Main] Supabase initialized (Attempt $attempts)');
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ [Main] Supabase init attempt $attempts failed: $e');
-      if (attempts < 3) {
-        await Future.delayed(Duration(seconds: attempts)); // Exponential backoff ekvivalent
-      }
-    }
-  }
 
   // 🔥 SVE OSTALO POKRENI ISTOVREMENO (Paralelno)
   unawaited(_initPushSystems());
