@@ -21,7 +21,6 @@ class MLVehicleAutonomousService extends ChangeNotifier {
 
   // 📡 REALTIME STREAMS
   RealtimeChannel? _vehicleStream;
-  RealtimeChannel? _expensesStream;
 
   // 📊 Learned patterns (keš)
   final Map<String, dynamic> _learnedPatterns = {};
@@ -110,20 +109,6 @@ class MLVehicleAutonomousService extends ChangeNotifier {
           )
           .subscribe();
 
-      // Slušamo promene u TROSKOVI_UNOSI
-      _expensesStream = _supabase
-          .channel('public:troskovi_unosi')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'troskovi_unosi',
-            callback: (payload) {
-              print('⚡ [ML Lab] Detektovan novi trošak! Pokrećem analizu...');
-              _autoLearn();
-            },
-          )
-          .subscribe();
-
       print('✅ [ML Lab] Uspešno povezan na Realtime Stream.');
     } catch (e) {
       print('⚠️ [ML Lab] Greška pri povezivanju na Realtime: $e');
@@ -134,7 +119,6 @@ class MLVehicleAutonomousService extends ChangeNotifier {
 
   void _unsubscribeFromRealtime() {
     _vehicleStream?.unsubscribe();
-    _expensesStream?.unsubscribe();
   }
 
   /// 🔍 MONITORING & AUTO-LEARNING
@@ -157,7 +141,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
   Future<bool> _checkForNewData() async {
     try {
       // Beba sada baca pogled na par ključnih mesta da vidi ima li aktivnosti
-      final List<String> tablesToCheck = ['vozila_istorija', 'voznje_log', 'seat_requests', 'troskovi_unosi'];
+      final List<String> tablesToCheck = ['vozila_istorija', 'voznje_log', 'seat_requests'];
 
       for (final String table in tablesToCheck) {
         try {
@@ -251,7 +235,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
 
       // DINAMIČKA LISTA: Beba kreće od onoga što poznaje, ali stalno traži nove putokaze.
       final List<String> discoveredTables = (_learnedPatterns['discovered_tables'] as List?)?.cast<String>() ??
-          ['registrovani_putnici', 'voznje_log', 'troskovi_unosi', 'vozila', 'vozaci', 'seat_requests', 'adrese'];
+          ['registrovani_putnici', 'voznje_log', 'vozila', 'vozaci', 'seat_requests', 'adrese'];
 
       // Beba ne gleda red po red, već uzima "fotografiju" cele tabele
       for (final String tableName in discoveredTables) {

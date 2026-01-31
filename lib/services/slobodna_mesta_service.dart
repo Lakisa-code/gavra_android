@@ -9,7 +9,6 @@ import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_helpers.dart';
 import 'kapacitet_service.dart';
 import 'putnik_service.dart';
-import 'seat_request_service.dart';
 import 'voznje_log_service.dart';
 
 /// 🎫 Model za slobodna mesta po polasku
