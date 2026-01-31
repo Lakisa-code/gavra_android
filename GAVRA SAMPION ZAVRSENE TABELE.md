@@ -21,4 +21,4 @@
 21 user_daily_changes tabela je POTPUNO FUNKCIONALNA!
 22 vozac_lokacije tabela je POTPUNO FUNKCIONALNA!
 23 vozila_istorija tabela je POTPUNO FUNKCIONALNA!
-25 vreme_vozac tabela je POTPUNO FUNKCIONALNA! 
+26 weather_alerts_log tabela je POTPUNO FUNKCIONALNA! 
