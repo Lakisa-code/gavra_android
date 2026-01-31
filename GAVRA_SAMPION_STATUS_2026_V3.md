@@ -1,10 +1,10 @@
 # GAVRA SAMPION - STATUS SVIH 30 TABELA
 **Datum:** 31.01.2026
-**Status:** 24/30 tabela implementirano ✅
+**Status:** 25/30 tabela implementirano ✅
 
 ## 📊 TRENUTNI STATUS:
 
-### ✅ IMPLEMENTIRANE TABELE (24/30):
+### ✅ IMPLEMENTIRANE TABELE (25/30):
 1. **admin_audit_logs** - Audit logovi za admin akcije
 2. **adrese** - Adrese putnika i destinacija
 3. **daily_reports** - Dnevni izveštaji vozača
@@ -29,6 +29,7 @@
 22. **vozac_lokacije** - Lokacije vozača sa GPS i ETA
 23. **vozila_istorija** - Istorija intervencija na vozilima (servisi, popravke)
 24. **voznje_log** - Log svih vožnji sa finansijskim podacima
+25. **vreme_vozac** - Vremena polazaka vozača po gradovima i danima
 
 ### ❌ UKLONJENE TABELE:
 - **finansije_licno** - Uklonjena kao nepotrebna
