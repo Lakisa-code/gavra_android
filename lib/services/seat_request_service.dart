@@ -33,27 +33,6 @@ class SeatRequestService {
     }
   }
 
-  /// 🗑️ BRISANJE ZAHTEVA NAKON POTVRDE/OBRADE
-  static Future<void> deleteProcessedRequest({
-    required String putnikId,
-    required String dan,
-    required String grad,
-  }) async {
-    try {
-      final datum = getNextDateForDay(DateTime.now(), dan);
-      final datumStr = datum.toIso8601String().split('T')[0];
-
-      await _supabase.from('seat_requests').delete().match({
-        'putnik_id': putnikId,
-        'grad': grad.toUpperCase(),
-        'datum': datumStr,
-      });
-      debugPrint('🧹 [SeatRequestService] Deleted processed request for $grad on $datumStr');
-    } catch (e) {
-      debugPrint('⚠️ [SeatRequestService] Error deleting processed request: $e');
-    }
-  }
-
   /// 🕒 STREAM SVIH AKTIVNIH ZAHTEVA - Za admin monitoring
   static Stream<List<Map<String, dynamic>>> streamActiveRequests() {
     return _supabase.from('seat_requests').stream(primaryKey: ['id']).order('created_at', ascending: false);

@@ -417,13 +417,6 @@ class SlobodnaMestaService {
           tipPutnika: putnikResponse['tip']?.toString() ?? 'Putnik',
           detalji: 'Zahtev obrađen (Vreme promenjeno)',
         );
-
-        // 🧹 Cleanup seat_requests tabele nakon što je zahtev potvrđen
-        await SeatRequestService.deleteProcessedRequest(
-          putnikId: putnikId,
-          dan: dan,
-          grad: gradKey,
-        );
       } catch (logError) {
         debugPrint('Greška pri logovanju potvrde: $logError');
       }
