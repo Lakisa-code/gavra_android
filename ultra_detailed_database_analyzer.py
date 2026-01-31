@@ -35,7 +35,7 @@ ALL_TABLES = [
     'ml_config', 'payment_reminders_log',  # 'pending_resolution_queue',  # TABLE REMOVED
     'pin_zahtevi',
     'promene_vremena_log', 'push_tokens', 'putnik_pickup_lokacije', 'racun_sequence',
-    'registrovani_putnici', 'seat_request_notifications', 'seat_requests',
+    'registrovani_putnici', 'seat_requests',
     'troskovi_unosi', 'user_daily_changes', 'vozac_lokacije', 'vozaci', 'vozila',
     'vozila_istorija', 'voznje_log', 'voznje_log_with_names', 'vreme_vozac',
     'weather_alerts_log'
@@ -149,7 +149,6 @@ class UltraDetailedTableAnalyzer:
             'putnik_pickup_lokacije': ['putnik_id', 'vozac_id'],
             'racun_sequence': [],
             'registrovani_putnici': ['vozac_id', 'adresa_bela_crkva_id', 'adresa_vrsac_id'],
-            'seat_request_notifications': ['putnik_id', 'seat_request_id'],
             'seat_requests': ['putnik_id'],
             'troskovi_unosi': ['vozilo_id', 'vozac_id'],
             'user_daily_changes': ['putnik_id'],

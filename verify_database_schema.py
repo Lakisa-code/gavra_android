@@ -34,7 +34,6 @@ SUPABASE_SCHEMA = {
     'putnik_pickup_lokacije': ['id', 'putnik_id', 'putnik_ime', 'lat', 'lng', 'vozac_id', 'datum', 'vreme', 'created_at'],
     'racun_sequence': ['godina', 'poslednji_broj', 'updated_at'],
     'registrovani_putnici': ['id', 'putnik_ime', 'tip', 'tip_skole', 'broj_telefona', 'broj_telefona_oca', 'broj_telefona_majke', 'polasci_po_danu', 'aktivan', 'status', 'datum_pocetka_meseca', 'datum_kraja_meseca', 'vozac_id', 'obrisan', 'created_at', 'updated_at', 'adresa_bela_crkva_id', 'adresa_vrsac_id', 'pin', 'cena_po_danu', 'broj_telefona_2', 'email', 'uklonjeni_termini', 'firma_naziv', 'firma_pib', 'firma_mb', 'firma_ziro', 'firma_adresa', 'treba_racun', 'tip_prikazivanja', 'broj_mesta', 'merged_into_id', 'is_duplicate', 'radni_dani'],
-    'seat_request_notifications': ['id', 'putnik_id', 'seat_request_id', 'title', 'body', 'sent', 'sent_at', 'created_at'],
     'seat_requests': ['id', 'putnik_id', 'grad', 'datum', 'zeljeno_vreme', 'dodeljeno_vreme', 'status', 'created_at', 'updated_at', 'processed_at', 'priority', 'batch_id', 'alternatives', 'changes_count', 'broj_mesta'],
     'troskovi_unosi': ['id', 'datum', 'tip', 'iznos', 'opis', 'vozilo_id', 'vozac_id', 'created_at'],
     'user_daily_changes': ['id', 'putnik_id', 'datum', 'changes_count', 'last_change_at', 'created_at'],

@@ -108,11 +108,6 @@ SELECT 'registrovani_putnici' as tabela, COUNT(*) as ukupno_redova,
        COUNT(DISTINCT tip) as tipovi
 FROM registrovani_putnici;
 
--- 19. SEAT_REQUEST_NOTIFICATIONS
-SELECT 'seat_request_notifications' as tabela, COUNT(*) as ukupno_redova,
-       COUNT(DISTINCT seat_request_id) as zahtevi
-FROM seat_request_notifications;
-
 -- 20. SEAT_REQUESTS
 SELECT 'seat_requests' as tabela, COUNT(*) as ukupno_redova,
        COUNT(DISTINCT putnik_id) as putnici,
@@ -198,7 +193,6 @@ SELECT
     (SELECT COUNT(*) FROM putnik_pickup_lokacije) +
     (SELECT COUNT(*) FROM racun_sequence) +
     (SELECT COUNT(*) FROM registrovani_putnici) +
-    (SELECT COUNT(*) FROM seat_request_notifications) +
     (SELECT COUNT(*) FROM seat_requests) +
     (SELECT COUNT(*) FROM troskovi_unosi) +
     (SELECT COUNT(*) FROM user_daily_changes) +

@@ -683,29 +683,6 @@ GROUP BY adresa_bela_crkva_id, adresa_vrsac_id
 ORDER BY passenger_count DESC;
 
 -- =====================================================
--- 19. SEAT_REQUEST_NOTIFICATIONS - Detaljna analiza
--- =====================================================
-
--- 19.1 Osnovne informacije
-SELECT
-    'seat_request_notifications' as table_name,
-    COUNT(*) as total_notifications,
-    COUNT(CASE WHEN sent THEN 1 END) as sent_notifications,
-    COUNT(DISTINCT putnik_id) as unique_passengers,
-    COUNT(DISTINCT seat_request_id) as unique_requests
-FROM seat_request_notifications;
-
--- 19.2 Analiza uspešnosti slanja
-SELECT
-    sent,
-    COUNT(*) as total_count,
-    ROUND(COUNT(*)::numeric / SUM(COUNT(*)) OVER () * 100, 2) as percentage,
-    MIN(created_at) as oldest,
-    MAX(created_at) as newest
-FROM seat_request_notifications
-GROUP BY sent;
-
--- =====================================================
 -- 20. SEAT_REQUESTS - Ultra detaljna analiza
 -- =====================================================
 

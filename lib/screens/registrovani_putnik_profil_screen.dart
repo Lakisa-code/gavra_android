@@ -377,11 +377,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (oldRequests.isNotEmpty) {
         debugPrint('🧹 [Cleanup] Brisanje ${oldRequests.length} starih zahteva...');
 
-        // 1. Prvo obriši povezane notifikacije (FK constraint fix)
-        final List ids = oldRequests.map((e) => e['id']).toList();
-        await supabase.from('seat_request_notifications').delete().inFilter('seat_request_id', ids);
-
-        // 2. Onda obriši same zahteve
+        // Briši stare zahteve
         await supabase.from('seat_requests').delete().lt('created_at', yesterday);
       }
     } catch (e) {
