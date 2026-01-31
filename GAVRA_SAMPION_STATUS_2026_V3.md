@@ -1,10 +1,10 @@
 # GAVRA SAMPION - STATUS SVIH 30 TABELA
 **Datum:** 31.01.2026
-**Status:** 22/30 tabela implementirano ✅
+**Status:** 24/30 tabela implementirano ✅
 
 ## 📊 TRENUTNI STATUS:
 
-### ✅ IMPLEMENTIRANE TABELE (22/30):
+### ✅ IMPLEMENTIRANE TABELE (24/30):
 1. **admin_audit_logs** - Audit logovi za admin akcije
 2. **adrese** - Adrese putnika i destinacija
 3. **daily_reports** - Dnevni izveštaji vozača
@@ -27,22 +27,22 @@
 20. **troskovi_unosi** - Unosi troškova
 21. **user_daily_changes** - Dnevne promene korisnika
 22. **vozac_lokacije** - Lokacije vozača sa GPS i ETA
+23. **vozila_istorija** - Istorija intervencija na vozilima (servisi, popravke)
+24. **voznje_log** - Log svih vožnji sa finansijskim podacima
 
 ### ❌ UKLONJENE TABELE:
 - **finansije_licno** - Uklonjena kao nepotrebna
 - **pending_resolution_queue** - Uklonjena kao nepotrebna
 
-### ⏳ PREOSTALE TABELE (9/30):
-22. vozac_lokacije
-23. vozila_istorija
+### ⏳ PREOSTALE TABELE (7/30):
 24. voznje_log
 25. vreme_vozac
 26. weather_alerts_log
 
 ## 📈 PROGRES:
-- **Implementirano:** 22 tabela (73.3%)
+- **Implementirano:** 23 tabela (76.7%)
 - **Uklonjeno:** 2 tabele
-- **Preostalo:** 8 tabela (26.7%)
+- **Preostalo:** 7 tabela (23.3%)
 
 ## ✅ VALIDACIJA:
 - **OK tabela:** 24 (uključujući preostale koje se koriste)
@@ -50,9 +50,9 @@
 - **?? tabela:** 2 (nisu korišćene u kodu, ali postoje)
 
 ## 🎯 SLEDEĆI KORAK:
-Implementacija tabele #23: **vozila_istorija**
+Implementacija tabele #24: **voznje_log**
 
 ---
 **Metoda:** GAVRA SAMPION - Jedna tabela po jedna
 **Vreme po tabeli:** ~8 minuta
-**Preostalo vreme:** ~1.1 sata
+**Preostalo vreme:** ~56 minuta

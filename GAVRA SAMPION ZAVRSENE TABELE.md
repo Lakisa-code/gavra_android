@@ -19,4 +19,6 @@
 19 seat_requests tabela je POTPUNO FUNKCIONALNA!
 20 troskovi_unosi tabela je POTPUNO FUNKCIONALNA!
 21 user_daily_changes tabela je POTPUNO FUNKCIONALNA!
-22 vozac_lokacije tabela je POTPUNO FUNKCIONALNA! 
+22 vozac_lokacije tabela je POTPUNO FUNKCIONALNA!
+23 vozila_istorija tabela je POTPUNO FUNKCIONALNA!
+24 voznje_log tabela je POTPUNO FUNKCIONALNA! 
