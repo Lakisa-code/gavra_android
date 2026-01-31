@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../globals.dart';
+import '../models/vozac.dart';
 import '../screens/welcome_screen.dart';
 import '../utils/vozac_boja.dart';
 import 'firebase_service.dart';
@@ -51,9 +52,28 @@ class AuthManager {
       debugPrint('🔄 [AuthManager] Ažuriram token za vozača: $driverName');
 
       // Dohvati vozac_id iz VozacBoja cache-a
-      final vozac = VozacBoja.getVozac(driverName);
-      final vozacId = vozac?.id;
-      debugPrint('🔄 [AuthManager] vozac_id: $vozacId');
+      Vozac? vozac = VozacBoja.getVozac(driverName);
+      String? vozacId = vozac?.id;
+
+      // Fallback: Ako VozacBoja nema podatke, pokušaj direktno iz baze
+      if (vozacId == null) {
+        debugPrint('🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
+        try {
+          final response = await supabase
+              .from('vozaci')
+              .select('id')
+              .eq('ime', driverName)
+              .single()
+              .timeout(const Duration(seconds: 3));
+
+          vozacId = response['id'] as String?;
+          debugPrint('🔄 [AuthManager] Fallback vozac_id: $vozacId');
+        } catch (e) {
+          debugPrint('⚠️ [AuthManager] Fallback iz baze neuspešan: $e');
+        }
+      }
+
+      debugPrint('🔄 [AuthManager] Final vozac_id: $vozacId');
 
       // 1. Pokušaj FCM token (Google/Samsung uređaji)
       final fcmToken = await FirebaseService.getFCMToken();
