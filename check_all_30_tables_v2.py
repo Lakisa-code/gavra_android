@@ -64,7 +64,7 @@ TABLES = [
     ('app_config', ['key', 'value', 'description', 'updated_at'], []),
     ('app_settings', ['id', 'updated_at', 'updated_by', 'nav_bar_type', 'dnevni_zakazivanje_aktivno', 'min_version', 'latest_version', 'store_url_android', 'store_url_huawei'], []),
     ('daily_reports', ['id', 'vozac', 'datum', 'ukupan_pazar', 'sitan_novac', 'checkin_vreme', 'otkazani_putnici', 'naplaceni_putnici', 'pokupljeni_putnici', 'dugovi_putnici', 'mesecne_karte', 'kilometraza', 'automatski_generisan', 'created_at', 'updated_at', 'vozac_id'], []),
-    ('finansije_licno', ['id', 'created_at', 'tip', 'naziv', 'iznos'], []),
+    # ('finansije_licno', ['id', 'created_at', 'tip', 'naziv', 'iznos'], []),  # TABLE REMOVED - nepotrebna
     ('finansije_troskovi', ['id', 'naziv', 'tip', 'iznos', 'mesecno', 'aktivan', 'vozac_id', 'created_at', 'updated_at', 'mesec', 'godina'], []),
     ('fuel_logs', ['id', 'created_at', 'type', 'liters', 'price', 'amount', 'vozilo_uuid', 'km', 'pump_meter', 'metadata'], ['metadata']),
     ('kapacitet_polazaka', ['id', 'grad', 'vreme', 'max_mesta', 'aktivan', 'napomena'], []),

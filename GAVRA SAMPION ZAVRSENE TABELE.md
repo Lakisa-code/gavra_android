@@ -6,4 +6,6 @@
 6 vozila tabela je POTPUNO FUNKCIONALNA!
 7 app_config tabela je POTPUNO FUNKCIONALNA!
 8 app_settings tabela je POTPUNO FUNKCIONALNA!
-9 finansije_troskovi tabela je POTPUNO FUNKCIONALNA! 
+9 finansije_troskovi tabela je POTPUNO FUNKCIONALNA!
+10 fuel_logs tabela je POTPUNO FUNKCIONALNA!
+11 kapacitet_polazaka tabela je POTPUNO FUNKCIONALNA! 
