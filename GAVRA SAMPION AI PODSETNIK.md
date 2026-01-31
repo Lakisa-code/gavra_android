@@ -12,3 +12,9 @@
 8. **DOKUMENTACIJA** - Detaljno zapisuj sve korake i rezultate
 9. **LOKACIJA TESTOVA** - Čuvaj u `C:\Users\Bojan\Desktop\GAVRA013\GAVRA SAMPION`
 10. **REALTIME ZA SVAKU TABELU** - Implementiraj streaming za sve promene
+11. **KOMUNIKACIJA NA SRPSKOM** - Sva komunikacija i dokumentacija na srpskom jeziku
+12. **TESTOVI PO JEDNA TABELA** - Python i SQL testovi se rade samo za jednu tabelu
+13. **REALTIME PUBLICATION** - Automatski dodaj nove tabele u supabase_realtime publication
+14. **GAVRA SAMPION TESTOVI** - Svi testovi: GAVRA SAMPION TEST [TABELA] [TIP] [GODINA]
+15. **POKRENI TESTOVE** - Uvek pokreni testove posle implementacije tabele
+16. **ZAVRŠENE TABELE FORMAT** - Fajl "GAVRA SAMPION ZAVRSENE TABELE.md" piši po paternu: broj 1, broj 2, broj 3...
