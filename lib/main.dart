@@ -20,6 +20,7 @@ import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
 import 'services/ml_champion_service.dart';
 import 'services/ml_dispatch_autonomous_service.dart';
 import 'services/ml_finance_autonomous_service.dart';
+import 'services/ml_service.dart'; // 🧠 ML servis za trening modela
 import 'services/ml_vehicle_autonomous_service.dart';
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
@@ -126,6 +127,9 @@ Future<void> _initAppServices() async {
   unawaited(MLDispatchAutonomousService().start());
   unawaited(MLChampionService().start());
   unawaited(MLFinanceAutonomousService().start());
+
+  // 🧠 Treniraj ML model za ocenjivanje putnika
+  unawaited(MLService.trainPassengerScoringModel());
 }
 
 class MyApp extends StatefulWidget {
