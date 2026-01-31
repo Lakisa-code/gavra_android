@@ -3,4 +3,5 @@
 3 daily_reports tabela je POTPUNO FUNKCIONALNA!
 4 registrovani_putnici tabela je POTPUNO FUNKCIONALNA!
 5 vozaci tabela je POTPUNO FUNKCIONALNA!
-6 vozila tabela je POTPUNO FUNKCIONALNA! 
+6 vozila tabela je POTPUNO FUNKCIONALNA!
+7 app_config tabela je POTPUNO FUNKCIONALNA! 
