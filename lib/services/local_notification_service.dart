@@ -11,6 +11,7 @@ import '../screens/home_screen.dart';
 import '../supabase_client.dart';
 import 'notification_navigation_service.dart';
 import 'realtime_notification_service.dart';
+import 'seat_request_service.dart';
 import 'voznje_log_service.dart';
 import 'wake_lock_service.dart';
 
@@ -1005,6 +1006,19 @@ class LocalNotificationService {
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
 
+      // 🆕 INSERT U SEAT_REQUESTS TABELU ZA ML OBRADU
+      try {
+        await SeatRequestService.insertSeatRequest(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: zeljeniTermin,
+          grad: 'vs',
+          brojMesta: 1, // Default za waiting zahteve
+        );
+      } catch (e) {
+        debugPrint('⚠️ Error creating seat request for VS waiting: $e');
+      }
+
       // 📝 LOG U DNEVNIK
       try {
         await VoznjeLogService.logZahtev(
@@ -1069,6 +1083,19 @@ class LocalNotificationService {
         'polasci_po_danu': polasci,
         if (radniDani != null) 'radni_dani': radniDani,
       }).eq('id', putnikId);
+
+      // 🆕 INSERT U SEAT_REQUESTS TABELU ZA ML OBRADU
+      try {
+        await SeatRequestService.insertSeatRequest(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: zeljeniTermin,
+          grad: 'vs',
+          brojMesta: 1, // Default za ceka_mesto zahteve
+        );
+      } catch (e) {
+        debugPrint('⚠️ Error creating seat request for VS ceka_mesto: $e');
+      }
 
       // 📝 LOG U DNEVNIK
       try {
