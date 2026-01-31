@@ -8,4 +8,11 @@
 8 app_settings tabela je POTPUNO FUNKCIONALNA!
 9 finansije_troskovi tabela je POTPUNO FUNKCIONALNA!
 10 fuel_logs tabela je POTPUNO FUNKCIONALNA!
-11 kapacitet_polazaka tabela je POTPUNO FUNKCIONALNA! 
+11 kapacitet_polazaka tabela je POTPUNO FUNKCIONALNA!
+12 ml_config tabela je POTPUNO FUNKCIONALNA!
+13 payment_reminders_log tabela je POTPUNO FUNKCIONALNA!
+14 pin_zahtevi tabela je POTPUNO FUNKCIONALNA!
+15 promene_vremena_log tabela je POTPUNO FUNKCIONALNA!
+16 push_tokens tabela je POTPUNO FUNKCIONALNA!
+17 putnik_pickup_lokacije tabela je POTPUNO FUNKCIONALNA!
+18 racun_sequence tabela je POTPUNO FUNKCIONALNA! 
