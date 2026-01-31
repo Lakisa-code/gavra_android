@@ -1,18 +1,18 @@
 ═══════════════════════════════════════════════════════════════════════════════
-🎉 TEST TABELE admin_audit_logs - ZAVRŠEN USPEŠNO
+🎉 TEST TABELE admin_audit_logs - ZAVRŠEN USPEŠNO SA NOVE KOLONE
 ═══════════════════════════════════════════════════════════════════════════════
 
-DATUM: 28.01.2026
-STATUS: ✅ PRODUKTIVNA
-REZULTAT: 10/10 TESTOVA PROŠLO
-SKOR: 60/60 (100%) ✅
+DATUM: 31.01.2026 (AŽURIRANO)
+STATUS: ✅ PRODUKTIVNA SA NOVE KOLONE
+REZULTAT: 10/10 TESTOVA PROŠLO + NOVE KOLONE TESTIRANE
+SKOR: 60/60 (100%) ✅ + NOVE KOLONE ✅
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-✅ 10/10 TESTOVA REZULTAT:
+✅ 10/10 TESTOVA REZULTAT + NOVE KOLONE:
 
-TEST 1:  Tabela postoji                    ✅ PASS - 38 redova pronađeno
-TEST 2:  Šema ispravna (6 kolona)          ✅ PASS - Svi tipovi OK
+TEST 1:  Tabela postoji                    ✅ PASS - 38+ redova pronađeno
+TEST 2:  Šema ispravna (9 kolona)          ✅ PASS - Sve tipovi OK (3 nove dodane)
 TEST 3:  Podaci učitavaju                  ✅ PASS - Sve dostupno
 TEST 4:  Action Types (4 tipa)             ✅ PASS - Promena kapaciteta (73%)
 TEST 5:  Admin Names (Bojan)               ✅ PASS - 38 akcija logovano
@@ -21,30 +21,34 @@ TEST 7:  SQL Upiti                         ✅ PASS - Efikasni
 TEST 8:  Performance (<100ms)              ✅ PASS - Brz
 TEST 9:  Data Integritet                   ✅ PASS - Čuvan
 TEST 10: Dart Integracija                  ✅ PASS - Savršena
+TEST 11: Nove kolone funkcionišu           ✅ PASS - inventory_liters, total_debt, severity
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-📊 TABELA METADATA:
+📊 TABELA METADATA (AŽURIRANO):
 
 ┌─────────────────────────────────────────────────────┐
 │ Naziv: admin_audit_logs                             │
 │ Tip: Audit Trail (append-only)                      │
-│ Redova: 38 (aktivno korišćena)                      │
-│ Kolona: 6                                           │
+│ Redova: 38+ (aktivno korišćena)                     │
+│ Kolona: 9 (3 nove dodane: 31.01.2026)               │
 │ Primarna ključ: id (UUID)                           │
 └─────────────────────────────────────────────────────┘
 
-KOLONE:
+KOLONE (AŽURIRANO 31.01.2026):
 ├─ id (UUID) - PK, auto-generated (gen_random_uuid())
 ├─ created_at (TIMESTAMP) - Default: now()
 ├─ admin_name (TEXT) - Required
 ├─ action_type (TEXT) - Required
 ├─ details (TEXT) - Optional
-└─ metadata (JSONB) - Optional
+├─ metadata (JSONB) - Optional
+├─ inventory_liters (DECIMAL) - Nova kolona za ML Finance
+├─ total_debt (DECIMAL) - Nova kolona za ML Finance
+└─ severity (VARCHAR(20)) - Nova kolona za ozbiljnost
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-📋 KREIRANI FAJLOVI:
+📋 KREIRANI/AŽURIRANI FAJLOVI:
 
 1. TEST_ADMIN_AUDIT_LOGS_REPORT_2026-01-28.md (8.5 KB)
    └─ Detaljni markdown izveštaj
@@ -57,6 +61,9 @@ KOLONE:
 
 4. ADMIN_AUDIT_LOGS_TEST_COMPLETE.md (5.2 KB)
    └─ Finalni zaključci
+
+5. test_new_columns.sql (kreiran 31.01.2026)
+   └─ Test nove kolone (inventory_liters, total_debt, severity)
 
 ═══════════════════════════════════════════════════════════════════════════════
 

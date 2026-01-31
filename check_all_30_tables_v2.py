@@ -48,17 +48,19 @@ def check_table(table_name: str, expected_columns: list, jsonb_fields: list = No
         if unknown:
             for col in unknown:
                 problems.append(col)
-        return {'table': table_name, 'status': '❌' if problems else '✅', 'problems': problems}
+            return {'table': table_name, 'status': 'ERR', 'problems': problems}
+        else:
+            return {'table': table_name, 'status': 'OK', 'problems': None}
     else:
-        return {'table': table_name, 'status': '⚠️', 'problems': None, 'note': 'Nije korišćena u kodu'}
+        return {'table': table_name, 'status': 'NIJE_KORISCENA', 'problems': None, 'note': 'Nije korišćena u kodu'}
 
 # ============================================================================
 # SVE 30 TABELA - sa JSONB fields
 # ============================================================================
 
 TABLES = [
-    ('admin_audit_logs', ['id', 'created_at', 'admin_name', 'action_type', 'details', 'metadata'], ['metadata']),
-    ('adrese', ['id', 'naziv', 'grad', 'ulica', 'broj', 'koordinate'], ['koordinate']),
+    ('admin_audit_logs', ['id', 'created_at', 'admin_name', 'action_type', 'details', 'metadata', 'inventory_liters', 'total_debt', 'severity'], ['metadata']),
+    ('adrese', ['id', 'naziv', 'grad', 'ulica', 'broj', 'gps_lat', 'gps_lng', 'created_at', 'updated_at'], []),
     ('app_config', ['key', 'value', 'description', 'updated_at'], []),
     ('app_settings', ['id', 'updated_at', 'updated_by', 'nav_bar_type', 'dnevni_zakazivanje_aktivno', 'min_version', 'latest_version', 'store_url_android', 'store_url_huawei'], []),
     ('daily_reports', ['id', 'vozac', 'datum', 'ukupan_pazar', 'sitan_novac', 'checkin_vreme', 'otkazani_putnici', 'naplaceni_putnici', 'pokupljeni_putnici', 'dugovi_putnici', 'mesecne_karte', 'kilometraza', 'automatski_generisan', 'created_at', 'vozac_id'], []),
@@ -88,7 +90,7 @@ TABLES = [
 ]
 
 if __name__ == '__main__':
-    print("\n🚀 PROVERA SVE 30 TABELA - POBOLJŠANA\n")
+    print("\n*** PROVERA SVE 30 TABELA - POBOLJSANA ***\n")
     print("="*70)
     
     results = []
@@ -101,7 +103,7 @@ if __name__ == '__main__':
         results.append(result)
     
     print(f"\n{'='*70}")
-    print("📊 SAŽETAK")
+    print("SAZETAK")
     print("="*70 + "\n")
     
     ok_count = 0
@@ -109,19 +111,19 @@ if __name__ == '__main__':
     unused_count = 0
     
     for r in results:
-        if r['status'] == '✅':
+        if r['status'] == 'OK':
             ok_count += 1
-            print(f"✅ {r['table']:<30} OK")
-        elif r['status'] == '⚠️':
+            print(f"OK {r['table']:<30} OK")
+        elif r['status'] == 'NIJE_KORISCENA':
             unused_count += 1
-            print(f"⚠️  {r['table']:<30} Nije korišćena u kodu")
+            print(f"?? {r['table']:<30} NIJE KORISCENA")
         else:
             problem_count += 1
-            print(f"❌ {r['table']:<30} PROBLEME: {r['problems']}")
+            print(f"ERR {r['table']:<30} PROBLEMI: {r['problems']}")
     
     print(f"\n{'='*70}")
     print(f"UKUPNO: {len(results)} tabela")
-    print(f"  ✅ OK: {ok_count}")
-    print(f"  ❌ Problemi: {problem_count}")
-    print(f"  ⚠️  Nije korišćena: {unused_count}")
+    print(f"  OK: {ok_count}")
+    print(f"  ERR: {problem_count}")
+    print(f"  ??: {unused_count}")
     print(f"{'='*70}\n")

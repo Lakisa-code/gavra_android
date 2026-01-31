@@ -7,6 +7,7 @@ import '../globals.dart';
 import 'auth_manager.dart';
 import 'popis_service.dart';
 import 'vozac_mapping_service.dart';
+import 'vozac_service.dart';
 
 /// 📊 SERVIS ZA AUTOMATSKI POPIS U 21:00
 /// Generiše popis za sve aktivne vozače svakog radnog dana u 21:00
@@ -16,8 +17,18 @@ class ScheduledPopisService {
   static bool _isInitialized = false;
   static const String _lastPopisDateKey = 'last_auto_popis_date';
 
-  /// Lista aktivnih vozača
-  static const List<String> _aktivniVozaci = ['Bojan', 'Bilevski', 'Bruda', 'Ivan'];
+  /// Lista aktivnih vozača - 🔧 FIX: Dinamičko učitavanje umesto hardkodirane liste
+  static Future<List<String>> _getAktivniVozaci() async {
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      // Za sada vraćamo sve vozače, ali možemo dodati filter za aktivne
+      return vozaci.map((v) => v.ime).toList();
+    } catch (e) {
+      // Fallback na hardkodiranu listu ako dođe do greške
+      return ['Bojan', 'Bilevski', 'Bruda', 'Ivan'];
+    }
+  }
 
   /// Inicijalizuj servis - pozovi iz main.dart ili welcome_screen
   static Future<void> initialize() async {
@@ -111,10 +122,13 @@ class ScheduledPopisService {
     // Bez ovoga, getVozacUuidSync() vraća null i sve statistike su 0
     await VozacMappingService.initialize();
 
+    // 🔧 FIX: Dinamičko učitavanje aktivnih vozača
+    final aktivniVozaci = await _getAktivniVozaci();
+
     int uspesno = 0;
     int neuspesno = 0;
 
-    for (final vozac in _aktivniVozaci) {
+    for (final vozac in aktivniVozaci) {
       try {
         // 🔄 KORISTI CENTRALIZOVAN PopisService ZA KONZISTENTNOST
         final popisDataRaw = await PopisService.loadPopisData(

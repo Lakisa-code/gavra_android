@@ -55,7 +55,6 @@ class _AdreseScreenState extends State<AdreseScreen> {
           'grad': result['grad'],
           'ulica': result['ulica'],
           'broj': result['broj'],
-          'koordinate': result['koordinate'] ?? {},
         });
 
         if (mounted) {

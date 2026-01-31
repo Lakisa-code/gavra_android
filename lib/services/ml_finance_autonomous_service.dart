@@ -265,7 +265,8 @@ class MLFinanceAutonomousService extends ChangeNotifier {
         'action_type': action,
         'details': details,
         'admin_name': 'system',
-        'metadata': {'inventory_liters': _inventory.litersInStock, 'total_debt': _inventory.totalDebt},
+        'inventory_liters': _inventory.litersInStock, // DIREKTNA KOLONA
+        'total_debt': _inventory.totalDebt, // DIREKTNA KOLONA
       });
     } catch (e) {
       if (kDebugMode) print('❌ [ML Finance] Greška pri logovanju audita: $e');

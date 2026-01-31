@@ -17,7 +17,8 @@ class AdresaSupabaseService {
     }
 
     try {
-      final response = await supabase.from('adrese').select('id, naziv, grad, koordinate').eq('id', uuid).single();
+      final response =
+          await supabase.from('adrese').select('id, naziv, grad, gps_lat, gps_lng').eq('id', uuid).single();
 
       final adresa = Adresa.fromMap(response);
       _cache[uuid] = adresa;
@@ -39,7 +40,7 @@ class AdresaSupabaseService {
   static Future<List<Adresa>> getAdreseZaGrad(String grad) async {
     try {
       final response =
-          await supabase.from('adrese').select('id, naziv, grad, koordinate').eq('grad', grad).order('naziv');
+          await supabase.from('adrese').select('id, naziv, grad, gps_lat, gps_lng').eq('grad', grad).order('naziv');
 
       return response.map((json) => Adresa.fromMap(json)).toList();
     } catch (e) {
@@ -62,7 +63,7 @@ class AdresaSupabaseService {
     try {
       final response = await supabase
           .from('adrese')
-          .select('id, naziv, grad, ulica, broj, koordinate')
+          .select('id, naziv, grad, ulica, broj, gps_lat, gps_lng')
           .eq('naziv', naziv)
           .eq('grad', grad)
           .maybeSingle();
@@ -128,10 +129,11 @@ class AdresaSupabaseService {
             final response = await supabase
                 .from('adrese')
                 .update({
-                  'koordinate': {'lat': lat, 'lng': lng},
+                  'gps_lat': lat, // Direct column
+                  'gps_lng': lng, // Direct column
                 })
                 .eq('id', adresa.id)
-                .select('id, naziv, grad, ulica, broj, koordinate')
+                .select('id, naziv, grad, ulica, broj, gps_lat, gps_lng')
                 .single();
 
             final updatedAdresa = Adresa.fromMap(response);
@@ -227,7 +229,8 @@ class AdresaSupabaseService {
   }) async {
     try {
       await supabase.from('adrese').update({
-        'koordinate': {'lat': lat, 'lng': lng},
+        'gps_lat': lat, // Direct column
+        'gps_lng': lng, // Direct column
       }).eq('id', uuid);
 
       if (_cache.containsKey(uuid)) {
@@ -258,15 +261,9 @@ class AdresaSupabaseService {
         return false;
       }
 
-      final koordinate = {
-        'lat': latitude,
-        'lng': longitude,
-        'source': 'gps_learn',
-        'learned_at': DateTime.now().toIso8601String(),
-      };
-
       await supabase.from('adrese').update({
-        'koordinate': koordinate,
+        'gps_lat': latitude, // Direct column
+        'gps_lng': longitude, // Direct column
       }).eq('id', adresaId);
 
       _cache.remove(adresaId);

@@ -118,7 +118,8 @@ def test_database_schema():
         "Table: user_daily_changes",
         "Columns: id, putnik_id, datum, changes_count, last_change_at, created_at",
         "Primary key: id",
-        "Indexes: putnik_id, datum"
+        "Unique constraint: putnik_id, datum",
+        "Foreign key: putnik_id -> registrovani_putnici.id"
     ]
 
     print("📋 Expected schema:")

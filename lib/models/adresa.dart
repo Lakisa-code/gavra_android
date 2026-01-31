@@ -12,7 +12,8 @@ class Adresa {
     this.ulica,
     this.broj,
     this.grad,
-    this.koordinate,
+    this.gpsLat, // Direct DECIMAL column
+    this.gpsLng, // Direct DECIMAL column
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : id = id ?? const Uuid().v4(),
@@ -26,13 +27,14 @@ class Adresa {
       ulica: map['ulica'] as String?,
       broj: map['broj'] as String?,
       grad: map['grad'] as String?,
-      koordinate: map['koordinate'], // JSONB data
+      gpsLat: map['gps_lat'] as double?, // Direct column
+      gpsLng: map['gps_lng'] as double?, // Direct column
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : DateTime.now(),
       updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
     );
   }
 
-  /// Factory constructor with separate lat/lng that creates JSONB coordinates
+  /// Factory constructor with separate lat/lng using direct columns
   factory Adresa.withCoordinates({
     String? id,
     required String naziv,
@@ -50,7 +52,8 @@ class Adresa {
       ulica: ulica,
       broj: broj,
       grad: grad,
-      koordinate: createCoordinatesJsonb(latitude, longitude),
+      gpsLat: latitude, // Direct column
+      gpsLng: longitude, // Direct column
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
@@ -60,13 +63,17 @@ class Adresa {
   final String? ulica;
   final String? broj;
   final String? grad;
-  final dynamic koordinate; // JSONB data from PostgreSQL
+  final double? gpsLat; // Direct DECIMAL column
+  final double? gpsLng; // Direct DECIMAL column
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  // Virtuelna polja za latitude/longitude iz JSONB koordinata
-  double? get latitude => _parseLatitudeFromJsonb();
-  double? get longitude => _parseLongitudeFromJsonb();
+  // Legacy properties for backward compatibility
+  dynamic get koordinate => gpsLat != null && gpsLng != null ? {'lat': gpsLat, 'lng': gpsLng} : null;
+
+  // Virtuelna polja za latitude/longitude iz direktnih kolona
+  double? get latitude => gpsLat;
+  double? get longitude => gpsLng;
 
   Map<String, dynamic> toMap() {
     return {
@@ -75,48 +82,15 @@ class Adresa {
       'ulica': ulica,
       'broj': broj,
       'grad': grad,
-      'koordinate': koordinate, // JSONB data
+      'gps_lat': gpsLat, // Direct column
+      'gps_lng': gpsLng, // Direct column
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
 
-  /// Parse latitude from JSONB coordinates
-  double? _parseLatitudeFromJsonb() {
-    if (koordinate == null) return null;
-    try {
-      if (koordinate is Map<String, dynamic>) {
-        final lat = (koordinate as Map<String, dynamic>)['lat'];
-        return lat is num ? lat.toDouble() : null;
-      }
-    } catch (e) {
-      // Handle parsing errors gracefully
-    }
-    return null;
-  }
-
-  /// Parse longitude from JSONB coordinates
-  double? _parseLongitudeFromJsonb() {
-    if (koordinate == null) return null;
-    try {
-      if (koordinate is Map<String, dynamic>) {
-        final lng = (koordinate as Map<String, dynamic>)['lng'];
-        return lng is num ? lng.toDouble() : null;
-      }
-    } catch (e) {
-      // Handle parsing errors gracefully
-    }
-    return null;
-  }
-
-  /// Create JSONB coordinates from latitude and longitude
-  static Map<String, double>? createCoordinatesJsonb(double? lat, double? lng) {
-    if (lat == null || lng == null) return null;
-    return {'lat': lat, 'lng': lng};
-  }
-
   /// Validation methods
-  bool get hasValidCoordinates => latitude != null && longitude != null;
+  bool get hasValidCoordinates => gpsLat != null && gpsLng != null;
 
   /// Distance calculation between two addresses
   double? distanceTo(Adresa other) {
@@ -331,7 +305,8 @@ class Adresa {
     String? ulica,
     String? broj,
     String? grad,
-    dynamic koordinate,
+    double? gpsLat,
+    double? gpsLng,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -341,7 +316,8 @@ class Adresa {
       ulica: ulica ?? this.ulica,
       broj: broj ?? this.broj,
       grad: grad ?? this.grad,
-      koordinate: koordinate ?? this.koordinate,
+      gpsLat: gpsLat ?? this.gpsLat,
+      gpsLng: gpsLng ?? this.gpsLng,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -360,7 +336,8 @@ class Adresa {
   /// Create a copy with updated coordinates
   Adresa withCoordinates(double latitude, double longitude) {
     return copyWith(
-      koordinate: createCoordinatesJsonb(latitude, longitude),
+      gpsLat: latitude,
+      gpsLng: longitude,
       updatedAt: DateTime.now(),
     );
   }

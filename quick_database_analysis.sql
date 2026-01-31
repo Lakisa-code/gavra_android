@@ -123,7 +123,7 @@ FROM troskovi_unosi;
 
 -- 22. USER_DAILY_CHANGES
 SELECT 'user_daily_changes' as tabela, COUNT(*) as ukupno_redova,
-       COUNT(DISTINCT user_id) as korisnici
+       COUNT(DISTINCT putnik_id) as putnici
 FROM user_daily_changes;
 
 -- 23. VOZAC_LOKACIJE

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../services/vozac_mapping_service.dart';
+import '../services/vozac_service.dart';
 import '../theme.dart';
 import '../utils/vozac_boja.dart';
 
@@ -26,13 +27,26 @@ class _VozaciStatistikaScreenState extends State<VozaciStatistikaScreen> {
   Map<String, VozacStats> _statsPoVozacima = {};
   bool _isLoading = true;
 
-  // Fiksni redosled vozača
-  final List<String> _vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Ivan'];
+  // 🔧 Dinamički redosled vozača - učitava se iz VozacService
+  late final List<String> _vozaciRedosled;
 
   @override
   void initState() {
     super.initState();
+    _initializeVozaciRedosled();
     _loadData();
+  }
+
+  /// Inicijalizuj redosled vozača
+  Future<void> _initializeVozaciRedosled() async {
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      _vozaciRedosled = vozaci.map((v) => v.ime).toList();
+    } catch (e) {
+      // Fallback na hardkodiranu listu ako dođe do greške
+      _vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Ivan'];
+    }
   }
 
   /// Računaj datumski opseg na osnovu filtera

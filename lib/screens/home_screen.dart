@@ -2372,7 +2372,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         const SizedBox(width: 4),
-                        if (['Bojan', 'Svetlana'].contains(_currentDriver))
+                        if (AdminSecurityService.isAdmin(_currentDriver))
                           Expanded(
                             child: _HomeScreenButton(
                               label: 'Admin',

@@ -151,7 +151,7 @@ class UltraDetailedTableAnalyzer:
             'registrovani_putnici': ['vozac_id', 'adresa_bela_crkva_id', 'adresa_vrsac_id'],
             'seat_requests': ['putnik_id'],
             'troskovi_unosi': ['vozilo_id', 'vozac_id'],
-            'user_daily_changes': ['putnik_id'],
+            'user_daily_changes': ['putnik_id'],  # Unique constraint (putnik_id, datum) postoji
             'vozac_lokacije': ['vozac_id'],
             'vozaci': [],
             'vozila': [],

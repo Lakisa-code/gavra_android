@@ -12,6 +12,7 @@ import '../services/haptic_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/registrovani_putnik_service.dart';
+import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart';
 import '../utils/smart_colors.dart';
@@ -102,13 +103,13 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // 💰 UNIVERZALNA METODA ZA PLAĆANJE - custom cena za sve tipove putnika
   Future<void> _handlePayment() async {
-    // Validacija vozača pre pokušaja plaćanja
-    final validni = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Ivan'];
-    if (!validni.contains(widget.currentDriver)) {
+    // 🔧 FIX: Validacija vozača pre pokušaja plaćanja - koristi VozacMappingService
+    final vozacUuid = await VozacMappingService.getVozacUuid(widget.currentDriver);
+    if (vozacUuid == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Greška: Vozač nije definisan'),
+            content: const Text('Greška: Vozač nije definisan u sistemu'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

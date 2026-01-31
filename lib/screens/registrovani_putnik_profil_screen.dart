@@ -513,31 +513,25 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       try {
         if (adresaBcId != null && adresaBcId.isNotEmpty) {
           final bcResponse =
-              await supabase.from('adrese').select('naziv, koordinate').eq('id', adresaBcId).maybeSingle();
+              await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaBcId).maybeSingle();
           if (bcResponse != null) {
             adresaBcNaziv = bcResponse['naziv'] as String?;
             // Koordinate za BC adresu
-            if (grad == 'BC' && bcResponse['koordinate'] != null) {
-              final koordinate = bcResponse['koordinate'];
-              if (koordinate is Map) {
-                putnikLat = (koordinate['lat'] as num?)?.toDouble();
-                putnikLng = (koordinate['lng'] as num?)?.toDouble();
-              }
+            if (grad == 'BC' && bcResponse['gps_lat'] != null && bcResponse['gps_lng'] != null) {
+              putnikLat = (bcResponse['gps_lat'] as num?)?.toDouble();
+              putnikLng = (bcResponse['gps_lng'] as num?)?.toDouble();
             }
           }
         }
         if (adresaVsId != null && adresaVsId.isNotEmpty) {
           final vsResponse =
-              await supabase.from('adrese').select('naziv, koordinate').eq('id', adresaVsId).maybeSingle();
+              await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaVsId).maybeSingle();
           if (vsResponse != null) {
             adresaVsNaziv = vsResponse['naziv'] as String?;
             // Koordinate za VS adresu
-            if (grad == 'VS' && vsResponse['koordinate'] != null) {
-              final koordinate = vsResponse['koordinate'];
-              if (koordinate is Map) {
-                putnikLat = (koordinate['lat'] as num?)?.toDouble();
-                putnikLng = (koordinate['lng'] as num?)?.toDouble();
-              }
+            if (grad == 'VS' && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {
+              putnikLat = (vsResponse['gps_lat'] as num?)?.toDouble();
+              putnikLng = (vsResponse['gps_lng'] as num?)?.toDouble();
             }
           }
         }

@@ -8,6 +8,7 @@ import '../globals.dart';
 import 'auth_manager.dart';
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
+import 'vozac_service.dart';
 
 class RealtimeNotificationService {
   /// 📱 Pošalji push notifikaciju na specifične tokene
@@ -60,8 +61,13 @@ class RealtimeNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      final response =
-          await supabase.from('push_tokens').select('token, provider').inFilter('user_id', ['Bojan', 'Svetlana']);
+      // 🔧 FIX: Dinamičko učitavanje admin vozača
+      const adminNames = ['Bojan', 'Svetlana'];
+      final vozacService = VozacService();
+      final allVozaci = await vozacService.getAllVozaci();
+      final adminVozaci = allVozaci.where((v) => adminNames.contains(v.ime)).map((v) => v.ime).toList();
+
+      final response = await supabase.from('push_tokens').select('token, provider').inFilter('user_id', adminVozaci);
 
       if ((response as List).isEmpty) return;
 
@@ -139,7 +145,11 @@ class RealtimeNotificationService {
     String? excludeSender,
   }) async {
     try {
-      const vozaci = ['Bojan', 'Svetlana', 'Bilevski', 'Bruda', 'Ivan'];
+      // 🔧 FIX: Dinamičko učitavanje vozača umesto hardkodirane liste
+      final vozacService = VozacService();
+      final allVozaci = await vozacService.getAllVozaci();
+      final vozaci = allVozaci.map((v) => v.ime).toList();
+
       final response =
           await supabase.from('push_tokens').select('token, provider, user_id').inFilter('user_id', vozaci);
 
