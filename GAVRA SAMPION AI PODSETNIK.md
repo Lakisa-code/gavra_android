@@ -18,3 +18,4 @@
 14. **GAVRA SAMPION TESTOVI** - Svi testovi: GAVRA SAMPION TEST [TABELA] [TIP] [GODINA]
 15. **POKRENI TESTOVE** - Uvek pokreni testove posle implementacije tabele
 16. **ZAVRŠENE TABELE FORMAT** - Fajl "GAVRA SAMPION ZAVRSENE TABELE.md" piši po paternu: broj 1, broj 2, broj 3...
+17. **DODAJ TABELE U JEBENI SUPABASE** - Implementiraj tabele u Supabase, ne samo lokalno! Koristi MCP alate za deploy u produkciju
