@@ -8,7 +8,6 @@ library;
 import 'dart:async';
 
 import 'package:geolocator/geolocator.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
@@ -274,29 +273,6 @@ class UnifiedGeocodingService {
     }
   }
 
-  /// Trajno loguj lokaciju gde je putnik pokupljen u tabelu putnik_pickup_lokacije
-  static Future<void> logPickupLocation({
-    required Putnik putnik,
-    required String vozacId,
-    required double lat,
-    required double lng,
-  }) async {
-    try {
-      final supabase = Supabase.instance.client;
-      await supabase.from('putnik_pickup_lokacije').insert({
-        'putnik_id': putnik.id,
-        'putnik_ime': putnik.ime,
-        'lat': lat,
-        'lng': lng,
-        'vozac_id': vozacId,
-        'datum': DateTime.now().toIso8601String().split('T')[0],
-      });
-      print('📍 [Geocoding] Lokacija pokupljenja logovana za ${putnik.ime}');
-    } catch (e) {
-      print('⚠️ [Geocoding] Greška pri logovanju lokacije: $e');
-    }
-  }
-
   /// Izvršava taskove sekvencijalno sa pauzom između zahteva
   static Future<List<GeocodingResult>> _executeWithRateLimit(
     List<Future<GeocodingResult> Function()> tasks, {
@@ -397,16 +373,6 @@ class UnifiedGeocodingService {
           timeLimit: Duration(seconds: 5),
         ),
       );
-
-      // 2. LOGUJ U TABELU ZA PRACENJE (uvek, ako imamo poziciju)
-      if (vozacId != null) {
-        unawaited(logPickupLocation(
-          putnik: putnik,
-          vozacId: vozacId,
-          lat: position.latitude,
-          lng: position.longitude,
-        ));
-      }
 
       // 3. AUTO-LEARNING ADRESE: Proveri da li adresa već ima koordinate (ne menjaj ako ima)
       bool shouldUpdateAddress = true;
