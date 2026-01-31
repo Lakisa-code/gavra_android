@@ -1,10 +1,10 @@
 # GAVRA SAMPION - STATUS SVIH 30 TABELA
 **Datum:** 31.01.2026
-**Status:** 19/30 tabela implementirano ✅
+**Status:** 20/30 tabela implementirano ✅
 
 ## 📊 TRENUTNI STATUS:
 
-### ✅ IMPLEMENTIRANE TABELE (19/30):
+### ✅ IMPLEMENTIRANE TABELE (20/30):
 1. **admin_audit_logs** - Audit logovi za admin akcije
 2. **adrese** - Adrese putnika i destinacija
 3. **daily_reports** - Dnevni izveštaji vozača
@@ -24,6 +24,7 @@
 17. **putnik_pickup_lokacije** - Lokacije preuzimanja putnika
 18. **racun_sequence** - Sekvence brojeva računa
 19. **seat_requests** - Zahtevi za sedišta
+20. **troskovi_unosi** - Unosi troškova
 14. **pin_zahtevi** - Zahtevi za PIN kodove
 15. **promene_vremena_log** - Logovi promena vremena polazaka
 16. **push_tokens** - Push notifikacioni tokeni
@@ -33,8 +34,7 @@
 - **finansije_licno** - Uklonjena kao nepotrebna
 - **pending_resolution_queue** - Uklonjena kao nepotrebna
 
-### ⏳ PREOSTALE TABELE (11/30):
-20. troskovi_unosi
+### ⏳ PREOSTALE TABELE (10/30):
 21. user_daily_changes
 22. vozac_lokacije
 23. vozila_istorija
@@ -43,9 +43,9 @@
 26. weather_alerts_log
 
 ## 📈 PROGRES:
-- **Implementirano:** 19 tabela (63.3%)
+- **Implementirano:** 20 tabela (66.7%)
 - **Uklonjeno:** 2 tabele
-- **Preostalo:** 11 tabela (36.7%)
+- **Preostalo:** 10 tabela (33.3%)
 
 ## ✅ VALIDACIJA:
 - **OK tabela:** 24 (uključujući preostale koje se koriste)
@@ -53,7 +53,7 @@
 - **?? tabela:** 2 (nisu korišćene u kodu, ali postoje)
 
 ## 🎯 SLEDEĆI KORAK:
-Implementacija tabele #20: **troskovi_unosi**
+Implementacija tabele #21: **user_daily_changes**
 
 ---
 **Metoda:** GAVRA SAMPION - Jedna tabela po jedna

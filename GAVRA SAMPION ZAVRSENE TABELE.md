@@ -16,4 +16,5 @@
 16 push_tokens tabela je POTPUNO FUNKCIONALNA!
 17 putnik_pickup_lokacije tabela je POTPUNO FUNKCIONALNA!
 18 racun_sequence tabela je POTPUNO FUNKCIONALNA!
-19 seat_requests tabela je POTPUNO FUNKCIONALNA! 
+19 seat_requests tabela je POTPUNO FUNKCIONALNA!
+20 troskovi_unosi tabela je POTPUNO FUNKCIONALNA! 
