@@ -5,4 +5,6 @@
 5 vozaci tabela je POTPUNO FUNKCIONALNA!
 6 vozila tabela je POTPUNO FUNKCIONALNA!
 7 app_config tabela je POTPUNO FUNKCIONALNA!
-8 app_settings tabela je POTPUNO FUNKCIONALNA! 
+8 app_settings tabela je POTPUNO FUNKCIONALNA!
+9 finansije_licno tabela je POTPUNO FUNKCIONALNA!
+10 finansije_troskovi tabela je POTPUNO FUNKCIONALNA! 
