@@ -27,7 +27,7 @@ SUPABASE_SCHEMA = {
     'kapacitet_polazaka': ['id', 'grad', 'vreme', 'max_mesta', 'aktivan', 'napomena'],
     'ml_config': ['id', 'data', 'config', 'updated_at'],
     'payment_reminders_log': ['id', 'reminder_date', 'reminder_type', 'triggered_by', 'total_unpaid_passengers', 'total_notifications_sent', 'created_at'],
-    'pending_resolution_queue': ['id', 'putnik_id', 'grad', 'dan', 'vreme', 'old_status', 'new_status', 'message_title', 'message_body', 'created_at', 'sent', 'sent_at', 'alternative_time'],
+    # 'pending_resolution_queue': ['id', 'putnik_id', 'grad', 'dan', 'vreme', 'old_status', 'new_status', 'message_title', 'message_body', 'created_at', 'sent', 'sent_at', 'alternative_time'],  # TABLE REMOVED
     'pin_zahtevi': ['id', 'putnik_id', 'email', 'telefon', 'status', 'created_at'],
     'promene_vremena_log': ['id', 'putnik_id', 'datum', 'created_at', 'ciljni_dan', 'datum_polaska', 'sati_unapred'],
     'push_tokens': ['id', 'provider', 'token', 'user_id', 'created_at', 'updated_at', 'user_type', 'putnik_id', 'vozac_id'],

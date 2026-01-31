@@ -478,29 +478,10 @@ GROUP BY reminder_type
 ORDER BY total_reminders DESC;
 
 -- =====================================================
--- 12. PENDING_RESOLUTION_QUEUE - Detaljna analiza
+-- 12. PENDING_RESOLUTION_QUEUE - TABLE REMOVED
 -- =====================================================
-
--- 12.1 Osnovne informacije
-SELECT
-    'pending_resolution_queue' as table_name,
-    COUNT(*) as total_pending,
-    COUNT(DISTINCT putnik_id) as unique_passengers,
-    COUNT(DISTINCT grad) as unique_cities,
-    COUNT(CASE WHEN sent THEN 1 END) as sent_notifications,
-    COUNT(CASE WHEN sent_at IS NOT NULL THEN 1 END) as processed_notifications
-FROM pending_resolution_queue;
-
--- 12.2 Analiza po statusu
-SELECT
-    sent,
-    COUNT(*) as total_count,
-    COUNT(DISTINCT putnik_id) as unique_passengers,
-    MIN(created_at) as oldest,
-    MAX(created_at) as newest
-FROM pending_resolution_queue
-GROUP BY sent
-ORDER BY sent;
+-- Table was deleted as it was causing confusion
+-- All pending resolution logic moved to different implementation
 
 -- =====================================================
 -- 13. PIN_ZAHTEVI - Detaljna analiza

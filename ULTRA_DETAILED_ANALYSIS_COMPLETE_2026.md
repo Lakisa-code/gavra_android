@@ -21,7 +21,7 @@ Sve tabele su pokrivene detaljnim analizama:
 - `kapacitet_polazaka` ✅
 - `ml_config` ✅
 - `payment_reminders_log` ✅
-- `pending_resolution_queue` ✅
+- `pending_resolution_queue` ❌ REMOVED (causing confusion)
 - `pin_zahtevi` ✅
 - `promene_vremena_log` ✅
 - `push_tokens` ✅

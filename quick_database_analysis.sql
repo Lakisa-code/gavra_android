@@ -70,10 +70,10 @@ SELECT 'payment_reminders_log' as tabela, COUNT(*) as ukupno_redova,
        COUNT(DISTINCT putnik_id) as putnici
 FROM payment_reminders_log;
 
--- 12. PENDING_RESOLUTION_QUEUE
-SELECT 'pending_resolution_queue' as tabela, COUNT(*) as ukupno_redova,
-       COUNT(DISTINCT status) as statusi
-FROM pending_resolution_queue;
+-- 12. PENDING_RESOLUTION_QUEUE - TABLE REMOVED
+-- SELECT 'pending_resolution_queue' as tabela, COUNT(*) as ukupno_redova,
+--        COUNT(DISTINCT status) as statusi
+-- FROM pending_resolution_queue;
 
 -- 13. PIN_ZAHTEVI
 SELECT 'pin_zahtevi' as tabela, COUNT(*) as ukupno_redova,
@@ -191,7 +191,7 @@ SELECT
     (SELECT COUNT(*) FROM kapacitet_polazaka) +
     (SELECT COUNT(*) FROM ml_config) +
     (SELECT COUNT(*) FROM payment_reminders_log) +
-    (SELECT COUNT(*) FROM pending_resolution_queue) +
+    -- (SELECT COUNT(*) FROM pending_resolution_queue) +  -- TABLE REMOVED
     (SELECT COUNT(*) FROM pin_zahtevi) +
     (SELECT COUNT(*) FROM promene_vremena_log) +
     (SELECT COUNT(*) FROM push_tokens) +

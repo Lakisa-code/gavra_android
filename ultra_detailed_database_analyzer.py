@@ -32,7 +32,8 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 ALL_TABLES = [
     'admin_audit_logs', 'adrese', 'app_config', 'app_settings', 'daily_reports',
     'finansije_licno', 'finansije_troskovi', 'fuel_logs', 'kapacitet_polazaka',
-    'ml_config', 'payment_reminders_log', 'pending_resolution_queue', 'pin_zahtevi',
+    'ml_config', 'payment_reminders_log',  # 'pending_resolution_queue',  # TABLE REMOVED
+    'pin_zahtevi',
     'promene_vremena_log', 'push_tokens', 'putnik_pickup_lokacije', 'racun_sequence',
     'registrovani_putnici', 'seat_request_notifications', 'seat_requests',
     'troskovi_unosi', 'user_daily_changes', 'vozac_lokacije', 'vozaci', 'vozila',
@@ -141,7 +142,7 @@ class UltraDetailedTableAnalyzer:
             'kapacitet_polazaka': [],
             'ml_config': [],
             'payment_reminders_log': [],
-            'pending_resolution_queue': ['putnik_id'],
+            # 'pending_resolution_queue': ['putnik_id'],  # TABLE REMOVED
             'pin_zahtevi': ['putnik_id'],
             'promene_vremena_log': ['putnik_id'],
             'push_tokens': ['putnik_id', 'vozac_id'],

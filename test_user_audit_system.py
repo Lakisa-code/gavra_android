@@ -16,24 +16,31 @@ def test_user_audit_service():
     """Test the UserAuditService functionality"""
     print("🧪 Testing UserAuditService functionality...")
 
-    # Test 1: Check if UserAuditService class exists
-    try:
-        from lib.services.user_audit_service import UserAuditService
-        print("✅ UserAuditService class found")
-    except ImportError as e:
-        print(f"❌ UserAuditService class not found: {e}")
+    # Test 1: Check if UserAuditService file exists
+    audit_service_file = 'lib/services/user_audit_service.dart'
+    if os.path.exists(audit_service_file):
+        print("✅ UserAuditService file found")
+    else:
+        print("❌ UserAuditService file not found")
         return False
 
-    # Test 2: Check if methods exist
-    service = UserAuditService()
-    methods_to_check = ['logUserChange', 'getTodayStats', 'getUserChangeHistory', 'cleanupOldRecords']
+    # Test 2: Check if methods exist in the file
+    try:
+        with open(audit_service_file, 'r', encoding='utf-8') as f:
+            content = f.read()
 
-    for method in methods_to_check:
-        if hasattr(service, method):
-            print(f"✅ Method {method} exists")
-        else:
-            print(f"❌ Method {method} missing")
-            return False
+        methods_to_check = ['logUserChange', 'getTodayStats', 'getUserChangeHistory', 'cleanupOldRecords']
+
+        for method in methods_to_check:
+            if f'Future<void> {method}' in content or f'{method}(' in content:
+                print(f"✅ Method {method} exists")
+            else:
+                print(f"❌ Method {method} missing")
+                return False
+
+    except Exception as e:
+        print(f"❌ Error reading UserAuditService file: {e}")
+        return False
 
     # Test 3: Check if putnik_service has audit calls
     try:

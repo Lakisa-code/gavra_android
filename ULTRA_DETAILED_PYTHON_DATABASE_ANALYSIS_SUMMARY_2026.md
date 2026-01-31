@@ -23,7 +23,7 @@
 | `kapacitet_polazaka` | ✅ OK | 0 | 2 | 1 |
 | `ml_config` | ✅ OK | 0 | 0 | 0 |
 | `payment_reminders_log` | ✅ OK | 0 | 2 | 1 |
-| `pending_resolution_queue` | ✅ OK | 0 | 2 | 3 |
+| `pending_resolution_queue` | ❌ REMOVED | 0 | 0 | 0 |
 | `pin_zahtevi` | ✅ OK | 0 | 2 | 1 |
 | `promene_vremena_log` | ✅ OK | 0 | 2 | 0 |
 | `push_tokens` | ✅ OK | 0 | 2 | 1 |
