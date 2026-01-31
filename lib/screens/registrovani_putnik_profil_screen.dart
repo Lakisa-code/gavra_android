@@ -2379,13 +2379,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     tipPutnika: pTip,
                     detalji: 'Zahtev direktno potvrđen',
                   );
-
-                  // 🧹 Čišćenje ako je postojao zahtev (npr. pri promeni sa pending na confirmed)
-                  await SeatRequestService.deleteProcessedRequest(
-                    putnikId: putnikId,
-                    dan: dan,
-                    grad: tipGrad,
-                  );
                 } catch (_) {}
               }
 
