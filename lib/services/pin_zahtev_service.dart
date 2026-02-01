@@ -67,8 +67,7 @@ class PinZahtevService {
         .eq('status', 'ceka')
         .order('created_at')
         .asyncMap((data) async {
-          // Budući da stream() ne podržava join (select sa relacijama),
-          // moramo ručno dohvatiti podatke o putnicima za trenutnu listu zahteva
+          // Sa FK, relacije bi trebalo da rade
           if (data.isEmpty) return [];
 
           final ids = data.map((z) => z['id'] as String).toList();

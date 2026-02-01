@@ -498,10 +498,10 @@ class PutnikService {
         // KORISTI fromRegistrovaniPutniciMultipleForDay da kreira putnike samo za selektovani dan
         final registrovaniPutnici = Putnik.fromRegistrovaniPutniciMultipleForDay(data, danKratica);
 
-        // ? VALIDACIJA: Prika�i samo putnike sa validnim vremenima polazaka
+        // ? VALIDACIJA: Prikaži samo putnike sa validnim vremenima polazaka
         final validPutnici = registrovaniPutnici.where((putnik) {
           final polazak = putnik.polazak.trim();
-          // Pobolj�ana validacija vremena
+          // Poboljšana validacija vremena
           if (polazak.isEmpty) return false;
 
           final cleaned = polazak.toLowerCase();
@@ -559,7 +559,7 @@ class PutnikService {
   // ?? UNDO POSLEDNJU AKCIJU
   Future<String?> undoLastAction() async {
     if (_undoStack.isEmpty) {
-      return 'Nema akcija za poni�tavanje';
+      return 'Nema akcija za poništavanje';
     }
 
     final lastAction = _undoStack.removeLast();
@@ -573,7 +573,7 @@ class PutnikService {
             'status': lastAction.oldData['status'],
             'aktivan': true,
           }).eq('id', lastAction.putnikId as String);
-          return 'Poni�teno brisanje putnika';
+          return 'Poništeno brisanje putnika';
 
         case 'pickup':
           // Pokupljanje se više ne poništava preko kolona u registrovani_putnici
@@ -625,7 +625,7 @@ class PutnikService {
       // ?? VALIDACIJA GRADA
       if (GradAdresaValidator.isCityBlocked(putnik.grad)) {
         throw Exception(
-          'Grad "${putnik.grad}" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vr�ac.',
+          'Grad "${putnik.grad}" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.',
         );
       }
 
@@ -636,7 +636,7 @@ class PutnikService {
           putnik.grad,
         )) {
           throw Exception(
-            'Adresa "${putnik.adresa}" nije validna za grad "${putnik.grad}". Dozvoljene su samo adrese iz Bele Crkve i Vr�ca.',
+            'Adresa "${putnik.adresa}" nije validna za grad "${putnik.grad}". Dozvoljene su samo adrese iz Bele Crkve i Vršca.',
           );
         }
       }
@@ -728,8 +728,8 @@ class PutnikService {
         radniDani = radniDaniList.join(',');
       }
 
-      // A�uriraj mesecnog putnika u bazi
-      // ? UKLONJENO: updated_by izaziva foreign key gre�ku jer UUID nije u tabeli users
+      // Ažuriraj mesecnog putnika u bazi
+      // ? UKLONJENO: updated_by izaziva foreign key grešku jer UUID nije u tabeli users
       // final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodeljenVozac ?? '');
 
       // ?? Pripremi update mapu - BEZ updated_by (foreign key constraint)
@@ -819,7 +819,7 @@ class PutnikService {
     _addToUndoStack('delete', id, undoResponse);
 
     // ?? NE menjaj status - constraint check_registrovani_status_valid dozvoljava samo:
-    // 'aktivan', 'neaktivan', 'pauziran', 'radi', 'bolovanje', 'godi�nji'
+    // 'aktivan', 'neaktivan', 'pauziran', 'radi', 'bolovanje', 'godišnji'
     await supabase.from(tabela).update({
       'obrisan': true, // ? Soft delete flag
     }).eq('id', id);
@@ -899,7 +899,7 @@ class PutnikService {
         'updated_at': now.toUtc().toIso8601String(),
       }).eq('id', id);
 
-      // ?? DODAJ ZAPIS U voznje_log za pracenje vo�nji
+      // ?? DODAJ ZAPIS U voznje_log za pracenje vožnji
       final danas = now.toIso8601String().split('T')[0];
       try {
         await supabase.from('voznje_log').insert({
@@ -918,7 +918,7 @@ class PutnikService {
     // 📊 AŽURIRAJ STATISTIKE ako je mesečni putnik i pokupljen je
     if (putnik.mesecnaKarta == true) {
       // Statistike se racunaju dinamicki kroz StatistikaService
-      // bez potrebe za dodatnim a�uriranjem
+      // bez potrebe za dodatnim ažuriranjem
     }
 
     // ?? DINAMICKI ETA UPDATE - ukloni putnika iz pracenja i preracunaj ETA
@@ -1185,7 +1185,7 @@ class PutnikService {
     }
   }
 
-  /// ?? OZNACI KAO BOLOVANJE/GODI�NJI (samo za admin)
+  /// ?? OZNACI KAO BOLOVANJE/GODIŠNJI (samo za admin)
   Future<void> oznaciBolovanjeGodisnji(
     dynamic id,
     String tipOdsustva,

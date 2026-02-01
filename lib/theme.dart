@@ -220,7 +220,7 @@ extension ThemeGradients on ThemeData {
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
-  fontFamily: 'Inter',
+  fontFamily: 'Roboto',
   scaffoldBackgroundColor: const Color(0xFFF0F9FF),
   appBarTheme: const AppBarTheme(
     elevation: 0,

@@ -88,6 +88,14 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+
   assets:
     - assets/gavra.mp3
     - assets/kasno_je.mp3 # 🎵 GAVRA 013 pesma "Beogradski sindikat - Kasno je"

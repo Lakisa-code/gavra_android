@@ -27,8 +27,8 @@ class WeeklyResetService {
     // Proveri da li treba odmah resetovati (propušten reset)
     await _checkMissedReset();
 
-    // Pokreni timer za petak ponoć
-    _scheduleNextReset();
+    // AUTOMATSKI TIMER JE ONEMOGUĆEN - sada se koristi samo ručni reset
+    // _scheduleNextReset();
   }
 
   /// Proveri da li je propušten reset
@@ -44,42 +44,15 @@ class WeeklyResetService {
           .subtract(Duration(days: daysSinceFriday == 0 && now.hour < 0 ? 7 : daysSinceFriday));
       final lastFridayStr = lastFriday.toIso8601String().split('T')[0];
 
-      // Ako je subota ili nedelja i nismo resetovali u petak
-      if ((now.weekday == 6 || now.weekday == 7) && lastResetDate != lastFridayStr) {
-        debugPrint('🔄 [WeeklyReset] Propušten reset za petak $lastFridayStr - resetujem sada');
+      // RESETUJEMO UVEK KADA SE APLIKACIJA POKRENE POSLE PETKA
+      // (subota, nedelja, ponedeljak...) i ako nije resetovano za taj petak
+      if (lastResetDate != lastFridayStr) {
+        debugPrint('🔄 [WeeklyReset] Resetujem za prošlu nedelju (petak $lastFridayStr)');
         await _executeWeeklyReset();
       }
     } catch (e) {
       debugPrint('❌ [WeeklyReset] Greška pri proveri propuštenog reseta: $e');
     }
-  }
-
-  /// Zakaži sledeći reset za petak u ponoć (00:00 subota)
-  static void _scheduleNextReset() {
-    _weeklyTimer?.cancel();
-
-    final now = DateTime.now();
-
-    // Pronađi sledeći petak u ponoć (zapravo subota 00:00)
-    var nextFridayMidnight = DateTime(now.year, now.month, now.day, 0, 0, 0);
-
-    // Dodaj dane do subote (weekday 6)
-    int daysUntilSaturday = (6 - now.weekday) % 7;
-    if (daysUntilSaturday == 0 && now.hour >= 0) {
-      // Već je subota, zakaži za sledeću
-      daysUntilSaturday = 7;
-    }
-    nextFridayMidnight = nextFridayMidnight.add(Duration(days: daysUntilSaturday));
-
-    final duration = nextFridayMidnight.difference(now);
-    debugPrint(
-        '🔄 [WeeklyReset] Sledeći reset zakazan za: $nextFridayMidnight (za ${duration.inDays}d ${duration.inHours % 24}h)');
-
-    _weeklyTimer = Timer(duration, () async {
-      await _executeWeeklyReset();
-      // Zakaži sledeći
-      _scheduleNextReset();
-    });
   }
 
   /// Izvrši nedeljni reset

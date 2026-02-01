@@ -64,7 +64,8 @@ class TimePickerCell extends StatelessWidget {
 
     // Razlika u danima od danas
     final diff = targetWeekday - todayWeekday;
-    return DateTime(now.year, now.month, now.day).add(Duration(days: diff));
+    final daysToAdd = diff == 0 ? 0 : (diff > 0 ? diff : diff + 7);
+    return DateTime(now.year, now.month, now.day).add(Duration(days: daysToAdd));
   }
 
   /// Da li je vreme za ovaj dan već prošlo (ne može se menjati, samo otkazati)
@@ -79,7 +80,7 @@ class TimePickerCell extends StatelessWidget {
     final todayOnly = DateTime(now.year, now.month, now.day);
     if (dayDate.isBefore(todayOnly)) return true;
 
-          // Ako je današnji dan - proveri da li je vreme prošlo
+    // Ako je današnji dan - proveri da li je vreme prošlo
     if (dayDate.isAtSameMomentAs(todayOnly)) {
       try {
         final timeParts = value!.split(':');
@@ -97,7 +98,8 @@ class TimePickerCell extends StatelessWidget {
       } catch (e) {
         debugPrint('⚠️ [TimePickerCell] Greška pri parsiranju vremena: $e');
       }
-    }    return false;
+    }
+    return false;
   }
 
   /// Da li je dan zaključan (prošao ili danas posle 18:00)
@@ -267,7 +269,7 @@ class TimePickerCell extends StatelessWidget {
             GavraUI.showSnackBar(
               context,
               message:
-                  'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan. Hvala na razumevanju! 🚌',
+                  'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌',
               type: GavraNotificationType.warning,
               duration: const Duration(seconds: 4),
             );
@@ -286,6 +288,24 @@ class TimePickerCell extends StatelessWidget {
         }
 
         if (locked) return; // Ostali slučajevi zaključavanja (npr. prošli dan)
+
+        // 🆕 PROVERA ZA DNEVNE PUTNIKE - samo danas i sutra
+        if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && isDnevniZakazivanjeAktivno) {
+          final now = DateTime.now();
+          final todayOnly = DateTime(now.year, now.month, now.day);
+          final tomorrowOnly = todayOnly.add(const Duration(days: 1));
+          final dayDate = _getDateForDay();
+          if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly) && !dayDate.isAtSameMomentAs(tomorrowOnly)) {
+            GavraUI.showSnackBar(
+              context,
+              message:
+                  'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌',
+              type: GavraNotificationType.warning,
+              duration: const Duration(seconds: 4),
+            );
+            return;
+          }
+        }
 
         _showTimePickerDialog(context);
       },

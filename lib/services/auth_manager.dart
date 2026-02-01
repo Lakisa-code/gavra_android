@@ -55,21 +55,38 @@ class AuthManager {
       Vozac? vozac = VozacBoja.getVozac(driverName);
       String? vozacId = vozac?.id;
 
-      // Fallback: Ako VozacBoja nema podatke, pokušaj direktno iz baze
+      // Fallback: Ako VozacBoja nema podatke, sačekaj inicijalizaciju ili probaj iz baze
       if (vozacId == null) {
-        debugPrint('🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
-        try {
-          final response = await supabase
-              .from('vozaci')
-              .select('id')
-              .eq('ime', driverName)
-              .single()
-              .timeout(const Duration(seconds: 3));
+        debugPrint('🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback...');
 
-          vozacId = response['id'] as String?;
-          debugPrint('🔄 [AuthManager] Fallback vozac_id: $vozacId');
+        // Prvo probaj da sačekaš da se VozacBoja inicijalizuje (ako je u toku)
+        try {
+          await VozacBoja.initialize();
+          vozac = VozacBoja.getVozac(driverName);
+          vozacId = vozac?.id;
+          if (vozacId != null) {
+            debugPrint('🔄 [AuthManager] VozacBoja inicijalizovan, vozac_id: $vozacId');
+          }
         } catch (e) {
-          debugPrint('⚠️ [AuthManager] Fallback iz baze neuspešan: $e');
+          debugPrint('⚠️ [AuthManager] VozacBoja inicijalizacija neuspešna: $e');
+        }
+
+        // Ako i dalje nema podataka, probaj direktno iz baze
+        if (vozacId == null) {
+          debugPrint('🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
+          try {
+            final response = await supabase
+                .from('vozaci')
+                .select('id')
+                .eq('ime', driverName)
+                .single()
+                .timeout(const Duration(seconds: 3));
+
+            vozacId = response['id'] as String?;
+            debugPrint('🔄 [AuthManager] Fallback vozac_id: $vozacId');
+          } catch (e) {
+            debugPrint('⚠️ [AuthManager] Fallback iz baze neuspešan: $e');
+          }
         }
       }
 
@@ -90,9 +107,9 @@ class AuthManager {
       }
 
       // 2. Pokušaj HMS token (Huawei uređaji)
-      // HMS token se dobija kroz initialize() ili stream, pa ažuriramo postojeći
+      // Koristi cached token umesto initialize() da izbegneš timeout
       try {
-        final hmsToken = await HuaweiPushService().initialize();
+        final hmsToken = HuaweiPushService().cachedToken;
         if (hmsToken != null && hmsToken.isNotEmpty) {
           debugPrint('🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 30)}...');
           final success = await PushTokenService.registerToken(
@@ -103,6 +120,8 @@ class AuthManager {
             vozacId: vozacId,
           );
           debugPrint('🔄 [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
+        } else {
+          debugPrint('🔄 [AuthManager] HMS token nije dostupan (cachedToken je null/prazan)');
         }
       } catch (e) {
         // HMS nije dostupan na ovom uređaju - OK

@@ -566,9 +566,9 @@ class MLVehicleAutonomousService extends ChangeNotifier {
   Future<void> _loadLearnedPatterns() async {
     try {
       final Map<String, dynamic>? result =
-          await _supabase.from('ml_config').select().eq('id', 'vehicle_patterns').maybeSingle();
-      if (result != null && result['config'] != null) {
-        _learnedPatterns.addAll(Map<String, dynamic>.from(result['config'] as Map));
+          await _supabase.from('ml_config').select().eq('model_name', 'vehicle_patterns').maybeSingle();
+      if (result != null && result['parameters'] != null) {
+        _learnedPatterns.addAll(Map<String, dynamic>.from(result['parameters'] as Map));
       }
     } catch (e) {
       print('⚠️ [ML Lab] Greška pri učitavanju obrazaca: $e');
@@ -578,8 +578,9 @@ class MLVehicleAutonomousService extends ChangeNotifier {
   Future<void> _saveLearnedPatterns() async {
     try {
       await _supabase.from('ml_config').upsert(<String, dynamic>{
-        'id': 'vehicle_patterns',
-        'config': _learnedPatterns,
+        'model_name': 'vehicle_patterns',
+        'parameters': _learnedPatterns,
+        'is_active': true,
         'updated_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {

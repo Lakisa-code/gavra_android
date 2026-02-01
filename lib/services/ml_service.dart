@@ -243,7 +243,7 @@ class MLService {
 
     try {
       // Get passenger data
-      final putnik = await _supabase.from('putnici').select().eq('id', putnikId).maybeSingle();
+      final putnik = await _supabase.from('registrovani_putnici').select().eq('id', putnikId).maybeSingle();
 
       if (putnik == null) {
         return PassengerScore(
@@ -410,10 +410,11 @@ class MLService {
   static Future<Map<String, double>> _getLearnedWeightsForScoring() async {
     try {
       // Pokušaj da učitaš iz baze
-      final result = await _supabase.from('ml_config').select().eq('id', 'passenger_scoring_weights').maybeSingle();
+      final result =
+          await _supabase.from('ml_config').select().eq('model_name', 'passenger_scoring_weights').maybeSingle();
 
-      if (result != null && result['data'] != null) {
-        final weightsJson = result['data'] as Map<String, dynamic>;
+      if (result != null && result['parameters'] != null) {
+        final weightsJson = result['parameters'] as Map<String, dynamic>;
         return weightsJson.map((k, v) => MapEntry(k, double.tryParse(v.toString()) ?? 1.0));
       }
     } catch (e) {
@@ -467,7 +468,7 @@ class MLService {
 
     try {
       // 1. Dobavi SVE putnike sa podacima
-      final putnici = await _supabase.from('putnici').select('id');
+      final putnici = await _supabase.from('registrovani_putnici').select('id');
       final allFeatures = <Map<String, double>>[];
       final allLabels = <double>[];
 
@@ -505,8 +506,10 @@ class MLService {
 
       // 3. Sačuvaj naučene težine
       await _supabase.from('ml_config').upsert({
-        'id': 'passenger_scoring_weights',
-        'data': learnedWeights.map((k, v) => MapEntry(k, v.toString())),
+        'model_name': 'passenger_scoring_weights',
+        'model_version': '1.0',
+        'parameters': learnedWeights.map((k, v) => MapEntry(k, v.toString())),
+        'is_active': true,
         'updated_at': DateTime.now().toIso8601String(),
       });
 
@@ -945,7 +948,7 @@ class MLService {
   static Future<List<PassengerScore>> getTopPassengers({int limit = 10}) async {
     try {
       // Get all passengers
-      final putnici = await _supabase.from('putnici').select('id');
+      final putnici = await _supabase.from('registrovani_putnici').select('id');
 
       final scores = <PassengerScore>[];
       for (final putnik in putnici) {
@@ -966,7 +969,7 @@ class MLService {
   /// Dobavi putnike sa niskim skorom (potrebna pažnja)
   Future<List<PassengerScore>> getRiskyPassengers({int limit = 10}) async {
     try {
-      final putnici = await _supabase.from('putnici').select('id');
+      final putnici = await _supabase.from('registrovani_putnici').select('id');
 
       final scores = <PassengerScore>[];
       for (final putnik in putnici) {
@@ -1090,8 +1093,10 @@ class MLService {
       final coefficientsJson = _modelCoefficients.map((k, v) => MapEntry(k, v.toString()));
 
       await _supabase.from('ml_config').upsert({
-        'id': 'model_coefficients',
-        'data': coefficientsJson,
+        'model_name': 'model_coefficients',
+        'model_version': '1.0',
+        'parameters': coefficientsJson,
+        'is_active': true,
         'updated_at': DateTime.now().toIso8601String(),
       });
 
@@ -1104,10 +1109,10 @@ class MLService {
   /// Učitaj koeficijente iz baze
   Future<void> loadModelCoefficients() async {
     try {
-      final result = await _supabase.from('ml_config').select().eq('id', 'model_coefficients').maybeSingle();
+      final result = await _supabase.from('ml_config').select().eq('model_name', 'model_coefficients').maybeSingle();
 
-      if (result != null && result['data'] != null) {
-        final coefficientsJson = result['data'] as Map<String, dynamic>;
+      if (result != null && result['parameters'] != null) {
+        final coefficientsJson = result['parameters'] as Map<String, dynamic>;
         _modelCoefficients = coefficientsJson.map((k, v) => MapEntry(k, double.tryParse(v.toString()) ?? 0.0));
         print('✅ Model coefficients loaded from database');
       }
@@ -1434,8 +1439,10 @@ class MLService {
   static Future<void> _saveModelCoefficients(Map<String, double> coefficients) async {
     try {
       await _supabase.from('ml_config').upsert({
-        'id': 'occupancy_model_coefficients',
-        'data': coefficients.map((k, v) => MapEntry(k, v.toString())),
+        'model_name': 'occupancy_model_coefficients',
+        'model_version': '1.0',
+        'parameters': coefficients.map((k, v) => MapEntry(k, v.toString())),
+        'is_active': true,
         'updated_at': DateTime.now().toIso8601String(),
       });
       print('💾 Model coefficients persisted to Supabase');
@@ -1446,10 +1453,11 @@ class MLService {
 
   static Future<void> _loadModelCoefficients() async {
     try {
-      final result = await _supabase.from('ml_config').select().eq('id', 'occupancy_model_coefficients').maybeSingle();
+      final result =
+          await _supabase.from('ml_config').select().eq('model_name', 'occupancy_model_coefficients').maybeSingle();
 
-      if (result != null && result['data'] != null) {
-        final data = result['data'] as Map<String, dynamic>;
+      if (result != null && result['parameters'] != null) {
+        final data = result['parameters'] as Map<String, dynamic>;
         _modelCoefficients = data.map((k, v) => MapEntry(k, double.tryParse(v.toString()) ?? 0.0));
         print('📂 Loaded ${_modelCoefficients.length} coefficients from Supabase');
       }

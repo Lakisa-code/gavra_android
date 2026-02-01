@@ -24,13 +24,13 @@ import 'services/ml_service.dart'; // 🧠 ML servis za trening modela
 import 'services/ml_vehicle_autonomous_service.dart';
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
+import 'services/registrovani_putnik_service.dart'; // 👥 Registrovani putnici
 import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00 (bez notif)
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
-import 'services/weather_alert_service.dart'; // 🌨️ Upozorenja za loše vreme
+import 'services/weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
-import 'services/weekly_reset_service.dart'; // 🔄 NOVI SERVIS ZA RESET
 import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
 
 void main() async {
@@ -46,6 +46,9 @@ void main() async {
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdGFidHd1ZGJybWZleWppaWN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzQzNjI5MiwiZXhwIjoyMDYzMDEyMjkyfQ.BrwnYQ6TWGB1BrmwaE0YnhMC5wMlBRdZUs1xv2dY5r4',
     );
     if (kDebugMode) debugPrint('✅ [Main] Supabase initialized before runApp');
+
+    // 🧹 TEMP: Clear realtime cache za test putnika
+    RegistrovaniPutnikService.clearRealtimeCache();
   } catch (e) {
     if (kDebugMode) debugPrint('❌ [Main] Supabase init failed: $e');
     // Možeš dodati fallback ili crash app ako je kritično
@@ -120,7 +123,6 @@ Future<void> _initAppServices() async {
 
   // Realtime & AI (bez čekanja ikoga)
   KapacitetService.startGlobalRealtimeListener();
-  unawaited(WeeklyResetService.initialize()); // ✅ Koristimo novi, robusniji servis
   unawaited(WeatherAlertService.checkAndSendWeatherAlerts());
 
   unawaited(MLVehicleAutonomousService().start());

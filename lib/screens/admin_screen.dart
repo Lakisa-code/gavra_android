@@ -15,6 +15,7 @@ import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
+import '../services/weekly_reset_service.dart'; // 🔄 WEEKLY RESET SERVICE
 import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
@@ -67,10 +68,10 @@ class _AdminScreenState extends State<AdminScreen> {
     // Admin screen supports all days now, including weekends
     _selectedDan = todayName;
 
-    // � FORSIRANA INICIJALIZACIJA VOZAC MAPIRANJA
+    // 🔄 FORSIRANA INICIJALIZACIJA VOZAČ MAPIRANJA
     VozacMappingService.refreshMapping();
 
-    // �🔄 INITIALIZE REALTIME MONITORING
+    // 🔄 INITIALIZE REALTIME MONITORING
     _isRealtimeHealthy = ValueNotifier(true);
     _kusurStreamHealthy = ValueNotifier(true);
     _putnikDataHealthy = ValueNotifier(true);
@@ -1632,79 +1633,229 @@ class _AdminScreenState extends State<AdminScreen> {
                             ],
                           ),
                         ),
-                        // � SMS TEST DUGME - samo za Bojan
+                        // 📱 SMS TEST DUGME - samo za Bojan
                         if (_currentDriver?.toLowerCase() == 'bojan') ...[
                           // SMS test i debug funkcionalnost uklonjena - servis radi u pozadini
                         ],
                         // 🎯 SVI ADMIN DUGMIĆI U JEDNOM REDU
                         Container(
                           margin: const EdgeInsets.all(16.0),
-                          child: Row(
+                          child: Column(
                             children: [
-                              // 🗺️ GPS ADMIN MAPA
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (context) => const AdminMapScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: Container(
-                                    height: 54,
-                                    margin: const EdgeInsets.only(right: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2), // Glassmorphism
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: Theme.of(context).glassBorder,
-                                        width: 1.5,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF00D4FF).withValues(alpha: 0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.location_on,
-                                          color: Colors.white,
-                                          size: 16,
-                                          shadows: [
-                                            Shadow(
-                                              offset: Offset(1, 1),
-                                              blurRadius: 3,
-                                              color: Colors.black54,
+                              Row(
+                                children: [
+                                  // 🗺️ GPS ADMIN MAPA
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (context) => const AdminMapScreen(),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        height: 54,
+                                        margin: const EdgeInsets.only(right: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.2), // Glassmorphism
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFF00D4FF).withValues(alpha: 0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
                                             ),
                                           ],
                                         ),
-                                        Text(
-                                          'GPS',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 10,
-                                            shadows: [
-                                              Shadow(
-                                                offset: Offset(1, 1),
-                                                blurRadius: 3,
-                                                color: Colors.black54,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.location_on,
+                                              color: Colors.white,
+                                              size: 16,
+                                              shadows: [
+                                                Shadow(
+                                                  offset: Offset(1, 1),
+                                                  blurRadius: 3,
+                                                  color: Colors.black54,
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              'GPS',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                                shadows: [
+                                                  Shadow(
+                                                    offset: Offset(1, 1),
+                                                    blurRadius: 3,
+                                                    color: Colors.black54,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // 🔄 WEEKLY RESET
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () async {
+                                        // Proveri admin privilegije
+                                        final isAdmin = AdminSecurityService.isAdmin(_currentDriver);
+                                        if (!isAdmin) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Nemate admin privilegije za ovu akciju'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        // Prikaži potvrdu
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('🔄 Nedeljni Reset'),
+                                            content: const Text(
+                                              'Da li ste sigurni da želite da izvršite nedeljni reset?\n\nOva akcija će obrisati sva zakazana vremena polaska za sve putnike i vratiti ih na prazna polja.',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(context).pop(false),
+                                                child: const Text('Otkaži'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.of(context).pop(true),
+                                                style: TextButton.styleFrom(
+                                                  foregroundColor: Colors.red,
+                                                ),
+                                                child: const Text('Resetuj'),
                                               ),
                                             ],
                                           ),
+                                        );
+
+                                        if (confirmed == true) {
+                                          // Prikaži loading
+                                          showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (context) => const AlertDialog(
+                                              content: Row(
+                                                children: [
+                                                  CircularProgressIndicator(),
+                                                  SizedBox(width: 16),
+                                                  Text('Resetujem raspored...'),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+
+                                          try {
+                                            // Izvrši reset
+                                            await WeeklyResetService.manualReset();
+
+                                            // Zatvori loading
+                                            if (context.mounted) {
+                                              Navigator.of(context).pop();
+                                            }
+
+                                            // Prikaži uspeh
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('✅ Nedeljni reset uspešno izvršen'),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            // Zatvori loading
+                                            if (context.mounted) {
+                                              Navigator.of(context).pop();
+                                            }
+
+                                            // Prikaži grešku
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('❌ Greška pri resetu: $e'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        }
+                                      },
+                                      child: Container(
+                                        height: 54,
+                                        margin: const EdgeInsets.only(left: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.2), // Glassmorphism
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.orange.withValues(alpha: 0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
                                         ),
-                                      ],
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.refresh,
+                                              color: Colors.orange,
+                                              size: 16,
+                                              shadows: [
+                                                Shadow(
+                                                  offset: Offset(1, 1),
+                                                  blurRadius: 3,
+                                                  color: Colors.black54,
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              'RESET',
+                                              style: TextStyle(
+                                                color: Colors.orange,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                                shadows: [
+                                                  Shadow(
+                                                    offset: Offset(1, 1),
+                                                    blurRadius: 3,
+                                                    color: Colors.black54,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
                             ],
                           ),

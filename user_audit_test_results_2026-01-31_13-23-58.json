@@ -1,8 +1,0 @@
-{
-  "test_timestamp": "2026-01-31T13:23:58.728339",
-  "test_results": {
-    "user_audit_service": true,
-    "database_schema": true
-  },
-  "overall_status": "PASS"
-}
