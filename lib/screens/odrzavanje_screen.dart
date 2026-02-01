@@ -22,7 +22,23 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVozila();
+    // Realtime osvežavanje vozila
+    VozilaService.streamVozila().listen((vozila) {
+      setState(() {
+        _vozila = vozila;
+        _isLoading = false;
+        // Ako je bilo selektovano vozilo, osveži ga
+        if (_selectedVozilo != null) {
+          try {
+            _selectedVozilo = vozila.firstWhere(
+              (v) => v.id == _selectedVozilo!.id,
+            );
+          } catch (e) {
+            _selectedVozilo = vozila.isNotEmpty ? vozila.first : null;
+          }
+        }
+      });
+    });
   }
 
   Future<void> _loadVozila() async {

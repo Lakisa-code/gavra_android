@@ -1,11 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import 'realtime/realtime_manager.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (seat_requests tabela)
 class SeatRequestService {
   static SupabaseClient get _supabase => supabase;
+
+  static StreamSubscription? _requestsSubscription;
+  static final StreamController<List<Map<String, dynamic>>> _requestsController =
+      StreamController<List<Map<String, dynamic>>>.broadcast();
 
   /// 📥 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
   static Future<void> insertSeatRequest({
@@ -33,9 +40,40 @@ class SeatRequestService {
     }
   }
 
+  /// Dohvata aktivne zahteve
+  static Future<List<Map<String, dynamic>>> getActiveRequests() async {
+    try {
+      final response = await _supabase.from('seat_requests').select().order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// 🕒 STREAM SVIH AKTIVNIH ZAHTEVA - Za admin monitoring
   static Stream<List<Map<String, dynamic>>> streamActiveRequests() {
-    return _supabase.from('seat_requests').stream(primaryKey: ['id']).order('created_at', ascending: false);
+    if (_requestsSubscription == null) {
+      _requestsSubscription = RealtimeManager.instance.subscribe('seat_requests').listen((payload) {
+        _refreshRequestsStream();
+      });
+      // Inicijalno učitavanje
+      _refreshRequestsStream();
+    }
+    return _requestsController.stream;
+  }
+
+  static void _refreshRequestsStream() async {
+    final requests = await getActiveRequests();
+    if (!_requestsController.isClosed) {
+      _requestsController.add(requests);
+    }
+  }
+
+  /// 🧹 Čisti realtime subscription
+  static void dispose() {
+    _requestsSubscription?.cancel();
+    _requestsSubscription = null;
+    _requestsController.close();
   }
 
   /// 📅 Helper: Računa sledeći datum za dati dan u nedelji

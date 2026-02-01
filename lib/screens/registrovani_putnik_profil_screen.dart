@@ -718,8 +718,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   /// Vraća format: "Ponedeljak, 7:00 BC" ili null ako nema zakazanih vožnji
   String? _izracunajSledecuVoznju() {
     try {
-      final polasciPoDanu = _putnikData['polasci_po_danu'];
-      if (polasciPoDanu == null) return null;
+      final polasciPoDanu = _safeMap(_putnikData['polasci_po_danu']);
+      if (polasciPoDanu.isEmpty) return null;
 
       final now = DateTime.now();
       final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
@@ -1791,7 +1791,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final tip = _putnikData['tip'] as String? ?? 'radnik';
     final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
     // Parsiranje polasci_po_danu iz putnikData
-    final polasciRaw = _putnikData['polasci_po_danu'];
+    final polasciRaw = _safeMap(_putnikData['polasci_po_danu']);
     Map<String, Map<String, String?>> polasci = {};
 
     // Helper funkcija za sigurno parsiranje vremena
@@ -1802,43 +1802,41 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       return str;
     }
 
-    if (polasciRaw != null && polasciRaw is Map) {
-      polasciRaw.forEach((key, value) {
-        if (value is Map) {
-          final danName = key.toString();
-          final bcStatus = parseVreme(value['bc_status']);
-          final vsStatus = parseVreme(value['vs_status']);
-          String? bcVreme = parseVreme(value['bc']);
-          String? vsVreme = parseVreme(value['vs']);
+    polasciRaw.forEach((key, value) {
+      if (value is Map) {
+        final danName = key.toString();
+        final bcStatus = parseVreme(value['bc_status']);
+        final vsStatus = parseVreme(value['vs_status']);
+        String? bcVreme = parseVreme(value['bc']);
+        String? vsVreme = parseVreme(value['vs']);
 
-          // 🆕 AUTOMATSKO OTKAZIVANJE ISTEKLIH PENDING ZAHTEVA
-          final now = DateTime.now();
-          if (_isDanas(danName)) {
-            // BC Pending
-            if (bcStatus == 'pending' && bcVreme != null && _isExpired(bcVreme, now)) {
-              bcVreme = null;
-              _autoCancelPending(danName, 'bc');
-            }
-            // VS Pending
-            if (vsStatus == 'pending' && vsVreme != null && _isExpired(vsVreme, now)) {
-              vsVreme = null;
-              _autoCancelPending(danName, 'vs');
-            }
+        // 🆕 AUTOMATSKO OTKAZIVANJE ISTEKLIH PENDING ZAHTEVA
+        final now = DateTime.now();
+        if (_isDanas(danName)) {
+          // BC Pending
+          if (bcStatus == 'pending' && bcVreme != null && _isExpired(bcVreme, now)) {
+            bcVreme = null;
+            _autoCancelPending(danName, 'bc');
           }
-
-          polasci[danName] = {
-            'bc': bcVreme,
-            'vs': vsVreme,
-            'bc_status': bcStatus,
-            'vs_status': vsStatus,
-            'bc_otkazano': parseVreme(value['bc_otkazano']),
-            'vs_otkazano': parseVreme(value['vs_otkazano']),
-            'bc_otkazano_vreme': parseVreme(value['bc_otkazano_vreme']),
-            'vs_otkazano_vreme': parseVreme(value['vs_otkazano_vreme']),
-          };
+          // VS Pending
+          if (vsStatus == 'pending' && vsVreme != null && _isExpired(vsVreme, now)) {
+            vsVreme = null;
+            _autoCancelPending(danName, 'vs');
+          }
         }
-      });
-    }
+
+        polasci[danName] = {
+          'bc': bcVreme,
+          'vs': vsVreme,
+          'bc_status': bcStatus,
+          'vs_status': vsStatus,
+          'bc_otkazano': parseVreme(value['bc_otkazano']),
+          'vs_otkazano': parseVreme(value['vs_otkazano']),
+          'bc_otkazano_vreme': parseVreme(value['bc_otkazano_vreme']),
+          'vs_otkazano_vreme': parseVreme(value['vs_otkazano_vreme']),
+        };
+      }
+    });
 
     final dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
     final daniLabels = {'pon': 'Ponedeljak', 'uto': 'Utorak', 'sre': 'Sreda', 'cet': 'Četvrtak', 'pet': 'Petak'};
@@ -2058,18 +2056,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       );
 
       // Ažuriraj lokalno - ČUVAJ SVE PODATKE (pokupljeno, placeno, otkazano, itd.)
-      final polasciRaw = _putnikData['polasci_po_danu'] ?? {};
-      Map<String, dynamic> polasci = {};
-
-      if (polasciRaw is Map) {
-        polasciRaw.forEach((key, value) {
-          if (value is Map) {
-            polasci[key.toString()] = Map<String, dynamic>.from(value);
-          } else {
-            polasci[key.toString()] = {'bc': null, 'vs': null};
-          }
-        });
-      }
+      final polasciRaw = _safeMap(_putnikData['polasci_po_danu']);
+      Map<String, dynamic> polasci = Map<String, dynamic>.from(polasciRaw);
 
       // Osiguraj da dan postoji
       polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
@@ -2288,7 +2276,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           debugPrint('🎯 [VS] ZAHTEV - Pending status, 10 min timer');
 
           // 🆕 PROVERA TRANZITA ZA SNACKBAR
-          final polasciMap = _putnikData['polasci_po_danu'] ?? {};
+          final polasciMap = _safeMap(_putnikData['polasci_po_danu']);
           final danData = polasciMap[dan];
           final jeUTranzitu = (danData is Map && danData['bc_status'] == 'confirmed' && (jeUcenik || jeRadnik));
 

@@ -1009,17 +1009,8 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
           ),
         ),
-        body: FutureBuilder<List<Putnik>>(
-          future: _putnikService.getAllPutnici().timeout(
-            const Duration(seconds: 8),
-            onTimeout: () {
-              // Timeout handling - return empty list to prevent infinite loading
-              return <Putnik>[];
-            },
-          ).catchError((Object error) {
-            // Handle any errors by returning empty list to prevent infinite loading
-            return <Putnik>[];
-          }),
+        body: StreamBuilder<List<Putnik>>(
+          stream: _putnikService.streamPutnici(),
           builder: (context, snapshot) {
             // 🩺 UPDATE PUTNIK DATA HEALTH STATUS
             if (snapshot.hasError) {
@@ -1861,8 +1852,8 @@ class _AdminScreenState extends State<AdminScreen> {
                           ),
                         ),
                         // 🚢 SMART TRANZIT - EARLY WARNING
-                        FutureBuilder<List<Map<String, dynamic>>>(
-                          future: SlobodnaMestaService.getMissingTransitPassengers(),
+                        StreamBuilder<List<Map<String, dynamic>>>(
+                          stream: SlobodnaMestaService.streamMissingTransitPassengers(),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
                             final missing = snapshot.data!;
@@ -1908,8 +1899,8 @@ class _AdminScreenState extends State<AdminScreen> {
                           },
                         ),
                         // 📊 PROJEKTOVANO OPTEREĆENJE
-                        FutureBuilder<Map<String, dynamic>>(
-                          future: SlobodnaMestaService.getProjectedOccupancyStats(),
+                        StreamBuilder<Map<String, dynamic>>(
+                          stream: SlobodnaMestaService.streamProjectedOccupancyStats(),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData) return const SizedBox.shrink();
                             final stats = snapshot.data!;

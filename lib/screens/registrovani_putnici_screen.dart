@@ -1356,8 +1356,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                             color: Colors.green.shade700,
                           ),
                           const SizedBox(width: 4),
-                          FutureBuilder<int>(
-                            future: RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id),
+                          StreamBuilder<int>(
+                            stream: Stream.fromFuture(
+                                RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id)),
                             builder: (context, snapshot) => Text(
                               '${snapshot.data ?? 0}',
                               style: TextStyle(
@@ -1398,8 +1399,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                             color: Colors.red.shade700,
                           ),
                           const SizedBox(width: 4),
-                          FutureBuilder<int>(
-                            future: RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id),
+                          StreamBuilder<int>(
+                            stream: Stream.fromFuture(
+                                RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id)),
                             builder: (context, snapshot) => Text(
                               '${snapshot.data ?? 0}',
                               style: TextStyle(

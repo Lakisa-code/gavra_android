@@ -184,13 +184,28 @@ class KapacitetService {
   /// Admin: Promeni kapacitet za određeni polazak
   static Future<bool> setKapacitet(String grad, String vreme, int maxMesta, {String? napomena}) async {
     try {
-      await _supabase.from('kapacitet_polazaka').upsert({
-        'grad': grad,
-        'vreme': vreme,
-        'max_mesta': maxMesta,
-        'aktivan': true,
-        if (napomena != null) 'napomena': napomena,
-      }, onConflict: 'grad,vreme');
+      // Prvo probaj update ako postoji zapis
+      final updateResult = await _supabase
+          .from('kapacitet_polazaka')
+          .update({
+            'max_mesta': maxMesta,
+            'aktivan': true,
+            if (napomena != null) 'napomena': napomena,
+          })
+          .eq('grad', grad)
+          .eq('vreme', vreme)
+          .select();
+
+      // Ako update nije promenio ništa, uradi insert
+      if (updateResult.isEmpty) {
+        await _supabase.from('kapacitet_polazaka').insert({
+          'grad': grad,
+          'vreme': vreme,
+          'max_mesta': maxMesta,
+          'aktivan': true,
+          if (napomena != null) 'napomena': napomena,
+        });
+      }
 
       // Invalidate cache
       _kapacitetCache = null;

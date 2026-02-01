@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../utils/grad_adresa_validator.dart';
 import 'kapacitet_service.dart';
+import 'slobodna_mesta_service.dart';
 
 ///  BEBA DISPEČER (ML Dispatch Autonomous Service)
 ///
@@ -112,6 +113,9 @@ class MLDispatchAutonomousService extends ChangeNotifier {
     await _learnFromHistory();
     _startVelocityMonitoring();
     _startIntegrityCheck();
+
+    // 🔧 FIX: Obradi postojeće pending zahteve pri pokretanju
+    await _processNewSeatRequests();
 
     _subscribeToBookingStream();
   }
@@ -387,8 +391,312 @@ class MLDispatchAutonomousService extends ChangeNotifier {
       if (recent is List && recent.length >= 5) {
         _triggerAlert('REALTIME DEMAND', 'Nagli skok rezervacija (/h).');
       }
+
+      // 🆕 Automatska obrada novih zahteva po BC LOGIKA pravilima
+      await _processNewSeatRequests();
     } catch (e) {
       if (kDebugMode) print(' [ML Dispatch] Velocity error: ');
+    }
+  }
+
+  /// 🆕 AUTOMATSKA OBRADA ZAHTEVA PO BC LOGIKA PRAVILIMA
+  Future<void> _processNewSeatRequests() async {
+    try {
+      if (kDebugMode) print(' [ML Dispatch] Proveravam nove seat requests...');
+
+      // Nađi sve pending zahteve
+      final pendingRequests =
+          await _supabase.from('seat_requests').select('*').eq('status', 'pending').order('created_at');
+
+      if (pendingRequests.isEmpty) return;
+
+      for (var request in pendingRequests) {
+        final requestId = request['id'];
+        final putnikId = request['putnik_id'];
+
+        // Dobavi tip putnika posebnim upitom
+        final putnikData = await _supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).maybeSingle();
+
+        final putnikTip = putnikData?['tip'] ?? 'radnik'; // default radnik
+        final datum = DateTime.parse(request['datum']);
+        final vremeSlanjaZahteva = DateTime.parse(request['created_at']);
+        final sada = DateTime.now();
+
+        // Odredi vreme čekanja po BC LOGIKA pravilima - računaj od vremena slanja zahteva
+        final delay = _calculateProcessingDelay(putnikTip, datum, vremeSlanjaZahteva);
+
+        if (delay != null) {
+          // Zakazaj obradu za kasnije
+          Future.delayed(delay, () => _processSingleRequest(requestId));
+          if (kDebugMode) print(' [ML Dispatch] Zakazao obradu za $requestId za ${delay.inMinutes} min');
+        } else {
+          // Odmah obradi
+          await _processSingleRequest(requestId);
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print(' [ML Dispatch] Greška pri procesuiranju: $e');
+    }
+  }
+
+  /// Izračunaj vreme čekanja po BC LOGIKA pravilima (računa od vremena slanja zahteva)
+  Duration? _calculateProcessingDelay(String tipPutnika, DateTime datumZahteva, DateTime vremeSlanja) {
+    final sada = DateTime.now();
+    final jeZaDanas = datumZahteva.year == vremeSlanja.year &&
+        datumZahteva.month == vremeSlanja.month &&
+        datumZahteva.day == vremeSlanja.day;
+
+    final jeZaSutra = datumZahteva.year == vremeSlanja.year &&
+        datumZahteva.month == vremeSlanja.month &&
+        datumZahteva.day == vremeSlanja.day + 1;
+
+    Duration? requiredDelay;
+
+    if (tipPutnika == 'ucenik') {
+      if (jeZaSutra) {
+        // Sutra: proveri vreme dana kada je zahtev poslat
+        final jePoslatDo16h = vremeSlanja.hour < 16;
+        requiredDelay = jePoslatDo16h ? const Duration(minutes: 5) : const Duration(hours: 4); // do 20h
+      } else if (jeZaDanas) {
+        requiredDelay = const Duration(minutes: 10);
+      }
+    } else if (tipPutnika == 'radnik') {
+      requiredDelay = const Duration(minutes: 5);
+    } else if (tipPutnika == 'dnevni' && jeZaDanas) {
+      requiredDelay = const Duration(minutes: 10);
+    }
+
+    // Ako nema required delay, odmah obradi
+    if (requiredDelay == null) return null;
+
+    // Izračunaj koliko je vremena prošlo od slanja zahteva
+    final prosloVreme = sada.difference(vremeSlanja);
+
+    // Ako je prošlo vreme veće od required delay-a, odmah obradi
+    if (prosloVreme >= requiredDelay) return null;
+
+    // Inače vrati preostalo vreme čekanja
+    return requiredDelay - prosloVreme;
+  }
+
+  /// Obradi pojedinačni zahtev
+  Future<void> _processSingleRequest(String requestId) async {
+    try {
+      // Proveri da li je još uvek pending
+      final request =
+          await _supabase.from('seat_requests').select('*').eq('id', requestId).eq('status', 'pending').maybeSingle();
+
+      if (request == null) return; // Već obrađen
+
+      final grad = request['grad'];
+      final vreme = request['zeljeno_vreme'];
+      final datum = request['datum'];
+      final brojMesta = request['broj_mesta'] ?? 1;
+
+      // Proveri kapacitet
+      final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
+        grad,
+        vreme,
+        datum: datum,
+        brojMesta: brojMesta,
+      );
+
+      if (imaMesta) {
+        // Odobri zahtev
+        await _approveSeatRequest(requestId, vreme, request);
+        if (kDebugMode) print(' [ML Dispatch] ✅ Odobren zahtev $requestId');
+      } else {
+        // Nema mesta - nađi alternativu
+        final alternativeTimes = await findAlternativeTimes(grad, datum, vreme, brojMesta);
+        if (alternativeTimes.isNotEmpty) {
+          await _proposeAlternatives(requestId, alternativeTimes);
+          if (kDebugMode) print(' [ML Dispatch] 🔄 Ponuđene alternative za $requestId: ${alternativeTimes.join(", ")}');
+        } else {
+          // Nema alternative - ostavi pending
+          if (kDebugMode) print(' [ML Dispatch] ❌ Nema alternative za $requestId');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print(' [ML Dispatch] Greška pri obradi $requestId: $e');
+    }
+  }
+
+  /// Pomoćna funkcija za odobravanje zahteva
+  Future<void> _approveSeatRequest(String requestId, String dodeljenoVreme, Map<String, dynamic> request) async {
+    try {
+      await _supabase.from('seat_requests').update({
+        'status': 'approved',
+        'dodeljeno_vreme': dodeljenoVreme,
+        'processed_at': DateTime.now().toIso8601String(),
+      }).eq('id', requestId);
+
+      // 🆕 SINHRONIZUJ POLASCI_PO_DANU STATUS
+      final putnikId = request['putnik_id'];
+      final grad = request['grad'];
+      final datum = request['datum'];
+
+      if (kDebugMode) print(' [ML Dispatch] 🔄 Sinhronizujem polasci_po_danu za $putnikId, grad: $grad, datum: $datum');
+
+      if (putnikId != null && grad != null && datum != null) {
+        try {
+          // Izračunaj dan u nedelji (1=pon, 2=uto, ..., 7=ned)
+          final dateTime = DateTime.parse(datum);
+          final danMap = {1: 'pon', 2: 'uto', 3: 'sre', 4: 'cet', 5: 'pet', 6: 'sub', 7: 'ned'};
+          final dan = danMap[dateTime.weekday];
+
+          if (kDebugMode) print(' [ML Dispatch] 📅 Izračunat dan: $dan (weekday: ${dateTime.weekday})');
+
+          if (dan != null) {
+            // Dobij trenutni polasci_po_danu
+            final putnikResponse =
+                await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnikId).maybeSingle();
+
+            if (putnikResponse != null) {
+              final rawPolasci = putnikResponse['polasci_po_danu'];
+              if (kDebugMode) {
+                print(' [ML Dispatch] 📊 Raw polasci_po_danu: $rawPolasci (type: ${rawPolasci.runtimeType})');
+              }
+
+              // Parsiraj polasci_po_danu - može biti Map ili JSON string
+              Map<String, dynamic> polasci = {};
+              if (rawPolasci is Map) {
+                polasci = Map<String, dynamic>.from(rawPolasci);
+              } else if (rawPolasci is String) {
+                try {
+                  polasci = Map<String, dynamic>.from(json.decode(rawPolasci));
+                } catch (e) {
+                  if (kDebugMode) print(' [ML Dispatch] ⚠️ Greška pri parsiranju JSON: $e');
+                  polasci = {};
+                }
+              }
+
+              if (kDebugMode) print(' [ML Dispatch] 📊 Parsed polasci: $polasci');
+
+              final rawDanData = polasci[dan];
+              Map<String, dynamic> danData = {};
+              if (rawDanData is Map) {
+                danData = Map<String, dynamic>.from(rawDanData);
+              } else if (rawDanData is String) {
+                try {
+                  danData = Map<String, dynamic>.from(json.decode(rawDanData));
+                } catch (e) {
+                  if (kDebugMode) print(' [ML Dispatch] ⚠️ Greška pri parsiranju danData: $e');
+                  danData = {};
+                }
+              }
+
+              if (kDebugMode) print(' [ML Dispatch] 📊 Trenutni danData za $dan: $danData');
+
+              // Ažuriraj status na approved
+              danData['${grad.toLowerCase()}_status'] = 'approved';
+
+              if (kDebugMode) print(' [ML Dispatch] 📝 Novi danData: $danData');
+
+              polasci[dan] = danData;
+
+              // Sačuvaj ažurirani polasci_po_danu
+              final updateResult = await _supabase
+                  .from('registrovani_putnici')
+                  .update({'polasci_po_danu': json.encode(polasci)}).eq('id', putnikId);
+
+              if (kDebugMode) {
+                print(' [ML Dispatch] ✅ Ažuriran polasci_po_danu za $putnikId ($dan $grad), rezultat: $updateResult');
+              }
+            } else {
+              if (kDebugMode) print(' [ML Dispatch] ⚠️ Nije pronađen putnik $putnikId');
+            }
+          } else {
+            if (kDebugMode) print(' [ML Dispatch] ⚠️ Nevažeći dan u nedelji: ${dateTime.weekday}');
+          }
+        } catch (e) {
+          if (kDebugMode) print(' [ML Dispatch] ⚠️ Greška pri ažuriranju polasci_po_danu: $e');
+        }
+      } else {
+        if (kDebugMode) print(' [ML Dispatch] ⚠️ Nedostaju podaci: putnikId=$putnikId, grad=$grad, datum=$datum');
+      }
+
+      // Loguj odluku
+      await _supabase.from('admin_audit_logs').insert({
+        'action_type': 'AUTO_SEAT_APPROVAL',
+        'details': 'Automatski odobren seat request: $requestId',
+        'admin_name': 'system',
+        'metadata': {'request_id': requestId, 'assigned_time': dodeljenoVreme},
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      if (kDebugMode) print(' [ML Dispatch] Greška pri odobravanju: $e');
+    }
+  }
+
+  /// Nađi NAJBLŽE alternativno vreme sa slobodnim mestima (±3 sata)
+  Future<List<String>> findAlternativeTimes(String grad, String datum, String originalTime, int brojMesta) async {
+    try {
+      // Dobavi sva vremena za grad
+      final svaVremena = KapacitetService.getVremenaZaGrad(grad);
+
+      // Nađi indeks originalnog vremena
+      final originalIndex = svaVremena.indexOf(originalTime);
+      if (originalIndex == -1) return [];
+
+      List<String> alternatives = [];
+
+      // Nađi najbliže vreme PRE originalnog
+      for (int i = originalIndex - 1; i >= 0 && (originalIndex - i) <= 3; i--) {
+        final alternativeTime = svaVremena[i];
+        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
+          grad,
+          alternativeTime,
+          datum: datum,
+          brojMesta: brojMesta,
+        );
+        if (imaMesta) {
+          alternatives.add(alternativeTime);
+          break; // Uzmi prvo (najbliže) što ima mesta
+        }
+      }
+
+      // Nađi najbliže vreme POSLE originalnog
+      for (int i = originalIndex + 1; i < svaVremena.length && (i - originalIndex) <= 3; i++) {
+        final alternativeTime = svaVremena[i];
+        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
+          grad,
+          alternativeTime,
+          datum: datum,
+          brojMesta: brojMesta,
+        );
+        if (imaMesta) {
+          alternatives.add(alternativeTime);
+          break; // Uzmi prvo (najbliže) što ima mesta
+        }
+      }
+
+      return alternatives;
+    } catch (e) {
+      if (kDebugMode) print(' [ML Dispatch] Greška pri traženju alternative: $e');
+      return [];
+    }
+  }
+
+  /// Predloži alternativna vremena zahtevu
+  Future<void> _proposeAlternatives(String requestId, List<String> alternativeTimes) async {
+    try {
+      final alternativesString = alternativeTimes.join(',');
+      await _supabase.from('seat_requests').update({
+        'status': 'alternative_proposed',
+        'alternative_vreme': alternativesString,
+        'processed_at': DateTime.now().toIso8601String(),
+      }).eq('id', requestId);
+
+      // Loguj predlog
+      await _supabase.from('admin_audit_logs').insert({
+        'action_type': 'AUTO_ALTERNATIVE_PROPOSED',
+        'details': 'Automatski predložene alternative za seat request: $requestId - ${alternativeTimes.join(", ")}',
+        'admin_name': 'system',
+        'metadata': {'request_id': requestId, 'alternative_times': alternativeTimes},
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      if (kDebugMode) print(' [ML Dispatch] Greška pri predlaganju alternative: $e');
     }
   }
 

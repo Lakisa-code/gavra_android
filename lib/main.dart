@@ -11,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'globals.dart';
 import 'screens/welcome_screen.dart';
+import 'services/adresa_supabase_service.dart';
 import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
 import 'services/battery_optimization_service.dart'; // 🔋 Huawei/Xiaomi battery warning
 import 'services/cache_service.dart';
@@ -26,8 +27,13 @@ import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
 import 'services/registrovani_putnik_service.dart'; // 👥 Registrovani putnici
 import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00 (bez notif)
+import 'services/seat_request_service.dart';
+import 'services/slobodna_mesta_service.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
+import 'services/vozac_service.dart';
+import 'services/vozila_service.dart';
+import 'services/voznje_log_service.dart';
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
@@ -193,6 +199,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 🧹 CLEANUP: Zatvori stream controllere
     WeatherService.dispose();
     RealtimeGpsService.dispose();
+    AdresaSupabaseService.dispose();
+    VozacService.dispose();
+    VozilaService.dispose();
+    SeatRequestService.dispose();
+    VoznjeLogService.dispose();
+    MLVehicleAutonomousService.disposeRealtime();
+    SlobodnaMestaService.dispose();
     super.dispose();
   }
 

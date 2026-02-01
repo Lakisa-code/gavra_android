@@ -1214,8 +1214,8 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
                   },
                 ),
                 const Divider(),
-                FutureBuilder<List<Vozilo>>(
-                  future: VozilaService.getVozila(),
+                StreamBuilder<List<Vozilo>>(
+                  stream: VozilaService.streamVozila(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const CircularProgressIndicator();
                     final vozila = snapshot.data!;

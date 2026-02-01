@@ -35,12 +35,12 @@ class KapacitetScreenWithML extends StatelessWidget {
           // Postojeći prikaz kapaciteta...
 
           // ✨ NOVO: ML predviđanje
-          FutureBuilder<double>(
-            future: MLService.predictOccupancy(
+          StreamBuilder<double>(
+            stream: Stream.fromFuture(MLService.predictOccupancy(
               grad: grad,
               vreme: vreme,
               date: datum,
-            ),
+            )),
             builder: (context, snapshot) {
               if (!snapshot.hasData) return const SizedBox.shrink();
 
@@ -158,8 +158,8 @@ class PutnikCardWithRisk extends StatelessWidget {
         // Postojeći prikaz...
 
         // ✨ NOVO: Payment risk badge
-        trailing: FutureBuilder<double>(
-          future: MLService.predictPaymentRisk(putnikId),
+        trailing: StreamBuilder<double>(
+          stream: Stream.fromFuture(MLService.predictPaymentRisk(putnikId)),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const SizedBox.shrink();
 

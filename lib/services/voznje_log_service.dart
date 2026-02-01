@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import 'realtime/realtime_manager.dart';
 import 'vozac_mapping_service.dart';
 
 /// Servis za upravljanje istorijom vožnji
 /// MINIMALNA tabela: putnik_id, datum, tip (voznja/otkazivanje/uplata), iznos, vozac_id
 /// ✅ TRAJNO REŠENJE: Sve statistike se čitaju iz ove tabele
 class VoznjeLogService {
+  static StreamSubscription? _logSubscription;
+  static final StreamController<List<Map<String, dynamic>>> _logController =
+      StreamController<List<Map<String, dynamic>>>.broadcast();
   static SupabaseClient get _supabase => supabase;
 
   /// 📊 STATISTIKE ZA POPIS - Broj vožnji, otkazivanja i uplata po vozaču za određeni datum
@@ -814,5 +820,41 @@ class VoznjeLogService {
       detalji: 'Greška: $greska',
       meta: meta,
     );
+  }
+
+  /// Dohvata nedavne logove (poslednjih 100)
+  static Future<List<Map<String, dynamic>>> getRecentLogs() async {
+    try {
+      final response = await _supabase.from('voznje_log').select().order('created_at', ascending: false).limit(100);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Stream nedavnih logova sa realtime osvežavanjem
+  static Stream<List<Map<String, dynamic>>> streamRecentLogsRealtime() {
+    if (_logSubscription == null) {
+      _logSubscription = RealtimeManager.instance.subscribe('voznje_log').listen((payload) {
+        _refreshLogStream();
+      });
+      // Inicijalno učitavanje
+      _refreshLogStream();
+    }
+    return _logController.stream;
+  }
+
+  static void _refreshLogStream() async {
+    final logs = await getRecentLogs();
+    if (!_logController.isClosed) {
+      _logController.add(logs);
+    }
+  }
+
+  /// 🧹 Čisti realtime subscription
+  static void dispose() {
+    _logSubscription?.cancel();
+    _logSubscription = null;
+    _logController.close();
   }
 }

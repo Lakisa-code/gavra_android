@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../config/constants.dart';
 import '../globals.dart';
 
 /// 🕵️ ADMIN AUDIT SERVICE
@@ -42,7 +41,7 @@ class AdminAuditService {
   }) async {
     await logAction(
       adminName: adminName,
-      actionType: AppConstants.logTypePromenaKapaciteta, // Koristi konstantu!
+      actionType: 'promena_kapaciteta', // Koristi konstantu!
       details: 'Promena kapaciteta za $datum $vreme: $oldCap -> $newCap',
       metadata: {
         'datum': datum,

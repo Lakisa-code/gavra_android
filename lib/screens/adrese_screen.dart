@@ -43,19 +43,30 @@ class _AdreseScreenState extends State<AdreseScreen> {
   }
 
   Future<void> _addAdresa() async {
-    final result = await showDialog<Map<String, String?>>(
+    final result = await showDialog<Map<String, dynamic>>(
+      // Changed to Map<String, dynamic> to include doubles
       context: context,
       builder: (context) => _AdresaDialog(),
     );
 
     if (result != null) {
       try {
-        await supabase.from('adrese').insert({
+        final insertData = {
           'naziv': result['naziv'],
           'grad': result['grad'],
           'ulica': result['ulica'],
           'broj': result['broj'],
-        });
+        };
+
+        // Add coordinates if provided
+        if (result['latitude'] != null) {
+          insertData['gps_lat'] = result['latitude'];
+        }
+        if (result['longitude'] != null) {
+          insertData['gps_lng'] = result['longitude'];
+        }
+
+        await supabase.from('adrese').insert(insertData);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -73,24 +84,37 @@ class _AdreseScreenState extends State<AdreseScreen> {
   }
 
   Future<void> _editAdresa(Adresa adresa) async {
-    final result = await showDialog<Map<String, String?>>(
+    final result = await showDialog<Map<String, dynamic>>(
+      // Changed to Map<String, dynamic> to include doubles
       context: context,
       builder: (context) => _AdresaDialog(
         initialNaziv: adresa.naziv,
         initialGrad: adresa.grad,
         initialUlica: adresa.ulica,
         initialBroj: adresa.broj,
+        initialLatitude: adresa.gpsLat,
+        initialLongitude: adresa.gpsLng,
       ),
     );
 
     if (result != null) {
       try {
-        await supabase.from('adrese').update({
+        final updateData = {
           'naziv': result['naziv'],
           'grad': result['grad'],
           'ulica': result['ulica'],
           'broj': result['broj'],
-        }).eq('id', adresa.id);
+        };
+
+        // Add coordinates if provided
+        if (result['latitude'] != null) {
+          updateData['gps_lat'] = result['latitude'];
+        }
+        if (result['longitude'] != null) {
+          updateData['gps_lng'] = result['longitude'];
+        }
+
+        await supabase.from('adrese').update(updateData).eq('id', adresa.id);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -361,12 +385,16 @@ class _AdresaDialog extends StatefulWidget {
   final String? initialGrad;
   final String? initialUlica;
   final String? initialBroj;
+  final double? initialLatitude;
+  final double? initialLongitude;
 
   const _AdresaDialog({
     this.initialNaziv,
     this.initialGrad,
     this.initialUlica,
     this.initialBroj,
+    this.initialLatitude,
+    this.initialLongitude,
   });
 
   @override
@@ -377,6 +405,8 @@ class _AdresaDialogState extends State<_AdresaDialog> {
   late TextEditingController _nazivController;
   late TextEditingController _ulicaController;
   late TextEditingController _brojController;
+  late TextEditingController _latitudeController;
+  late TextEditingController _longitudeController;
   String _selectedGrad = 'Bela Crkva';
 
   @override
@@ -385,6 +415,8 @@ class _AdresaDialogState extends State<_AdresaDialog> {
     _nazivController = TextEditingController(text: widget.initialNaziv);
     _ulicaController = TextEditingController(text: widget.initialUlica);
     _brojController = TextEditingController(text: widget.initialBroj);
+    _latitudeController = TextEditingController(text: widget.initialLatitude?.toString());
+    _longitudeController = TextEditingController(text: widget.initialLongitude?.toString());
     if (widget.initialGrad != null) {
       _selectedGrad = widget.initialGrad!;
     }
@@ -395,6 +427,8 @@ class _AdresaDialogState extends State<_AdresaDialog> {
     _nazivController.dispose();
     _ulicaController.dispose();
     _brojController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     super.dispose();
   }
 
@@ -443,6 +477,32 @@ class _AdresaDialogState extends State<_AdresaDialog> {
                 hintText: 'npr. 99',
               ),
             ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _latitudeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Latitude (opciono)',
+                      hintText: 'npr. 44.7568',
+                    ),
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: _longitudeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Longitude (opciono)',
+                      hintText: 'npr. 21.1622',
+                    ),
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -460,11 +520,35 @@ class _AdresaDialogState extends State<_AdresaDialog> {
               );
               return;
             }
+
+            double? latitude;
+            double? longitude;
+            if (_latitudeController.text.trim().isNotEmpty) {
+              latitude = double.tryParse(_latitudeController.text.trim());
+              if (latitude == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nevažeća latitude vrednost')),
+                );
+                return;
+              }
+            }
+            if (_longitudeController.text.trim().isNotEmpty) {
+              longitude = double.tryParse(_longitudeController.text.trim());
+              if (longitude == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nevažeća longitude vrednost')),
+                );
+                return;
+              }
+            }
+
             Navigator.pop(context, {
               'naziv': naziv,
               'grad': _selectedGrad,
               'ulica': _ulicaController.text.trim().isEmpty ? naziv : _ulicaController.text.trim(),
               'broj': _brojController.text.trim().isEmpty ? null : _brojController.text.trim(),
+              'latitude': latitude,
+              'longitude': longitude,
             });
           },
           child: Text(isEditing ? 'Sačuvaj' : 'Dodaj'),

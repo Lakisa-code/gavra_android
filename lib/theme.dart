@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'services/theme_manager.dart';
 
@@ -220,7 +221,7 @@ extension ThemeGradients on ThemeData {
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
-  fontFamily: 'Roboto',
+  textTheme: GoogleFonts.montserratTextTheme(), // 🇷🇸 Montserrat font sa srpskim slovima
   scaffoldBackgroundColor: const Color(0xFFF0F9FF),
   appBarTheme: const AppBarTheme(
     elevation: 0,

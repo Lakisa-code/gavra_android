@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/admin_audit_service.dart'; // 🕵️ ADMIN AUDIT
-import '../services/firebase_service.dart'; // 👤 CURRENT USER
 import '../services/kapacitet_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🚢 SMART TRANZIT
 import '../services/theme_manager.dart';
@@ -222,10 +222,10 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
       if (!mounted) return;
       if (success) {
         try {
-          // 🕵️ AUDIT LOG
-          final vozac = await FirebaseService.getCurrentDriver() ?? 'Unknown Admin';
+          // 🕵️ AUDIT LOG - koristi Supabase auth umesto Firebase
+          final adminEmail = Supabase.instance.client.auth.currentUser?.email ?? 'Unknown Admin';
           await AdminAuditService.logCapacityChange(
-            adminName: vozac,
+            adminName: adminEmail,
             datum: 'Standardni raspored',
             vreme: '$grad $vreme',
             oldCap: trenutni,
@@ -259,8 +259,8 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
       children: [
         // 🚢 SMART TRANZIT INFO (Samo za Vršac)
         if (grad == 'VS')
-          FutureBuilder<List<Map<String, dynamic>>>(
-            future: SlobodnaMestaService.getMissingTransitPassengers(),
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: SlobodnaMestaService.streamMissingTransitPassengers(),
             builder: (context, snapshot) {
               if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
               final missingCount = snapshot.data!.length;

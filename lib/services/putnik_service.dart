@@ -15,7 +15,6 @@ import 'realtime/realtime_manager.dart';
 import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
 import 'slobodna_mesta_service.dart';
-import 'unified_geocoding_service.dart';
 import 'user_audit_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
@@ -854,10 +853,6 @@ class PutnikService {
     final undoPickup = Map<String, dynamic>.from(response);
     _addToUndoStack('pickup', id, undoPickup);
 
-    // 🧠 AUTO-LEARNING: Pokušaj da naučiš koordinate i loguj pickup lokaciju
-    // Ovo radimo asinhrono (bez await) da ne kočimo UI
-    UnifiedGeocodingService.tryLearnFromDriverLocation(putnik, vozacId: currentDriver);
-
     if (tabela == 'registrovani_putnici') {
       final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
@@ -1215,8 +1210,9 @@ class PutnikService {
     );
 
     // 🛠️ ADMIN AUDIT LOG: Zabeleži promenu statusa (odsustvo/povratak)
+    final currentUser = supabase.auth.currentUser;
     await AdminAuditService.logAction(
-      adminName: currentDriver,
+      adminName: currentUser?.email ?? 'Unknown Admin',
       actionType: 'change_status',
       details: 'Putnik $id promenjen status u $statusZaBazu',
       metadata: {
@@ -1325,8 +1321,9 @@ class PutnikService {
           print('🔄 RESET polasci_po_danu: $polasci');
 
           // ?? ADMIN AUDIT LOG: Zabeleži resetovanje kartice
+          final currentUser = supabase.auth.currentUser;
           await AdminAuditService.logAction(
-            adminName: currentDriver,
+            adminName: currentUser?.email ?? 'Unknown Admin',
             actionType: 'reset_putnik_card',
             details: 'Resetovan putnik $imePutnika sa odmora/statusa na "radi"',
             metadata: {

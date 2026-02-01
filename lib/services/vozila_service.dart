@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import 'realtime/realtime_manager.dart';
 
 /// 🚗 VOZILA SERVICE - Kolska knjiga
 /// Evidencija vozila i njihovo tehničko stanje
 class VozilaService {
   static SupabaseClient get _supabase => supabase;
+
+  static StreamSubscription? _vozilaSubscription;
+  static final StreamController<List<Vozilo>> _vozilaController = StreamController<List<Vozilo>>.broadcast();
 
   /// Dohvati sva vozila
   static Future<List<Vozilo>> getVozila() async {
@@ -15,6 +21,32 @@ class VozilaService {
     } catch (e) {
       return [];
     }
+  }
+
+  /// Stream vozila sa realtime osvežavanjem
+  static Stream<List<Vozilo>> streamVozila() {
+    if (_vozilaSubscription == null) {
+      _vozilaSubscription = RealtimeManager.instance.subscribe('vozila').listen((payload) {
+        _refreshVozilaStream();
+      });
+      // Inicijalno učitavanje
+      _refreshVozilaStream();
+    }
+    return _vozilaController.stream;
+  }
+
+  static void _refreshVozilaStream() async {
+    final vozila = await getVozila();
+    if (!_vozilaController.isClosed) {
+      _vozilaController.add(vozila);
+    }
+  }
+
+  /// 🧹 Čisti realtime subscription
+  static void dispose() {
+    _vozilaSubscription?.cancel();
+    _vozilaSubscription = null;
+    _vozilaController.close();
   }
 
   /// Dohvati jedno vozilo

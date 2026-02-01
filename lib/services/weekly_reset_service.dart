@@ -24,35 +24,11 @@ class WeeklyResetService {
 
     debugPrint('🔄 [WeeklyReset] Inicijalizacija servisa...');
 
-    // Proveri da li treba odmah resetovati (propušten reset)
-    await _checkMissedReset();
+    // AUTOMATSKI RESET UKLONJEN - termini ostaju sačuvani između nedelja
+    // await _checkMissedReset();
 
     // AUTOMATSKI TIMER JE ONEMOGUĆEN - sada se koristi samo ručni reset
     // _scheduleNextReset();
-  }
-
-  /// Proveri da li je propušten reset
-  static Future<void> _checkMissedReset() async {
-    try {
-      final now = DateTime.now();
-      final prefs = await SharedPreferences.getInstance();
-      final lastResetDate = prefs.getString(_lastResetDateKey);
-
-      // Izračunaj datum poslednjeg petka
-      final daysSinceFriday = (now.weekday - 5) % 7;
-      final lastFriday = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: daysSinceFriday == 0 && now.hour < 0 ? 7 : daysSinceFriday));
-      final lastFridayStr = lastFriday.toIso8601String().split('T')[0];
-
-      // RESETUJEMO UVEK KADA SE APLIKACIJA POKRENE POSLE PETKA
-      // (subota, nedelja, ponedeljak...) i ako nije resetovano za taj petak
-      if (lastResetDate != lastFridayStr) {
-        debugPrint('🔄 [WeeklyReset] Resetujem za prošlu nedelju (petak $lastFridayStr)');
-        await _executeWeeklyReset();
-      }
-    } catch (e) {
-      debugPrint('❌ [WeeklyReset] Greška pri proveri propuštenog reseta: $e');
-    }
   }
 
   /// Izvrši nedeljni reset

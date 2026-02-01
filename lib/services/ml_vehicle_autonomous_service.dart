@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import 'realtime/realtime_manager.dart';
 
 /// 🧠 AUTONOMNI ML LAB ZA VOZILA I OPERACIJE
 ///
@@ -17,6 +18,9 @@ import '../globals.dart';
 /// 100% UNSUPERVISED: Beba uči strukturu baze i ritam održavanja.
 
 class MLVehicleAutonomousService extends ChangeNotifier {
+  static StreamSubscription? _patternsSubscription;
+  static final StreamController<Map<String, dynamic>> _patternsController =
+      StreamController<Map<String, dynamic>>.broadcast();
   static SupabaseClient get _supabase => supabase;
 
   // 📡 REALTIME STREAMS
@@ -579,13 +583,53 @@ class MLVehicleAutonomousService extends ChangeNotifier {
     try {
       await _supabase.from('ml_config').upsert(<String, dynamic>{
         'model_name': 'vehicle_patterns',
+        'model_version': '1.0',
         'parameters': _learnedPatterns,
         'is_active': true,
         'updated_at': DateTime.now().toIso8601String(),
-      });
+      }, onConflict: 'model_name');
     } catch (e) {
       print('⚠️ [ML Lab] Greška pri čuvanju obrazaca: $e');
     }
+  }
+
+  /// Stream za learned patterns sa realtime osvežavanjem
+  Stream<Map<String, dynamic>> streamLearnedPatterns() {
+    if (_patternsSubscription == null) {
+      _patternsSubscription = RealtimeManager.instance.subscribe('ml_config').listen((payload) {
+        _refreshPatternsStream();
+      });
+      // Inicijalno učitavanje
+      _refreshPatternsStream();
+    }
+    return _patternsController.stream;
+  }
+
+  void _refreshPatternsStream() async {
+    final patterns = await _loadLearnedPatternsMap();
+    if (!_patternsController.isClosed) {
+      _patternsController.add(patterns);
+    }
+  }
+
+  /// 🧹 Čisti realtime subscription
+  static void disposeRealtime() {
+    _patternsSubscription?.cancel();
+    _patternsSubscription = null;
+    _patternsController.close();
+  }
+
+  Future<Map<String, dynamic>> _loadLearnedPatternsMap() async {
+    try {
+      final result =
+          await _supabase.from('ml_config').select('parameters').eq('model_name', 'vehicle_patterns').maybeSingle();
+      if (result != null && result['parameters'] != null) {
+        return Map<String, dynamic>.from(result['parameters'] as Map);
+      }
+    } catch (e) {
+      print('⚠️ [ML Lab] Greška pri učitavanju obrazaca: $e');
+    }
+    return {};
   }
 }
 

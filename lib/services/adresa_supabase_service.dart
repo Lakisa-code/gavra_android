@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import '../globals.dart';
 import '../models/adresa.dart';
 import 'geocoding_service.dart';
+import 'realtime/realtime_manager.dart';
 
 /// Servis za rad sa normalizovanim adresama iz Supabase tabele
 /// 🎯 KORISTI UUID REFERENCE umesto TEXT polja
@@ -9,6 +12,9 @@ class AdresaSupabaseService {
   static final Map<String, Adresa> _cache = {};
   static DateTime? _lastCacheUpdate;
   static const Duration _cacheExpiry = Duration(minutes: 10);
+
+  static StreamSubscription? _adreseSubscription;
+  static final StreamController<List<Adresa>> _adreseController = StreamController<List<Adresa>>.broadcast();
 
   /// Dobija adresu po UUID-u
   static Future<Adresa?> getAdresaByUuid(String uuid) async {
@@ -48,14 +54,34 @@ class AdresaSupabaseService {
     }
   }
 
+  /// Dobija sve adrese
+  static Future<List<Adresa>> getSveAdrese() async {
+    try {
+      final response =
+          await supabase.from('adrese').select('id, naziv, grad, gps_lat, gps_lng').order('grad').order('naziv');
+      return response.map((json) => Adresa.fromMap(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// 🛰️ REALTIME STREAM: Prati promene u tabeli 'adrese'
   static Stream<List<Adresa>> streamSveAdrese() {
-    return supabase
-        .from('adrese')
-        .stream(primaryKey: ['id'])
-        .order('grad')
-        .order('naziv')
-        .map((data) => data.map((json) => Adresa.fromMap(json)).toList());
+    if (_adreseSubscription == null) {
+      _adreseSubscription = RealtimeManager.instance.subscribe('adrese').listen((payload) {
+        _refreshAdreseStream();
+      });
+      // Inicijalno učitavanje
+      _refreshAdreseStream();
+    }
+    return _adreseController.stream;
+  }
+
+  static void _refreshAdreseStream() async {
+    final adrese = await getSveAdrese();
+    if (!_adreseController.isClosed) {
+      _adreseController.add(adrese);
+    }
   }
 
   /// Pronađi adresu po nazivu i gradu
@@ -244,32 +270,10 @@ class AdresaSupabaseService {
     }
   }
 
-  /// 📍 GPS LEARN: Ažuriraj koordinate adrese na osnovu GPS lokacije pri pokupljenju
-  /// Ova funkcija se poziva kada vozač pokupi putnika - pamti tačnu lokaciju
-  static Future<bool> updateKoordinateFromGps({
-    required String adresaId,
-    required double latitude,
-    required double longitude,
-  }) async {
-    try {
-      if (latitude < 42.0 || latitude > 46.5 || longitude < 18.0 || longitude > 23.0) {
-        return false;
-      }
-
-      final existing = await getAdresaByUuid(adresaId);
-      if (existing?.hasValidCoordinates == true) {
-        return false;
-      }
-
-      await supabase.from('adrese').update({
-        'gps_lat': latitude, // Direct column
-        'gps_lng': longitude, // Direct column
-      }).eq('id', adresaId);
-
-      _cache.remove(adresaId);
-      return true;
-    } catch (e) {
-      return false;
-    }
+  /// 🧹 Čisti realtime cache i subscription
+  static void dispose() {
+    _adreseSubscription?.cancel();
+    _adreseSubscription = null;
+    _adreseController.close();
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,7 @@ import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_helpers.dart';
 import 'kapacitet_service.dart';
 import 'putnik_service.dart';
+import 'realtime/realtime_manager.dart';
 import 'voznje_log_service.dart';
 
 /// 🎫 Model za slobodna mesta po polasku
@@ -39,6 +41,14 @@ class SlobodnaMesta {
 class SlobodnaMestaService {
   static SupabaseClient get _supabase => supabase;
   static final _putnikService = PutnikService();
+
+  static StreamSubscription? _missingTransitSubscription;
+  static final StreamController<List<Map<String, dynamic>>> _missingTransitController =
+      StreamController<List<Map<String, dynamic>>>.broadcast();
+
+  static StreamSubscription? _projectedStatsSubscription;
+  static final StreamController<Map<String, dynamic>> _projectedStatsController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   /// Izračunaj broj zauzetih mesta za određeni grad/vreme/datum
   static int _countPutniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
@@ -717,6 +727,25 @@ class SlobodnaMestaService {
     }
   }
 
+  /// Stream za missing transit passengers sa realtime osvežavanjem
+  static Stream<List<Map<String, dynamic>>> streamMissingTransitPassengers() {
+    if (_missingTransitSubscription == null) {
+      _missingTransitSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+        _refreshMissingTransitStream();
+      });
+      // Inicijalno učitavanje
+      _refreshMissingTransitStream();
+    }
+    return _missingTransitController.stream;
+  }
+
+  static void _refreshMissingTransitStream() async {
+    final missing = await getMissingTransitPassengers();
+    if (!_missingTransitController.isClosed) {
+      _missingTransitController.add(missing);
+    }
+  }
+
   /// Ručno okida slanje podsetnika svim tranzitnim putnicima koji nisu rezervisali povratak
   static Future<int> triggerTransitReminders() async {
     try {
@@ -757,6 +786,40 @@ class SlobodnaMestaService {
         'missing_count': 0,
       };
     }
+  }
+
+  /// Stream za projected occupancy stats sa realtime osvežavanjem
+  static Stream<Map<String, dynamic>> streamProjectedOccupancyStats() {
+    if (_projectedStatsSubscription == null) {
+      // Listen to both registrovani_putnici and kapacitet_polazaka
+      _projectedStatsSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+        _refreshProjectedStatsStream();
+      });
+      RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
+        _refreshProjectedStatsStream();
+      });
+      // Inicijalno učitavanje
+      _refreshProjectedStatsStream();
+    }
+    return _projectedStatsController.stream;
+  }
+
+  static void _refreshProjectedStatsStream() async {
+    final stats = await getProjectedOccupancyStats();
+    if (!_projectedStatsController.isClosed) {
+      _projectedStatsController.add(stats);
+    }
+  }
+
+  /// 🧹 Čisti realtime subscriptions
+  static void dispose() {
+    _missingTransitSubscription?.cancel();
+    _missingTransitSubscription = null;
+    _missingTransitController.close();
+
+    _projectedStatsSubscription?.cancel();
+    _projectedStatsSubscription = null;
+    _projectedStatsController.close();
   }
 
   /// 🛡️ Sigurno parsira polasci_po_danu (Map ili String)
