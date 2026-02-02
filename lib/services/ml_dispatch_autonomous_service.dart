@@ -255,7 +255,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         }
       }
     } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Overflow error: ');
+      if (kDebugMode) print(' [ML Dispatch] Overflow error: $e');
     }
   }
 
@@ -321,7 +321,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         }
       }
     } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Grouping error: ');
+      if (kDebugMode) print(' [ML Dispatch] Grouping error: $e');
     }
   }
 
@@ -378,7 +378,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         }
       });
     } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Split error: ');
+      if (kDebugMode) print(' [ML Dispatch] Split error: $e');
     }
   }
 
@@ -395,7 +395,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
       // 🆕 Automatska obrada novih zahteva po BC LOGIKA pravilima
       await _processNewSeatRequests();
     } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Velocity error: ');
+      if (kDebugMode) print(' [ML Dispatch] Velocity error: $e');
     }
   }
 

@@ -17,6 +17,7 @@ import '../services/putnik_push_service.dart'; // 📱 Za push notifikacije putn
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
+import '../services/route_service.dart'; // 🚐 Dinamički satni redoslijedi
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
@@ -94,30 +95,60 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get _bcVremena {
     final navType = navBarTypeNotifier.value;
+    String sezona;
+
     switch (navType) {
       case 'praznici':
-        return RouteConfig.bcVremenaPraznici;
+        sezona = 'praznici';
+        break;
       case 'zimski':
-        return RouteConfig.bcVremenaZimski;
+        sezona = 'zimski';
+        break;
       case 'letnji':
-        return RouteConfig.bcVremenaLetnji;
+        sezona = 'letnji';
+        break;
       default: // 'auto'
-        return isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
+
+    // Pokušaj iz cache-a, fallback na RouteConfig
+    final cached = RouteService.getCachedVremena(sezona, 'bc');
+    return cached.isNotEmpty
+        ? cached
+        : (sezona == 'praznici'
+            ? RouteConfig.bcVremenaPraznici
+            : sezona == 'zimski'
+                ? RouteConfig.bcVremenaZimski
+                : RouteConfig.bcVremenaLetnji);
   }
 
   List<String> get _vsVremena {
     final navType = navBarTypeNotifier.value;
+    String sezona;
+
     switch (navType) {
       case 'praznici':
-        return RouteConfig.vsVremenaPraznici;
+        sezona = 'praznici';
+        break;
       case 'zimski':
-        return RouteConfig.vsVremenaZimski;
+        sezona = 'zimski';
+        break;
       case 'letnji':
-        return RouteConfig.vsVremenaLetnji;
+        sezona = 'letnji';
+        break;
       default: // 'auto'
-        return isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
+
+    // Pokušaj iz cache-a, fallback na RouteConfig
+    final cached = RouteService.getCachedVremena(sezona, 'vs');
+    return cached.isNotEmpty
+        ? cached
+        : (sezona == 'praznici'
+            ? RouteConfig.vsVremenaPraznici
+            : sezona == 'zimski'
+                ? RouteConfig.vsVremenaZimski
+                : RouteConfig.vsVremenaLetnji);
   }
 
   List<String> get _sviPolasci {

@@ -543,7 +543,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       String? sledeciPolazak;
 
       // Dobavi vremena polazaka iz RouteConfig (automatski letnji/zimski)
-      final vremenaPolazaka = RouteConfig.getVremenaPolazaka(
+      final vremenaPolazaka = await RouteConfig.getVremenaPolazaka(
         grad: grad,
         letnji: !isZimski(now), // Automatska provera sezone
       );
@@ -2059,8 +2059,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final polasciRaw = _safeMap(_putnikData['polasci_po_danu']);
       Map<String, dynamic> polasci = Map<String, dynamic>.from(polasciRaw);
 
-      // Osiguraj da dan postoji
-      polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
+      // Osiguraj da dan postoji - ČUVAJ POSTOJEĆE PODATKE!
+      if (!polasci.containsKey(dan)) {
+        polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
+      } else if (polasci[dan] is! Map) {
+        // Ako nije mapa, kreiraj novu
+        polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
+      }
+      // Ne kreiramo novu mapu ako dan već postoji - čuvamo sve postojeće markere!
 
       // 🔴 OTKAZIVANJE - ako putnik briše vreme, zabeleži kao otkazano SA STARIM VREMENOM
       if (novoVreme == null) {

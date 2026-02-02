@@ -18,9 +18,26 @@ class VozacService {
 
   /// Dohvata sve vozače
   Future<List<Vozac>> getAllVozaci() async {
-    final response = await _supabase.from('vozaci').select('id, ime').order('ime');
+    final response = await _supabase.from('vozaci').select('id, ime, email, telefon, sifra, boja').order('ime');
 
     return response.map((json) => Vozac.fromMap(json)).toList();
+  }
+
+  /// Dodaje novog vozača
+  Future<Vozac> addVozac(Vozac vozac) async {
+    final response = await _supabase.from('vozaci').insert(vozac.toMap()).select().single();
+    return Vozac.fromMap(response);
+  }
+
+  /// Ažurira postojećeg vozača
+  Future<Vozac> updateVozac(Vozac vozac) async {
+    final response = await _supabase.from('vozaci').update(vozac.toMap()).eq('id', vozac.id).select().single();
+    return Vozac.fromMap(response);
+  }
+
+  /// Briše vozača
+  Future<void> deleteVozac(String id) async {
+    await _supabase.from('vozaci').delete().eq('id', id);
   }
 
   /// 🛰️ REALTIME STREAM: Dohvata sve vozače u realnom vremenu

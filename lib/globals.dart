@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'services/config_service.dart'; // 🔐 Centralizovani kredencijali
+
 /// 🌐 GLOBALNE VARIJABLE ZA GAVRA ANDROID
 ///
 /// Ovaj fajl sadrži globalne varijable koje se koriste kroz celu aplikaciju.
@@ -78,3 +80,8 @@ final ValueNotifier<bool> dnevniZakazivanjeNotifier = ValueNotifier<bool>(false)
 
 /// Helper za proveru da li je zakazivanje za dnevne aktivno
 bool get isDnevniZakazivanjeAktivno => dnevniZakazivanjeNotifier.value;
+
+/// 🔐 GLOBALNA INSTANCA CONFIG SERVICE
+/// Centralizovano upravljanje svim kredencijalima i konfiguracijom
+/// Koristi se u celoj aplikaciji za pristup kredencijalima
+final ConfigService configService = ConfigService();

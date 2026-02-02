@@ -215,10 +215,12 @@ class PushTokenService {
   /// - [token] - specifičan token
   /// - [userId] - svi tokeni za korisnika
   /// - [putnikId] - svi tokeni za putnika
+  /// - [vozacId] - svi tokeni za vozača
   static Future<bool> clearToken({
     String? token,
     String? userId,
     String? putnikId,
+    String? vozacId,
   }) async {
     try {
       if (token != null) {
@@ -227,6 +229,8 @@ class PushTokenService {
         await _supabase.from('push_tokens').delete().eq('putnik_id', putnikId);
       } else if (userId != null) {
         await _supabase.from('push_tokens').delete().eq('user_id', userId);
+      } else if (vozacId != null) {
+        await _supabase.from('push_tokens').delete().eq('vozac_id', vozacId);
       } else {
         return false;
       }

@@ -133,16 +133,23 @@ class RealtimeManager {
       schema: 'public',
       table: table,
       callback: (payload) {
+        debugPrint('🔄 [RealtimeManager] EVENT na tabeli "$table": ${payload.eventType}');
         if (_controllers.containsKey(table) && !_controllers[table]!.isClosed) {
           _controllers[table]!.add(payload);
+          debugPrint('✅ [RealtimeManager] Payload emitovan za tabelu "$table"');
+        } else {
+          debugPrint('⚠️ [RealtimeManager] Controller zatvoren ili ne postoji za tabelu "$table"');
         }
       },
     )
         .subscribe((status, [error]) {
+      debugPrint(
+          '📡 [RealtimeManager] Subscribe status za "$table": $status${error != null ? " (Error: $error)" : ""}');
       _handleSubscribeStatus(table, status, error);
     });
 
     _channels[table] = channel;
+    debugPrint('🔗 [RealtimeManager] Channel kreiiran za tabelu "$table"');
   }
 
   /// Handle status promene od Supabase

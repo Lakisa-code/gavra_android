@@ -283,7 +283,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
   }
 
   Widget _getScreenForDriver(String driverName) {
-    if (driverName == 'Ivan') {
+    // Vozači koji koriste VozacScreen umesto HomeScreen
+    if (driverName == 'Ivan' || driverName == 'Voja') {
       return const VozacScreen();
     }
     return const HomeScreen();

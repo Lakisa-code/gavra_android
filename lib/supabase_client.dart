@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
 // 🚀 SUPABASE CLOUD КОНФИГУРАЦИЈА
 // ✅ РАДИ 100% - Тестирано 19.10.2025
 //
@@ -34,3 +38,18 @@ const String supabaseServiceRoleKey = String.fromEnvironment('SUPABASE_SERVICE_R
 // POST нови путник:
 // curl -X POST -H "apikey: $serviceKey" -H "Content-Type: application/json" \
 //      -d '{"putnik_ime":"Тест","tip":"ucenik"}' "$url/rest/v1/registrovani_putnici"
+
+Future<String?> getSecretFromVault(String secretName) async {
+  final response = await http.get(
+    Uri.parse('$supabaseUrl/rest/v1/vault/secrets/$secretName'),
+    headers: {
+      'Authorization': 'Bearer $supabaseServiceRoleKey',
+      'apikey': supabaseAnonKey,
+    },
+  );
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['value'];
+  }
+  return null;
+}

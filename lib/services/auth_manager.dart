@@ -232,54 +232,76 @@ class AuthManager {
 
   /// Centralizovan logout - briše sve session podatke
   static Future<void> logout(BuildContext context) async {
-    // 🔧 FIX: Koristi context direktno + fallback na navigatorKey
-    final navigator = Navigator.of(context);
-
-    // Prikaži loading
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
     try {
+      debugPrint('🔄 Starting logout process...');
+
       final prefs = await SharedPreferences.getInstance();
 
       // 🧹 Invalidira memory cache
       invalidateCache();
+      debugPrint('✅ Cache invalidated');
 
       // 1. Obriši SharedPreferences - SVE session podatke uključujući zapamćene uređaje
       await prefs.remove(_driverKey);
       await prefs.remove(_authSessionKey);
       await prefs.remove(_rememberedDevicesKey);
+      debugPrint('✅ SharedPreferences cleared');
+
+      // 2. Obriši push tokene iz Supabase baze
+      try {
+        final currentDriver = await getCurrentDriver();
+        if (currentDriver != null) {
+          // Nađi vozac_id za trenutnog vozača
+          Vozac? vozac = VozacBoja.getVozac(currentDriver);
+          if (vozac?.id != null) {
+            await PushTokenService.clearToken(vozacId: vozac!.id);
+            debugPrint('✅ Push tokens cleared for vozac: $currentDriver');
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error clearing push tokens: $e');
+      }
 
       // 3. Očisti Firebase session (ako postoji)
       try {
         await FirebaseService.clearCurrentDriver();
+        debugPrint('✅ Firebase session cleared');
       } catch (e) {
         debugPrint('⚠️ Error clearing Firebase session: $e');
       }
 
-      // 4. Zatvori loading i navigiraj
-      navigator.pop();
-      navigator.pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
-        (route) => false,
-      );
+      // 4. Navigiraj na WelcomeScreen sa punim refresh-om (uklanja sve rute)
+      // ⚠️ Koristi globalnu navigatorKey umesto konteksta jer context može biti invalidiran
+      debugPrint('🚀 Navigating to WelcomeScreen...');
+
+      if (navigatorKey.currentState != null) {
+        navigatorKey.currentState!.pushAndRemoveUntil(
+          MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
+          (route) => false,
+        );
+        debugPrint('✅ Navigation successful');
+      } else {
+        debugPrint('⚠️ NavigatorKey state is null, attempting fallback');
+        if (context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
+      }
     } catch (e) {
       debugPrint('⚠️ Error during logout: $e');
       // Logout greška - svejedno navigiraj na welcome
       try {
-        navigator.pop(); // Zatvori loading
+        if (navigatorKey.currentState != null) {
+          navigatorKey.currentState!.pushAndRemoveUntil(
+            MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
       } catch (e2) {
-        debugPrint('⚠️ Error closing loading dialog: $e2');
+        debugPrint('⚠️ Error in logout error handler: $e2');
       }
-      navigator.pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
-        (route) => false,
-      );
     }
   }
 

@@ -22,6 +22,7 @@ class RegistrovaniPutnikService {
   // 🔧 SINGLETON PATTERN za realtime stream - koristi RealtimeManager
   static StreamController<List<RegistrovaniPutnik>>? _sharedController;
   static StreamSubscription? _sharedSubscription;
+  static RealtimeChannel? _realtimeChannel;
   static List<RegistrovaniPutnik>? _lastValue;
 
   // 🔧 SINGLETON PATTERN za "SVI PUTNICI" stream (uključujući neaktivne)
@@ -126,33 +127,51 @@ class RegistrovaniPutnikService {
   /// 🔄 Fetch podatke i emituj u stream
   static Future<void> _fetchAndEmit(SupabaseClient supabase) async {
     try {
-      final data = await supabase
-          .from('registrovani_putnici')
-          .select()
-          .eq('aktivan', true)
-          .eq('obrisan', false)
-          .eq('is_duplicate', false)
-          .order('putnik_ime');
+      debugPrint('📊 [RegistrovaniPutnik] Osvežavanje liste putnika iz baze...');
 
-      final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
+      // 🔧 POJEDNOSTAVLJEN QUERY - direktno bez lanaca za pouzdanost
+      final data = await supabase.from('registrovani_putnici').select();
+
+      // Filtriraj lokalno umesto preko Supabase
+      final putnici = data
+          .where((json) {
+            final aktivan = json['aktivan'] as bool? ?? false;
+            final obrisan = json['obrisan'] as bool? ?? true;
+            final isDuplicate = json['is_duplicate'] as bool? ?? false;
+            return aktivan && !obrisan && !isDuplicate;
+          })
+          .map((json) => RegistrovaniPutnik.fromMap(json))
+          .toList()
+        ..sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
+
+      debugPrint('✅ [RegistrovaniPutnik] Učitano ${putnici.length} putnika (nakon filtriranja)');
+
       _lastValue = putnici;
 
       if (_sharedController != null && !_sharedController!.isClosed) {
         _sharedController!.add(putnici);
+        debugPrint('🔊 [RegistrovaniPutnik] Stream emitovao listu sa ${putnici.length} putnika');
+      } else {
+        debugPrint('⚠️ [RegistrovaniPutnik] Controller nije dostupan ili je zatvoren');
       }
     } catch (e) {
-      debugPrint('🔴 Error fetching registered passengers: $e');
+      debugPrint('🔴 [RegistrovaniPutnik] Error fetching passengers: $e');
     }
   }
 
-  /// 🔌 Setup realtime subscription preko RealtimeManager
+  /// 🔌 Setup realtime subscription - Direktno iz Supabase (bez RealtimeManager)
   static void _setupRealtimeSubscription(SupabaseClient supabase) {
     _sharedSubscription?.cancel();
 
+    debugPrint('🔗 [RegistrovaniPutnik] Setup realtime subscription...');
     // Koristi centralizovani RealtimeManager
     _sharedSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+      debugPrint('🔄 [RegistrovaniPutnik] Payload primljen: ${payload.eventType}');
       _fetchAndEmit(supabase);
+    }, onError: (error) {
+      debugPrint('❌ [RegistrovaniPutnik] Stream error: $error');
     });
+    debugPrint('✅ [RegistrovaniPutnik] Realtime subscription postavljena');
   }
 
   /// 🧹 Čisti singleton cache - pozovi kad treba resetovati sve
@@ -375,7 +394,7 @@ class RegistrovaniPutnikService {
 
         if (rawPolasciDB is String) {
           try {
-            trenutniPolasci = json.decode(rawPolasciDB) as Map<String, dynamic>?;
+            trenutniPolasci = jsonDecode(rawPolasciDB) as Map<String, dynamic>?;
           } catch (e) {
             debugPrint('Greška pri parsu polasci_po_danu stringa: $e');
           }

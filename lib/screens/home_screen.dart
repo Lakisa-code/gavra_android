@@ -23,6 +23,7 @@ import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog gr
 import '../services/racun_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart';
+import '../services/route_service.dart'; // 🚐 Dinamički satni redoslijedi
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
@@ -86,30 +87,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
+    String sezona;
+
     switch (navType) {
       case 'praznici':
-        return RouteConfig.bcVremenaPraznici;
+        sezona = 'praznici';
+        break;
       case 'zimski':
-        return RouteConfig.bcVremenaZimski;
+        sezona = 'zimski';
+        break;
       case 'letnji':
-        return RouteConfig.bcVremenaLetnji;
+        sezona = 'letnji';
+        break;
       default: // 'auto'
-        return isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
+
+    // Pokušaj iz cache-a, fallback na RouteConfig
+    final cached = RouteService.getCachedVremena(sezona, 'bc');
+    return cached.isNotEmpty
+        ? cached
+        : (sezona == 'praznici'
+            ? RouteConfig.bcVremenaPraznici
+            : sezona == 'zimski'
+                ? RouteConfig.bcVremenaZimski
+                : RouteConfig.bcVremenaLetnji);
   }
 
   List<String> get vsVremena {
     final navType = navBarTypeNotifier.value;
+    String sezona;
+
     switch (navType) {
       case 'praznici':
-        return RouteConfig.vsVremenaPraznici;
+        sezona = 'praznici';
+        break;
       case 'zimski':
-        return RouteConfig.vsVremenaZimski;
+        sezona = 'zimski';
+        break;
       case 'letnji':
-        return RouteConfig.vsVremenaLetnji;
+        sezona = 'letnji';
+        break;
       default: // 'auto'
-        return isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
+
+    // Pokušaj iz cache-a, fallback na RouteConfig
+    final cached = RouteService.getCachedVremena(sezona, 'vs');
+    return cached.isNotEmpty
+        ? cached
+        : (sezona == 'praznici'
+            ? RouteConfig.vsVremenaPraznici
+            : sezona == 'zimski'
+                ? RouteConfig.vsVremenaZimski
+                : RouteConfig.vsVremenaLetnji);
   }
 
   // 📝 DINAMIČKA LISTA POLAZAKA za BottomNavBar
@@ -930,7 +961,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
 
     if (shouldLogout == true && mounted) {
-      await AuthManager.logout(context);
+      // 🔄 Prikaži loading spinner
+      if (!mounted) return;
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Theme.of(ctx).colorScheme.primary,
+            ),
+          ),
+        ),
+      );
+
+      // 🚪 Izvrši logout
+      try {
+        await AuthManager.logout(context);
+      } catch (e) {
+        debugPrint('⚠️ Logout error: $e');
+        // Ako logout fail, pokreni navigaciju ručno
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
+      }
     }
   }
 

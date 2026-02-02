@@ -9,6 +9,7 @@ class Vozac {
     this.brojTelefona,
     this.email,
     this.boja,
+    this.sifra,
   })  : assert(ime.trim().isNotEmpty, 'Ime vozača ne može biti prazno'),
         id = id ?? const Uuid().v4();
 
@@ -19,6 +20,7 @@ class Vozac {
       brojTelefona: map['telefon'] as String?,
       email: map['email'] as String?,
       boja: map['boja'] as String?,
+      sifra: map['sifra'] as String?,
     );
   }
   final String id;
@@ -26,6 +28,7 @@ class Vozac {
   final String? brojTelefona;
   final String? email;
   final String? boja;
+  final String? sifra;
 
   Map<String, dynamic> toMap() {
     return {
@@ -34,6 +37,7 @@ class Vozac {
       'telefon': brojTelefona,
       'email': email,
       'boja': boja,
+      'sifra': sifra,
     };
   }
 
@@ -115,6 +119,7 @@ class Vozac {
     String? brojTelefona,
     String? email,
     String? boja,
+    String? sifra,
   }) {
     return Vozac(
       id: id,
@@ -122,6 +127,7 @@ class Vozac {
       brojTelefona: brojTelefona ?? this.brojTelefona,
       email: email ?? this.email,
       boja: boja ?? this.boja,
+      sifra: sifra ?? this.sifra,
     );
   }
 

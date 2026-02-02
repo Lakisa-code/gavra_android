@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/vozac.dart';
+import '../services/vozac_service.dart';
 import '../theme.dart';
 
 /// 🔐 AUTH SCREEN - Admin panel za upravljanje vozačima
@@ -15,7 +17,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  List<Map<String, dynamic>> _vozaci = [];
+  List<Vozac> _vozaci = [];
   bool _isLoading = true;
 
   // Forma za novog vozača
@@ -55,60 +57,70 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  /// Učitaj vozače iz SharedPreferences
+  /// Učitaj vozače iz Supabase ili SharedPreferences
   Future<void> _loadVozaci() async {
-    final prefs = await SharedPreferences.getInstance();
-    final vozaciJson = prefs.getString('auth_vozaci');
-
-    if (vozaciJson != null) {
-      final List<dynamic> decoded = jsonDecode(vozaciJson);
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
       if (!mounted) return;
       setState(() {
-        _vozaci = decoded.map((v) => Map<String, dynamic>.from(v)).toList();
+        _vozaci = vozaci;
         _isLoading = false;
       });
-    } else {
-      // Inicijalni podaci - postojeći vozači
-      _vozaci = [
-        {
-          'ime': 'Bojan',
-          'email': 'gavriconi19@gmail.com',
-          'sifra': '191919',
-          'telefon': '0641162560',
-          'boja': 0xFF00E5FF,
-        },
-        {
-          'ime': 'Bruda',
-          'email': 'igor.jovanovic.1984@icloud.com',
-          'sifra': '111111',
-          'telefon': '0641202844',
-          'boja': 0xFF7C4DFF,
-        },
-        {
-          'ime': 'Bilevski',
-          'email': 'bilyboy1983@gmail.com',
-          'sifra': '222222',
-          'telefon': '0638466418',
-          'boja': 0xFFFF9800,
-        },
-        {
-          'ime': 'Svetlana',
-          'email': 'risticsvetlana2911@yahoo.com',
-          'sifra': '444444',
-          'telefon': '0658464160',
-          'boja': 0xFFFF1493,
-        },
-        {
-          'ime': 'Ivan',
-          'email': 'bradvarevicivan99@gmail.com',
-          'sifra': '333333',
-          'telefon': '0677662993',
-          'boja': 0xFFFFD700, // žuta (Gold)
-        },
-      ];
-      await _saveVozaci();
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+    } catch (e) {
+      // Fallback to SharedPreferences if Supabase fails
+      final prefs = await SharedPreferences.getInstance();
+      final vozaciJson = prefs.getString('auth_vozaci');
+      if (vozaciJson != null) {
+        final List<dynamic> decoded = jsonDecode(vozaciJson);
+        if (!mounted) return;
+        setState(() {
+          _vozaci = decoded.map((v) => Vozac.fromMap(v as Map<String, dynamic>)).toList();
+          _isLoading = false;
+        });
+      } else {
+        // Inicijalni podaci - postojeći vozači
+        _vozaci = [
+          Vozac(
+            ime: 'Bojan',
+            email: 'gavriconi19@gmail.com',
+            sifra: '191919',
+            brojTelefona: '0641162560',
+            boja: '00E5FF',
+          ),
+          Vozac(
+            ime: 'Bruda',
+            email: 'igor.jovanovic.1984@icloud.com',
+            sifra: '111111',
+            brojTelefona: '0641202844',
+            boja: '7C4DFF',
+          ),
+          Vozac(
+            ime: 'Bilevski',
+            email: 'bilyboy1983@gmail.com',
+            sifra: '222222',
+            brojTelefona: '0638466418',
+            boja: 'FF9800',
+          ),
+          Vozac(
+            ime: 'Svetlana',
+            email: 'risticsvetlana2911@yahoo.com',
+            sifra: '444444',
+            brojTelefona: '0658464160',
+            boja: 'FF1493',
+          ),
+          Vozac(
+            ime: 'Ivan',
+            email: 'bradvarevicivan99@gmail.com',
+            sifra: '333333',
+            brojTelefona: '0677662993',
+            boja: 'FFD700',
+          ),
+        ];
+        await _saveVozaciToSupabase();
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -118,22 +130,43 @@ class _AuthScreenState extends State<AuthScreen> {
     await prefs.setString('auth_vozaci', jsonEncode(_vozaci));
   }
 
+  /// Sačuvaj vozače u Supabase
+  Future<void> _saveVozaciToSupabase() async {
+    final vozacService = VozacService();
+    for (final vozac in _vozaci) {
+      try {
+        await vozacService.addVozac(vozac);
+      } catch (e) {
+        // Ignore if already exists
+      }
+    }
+  }
+
   /// Dodaj novog vozača
   Future<void> _addVozac() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final noviVozac = {
-      'ime': _imeController.text.trim(),
-      'email': _emailController.text.trim().toLowerCase(),
-      'sifra': _sifraController.text,
-      'telefon': _telefonController.text.trim(),
-      'boja': _selectedColor.toARGB32(),
-    };
+    final noviVozac = Vozac(
+      ime: _imeController.text.trim(),
+      email: _emailController.text.trim().toLowerCase(),
+      sifra: _sifraController.text,
+      brojTelefona: _telefonController.text.trim(),
+      boja: _selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2),
+    );
 
-    setState(() {
-      _vozaci.add(noviVozac);
-    });
-    await _saveVozaci();
+    try {
+      final vozacService = VozacService();
+      final addedVozac = await vozacService.addVozac(noviVozac);
+      setState(() {
+        _vozaci.add(addedVozac);
+      });
+    } catch (e) {
+      // Fallback to local storage
+      setState(() {
+        _vozaci.add(noviVozac);
+      });
+      await _saveVozaci();
+    }
 
     // Reset forme
     _imeController.clear();
@@ -146,7 +179,7 @@ class _AuthScreenState extends State<AuthScreen> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vozač ${noviVozac['ime']} dodat!'),
+          content: Text('Vozač ${noviVozac.ime} dodat!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -163,7 +196,7 @@ class _AuthScreenState extends State<AuthScreen> {
         backgroundColor: const Color(0xFF1A1A2E),
         title: const Text('Obriši vozača?', style: TextStyle(color: Colors.white)),
         content: Text(
-          'Da li si siguran da želiš da obrišeš ${vozac['ime']}?',
+          'Da li si siguran da želiš da obrišeš ${vozac.ime}?',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
         ),
         actions: [
@@ -180,6 +213,12 @@ class _AuthScreenState extends State<AuthScreen> {
     );
 
     if (confirm == true) {
+      try {
+        final vozacService = VozacService();
+        await vozacService.deleteVozac(vozac.id);
+      } catch (e) {
+        // Ignore if Supabase fails
+      }
       setState(() {
         _vozaci.removeAt(index);
       });
@@ -188,7 +227,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${vozac['ime']} obrisan!'),
+            content: Text('${vozac.ime} obrisan!'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -200,27 +239,38 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _editVozac(int index) async {
     final vozac = _vozaci[index];
 
-    _imeController.text = vozac['ime'] ?? '';
-    _emailController.text = vozac['email'] ?? '';
-    _sifraController.text = vozac['sifra'] ?? '';
-    _telefonController.text = vozac['telefon'] ?? '';
-    _selectedColor = Color(vozac['boja'] ?? 0xFF2196F3);
+    _imeController.text = vozac.ime;
+    _emailController.text = vozac.email ?? '';
+    _sifraController.text = vozac.sifra ?? '';
+    _telefonController.text = vozac.brojTelefona ?? '';
+    _selectedColor = vozac.color ?? Colors.blue;
 
     await showDialog(
       context: context,
       builder: (ctx) => _buildVozacDialog(
         title: 'Izmeni vozača',
         onSave: () async {
-          setState(() {
-            _vozaci[index] = {
-              'ime': _imeController.text.trim(),
-              'email': _emailController.text.trim().toLowerCase(),
-              'sifra': _sifraController.text,
-              'telefon': _telefonController.text.trim(),
-              'boja': _selectedColor.toARGB32(),
-            };
-          });
-          await _saveVozaci();
+          final updatedVozac = vozac.copyWith(
+            ime: _imeController.text.trim(),
+            email: _emailController.text.trim().toLowerCase(),
+            sifra: _sifraController.text,
+            brojTelefona: _telefonController.text.trim(),
+            boja: _selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2),
+          );
+
+          try {
+            final vozacService = VozacService();
+            final savedVozac = await vozacService.updateVozac(updatedVozac);
+            setState(() {
+              _vozaci[index] = savedVozac;
+            });
+          } catch (e) {
+            // Fallback to local update
+            setState(() {
+              _vozaci[index] = updatedVozac;
+            });
+            await _saveVozaci();
+          }
 
           _imeController.clear();
           _emailController.clear();
@@ -457,7 +507,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ..._vozaci.asMap().entries.map((entry) {
                       final index = entry.key;
                       final vozac = entry.value;
-                      final boja = Color(vozac['boja'] ?? 0xFF2196F3);
+                      final boja = vozac.color ?? Colors.blue;
 
                       return Card(
                         color: Colors.white.withValues(alpha: 0.1),
@@ -475,7 +525,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 backgroundColor: boja,
                                 radius: 22,
                                 child: Text(
-                                  (vozac['ime'] ?? '?')[0].toUpperCase(),
+                                  vozac.ime[0].toUpperCase(),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -494,7 +544,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       children: [
                                         Expanded(
                                           child: Text(
-                                            vozac['ime'] ?? '',
+                                            vozac.ime,
                                             style: TextStyle(
                                               color: boja,
                                               fontWeight: FontWeight.bold,
@@ -525,7 +575,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
-                                            vozac['email'] ?? '-',
+                                            vozac.email ?? '-',
                                             style: const TextStyle(color: Colors.white, fontSize: 12),
                                             overflow: TextOverflow.ellipsis,
                                             maxLines: 1,
@@ -539,10 +589,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                         Icon(Icons.phone, size: 14, color: Colors.white54),
                                         const SizedBox(width: 6),
                                         Text(
-                                          vozac['telefon'] ?? '-',
+                                          vozac.brojTelefona ?? '-',
                                           style: const TextStyle(color: Colors.white, fontSize: 13),
                                         ),
-                                        if (vozac['sifra']?.isNotEmpty == true)
+                                        if (vozac.sifra?.isNotEmpty == true)
                                           const Padding(
                                             padding: EdgeInsets.only(left: 6),
                                             child: Text('🔒', style: TextStyle(fontSize: 12)),

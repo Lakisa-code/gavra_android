@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../config/route_config.dart';
 import '../../globals.dart';
 import '../../helpers/gavra_ui.dart';
+import '../../services/route_service.dart';
 import '../../services/theme_manager.dart';
 import '../../utils/schedule_utils.dart';
 
@@ -369,21 +370,42 @@ class TimePickerCell extends StatelessWidget {
     final navType = navBarTypeNotifier.value;
     List<String> vremena;
 
+    // Mapiramo sezonu iz navType
+    String sezona;
     switch (navType) {
       case 'praznici':
-        vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
+        sezona = 'praznici';
         break;
       case 'zimski':
-        vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+        sezona = 'zimski';
         break;
       case 'letnji':
-        vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
+        sezona = 'letnji';
         break;
       default: // 'auto'
         final jeZimski = isZimski(DateTime.now());
-        vremena = isBC
-            ? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji)
-            : (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);
+        sezona = jeZimski ? 'zimski' : 'letnji';
+    }
+
+    // Učitaj vremena iz RouteService cache-a
+    // (Vremena su već učitana pri app startup-u)
+    final gradCode = isBC ? 'bc' : 'vs';
+
+    // Prvo pokušaj iz cache-a
+    vremena = RouteService.getCachedVremena(sezona, gradCode);
+
+    // Ako cache nema, koristi fallback iz RouteConfig
+    if (vremena.isEmpty) {
+      switch (sezona) {
+        case 'praznici':
+          vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
+          break;
+        case 'zimski':
+          vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+          break;
+        default:
+          vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
+      }
     }
 
     showDialog(

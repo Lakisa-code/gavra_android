@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../models/vozac.dart';
 import '../services/auth_manager.dart';
 import '../services/biometric_service.dart';
 import '../services/daily_checkin_service.dart';
@@ -12,6 +13,7 @@ import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/theme_manager.dart';
+import '../services/vozac_service.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
 import 'home_screen.dart';
@@ -25,7 +27,8 @@ Widget _getHomeScreen() {
 }
 
 Widget _getScreenForDriver(String driverName) {
-  if (driverName == 'Ivan') {
+  // Vozači koji koriste VozacScreen umesto HomeScreen
+  if (driverName == 'Ivan' || driverName == 'Voja') {
     return const VozacScreen();
   }
   return const HomeScreen();
@@ -46,35 +49,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   late AnimationController _pulseController;
   late Animation<double> _fadeAnimation;
 
-  // Lista vozača za email sistem - koristi VozacBoja utility
-  final List<Map<String, dynamic>> _drivers = [
-    {
-      'name': 'Bruda',
-      'color': VozacBoja.get('Bruda'),
-      'icon': Icons.local_taxi,
-    },
-    {
-      'name': 'Bilevski',
-      'color': VozacBoja.get('Bilevski'),
-      'icon': Icons.directions_car,
-    },
-    {
-      'name': 'Ivan',
-      'color': VozacBoja.get('Ivan'),
-      'icon': Icons.directions_car,
-    },
-    // Svetlana sakrivena sa welcome screen-a
-    // {
-    //   'name': 'Svetlana',
-    //   'color': VozacBoja.get('Svetlana'),
-    //   'icon': Icons.favorite,
-    // },
-    {
-      'name': 'Bojan',
-      'color': VozacBoja.get('Bojan'),
-      'icon': Icons.airport_shuttle,
-    },
-  ];
+  // Lista vozača učitana iz baze
+  List<Vozac> _drivers = [];
+  bool _isLoadingDrivers = true;
 
   @override
   void initState() {
@@ -82,12 +59,62 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     WidgetsBinding.instance.addObserver(this); // Dodano za lifecycle
 
     _setupAnimations();
+    _loadDrivers();
 
     // Inicijalizacija bez blokiranja - dajemo aplikaciji vremena da "udahne"
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
       _initServicesRecursively();
     });
+  }
+
+  /// Učitaj vozače iz baze
+  Future<void> _loadDrivers() async {
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      if (!mounted) return;
+      setState(() {
+        _drivers = vozaci;
+        _isLoadingDrivers = false;
+      });
+    } catch (e) {
+      // Fallback na hardkodovane vozače
+      if (!mounted) return;
+      setState(() {
+        _drivers = [
+          Vozac(
+            ime: 'Bruda',
+            email: 'igor.jovanovic.1984@icloud.com',
+            sifra: '111111',
+            brojTelefona: '+381641202844',
+            boja: '7C4DFF',
+          ),
+          Vozac(
+            ime: 'Bilevski',
+            email: 'bilyboy1983@gmail.com',
+            sifra: '222222',
+            brojTelefona: '+381638466418',
+            boja: 'FF9800',
+          ),
+          Vozac(
+            ime: 'Ivan',
+            email: 'bradvarevicivan99@gmail.com',
+            sifra: '333333',
+            brojTelefona: '+381677662993',
+            boja: 'FFD700',
+          ),
+          Vozac(
+            ime: 'Bojan',
+            email: 'gavriconi19@gmail.com',
+            sifra: '191919',
+            brojTelefona: '+381641162560',
+            boja: '00E5FF',
+          ),
+        ];
+        _isLoadingDrivers = false;
+      });
+    }
   }
 
   /// 🛠️ Inicijalizacija servisa jedan po jedan, bez agresivnih await-ova
@@ -763,55 +790,74 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   ),
                 ),
                 const SizedBox(height: 20),
-                ..._drivers.map((driver) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context); // Zatvori dijalog
-                        _loginAsDriver(driver['name'] as String);
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              (driver['color'] as Color).withValues(alpha: 0.8),
-                              Colors.white.withValues(alpha: 0.1),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: (driver['color'] as Color).withValues(alpha: 0.6),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              driver['icon'] as IconData,
-                              color: Colors.white,
-                              size: 22,
+                if (_isLoadingDrivers)
+                  const CircularProgressIndicator(color: Colors.white)
+                else
+                  ..._drivers.map((driver) {
+                    // Odredi ikonu na osnovu imena vozača
+                    IconData getIconForDriver(String name) {
+                      switch (name.toLowerCase()) {
+                        case 'bruda':
+                          return Icons.local_taxi;
+                        case 'bilevski':
+                          return Icons.directions_car;
+                        case 'ivan':
+                          return Icons.directions_car;
+                        case 'bojan':
+                          return Icons.airport_shuttle;
+                        default:
+                          return Icons.person;
+                      }
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context); // Zatvori dijalog
+                          _loginAsDriver(driver.ime);
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                (driver.color ?? Colors.blue).withValues(alpha: 0.8),
+                                Colors.white.withValues(alpha: 0.1),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              driver['name'] as String,
-                              style: const TextStyle(
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: (driver.color ?? Colors.blue).withValues(alpha: 0.6),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                getIconForDriver(driver.ime),
                                 color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                size: 22,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Text(
+                                driver.ime,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () => Navigator.pop(context),

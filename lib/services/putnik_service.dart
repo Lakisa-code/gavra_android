@@ -1,5 +1,5 @@
 ﻿import 'dart:async';
-import 'dart:convert';
+import 'dart:convert' as convert;
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -248,6 +248,8 @@ class PutnikService {
 
       final todayDate = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
 
+      debugPrint('📊 [PutnikService] Fetch stream: grad=$grad, vreme=$vreme, dan=$danKratica, date=$todayDate');
+
       // 🆕 Učitaj otkazivanja iz voznje_log za sve putnike
       final otkazivanja = await VoznjeLogService.getOtkazivanjaZaSvePutnike();
 
@@ -258,9 +260,13 @@ class PutnikService {
           .eq('obrisan', false)
           .eq('is_duplicate', false); // 🧹 Ne učitavaj duplikate
 
+      debugPrint('📊 [PutnikService] Učitano ${registrovani.length} mesečnih putnika');
+
       for (final m in registrovani) {
         // ? ISPRAVKA: Kreiraj putnike SAMO za ciljani dan
         final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica, isoDate: todayDate);
+
+        debugPrint('📊 [PutnikService] ${m['putnik_ime']}: ${putniciZaDan.length} varijanti (BC+VS)');
 
         // ?? Dohvati uklonjene termine za ovog putnika
         final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
@@ -269,10 +275,15 @@ class PutnikService {
           final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
           final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
+          debugPrint(
+              '🔍 [PutnikService] ${p.ime} - grad=${p.grad}, vreme=$normVreme, filter_grad=$grad, filter_vreme=$normVremeFilter');
+
           if (grad != null && p.grad != grad) {
+            debugPrint('  ❌ PRESKOČEN - grad ne odgovara');
             continue;
           }
           if (normVremeFilter != null && normVreme != normVremeFilter) {
+            debugPrint('  ❌ PRESKOČEN - vreme ne odgovara');
             continue;
           }
 
@@ -287,6 +298,7 @@ class PutnikService {
             return utDatum == todayDate && utVreme == pVreme && utMap['grad'] == p.grad;
           });
           if (jeUklonjen) {
+            debugPrint('  ❌ PRESKOČEN - uklonjen iz termina');
             continue;
           }
 
@@ -301,15 +313,18 @@ class PutnikService {
             }
           }
 
+          debugPrint('  ✅ DODAT - ${p.ime} ${p.grad} ${p.polazak}');
           combined.add(p);
         }
       }
 
+      debugPrint('✅ [PutnikService] Stream emitovao ${combined.length} putnika za key=$key');
       _lastValues[key] = combined;
       if (!controller.isClosed) {
         controller.add(combined);
       }
     } catch (e) {
+      debugPrint('🔴 [PutnikService] Error u _doFetchForStream: $e');
       _lastValues[key] = [];
       if (!controller.isClosed) {
         controller.add([]);
@@ -319,9 +334,7 @@ class PutnikService {
 
   // ? DODATO: JOIN sa adrese tabelom za obe adrese
   static const String registrovaniFields = '*,'
-      'polasci_po_danu,'
-      'adresa_bc:adresa_bela_crkva_id(id,naziv,ulica,broj,grad,koordinate),'
-      'adresa_vs:adresa_vrsac_id(id,naziv,ulica,broj,grad,koordinate)';
+      'polasci_po_danu';
 
   // ?? UNDO STACK - Cuva poslednje akcije (max 10)
   static final List<UndoAction> _undoStack = [];
@@ -687,9 +700,19 @@ class PutnikService {
 
       Map<String, dynamic> polasciPoDanu = {};
       final rawPolasciPoDanu = registrovaniPutnik['polasci_po_danu'];
-      // 🛡️ FIX: Proveri da li je Map, ne List (može biti [] ako je greškom postavljeno)
-      if (rawPolasciPoDanu != null && rawPolasciPoDanu is Map) {
-        polasciPoDanu = Map<String, dynamic>.from(rawPolasciPoDanu);
+
+      // 🛡️ Parseraj polasci_po_danu - može biti String (JSON) ili Map
+      if (rawPolasciPoDanu != null) {
+        if (rawPolasciPoDanu is String) {
+          try {
+            polasciPoDanu = convert.jsonDecode(rawPolasciPoDanu) as Map<String, dynamic>;
+          } catch (e) {
+            debugPrint('⚠️ Greška pri parsiranju polasci_po_danu JSON: $e');
+            polasciPoDanu = {};
+          }
+        } else if (rawPolasciPoDanu is Map) {
+          polasciPoDanu = Map<String, dynamic>.from(rawPolasciPoDanu);
+        }
       }
 
       final danKratica = putnik.dan.toLowerCase();
@@ -698,10 +721,18 @@ class PutnikService {
 
       final polazakVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
 
+      // ČUVAJ POSTOJEĆE PODATKE - ne kreiraj novu mapu sa samo bc/vs
       if (!polasciPoDanu.containsKey(danKratica)) {
-        polasciPoDanu[danKratica] = {'bc': null, 'vs': null};
+        polasciPoDanu[danKratica] = <String, dynamic>{'bc': null, 'vs': null};
+      } else if (polasciPoDanu[danKratica] is! Map) {
+        // Ako dan postoji ali nije mapa, kreiraj novu
+        polasciPoDanu[danKratica] = <String, dynamic>{'bc': null, 'vs': null};
       }
+
+      // Kopiraj postojeće podatke - ne briši markere!
       final danPolasci = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map);
+
+      // Ažuriraj samo vreme, čuvaj ostale markere
       danPolasci[gradKeyLower] = polazakVreme;
       // ?? Dodaj broj mesta ako je > 1
       if (putnik.brojMesta > 1) {
@@ -876,7 +907,7 @@ class PutnikService {
       if (rawPolasci != null) {
         if (rawPolasci is String) {
           try {
-            polasciPoDanu = Map<String, dynamic>.from(jsonDecode(rawPolasci));
+            polasciPoDanu = Map<String, dynamic>.from(convert.jsonDecode(rawPolasci));
           } catch (_) {}
         } else if (rawPolasci is Map) {
           polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
@@ -967,7 +998,7 @@ class PutnikService {
     if (rawPolasci != null) {
       if (rawPolasci is String) {
         try {
-          polasciPoDanu = Map<String, dynamic>.from(jsonDecode(rawPolasci));
+          polasciPoDanu = Map<String, dynamic>.from(convert.jsonDecode(rawPolasci));
         } catch (_) {}
       } else if (rawPolasci is Map) {
         polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
@@ -1082,7 +1113,7 @@ class PutnikService {
         if (polasciRaw != null) {
           if (polasciRaw is String) {
             try {
-              polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
+              polasci = convert.jsonDecode(polasciRaw) as Map<String, dynamic>;
             } catch (_) {}
           } else if (polasciRaw is Map) {
             polasci = Map<String, dynamic>.from(polasciRaw);
@@ -1262,10 +1293,10 @@ class PutnikService {
           if (polasciRaw != null) {
             if (polasciRaw is String) {
               try {
-                polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
+                polasci = convert.jsonDecode(polasciRaw) as Map<String, dynamic>;
               } catch (_) {}
             } else if (polasciRaw is Map) {
-              polasci = jsonDecode(jsonEncode(polasciRaw)) as Map<String, dynamic>;
+              polasci = convert.jsonDecode(convert.jsonEncode(polasciRaw)) as Map<String, dynamic>;
             }
           }
 
@@ -1441,7 +1472,7 @@ class PutnikService {
       if (polasciRaw != null) {
         if (polasciRaw is String) {
           try {
-            polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
+            polasci = convert.jsonDecode(polasciRaw) as Map<String, dynamic>;
           } catch (_) {}
         } else if (polasciRaw is Map) {
           polasci = Map<String, dynamic>.from(polasciRaw);

@@ -26,6 +26,7 @@ import 'services/ml_vehicle_autonomous_service.dart';
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
 import 'services/registrovani_putnik_service.dart'; // 👥 Registrovani putnici
+import 'services/route_service.dart'; // 🚐 Dinamički satni redoslijedi iz baze
 import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00 (bez notif)
 import 'services/seat_request_service.dart';
 import 'services/slobodna_mesta_service.dart';
@@ -44,20 +45,43 @@ void main() async {
 
   if (kDebugMode) debugPrint('🚀 [Main] App starting...');
 
-  // 🌐 SUPABASE - Inicijalizuj pre runApp da izbegneš crash
+  // 🔐 KONFIGURACIJA - Inicijalizuj osnovne kredencijale (bez Supabase)
+  try {
+    await configService.initializeBasic();
+    if (kDebugMode) {
+      debugPrint('✅ [Main] Basic config initialized');
+    }
+  } catch (e) {
+    if (kDebugMode) debugPrint('❌ [Main] Basic config init failed: $e');
+    // Critical error - cannot continue without credentials
+    throw Exception('Ne mogu da inicijalizujem osnovne kredencijale: $e');
+  }
+
+  // 🌐 SUPABASE - Inicijalizuj sa osnovnim kredencijalima
   try {
     await Supabase.initialize(
-      url: 'https://gjtabtwudbrmfeyjiicu.supabase.co',
-      anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdGFidHd1ZGJybWZleWppaWN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzQzNjI5MiwiZXhwIjoyMDYzMDEyMjkyfQ.BrwnYQ6TWGB1BrmwaE0YnhMC5wMlBRdZUs1xv2dY5r4',
+      url: configService.getSupabaseUrl(),
+      anonKey: configService.getSupabaseAnonKey(),
     );
-    if (kDebugMode) debugPrint('✅ [Main] Supabase initialized before runApp');
+    if (kDebugMode) debugPrint('✅ [Main] Supabase initialized');
 
     // 🧹 TEMP: Clear realtime cache za test putnika
     RegistrovaniPutnikService.clearRealtimeCache();
   } catch (e) {
     if (kDebugMode) debugPrint('❌ [Main] Supabase init failed: $e');
     // Možeš dodati fallback ili crash app ako je kritično
+  }
+
+  // 🔐 DOVRŠI KONFIGURACIJU - učitaj preostale kredencijale iz Vault-a
+  try {
+    await configService.initializeVaultCredentials();
+    if (kDebugMode) {
+      debugPrint('✅ [Main] Vault credentials loaded');
+      debugPrint('📊 Config info: ${configService.getDebugInfo()}');
+    }
+  } catch (e) {
+    if (kDebugMode) debugPrint('❌ [Main] Vault credentials failed: $e');
+    // Non-critical - app can continue with basic credentials
   }
 
   // 1. Pokreni UI
@@ -121,11 +145,15 @@ Future<void> _initAppServices() async {
     VremeVozacService().loadAllVremeVozac(),
     AppSettingsService.initialize(),
     CacheService.initialize(),
+    RouteService.refreshCache(), // 🚐 Učitaj satne redoslijede iz baze
   ];
 
   for (var service in services) {
     unawaited(service.timeout(const Duration(seconds: 3), onTimeout: () => {}));
   }
+
+  // 🔔 Setup realtime listener za izmjene redoslijeda
+  unawaited(RouteService.setupRealtimeListener());
 
   // Realtime & AI (bez čekanja ikoga)
   KapacitetService.startGlobalRealtimeListener();
@@ -155,16 +183,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeApp();
-    // Setup realtime notification listeners (FCM) for foreground handling
-    try {
-      RealtimeNotificationService.listenForForegroundNotifications(context);
-    } catch (_) {}
 
-    // 🔔 FORCE SUBSCRIBE to FCM topics on app start (for testing)
-    _forceSubscribeToTopics();
+    // Premesti ove pozive u didChangeDependencies ili koristi addPostFrameCallback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Setup realtime notification listeners (FCM) for foreground handling
+        try {
+          RealtimeNotificationService.listenForForegroundNotifications(context);
+        } catch (_) {}
 
-    // 🔋 Check for battery optimization warning (Huawei/Xiaomi/etc)
-    _checkBatteryOptimization();
+        // 🔔 FORCE SUBSCRIBE to FCM topics on app start (for testing)
+        _forceSubscribeToTopics();
+
+        // 🔋 Check for battery optimization warning (Huawei/Xiaomi/etc)
+        _checkBatteryOptimization();
+      }
+    });
   }
 
   /// 🔋 Show battery optimization warning for Huawei/Xiaomi phones

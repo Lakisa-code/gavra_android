@@ -1,15 +1,21 @@
+import 'package:gavra_android/services/route_service.dart';
+
 /// 🚐 Route Configuration
 ///
 /// Vremena polazaka za različite rute i sezone.
 /// Koristi se u kapacitet servisu i navigacionim bar-ovima.
+/// 
+/// NAPOMENA: Redoslijedi se sada učitavaju iz `voznje_po_sezoni` tabele
+/// putem RouteService-a za dinamičku konfiguraciju bez redeploya aplikacije.
 
 class RouteConfig {
-  // 🏙️ BELA CRKVA - Zimski raspored (oktobar-mart)
+  // 🏙️ BELA CRKVA - Zimski raspored (oktobar-mart) - FALLBACK
   static const List<String> bcVremenaZimski = [
     '05:00',
     '06:00',
     '07:00',
     '08:00',
+    '09:00',
     '11:00',
     '12:00',
     '13:00',
@@ -18,7 +24,7 @@ class RouteConfig {
     '18:00',
   ];
 
-  // 🏙️ BELA CRKVA - Letnji raspored (april-septembar)
+  // 🏙️ BELA CRKVA - Letnji raspored (april-septembar) - FALLBACK
   static const List<String> bcVremenaLetnji = [
     '05:00',
     '06:00',
@@ -32,7 +38,7 @@ class RouteConfig {
     '18:00',
   ];
 
-  // 🏙️ BELA CRKVA - Praznični raspored
+  // 🏙️ BELA CRKVA - Praznični raspored - FALLBACK
   static const List<String> bcVremenaPraznici = [
     '05:00',
     '06:00',
@@ -41,7 +47,7 @@ class RouteConfig {
     '15:00',
   ];
 
-  // 🌆 VRŠAC - Zimski raspored (oktobar-mart)
+  // 🌆 VRŠAC - Zimski raspored (oktobar-mart) - FALLBACK
   static const List<String> vsVremenaZimski = [
     '06:00',
     '07:00',
@@ -52,10 +58,11 @@ class RouteConfig {
     '13:00',
     '14:00',
     '15:30',
-    '18:00',
+    '17:00',
+    '19:00',
   ];
 
-  // 🌆 VRŠAC - Letnji raspored (april-septembar)
+  // 🌆 VRŠAC - Letnji raspored (april-septembar) - FALLBACK
   static const List<String> vsVremenaLetnji = [
     '06:00',
     '07:00',
@@ -69,7 +76,7 @@ class RouteConfig {
     '18:00',
   ];
 
-  // 🌆 VRŠAC - Praznični raspored
+  // 🌆 VRŠAC - Praznični raspored - FALLBACK
   static const List<String> vsVremenaPraznici = [
     '06:00',
     '07:00',
@@ -95,19 +102,37 @@ class RouteConfig {
   static const Duration geocodingDiskCacheDuration = Duration(days: 7);
 
   /// 🚐 Dobija vremena polazaka za određeni grad i sezonu
-  static List<String> getVremenaPolazaka({
+  /// Učitava iz baze putem RouteService-a sa fallbackom na hardkodovane vrednosti
+  static Future<List<String>> getVremenaPolazaka({
     required String grad,
     required bool letnji,
-  }) {
+  }) async {
     final isBc = grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc');
     final isVs = grad.toLowerCase().contains('vrs') || grad.toLowerCase().contains('vrš');
+    
+    final sezona = letnji ? 'letnji' : 'zimski';
+    final gradCode = isBc ? 'bc' : 'vs';
 
+    try {
+      // Učitaj iz baze
+      final vremena = await RouteService.getVremenaPolazaka(
+        grad: gradCode,
+        sezona: sezona,
+      );
+      
+      if (vremena.isNotEmpty) {
+        return vremena;
+      }
+    } catch (e) {
+      print('⚠️ [RouteConfig] Fallback na hardkodovane vrednosti: $e');
+    }
+
+    // Fallback na hardkodovane vrednosti
     if (isBc) {
       return letnji ? bcVremenaLetnji : bcVremenaZimski;
     } else if (isVs) {
       return letnji ? vsVremenaLetnji : vsVremenaZimski;
     } else {
-      // Default na BC
       return letnji ? bcVremenaLetnji : bcVremenaZimski;
     }
   }
@@ -118,3 +143,4 @@ class RouteConfig {
     return Duration(seconds: 1 << (attempt - 1));
   }
 }
+
