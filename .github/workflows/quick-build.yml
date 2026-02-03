@@ -66,6 +66,13 @@ jobs:
           echo "=== Full build directory ==="
           find build/app/outputs -type f 2>/dev/null || echo "build/app/outputs not found"
       
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ github.run_id }}
+          path: build.log
+      
       - name: Get Version
         run: |
           VERSION=$(grep "version:" pubspec.yaml | head -1 | cut -d: -f2 | xargs)
