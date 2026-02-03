@@ -66,10 +66,21 @@ jobs:
           echo "Build Version: $VERSION"
       
       - name: Generate QR Code
-        uses: snow-actions/qrcode@v1.0
-        with:
-          text: "https://github.com/kadpitamkurac-hash/gavra_android/releases/tag/v${{ steps.version.outputs.app_version }}-${{ github.event.inputs.release_type }}-${{ github.run_number }}"
-          path: qrcode.png
+        run: |
+          pip install qrcode[pil]
+          python3 << 'EOF'
+          import qrcode
+          qr = qrcode.QRCode(
+              version=1,
+              error_correction=qrcode.constants.ERROR_CORRECT_L,
+              box_size=10,
+              border=4,
+          )
+          qr.add_data("https://github.com/kadpitamkurac-hash/gavra_android/releases/tag/v${{ steps.version.outputs.app_version }}-${{ github.event.inputs.release_type }}-${{ github.run_number }}")
+          qr.make(fit=True)
+          img = qr.make_image(fill_color="black", back_color="white")
+          img.save("qrcode.png")
+          EOF
       
       - name: Generate build info
         run: |
