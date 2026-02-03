@@ -55,18 +55,39 @@ jobs:
       - name: Check Build Output
         if: always()
         run: |
+          echo "=== Build Log (Last 150 lines) ==="
           if [ -f build.log ]; then
-            echo "=== Last 100 lines of build.log ==="
-            tail -n 100 build.log
+            tail -n 150 build.log
           fi
+          echo ""
+          echo "=== Searching for APK files ==="
+          find build -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+          echo ""
+          echo "=== Full build directory ==="
+          find build/app/outputs -type f 2>/dev/null || echo "build/app/outputs not found"
       
-      - name: Rename APK
+      - name: Get Version
         run: |
           VERSION=$(grep "version:" pubspec.yaml | head -1 | cut -d: -f2 | xargs)
-          BUILD_NUM=${{ github.run_number }}
-          mv build/app/outputs/apk/release/app-release.apk build/app/outputs/apk/release/gavra-v${VERSION}-build${BUILD_NUM}.apk
-          echo "APK_NAME=gavra-v${VERSION}-build${BUILD_NUM}.apk" >> $GITHUB_ENV
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+      
+      - name: Rename and Prepare APK
+        if: always()
+        run: |
+          if [ -f "build/app/outputs/apk/release/app-release.apk" ]; then
+            echo "✓ APK file found, preparing for upload..."
+            VERSION=${{ env.APP_VERSION }}
+            BUILD_NUM=${{ github.run_number }}
+            mkdir -p release_apk
+            cp "build/app/outputs/apk/release/app-release.apk" "release_apk/gavra-v${VERSION}-build${BUILD_NUM}.apk"
+            echo "APK_NAME=gavra-v${VERSION}-build${BUILD_NUM}.apk" >> $GITHUB_ENV
+            echo "APK_PATH=release_apk/gavra-v${VERSION}-build${BUILD_NUM}.apk" >> $GITHUB_ENV
+          else
+            echo "✗ APK file not found!"
+            echo "Looking for any apk files..."
+            find . -name "*.apk" -type f 2>/dev/null
+            exit 1
+          fi
       
       - name: Generate download link
         id: link
@@ -77,6 +98,7 @@ jobs:
           echo "run_id=${RUN_ID}" >> $GITHUB_OUTPUT
       
       - name: Generate QR Code
+        if: success()
         run: |
           pip install qrcode[pil]
           python3 << 'EOF'
@@ -94,16 +116,18 @@ jobs:
           EOF
       
       - name: Upload APK as artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APK_NAME }}
           path: |
-            build/app/outputs/apk/release/${{ env.APK_NAME }}
+            ${{ env.APK_PATH }}
             qrcode.png
           retention-days: 30
           compression-level: 0
       
       - name: Display Download Instructions
+        if: success()
         run: |
           echo "╔════════════════════════════════════════════════════════╗"
           echo "║         ✅ APK BUILD COMPLETED SUCCESSFULLY!           ║"
