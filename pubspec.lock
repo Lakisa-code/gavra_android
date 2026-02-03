@@ -840,6 +840,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  huawei_push:
+    dependency: "direct main"
+    description:
+      name: huawei_push
+      sha256: bccd7df3fe79925c77b78404956c74c921996d63e788cd66fef8def85b6c3ca4
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.12.0+300"
   image:
     dependency: transitive
     description:
