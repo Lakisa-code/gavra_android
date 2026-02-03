@@ -14,13 +14,13 @@ import '../services/realtime/realtime_manager.dart';
 /// 4. Nakon 60 min: "Vaša sledeća zakazana vožnja: dan, vreme"
 class KombiEtaWidget extends StatefulWidget {
   const KombiEtaWidget({
-    Key? key,
+    super.key,
     required this.putnikIme,
     required this.grad,
     this.vremePolaska,
     this.sledecaVoznja,
     this.putnikId, // 🆕 ID putnika za čitanje iz baze
-  }) : super(key: key);
+  });
 
   final String putnikIme;
   final String grad;

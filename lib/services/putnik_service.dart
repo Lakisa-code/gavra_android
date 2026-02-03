@@ -92,6 +92,41 @@ class PutnikService {
     _globalSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
       // 🐛 DEBUG: Log realtime event
       print('🔴 REALTIME EVENT PRIMLJEN: ${payload.eventType} - ${payload.newRecord['putnik_ime'] ?? 'unknown'}');
+
+      // 🔧 FIX: Proveri da li je ovo stvarna promena podataka
+      final eventType = payload.eventType;
+      final hasOldRecord = payload.oldRecord.isNotEmpty;
+      final hasNewRecord = payload.newRecord.isNotEmpty;
+
+      // Ignoriši UPDATE evente koji nemaju stvarne promene
+      if (eventType == PostgresChangeEvent.update && hasOldRecord && hasNewRecord) {
+        final oldRecord = payload.oldRecord;
+        final newRecord = payload.newRecord;
+
+        // Uporedi ključna polja koja utiču na putnike
+        final relevantFields = [
+          'aktivan',
+          'obrisan',
+          'is_duplicate',
+          'radni_dani',
+          'polasci_po_danu',
+          'uklonjeni_termini'
+        ];
+        bool hasRelevantChange = false;
+
+        for (final field in relevantFields) {
+          if (oldRecord[field] != newRecord[field]) {
+            hasRelevantChange = true;
+            break;
+          }
+        }
+
+        if (!hasRelevantChange) {
+          print('🔴 REALTIME: Ignorišem UPDATE bez relevantnih promena');
+          return;
+        }
+      }
+
       print(
           '🔴 REALTIME PAYLOAD: oldRecord keys=${payload.oldRecord.keys.toList()}, newRecord keys=${payload.newRecord.keys.toList()}');
       // 🔧 FIX: UVEK radi full refresh jer partial update ne može pravilno rekonstruisati
@@ -137,8 +172,10 @@ class PutnikService {
             controller.add(_lastValues[key]!);
           }
         });
+      } else {
+        // Nema cache-a, učitaj podatke
+        _doFetchForStream(key, isoDate, grad, vreme, controller);
       }
-      _doFetchForStream(key, isoDate, grad, vreme, controller);
       return controller.stream;
     }
 

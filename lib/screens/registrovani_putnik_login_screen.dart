@@ -11,7 +11,7 @@ import '../theme.dart';
 import 'registrovani_putnik_profil_screen.dart';
 
 class RegistrovaniPutnikLoginScreen extends StatefulWidget {
-  const RegistrovaniPutnikLoginScreen({Key? key}) : super(key: key);
+  const RegistrovaniPutnikLoginScreen({super.key});
 
   @override
   State<RegistrovaniPutnikLoginScreen> createState() => _RegistrovaniPutnikLoginScreenState();

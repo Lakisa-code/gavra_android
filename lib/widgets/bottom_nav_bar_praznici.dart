@@ -179,8 +179,7 @@ class _PolazakRow extends StatelessWidget {
     this.isSlotLoading,
     this.scrollController,
     this.selectedDan,
-    Key? key,
-  }) : super(key: key);
+  });
   final String label;
   final List<String> vremena;
   final String selectedGrad;

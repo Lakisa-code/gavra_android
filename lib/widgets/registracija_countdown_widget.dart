@@ -75,7 +75,7 @@ class _RegistracijaData {
 
 /// 🏷️ TABLICA WIDGET - samo slika tablice (leva strana)
 class RegistracijaTablicaWidget extends StatefulWidget {
-  const RegistracijaTablicaWidget({Key? key}) : super(key: key);
+  const RegistracijaTablicaWidget({super.key});
 
   @override
   State<RegistracijaTablicaWidget> createState() => _RegistracijaTablicaWidgetState();
@@ -138,7 +138,7 @@ class _RegistracijaTablicaWidgetState extends State<RegistracijaTablicaWidget> {
 
 /// 📊 BROJAČ WIDGET - samo broj dana (desna strana)
 class RegistracijaBrojacWidget extends StatefulWidget {
-  const RegistracijaBrojacWidget({Key? key}) : super(key: key);
+  const RegistracijaBrojacWidget({super.key});
 
   @override
   State<RegistracijaBrojacWidget> createState() => _RegistracijaBrojacWidgetState();
@@ -205,7 +205,7 @@ class _RegistracijaBrojacWidgetState extends State<RegistracijaBrojacWidget> {
 
 /// 🚗 ORIGINALNI REGISTRACIJA COUNTDOWN WIDGET (za kompatibilnost)
 class RegistracijaCountdownWidget extends StatefulWidget {
-  const RegistracijaCountdownWidget({Key? key}) : super(key: key);
+  const RegistracijaCountdownWidget({super.key});
 
   @override
   State<RegistracijaCountdownWidget> createState() => _RegistracijaCountdownWidgetState();

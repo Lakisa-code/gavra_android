@@ -10,7 +10,7 @@ import '../theme.dart';
 class PromenaSifreScreen extends StatefulWidget {
   final String vozacIme;
 
-  const PromenaSifreScreen({Key? key, required this.vozacIme}) : super(key: key);
+  const PromenaSifreScreen({super.key, required this.vozacIme});
 
   @override
   State<PromenaSifreScreen> createState() => _PromenaSifreScreenState();

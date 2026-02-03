@@ -10,10 +10,10 @@ import '../utils/vozac_boja.dart';
 
 class DailyCheckInScreen extends StatefulWidget {
   const DailyCheckInScreen({
-    Key? key,
+    super.key,
     required this.vozac,
     required this.onCompleted,
-  }) : super(key: key);
+  });
   final String vozac;
   final VoidCallback onCompleted;
 

@@ -552,60 +552,58 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
               child: Text('Nema kritičnih gužvi za sada. Tabela je čista.'),
             ))
           else
-            ...advices
-                .map((DispatchAdvice advice) => Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: Icon(
-                          advice.priority == AdvicePriority.critical ? Icons.warning : Icons.lightbulb,
-                          color: advice.priority == AdvicePriority.critical ? Colors.red : Colors.orange,
-                        ),
-                        title: Text(advice.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(advice.description),
-                            const SizedBox(height: 4),
-                            if (advice.originalStatus != null || advice.proposedChange != null) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withAlpha(20),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (advice.originalStatus != null)
-                                      Text('Trenutno: ${advice.originalStatus}',
-                                          style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
-                                    if (advice.proposedChange != null)
-                                      Text('Beba želi: ${advice.proposedChange}',
-                                          style: const TextStyle(
-                                              fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () {}, // Akcija će zavisiti od tipa saveta
-                              style: ElevatedButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                              ),
-                              child: Text(advice.action, style: const TextStyle(fontSize: 12)),
+            ...advices.map((DispatchAdvice advice) => Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: Icon(
+                      advice.priority == AdvicePriority.critical ? Icons.warning : Icons.lightbulb,
+                      color: advice.priority == AdvicePriority.critical ? Colors.red : Colors.orange,
+                    ),
+                    title: Text(advice.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(advice.description),
+                        const SizedBox(height: 4),
+                        if (advice.originalStatus != null || advice.proposedChange != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withAlpha(20),
+                              borderRadius: BorderRadius.circular(6),
                             ),
-                          ],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (advice.originalStatus != null)
+                                  Text('Trenutno: ${advice.originalStatus}',
+                                      style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                                if (advice.proposedChange != null)
+                                  Text('Beba želi: ${advice.proposedChange}',
+                                      style: const TextStyle(
+                                          fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () {}, // Akcija će zavisiti od tipa saveta
+                          style: ElevatedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          child: Text(advice.action, style: const TextStyle(fontSize: 12)),
                         ),
-                        trailing: Text(
-                          '${advice.timestamp.hour}:${advice.timestamp.minute.toString().padLeft(2, '0')}',
-                          style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ))
-                .toList(),
+                      ],
+                    ),
+                    trailing: Text(
+                      '${advice.timestamp.hour}:${advice.timestamp.minute.toString().padLeft(2, '0')}',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                )),
         ],
       ),
     );
@@ -772,15 +770,13 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           if (legends.isEmpty)
             const Text('Svi su u proseku. Nema ekstrema.', style: TextStyle(fontStyle: FontStyle.italic))
           else
-            ...legends
-                .map((PassengerStats p) => ListTile(
-                      leading: CircleAvatar(
-                          backgroundColor: Colors.green.shade100, child: const Icon(Icons.person, color: Colors.green)),
-                      title: Text(p.name),
-                      subtitle: Text('Skor: ${p.score.toStringAsFixed(1)} | Vožnji: ${p.totalTrips}'),
-                      trailing: const Icon(Icons.verified, color: Colors.green),
-                    ))
-                .toList(),
+            ...legends.map((PassengerStats p) => ListTile(
+                  leading: CircleAvatar(
+                      backgroundColor: Colors.green.shade100, child: const Icon(Icons.person, color: Colors.green)),
+                  title: Text(p.name),
+                  subtitle: Text('Skor: ${p.score.toStringAsFixed(1)} | Vožnji: ${p.totalTrips}'),
+                  trailing: const Icon(Icons.verified, color: Colors.green),
+                )),
           if (problematic.isNotEmpty) ...[
             const SizedBox(height: 24),
             const Text('Statistički Problematični',
@@ -788,15 +784,13 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
             const Text('Putnici koji su značajno ispod proseka zajednice.',
                 style: TextStyle(fontSize: 11, color: Colors.grey)),
             const SizedBox(height: 8),
-            ...problematic
-                .map((PassengerStats p) => ListTile(
-                      leading: CircleAvatar(
-                          backgroundColor: Colors.red.shade100, child: const Icon(Icons.person, color: Colors.red)),
-                      title: Text(p.name),
-                      subtitle: Text('Skor: ${p.score.toStringAsFixed(1)} | Otkazano: ${p.cancellations}'),
-                      trailing: const Icon(Icons.warning_amber_rounded, color: Colors.red),
-                    ))
-                .toList(),
+            ...problematic.map((PassengerStats p) => ListTile(
+                  leading: CircleAvatar(
+                      backgroundColor: Colors.red.shade100, child: const Icon(Icons.person, color: Colors.red)),
+                  title: Text(p.name),
+                  subtitle: Text('Skor: ${p.score.toStringAsFixed(1)} | Otkazano: ${p.cancellations}'),
+                  trailing: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+                )),
           ],
         ],
       ),

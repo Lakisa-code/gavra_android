@@ -3,6 +3,8 @@
 /// Državni praznici, školski raspusti i posebni dani za Srbiju.
 /// Koristi se u ML predviđanjima i smart notifikacijama.
 
+library;
+
 class CalendarConfig {
   // 🇷🇸 Državni praznici Srbije (neradni dani)
   static final Map<String, String> drzavniPraznici = {

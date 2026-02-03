@@ -10,7 +10,7 @@ import '../theme.dart';
 /// 🔐 AUTH SCREEN - Admin panel za upravljanje vozačima
 /// Ovde dodaješ/brišeš vozače, emailove, šifre, telefone, boje
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({Key? key}) : super(key: key);
+  const AuthScreen({super.key});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();

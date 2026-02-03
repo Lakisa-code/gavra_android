@@ -16,7 +16,7 @@ import 'vozac_screen.dart';
 class VozacLoginScreen extends StatefulWidget {
   final String vozacIme;
 
-  const VozacLoginScreen({Key? key, required this.vozacIme}) : super(key: key);
+  const VozacLoginScreen({super.key, required this.vozacIme});
 
   @override
   State<VozacLoginScreen> createState() => _VozacLoginScreenState();

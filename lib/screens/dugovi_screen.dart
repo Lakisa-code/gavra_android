@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
@@ -9,7 +7,7 @@ import '../utils/putnik_helpers.dart';
 import '../widgets/putnik_list.dart';
 
 class DugoviScreen extends StatefulWidget {
-  const DugoviScreen({Key? key, required this.currentDriver}) : super(key: key);
+  const DugoviScreen({super.key, required this.currentDriver});
   final String currentDriver;
 
   @override
@@ -17,14 +15,6 @@ class DugoviScreen extends StatefulWidget {
 }
 
 class _DugoviScreenState extends State<DugoviScreen> {
-  // 🔄 V3.0 REALTIME MONITORING STATE (Clean Architecture)
-  late ValueNotifier<bool> _isRealtimeHealthy;
-  late ValueNotifier<bool> _dugoviStreamHealthy;
-  late ValueNotifier<bool> _isNetworkConnected;
-  late ValueNotifier<String> _realtimeHealthStatus;
-  Timer? _healthCheckTimer;
-  final Map<String, DateTime> _streamHeartbeats = {};
-
   // 🔍 SEARCH & FILTERING (bez RxDart)
   final TextEditingController _searchController = TextEditingController();
 
@@ -34,63 +24,14 @@ class _DugoviScreenState extends State<DugoviScreen> {
   @override
   void initState() {
     super.initState();
-    _setupRealtimeMonitoring();
     _setupDebouncedSearch();
   }
 
   @override
   void dispose() {
-    // 🧹 V3.0 CLEANUP REALTIME MONITORING
-    _healthCheckTimer?.cancel();
-    _isRealtimeHealthy.dispose();
-    _dugoviStreamHealthy.dispose();
-    _isNetworkConnected.dispose();
-    _realtimeHealthStatus.dispose();
-
     // 🧹 SEARCH CLEANUP
     _searchController.dispose();
     super.dispose();
-  }
-
-  // 🔄 V3.0 REALTIME MONITORING SETUP
-  void _setupRealtimeMonitoring() {
-    _isRealtimeHealthy = ValueNotifier(true);
-    _dugoviStreamHealthy = ValueNotifier(true);
-    _isNetworkConnected = ValueNotifier(true);
-    _realtimeHealthStatus = ValueNotifier('healthy');
-
-    _healthCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _checkStreamHealth();
-    });
-  }
-
-  void _checkStreamHealth() {
-    final now = DateTime.now();
-    bool isHealthy = true;
-
-    for (final entry in _streamHeartbeats.entries) {
-      final timeSinceLastHeartbeat = now.difference(entry.value);
-      if (timeSinceLastHeartbeat.inSeconds > 60) {
-        isHealthy = false;
-        break;
-      }
-    }
-
-    if (_isRealtimeHealthy.value != isHealthy) {
-      _isRealtimeHealthy.value = isHealthy;
-      _realtimeHealthStatus.value = isHealthy ? 'healthy' : 'heartbeat_timeout';
-    }
-
-    final networkHealthy = _isNetworkConnected.value;
-    final streamHealthy = _dugoviStreamHealthy.value;
-
-    if (!networkHealthy) {
-      _realtimeHealthStatus.value = 'network_error';
-    } else if (!streamHealthy) {
-      _realtimeHealthStatus.value = 'stream_error';
-    } else if (isHealthy) {
-      _realtimeHealthStatus.value = 'healthy';
-    }
   }
 
   // 🔍 SEARCH SETUP (bez RxDart - jednostavan setState)
@@ -160,7 +101,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
           case 'veliki_dug':
             return iznos >= 600; // Veliki dug (Dnevni je 600)
           case 'mali_dug':
-            return iznos < 600; 
+            return iznos < 600;
           default:
             return true;
         }

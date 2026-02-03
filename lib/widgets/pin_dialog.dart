@@ -16,12 +16,12 @@ class PinDialog extends StatefulWidget {
   final String? brojTelefona;
 
   const PinDialog({
-    Key? key,
+    super.key,
     required this.putnikId,
     required this.putnikIme,
     this.trenutniPin,
     this.brojTelefona,
-  }) : super(key: key);
+  });
 
   @override
   State<PinDialog> createState() => _PinDialogState();

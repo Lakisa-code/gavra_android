@@ -10,11 +10,11 @@ class TimeRow extends StatelessWidget {
   final TextEditingController vsController;
 
   const TimeRow({
-    Key? key,
+    super.key,
     required this.dayLabel,
     required this.bcController,
     required this.vsController,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

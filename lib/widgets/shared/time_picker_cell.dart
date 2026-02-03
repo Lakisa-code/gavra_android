@@ -29,7 +29,7 @@ class TimePickerCell extends StatelessWidget {
   final DateTime? datumKrajaMeseca; // 🆕 Datum do kog je plaćeno
 
   const TimePickerCell({
-    Key? key,
+    super.key,
     required this.value,
     required this.isBC,
     required this.onChanged,
@@ -41,7 +41,7 @@ class TimePickerCell extends StatelessWidget {
     this.tipPutnika,
     this.tipPrikazivanja,
     this.datumKrajaMeseca,
-  }) : super(key: key);
+  });
 
   /// Vraća DateTime za određeni dan u tekućoj nedelji
   DateTime? _getDateForDay() {

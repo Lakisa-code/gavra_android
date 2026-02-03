@@ -6,7 +6,7 @@ class DugButton extends StatelessWidget {
   // novi parametar za prikaz kao kocka
 
   const DugButton({
-    Key? key,
+    super.key,
     required this.brojDuznika,
     this.onTap,
     this.backgroundColor,
@@ -14,7 +14,7 @@ class DugButton extends StatelessWidget {
     this.textColor,
     this.wide = false,
     this.isLoading = false,
-  }) : super(key: key);
+  });
   final int brojDuznika;
   final VoidCallback? onTap;
   final Color? backgroundColor;

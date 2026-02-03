@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 🚐 Screen za editovanje satnih redoslijeda po sezoni
 class RedosledPreureditiScreen extends StatefulWidget {
-  const RedosledPreureditiScreen({Key? key}) : super(key: key);
+  const RedosledPreureditiScreen({super.key});
 
   @override
   State<RedosledPreureditiScreen> createState() => _RedosledPreureditiScreenState();
@@ -12,7 +12,7 @@ class RedosledPreureditiScreen extends StatefulWidget {
 
 class _RedosledPreureditiScreenState extends State<RedosledPreureditiScreen> {
   final SupabaseClient _supabase = Supabase.instance.client;
-  
+
   // Map sa redosledima: sezona -> grad -> vremena
   Map<String, Map<String, List<String>>> _redosled = {
     'zimski': {'bc': [], 'vs': []},
@@ -32,11 +32,8 @@ class _RedosledPreureditiScreenState extends State<RedosledPreureditiScreen> {
   Future<void> _loadRedosled() async {
     try {
       setState(() => _isLoading = true);
-      
-      final response = await _supabase
-          .from('voznje_po_sezoni')
-          .select('sezona, grad, vremena')
-          .eq('aktivan', true);
+
+      final response = await _supabase.from('voznje_po_sezoni').select('sezona, grad, vremena').eq('aktivan', true);
 
       // Organizuj po sezoni i gradu
       final Map<String, Map<String, List<String>>> redosled = {
@@ -49,7 +46,7 @@ class _RedosledPreureditiScreenState extends State<RedosledPreureditiScreen> {
         final sezona = row['sezona'];
         final grad = row['grad'];
         final vremena = List<String>.from(row['vremena'] ?? []);
-        
+
         if (redosled.containsKey(sezona) && redosled[sezona]!.containsKey(grad)) {
           redosled[sezona]![grad] = vremena;
         }
@@ -74,19 +71,15 @@ class _RedosledPreureditiScreenState extends State<RedosledPreureditiScreen> {
   Future<void> _saveRedosled(String sezona, String grad) async {
     try {
       final vremena = _redosled[sezona]![grad]!;
-      
-      await _supabase
-          .from('voznje_po_sezoni')
-          .update({'vremena': vremena})
-          .eq('sezona', sezona)
-          .eq('grad', grad);
+
+      await _supabase.from('voznje_po_sezoni').update({'vremena': vremena}).eq('sezona', sezona).eq('grad', grad);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('✅ Redoslijed za $sezona/$grad je sačuvan')),
         );
       }
-      
+
       if (kDebugMode) {
         debugPrint('✅ Sačuvan redoslijed ($sezona/$grad): $vremena');
       }
@@ -131,11 +124,7 @@ class _RedosledPreureditiScreenState extends State<RedosledPreureditiScreen> {
                 return;
               }
 
-              final vremena = input
-                  .split(',')
-                  .map((v) => v.trim())
-                  .where((v) => v.isNotEmpty)
-                  .toList();
+              final vremena = input.split(',').map((v) => v.trim()).where((v) => v.isNotEmpty).toList();
 
               setState(() {
                 _redosled[sezona]![grad] = vremena;
@@ -162,8 +151,7 @@ class _RedosledPreureditiScreenState extends State<RedosledPreureditiScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
-                  child: Text(_error!,
-                      style: const TextStyle(color: Colors.red, fontSize: 16)),
+                  child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 16)),
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),

@@ -22,7 +22,7 @@ import '../utils/vozac_boja.dart';
 
 class PutnikCard extends StatefulWidget {
   const PutnikCard({
-    Key? key,
+    super.key,
     required this.putnik,
     this.showActions = true,
     required this.currentDriver,
@@ -33,7 +33,7 @@ class PutnikCard extends StatefulWidget {
     this.selectedGrad,
     this.onChanged,
     this.onPokupljen,
-  }) : super(key: key);
+  });
   final Putnik putnik;
   final bool showActions;
   final String currentDriver;

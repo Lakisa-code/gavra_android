@@ -43,7 +43,7 @@ class VozacScreen extends StatefulWidget {
   /// Ako je prosleđen, prikazuje ekran kao da je taj vozač ulogovan (admin preview)
   final String? previewAsDriver;
 
-  const VozacScreen({Key? key, this.previewAsDriver}) : super(key: key);
+  const VozacScreen({super.key, this.previewAsDriver});
 
   @override
   State<VozacScreen> createState() => _VozacScreenState();

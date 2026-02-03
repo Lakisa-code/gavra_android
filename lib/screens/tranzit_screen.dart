@@ -14,9 +14,9 @@ class TranzitScreen extends StatefulWidget {
   final String currentDriver;
 
   const TranzitScreen({
-    Key? key,
+    super.key,
     required this.currentDriver,
-  }) : super(key: key);
+  });
 
   @override
   State<TranzitScreen> createState() => _TranzitScreenState();

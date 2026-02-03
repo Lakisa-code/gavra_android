@@ -8,7 +8,7 @@ import 'putnik_card.dart';
 
 class PutnikList extends StatelessWidget {
   const PutnikList({
-    Key? key,
+    super.key,
     this.putnici,
     this.putniciStream,
     this.showActions = true,
@@ -21,7 +21,7 @@ class PutnikList extends StatelessWidget {
     this.selectedGrad,
     this.selectedVreme,
     this.isDugovanjaMode = false,
-  }) : super(key: key);
+  });
   final bool showActions;
   final String currentDriver;
   final bool isDugovanjaMode;

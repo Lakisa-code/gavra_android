@@ -13,7 +13,6 @@ import '../services/realtime_notification_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🚢 SMART TRANZIT
 import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
-import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
 import '../services/weekly_reset_service.dart'; // 🔄 WEEKLY RESET SERVICE
 import '../theme.dart';
@@ -36,7 +35,7 @@ import 'vozac_screen.dart'; // DODANO za vozac screen
 import 'vozaci_statistika_screen_v2.dart'; // 📊 Statistika vozača
 
 class AdminScreen extends StatefulWidget {
-  const AdminScreen({Key? key}) : super(key: key);
+  const AdminScreen({super.key});
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
@@ -46,10 +45,6 @@ class _AdminScreenState extends State<AdminScreen> {
   String? _currentDriver;
   final PutnikService _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 
-  // 🔄 REALTIME MONITORING STATE
-  late ValueNotifier<bool> _isRealtimeHealthy;
-  late ValueNotifier<bool> _kusurStreamHealthy;
-  late ValueNotifier<bool> _putnikDataHealthy;
   // 📨 PIN ZAHTEVI - broj zahteva koji čekaju
   int _brojPinZahteva = 0;
   // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnog Timer-a
@@ -70,13 +65,7 @@ class _AdminScreenState extends State<AdminScreen> {
     // 🔄 FORSIRANA INICIJALIZACIJA VOZAČ MAPIRANJA
     VozacMappingService.refreshMapping();
 
-    // 🔄 INITIALIZE REALTIME MONITORING
-    _isRealtimeHealthy = ValueNotifier(true);
-    _kusurStreamHealthy = ValueNotifier(true);
-    _putnikDataHealthy = ValueNotifier(true);
-
     _loadCurrentDriver();
-    _setupRealtimeMonitoring();
     _loadBrojPinZahteva(); // 📨 Učitaj broj PIN zahteva
 
     // Inicijalizuj heads-up i zvuk notifikacije
@@ -113,21 +102,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   void dispose() {
-    // 🧹 CLEANUP REALTIME MONITORING sa TimerManager
-    TimerManager.cancelTimer('admin_screen_health_check');
-
-    // 🧹 SAFE DISPOSAL ValueNotifier-a
-    try {
-      if (mounted) {
-        _isRealtimeHealthy.dispose();
-        _kusurStreamHealthy.dispose();
-        _putnikDataHealthy.dispose();
-      }
-    } catch (e) {
-      // Error handling - logging removed for production
-    }
-
-    // AdminScreen disposed realtime monitoring resources safely
+    // AdminScreen disposed
     super.dispose();
   }
 
@@ -212,51 +187,6 @@ class _AdminScreenState extends State<AdminScreen> {
       }
     } catch (e) {
       // Ignorišemo grešku, badge jednostavno neće prikazati broj
-    }
-  }
-
-  // 🔄 REALTIME MONITORING SETUP
-  void _setupRealtimeMonitoring() {
-    // Setting up realtime monitoring
-
-    // 🕐 KORISTI TIMER MANAGER za health check - SPREČAVA MEMORY LEAK
-    TimerManager.cancelTimer('admin_screen_health_check');
-    TimerManager.createTimer(
-      'admin_screen_health_check',
-      const Duration(seconds: 30),
-      _checkStreamHealth,
-      isPeriodic: true,
-    );
-
-    // AdminScreen: Realtime monitoring active
-  }
-
-  // 🩺 STREAM HEALTH CHECK
-  void _checkStreamHealth() {
-    try {
-      // Check if realtime services are responding
-      final healthCheck = true; // Supabase realtime health check
-      _isRealtimeHealthy.value = healthCheck;
-
-      // Check specific stream health (will be updated by StreamBuilders)
-      // Kusur streams health is managed by individual StreamBuilders
-      // Putnik data health check
-      _putnikDataHealthy.value = true; // Assume healthy unless FutureBuilder reports error
-
-      // Health check completed
-
-      // 🚨 COMPREHENSIVE HEALTH REPORT
-      final overallHealth = _isRealtimeHealthy.value && _kusurStreamHealthy.value && _putnikDataHealthy.value;
-
-      if (!overallHealth) {
-        // AdminScreen health issues detected
-        // Implementation removed for production
-      }
-    } catch (e) {
-      // Error handling - logging removed for production
-      _isRealtimeHealthy.value = false;
-      _kusurStreamHealthy.value = false;
-      _putnikDataHealthy.value = false;
     }
   }
 
@@ -412,7 +342,6 @@ class _AdminScreenState extends State<AdminScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // PRVI RED - Admin Panel sa Heartbeat
                           Container(
                             height: 20,
                             alignment: Alignment.center,
@@ -1011,13 +940,6 @@ class _AdminScreenState extends State<AdminScreen> {
         body: StreamBuilder<List<Putnik>>(
           stream: _putnikService.streamPutnici(),
           builder: (context, snapshot) {
-            // 🩺 UPDATE PUTNIK DATA HEALTH STATUS
-            if (snapshot.hasError) {
-              _putnikDataHealthy.value = false;
-            } else if (snapshot.hasData) {
-              _putnikDataHealthy.value = true;
-            }
-
             if (snapshot.connectionState == ConnectionState.waiting) {
               // Loading state - add refresh option to prevent infinite loading
               return Center(
@@ -1297,9 +1219,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 // Stream za kusur
                                 stream: DailyCheckInService.streamTodayAmount('Bruda'),
                                 builder: (context, snapshot) {
-                                  // Heartbeat indicator pokazuje status konekcije
                                   if (snapshot.hasError) {
-                                    _kusurStreamHealthy.value = false;
                                     // Prikaži prazno stanje umesto error widget-a
                                     return Container(
                                       height: 60,
@@ -1350,11 +1270,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                         ],
                                       ),
                                     );
-                                  }
-
-                                  // Update health status on successful data
-                                  if (snapshot.hasData) {
-                                    _kusurStreamHealthy.value = true;
                                   }
 
                                   final kusurBruda = snapshot.data ?? 0.0;
@@ -1431,9 +1346,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 // Stream za kusur
                                 stream: DailyCheckInService.streamTodayAmount('Bilevski'),
                                 builder: (context, snapshot) {
-                                  // Heartbeat indicator pokazuje status konekcije
                                   if (snapshot.hasError) {
-                                    _kusurStreamHealthy.value = false;
                                     // Prikaži prazno stanje umesto error widget-a
                                     return Container(
                                       height: 60,
@@ -1484,11 +1397,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                         ],
                                       ),
                                     );
-                                  }
-
-                                  // Update health status on successful data
-                                  if (snapshot.hasData) {
-                                    _kusurStreamHealthy.value = true;
                                   }
 
                                   final kusurBilevski = snapshot.data ?? 0.0;

@@ -9,7 +9,7 @@ import '../theme.dart';
 
 /// 🎫 Admin ekran za podešavanje kapaciteta polazaka
 class KapacitetScreen extends StatefulWidget {
-  const KapacitetScreen({Key? key}) : super(key: key);
+  const KapacitetScreen({super.key});
 
   @override
   State<KapacitetScreen> createState() => _KapacitetScreenState();

@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
-import '../services/realtime/realtime_manager.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/admin_security_service.dart';
@@ -22,12 +21,12 @@ import '../services/local_notification_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/racun_service.dart';
+import '../services/realtime/realtime_manager.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/route_service.dart'; // 🚐 Dinamički satni redoslijedi
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
-import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
@@ -72,9 +71,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Real-time subscription variables
   StreamSubscription<dynamic>? _realtimeSubscription;
-
-  // 🚨 REALTIME MONITORING VARIABLES
-  final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
   StreamSubscription<dynamic>? _networkStatusSubscription;
 
   final List<String> _dani = [
@@ -298,29 +294,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // 🚨 Setup realtime monitoring system
   void _setupRealtimeMonitoring() {
     try {
-      // 🕐 KORISTI TIMER MANAGER za heartbeat monitoring - STANDARDIZOVANO
-      TimerManager.cancelTimer('home_screen_realtime_health');
-      TimerManager.createTimer(
-        'home_screen_realtime_health',
-        const Duration(seconds: 30),
-        _checkRealtimeHealth,
-        isPeriodic: true,
-      );
+      // No additional monitoring needed
     } catch (e) {
       // Silently ignore timer errors
-    }
-  }
-
-  // 🚨 Check realtime system health
-  void _checkRealtimeHealth() {
-    try {
-      final isHealthy = _realtimeSubscription != null;
-
-      if (_isRealtimeHealthy.value != isHealthy) {
-        _isRealtimeHealthy.value = isHealthy;
-      }
-    } catch (e) {
-      _isRealtimeHealthy.value = false;
     }
   }
 
@@ -2736,9 +2712,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    // 🕐 KORISTI TIMER MANAGER za cleanup - SPREČAVA MEMORY LEAK
-    TimerManager.cancelTimer('home_screen_realtime_health');
-
     // 🧹 CLEANUP REAL-TIME SUBSCRIPTIONS
     try {
       _realtimeSubscription?.cancel();
@@ -2751,9 +2724,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // 🧹 SAFE DISPOSAL ValueNotifier-a
     try {
-      if (mounted) {
-        _isRealtimeHealthy.dispose();
-      }
+      // No additional disposals needed
     } catch (e) {
       // Silently ignore
     }

@@ -8,7 +8,7 @@ import '../theme.dart';
 /// 📍 ADRESE SCREEN - Upravljanje dozvoljenim adresama
 /// Omogućava dodavanje, uređivanje i brisanje adresa direktno iz aplikacije
 class AdreseScreen extends StatefulWidget {
-  const AdreseScreen({Key? key}) : super(key: key);
+  const AdreseScreen({super.key});
 
   @override
   State<AdreseScreen> createState() => _AdreseScreenState();

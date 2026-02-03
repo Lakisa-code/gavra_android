@@ -8,9 +8,6 @@ class RealtimeConfig {
   /// Maksimalan broj pokušaja reconnect-a
   static const int maxReconnectAttempts = 3;
 
-  /// Interval za heartbeat proveru (sekunde)
-  static const int heartbeatIntervalSeconds = 30;
-
   /// Liste tabela koje pratimo
   static const List<String> tables = [
     'registrovani_putnici',

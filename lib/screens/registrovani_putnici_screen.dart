@@ -13,7 +13,6 @@ import '../services/cena_obracun_service.dart';
 import '../services/geocoding_service.dart';
 import '../services/permission_service.dart';
 import '../services/registrovani_putnik_service.dart';
-import '../services/timer_manager.dart';
 import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
@@ -29,7 +28,7 @@ extension SetExtensions<T> on Set<T> {
 }
 
 class RegistrovaniPutniciScreen extends StatefulWidget {
-  const RegistrovaniPutniciScreen({Key? key}) : super(key: key);
+  const RegistrovaniPutniciScreen({super.key});
 
   @override
   State<RegistrovaniPutniciScreen> createState() => _RegistrovaniPutniciScreenState();
@@ -49,13 +48,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   // ?? OPTIMIZACIJA: Connection resilience
   StreamSubscription<dynamic>? _connectionSubscription;
   bool _isConnected = true;
-
-  // ⚡ REALTIME MONITORING STATE (V3.0 Clean Architecture) - STANDARDIZED TIMERS
-  late ValueNotifier<bool> _isRealtimeHealthy;
-  late ValueNotifier<bool> _registrovaniPutniciStreamHealthy;
-  // ? UKLONJENO: Timer? _monitoringTimer; - koristi TimerManager!
-  late ValueNotifier<String> _realtimeHealthStatus;
-  late ValueNotifier<bool> _isNetworkConnected;
 
   // Working days state
   final Map<String, bool> _noviRadniDani = {
@@ -169,9 +161,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
     // 🔌 Connection monitoring - prati konekciju ka serveru
     _setupConnectionMonitoring();
-
-    // ⚡ V3.0 REALTIME MONITORING SETUP (Clean Architecture)
-    _setupRealtimeMonitoring();
   }
 
   // 🔌 PRAVI CONNECTION MONITORING - Periodiski ping server
@@ -191,22 +180,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         }
       }
     });
-  }
-
-  // ⚡ V3.0 REALTIME MONITORING SETUP (Backend only - no visual heartbeat)
-  void _setupRealtimeMonitoring() {
-    _isRealtimeHealthy = ValueNotifier(true);
-    _registrovaniPutniciStreamHealthy = ValueNotifier(true);
-    _realtimeHealthStatus = ValueNotifier('healthy');
-    _isNetworkConnected = ValueNotifier(_isConnected);
-
-    // 🔒 TIMER MEMORY LEAK FIX: Koristi TimerManager umesto direktnog Timer.periodic
-    TimerManager.createTimer(
-      'registrovani_putnici_monitoring',
-      const Duration(seconds: 5),
-      () => _updateHealthStatus(),
-      isPeriodic: true,
-    );
   }
 
   // 🚀 BATCH UCITAVANJE - sve tri operacije odjednom za optimalne performanse
@@ -385,38 +358,15 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     }
   }
 
-  void _updateHealthStatus() {
-    final streamHealthy = _registrovaniPutniciStreamHealthy.value;
-    _isRealtimeHealthy.value = streamHealthy;
-
-    // Update network status
-    _isNetworkConnected.value = _isConnected;
-
-    // Update health status
-    if (!_isConnected) {
-      _realtimeHealthStatus.value = 'error';
-    } else if (!streamHealthy) {
-      _realtimeHealthStatus.value = 'error';
-    } else {
-      _realtimeHealthStatus.value = 'healthy';
-    }
-  }
-
   @override
   void dispose() {
     // Cleanup debounce timer
     _paymentUpdateDebounceTimer?.cancel();
 
-    // CRITICAL TIMER MEMORY LEAK FIX - KORISTI TIMER MANAGER!
-    TimerManager.cancelTimer('registrovani_putnici_monitoring');
-
     // SAFE DISPOSAL ValueNotifier-a
     try {
       if (mounted) {
-        _isRealtimeHealthy.dispose();
-        _registrovaniPutniciStreamHealthy.dispose();
-        _realtimeHealthStatus.dispose();
-        _isNetworkConnected.dispose();
+        // No additional disposals needed
       }
     } catch (e) {
       // Warning disposing ValueNotifiers
@@ -863,7 +813,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   }
 
                   if (snapshot.hasError) {
-                    // Heartbeat indicator shows connection status
                     return const Center(
                       child: Text(
                         'Greška pri učitavanju mesečnih putnika',
@@ -2621,8 +2570,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
           // Dinamicki prikaz samo za oznacene dane
           ..._noviRadniDani.entries
               .where((entry) => entry.value) // Samo oznaceni dani
-              .map((entry) => _buildDanVremeInput(entry.key))
-              .toList(),
+              .map((entry) => _buildDanVremeInput(entry.key)),
         ],
       ),
     );

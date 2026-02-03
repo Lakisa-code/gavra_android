@@ -8,7 +8,7 @@ import '../services/theme_manager.dart';
 /// 📖 O NAMA SCREEN
 /// Informacije o Gavra 013 timu i aplikaciji
 class ONamaScreen extends StatefulWidget {
-  const ONamaScreen({Key? key}) : super(key: key);
+  const ONamaScreen({super.key});
 
   @override
   State<ONamaScreen> createState() => _ONamaScreenState();

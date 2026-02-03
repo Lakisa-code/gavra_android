@@ -10,7 +10,7 @@ import '../theme.dart';
 /// 📋 PIN ZAHTEVI SCREEN
 /// Admin vidi sve zahteve za PIN i može da odobri/odbije
 class PinZahteviScreen extends StatefulWidget {
-  const PinZahteviScreen({Key? key}) : super(key: key);
+  const PinZahteviScreen({super.key});
 
   @override
   State<PinZahteviScreen> createState() => _PinZahteviScreenState();

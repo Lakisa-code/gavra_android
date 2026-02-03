@@ -3,6 +3,8 @@
 /// Ovi primeri pokazuju kako integrisati MLService u postojeći kod.
 /// Svi primeri su advisory only - ne menjaju ništa automatski.
 
+library;
+
 import 'package:flutter/material.dart';
 
 import '../config/calendar_config.dart';

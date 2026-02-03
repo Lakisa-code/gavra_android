@@ -87,12 +87,12 @@ class HapticService {
 /// 📳 ENHANCED ELEVATED BUTTON sa haptic feedback
 class HapticElevatedButton extends StatelessWidget {
   const HapticElevatedButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.child,
     this.hapticType = HapticType.light,
     this.style,
-  }) : super(key: key);
+  });
   final VoidCallback? onPressed;
   final Widget child;
   final HapticType hapticType;

@@ -125,115 +125,110 @@ class PopisService {
           children: [
             Icon(isAutomatic ? Icons.auto_awesome : Icons.person, color: vozacColor, size: 20),
             const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                isAutomatic
-                    ? 'AUTOMATSKI POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}'
-                    : 'POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[800]),
-                overflow: TextOverflow.ellipsis,
-              ),
+            Text(
+              isAutomatic
+                  ? 'AUTOMATSKI POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}'
+                  : 'POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Card(
-              margin: const EdgeInsets.all(0),
-              elevation: 4,
-              color: vozacColor.withValues(alpha: 0.25),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: vozacColor.withValues(alpha: 0.6), width: 2),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // HEADER SA VOZAČEM
-                    Row(
-                      children: [
-                        Icon(Icons.person, color: vozacColor, size: 24),
-                        const SizedBox(width: 8),
-                        Text(
-                          data.vozac,
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // DETALJNE STATISTIKE
-                    _buildStatRow('Pokupljeni', data.pokupljeniPutnici, Icons.check_circle, Colors.teal),
-                    _buildStatRow('Otkazani', data.otkazaniPutnici, Icons.cancel, Colors.red),
-                    _buildStatRow('Dugovi', data.dugoviPutnici, Icons.warning, Colors.orange),
-
-                    if (data.naplaceniDnevni > 0 || data.naplaceniMesecni > 0) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          if (data.naplaceniDnevni > 0)
-                            Expanded(child: _buildSmallStat('Dnevne: ${data.naplaceniDnevni}', Colors.blueGrey)),
-                          if (data.naplaceniMesecni > 0)
-                            Expanded(child: _buildSmallStat('Mesečne: ${data.naplaceniMesecni}', Colors.purple)),
-                        ],
+        content: SingleChildScrollView(
+          child: Card(
+            margin: const EdgeInsets.all(0),
+            elevation: 4,
+            color: vozacColor.withValues(alpha: 0.25),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: vozacColor.withValues(alpha: 0.6), width: 2),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // HEADER SA VOZAČEM
+                  Row(
+                    children: [
+                      Icon(Icons.person, color: vozacColor, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        data.vozac,
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
 
-                    _buildStatRow('Kilometraža', '${data.kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
+                  // DETALJNE STATISTIKE
+                  _buildStatRow('Pokupljeni', data.pokupljeniPutnici, Icons.check_circle, Colors.teal),
+                  _buildStatRow('Otkazani', data.otkazaniPutnici, Icons.cancel, Colors.red),
+                  _buildStatRow('Dugovi', data.dugoviPutnici, Icons.warning, Colors.orange),
 
-                    Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24)),
-
-                    // UKUPAN PAZAR
-                    _buildStatRow(
-                      'Ukupno pazar',
-                      '${data.ukupanPazar.toStringAsFixed(0)} RSD',
-                      Icons.monetization_on,
-                      Colors.amber,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // SITAN NOVAC
-                    if (data.sitanNovac > 0)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.account_balance_wallet, color: Colors.orange, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Sitan novac: ${data.sitanNovac.toStringAsFixed(0)} RSD',
-                              style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    const SizedBox(height: 12),
-
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.shade200),
-                      ),
-                      child: const Text(
-                        '📋 Ovaj popis će biti sačuvan i prikazan pri sledećem check-in-u.',
-                        style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-                      ),
+                  if (data.naplaceniDnevni > 0 || data.naplaceniMesecni > 0) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (data.naplaceniDnevni > 0)
+                          Expanded(child: _buildSmallStat('Dnevne: ${data.naplaceniDnevni}', Colors.blueGrey)),
+                        if (data.naplaceniMesecni > 0)
+                          Expanded(child: _buildSmallStat('Mesečne: ${data.naplaceniMesecni}', Colors.purple)),
+                      ],
                     ),
                   ],
-                ),
+
+                  _buildStatRow('Kilometraža', '${data.kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
+
+                  Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24)),
+
+                  // UKUPAN PAZAR
+                  _buildStatRow(
+                    'Ukupno pazar',
+                    '${data.ukupanPazar.toStringAsFixed(0)} RSD',
+                    Icons.monetization_on,
+                    Colors.amber,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // SITAN NOVAC
+                  if (data.sitanNovac > 0)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.account_balance_wallet, color: Colors.orange, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Sitan novac: ${data.sitanNovac.toStringAsFixed(0)} RSD',
+                            style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: const Text(
+                      '📋 Ovaj popis će biti sačuvan i prikazan pri sledećem check-in-u.',
+                      style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
