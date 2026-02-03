@@ -55,18 +55,29 @@ jobs:
           BUILD_NUM=${{ github.run_number }}
           mv build/app/outputs/apk/release/app-release.apk build/app/outputs/apk/release/gavra-v${VERSION}-build${BUILD_NUM}.apk
           echo "APK_NAME=gavra-v${VERSION}-build${BUILD_NUM}.apk" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
       
       - name: Generate download link
         id: link
         run: |
           RUN_ID=${{ github.run_id }}
-          echo "download_url=https://github.com/kadpitamkurac-hash/gavra_android/actions/runs/${RUN_ID}" >> $GITHUB_OUTPUT
+          DOWNLOAD_URL="https://github.com/kadpitamkurac-hash/gavra_android/actions/runs/${RUN_ID}"
+          echo "download_url=${DOWNLOAD_URL}" >> $GITHUB_OUTPUT
+          echo "run_id=${RUN_ID}" >> $GITHUB_OUTPUT
+      
+      - name: Generate QR Code
+        uses: snow-actions/qrcode@v1.0
+        with:
+          text: ${{ steps.link.outputs.download_url }}
+          path: qrcode.png
       
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APK_NAME }}
-          path: build/app/outputs/apk/release/${{ env.APK_NAME }}
+          path: |
+            build/app/outputs/apk/release/${{ env.APK_NAME }}
+            qrcode.png
           retention-days: 30
           compression-level: 0
       
@@ -76,18 +87,25 @@ jobs:
           echo "║         ✅ APK BUILD COMPLETED SUCCESSFULLY!           ║"
           echo "╚════════════════════════════════════════════════════════╝"
           echo ""
-          echo "📥 DOWNLOAD APK:"
+          echo "📥 DOWNLOAD APK - 2 OPTIONS:"
+          echo ""
+          echo "   OPTION 1 - SCAN QR CODE (Most Convenient!):"
+          echo "   📱 A QR code image was generated!"
+          echo "   📷 Scan it with your phone camera → Opens download link"
+          echo ""
+          echo "   OPTION 2 - DIRECT LINK:"
           echo "   🔗 ${{ steps.link.outputs.download_url }}"
           echo ""
           echo "📋 BUILD CHANGELOG:"
           echo "   ${{ github.event.inputs.changelog }}"
           echo ""
           echo "⬇️  HOW TO INSTALL:"
-          echo "   1. Download the APK from the link above"
+          echo "   1. Download the APK from link or QR code"
           echo "   2. Transfer to your Android phone"
           echo "   3. Open file manager and tap the APK"
           echo "   4. Accept installation"
           echo "   5. Done! ✨"
           echo ""
           echo "📦 FILE: ${{ env.APK_NAME }}"
+          echo "📊 VERSION: ${{ env.VERSION }}"
           echo ""
