@@ -62,7 +62,9 @@ dependencies:
   # 📇 CONTACT PICKER - biranje broja iz imenika
   flutter_native_contact_picker: ^0.0.11
 
-  # app_links - dolazi kao zavisnost od supabase_flutter, ne treba eksplicitno
+  # app_links - explicit pinning to stable version (6.3.x has gradle issues)
+  app_links: ^5.0.0
+  
   vibration: ^3.1.4
   
   # 🔐 BIOMETRIC AUTHENTICATION (otisak prsta, Face ID)
