@@ -9,37 +9,37 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl: ^0.17.0
+  intl: ^0.20.2
   supabase_flutter: ^2.9.0
-  firebase_core: ^3.8.0
-  firebase_messaging: ^15.1.5
-  flutter_local_notifications: ^17.0.0
+  firebase_core: ^4.4.0
+  firebase_messaging: ^16.1.1
+  flutter_local_notifications: ^20.0.0
   shared_preferences: ^2.2.2
-  fl_chart: ^0.66.0
+  fl_chart: ^1.1.1
   # Legacy push provider references removed - using FCM + Huawei Push only
   # Huawei Push plugin - za notifikacije
   google_api_availability: ^5.0.0
   http: ^1.2.1
-  package_info_plus: ^8.3.1
+  package_info_plus: ^9.0.0
   url_launcher: ^6.2.6
   logger: ^2.6.0
-  flutter_map: ^7.0.2
+  flutter_map: ^8.2.2
   latlong2: ^0.9.1
   audioplayers: ^6.1.0
   flutter_typeahead: ^5.2.0
   async: ^2.11.0
   path_provider: ^2.1.1
   open_filex: ^4.3.4
-  permission_handler: ^11.3.1
+  permission_handler: ^12.0.1
   dropdown_button2: ^2.3.9
-  flutter_secure_storage: ^8.0.0
+  flutter_secure_storage: ^10.0.0
   wakelock_plus: ^1.2.8
-  google_fonts: ^6.1.0
+  google_fonts: ^8.0.0
 
   # googleapis i googleapis_auth UKLONJENI - koristi se OSRM za optimizaciju ruta
   shimmer: ^3.0.0
-  device_info_plus: ^10.1.0
-  android_intent_plus: ^5.2.0
+  device_info_plus: ^12.3.0
+  android_intent_plus: ^6.0.0
   # flutter_sms: ^2.3.3 # Problematičan namespace - zamijenjen sa url_launcher SMS pozivima
   # sms_advanced: ^1.0.1 # Alternativa sa automatskim slanjem - isto ima namespace problem
   # Vraćam se na URL launcher pristup - jedini koji radi
@@ -52,7 +52,7 @@ dependencies:
   # supabase: ^2.10.0  # UKLONJENO 2026-01-05 - duplikat (već u supabase_flutter)
   
   # 🏗️ STATE MANAGEMENT & IMMUTABLE MODELS
-  freezed_annotation: ^2.4.1
+  freezed_annotation: ^3.1.0
   json_annotation: ^4.8.1
 
   # 🗺️ OFFLINE MAPS DATABASE
@@ -64,14 +64,15 @@ dependencies:
   vibration: ^3.1.4
   
   # 🔐 BIOMETRIC AUTHENTICATION (otisak prsta, Face ID)
-  local_auth: ^2.3.0
+  local_auth: ^3.0.0
+  # huawei_push: ^6.14.0+300  # UKLONJENO ZA TEST - KONFLIKT SA FIREBASE
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^6.0.0
   build_runner: ^2.4.6
-  freezed: ^2.4.5
+  freezed: ^3.2.5
   json_serializable: ^6.7.1
   flutter_launcher_icons: ^0.14.3
 

@@ -43,7 +43,7 @@ flutter {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = 36
+    compileSdk = 34
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -64,7 +64,7 @@ android {
     defaultConfig {
         applicationId = "com.gavra013.gavra_android"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
@@ -85,8 +85,8 @@ android {
     buildTypes {
         named("release") {
             // 🚀 R8 ENABLED (2026-01-05) - smanjuje APK za ~40%
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -79,7 +79,7 @@ jobs:
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
       
       - name: Rename and Prepare APK
-        if: success()
+        if: always()
         run: |
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             echo "✓ APK file found, preparing for upload..."
