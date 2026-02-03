@@ -96,13 +96,28 @@ jobs:
             exit 1
           fi
       
-      - name: Generate download link
-        id: link
+      - name: Upload APK to transfer.sh
+        id: upload
         run: |
-          RUN_ID=${{ github.run_id }}
-          DOWNLOAD_URL="https://github.com/kadpitamkurac-hash/gavra_android/actions/runs/${RUN_ID}"
-          echo "download_url=${DOWNLOAD_URL}" >> $GITHUB_OUTPUT
-          echo "run_id=${RUN_ID}" >> $GITHUB_OUTPUT
+          APK_FILE="${{ env.APK_PATH }}"
+          if [ -f "$APK_FILE" ]; then
+            echo "Uploading APK to transfer.sh..."
+            UPLOAD_URL=$(curl -s -F "file=@$APK_FILE" https://transfer.sh/gavra-android.apk)
+            if [ $? -eq 0 ] && [ -n "$UPLOAD_URL" ]; then
+              echo "Upload successful: $UPLOAD_URL"
+              echo "download_url=$UPLOAD_URL" >> $GITHUB_OUTPUT
+              echo "run_id=${{ github.run_id }}" >> $GITHUB_OUTPUT
+            else
+              echo "Upload failed, falling back to GitHub link"
+              RUN_ID=${{ github.run_id }}
+              DOWNLOAD_URL="https://github.com/kadpitamkurac-hash/gavra_android/actions/runs/${RUN_ID}"
+              echo "download_url=${DOWNLOAD_URL}" >> $GITHUB_OUTPUT
+              echo "run_id=${RUN_ID}" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "APK file not found for upload"
+            exit 1
+          fi
       
       - name: Generate QR Code
         if: success()
@@ -116,7 +131,7 @@ jobs:
               box_size=10,
               border=4,
           )
-          qr.add_data("${{ steps.link.outputs.download_url }}")
+          qr.add_data("${{ steps.upload.outputs.download_url }}")
           qr.make(fit=True)
           img = qr.make_image(fill_color="black", back_color="white")
           img.save("qrcode.png")
