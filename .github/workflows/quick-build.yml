@@ -31,10 +31,6 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       
-      - name: Run build_runner (generate code)
-        run: flutter pub run build_runner build --release
-        continue-on-error: true
-      
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
@@ -50,8 +46,19 @@ jobs:
           EOF
         shell: bash
       
+      - name: Flutter Clean
+        run: flutter clean
+      
       - name: Build APK
-        run: flutter build apk --release -v
+        run: flutter build apk --release -v 2>&1 | tee build.log
+      
+      - name: Check Build Output
+        if: always()
+        run: |
+          if [ -f build.log ]; then
+            echo "=== Last 100 lines of build.log ==="
+            tail -n 100 build.log
+          fi
       
       - name: Rename APK
         run: |
