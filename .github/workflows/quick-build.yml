@@ -79,7 +79,7 @@ jobs:
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
       
       - name: Rename and Prepare APK
-        if: always()
+        if: success()
         run: |
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             echo "✓ APK file found, preparing for upload..."
@@ -96,30 +96,28 @@ jobs:
             exit 1
           fi
       
-      - name: Upload APK to transfer.sh
-        id: upload
+      - name: Upload APK to File.io
+        if: success()
         run: |
-          APK_FILE="${{ env.APK_PATH }}"
-          if [ -f "$APK_FILE" ]; then
-            echo "Uploading APK to transfer.sh..."
-            UPLOAD_URL=$(curl -s -F "file=@$APK_FILE" https://transfer.sh/gavra-android.apk)
-            if [ $? -eq 0 ] && [ -n "$UPLOAD_URL" ]; then
-              echo "Upload successful: $UPLOAD_URL"
-              echo "download_url=$UPLOAD_URL" >> $GITHUB_OUTPUT
-              echo "run_id=${{ github.run_id }}" >> $GITHUB_OUTPUT
+          sudo apt-get update && sudo apt-get install -y jq
+          APK_PATH="${{ env.APK_PATH }}"
+          if [ -f "$APK_PATH" ]; then
+            echo "Uploading APK to File.io..."
+            RESPONSE=$(curl -F "file=@$APK_PATH" https://file.io)
+            DOWNLOAD_LINK=$(echo $RESPONSE | jq -r '.link')
+            if [ "$DOWNLOAD_LINK" != "null" ] && [ -n "$DOWNLOAD_LINK" ]; then
+              echo "FILE_IO_LINK=$DOWNLOAD_LINK" >> $GITHUB_ENV
+              echo "✓ Upload successful! Link: $DOWNLOAD_LINK"
             else
-              echo "Upload failed, falling back to GitHub link"
-              RUN_ID=${{ github.run_id }}
-              DOWNLOAD_URL="https://github.com/kadpitamkurac-hash/gavra_android/actions/runs/${RUN_ID}"
-              echo "download_url=${DOWNLOAD_URL}" >> $GITHUB_OUTPUT
-              echo "run_id=${RUN_ID}" >> $GITHUB_OUTPUT
+              echo "✗ Upload failed! Response: $RESPONSE"
+              exit 1
             fi
           else
-            echo "APK file not found for upload"
+            echo "✗ APK file not found for upload!"
             exit 1
           fi
       
-      - name: Generate QR Code
+      - name: Generate QR Code for File.io Link
         if: success()
         run: |
           pip install qrcode[pil]
@@ -131,20 +129,11 @@ jobs:
               box_size=10,
               border=4,
           )
-          qr.add_data("${{ steps.upload.outputs.download_url }}")
+          qr.add_data("${{ env.FILE_IO_LINK }}")
           qr.make(fit=True)
           img = qr.make_image(fill_color="black", back_color="white")
           img.save("qrcode.png")
           EOF
-      
-      - name: Upload APK as artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APK_NAME }}
-          path: ${{ env.APK_PATH }}
-          retention-days: 30
-          compression-level: 0
       
       - name: Upload QR Code as artifact
         if: success()
@@ -161,24 +150,24 @@ jobs:
           echo "║         ✅ APK BUILD COMPLETED SUCCESSFULLY!           ║"
           echo "╚════════════════════════════════════════════════════════╝"
           echo ""
-          echo "📥 DOWNLOAD APK - 2 OPTIONS:"
+          echo "📥 DOWNLOAD APK - SCAN QR CODE:"
           echo ""
-          echo "   OPTION 1 - SCAN QR CODE (Most Convenient!):"
           echo "   📱 A QR code image was generated!"
-          echo "   📷 Scan it with your phone camera → Opens download link"
+          echo "   📷 Scan it with your phone camera → Direct APK download"
+          echo "   ⏰ Link expires in 14 days"
           echo ""
-          echo "   OPTION 2 - DIRECT LINK:"
-          echo "   🔗 ${{ steps.link.outputs.download_url }}"
+          echo "   🔗 Direct Link: ${{ env.FILE_IO_LINK }}"
           echo ""
           echo "📋 BUILD CHANGELOG:"
           echo "   ${{ github.event.inputs.changelog }}"
           echo ""
           echo "⬇️  HOW TO INSTALL:"
-          echo "   1. Download the APK from link or QR code"
-          echo "   2. Transfer to your Android phone"
-          echo "   3. Open file manager and tap the APK"
-          echo "   4. Accept installation"
-          echo "   5. Done! ✨"
+          echo "   1. Scan QR code or open direct link"
+          echo "   2. Download the APK"
+          echo "   3. Transfer to your Android phone (if needed)"
+          echo "   4. Open file manager and tap the APK"
+          echo "   5. Accept installation"
+          echo "   6. Done! ✨"
           echo ""
           echo "📦 FILE: ${{ env.APK_NAME }}"
           echo "📊 VERSION: ${{ env.VERSION }}"
