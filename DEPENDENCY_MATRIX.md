@@ -3,7 +3,8 @@
 ## Current Setup (✅ Working)
 **Flutter Version**: 3.24.3  
 **Dart SDK**: 3.5.3+  
-**Last Updated**: 2026-02-03
+**Last Updated**: 2026-02-03  
+**Key Fix**: Removed explicit `app_links` dependency - let `supabase_flutter` resolve it automatically
 
 ---
 
@@ -18,9 +19,9 @@
 ### Critical Dependencies (Cause Build Failures if Wrong)
 | Package | Current | Required Dart | Required Flutter | ⚠️ Notes |
 |---------|---------|---|---|---|
+| `supabase_flutter` | ^2.9.0 | ^3.5.3 | 3.24.0+ | ✅ Automatically resolves `app_links` (no explicit version needed) |
 | `flutter_native_contact_picker` | ^0.0.11 | ^3.5.3 | 3.24.0+ | ❌ Fails with Dart <3.5.3 (SDK version mismatch) |
 | `local_auth` | ^2.3.0 | ^3.5.4 | 3.24.0+ | ⚠️ 2.1.0 works with Dart 3.2.0, but 2.3.0 is better |
-| `geolocator` | ^14.0.2 | - | 3.16.0+ | ⚠️ Has toARGB32() issues with newer Flutter |
 
 ### Optional/Secondary Dependencies
 | Package | Version | Notes |

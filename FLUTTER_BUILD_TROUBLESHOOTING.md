@@ -272,4 +272,5 @@ gh run view <NEW_RUN_ID> --log-failed
 ---
 
 *Last Updated: 2026-02-03*  
-*Status: ✅ Flutter 3.24.3 + Dart 3.5.3 - STABLE*
+*Status: ✅ Flutter 3.24.3 + Dart 3.5.3 - STABLE*  
+*Note: app_links dependency handled by supabase_flutter automatically*
