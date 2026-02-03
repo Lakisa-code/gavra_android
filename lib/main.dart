@@ -24,6 +24,7 @@ import 'services/ml_dispatch_autonomous_service.dart';
 import 'services/ml_finance_autonomous_service.dart';
 import 'services/ml_service.dart'; // 🧠 ML servis za trening modela
 import 'services/ml_vehicle_autonomous_service.dart';
+import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
 import 'services/registrovani_putnik_service.dart'; // 👥 Registrovani putnici
@@ -74,16 +75,12 @@ void main() async {
   }
 
   // 🔐 DOVRŠI KONFIGURACIJU - učitaj preostale kredencijale iz Vault-a
-  try {
-    await configService.initializeVaultCredentials();
-    if (kDebugMode) {
-      debugPrint('✅ [Main] Vault credentials loaded');
-      debugPrint('📊 Config info: ${configService.getDebugInfo()}');
-    }
-  } catch (e) {
-    if (kDebugMode) debugPrint('❌ [Main] Vault credentials failed: $e');
-    // Non-critical - app can continue with basic credentials
-  }
+  // try {
+  //   await configService.initializeVaultCredentials();
+  // } catch (e) {
+  //   if (kDebugMode) debugPrint('❌ [Main] Vault credentials failed: $e');
+  //   // Non-critical - app can continue with basic credentials
+  // }
 
   // 1. Pokreni UI
   runApp(const MyApp());
@@ -153,11 +150,12 @@ Future<void> _initAppServices() async {
     unawaited(service.timeout(const Duration(seconds: 3), onTimeout: () => {}));
   }
 
-  // 🔔 Setup realtime listener za izmjene redoslijeda
-  unawaited(RouteService.setupRealtimeListener());
+  // 🔔 Initialize centralized realtime manager (monitoring sve tabele)
+  unawaited(RealtimeManager.instance.initializeAll());
 
-  // Realtime & AI (bez čekanja ikoga)
-  KapacitetService.startGlobalRealtimeListener();
+  // 🚐 Realtime & AI (bez čekanja ikoga)
+  // NOTE: RouteService.setupRealtimeListener() je sada dio RealtimeManager.initializeAll()
+  // NOTE: KapacitetService.startGlobalRealtimeListener() je sada dio RealtimeManager.initializeAll()
   unawaited(WeatherAlertService.checkAndSendWeatherAlerts());
 
   unawaited(MLVehicleAutonomousService().start());
@@ -170,7 +168,7 @@ Future<void> _initAppServices() async {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();

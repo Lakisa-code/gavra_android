@@ -61,7 +61,7 @@ class LocalNotificationService {
     );
 
     await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
         handleNotificationTap(response);
       },
@@ -143,10 +143,10 @@ class LocalNotificationService {
       }
 
       await flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        title,
-        body,
-        NotificationDetails(
+        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             'gavra_realtime_channel',
             'Gavra Realtime Notifikacije',
@@ -257,10 +257,10 @@ class LocalNotificationService {
       }
 
       await flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        '🕐 Izaberite termin',
-        bodyText,
-        NotificationDetails(
+        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title: '🕐 Izaberite termin',
+        body: bodyText,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             'gavra_realtime_channel',
             'Gavra Realtime Notifikacije',
@@ -339,7 +339,9 @@ class LocalNotificationService {
         android: initializationSettingsAndroid,
       );
 
-      await plugin.initialize(initializationSettings);
+      await plugin.initialize(
+        settings: initializationSettings,
+      );
 
       final androidDetails = AndroidNotificationDetails(
         'gavra_realtime_channel',
@@ -371,10 +373,10 @@ class LocalNotificationService {
       await WakeLockService.wakeScreen(durationMs: 10000);
 
       await plugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        title,
-        body,
-        platformChannelSpecifics,
+        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title: title,
+        body: body,
+        notificationDetails: platformChannelSpecifics,
         payload: payload,
       );
 
@@ -859,10 +861,10 @@ class LocalNotificationService {
       }
 
       await flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        isRushHourWaiting ? '⏳ Izbor termina' : '🕐 [VS] Izaberite termin',
-        bodyText,
-        NotificationDetails(
+        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title: isRushHourWaiting ? '⏳ Izbor termina' : '🕐 [VS] Izaberite termin',
+        body: bodyText,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             'gavra_realtime_channel',
             'Gavra Realtime Notifikacije',

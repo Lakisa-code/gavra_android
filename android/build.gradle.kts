@@ -2,14 +2,21 @@ plugins {
     id("com.android.application") version "8.9.1" apply false
 }
 
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // Removed Huawei AGC due to version compatibility issues
+        // classpath("com.huawei.agconnect:agcp:1.8.1.300")
+    }
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
-        // Huawei AGConnect repository for AGC Gradle plugin
-        maven {
-            url = uri("https://developer.huawei.com/repo/")
-        }
     }
 }
 
@@ -24,7 +31,9 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
-    project.evaluationDependsOn(":app")
+    if (project.name != "gradle") {
+        project.evaluationDependsOn(":app")
+    }
     
     // Skip tests for android_intent_plus package that has broken tests
     if (project.name == "android_intent_plus") {
@@ -39,20 +48,4 @@ subprojects {
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
-}
-
-// AG Connect Gradle plugin (applied in app module)
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url = uri("https://developer.huawei.com/repo/") }
-    }
-    dependencies {
-        // Use a recent AGC plugin version; adjust if needed
-        // Android Gradle plugin classpath (AGP)
-        classpath("com.android.tools.build:gradle:8.9.1")
-        // Huawei AGC plugin classpath
-        classpath("com.huawei.agconnect:agcp:1.10.1.300")
-    }
 }

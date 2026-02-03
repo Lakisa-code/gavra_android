@@ -136,23 +136,26 @@ class RealtimeManager {
       schema: 'public',
       table: table,
       callback: (payload) {
-        debugPrint('🔄 [RealtimeManager] EVENT na tabeli "$table": ${payload.eventType}');
+        // Filtriraj samo INSERT i UPDATE evente, preskoči DELETE
+        if (payload.eventType == PostgresChangeEvent.delete) return;
+
+        // debugPrint('🔄 [RealtimeManager] EVENT na tabeli "$table": ${payload.eventType}');
         if (_controllers.containsKey(table) && !_controllers[table]!.isClosed) {
           _controllers[table]!.add(payload);
-          debugPrint('✅ [RealtimeManager] Payload emitovan za tabelu "$table"');
+          // debugPrint('✅ [RealtimeManager] Payload emitovan za tabelu "$table"');
         } else {
-          debugPrint('⚠️ [RealtimeManager] Controller zatvoren ili ne postoji za tabelu "$table"');
+          // debugPrint('⚠️ [RealtimeManager] Controller zatvoren ili ne postoji za tabelu "$table"');
         }
       },
     )
         .subscribe((status, [error]) {
-      debugPrint(
-          '📡 [RealtimeManager] Subscribe status za "$table": $status${error != null ? " (Error: $error)" : ""}');
+      // debugPrint(
+      //     '📡 [RealtimeManager] Subscribe status za "$table": $status${error != null ? " (Error: $error)" : ""}');
       _handleSubscribeStatus(table, status, error);
     });
 
     _channels[table] = channel;
-    debugPrint('🔗 [RealtimeManager] Channel kreiiran za tabelu "$table"');
+    // debugPrint('🔗 [RealtimeManager] Channel kreiiran za tabelu "$table"');
   }
 
   /// Handle status promene od Supabase
@@ -250,6 +253,39 @@ class RealtimeManager {
     if (!_statusController.isClosed) {
       _statusController.add(Map.from(_statusMap));
     }
+  }
+
+  /// Inicijalizuj sve važne tabele za realtime praćenje
+  /// Poziva se jednom pri startu aplikacije
+  /// Za realtime-first aplikacije - samo priprema sistem, kanali se kreiraju on-demand
+  Future<void> initializeAll() async {
+    if (!isSupabaseReady) {
+      debugPrint('❌ [RealtimeManager] Cannot initialize: Supabase not ready');
+      return;
+    }
+
+    // Lista svih tabela koje mogu biti praćene (za referencu)
+    final tablesToMonitor = [
+      'registrovani_putnici', // 👥 Aktivni putnici
+      'kapacitet_polazaka', // 🚐 Kapacitet vozila
+      'vozac_lokacije', // 📍 GPS pozicije vozača
+      'voznje_log', // 📊 Log vožnji
+      'vozila', // 🚗 Vozila
+      'vozaci', // 👨 Vozači
+      'voznje_po_sezoni', // 📅 Redosljed polazaka
+      'seat_requests', // 🎫 Zahtjevi za mjesta
+      'daily_reports', // 📈 Dnevni izvještaji
+      'app_settings', // ⚙️ Postavke aplikacije
+      'ml_config', // 🧠 ML konfiguracija
+      'adrese', // 📍 Adrese
+      'registrovani_putnici_svi', // 👥 Svi registrovani putnici
+    ];
+
+    debugPrint(
+        '🚀 [RealtimeManager] Realtime sistem spreman - kanali će se kreirati on-demand za ${tablesToMonitor.length} tabela');
+
+    // Ne kreiraj kanale odmah - čekaj subscribe() pozive
+    // debugPrint('✅ [RealtimeManager] Sistem je spreman za realtime praćenje!');
   }
 
   /// Ugasi sve channel-e i očisti resurse

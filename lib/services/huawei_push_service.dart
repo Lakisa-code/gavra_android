@@ -193,6 +193,12 @@ class HuaweiPushService {
       driverName = null;
     }
 
+    // Registruj samo ako je vozač ulogovan
+    if (driverName == null || driverName.isEmpty) {
+      debugPrint('⚠️ [HuaweiPushService] Vozač nije ulogovan - preskačem HMS registraciju');
+      return;
+    }
+
     await PushTokenService.registerToken(
       token: token,
       provider: 'huawei',

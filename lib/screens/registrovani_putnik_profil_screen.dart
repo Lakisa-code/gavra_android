@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
+import '../services/realtime/realtime_manager.dart';
 import '../helpers/gavra_ui.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../models/registrovani_putnik.dart';
@@ -30,7 +31,7 @@ import '../widgets/shared/time_picker_cell.dart';
 class RegistrovaniPutnikProfilScreen extends StatefulWidget {
   final Map<String, dynamic> putnikData;
 
-  const RegistrovaniPutnikProfilScreen({Key? key, required this.putnikData}) : super(key: key);
+  const RegistrovaniPutnikProfilScreen({super.key, required this.putnikData});
 
   @override
   State<RegistrovaniPutnikProfilScreen> createState() => _RegistrovaniPutnikProfilScreenState();
@@ -69,7 +70,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   String? _sledecaVoznjaInfo; // 🆕 Format: "Ponedeljak, 7:00 BC"
 
   // 🎯 Realtime subscription za status promene
-  RealtimeChannel? _statusSubscription;
+  StreamSubscription? _statusSubscription;
 
   /// HELPER za bezbedno kastovanje JSONB podataka koji mogu doći kao String ili Map
   Map<String, dynamic> _safeMap(dynamic raw) {
@@ -184,7 +185,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this); // 🛑 Zatvori lifecycle observer
-    _statusSubscription?.unsubscribe(); // 🛑 Zatvori Realtime listener
+    _statusSubscription?.cancel(); // 🛑 Zatvori Realtime listener
+    RealtimeManager.instance.unsubscribe('registrovani_putnici');
     super.dispose();
   }
 
@@ -234,24 +236,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final putnikId = _putnikData['id']?.toString();
     if (putnikId == null) return;
 
-    // Pretplati se na promene u registrovani_putnici tabeli za ovog putnika
-    _statusSubscription = supabase
-        .channel('pending_status_$putnikId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'registrovani_putnici',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'id',
-            value: putnikId,
-          ),
-          callback: (payload) {
-            debugPrint('🎯 [Realtime] Status promena detektovana za putnika $putnikId');
-            _handleStatusChange(payload);
-          },
-        )
-        .subscribe();
+    // Koristi RealtimeManager za centralizovanu pretplatu
+    _statusSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').where((payload) {
+      // Filtriraj samo ako je ažuriran ovaj putnik
+      return payload.newRecord['id'].toString() == putnikId;
+    }).listen((payload) {
+      debugPrint('🎯 [Realtime] Status promena detektovana za putnika $putnikId');
+      _handleStatusChange(payload);
+    });
 
     debugPrint('🎯 [Realtime] Listener aktivan za putnika $putnikId');
   }

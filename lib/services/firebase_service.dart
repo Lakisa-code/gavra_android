@@ -115,6 +115,12 @@ class FirebaseService {
       driverName = null;
     }
 
+    // Registruj samo ako je vozač ulogovan
+    if (driverName == null || driverName.isEmpty) {
+      debugPrint('⚠️ [FirebaseService] Vozač nije ulogovan - preskačem FCM registraciju');
+      return;
+    }
+
     await PushTokenService.registerToken(
       token: token,
       provider: 'fcm',

@@ -92,6 +92,12 @@ class AuthManager {
 
       debugPrint('🔄 [AuthManager] Final vozac_id: $vozacId');
 
+      // Registruj tokene samo ako je vozač uspešno identifikovan
+      if (vozacId == null || vozacId.isEmpty || driverName.isEmpty) {
+        debugPrint('⚠️ [AuthManager] Vozač nije ulogovan ili identifikovan - preskačem registraciju tokena');
+        return;
+      }
+
       // 1. Pokušaj FCM token (Google/Samsung uređaji)
       final fcmToken = await FirebaseService.getFCMToken();
       if (fcmToken != null && fcmToken.isNotEmpty) {

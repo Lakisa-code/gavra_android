@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'realtime/realtime_manager.dart';
+
 /// 🚐 Servis za učitavanje satnih redoslijeda iz baze
 /// Dinamički učitava vremena polazaka iz `voznje_po_sezoni` tabele
 class RouteService {
@@ -79,20 +81,12 @@ class RouteService {
   /// 🔔 Setup realtime listener za izmjene redoslijeda
   static Future<void> setupRealtimeListener() async {
     try {
-      _supabase
-          .channel('voznje_po_sezoni')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'voznje_po_sezoni',
-            callback: (payload) {
-              debugPrint('🔔 [RouteService] Izmjena redoslijeda u bazi!');
-              // Očisti cache
-              _vremenaCache.clear();
-              _cachetime.clear();
-            },
-          )
-          .subscribe();
+      RealtimeManager.instance.subscribe('voznje_po_sezoni').listen((payload) {
+        debugPrint('🔔 [RouteService] Izmjena redoslijeda u bazi!');
+        // Očisti cache
+        _vremenaCache.clear();
+        _cachetime.clear();
+      });
 
       debugPrint('📡 [RouteService] Realtime listener aktiviran');
     } catch (e) {

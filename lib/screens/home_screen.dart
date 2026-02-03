@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
+import '../services/realtime/realtime_manager.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/admin_security_service.dart';
@@ -48,7 +49,7 @@ import 'vozac_screen.dart';
 import 'welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -325,8 +326,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _setupRealtimeListener() {
     _realtimeSubscription?.cancel();
-    // Direktan Supabase realtime umesto RealtimeHubService
-    _realtimeSubscription = RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici().listen((_) {});
+    // Koristi RealtimeManager za centralizovanu pretplatu na registrovane putnike
+    _realtimeSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((_) {});
   }
 
   Widget _buildGlassStatRow(String label, String value) {
@@ -2763,7 +2764,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 // AnimatedActionButton widget sa hover efektima
 class AnimatedActionButton extends StatefulWidget {
   const AnimatedActionButton({
-    Key? key,
+    super.key,
     required this.child,
     required this.onTap,
     required this.width,
@@ -2771,7 +2772,7 @@ class AnimatedActionButton extends StatefulWidget {
     required this.margin,
     required this.gradientColors,
     required this.boxShadow,
-  }) : super(key: key);
+  });
   final Widget child;
   final VoidCallback onTap;
   final double width;

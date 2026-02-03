@@ -10,7 +10,8 @@ plugins {
 }
 
 // Apply AGConnect as a plugin via buildscript classpath
-apply(plugin = "com.huawei.agconnect")
+// DISABLED: Causes build issues with current gradle configuration
+// apply(plugin = "com.huawei.agconnect")
 
 // 🔐 PRODUCTION KEYSTORE CONFIGURATION
 val keystorePropertiesFile = rootProject.file("key.properties")
@@ -20,7 +21,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
@@ -43,7 +44,7 @@ flutter {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -64,7 +65,7 @@ android {
     defaultConfig {
         applicationId = "com.gavra013.gavra_android"
         minSdk = flutter.minSdkVersion
-        targetSdk = 34
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true

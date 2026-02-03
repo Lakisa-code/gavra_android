@@ -80,15 +80,19 @@ class PushTokenService {
 
       // ✅ UPSERT novi token (ako token već postoji, ažuriraće ga, ako ne, insertovaće)
       // Ovo je mnogo otpornije na "duplicate key" greške nego delete+insert
-      await _supabase.from('push_tokens').upsert({
+      final data = {
         'token': token,
         'provider': provider,
         'user_type': userType,
-        'user_id': userId,
-        'vozac_id': vozacId,
-        'putnik_id': putnikId,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'token').timeout(timeout);
+      };
+
+      // Dodaj opciono polja samo ako nisu null
+      if (userId != null && userId.isNotEmpty) data['user_id'] = userId;
+      if (vozacId != null && vozacId.isNotEmpty) data['vozac_id'] = vozacId;
+      if (putnikId != null && putnikId.isNotEmpty) data['putnik_id'] = putnikId;
+
+      await _supabase.from('push_tokens').upsert(data, onConflict: 'token').timeout(timeout);
 
       if (kDebugMode) {
         debugPrint('✅ [PushToken] Token registrovan: $provider/$userType/${token.substring(0, 20)}...');

@@ -105,11 +105,6 @@ class BiometricService {
 
       return await _auth.authenticate(
         localizedReason: reason,
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true, // Samo biometrija, bez PIN-a uređaja
-          useErrorDialogs: true,
-        ),
       );
     } on PlatformException {
       // Biometric auth failed silently
