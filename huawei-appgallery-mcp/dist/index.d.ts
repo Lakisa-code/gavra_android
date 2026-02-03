@@ -16,4 +16,4 @@
  * 2. Set environment variables: HUAWEI_CLIENT_ID, HUAWEI_CLIENT_SECRET
  * 3. Add to mcp.json config
  */
-export {};
+import 'dotenv/config.js';

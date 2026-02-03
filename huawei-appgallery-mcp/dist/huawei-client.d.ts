@@ -15,22 +15,29 @@ export interface TokenResponse {
 }
 export interface AppInfo {
     appId: string;
-    appName: string;
-    packageName: string;
-    versionCode: string;
-    versionName: string;
+    appName?: string;
+    packageName?: string;
+    versionCode?: number;
+    versionName?: string;
+    versionNumber?: string;
     releaseState: number;
-    languages: string[];
-    minSdkVersion?: string;
-    targetSdkVersion?: string;
-    categoryId?: number;
+    defaultLang?: string;
+    updateTime?: string;
+    onShelfVersionNumber?: string;
+    onShelfVersionCode?: number;
+    onShelfVersionId?: string;
+    projectId?: string;
+    languages?: string[];
+    minSdkVersion?: number;
+    targetSdkVersion?: number;
+    categoryId?: string;
     categoryName?: string;
     contentRating?: string;
     fileSize?: number;
     sha256?: string;
     permissions?: string[];
-    downloads?: string;
-    rating?: string;
+    downloads?: number | string;
+    rating?: number | string;
 }
 export interface UploadUrlResponse {
     uploadUrl: string;

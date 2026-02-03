@@ -8,10 +8,16 @@ import 'realtime/realtime_manager.dart';
 
 /// Servis za upravljanje vozačima
 class VozacService {
-  VozacService({SupabaseClient? supabaseClient}) : _supabaseOverride = supabaseClient;
-  final SupabaseClient? _supabaseOverride;
+  // Singleton pattern
+  static final VozacService _instance = VozacService._internal();
 
-  SupabaseClient get _supabase => _supabaseOverride ?? supabase;
+  factory VozacService() {
+    return _instance;
+  }
+
+  VozacService._internal();
+
+  SupabaseClient get _supabase => supabase;
 
   static StreamSubscription? _vozaciSubscription;
   static final StreamController<List<Vozac>> _vozaciController = StreamController<List<Vozac>>.broadcast();

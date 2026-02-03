@@ -149,6 +149,11 @@ class DailyCheckInService {
     _isSubscribed = false;
   }
 
+  /// 🧹 Dispose za čišćenje na exit aplikacije
+  static void dispose() {
+    clearAllKusurCache();
+  }
+
   /// Initialize stream with current value
   static Future<void> initializeStreamForVozac(String vozac) async {
     final currentAmount = await getTodayAmount(vozac) ?? 0.0;

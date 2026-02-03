@@ -25,6 +25,7 @@ import {
     ListToolsRequestSchema,
     Tool,
 } from '@modelcontextprotocol/sdk/types.js';
+import 'dotenv/config.js';
 import { HuaweiAppGalleryClient } from './huawei-client.js';
 import { Logger } from './logger.js';
 

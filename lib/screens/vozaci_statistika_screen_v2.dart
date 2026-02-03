@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../globals.dart';
-import '../services/vozac_mapping_service.dart';
+import '../services/voznje_log_service.dart';
 import '../theme.dart';
 import '../utils/vozac_boja.dart';
 
@@ -15,8 +13,6 @@ class VozaciStatistikaScreenV2 extends StatefulWidget {
 }
 
 class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
-  SupabaseClient get _supabase => supabase;
-
   // Filter opcije
   String _selectedFilter = 'mesec'; // dan, nedelja, mesec, godina
   DateTime _selectedDate = DateTime.now();
@@ -72,78 +68,35 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
     }
   }
 
-  /// 🛰️ STREAM ZA STATISTIKE (Zamjenjuje _loadData)
-  Stream<Map<String, VozacStatsV2>> _streamStats() async* {
-    while (true) {
-      final (from, to) = _getDateRange();
-      final fromStr = from.toIso8601String().split('T')[0];
-      final toStr = to.toIso8601String().split('T')[0];
+  /// 🛰️ STREAM ZA STATISTIKE - KORISTI REALTIME IZ VoznjeLogService
+  Stream<Map<String, VozacStatsV2>> _streamStats() {
+    final (from, to) = _getDateRange();
 
-      // Dohvati SVE zapise u periodu
-      final response = await _supabase
-          .from('voznje_log')
-          .select('id, datum, tip, iznos, vozac_id, putnik_id, created_at, registrovani_putnici!inner(tip)')
-          .gte('datum', fromStr)
-          .lte('datum', toStr);
-
-      // Inicijalizuj statistike za sve vozače
+    // Koristi realtime stream iz VoznjeLogService
+    return VoznjeLogService.streamDetaljneStatistikePoVozacima(
+      from: from,
+      to: to,
+      vozaciLista: _vozaciRedosled,
+    ).map((detaljneStats) {
+      // Konvertuj iz Map<String, dynamic> u Map<String, VozacStatsV2>
       final Map<String, VozacStatsV2> stats = {};
+
       for (final vozac in _vozaciRedosled) {
-        stats[vozac] = VozacStatsV2();
-      }
-
-      // Pratimo voznje i uplate po putnik_id za dužnike
-      final Map<String, String> dnevniVoznjePoVozacu = {};
-      final Set<String> naplaceniPutnici = {};
-
-      for (final record in response as List) {
-        final vozacId = record['vozac_id'] as String?;
-        final putnikId = record['putnik_id'] as String?;
-        final tip = record['tip'] as String?;
-        final iznos = double.tryParse(record['iznos']?.toString() ?? '0') ?? 0;
-        final putnikTip = record['registrovani_putnici']?['tip'] as String?;
-
-        if (vozacId == null) continue;
-
-        String vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? 'Nepoznat';
-        if (stats.containsKey(vozacIme)) {
-          switch (tip) {
-            case 'voznja':
-              stats[vozacIme]!.pokupljeni++;
-              if (putnikId != null && putnikTip == 'dnevni') {
-                dnevniVoznjePoVozacu[putnikId] = vozacIme;
-              }
-              break;
-            case 'otkazivanje':
-              stats[vozacIme]!.otkazani++;
-              break;
-            case 'uplata':
-            case 'uplata_mesecna':
-            case 'uplata_dnevna':
-              stats[vozacIme]!.pazar += iznos;
-              if (putnikId != null) {
-                naplaceniPutnici.add(putnikId);
-              }
-              break;
-          }
+        if (detaljneStats.containsKey(vozac)) {
+          final stat = detaljneStats[vozac];
+          stats[vozac] = VozacStatsV2(
+            pokupljeni: stat['pokupljeni'] ?? 0,
+            otkazani: stat['otkazani'] ?? 0,
+            duznici: stat['duznici'] ?? 0,
+            pazar: (stat['pazar'] ?? 0.0).toDouble(),
+          );
+        } else {
+          stats[vozac] = VozacStatsV2();
         }
       }
 
-      // Izračunaj dužnike
-      for (final entry in dnevniVoznjePoVozacu.entries) {
-        if (!naplaceniPutnici.contains(entry.key)) {
-          stats[entry.value]?.duznici++;
-        }
-      }
-
-      yield stats;
-
-      // Čekaj na promene u tabeli ili timeout
-      await Future.any([
-        _supabase.from('voznje_log').stream(primaryKey: ['id']).first,
-        Future.delayed(const Duration(seconds: 30)),
-      ]);
-    }
+      return stats;
+    });
   }
 
   /// Format datuma za prikaz

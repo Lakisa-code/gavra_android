@@ -20,7 +20,6 @@ import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
-import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'admin_zahtevi_screen.dart'; // 📨 MONITORING ZAHTEVA
 import 'adrese_screen.dart'; // 📍 Upravljanje adresama
 import 'auth_screen.dart'; // DODANO za auth admin
@@ -1635,71 +1634,6 @@ class _AdminScreenState extends State<AdminScreen> {
                             children: [
                               Row(
                                 children: [
-                                  // 🗺️ GPS ADMIN MAPA
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute<void>(
-                                            builder: (context) => const AdminMapScreen(),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        height: 54,
-                                        margin: const EdgeInsets.only(right: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2), // Glassmorphism
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: Theme.of(context).glassBorder,
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(0xFF00D4FF).withValues(alpha: 0.3),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.location_on,
-                                              color: Colors.white,
-                                              size: 16,
-                                              shadows: [
-                                                Shadow(
-                                                  offset: Offset(1, 1),
-                                                  blurRadius: 3,
-                                                  color: Colors.black54,
-                                                ),
-                                              ],
-                                            ),
-                                            Text(
-                                              'GPS',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 10,
-                                                shadows: [
-                                                  Shadow(
-                                                    offset: Offset(1, 1),
-                                                    blurRadius: 3,
-                                                    color: Colors.black54,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                                   // 🔄 WEEKLY RESET
                                   Expanded(
                                     child: GestureDetector(

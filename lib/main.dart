@@ -15,6 +15,7 @@ import 'services/adresa_supabase_service.dart';
 import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
 import 'services/battery_optimization_service.dart'; // 🔋 Huawei/Xiaomi battery warning
 import 'services/cache_service.dart';
+import 'services/daily_checkin_service.dart'; // 📋 Daily check-in kusur tracking
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
@@ -240,6 +241,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     VoznjeLogService.dispose();
     MLVehicleAutonomousService.disposeRealtime();
     SlobodnaMestaService.dispose();
+    DailyCheckInService.dispose();
+    AppSettingsService.dispose();
+    KapacitetService.stopGlobalRealtimeListener();
     super.dispose();
   }
 

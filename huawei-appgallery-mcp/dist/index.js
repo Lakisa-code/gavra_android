@@ -16,6 +16,7 @@
  * 2. Set environment variables: HUAWEI_CLIENT_ID, HUAWEI_CLIENT_SECRET
  * 3. Add to mcp.json config
  */
+import 'dotenv/config.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
@@ -881,6 +882,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 // Huawei AppGallery releaseState codes:
                 // https://developer.huawei.com/consumer/en/doc/harmonyos-references/appgallerykit-publishingapi-getappinfo-0000001861766669
                 const releaseStateDesc = {
+                    0: 'Created',
                     1: 'Draft',
                     2: 'Released',
                     3: 'Removed',
@@ -888,6 +890,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     5: 'Review Rejected',
                     6: 'Updating',
                     7: 'Update Rejected',
+                    8: 'On Sale',
+                    9: 'Audit Passed',
+                    10: 'Audit Failed',
                 };
                 return {
                     content: [
@@ -896,9 +901,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                             text: JSON.stringify({
                                 success: true,
                                 appId,
-                                appName: appInfo.appName,
-                                versionName: appInfo.versionName,
-                                releaseState: releaseStateDesc[appInfo.releaseState] || 'Unknown',
+                                appName: appInfo.appName || 'Unknown App',
+                                versionName: appInfo.versionName || appInfo.versionNumber || 'Unknown',
+                                versionCode: appInfo.versionCode,
+                                releaseState: releaseStateDesc[appInfo.releaseState] || `Unknown (${appInfo.releaseState})`,
+                                onShelfVersion: appInfo.onShelfVersionNumber,
+                                updateTime: appInfo.updateTime,
                             }, null, 2),
                         },
                     ],

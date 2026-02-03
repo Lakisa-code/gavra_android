@@ -41,7 +41,20 @@ export interface AppInfo {
     onShelfVersionCode?: number;
     onShelfVersionId?: string;
     projectId?: string;
-    // ...existing code...
+    // Metadata fields
+    languages?: string[];
+    minSdkVersion?: number;
+    targetSdkVersion?: number;
+    categoryId?: string;
+    categoryName?: string;
+    contentRating?: string;
+    // File fields
+    fileSize?: number;
+    sha256?: string;
+    // Permissions and stats
+    permissions?: string[];
+    downloads?: number | string;
+    rating?: number | string;
 }
 
 export interface UploadUrlResponse {

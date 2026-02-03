@@ -29,7 +29,7 @@ extension SmartColors on ColorScheme {
     switch (brightness) {
       case Brightness.light:
         // Ako je pink tema, koristi pink umesto zelene
-        if (primary.toARGB32() == 0xFFE91E63) {
+        if (primary.value == 0xFFE91E63) {
           // Pink tema
           return const Color(0xFF4CAF50); // Blaza zelena za pink temu
         }
@@ -42,7 +42,7 @@ extension SmartColors on ColorScheme {
   Color get smartSuccessContainer {
     switch (brightness) {
       case Brightness.light:
-        if (primary.toARGB32() == 0xFFE91E63) {
+        if (primary.value == 0xFFE91E63) {
           // Pink tema
           return const Color(0xFFC8E6C9);
         }
@@ -56,7 +56,7 @@ extension SmartColors on ColorScheme {
   Color get smartWarning {
     switch (brightness) {
       case Brightness.light:
-        if (primary.toARGB32() == 0xFFE91E63) {
+        if (primary.value == 0xFFE91E63) {
           // Pink tema
           return const Color(0xFFFF9800); // Narandžasta za pink
         }
@@ -79,7 +79,7 @@ extension SmartColors on ColorScheme {
   Color get smartInfo {
     switch (brightness) {
       case Brightness.light:
-        if (primary.toARGB32() == 0xFFE91E63) {
+        if (primary.value == 0xFFE91E63) {
           // Pink tema
           return const Color(0xFF2196F3); // Plava za pink temu
         }
@@ -121,7 +121,7 @@ extension SmartColors on ColorScheme {
   Color get smartMale {
     switch (brightness) {
       case Brightness.light:
-        if (primary.toARGB32() == 0xFFE91E63) {
+        if (primary.value == 0xFFE91E63) {
           // Pink tema
           return const Color(0xFF2196F3);
         }
@@ -134,7 +134,7 @@ extension SmartColors on ColorScheme {
   Color get smartFemale {
     switch (brightness) {
       case Brightness.light:
-        if (primary.toARGB32() == 0xFFE91E63) {
+        if (primary.value == 0xFFE91E63) {
           // Pink tema
           return primary; // Koristi pink
         }

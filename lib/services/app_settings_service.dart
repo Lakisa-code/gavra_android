@@ -44,26 +44,23 @@ class AppSettingsService {
 
   /// Postavi nav_bar_type (samo admin može)
   static Future<void> setNavBarType(String type) async {
-    await supabase.from('app_settings').update({
-      'nav_bar_type': type,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', 'global');
+    await supabase
+        .from('app_settings')
+        .update({'nav_bar_type': type, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', 'global');
 
     // 📝 LOG U DNEVNIK
     try {
-      await VoznjeLogService.logGeneric(
-        tip: 'admin_akcija',
-        detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}',
-      );
+      await VoznjeLogService.logGeneric(tip: 'admin_akcija', detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
     } catch (_) {}
   }
 
   /// Postavi dnevni_zakazivanje_aktivno (samo admin može)
   static Future<void> setDnevniZakazivanjeAktivno(bool aktivno) async {
-    await supabase.from('app_settings').update({
-      'dnevni_zakazivanje_aktivno': aktivno,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', 'global');
+    await supabase
+        .from('app_settings')
+        .update({'dnevni_zakazivanje_aktivno': aktivno, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', 'global');
 
     // 📝 LOG U DNEVNIK
     try {
@@ -77,5 +74,7 @@ class AppSettingsService {
   /// Cleanup
   static void dispose() {
     _subscription?.cancel();
+    RealtimeManager.instance.unsubscribe('app_settings');
+    _subscription = null;
   }
 }

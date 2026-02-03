@@ -341,6 +341,7 @@ class KapacitetService {
   static void stopGlobalRealtimeListener() {
     _globalRealtimeSubscription?.cancel();
     _globalRealtimeSubscription = null;
+    RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
     print('🛑 Globalni kapacitet listener zaustavljen');
   }
 }

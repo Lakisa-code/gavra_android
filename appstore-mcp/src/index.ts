@@ -6,6 +6,7 @@ import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import 'dotenv/config.js';
 import * as fs from "fs";
 import jwt from "jsonwebtoken";
 import fetch from "node-fetch";

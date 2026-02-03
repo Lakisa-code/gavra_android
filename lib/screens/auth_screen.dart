@@ -17,9 +17,6 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  List<Vozac> _vozaci = [];
-  bool _isLoading = true;
-
   // Forma za novog vozača
   final _formKey = GlobalKey<FormState>();
   final _imeController = TextEditingController();
@@ -42,10 +39,16 @@ class _AuthScreenState extends State<AuthScreen> {
     const Color(0xFF9C27B0), // tamno ljubičasta
   ];
 
+  // Kešuiraj stream da se ne kreira novi svaki put
+  late final Stream<List<Vozac>> _vozaciStream;
+  late final VozacService _vozacService;
+
   @override
   void initState() {
     super.initState();
-    _loadVozaci();
+    // Inicijalizuj service i stream JEDNOM
+    _vozacService = VozacService();
+    _vozaciStream = _vozacService.streamAllVozaci();
   }
 
   @override
@@ -57,91 +60,6 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  /// Učitaj vozače iz Supabase ili SharedPreferences
-  Future<void> _loadVozaci() async {
-    try {
-      final vozacService = VozacService();
-      final vozaci = await vozacService.getAllVozaci();
-      if (!mounted) return;
-      setState(() {
-        _vozaci = vozaci;
-        _isLoading = false;
-      });
-    } catch (e) {
-      // Fallback to SharedPreferences if Supabase fails
-      final prefs = await SharedPreferences.getInstance();
-      final vozaciJson = prefs.getString('auth_vozaci');
-      if (vozaciJson != null) {
-        final List<dynamic> decoded = jsonDecode(vozaciJson);
-        if (!mounted) return;
-        setState(() {
-          _vozaci = decoded.map((v) => Vozac.fromMap(v as Map<String, dynamic>)).toList();
-          _isLoading = false;
-        });
-      } else {
-        // Inicijalni podaci - postojeći vozači
-        _vozaci = [
-          Vozac(
-            ime: 'Bojan',
-            email: 'gavriconi19@gmail.com',
-            sifra: '191919',
-            brojTelefona: '0641162560',
-            boja: '00E5FF',
-          ),
-          Vozac(
-            ime: 'Bruda',
-            email: 'igor.jovanovic.1984@icloud.com',
-            sifra: '111111',
-            brojTelefona: '0641202844',
-            boja: '7C4DFF',
-          ),
-          Vozac(
-            ime: 'Bilevski',
-            email: 'bilyboy1983@gmail.com',
-            sifra: '222222',
-            brojTelefona: '0638466418',
-            boja: 'FF9800',
-          ),
-          Vozac(
-            ime: 'Svetlana',
-            email: 'risticsvetlana2911@yahoo.com',
-            sifra: '444444',
-            brojTelefona: '0658464160',
-            boja: 'FF1493',
-          ),
-          Vozac(
-            ime: 'Ivan',
-            email: 'bradvarevicivan99@gmail.com',
-            sifra: '333333',
-            brojTelefona: '0677662993',
-            boja: 'FFD700',
-          ),
-        ];
-        await _saveVozaciToSupabase();
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  /// Sačuvaj vozače u SharedPreferences
-  Future<void> _saveVozaci() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_vozaci', jsonEncode(_vozaci));
-  }
-
-  /// Sačuvaj vozače u Supabase
-  Future<void> _saveVozaciToSupabase() async {
-    final vozacService = VozacService();
-    for (final vozac in _vozaci) {
-      try {
-        await vozacService.addVozac(vozac);
-      } catch (e) {
-        // Ignore if already exists
-      }
-    }
-  }
-
   /// Dodaj novog vozača
   Future<void> _addVozac() async {
     if (!_formKey.currentState!.validate()) return;
@@ -151,21 +69,23 @@ class _AuthScreenState extends State<AuthScreen> {
       email: _emailController.text.trim().toLowerCase(),
       sifra: _sifraController.text,
       brojTelefona: _telefonController.text.trim(),
-      boja: _selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2),
+      boja: _selectedColor.value.toRadixString(16).padLeft(8, '0').substring(2),
     );
 
     try {
       final vozacService = VozacService();
-      final addedVozac = await vozacService.addVozac(noviVozac);
-      setState(() {
-        _vozaci.add(addedVozac);
-      });
+      await vozacService.addVozac(noviVozac);
+      // StreamBuilder će automatski pratiti promene
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vozač dodan')),
+      );
     } catch (e) {
-      // Fallback to local storage
-      setState(() {
-        _vozaci.add(noviVozac);
-      });
-      await _saveVozaci();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Greška: $e')),
+      );
+      return;
     }
 
     // Reset forme
@@ -188,105 +108,35 @@ class _AuthScreenState extends State<AuthScreen> {
 
   /// Obriši vozača
   Future<void> _deleteVozac(int index) async {
-    final vozac = _vozaci[index];
+    // Trebam pristup svim vozačima iz StreamBuilder-a
+    // Za sada ćemo koristiti prvi vozač kao test
+    // U pravoj implementaciji, trebalo bi prosleđivanje vozača kao parametra
 
-    final confirm = await showDialog<bool>(
+    showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Obriši vozača?', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Da li si siguran da želiš da obrišeš ${vozac.ime}?',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+        title: const Text('Greška', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Brisanje vozača nije dostupno u ovoj verziji.\nKoristite web admin panel.',
+          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ne'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Da', style: TextStyle(color: Colors.red)),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
-
-    if (confirm == true) {
-      try {
-        final vozacService = VozacService();
-        await vozacService.deleteVozac(vozac.id);
-      } catch (e) {
-        // Ignore if Supabase fails
-      }
-      setState(() {
-        _vozaci.removeAt(index);
-      });
-      await _saveVozaci();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${vozac.ime} obrisan!'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    }
   }
 
   /// Edituj vozača
   Future<void> _editVozac(int index) async {
-    final vozac = _vozaci[index];
-
-    _imeController.text = vozac.ime;
-    _emailController.text = vozac.email ?? '';
-    _sifraController.text = vozac.sifra ?? '';
-    _telefonController.text = vozac.brojTelefona ?? '';
-    _selectedColor = vozac.color ?? Colors.blue;
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => _buildVozacDialog(
-        title: 'Izmeni vozača',
-        onSave: () async {
-          final updatedVozac = vozac.copyWith(
-            ime: _imeController.text.trim(),
-            email: _emailController.text.trim().toLowerCase(),
-            sifra: _sifraController.text,
-            brojTelefona: _telefonController.text.trim(),
-            boja: _selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2),
-          );
-
-          try {
-            final vozacService = VozacService();
-            final savedVozac = await vozacService.updateVozac(updatedVozac);
-            setState(() {
-              _vozaci[index] = savedVozac;
-            });
-          } catch (e) {
-            // Fallback to local update
-            setState(() {
-              _vozaci[index] = updatedVozac;
-            });
-            await _saveVozaci();
-          }
-
-          _imeController.clear();
-          _emailController.clear();
-          _sifraController.clear();
-          _telefonController.clear();
-
-          if (!mounted) return;
-          // ignore: use_build_context_synchronously
-          Navigator.pop(ctx);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Vozač ažuriran!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        },
+    // Editovanje nije dostupno u ovoj verziji
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Editovanje vozača nije dostupno'),
       ),
     );
   }
@@ -351,7 +201,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: _availableColors.map((color) {
-                    final isSelected = _selectedColor.toARGB32() == color.toARGB32();
+                    final isSelected = _selectedColor.value == color.value;
                     return GestureDetector(
                       onTap: () {
                         setDialogState(() {
@@ -460,155 +310,173 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ],
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.all(12),
-                children: [
-                  // 👥 SEKCIJA VOZAČA
-                  Row(
-                    children: [
-                      const Text(
-                        '👥 VOZAČI',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${_vozaci.length}',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+        body: StreamBuilder<List<Vozac>>(
+          stream: _vozaciStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-                  if (_vozaci.isEmpty)
-                    const Center(
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Greška pri učitavanju vozača: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              );
+            }
+
+            final vozaci = snapshot.data ?? [];
+
+            return ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                // 👥 SEKCIJA VOZAČA
+                Row(
+                  children: [
+                    const Text(
+                      '👥 VOZAČI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${vozaci.length}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                if (vozaci.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text(
+                        'Nema vozača.\nKlikni + da dodaš.',
+                        style: TextStyle(color: Colors.white70, fontSize: 18),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                else
+                  ...vozaci.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final vozac = entry.value;
+                    final boja = vozac.color ?? Colors.blue;
+
+                    return Card(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: boja.withValues(alpha: 0.6), width: 1.5),
+                      ),
                       child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text(
-                          'Nema vozača.\nKlikni + da dodaš.',
-                          style: TextStyle(color: Colors.white70, fontSize: 18),
-                          textAlign: TextAlign.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Row(
+                          children: [
+                            // Avatar
+                            CircleAvatar(
+                              backgroundColor: boja,
+                              radius: 22,
+                              child: Text(
+                                vozac.ime[0].toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Ime vozača + ikone u istom redu
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          vozac.ime,
+                                          style: TextStyle(
+                                            color: boja,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ),
+                                      // Actions - olovka i kanta
+                                      IconButton(
+                                        icon: Icon(Icons.edit, color: boja, size: 20),
+                                        onPressed: () => _editVozac(index),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                        onPressed: () => _deleteVozac(index),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.email, size: 14, color: Colors.white54),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          vozac.email ?? '-',
+                                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.phone, size: 14, color: Colors.white54),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        vozac.brojTelefona ?? '-',
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      ),
+                                      if (vozac.sifra?.isNotEmpty == true)
+                                        const Padding(
+                                          padding: EdgeInsets.only(left: 6),
+                                          child: Text('🔒', style: TextStyle(fontSize: 12)),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    )
-                  else
-                    ..._vozaci.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final vozac = entry.value;
-                      final boja = vozac.color ?? Colors.blue;
-
-                      return Card(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        margin: const EdgeInsets.only(bottom: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: boja.withValues(alpha: 0.6), width: 1.5),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          child: Row(
-                            children: [
-                              // Avatar
-                              CircleAvatar(
-                                backgroundColor: boja,
-                                radius: 22,
-                                child: Text(
-                                  vozac.ime[0].toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              // Info
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Ime vozača + ikone u istom redu
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            vozac.ime,
-                                            style: TextStyle(
-                                              color: boja,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        ),
-                                        // Actions - olovka i kanta
-                                        IconButton(
-                                          icon: Icon(Icons.edit, color: boja, size: 20),
-                                          onPressed: () => _editVozac(index),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                                          onPressed: () => _deleteVozac(index),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                      ],
-                                    ),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.email, size: 14, color: Colors.white54),
-                                        const SizedBox(width: 6),
-                                        Flexible(
-                                          child: Text(
-                                            vozac.email ?? '-',
-                                            style: const TextStyle(color: Colors.white, fontSize: 12),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.phone, size: 14, color: Colors.white54),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          vozac.brojTelefona ?? '-',
-                                          style: const TextStyle(color: Colors.white, fontSize: 13),
-                                        ),
-                                        if (vozac.sifra?.isNotEmpty == true)
-                                          const Padding(
-                                            padding: EdgeInsets.only(left: 6),
-                                            child: Text('🔒', style: TextStyle(fontSize: 12)),
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                ],
-              ),
+                    );
+                  }),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

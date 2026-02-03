@@ -47,6 +47,7 @@ class SlobodnaMestaService {
       StreamController<List<Map<String, dynamic>>>.broadcast();
 
   static StreamSubscription? _projectedStatsSubscription;
+  static StreamSubscription? _kapacitetStatsSubscription;
   static final StreamController<Map<String, dynamic>> _projectedStatsController =
       StreamController<Map<String, dynamic>>.broadcast();
 
@@ -791,11 +792,12 @@ class SlobodnaMestaService {
   /// Stream za projected occupancy stats sa realtime osvežavanjem
   static Stream<Map<String, dynamic>> streamProjectedOccupancyStats() {
     if (_projectedStatsSubscription == null) {
-      // Listen to both registrovani_putnici and kapacitet_polazaka
+      // Listen to registrovani_putnici
       _projectedStatsSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
         _refreshProjectedStatsStream();
       });
-      RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
+      // Listen to kapacitet_polazaka (ako još nije pretplaćen iz drugog servisa)
+      _kapacitetStatsSubscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
         _refreshProjectedStatsStream();
       });
       // Inicijalno učitavanje
@@ -819,7 +821,13 @@ class SlobodnaMestaService {
 
     _projectedStatsSubscription?.cancel();
     _projectedStatsSubscription = null;
+    _kapacitetStatsSubscription?.cancel();
+    _kapacitetStatsSubscription = null;
     _projectedStatsController.close();
+
+    // Otkaži realtime subscriptions
+    RealtimeManager.instance.unsubscribe('registrovani_putnici');
+    RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
   }
 
   /// 🛡️ Sigurno parsira polasci_po_danu (Map ili String)

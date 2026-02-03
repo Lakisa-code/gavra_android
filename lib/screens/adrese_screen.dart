@@ -452,7 +452,7 @@ class _AdresaDialogState extends State<_AdresaDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              initialValue: _selectedGrad,
+              value: _selectedGrad.isNotEmpty ? _selectedGrad : null,
               decoration: const InputDecoration(labelText: 'Grad *'),
               items: ['Bela Crkva', 'Vršac'].map((grad) {
                 return DropdownMenuItem(value: grad, child: Text(grad));

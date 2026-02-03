@@ -46,6 +46,9 @@ class RealtimeManager {
   /// Status po tabeli
   final Map<String, RealtimeStatus> _statusMap = {};
 
+  /// Pending reconnect timeri (debounce)
+  final Map<String, Timer?> _reconnectTimers = {};
+
   /// Globalni status stream
   final StreamController<Map<String, RealtimeStatus>> _statusController =
       StreamController<Map<String, RealtimeStatus>>.broadcast();
@@ -165,7 +168,13 @@ class RealtimeManager {
         break;
 
       case RealtimeSubscribeStatus.closed:
-        _scheduleReconnect(table);
+        // ✅ FIKSUJ: Ne pokušavaj reconnect ako nema aktivnih listenera
+        if (_listenerCount[table] != null && _listenerCount[table]! > 0) {
+          _scheduleReconnect(table);
+        } else {
+          // Nema listenera, samo zatvori
+          _closeChannel(table);
+        }
         break;
 
       case RealtimeSubscribeStatus.timedOut:

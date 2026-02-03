@@ -18,10 +18,7 @@ class VoznjeLogService {
 
   /// 📊 STATISTIKE ZA POPIS - Broj vožnji, otkazivanja i uplata po vozaču za određeni datum
   /// Vraća mapu: {voznje: X, otkazivanja: X, uplate: X, pazar: X.X}
-  static Future<Map<String, dynamic>> getStatistikePoVozacu({
-    required String vozacIme,
-    required DateTime datum,
-  }) async {
+  static Future<Map<String, dynamic>> getStatistikePoVozacu({required String vozacIme, required DateTime datum}) async {
     int voznje = 0;
     int otkazivanja = 0;
     int naplaceniDnevni = 0;
@@ -111,13 +108,7 @@ class VoznjeLogService {
 
       // Inicijalizuj rezultat za sve vozače
       for (final vozacId in vozacIds) {
-        rezultat[vozacId] = {
-          'voznje': 0,
-          'otkazivanja': 0,
-          'uplate': 0,
-          'mesecne': 0,
-          'pazar': 0.0,
-        };
+        rezultat[vozacId] = {'voznje': 0, 'otkazivanja': 0, 'uplate': 0, 'mesecne': 0, 'pazar': 0.0};
       }
 
       // PROCESS IN MEMORY: Grupiraj po vozaču (već su u memoriji)
@@ -157,10 +148,7 @@ class VoznjeLogService {
   }
 
   /// 📊 STREAM STATISTIKA ZA POPIS - Realtime verzija
-  static Stream<Map<String, dynamic>> streamStatistikePoVozacu({
-    required String vozacIme,
-    required DateTime datum,
-  }) {
+  static Stream<Map<String, dynamic>> streamStatistikePoVozacu({required String vozacIme, required DateTime datum}) {
     final datumStr = datum.toIso8601String().split('T')[0];
     final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
 
@@ -190,26 +178,20 @@ class VoznjeLogService {
             otkazivanja++;
             break;
           case 'uplata':
+          case 'uplata_dnevna':
+          case 'uplata_mesecna':
             uplate++;
             pazar += iznos;
             break;
         }
       }
 
-      return {
-        'voznje': voznje,
-        'otkazivanja': otkazivanja,
-        'uplate': uplate,
-        'pazar': pazar,
-      };
+      return {'voznje': voznje, 'otkazivanja': otkazivanja, 'uplate': uplate, 'pazar': pazar};
     });
   }
 
   /// 📊 STREAM BROJA DUŽNIKA - Realtime verzija
-  static Stream<int> streamBrojDuznikaPoVozacu({
-    required String vozacIme,
-    required DateTime datum,
-  }) {
+  static Stream<int> streamBrojDuznikaPoVozacu({required String vozacIme, required DateTime datum}) {
     final datumStr = datum.toIso8601String().split('T')[0];
     final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
 
@@ -253,10 +235,7 @@ class VoznjeLogService {
 
   /// 📊 DUŽNICI - Broj DNEVNIH putnika koji su pokupljeni ali NISU platili za dati datum
   /// Dužnik = tip='dnevni', ima 'voznja' zapis ali NEMA 'uplata' zapis za isti datum
-  static Future<int> getBrojDuznikaPoVozacu({
-    required String vozacIme,
-    required DateTime datum,
-  }) async {
+  static Future<int> getBrojDuznikaPoVozacu({required String vozacIme, required DateTime datum}) async {
     try {
       final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
       if (vozacUuid == null || vozacUuid.isEmpty) return 0;
@@ -353,10 +332,7 @@ class VoznjeLogService {
           vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
         }
 
-        result[putnikId] = {
-          'datum': datum,
-          'vozacIme': vozacIme,
-        };
+        result[putnikId] = {'datum': datum, 'vozacIme': vozacIme};
       }
     } catch (e) {
       // Greška - vrati praznu mapu
@@ -388,10 +364,7 @@ class VoznjeLogService {
 
   /// ✅ TRAJNO REŠENJE: Dohvati pazar po vozačima za period
   /// Vraća mapu {vozacIme: iznos, '_ukupno': ukupno}
-  static Future<Map<String, double>> getPazarPoVozacima({
-    required DateTime from,
-    required DateTime to,
-  }) async {
+  static Future<Map<String, double>> getPazarPoVozacima({required DateTime from, required DateTime to}) async {
     final Map<String, double> pazar = {};
     double ukupno = 0;
 
@@ -477,10 +450,7 @@ class VoznjeLogService {
   }
 
   /// ✅ TRAJNO REŠENJE: Stream pazara po vozačima (realtime)
-  static Stream<Map<String, double>> streamPazarPoVozacima({
-    required DateTime from,
-    required DateTime to,
-  }) {
+  static Stream<Map<String, double>> streamPazarPoVozacima({required DateTime from, required DateTime to}) {
     final fromStr = from.toIso8601String().split('T')[0];
     final toStr = to.toIso8601String().split('T')[0];
 
@@ -601,10 +571,7 @@ class VoznjeLogService {
   }
 
   /// ✅ Stream broja uplata po vozačima (realtime) - za kocku "Mesečne"
-  static Stream<Map<String, int>> streamBrojUplataPoVozacima({
-    required DateTime from,
-    required DateTime to,
-  }) {
+  static Stream<Map<String, int>> streamBrojUplataPoVozacima({required DateTime from, required DateTime to}) {
     final fromStr = from.toIso8601String().split('T')[0];
     final toStr = to.toIso8601String().split('T')[0];
 
@@ -652,12 +619,78 @@ class VoznjeLogService {
     });
   }
 
+  /// 📊 REALTIME DETALJNE STATISTIKE ZA SVE VOZAČE
+  /// Vraća Map sa kompletnim statistikama za sve vozače u periodu
+  /// Koristi realtime stream pa su ažuriranja trenutna
+  static Stream<Map<String, dynamic>> streamDetaljneStatistikePoVozacima({
+    required DateTime from,
+    required DateTime to,
+    required List<String> vozaciLista, // Lista vozača koji nas zanimaju
+  }) {
+    final fromStr = from.toIso8601String().split('T')[0];
+    final toStr = to.toIso8601String().split('T')[0];
+
+    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((records) {
+      final Map<String, dynamic> statistike = {};
+
+      // Inicijalizuj sve vozače
+      for (final vozac in vozaciLista) {
+        statistike[vozac] = {'pokupljeni': 0, 'otkazani': 0, 'duznici': 0, 'pazar': 0.0};
+      }
+
+      final Map<String, String> dnevniVoznjePoVozacu = {}; // putnik_id -> vozac_ime
+      final Set<String> naplaceniPutnici = {}; // putnici koji su placeni
+
+      for (final record in records) {
+        final datum = record['datum'] as String?;
+        if (datum == null) continue;
+        if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;
+
+        final vozacId = record['vozac_id'] as String?;
+        if (vozacId == null) continue;
+
+        String vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? '';
+        if (vozacIme.isEmpty || !statistike.containsKey(vozacIme)) continue;
+
+        final tip = record['tip'] as String?;
+        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
+        final putnikId = record['putnik_id'] as String?;
+
+        switch (tip) {
+          case 'voznja':
+            statistike[vozacIme]['pokupljeni']++;
+            if (putnikId != null) {
+              dnevniVoznjePoVozacu[putnikId] = vozacIme;
+            }
+            break;
+          case 'otkazivanje':
+            statistike[vozacIme]['otkazani']++;
+            break;
+          case 'uplata':
+          case 'uplata_dnevna':
+          case 'uplata_mesecna':
+            statistike[vozacIme]['pazar'] += iznos;
+            if (putnikId != null) {
+              naplaceniPutnici.add(putnikId);
+            }
+            break;
+        }
+      }
+
+      // Izračunaj dužnike
+      for (final entry in dnevniVoznjePoVozacu.entries) {
+        if (!naplaceniPutnici.contains(entry.key)) {
+          statistike[entry.value]['duznici']++;
+        }
+      }
+
+      return statistike;
+    });
+  }
+
   /// 🕒 STREAM POSLEDNJIH AKCIJA - Za Dnevnik vozača
   /// ✅ ISPRAVKA: Uključuje i akcije putnika (gde je vozac_id NULL) ako su povezani sa ovim vozačem
-  static Stream<List<Map<String, dynamic>>> streamRecentLogs({
-    required String vozacIme,
-    int limit = 10,
-  }) {
+  static Stream<List<Map<String, dynamic>>> streamRecentLogs({required String vozacIme, int limit = 10}) {
     final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
     if (vozacUuid == null || vozacUuid.isEmpty) {
       return Stream.value([]);
@@ -700,7 +733,7 @@ class VoznjeLogService {
             'potvrda_zakazivanja',
             'otkazivanje_putnika',
             'otkazivanje',
-            'greska_zahteva'
+            'greska_zahteva',
           ];
 
           final filtered = logs.where((l) => relevantTypes.contains(l['tip'])).toList();
@@ -778,11 +811,7 @@ class VoznjeLogService {
       tip: 'zakazivanje_putnika',
       putnikId: putnikId,
       detalji: '$status ($tipPutnika): $dan u $vreme ($grad)',
-      meta: {
-        'dan': dan.toLowerCase(),
-        'grad': grad.toLowerCase(),
-        'vreme': vreme,
-      },
+      meta: {'dan': dan.toLowerCase(), 'grad': grad.toLowerCase(), 'vreme': vreme},
     );
   }
 
@@ -800,11 +829,7 @@ class VoznjeLogService {
       tip: 'potvrda_zakazivanja',
       putnikId: putnikId,
       detalji: '$detalji$typeStr: $dan u $vreme ($grad)',
-      meta: {
-        'dan': dan.toLowerCase(),
-        'grad': grad.toLowerCase(),
-        'vreme': vreme,
-      },
+      meta: {'dan': dan.toLowerCase(), 'grad': grad.toLowerCase(), 'vreme': vreme},
     );
   }
 
@@ -814,12 +839,7 @@ class VoznjeLogService {
     required String greska,
     Map<String, dynamic>? meta,
   }) async {
-    return logGeneric(
-      tip: 'greska_zahteva',
-      putnikId: putnikId,
-      detalji: 'Greška: $greska',
-      meta: meta,
-    );
+    return logGeneric(tip: 'greska_zahteva', putnikId: putnikId, detalji: 'Greška: $greska', meta: meta);
   }
 
   /// Dohvata nedavne logove (poslednjih 100)
@@ -854,6 +874,7 @@ class VoznjeLogService {
   /// 🧹 Čisti realtime subscription
   static void dispose() {
     _logSubscription?.cancel();
+    RealtimeManager.instance.unsubscribe('voznje_log');
     _logSubscription = null;
     _logController.close();
   }
