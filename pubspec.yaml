@@ -67,7 +67,7 @@ dependencies:
   vibration: ^3.1.4
   
   # 🔐 BIOMETRIC AUTHENTICATION (otisak prsta, Face ID)
-  local_auth: ^2.3.0
+  local_auth: ^2.2.0
 
 dev_dependencies:
   flutter_test:
