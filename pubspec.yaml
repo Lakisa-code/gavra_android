@@ -18,7 +18,6 @@ dependencies:
   fl_chart: ^0.66.0
   # Legacy push provider references removed - using FCM + Huawei Push only
   # Huawei Push plugin - za notifikacije
-  huawei_push: 6.13.0+300
   google_api_availability: ^5.0.0
   http: ^1.2.1
   package_info_plus: ^8.3.1
