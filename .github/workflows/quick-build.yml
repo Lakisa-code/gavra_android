@@ -74,12 +74,12 @@ jobs:
       - name: Rename and Prepare APK
         if: always()
         run: |
-          if [ -f "build/app/outputs/apk/release/app-release.apk" ]; then
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             echo "✓ APK file found, preparing for upload..."
             VERSION=${{ env.APP_VERSION }}
             BUILD_NUM=${{ github.run_number }}
             mkdir -p release_apk
-            cp "build/app/outputs/apk/release/app-release.apk" "release_apk/gavra-v${VERSION}-build${BUILD_NUM}.apk"
+            cp "build/app/outputs/flutter-apk/app-release.apk" "release_apk/gavra-v${VERSION}-build${BUILD_NUM}.apk"
             echo "APK_NAME=gavra-v${VERSION}-build${BUILD_NUM}.apk" >> $GITHUB_ENV
             echo "APK_PATH=release_apk/gavra-v${VERSION}-build${BUILD_NUM}.apk" >> $GITHUB_ENV
           else
