@@ -40,6 +40,10 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       
+      - name: Run build_runner (generate code)
+        run: flutter pub run build_runner build --release
+        continue-on-error: true
+      
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
@@ -56,7 +60,7 @@ jobs:
         shell: bash
       
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release -v
       
       - name: Get app version
         id: version
