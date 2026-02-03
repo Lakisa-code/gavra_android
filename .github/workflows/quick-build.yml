@@ -49,15 +49,8 @@ jobs:
       - name: Flutter Clean
         run: flutter clean
       
-      # TEMP: Create dummy APK for testing rename (after clean)
-      - name: Create Dummy APK for Testing
-        run: |
-          mkdir -p build/app/outputs/flutter-apk
-          echo "dummy apk content" > build/app/outputs/flutter-apk/app-release.apk
-      
-      # TEMP: Skip actual build for testing rename
-      # - name: Build APK
-      #   run: flutter build apk --release -v 2>&1 | tee build.log
+      - name: Build APK
+        run: flutter build apk --release -v 2>&1 | tee build.log
       
       - name: Check Build Output
         if: always()
@@ -134,11 +127,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APK_NAME }}
-          path: |
-            ${{ env.APK_PATH }}
-            qrcode.png
+          path: ${{ env.APK_PATH }}
           retention-days: 30
           compression-level: 0
+      
+      - name: Upload QR Code as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qr-code-${{ github.run_number }}
+          path: qrcode.png
+          retention-days: 30
       
       - name: Display Download Instructions
         if: success()
