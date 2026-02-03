@@ -65,7 +65,7 @@ dependencies:
   
   # 🔐 BIOMETRIC AUTHENTICATION (otisak prsta, Face ID)
   local_auth: ^3.0.0
-  # huawei_push: ^6.14.0+300  # UKLONJENO ZA TEST - KONFLIKT SA FIREBASE
+  # huawei_push: ^6.14.0+300  # UKLONJENO - SPORI BUILD, KORISTIMO SAMO FIREBASE
 
 dev_dependencies:
   flutter_test:
