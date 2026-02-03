@@ -32,7 +32,6 @@ dependencies:
   path_provider: ^2.1.1
   open_filex: ^4.3.4
   permission_handler: ^11.3.1
-  connectivity_plus: ^6.0.5
   dropdown_button2: ^2.3.9
   flutter_secure_storage: ^8.0.0
   wakelock_plus: ^1.2.8
@@ -41,7 +40,7 @@ dependencies:
   # googleapis i googleapis_auth UKLONJENI - koristi se OSRM za optimizaciju ruta
   shimmer: ^3.0.0
   device_info_plus: ^10.1.0
-  android_intent_plus: ^6.0.0
+  android_intent_plus: ^5.2.0
   # flutter_sms: ^2.3.3 # Problematičan namespace - zamijenjen sa url_launcher SMS pozivima
   # sms_advanced: ^1.0.1 # Alternativa sa automatskim slanjem - isto ima namespace problem
   # Vraćam se na URL launcher pristup - jedini koji radi
