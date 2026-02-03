@@ -53,6 +53,6 @@ buildscript {
         // Android Gradle plugin classpath (AGP)
         classpath("com.android.tools.build:gradle:8.9.1")
         // Huawei AGC plugin classpath
-        classpath("com.huawei.agconnect:agcp:1.10.1.300")
+        classpath("com.huawei.agconnect:agcp:${property("huawei.agconnect.version")}")
     }
 }
