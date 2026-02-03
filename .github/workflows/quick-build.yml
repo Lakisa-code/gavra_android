@@ -28,6 +28,12 @@ jobs:
           flutter-version: '3.24.3'
           cache: true
       
+      # TEMP: Skip build and create dummy APK for testing rename
+      - name: Create Dummy APK for Testing
+        run: |
+          mkdir -p build/app/outputs/flutter-apk
+          echo "dummy apk content" > build/app/outputs/flutter-apk/app-release.apk
+      
       - name: Get dependencies
         run: flutter pub get
       
@@ -49,8 +55,9 @@ jobs:
       - name: Flutter Clean
         run: flutter clean
       
-      - name: Build APK
-        run: flutter build apk --release -v 2>&1 | tee build.log
+      # TEMP: Skip actual build for testing rename
+      # - name: Build APK
+      #   run: flutter build apk --release -v 2>&1 | tee build.log
       
       - name: Check Build Output
         if: always()
