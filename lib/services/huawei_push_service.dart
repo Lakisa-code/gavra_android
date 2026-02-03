@@ -34,16 +34,19 @@ class HuaweiPushService {
   Future<String?> initialize() async {
     // 🍎 iOS ne podržava Huawei Push - preskoči
     if (Platform.isIOS) {
+      debugPrint('📱 [HuaweiPush] iOS detected, skipping Huawei Push');
       return null;
     }
 
     // 🛡️ Ako je već inicijalizovan, vrati cached token
     if (_initialized && _cachedToken != null) {
+      debugPrint('📱 [HuaweiPush] Already initialized with token: ${_cachedToken!.substring(0, 10)}...');
       return _cachedToken;
     }
 
     // 🛡️ Ako je inicijalizacija u toku, sačekaj
     if (_initializing) {
+      debugPrint('📱 [HuaweiPush] Initialization already in progress...');
       // Čekaj do 5 sekundi da se završi tekuća inicijalizacija
       for (int i = 0; i < 50; i++) {
         await Future.delayed(const Duration(milliseconds: 100));
@@ -52,6 +55,7 @@ class HuaweiPushService {
       return _cachedToken;
     }
 
+    debugPrint('📱 [HuaweiPush] Starting Huawei Push initialization...');
     _initializing = true;
 
     try {
@@ -74,17 +78,20 @@ class HuaweiPushService {
       // that we can log any token and register it immediately.
       // First, try to get token directly (synchronous return from SDK)
       try {
+        debugPrint('📱 [HuaweiPush] Reading App ID and AGConnect values...');
         // Read the App ID and AGConnect values from `agconnect-services.json`
         try {
-          await Push.getAppId();
+          final appId = await Push.getAppId();
+          debugPrint('📱 [HuaweiPush] App ID: $appId');
         } catch (e) {
-          // 🔇 Ignore - HMS not available
+          debugPrint('📱 [HuaweiPush] Failed to get App ID: $e');
         }
 
         try {
           await Push.getAgConnectValues();
+          debugPrint('📱 [HuaweiPush] AGConnect values loaded successfully');
         } catch (e) {
-          // 🔇 Ignore - HMS not available
+          debugPrint('📱 [HuaweiPush] Failed to get AGConnect values: $e');
         }
 
         // Request the token explicitly: the Push.getToken requires a scope
@@ -93,30 +100,50 @@ class HuaweiPushService {
         // chance of getting a token quickly.
         // 🛡️ POZIVA SE SAMO JEDNOM PRI PRVOJ INICIJALIZACIJI
         try {
+          debugPrint('📱 [HuaweiPush] Requesting token with HCM scope...');
           Push.getToken('HCM');
         } catch (e) {
-          // 🔇 Ignore - HMS not available
+          debugPrint('📱 [HuaweiPush] Failed to request token: $e');
+          // If we get error 907135000, HMS is not available
+          if (e.toString().contains('907135000')) {
+            debugPrint('📱 [HuaweiPush] HMS Core not available (error 907135000), skipping Huawei Push');
+            _initialized = true;
+            _initializing = false;
+            return null;
+          }
         }
       } catch (e) {
-        // 🔇 Ignore - HMS not available
+        debugPrint('📱 [HuaweiPush] General error during token setup: $e');
       }
 
       // The plugin emits tokens asynchronously on the stream. Wait a short while for the first
       // non-null stream value so that initialization can report a token when
       // one is available immediately after startup.
       try {
+        debugPrint('📱 [HuaweiPush] Waiting for token on stream (5s timeout)...');
         // Wait longer for the token to appear on the stream, as the SDK may
         // emit the token with a delay while contacting Huawei servers.
         // 🛡️ SMANJEN TIMEOUT sa 15 na 5 sekundi
         final firstValue = await Push.getTokenStream.first.timeout(const Duration(seconds: 5));
         if (firstValue.isNotEmpty) {
+          debugPrint('📱 [HuaweiPush] Token received on stream: ${firstValue.substring(0, 10)}...');
           _cachedToken = firstValue;
           await _registerTokenWithServer(firstValue);
           _initialized = true;
           _initializing = false;
           return firstValue;
+        } else {
+          debugPrint('📱 [HuaweiPush] Empty token received on stream');
         }
-      } catch (_) {
+      } catch (e) {
+        debugPrint('📱 [HuaweiPush] No token received on stream within 5s: $e');
+        // If HMS is not available, don't keep trying
+        if (e.toString().contains('907135000') || e.toString().contains('HMS')) {
+          debugPrint('📱 [HuaweiPush] HMS not available, marking as initialized (null token)');
+          _initialized = true;
+          _initializing = false;
+          return null;
+        }
         // No token arriving quickly — that's OK, the long-lived stream will
         // still handle tokens once they become available.
       }

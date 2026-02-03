@@ -10,8 +10,7 @@ plugins {
 }
 
 // Apply AGConnect as a plugin via buildscript classpath
-// DISABLED: Causes build issues with current gradle configuration
-// apply(plugin = "com.huawei.agconnect")
+apply(plugin = "com.huawei.agconnect")
 
 // 🔐 PRODUCTION KEYSTORE CONFIGURATION
 val keystorePropertiesFile = rootProject.file("key.properties")

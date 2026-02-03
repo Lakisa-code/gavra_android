@@ -115,21 +115,39 @@ Future<void> _initPushSystems() async {
         await GoogleApiAvailability.instance.checkGooglePlayServicesAvailability().timeout(const Duration(seconds: 2));
 
     if (availability == GooglePlayServicesAvailability.success) {
-      if (kDebugMode) debugPrint('📲 [Main] Detected GMS (Google)');
-      await Firebase.initializeApp().timeout(const Duration(seconds: 5));
-      await FirebaseService.initialize();
-      FirebaseService.setupFCMListeners();
-      unawaited(FirebaseService.initializeAndRegisterToken());
+      if (kDebugMode) debugPrint('📲 [Main] Detected GMS (Google Play Services)');
+      try {
+        await Firebase.initializeApp().timeout(const Duration(seconds: 5));
+        await FirebaseService.initialize();
+        FirebaseService.setupFCMListeners();
+        unawaited(FirebaseService.initializeAndRegisterToken());
+        if (kDebugMode) debugPrint('✅ [Main] FCM initialized successfully');
+      } catch (e) {
+        if (kDebugMode) debugPrint('❌ [Main] FCM initialization failed: $e');
+      }
     } else {
-      if (kDebugMode) debugPrint('📲 [Main] Detected HMS (Huawei)');
-      await HuaweiPushService().initialize().timeout(const Duration(seconds: 5));
-      await HuaweiPushService().tryRegisterPendingToken();
+      if (kDebugMode) debugPrint('📲 [Main] GMS not available, trying HMS (Huawei Mobile Services)');
+      try {
+        final hmsToken = await HuaweiPushService().initialize().timeout(const Duration(seconds: 5));
+        if (hmsToken != null) {
+          await HuaweiPushService().tryRegisterPendingToken();
+          if (kDebugMode) debugPrint('✅ [Main] HMS initialized successfully');
+        } else {
+          if (kDebugMode) debugPrint('⚠️ [Main] HMS initialization returned null token');
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('❌ [Main] HMS initialization failed: $e');
+      }
     }
   } catch (e) {
-    // Fallback na HMS ako bilo šta pukne
+    if (kDebugMode) debugPrint('⚠️ [Main] Push services initialization failed: $e');
+    // Try HMS as last resort
     try {
+      if (kDebugMode) debugPrint('📲 [Main] Last resort: trying HMS');
       await HuaweiPushService().initialize().timeout(const Duration(seconds: 2));
-    } catch (_) {}
+    } catch (e2) {
+      if (kDebugMode) debugPrint('❌ [Main] All push services failed: $e2');
+    }
   }
 }
 

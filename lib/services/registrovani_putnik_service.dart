@@ -159,7 +159,7 @@ class RegistrovaniPutnikService {
     }
   }
 
-  /// 🔌 Setup realtime subscription - Direktno iz Supabase (bez RealtimeManager)
+  /// 🔌 Setup realtime subscription - Koristi payload za partial updates
   static void _setupRealtimeSubscription(SupabaseClient supabase) {
     _sharedSubscription?.cancel();
 
@@ -167,11 +167,108 @@ class RegistrovaniPutnikService {
     // Koristi centralizovani RealtimeManager
     _sharedSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
       debugPrint('🔄 [RegistrovaniPutnik] Payload primljen: ${payload.eventType}');
-      _fetchAndEmit(supabase);
+      _handleRealtimeUpdate(payload);
     }, onError: (error) {
       debugPrint('❌ [RegistrovaniPutnik] Stream error: $error');
     });
     debugPrint('✅ [RegistrovaniPutnik] Realtime subscription postavljena');
+  }
+
+  /// 🔄 Handle realtime update koristeći payload umesto full refetch
+  static void _handleRealtimeUpdate(PostgresChangePayload payload) {
+    if (_lastValue == null) {
+      debugPrint('⚠️ [RegistrovaniPutnik] Nema inicijalne vrednosti, preskačem update');
+      return;
+    }
+
+    final newRecord = payload.newRecord;
+    final oldRecord = payload.oldRecord;
+
+    switch (payload.eventType) {
+      case PostgresChangeEvent.insert:
+        _handleInsert(newRecord);
+        break;
+      case PostgresChangeEvent.update:
+        _handleUpdate(newRecord, oldRecord);
+        break;
+      default:
+        debugPrint('⚠️ [RegistrovaniPutnik] Nepoznat event type: ${payload.eventType}');
+        break;
+    }
+  }
+
+  /// ➕ Handle INSERT event
+  static void _handleInsert(Map<String, dynamic> newRecord) {
+    try {
+      final putnik = RegistrovaniPutnik.fromMap(newRecord);
+
+      // Proveri da li zadovoljava filter kriterijume (aktivan, nije obrisan, nije duplikat)
+      final aktivan = newRecord['aktivan'] as bool? ?? false;
+      final obrisan = newRecord['obrisan'] as bool? ?? true;
+      final isDuplicate = newRecord['is_duplicate'] as bool? ?? false;
+
+      if (!aktivan || obrisan || isDuplicate) {
+        debugPrint('🔄 [RegistrovaniPutnik] INSERT ignorisan (ne zadovoljava filter): ${putnik.putnikIme}');
+        return;
+      }
+
+      // Dodaj u listu i sortiraj
+      _lastValue!.add(putnik);
+      _lastValue!.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
+
+      debugPrint('✅ [RegistrovaniPutnik] INSERT: Dodan ${putnik.putnikIme}');
+      _emitUpdate();
+    } catch (e) {
+      debugPrint('❌ [RegistrovaniPutnik] INSERT error: $e');
+    }
+  }
+
+  /// 🔄 Handle UPDATE event
+  static void _handleUpdate(Map<String, dynamic> newRecord, Map<String, dynamic>? oldRecord) {
+    try {
+      final putnikId = newRecord['id'] as String?;
+      if (putnikId == null) return;
+
+      final index = _lastValue!.indexWhere((p) => p.id == putnikId);
+      final updatedPutnik = RegistrovaniPutnik.fromMap(newRecord);
+
+      // Proveri da li sada zadovoljava filter kriterijume
+      final aktivan = newRecord['aktivan'] as bool? ?? false;
+      final obrisan = newRecord['obrisan'] as bool? ?? true;
+      final isDuplicate = newRecord['is_duplicate'] as bool? ?? false;
+      final shouldBeIncluded = aktivan && !obrisan && !isDuplicate;
+
+      if (shouldBeIncluded) {
+        if (index == -1) {
+          // Možda je bio neaktivan, a sada je aktivan - dodaj
+          _lastValue!.add(updatedPutnik);
+          debugPrint('✅ [RegistrovaniPutnik] UPDATE: Dodan ${updatedPutnik.putnikIme} (sada aktivan)');
+        } else {
+          // Update postojeći
+          _lastValue![index] = updatedPutnik;
+          debugPrint('✅ [RegistrovaniPutnik] UPDATE: Ažuriran ${updatedPutnik.putnikIme}');
+        }
+        _lastValue!.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
+      } else {
+        // Ukloni iz liste ako postoji
+        if (index != -1) {
+          _lastValue!.removeAt(index);
+          debugPrint('✅ [RegistrovaniPutnik] UPDATE: Uklonjen ${updatedPutnik.putnikIme} (više ne zadovoljava filter)');
+        }
+      }
+
+      _emitUpdate();
+    } catch (e) {
+      debugPrint('❌ [RegistrovaniPutnik] UPDATE error: $e');
+    }
+  }
+
+  /// 🔊 Emit update u stream
+  static void _emitUpdate() {
+    if (_sharedController != null && !_sharedController!.isClosed) {
+      _sharedController!.add(List.from(_lastValue!));
+      debugPrint('🔊 [RegistrovaniPutnik] Stream emitovao update sa ${_lastValue!.length} putnika');
+    }
   }
 
   /// 🧹 Čisti singleton cache - pozovi kad treba resetovati sve

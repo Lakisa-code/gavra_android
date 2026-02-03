@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import 'realtime/realtime_manager.dart';
@@ -101,22 +102,36 @@ class DailyCheckInService {
     // Koristi centralizovani RealtimeManager - JEDAN channel za sve vozače!
     _globalSubscription = RealtimeManager.instance.subscribe('daily_reports').listen((payload) {
       debugPrint('🔔 [DailyCheckInService] Realtime event received: ${payload.eventType}');
-
-      // Osvježi sve aktivne vozače - UVEK KORISTI TRENUTNI DATUM!
-      final currentDate = DateTime.now().toIso8601String().split('T')[0];
-      debugPrint('🔄 [DailyCheckInService] Refreshing ${_kusurControllers.length} vozac streams');
-
-      for (final entry in _kusurControllers.entries) {
-        final vozac = entry.key;
-        final controller = entry.value;
-        if (!controller.isClosed) {
-          debugPrint('🔄 [DailyCheckInService] Refreshing kusur for $vozac');
-          _fetchKusurForVozac(vozac, currentDate, controller);
-        }
-      }
+      _handleRealtimeKusurUpdate(payload, today);
     });
 
     _isSubscribed = true;
+  }
+
+  /// 🔄 Handle realtime kusur update koristeći payload umesto full refetch
+  static void _handleRealtimeKusurUpdate(PostgresChangePayload payload, String today) {
+    try {
+      final newRecord = payload.newRecord;
+      final vozac = newRecord['vozac'] as String?;
+
+      if (vozac == null) {
+        debugPrint('⚠️ [DailyCheckInService] Realtime event bez vozača, ignorišem');
+        return;
+      }
+
+      // Koristi vozac ime direktno (trebalo bi već biti normalizovano)
+      final normalizedVozac = vozac;
+
+      // Proveri da li imamo aktivan controller za ovog vozača
+      if (_kusurControllers.containsKey(normalizedVozac) && !_kusurControllers[normalizedVozac]!.isClosed) {
+        debugPrint('🔄 [DailyCheckInService] Updating kusur for $normalizedVozac');
+        _fetchKusurForVozac(normalizedVozac, today, _kusurControllers[normalizedVozac]!);
+      } else {
+        debugPrint('⚠️ [DailyCheckInService] No active controller for $normalizedVozac, skipping update');
+      }
+    } catch (e) {
+      debugPrint('❌ [DailyCheckInService] Error handling realtime update: $e');
+    }
   }
 
   /// 🧹 Čisti kusur cache za vozača

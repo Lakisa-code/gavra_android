@@ -24,8 +24,6 @@ class VozacBoja {
     'Bruda': Color(0xFF7C4DFF), // ljubičasta
     'Bilevski': Color(0xFFFF9800), // narandžasta
     'Bojan': Color(0xFF00E5FF), // svetla cyan plava - osvežavajuća i moderna
-    'Svetlana': Color(0xFFFF1493), // drecava pink (DeepPink)
-    'Ivan': Color(0xFFFFD700), // žuta (Gold)
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -45,7 +43,9 @@ class VozacBoja {
     try {
       await _loadFromDatabase();
       _isInitialized = true;
+      debugPrint('✅ [VozacBoja] Initialized with ${_bojeCache?.length ?? 0} drivers');
     } catch (e) {
+      debugPrint('❌ [VozacBoja] Database load failed: $e, using fallback');
       // Ako baza nije dostupna, koristi fallback
       _bojeCache = Map.from(_fallbackBoje);
       _isInitialized = true;
@@ -54,8 +54,10 @@ class VozacBoja {
 
   /// Učitava boje iz baze podataka
   static Future<void> _loadFromDatabase() async {
+    debugPrint('🔍 [VozacBoja] Loading drivers from database...');
     final vozacService = VozacService();
     final vozaci = await vozacService.getAllVozaci();
+    debugPrint('✅ [VozacBoja] Loaded ${vozaci.length} drivers from database');
 
     _bojeCache = {};
     _vozaciCache = {};

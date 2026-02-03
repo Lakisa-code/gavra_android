@@ -8,8 +8,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Removed Huawei AGC due to version compatibility issues
-        // classpath("com.huawei.agconnect:agcp:1.8.1.300")
+        classpath("com.huawei.agconnect:agcp:1.8.1.300")
     }
 }
 
