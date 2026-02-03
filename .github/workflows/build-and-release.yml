@@ -1,0 +1,129 @@
+name: 🚀 Build & Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - alpha
+          - beta
+          - production
+      build_notes:
+        description: 'Build notes for drivers'
+        required: false
+        default: 'Test build for drivers'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
+        shell: bash
+      
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOF
+          storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}
+          storeFile=../gavra-release-key-production.keystore
+          EOF
+        shell: bash
+      
+      - name: Build APK
+        run: flutter build apk --release
+      
+      - name: Get app version
+        id: version
+        run: |
+          VERSION=$(grep "version:" pubspec.yaml | head -1 | cut -d: -f2 | xargs)
+          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Build Version: $VERSION"
+      
+      - name: Generate build info
+        run: |
+          cat > build_info.txt << EOF
+          🚗 GAVRA DRIVER APP - BUILD INFORMATION
+          ==========================================
+          
+          Version: ${{ steps.version.outputs.app_version }}
+          Build Number: ${{ github.run_number }}
+          Release Type: ${{ github.event.inputs.release_type }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+          Build Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          
+          DRIVER NOTES:
+          ${{ github.event.inputs.build_notes }}
+          
+          INSTALLATION GUIDE:
+          1. Download the APK file below
+          2. Enable "Unknown Sources" in Android Settings
+          3. Open the APK and install
+          4. Or use: adb install -r app-release.apk
+          
+          NEED HELP?
+          Report issues at: https://github.com/kadpitamkurac-hash/gavra_android
+          EOF
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/app/outputs/apk/release/app-release.apk
+          body_path: build_info.txt
+          tag_name: v${{ steps.version.outputs.app_version }}-${{ github.event.inputs.release_type }}-${{ github.run_number }}
+          prerelease: ${{ github.event.inputs.release_type != 'production' }}
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gavra-android-apk-${{ github.run_number }}-${{ github.event.inputs.release_type }}
+          path: |
+            build/app/outputs/apk/release/app-release.apk
+            build_info.txt
+          retention-days: 90
+          compression-level: 0
+      
+      - name: Print Success Message
+        run: |
+          echo "✅ BUILD SUCCESSFUL!"
+          echo ""
+          echo "📦 APK Details:"
+          echo "   Version: ${{ steps.version.outputs.app_version }}"
+          echo "   Type: ${{ github.event.inputs.release_type }}"
+          echo "   Build: #${{ github.run_number }}"
+          echo ""
+          echo "📥 Download Options:"
+          echo "   1. GitHub Release: https://github.com/kadpitamkurac-hash/gavra_android/releases/tag/v${{ steps.version.outputs.app_version }}-${{ github.event.inputs.release_type }}-${{ github.run_number }}"
+          echo "   2. Actions Artifacts: https://github.com/kadpitamkurac-hash/gavra_android/actions/runs/${{ github.run_id }}"
+          echo ""
+          echo "📱 Share with drivers:"
+          echo "   ${{ github.event.inputs.build_notes }}"

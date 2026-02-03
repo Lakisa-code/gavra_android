@@ -1,0 +1,93 @@
+name: 📲 Quick Build (Driver Download)
+
+on:
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: 'What changed in this build?'
+        required: false
+        default: 'Bug fixes and improvements'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
+        shell: bash
+      
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOF
+          storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}
+          storeFile=../gavra-release-key-production.keystore
+          EOF
+        shell: bash
+      
+      - name: Build APK
+        run: flutter build apk --release
+      
+      - name: Rename APK
+        run: |
+          VERSION=$(grep "version:" pubspec.yaml | head -1 | cut -d: -f2 | xargs)
+          BUILD_NUM=${{ github.run_number }}
+          mv build/app/outputs/apk/release/app-release.apk build/app/outputs/apk/release/gavra-v${VERSION}-build${BUILD_NUM}.apk
+          echo "APK_NAME=gavra-v${VERSION}-build${BUILD_NUM}.apk" >> $GITHUB_ENV
+      
+      - name: Generate download link
+        id: link
+        run: |
+          RUN_ID=${{ github.run_id }}
+          echo "download_url=https://github.com/kadpitamkurac-hash/gavra_android/actions/runs/${RUN_ID}" >> $GITHUB_OUTPUT
+      
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APK_NAME }}
+          path: build/app/outputs/apk/release/${{ env.APK_NAME }}
+          retention-days: 30
+          compression-level: 0
+      
+      - name: Display Download Instructions
+        run: |
+          echo "╔════════════════════════════════════════════════════════╗"
+          echo "║         ✅ APK BUILD COMPLETED SUCCESSFULLY!           ║"
+          echo "╚════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "📥 DOWNLOAD APK:"
+          echo "   🔗 ${{ steps.link.outputs.download_url }}"
+          echo ""
+          echo "📋 BUILD CHANGELOG:"
+          echo "   ${{ github.event.inputs.changelog }}"
+          echo ""
+          echo "⬇️  HOW TO INSTALL:"
+          echo "   1. Download the APK from the link above"
+          echo "   2. Transfer to your Android phone"
+          echo "   3. Open file manager and tap the APK"
+          echo "   4. Accept installation"
+          echo "   5. Done! ✨"
+          echo ""
+          echo "📦 FILE: ${{ env.APK_NAME }}"
+          echo ""

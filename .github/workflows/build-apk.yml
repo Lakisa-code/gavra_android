@@ -1,0 +1,83 @@
+name: 📱 APK Build for Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_name:
+        description: 'Build name/description (e.g., "Driver Test v1")'
+        required: false
+        default: 'Test Build'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
+        shell: bash
+      
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOF
+          storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}
+          storeFile=../gavra-release-key-production.keystore
+          EOF
+        shell: bash
+      
+      - name: Build APK
+        run: flutter build apk --release
+      
+      - name: Generate build info
+        run: |
+          cat > build_info.txt << EOF
+          Build: ${{ github.run_number }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+          Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          Build Name: ${{ github.event.inputs.build_name }}
+          EOF
+      
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gavra-android-apk-${{ github.run_number }}
+          path: |
+            build/app/outputs/apk/release/app-release.apk
+            build_info.txt
+          retention-days: 90
+          compression-level: 0
+      
+      - name: Create download link info
+        run: |
+          echo "✅ APK Build Completed!"
+          echo ""
+          echo "📥 Download Instructions:"
+          echo "1. Go to Actions tab → Build APK for Testing"
+          echo "2. Click on latest workflow run (Run #${{ github.run_number }})"
+          echo "3. Scroll to Artifacts section"
+          echo "4. Download: gavra-android-apk-${{ github.run_number }}"
+          echo ""
+          echo "📱 Installation on Device:"
+          echo "adb install -r app-release.apk"
