@@ -47,7 +47,7 @@ dependencies:
   # Vraćam se na URL launcher pristup - jedini koji radi
   # printing: ^5.14.2  # removed for Android-only build to avoid web dependency conflicts
   pdf: ^3.11.3
-  geolocator: ^14.1.0
+  geolocator: ^14.0.2
   # graphql: ^5.1.2  # UKLONJENO 2026-01-05 - nije korišćen
   # graphql_flutter: ^5.1.2  # UKLONJENO 2026-01-05 - nije korišćen
   uuid: ^4.4.0
