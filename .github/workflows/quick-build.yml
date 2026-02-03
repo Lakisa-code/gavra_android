@@ -39,9 +39,9 @@ jobs:
       - name: Create key.properties
         run: |
           cat > android/key.properties << EOF
-          storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}
-          keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
-          keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
           storeFile=../gavra-release-key-production.keystore
           EOF
         shell: bash
