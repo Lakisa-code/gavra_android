@@ -26,7 +26,8 @@ jobs:
     - name: Setup Flutter
       uses: flutter-actions/setup-flutter@v3
       with:
-        flutter-version: ${{ inputs.flutter_version || '3.35.6' }}
+        # Use the correct input key expected by the action
+        version: ${{ inputs.flutter_version || '3.35.6' }}
         channel: 'stable'
         cache: true
 
@@ -56,7 +57,7 @@ jobs:
         grep -n 'agconnect\|com.huawei.agconnect' android/app/build.gradle.kts || true
 
     - name: Build APK
-      run: flutter build apk --release --warning-mode=all
+      run: flutter build apk --release
 
     - name: Rename APK with version
       run: |
