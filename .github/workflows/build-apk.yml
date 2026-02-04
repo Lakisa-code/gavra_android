@@ -1,0 +1,80 @@
+name: '📱 Build APK'
+
+on:
+  workflow_dispatch:
+    inputs:
+      flutter_version:
+        description: 'Flutter version to use'
+        required: false
+        default: '3.35.6'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '21'
+
+    - name: Setup Flutter
+      uses: flutter-actions/setup-flutter@v3
+      with:
+        flutter-version: ${{ inputs.flutter_version || '3.35.6' }}
+        channel: 'stable'
+        cache: true
+
+    - name: Verify Flutter installation
+      run: |
+        flutter --version
+        flutter doctor -v
+
+    - name: Get Flutter dependencies
+      run: |
+        flutter pub get
+        flutter pub deps
+
+    - name: Clean build cache
+      run: flutter clean
+
+    - name: Disable Huawei plugin for CI
+      run: |
+        sed -i 's/classpath("com.huawei.agconnect:agcp:1.9.1.301")/\/\/ classpath("com.huawei.agconnect:agcp:1.9.1.301")/g' android/build.gradle.kts
+        sed -i 's/agconnectServices { configFile file(".\/agconnect-services.json") }/\/\/ agconnectServices { configFile file(".\/agconnect-services.json") }/g' android/app/build.gradle.kts
+        # Also comment-out the plugin id to avoid applying the Huawei AGC Gradle plugin in CI
+        sed -i 's/id("com.huawei.agconnect")/\/\/ id("com.huawei.agconnect")/g' android/app/build.gradle.kts
+        # Verify changes (print matching lines) so CI logs show whether AGC references remain
+        echo "---- android/build.gradle.kts matches ----"
+        grep -n 'agconnect\|com.huawei.agconnect' android/build.gradle.kts || true
+        echo "---- android/app/build.gradle.kts matches ----"
+        grep -n 'agconnect\|com.huawei.agconnect' android/app/build.gradle.kts || true
+
+    - name: Build APK
+      run: flutter build apk --release --warning-mode=all
+
+    - name: Rename APK with version
+      run: |
+        VERSION=$(grep "version:" pubspec.yaml | head -1 | cut -d: -f2 | xargs)
+        BUILD_NUM=${{ github.run_number }}
+        mkdir -p release_apk
+        cp build/app/outputs/flutter-apk/app-release.apk "release_apk/gavra-v${VERSION}-build${BUILD_NUM}.apk"
+        echo "APK_NAME=gavra-v${VERSION}-build${BUILD_NUM}.apk" >> $GITHUB_ENV
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: gavra-apk
+        path: release_apk/*.apk
+        retention-days: 30
+
+    - name: Display APK info
+      run: |
+        echo "APK built successfully!"
+        echo "File: ${{ env.APK_NAME }}"
+        ls -la release_apk/
