@@ -329,8 +329,6 @@ class PutnikService {
 
       final todayDate = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
 
-      debugPrint('📊 [PutnikService] Fetch stream: grad=$grad, vreme=$vreme, dan=$danKratica, date=$todayDate');
-
       // 🆕 Učitaj otkazivanja iz voznje_log za sve putnike
       final otkazivanja = await VoznjeLogService.getOtkazivanjaZaSvePutnike();
 
@@ -341,13 +339,9 @@ class PutnikService {
           .eq('obrisan', false)
           .eq('is_duplicate', false); // 🧹 Ne učitavaj duplikate
 
-      debugPrint('📊 [PutnikService] Učitano ${registrovani.length} mesečnih putnika');
-
       for (final m in registrovani) {
         // ? ISPRAVKA: Kreiraj putnike SAMO za ciljani dan
         final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica, isoDate: todayDate);
-
-        debugPrint('📊 [PutnikService] ${m['putnik_ime']}: ${putniciZaDan.length} varijanti (BC+VS)');
 
         // ?? Dohvati uklonjene termine za ovog putnika
         final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
@@ -356,15 +350,10 @@ class PutnikService {
           final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
           final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
-          debugPrint(
-              '🔍 [PutnikService] ${p.ime} - grad=${p.grad}, vreme=$normVreme, filter_grad=$grad, filter_vreme=$normVremeFilter');
-
           if (grad != null && p.grad != grad) {
-            debugPrint('  ❌ PRESKOČEN - grad ne odgovara');
             continue;
           }
           if (normVremeFilter != null && normVreme != normVremeFilter) {
-            debugPrint('  ❌ PRESKOČEN - vreme ne odgovara');
             continue;
           }
 
@@ -379,7 +368,6 @@ class PutnikService {
             return utDatum == todayDate && utVreme == pVreme && utMap['grad'] == p.grad;
           });
           if (jeUklonjen) {
-            debugPrint('  ❌ PRESKOČEN - uklonjen iz termina');
             continue;
           }
 
@@ -394,12 +382,10 @@ class PutnikService {
             }
           }
 
-          debugPrint('  ✅ DODAT - ${p.ime} ${p.grad} ${p.polazak}');
           combined.add(p);
         }
       }
 
-      debugPrint('✅ [PutnikService] Stream emitovao ${combined.length} putnika za key=$key');
       _lastValues[key] = combined;
       if (!controller.isClosed) {
         controller.add(combined);
