@@ -7,10 +7,8 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
+    id("com.huawei.agconnect")
 }
-
-// Apply AGConnect as a plugin via buildscript classpath
-apply(plugin = "com.huawei.agconnect")
 
 // 🔐 PRODUCTION KEYSTORE CONFIGURATION
 val keystorePropertiesFile = rootProject.file("key.properties")
@@ -19,54 +17,27 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-
-    // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
-
-    // Add Firebase Cloud Messaging
-    implementation("com.google.firebase:firebase-messaging")
-
-    // 🚀 Google Play Core - NEW MODULAR LIBRARIES (Android 14+ compatible)
-    implementation("com.google.android.play:app-update:2.1.0") {
-        because("Replaces deprecated play:core for in-app updates")
-    }
-    implementation("com.google.android.play:review:2.0.2") {
-        because("Replaces deprecated play:core for in-app reviews")
-    }
-}
-
-flutter {
-    source = "../.."
-}
-
 android {
     namespace = "com.gavra013.gavra_android"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
         isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
-    packaging {
-        jniLibs.pickFirsts.add("**/libc++_shared.so")
-        jniLibs.pickFirsts.add("**/libjsc.so")
+        jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     defaultConfig {
         applicationId = "com.gavra013.gavra_android"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 1
+        versionName = "1.0"
         multiDexEnabled = true
     }
 
@@ -94,4 +65,26 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+
+    // Add Firebase Cloud Messaging
+    implementation("com.google.firebase:firebase-messaging")
+
+    // 🚀 Google Play Core - NEW MODULAR LIBRARIES (Android 14+ compatible)
+    implementation("com.google.android.play:app-update:2.1.0") {
+        because("Replaces deprecated play:core for in-app updates")
+    }
+    implementation("com.google.android.play:review:2.0.2") {
+        because("Replaces deprecated play:core for in-app reviews")
+    }
+}
+
+flutter {
+    source = "../.."
 }

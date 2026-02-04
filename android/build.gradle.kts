@@ -8,7 +8,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.huawei.agconnect:agcp:1.8.1.300")
+        classpath("com.android.tools.build:gradle:8.9.1")
+        classpath("com.huawei.agconnect:agcp:1.9.1.301")
     }
 }
 

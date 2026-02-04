@@ -129,25 +129,69 @@ class PutnikService {
 
       print(
           '🔴 REALTIME PAYLOAD: oldRecord keys=${payload.oldRecord.keys.toList()}, newRecord keys=${payload.newRecord.keys.toList()}');
-      // 🔧 FIX: UVEK radi full refresh jer partial update ne može pravilno rekonstruisati
-      // polasci_po_danu JSON koji sadrži vremePokupljenja, otkazanZaPolazak itd.
-      // Partial update je previše kompleksan i error-prone za ovaj use case.
-      _refreshAllStreams();
+      // 🚀 OPTIMIZACIJA: Umesto full refresh, update-uj samo jednog putnika u cache-u
+      _updatePutnikInCache(payload.newRecord);
     });
     _isSubscribed = true;
     print('🔴 DEBUG: Realtime subscription AKTIVIRAN za registrovani_putnici');
   }
 
-  /// Osvežava SVE aktivne streamove (full refresh)
-  void _refreshAllStreams() {
-    print('🔴 DEBUG: _refreshAllStreams() POZVANO - broj streamova: ${_streamParams.length}');
+  /// 🚀 PARTIAL UPDATE: Update-uje samo jednog putnika u svim aktivnim streamovima
+  void _updatePutnikInCache(Map<String, dynamic> updatedPutnikData) {
+    final putnikId = updatedPutnikData['id'] as String?;
+    if (putnikId == null) return;
+
+    print('🔄 PARTIAL UPDATE: Update-ujem putnika ${updatedPutnikData['putnik_ime']} u cache-u');
+
     for (final entry in _streamParams.entries) {
       final key = entry.key;
       final params = entry.value;
-      final controller = _streams[key];
-      if (controller != null && !controller.isClosed) {
-        print('🔴 DEBUG: Refreshing stream key=$key');
-        _doFetchForStream(key, params.isoDate, params.grad, params.vreme, controller);
+      final currentList = _lastValues[key];
+
+      if (currentList != null && currentList.isNotEmpty) {
+        // Pronađi putnika u listi po ID-u
+        final putnikIndex = currentList.indexWhere((p) => p.id == putnikId);
+
+        if (putnikIndex != -1) {
+          // Kreiraj nove putnike za ovaj dan sa update-ovanim podacima
+          String? danKratica;
+          if (params.isoDate != null) {
+            try {
+              final dt = DateTime.parse(params.isoDate!);
+              const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+              danKratica = dani[dt.weekday - 1];
+            } catch (_) {}
+          }
+          danKratica ??= _getDayAbbreviationFromName(_getTodayName());
+
+          final todayDate = (params.isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
+          final newPutnici =
+              Putnik.fromRegistrovaniPutniciMultipleForDay(updatedPutnikData, danKratica, isoDate: todayDate);
+
+          // Filtriraj po gradu i vremenu ako su specificirani
+          final filteredPutnici = newPutnici.where((p) {
+            if (params.grad != null && p.grad != params.grad) return false;
+            if (params.vreme != null) {
+              final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+              final normFilterVreme = GradAdresaValidator.normalizeTime(params.vreme!);
+              if (normVreme != normFilterVreme) return false;
+            }
+            return true;
+          }).toList();
+
+          // Update-uj listu
+          final newList = List<Putnik>.from(currentList);
+          newList.removeWhere((p) => p.id == putnikId); // Ukloni stare verzije
+          newList.addAll(filteredPutnici); // Dodaj nove verzije
+
+          // Sačuvaj i emituj
+          _lastValues[key] = newList;
+          final controller = _streams[key];
+          if (controller != null && !controller.isClosed) {
+            controller.add(newList);
+            print('✅ PARTIAL UPDATE: Emitovana nova lista sa ${newList.length} putnika za stream $key');
+          }
+        }
       }
     }
   }
