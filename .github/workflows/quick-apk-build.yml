@@ -41,6 +41,14 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/gavra-release-key.keystore
 
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}" > key.properties
+          echo "keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}" >> key.properties
+          echo "keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}" >> key.properties
+          echo "storeFile=android/app/gavra-release-key.keystore" >> key.properties
+          ls -la key.properties || true
+
       - name: 🏗️ Build APK (Release)
         env:
           KEYSTORE_PATH: android/app/gavra-release-key.keystore
