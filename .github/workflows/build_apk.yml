@@ -22,13 +22,6 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
 
-    - name: Create key.properties
-      run: |
-        echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
-        echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-        echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-        echo "storeFile=../gavra-release-key-production.keystore" >> android/key.properties
-
     - name: Build APK
       run: flutter build apk --release
 
