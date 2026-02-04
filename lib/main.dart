@@ -82,11 +82,13 @@ void main() async {
   //   // Non-critical - app can continue with basic credentials
   // }
 
-  // 1. Pokreni UI
+  // 1. Pokreni UI ODMAH (bez čekanja Supabase)
   runApp(const MyApp());
 
-  // 2. Pokreni ostale inicijalizacije
-  unawaited(_doStartupTasks());
+  // 2. Čekaj malo da se UI renderira, pa tek onda inicijalizuj servise
+  Future<void>.delayed(const Duration(milliseconds: 500), () {
+    unawaited(_doStartupTasks());
+  });
 }
 
 /// 🏗️ Pozadinske inicijalizacije koje ne smeju da blokiraju UI
@@ -153,7 +155,8 @@ Future<void> _initPushSystems() async {
 
 /// ⚙️ Inicijalizacija ostalih servisa
 Future<void> _initAppServices() async {
-  if (!isSupabaseReady) return;
+  // Sada nije potrebna provera - Supabase je već inicijalizovan u main() liniji 69
+  if (kDebugMode) debugPrint('⚙️ [Main] Starting app services...');
 
   final services = [
     VozacMappingService.initialize(),
