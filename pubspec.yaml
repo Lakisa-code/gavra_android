@@ -96,7 +96,6 @@ flutter:
           weight: 700
 
   assets:
-    - .env
     - assets/gavra.mp3
     - assets/kasno_je.mp3 # 🎵 GAVRA 013 pesma "Beogradski sindikat - Kasno je"
     - assets/svetlana.mp3 # 💖 Svetlanina specijalna pesma "Hiljson Mandela & Miach - Anđeo"

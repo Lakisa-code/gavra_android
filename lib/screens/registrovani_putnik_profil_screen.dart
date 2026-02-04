@@ -8,7 +8,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../globals.dart';
-import '../services/realtime/realtime_manager.dart';
 import '../helpers/gavra_ui.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../models/registrovani_putnik.dart';
@@ -16,6 +15,7 @@ import '../services/cena_obracun_service.dart';
 import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikacije
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
+import '../services/realtime/realtime_manager.dart';
 import '../services/seat_request_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera slobodnih mesta
 import '../services/theme_manager.dart';
@@ -71,6 +71,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   // 🎯 Realtime subscription za status promene
   StreamSubscription? _statusSubscription;
+  // 🆕 Realtime subscription za seat request approvals
+  StreamSubscription? _seatRequestSubscription;
 
   /// HELPER za bezbedno kastovanje JSONB podataka koji mogu doći kao String ili Map
   Map<String, dynamic> _safeMap(dynamic raw) {
@@ -186,7 +188,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   void dispose() {
     WidgetsBinding.instance.removeObserver(this); // 🛑 Zatvori lifecycle observer
     _statusSubscription?.cancel(); // 🛑 Zatvori Realtime listener
+    _seatRequestSubscription?.cancel(); // 🛑 Zatvori Seat Request listener
     RealtimeManager.instance.unsubscribe('registrovani_putnici');
+    RealtimeManager.instance.unsubscribe('seat_requests');
     super.dispose();
   }
 
@@ -245,6 +249,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       _handleStatusChange(payload);
     });
 
+    // 🆕 Dodaj listener za seat_requests approvals
+    _seatRequestSubscription = RealtimeManager.instance.subscribe('seat_requests').where((payload) {
+      // Filtriraj samo za ovog putnika i UPDATE event
+      return payload.eventType == PostgresChangeEvent.update &&
+          payload.newRecord['putnik_id'].toString() == putnikId &&
+          payload.newRecord['status'] == 'approved';
+    }).listen((payload) {
+      debugPrint('🆕 [Realtime] Seat request approved za putnika $putnikId');
+      _handleSeatRequestApproval(payload);
+    });
+
     debugPrint('🎯 [Realtime] Listener aktivan za putnika $putnikId');
   }
 
@@ -291,6 +306,100 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     } catch (e) {
       debugPrint('❌ [Realtime] Greška pri obradi status promene: $e');
+    }
+  }
+
+  /// 🆕 Hendluje approval seat request-a - ažurira registrovani_putnici na 'confirmed'
+  Future<void> _handleSeatRequestApproval(PostgresChangePayload payload) async {
+    try {
+      final newRecord = payload.newRecord;
+      final putnikId = newRecord['putnik_id'].toString();
+      final grad = newRecord['grad'].toString().toLowerCase(); // 'bc' ili 'vs'
+      final datum = newRecord['datum'].toString();
+      final vreme = newRecord['zeljeno_vreme'].toString();
+
+      // Izračunaj dan iz datuma
+      final date = DateTime.parse(datum);
+      const daniMap = {
+        DateTime.monday: 'pon',
+        DateTime.tuesday: 'uto',
+        DateTime.wednesday: 'sre',
+        DateTime.thursday: 'cet',
+        DateTime.friday: 'pet',
+        DateTime.saturday: 'sub',
+        DateTime.sunday: 'ned'
+      };
+      final dan = daniMap[date.weekday] ?? 'pon';
+
+      debugPrint('🆕 [SeatRequestApproval] Ažuriram registrovani_putnici: $putnikId, $dan, $grad, $vreme');
+
+      // Dohvati trenutne podatke
+      final response =
+          await supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnikId).maybeSingle();
+      if (response == null) return;
+
+      final polasci = _safeMap(response['polasci_po_danu']);
+      if (polasci[dan] == null) return;
+
+      final danData = Map<String, dynamic>.from(polasci[dan] as Map);
+
+      // Ažuriraj status na confirmed i vreme
+      danData[grad] = vreme;
+      danData['${grad}_status'] = 'confirmed';
+      danData.remove('${grad}_napomena'); // Ukloni pending napomenu
+      danData.remove('${grad}_ceka_od'); // Ukloni pending timestamp
+      danData.remove('${grad}_otkazano_vreme'); // Ukloni otkazano vreme
+
+      polasci[dan] = danData;
+
+      // Sačuvaj u bazi
+      await supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
+
+      // Ažuriraj lokalni state
+      if (mounted) {
+        setState(() {
+          _putnikData['polasci_po_danu'] = polasci;
+        });
+        GavraUI.showSnackBar(
+          context,
+          message: '✅ Vaš zahtev za $vreme ($dan ${grad.toUpperCase()}) je odobren!',
+          type: GavraNotificationType.success,
+        );
+      }
+
+      // 🔔 Pošalji push notifikaciju (foreground/background/lock screen)
+      try {
+        final dniOznake = {
+          'pon': 'Ponedeljak',
+          'uto': 'Utorak',
+          'sre': 'Sredа',
+          'cet': 'Četvrtak',
+          'pet': 'Petak',
+          'sub': 'Subota',
+          'ned': 'Nedelja'
+        };
+        final danNaziv = dniOznake[dan] ?? dan;
+        final gradNaziv = grad.toUpperCase();
+
+        await LocalNotificationService.showRealtimeNotification(
+          title: '✅ Zahtev Odobren!',
+          body: 'Vaš zahtev za $vreme ($danNaziv $gradNaziv) je odobren. Slobodno mesto je dostupno!',
+          payload: jsonEncode({
+            'notification_id': 'seat_request_approval_$putnikId',
+            'type': 'seat_request_approval',
+            'putnik_id': putnikId,
+            'dan': dan,
+            'grad': grad,
+            'vreme': vreme,
+          }),
+        );
+      } catch (e) {
+        debugPrint('⚠️ [SeatRequestApproval] Greška pri slanju notifikacije: $e');
+      }
+
+      debugPrint('✅ [SeatRequestApproval] Registrovani putnici ažuriran');
+    } catch (e) {
+      debugPrint('❌ [SeatRequestApproval] Greška: $e');
     }
   }
 

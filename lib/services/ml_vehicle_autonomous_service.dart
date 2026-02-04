@@ -58,7 +58,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
         MonitoringTarget(id: 'Vozači (Live)', reason: 'Praćenje rada i realizacije', importance: 0.9);
 
     // Dinamički dodajemo ono što je beba otkrila
-    final tables = (_learnedPatterns['discovered_tables'] as List?)?.cast<String>() ?? [];
+    final tables = List<String>.from((_learnedPatterns['discovered_tables'] as List?) ?? []);
     for (var table in tables) {
       targets['table_$table'] =
           MonitoringTarget(id: 'Scanner: $table', reason: 'Nadgledanje integriteta', importance: 0.5);
@@ -238,8 +238,8 @@ class MLVehicleAutonomousService extends ChangeNotifier {
       _businessInferences.clear();
 
       // DINAMIČKA LISTA: Beba kreće od onoga što poznaje, ali stalno traži nove putokaze.
-      final List<String> discoveredTables = (_learnedPatterns['discovered_tables'] as List?)?.cast<String>() ??
-          ['registrovani_putnici', 'voznje_log', 'vozila', 'vozaci', 'seat_requests', 'adrese'];
+      final List<String> discoveredTables = List<String>.from((_learnedPatterns['discovered_tables'] as List?) ??
+          ['registrovani_putnici', 'voznje_log', 'vozila', 'vozaci', 'seat_requests', 'adrese']);
 
       // Beba ne gleda red po red, već uzima "fotografiju" cele tabele
       for (final String tableName in discoveredTables) {
@@ -293,7 +293,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
         final String potential = col.replaceAll('_id', '');
         // Beba ne može sama da kreira tabele u bazi (nema dozvolu),
         // ali ih sama DODAJE na svoju listu za skeniranje!
-        final List<String> current = (_learnedPatterns['discovered_tables'] as List?)?.cast<String>() ?? [];
+        final List<String> current = List<String>.from((_learnedPatterns['discovered_tables'] as List?) ?? []);
         if (!current.contains(potential)) {
           // Dodajemo u svesku za sledeći put
           current.add(potential);
@@ -315,7 +315,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
     final Map<String, dynamic> schemaMap = _learnedPatterns['schema'] as Map<String, dynamic>;
     schemaMap[table] ??= <String>[];
 
-    final List<String> knownCols = (schemaMap[table] as List).cast<String>();
+    final List<String> knownCols = List<String>.from(schemaMap[table] as List);
     for (final String col in columns) {
       if (!knownCols.contains(col)) {
         knownCols.add(col);
@@ -587,7 +587,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
         'parameters': _learnedPatterns,
         'is_active': true,
         'updated_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'model_name');
+      });
     } catch (e) {
       print('⚠️ [ML Lab] Greška pri čuvanju obrazaca: $e');
     }

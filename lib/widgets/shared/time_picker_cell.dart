@@ -153,6 +153,7 @@ class TimePickerCell extends StatelessWidget {
     final hasTime = value != null && value!.isNotEmpty;
     final isPending = status == 'pending';
     final isWaiting = status == 'waiting';
+    final isApproved = status == 'approved';
     final locked = isLocked;
 
     debugPrint(
@@ -174,6 +175,12 @@ class TimePickerCell extends StatelessWidget {
       borderColor = Colors.grey.shade400;
       bgColor = Colors.grey.shade200;
       textColor = Colors.grey.shade600;
+    }
+    // 🟢 APPROVED - zelena
+    else if (isApproved) {
+      borderColor = Colors.green;
+      bgColor = Colors.green.shade50;
+      textColor = Colors.green.shade800;
     }
     // 🟠 PENDING - narandžasto
     else if (isPending) {
@@ -240,6 +247,16 @@ class TimePickerCell extends StatelessWidget {
             context,
             message: '⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.',
             type: GavraNotificationType.warning,
+          );
+          return;
+        }
+
+        // ✅ BLOKADA ZA APPROVED STATUS - već je odobreno
+        if (isApproved) {
+          GavraUI.showSnackBar(
+            context,
+            message: '✅ Vaš zahtev je odobrljen! Vreme je zaključano.',
+            type: GavraNotificationType.success,
           );
           return;
         }
@@ -335,6 +352,10 @@ class TimePickerCell extends StatelessWidget {
                       const SizedBox(width: 2),
                     ] else if (isWaiting) ...[
                       Icon(Icons.schedule, size: 12, color: textColor),
+                      const SizedBox(width: 2),
+                    ] else if (status == 'approved') ...[
+                      // ✅ Zelena ikonica za approved status
+                      Icon(Icons.check_circle, size: 12, color: Colors.green),
                       const SizedBox(width: 2),
                     ] else if (status == 'confirmed' || (hasTime && status == null)) ...[
                       // ✅ Zelena ikonica za confirmed status (eksplicitno ili implicitno kada nema statusa ali ima vreme)
