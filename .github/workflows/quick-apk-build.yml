@@ -1,4 +1,4 @@
-name: 📲 Quick APK Build for Drivers
+name: '📲 Quick APK Build for Drivers'
 
 on:
   workflow_dispatch:
@@ -25,7 +25,7 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.35.6'
           channel: 'stable'
 
       - name: 🔧 Setup Java
@@ -40,7 +40,7 @@ jobs:
       - name: 🔐 Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/gavra-release-key.keystore
-          
+
       - name: 🏗️ Build APK (Release)
         env:
           KEYSTORE_PATH: android/app/gavra-release-key.keystore
@@ -57,7 +57,7 @@ jobs:
         run: |
           VERSION=$(grep "version:" pubspec.yaml | head -1 | awk -F'+' '{print $1}' | awk '{print $NF}')
           BUILD=$(grep "version:" pubspec.yaml | head -1 | awk -F'+' '{print $2}')
-          TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')
+          TIMESTAMP=$(date +"'%Y-%m-%d %H:%M:%S'")
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "build=${BUILD}" >> $GITHUB_OUTPUT
           echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
@@ -83,25 +83,15 @@ jobs:
           name: Gavra v${{ steps.version.outputs.version }} Build ${{ steps.version.outputs.build }}
           body: |
             ## 📱 Gavra Android - Nova verzija dostupna!
-            
+
             **Verzija:** v${{ steps.version.outputs.version }} (Build ${{ steps.version.outputs.build }})
             **Datum:** ${{ steps.version.outputs.timestamp }}
-            
+
             ### 📝 Izmene:
             ${{ github.event.inputs.build_description }}
-            
+
             ### 📥 Preuzimanje:
             Klikni na APK fajl ispod da preuzmeš novu verziju.
-            
-            ### 📋 Instrukcije za vozače:
-            1. Preuzmi APK fajl
-            2. Otključaj "Nepoznate izvore" u telefonu (Settings → Security)
-            3. Otvori preuzeti fajl i klikni "Instaliraj"
-            4. Ako pitaju da deinstaliraju staru verziju - klikni "DA"
-            5. Gotovin!
-            
-            ---
-            ℹ️ Ako imaš problema sa instalacijom, kontaktiraj administratora.
           artifacts: build/apk-release/*.apk
           prerelease: false
           draft: false
