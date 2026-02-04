@@ -56,6 +56,49 @@ jobs:
         echo "---- android/app/build.gradle.kts matches ----"
         grep -n 'agconnect\|com.huawei.agconnect' android/app/build.gradle.kts || true
 
+    - name: Restore keystore from secrets (CI only)
+      run: |
+        if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+          echo "No ANDROID_KEYSTORE_BASE64 secret set — skipping keystore restore"
+          exit 0
+        fi
+        echo "Restoring keystore to android/app/key.jks"
+        mkdir -p android/app
+        echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/key.jks
+        ls -la android/app/key.jks
+
+    - name: Create key.properties from secrets (CI only)
+      run: |
+        if [ -z "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" ] || [ -z "${{ secrets.ANDROID_KEY_ALIAS }}" ] || [ -z "${{ secrets.ANDROID_KEY_PASSWORD }}" ]; then
+          echo "Key properties secrets not fully set — skipping key.properties creation"
+          exit 0
+        fi
+        cat > key.properties <<EOF
+storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+storeFile=android/app/key.jks
+EOF
+        echo "Created key.properties (storeFile=android/app/key.jks)"
+        ls -la key.properties || true
+
+    - name: Verify keystore presence (CI)
+      run: |
+        echo "Verifying keystore and key.properties..."
+        if [ -f key.properties ]; then
+          STORE=$(grep '^storeFile=' key.properties | cut -d= -f2 | tr -d '\r' | xargs)
+          if [ -z "$STORE" ] || [ ! -f "$STORE" ]; then
+            echo "::error::Keystore file referenced in key.properties not found: $STORE"
+            echo "Ensure repository secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD are configured in CI and that the keystore is restored to the expected path."
+            exit 1
+          fi
+          echo "Keystore found: $STORE"
+        else
+          echo "::error::key.properties not found. Release signing cannot proceed without it."
+          echo "If you want to build signed APKs in CI, add secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD"
+          exit 1
+        fi
+
     - name: Build APK
       run: flutter build apk --release
 
