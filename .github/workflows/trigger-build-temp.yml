@@ -1,0 +1,88 @@
+name: 'Trigger Temp Build (push)'
+
+on:
+  push:
+    branches:
+      - 'ci/run-build-temp'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Flutter
+        uses: flutter-actions/setup-flutter@v3
+        with:
+          version: '3.35.6'
+          channel: 'stable'
+          cache: true
+
+      - name: Restore keystore from secrets
+        run: |
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "No ANDROID_KEYSTORE_BASE64 secret set — failing build"
+            exit 1
+          fi
+          mkdir -p android/app
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/key.jks
+          ls -la android/app/key.jks
+
+      - name: Create key.properties from secrets
+        run: |
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" ] || [ -z "${{ secrets.ANDROID_KEY_ALIAS }}" ] || [ -z "${{ secrets.ANDROID_KEY_PASSWORD }}" ]; then
+            echo "Key properties secrets not fully set — failing build"
+            exit 1
+          fi
+          cat > key.properties <<EOF
+storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+storeFile=android/app/key.jks
+EOF
+          ls -la key.properties
+
+      - name: Verify keystore presence
+        run: |
+          echo "Verifying keystore and key.properties..."
+          if [ -f key.properties ]; then
+            STORE=$(grep '^storeFile=' key.properties | cut -d= -f2 | tr -d '\r' | xargs)
+            if [ -z "$STORE" ] || [ ! -f "$STORE" ]; then
+              echo "Keystore file referenced in key.properties not found: $STORE"
+              exit 1
+            fi
+            echo "Keystore found: $STORE"
+          else
+            echo "key.properties not found. Release signing cannot proceed withou it."
+            exit 1
+          fi
+
+      - name: Get Flutter dependencies
+        run: |
+          flutter pub get
+
+      - name: Clean build cache
+        run: flutter clean
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Prepare APK artifact
+        run: |
+          mkdir -p release_apk
+          cp build/app/outputs/flutter-apk/*.apk release_apk/ || true
+          ls -la release_apk || true
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gavra-apk-temp
+          path: release_apk/*.apk
+          retention-days: 7
