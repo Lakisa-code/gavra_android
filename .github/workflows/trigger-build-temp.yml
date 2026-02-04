@@ -27,24 +27,50 @@ jobs:
 
       - name: Restore keystore from secrets
         run: |
-          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "No ANDROID_KEYSTORE_BASE64 secret set — failing build"
+          # Support either ANDROID_KEYSTORE_BASE64 or KEYSTORE_BASE64 for compatibility
+          KEYSTORE_B64="${{ secrets.ANDROID_KEYSTORE_BASE64 }}"
+          if [ -z "$KEYSTORE_B64" ]; then
+            KEYSTORE_B64="${{ secrets.KEYSTORE_BASE64 }}"
+          fi
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "No keystore secret found (checked ANDROID_KEYSTORE_BASE64 and KEYSTORE_BASE64) — failing build"
             exit 1
           fi
           mkdir -p android/app
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/key.jks
+          echo "$KEYSTORE_B64" | base64 --decode > android/app/key.jks
           ls -la android/app/key.jks
 
       - name: Create key.properties from secrets
         run: |
-          if [ -z "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" ] || [ -z "${{ secrets.ANDROID_KEY_ALIAS }}" ] || [ -z "${{ secrets.ANDROID_KEY_PASSWORD }}" ]; then
+          # Support multiple secret names for compatibility with existing repo secrets
+          STORE_PASS="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+          if [ -z "$STORE_PASS" ]; then
+            STORE_PASS="${{ secrets.KEYSTORE_PASSWORD }}"
+            if [ -z "$STORE_PASS" ]; then
+              STORE_PASS="${{ secrets.STORE_PASSWORD }}"
+            fi
+          fi
+
+          KEY_PASS="${{ secrets.ANDROID_KEY_PASSWORD }}"
+          if [ -z "$KEY_PASS" ]; then
+            KEY_PASS="${{ secrets.KEY_PASSWORD }}"
+          fi
+
+          KEY_ALIAS_VAL="${{ secrets.ANDROID_KEY_ALIAS }}"
+          if [ -z "$KEY_ALIAS_VAL" ]; then
+            KEY_ALIAS_VAL="${{ secrets.KEY_ALIAS }}"
+          fi
+
+          if [ -z "$STORE_PASS" ] || [ -z "$KEY_ALIAS_VAL" ] || [ -z "$KEY_PASS" ]; then
             echo "Key properties secrets not fully set — failing build"
+            echo "Expected one of: ANDROID_KEYSTORE_PASSWORD/KEYSTORE_PASSWORD/STORE_PASSWORD, ANDROID_KEY_ALIAS/KEY_ALIAS, ANDROID_KEY_PASSWORD/KEY_PASSWORD"
             exit 1
           fi
+
           cat > key.properties <<EOF
-storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+storePassword=$STORE_PASS
+keyPassword=$KEY_PASS
+keyAlias=$KEY_ALIAS_VAL
 storeFile=android/app/key.jks
 EOF
           ls -la key.properties
