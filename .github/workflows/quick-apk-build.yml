@@ -41,13 +41,15 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/gavra-release-key.keystore
 
-      - name: Create key.properties
+      - name: Create android/key.properties (used by Gradle)
         run: |
-          echo "storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}" > key.properties
-          echo "keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}" >> key.properties
-          echo "keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}" >> key.properties
-          echo "storeFile=android/app/gavra-release-key.keystore" >> key.properties
-          ls -la key.properties || true
+          mkdir -p android
+          echo "storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}" >> android/key.properties
+          # Use path relative to android/ so Gradle's rootProject.file(...) resolves correctly
+          echo "storeFile=app/gavra-release-key.keystore" >> android/key.properties
+          ls -la android/key.properties || true
 
       - name: 🏗️ Build APK (Release)
         env:
