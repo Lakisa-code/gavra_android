@@ -1,0 +1,110 @@
+name: '📲 Quick APK Build for Drivers'
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_description:
+        description: 'Opis izmena za vozače (npr. "Ispravljena greška pri loginu")'
+        required: false
+        default: 'Nove izmene aplikacije'
+      publish_release:
+        description: 'Objavi kao GitHub Release?'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: 🔨 Build APK Release
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.6'
+          channel: 'stable'
+
+      - name: 🔧 Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 📦 Get Flutter dependencies
+        run: flutter pub get
+
+      - name: 🔐 Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/gavra-release-key.keystore
+
+      - name: 🏗️ Build APK (Release)
+        env:
+          KEYSTORE_PATH: android/app/gavra-release-key.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release \
+            --dart-define=FLAVOR=production \
+            --split-per-abi
+
+      - name: 📊 Get version info
+        id: version
+        run: |
+          VERSION=$(grep "version:" pubspec.yaml | head -1 | awk -F'+' '{print $1}' | awk '{print $NF}')
+          BUILD=$(grep "version:" pubspec.yaml | head -1 | awk -F'+' '{print $2}')
+          TIMESTAMP=$(date +"'%Y-%m-%d %H:%M:%S'")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "build=${BUILD}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+
+      - name: 📦 Prepare APK files
+        run: |
+          mkdir -p build/apk-release
+          cp build/app/outputs/flutter-apk/*.apk build/apk-release/
+          ls -lah build/apk-release/
+
+      - name: 📤 Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: APK-v${{ steps.version.outputs.version }}
+          path: build/apk-release/
+          retention-days: 30
+
+      - name: 🎯 Create Release
+        if: github.event.inputs.publish_release == 'true'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ steps.version.outputs.version }}-build-${{ steps.version.outputs.build }}
+          name: Gavra v${{ steps.version.outputs.version }} Build ${{ steps.version.outputs.build }}
+          body: |
+            ## 📱 Gavra Android - Nova verzija dostupna!
+
+            **Verzija:** v${{ steps.version.outputs.version }} (Build ${{ steps.version.outputs.build }})
+            **Datum:** ${{ steps.version.outputs.timestamp }}
+
+            ### 📝 Izmene:
+            ${{ github.event.inputs.build_description }}
+
+            ### 📥 Preuzimanje:
+            Klikni na APK fajl ispod da preuzmeš novu verziju.
+          artifacts: build/apk-release/*.apk
+          prerelease: false
+          draft: false
+
+      - name: ✅ Build Success Summary
+        run: |
+          echo "=========================================="
+          echo "✅ APK BUILD SUCCESSFUL!"
+          echo "=========================================="
+          echo "Verzija: v${{ steps.version.outputs.version }}"
+          echo "Build: ${{ steps.version.outputs.build }}"
+          echo "Datum: ${{ steps.version.outputs.timestamp }}"
+          echo ""
+          echo "📥 Preuzimanje:"
+          echo "https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}-build-${{ steps.version.outputs.build }}"
+          echo "=========================================="
