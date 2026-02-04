@@ -47,8 +47,8 @@ jobs:
           echo "storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}" >> android/key.properties
-          # Use path relative to android/ so Gradle's rootProject.file(...) resolves correctly
-          echo "storeFile=app/gavra-release-key.keystore" >> android/key.properties
+          # Use filename relative to the app module so Gradle's file(...) resolves to android/app/<name>
+          echo "storeFile=gavra-release-key.keystore" >> android/key.properties
           ls -la android/key.properties || true
 
       - name: 🏗️ Build APK (Release)
