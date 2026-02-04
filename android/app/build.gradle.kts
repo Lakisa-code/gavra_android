@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import org.gradle.api.GradleException
 
 plugins {
     id("com.android.application")
@@ -50,6 +51,18 @@ android {
                 storeFile = file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
             }
+        }
+    }
+
+    // ✅ Validate expected release keystore when running release-related tasks
+    val isReleaseTask = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+    if (isReleaseTask) {
+        val storeFilePath = keystoreProperties["storeFile"] as? String
+        if (storeFilePath == null || storeFilePath.isBlank() || !rootProject.file(storeFilePath).exists()) {
+            throw GradleException(
+                "Missing or invalid release keystore. Expected keystore at '${storeFilePath ?: "<undefined>"}'.\n" +
+                    "Create a 'key.properties' with storeFile pointing to your keystore, or configure CI secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD."
+            )
         }
     }
 
