@@ -290,7 +290,12 @@ class MLVehicleAutonomousService extends ChangeNotifier {
     // Beba je pametna - ako vidi kolonu "servis_id", shvatiće da verovatno postoji i tabela "servis"
     for (final String col in columns) {
       if (col.endsWith('_id') && col != 'id') {
-        final String potential = col.replaceAll('_id', '');
+        String potential = col.replaceAll('_id', '');
+        
+        // 🛡️ FIX: Mapiranje specijalnih slučajeva (jednina -> množina)
+        if (potential == 'vozac') potential = 'vozaci';
+        if (potential == 'putnik') potential = 'registrovani_putnici';
+        
         // Beba ne može sama da kreira tabele u bazi (nema dozvolu),
         // ali ih sama DODAJE na svoju listu za skeniranje!
         final List<String> current = List<String>.from((_learnedPatterns['discovered_tables'] as List?) ?? []);
