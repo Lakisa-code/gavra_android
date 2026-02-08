@@ -295,7 +295,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
         // 🛡️ FIX: Mapiranje specijalnih slučajeva (jednina -> množina)
         if (potential == 'vozac') potential = 'vozaci';
         if (potential == 'putnik') potential = 'registrovani_putnici';
-        
+
         // 🛡️ FIX: Ignoriši tabele koje ne postoje u bazi
         final ignoredTables = [
           'adresa_bela_crkva',

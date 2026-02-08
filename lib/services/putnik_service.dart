@@ -1628,6 +1628,9 @@ class PutnikService {
             print('⚠️ Greška pri logovanju reset-a: $logError');
           }
 
+          // ✅ KRITIČNO: SAČUVAJ POČETNO VREME PRE BRISANJA MARKERA
+          final pocetnoVreme = dayData[place]?.toString();
+
           // Briši otkazivanje
           dayData.remove('${place}_otkazano');
           dayData.remove('${place}_otkazao_vozac');
@@ -1643,19 +1646,15 @@ class PutnikService {
           dayData.remove('placeno_iznos');
           dayData.remove('placeno_vozac');
 
-          // 🆕 BRISANJE VREMENA: Ako je dayData potpuno prazna nakon čišćenja, obriši dan iz polasci_po_danu
-          // Ali prvo, ako postoji {place}_vreme, to je čuvar za početno vreme - čuvaj ga!
-          if (dayData.isEmpty || (dayData.length == 1 && dayData.containsKey('${place}_vreme'))) {
-            // Dan je praktično prazan (nema nikakvih akcija) - obriši ga iz objekta
-            polasci.remove(danKratica);
-            // ignore: avoid_print
-            print('🔄 RESET CARD: Dan $danKratica je potpuno obrisana jer je prazna');
-          } else {
-            // Dan ima još nešto (npr. početno vreme) - čuva se
-            polasci[danKratica] = dayData;
-            // ignore: avoid_print
-            print('🔄 RESET CARD: Zadržava se dan $danKratica sa preostalim podacima: $dayData');
+          // ✅ VRATI POČETNO VREME - mora ostati u rasporedu!
+          if (pocetnoVreme != null && pocetnoVreme.isNotEmpty && pocetnoVreme != 'null') {
+            dayData[place] = pocetnoVreme;
           }
+
+          // Ažuriraj dan u polasci_po_danu (NIKAD više ne brišemo ceo dan!)
+          polasci[danKratica] = dayData;
+          // ignore: avoid_print
+          print('🔄 RESET CARD: Dan $danKratica resetovan - zadržano vreme $place: $pocetnoVreme');
 
           // ✅ Triple-tap resetuje karticu u belo stanje
           // Statistika u voznje_log OSTAJE NETAKNUTA
