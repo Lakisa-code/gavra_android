@@ -308,10 +308,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   Future<void> _handleSeatRequestApproval(PostgresChangePayload payload) async {
     try {
       final newRecord = payload.newRecord;
+      final requestId = newRecord['id'].toString();
       final putnikId = newRecord['putnik_id'].toString();
       final grad = newRecord['grad'].toString().toLowerCase(); // 'bc' ili 'vs'
       final datum = newRecord['datum'].toString();
       final vreme = newRecord['zeljeno_vreme'].toString();
+
+      // 🛡️ KRITIČNO: Odbaci ako je OldRecord već bio 'approved' - to znači da je već obrađeno!
+      final oldRecord = payload.oldRecord;
+      if (oldRecord['status'] == 'approved') {
+        debugPrint('⏭️ [SeatRequestApproval] Odbačen jer je već bio approved (request_id: $requestId)');
+        return;
+      }
 
       // 🛡️ PROVERA: Odbaci stare notifikacije (starije od 2 minuta)
       final processedAt = newRecord['processed_at'];
