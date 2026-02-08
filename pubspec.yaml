@@ -77,6 +77,9 @@ dev_dependencies:
   json_serializable: ^6.7.1
   flutter_launcher_icons: ^0.14.3
 
+dependency_overrides:
+  app_links: ^3.4.0
+
 # 🎨 LAUNCHER ICONS KONFIGURACIJA
 flutter_launcher_icons:
   android: true
