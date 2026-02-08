@@ -132,10 +132,51 @@ class _AuthScreenState extends State<AuthScreen> {
 
   /// Edituj vozača
   Future<void> _editVozac(int index) async {
-    // Editovanje nije dostupno u ovoj verziji
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Editovanje vozača nije dostupno'),
+    // Dohvati trenutni vozač stream podatke
+    final vozaci = await _vozacService.getAllVozaci();
+    if (index < 0 || index >= vozaci.length) return;
+    
+    final vozac = vozaci[index];
+    
+    // Popuni formu
+    _imeController.text = vozac.ime;
+    _emailController.text = vozac.email ?? '';
+    _sifraController.text = vozac.sifra ?? '';
+    _telefonController.text = vozac.brojTelefona ?? '';
+    _selectedColor = vozac.color ?? Colors.blue;
+
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => _buildVozacDialog(
+        title: 'Izmeni vozača',
+        onSave: () async {
+          if (!_formKey.currentState!.validate()) return;
+
+          final updatedVozac = Vozac(
+            id: vozac.id,
+            ime: _imeController.text.trim(),
+            email: _emailController.text.trim().toLowerCase(),
+            sifra: _sifraController.text,
+            brojTelefona: _telefonController.text.trim(),
+            boja: _selectedColor.value.toRadixString(16).padLeft(8, '0').substring(2),
+          );
+
+          try {
+            await _vozacService.updateVozac(updatedVozac);
+            if (!mounted) return;
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Vozač ažuriran')),
+            );
+          } catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Greška: $e')),
+            );
+          }
+        },
       ),
     );
   }
