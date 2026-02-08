@@ -666,10 +666,12 @@ class MLDispatchAutonomousService extends ChangeNotifier {
       // 📲 Pošalji notifikaciju putniku
       try {
         final gradNaziv = grad.toString().toLowerCase() == 'bc' ? 'Bela Crkva' : 'Vršac';
+        // Formatiranje vremena bez sekundi (5:00:00 -> 5:00)
+        final vremeFormatted = dodeljenoVreme.substring(0, dodeljenoVreme.lastIndexOf(':'));
         await RealtimeNotificationService.sendNotificationToPutnik(
           putnikId: putnikId.toString(),
           title: '✅ Zahtev Odobren',
-          body: 'Vaš zahtev za termin $dodeljenoVreme u pravcu $gradNaziv je odobren!',
+          body: 'Vaš zahtev za $gradNaziv u $vremeFormatted je odobren!',
           data: {
             'type': 'zahtev_odobren',
             'putnikId': putnikId.toString(),

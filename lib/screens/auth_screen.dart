@@ -135,9 +135,9 @@ class _AuthScreenState extends State<AuthScreen> {
     // Dohvati trenutni vozač stream podatke
     final vozaci = await _vozacService.getAllVozaci();
     if (index < 0 || index >= vozaci.length) return;
-    
+
     final vozac = vozaci[index];
-    
+
     // Popuni formu
     _imeController.text = vozac.ime;
     _emailController.text = vozac.email ?? '';
@@ -146,7 +146,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _selectedColor = vozac.color ?? Colors.blue;
 
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       builder: (ctx) => _buildVozacDialog(
