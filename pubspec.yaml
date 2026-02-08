@@ -79,6 +79,7 @@ dev_dependencies:
 
 dependency_overrides:
   app_links: ^3.4.0
+  geolocator_android: ^4.2.0
 
 # 🎨 LAUNCHER ICONS KONFIGURACIJA
 flutter_launcher_icons:
