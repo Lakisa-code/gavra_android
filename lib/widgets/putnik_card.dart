@@ -2417,6 +2417,14 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (confirm == true) {
       try {
+        // 🛡️ Provera da li je ID validan
+        if (_putnik.id == null || _putnik.id!.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('⚠️ Greška: Putnik nema ID-a')),
+          );
+          return;
+        }
+
         await PutnikService().ukloniIzTermina(
           _putnik.id!,
           datum: _putnik.datum ?? DateTime.now().toIso8601String().split('T')[0],

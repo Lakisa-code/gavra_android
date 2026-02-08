@@ -271,11 +271,20 @@ class PutnikService {
 
         // Dohvati uklonjene termine za ovog putnika
         final uklonjeniTerminiRaw = m['uklonjeni_termini'];
-        final List<dynamic> uklonjeniTermini;
+        late final List<dynamic> uklonjeniTermini;
         if (uklonjeniTerminiRaw is List<dynamic>) {
           uklonjeniTermini = uklonjeniTerminiRaw;
+        } else if (uklonjeniTerminiRaw is String) {
+          // 🛡️ Ako je JSON string, parsiraj ga
+          try {
+            final parsed = convert.jsonDecode(uklonjeniTerminiRaw);
+            uklonjeniTermini = parsed is List ? List<dynamic>.from(parsed) : [];
+          } catch (e) {
+            debugPrint('⚠️ [PutnikService] Greška pri parsiranju uklonjeni_termini za putnika ${m['ime']}: $e');
+            uklonjeniTermini = [];
+          }
         } else {
-          // Ako je string ili neki drugi tip, pretvori u praznu listu
+          // Ako je neki drugi tip, pretvori u praznu listu
           uklonjeniTermini = [];
           if (uklonjeniTerminiRaw != null) {
             debugPrint('⚠️ [PutnikService] uklonjeni_termini nije lista za putnika ${m['ime']}: $uklonjeniTerminiRaw');
@@ -356,11 +365,20 @@ class PutnikService {
 
         // ?? Dohvati uklonjene termine za ovog putnika
         final uklonjeniTerminiRaw = m['uklonjeni_termini'];
-        final List<dynamic> uklonjeniTermini;
+        late final List<dynamic> uklonjeniTermini;
         if (uklonjeniTerminiRaw is List<dynamic>) {
           uklonjeniTermini = uklonjeniTerminiRaw;
+        } else if (uklonjeniTerminiRaw is String) {
+          // 🛡️ Ako je JSON string, parsiraj ga
+          try {
+            final parsed = convert.jsonDecode(uklonjeniTerminiRaw);
+            uklonjeniTermini = parsed is List ? List<dynamic>.from(parsed) : [];
+          } catch (e) {
+            debugPrint('⚠️ [PutnikService] Greška pri parsiranju uklonjeni_termini za putnika ${m['ime']}: $e');
+            uklonjeniTermini = [];
+          }
         } else {
-          // Ako je string ili neki drugi tip, pretvori u praznu listu
+          // Ako je neki drugi tip, pretvori u praznu listu
           uklonjeniTermini = [];
           if (uklonjeniTerminiRaw != null) {
             debugPrint('⚠️ [PutnikService] uklonjeni_termini nije lista za putnika ${m['ime']}: $uklonjeniTerminiRaw');
@@ -893,6 +911,12 @@ class PutnikService {
     required String vreme,
     required String grad,
   }) async {
+    // 🛡️ Provera da li je ID validan
+    if (id == null || (id is String && id.isEmpty)) {
+      debugPrint('⚠️ [PutnikService] Pokušaj uklanjanja termina za nevažeći ID: $id');
+      return;
+    }
+
     final tabela = await _getTableForPutnik(id);
 
     final response = await supabase.from(tabela).select('uklonjeni_termini').eq('id', id as String).single();
@@ -900,10 +924,18 @@ class PutnikService {
     List<dynamic> uklonjeni = [];
     if (response['uklonjeni_termini'] != null) {
       final uklonjeniRaw = response['uklonjeni_termini'];
-      if (uklonjeniRaw is List) {
-        uklonjeni = List<dynamic>.from(uklonjeniRaw);
-      } else {
-        debugPrint('⚠️ [PutnikService] uklonjeni_termini nije lista za putnika $id: $uklonjeniRaw');
+      try {
+        if (uklonjeniRaw is List) {
+          uklonjeni = List<dynamic>.from(uklonjeniRaw);
+        } else if (uklonjeniRaw is String) {
+          // 🛡️ Ako je JSON string, parsiraj ga
+          final parsed = convert.jsonDecode(uklonjeniRaw);
+          if (parsed is List) {
+            uklonjeni = List<dynamic>.from(parsed);
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [PutnikService] Greška pri parsiranju uklonjeni_termini za putnika $id: $e');
       }
     }
 

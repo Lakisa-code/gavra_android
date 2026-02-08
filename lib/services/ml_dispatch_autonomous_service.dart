@@ -524,16 +524,39 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   /// Pomoćna funkcija za odobravanje zahteva
   Future<void> _approveSeatRequest(String requestId, String dodeljenoVreme, Map<String, dynamic> request) async {
     try {
+      // 🛡️ VALIDACIJA: Proveri da li su kritični podaci dostupni i validni
+      final putnikId = request['putnik_id'];
+      final grad = request['grad'];
+      final datum = request['datum'];
+
+      if (putnikId == null || putnikId.toString().isEmpty) {
+        if (kDebugMode) print(' [ML Dispatch] ❌ KRITIČNA GREŠKA: putnikId je null ili prazan! Ne mogu nastaviti.');
+        return;
+      }
+
+      // 🛡️ VALIDACIJA UUID FORMAT
+      if (!_isValidUuid(putnikId.toString())) {
+        if (kDebugMode)
+          print(
+              ' [ML Dispatch] ❌ KRITIČNA GREŠKA: putnikId "$putnikId" nije validan UUID! Mogao bi obrisati sve putnike!');
+        return;
+      }
+
+      if (grad == null || grad.toString().isEmpty) {
+        if (kDebugMode) print(' [ML Dispatch] ❌ KRITIČNA GREŠKA: grad je null ili prazan! Ne mogu nastaviti.');
+        return;
+      }
+
+      if (datum == null || datum.toString().isEmpty) {
+        if (kDebugMode) print(' [ML Dispatch] ❌ KRITIČNA GREŠKA: datum je null ili prazan! Ne mogu nastaviti.');
+        return;
+      }
+
       await _supabase.from('seat_requests').update({
         'status': 'approved',
         'dodeljeno_vreme': dodeljenoVreme,
         'processed_at': DateTime.now().toIso8601String(),
       }).eq('id', requestId);
-
-      // 🆕 SINHRONIZUJ POLASCI_PO_DANU STATUS
-      final putnikId = request['putnik_id'];
-      final grad = request['grad'];
-      final datum = request['datum'];
 
       if (kDebugMode) print(' [ML Dispatch] 🔄 Sinhronizujem polasci_po_danu za $putnikId, grad: $grad, datum: $datum');
 
@@ -587,20 +610,49 @@ class MLDispatchAutonomousService extends ChangeNotifier {
 
               if (kDebugMode) print(' [ML Dispatch] 📊 Trenutni danData za $dan: $danData');
 
-              // Ažuriraj status na approved
+              // Ažuriraj vrijeme i status na approved
+              danData['${grad.toLowerCase()}'] = dodeljenoVreme; // 🛡️ DODAJ VRIJEME!
               danData['${grad.toLowerCase()}_status'] = 'approved';
 
               if (kDebugMode) print(' [ML Dispatch] 📝 Novi danData: $danData');
 
               polasci[dan] = danData;
 
+              // 🛡️ KRITIČNA PROVERA 1: Nije dozvoljeno da se upiše prazna mapa!
+              if (polasci.isEmpty) {
+                if (kDebugMode)
+                  print(
+                      ' [ML Dispatch] ❌ KRITIČNA GREŠKA: polasci je prazan! Otkazujem update da ne obriše sve termine!');
+                return;
+              }
+
+              // 🛡️ KRITIČNA PROVERA 2: Proveri da li putnikId još uvek validan
+              if (!_isValidUuid(putnikId.toString())) {
+                if (kDebugMode)
+                  print(
+                      ' [ML Dispatch] ❌ KRITIČNA GREŠKA: putnikId nije validan UUID nakon obrade! putnikId=$putnikId');
+                return;
+              }
+
               // Sačuvaj ažurirani polasci_po_danu
               // 🛡️ VAŽNO: Ne prepisuj ceo JSON, već ažuriraj samo taj dan!
-              final updateResult =
-                  await _supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
-
               if (kDebugMode) {
-                print(' [ML Dispatch] ✅ Ažuriran polasci_po_danu za $putnikId ($dan $grad), rezultat: $updateResult');
+                print(' [ML Dispatch] 📝 Pre update-a: polasci.length=${polasci.length}, putnikId=$putnikId');
+              }
+
+              try {
+                final updateResult = await _supabase
+                    .from('registrovani_putnici')
+                    .update({'polasci_po_danu': polasci}).eq('id', putnikId);
+
+                if (kDebugMode) {
+                  print(' [ML Dispatch] ✅ Ažuriran polasci_po_danu za $putnikId ($dan $grad), rezultat: $updateResult');
+                }
+              } catch (updateError) {
+                if (kDebugMode) {
+                  print(' [ML Dispatch] ❌ GREŠKA PRI UPDATE-U: $updateError - putnikId=$putnikId');
+                }
+                rethrow;
               }
             } else {
               if (kDebugMode) print(' [ML Dispatch] ⚠️ Nije pronađen putnik $putnikId');
@@ -708,6 +760,13 @@ class MLDispatchAutonomousService extends ChangeNotifier {
       action: 'Vidi',
     ));
     notifyListeners();
+  }
+
+  /// 🛡️ Validira UUID format
+  bool _isValidUuid(String str) {
+    if (str.isEmpty) return false;
+    final uuidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', caseSensitive: false);
+    return uuidRegex.hasMatch(str);
   }
 }
 

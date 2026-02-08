@@ -569,10 +569,17 @@ class MLVehicleAutonomousService extends ChangeNotifier {
 
   Future<void> _loadLearnedPatterns() async {
     try {
-      final Map<String, dynamic>? result =
-          await _supabase.from('ml_config').select().eq('model_name', 'vehicle_patterns').maybeSingle();
-      if (result != null && result['parameters'] != null) {
-        _learnedPatterns.addAll(Map<String, dynamic>.from(result['parameters'] as Map));
+      final List<dynamic> results = await _supabase
+          .from('ml_config')
+          .select()
+          .eq('model_name', 'vehicle_patterns')
+          .order('updated_at', ascending: false)
+          .limit(1);
+      if (results.isNotEmpty) {
+        final Map<String, dynamic> result = results.first as Map<String, dynamic>;
+        if (result['parameters'] != null) {
+          _learnedPatterns.addAll(Map<String, dynamic>.from(result['parameters'] as Map));
+        }
       }
     } catch (e) {
       print('⚠️ [ML Lab] Greška pri učitavanju obrazaca: $e');
@@ -581,13 +588,17 @@ class MLVehicleAutonomousService extends ChangeNotifier {
 
   Future<void> _saveLearnedPatterns() async {
     try {
-      await _supabase.from('ml_config').upsert(<String, dynamic>{
-        'model_name': 'vehicle_patterns',
-        'model_version': '1.0',
-        'parameters': _learnedPatterns,
-        'is_active': true,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      // 🛡️ Koristi onConflict da ažuriram umesto da kreiram novi red
+      await _supabase.from('ml_config').upsert(
+        <String, dynamic>{
+          'model_name': 'vehicle_patterns',
+          'model_version': '1.0',
+          'parameters': _learnedPatterns,
+          'is_active': true,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'model_name',
+      );
     } catch (e) {
       print('⚠️ [ML Lab] Greška pri čuvanju obrazaca: $e');
     }
@@ -621,10 +632,17 @@ class MLVehicleAutonomousService extends ChangeNotifier {
 
   Future<Map<String, dynamic>> _loadLearnedPatternsMap() async {
     try {
-      final result =
-          await _supabase.from('ml_config').select('parameters').eq('model_name', 'vehicle_patterns').maybeSingle();
-      if (result != null && result['parameters'] != null) {
-        return Map<String, dynamic>.from(result['parameters'] as Map);
+      final List<dynamic> results = await _supabase
+          .from('ml_config')
+          .select('parameters')
+          .eq('model_name', 'vehicle_patterns')
+          .order('updated_at', ascending: false)
+          .limit(1);
+      if (results.isNotEmpty) {
+        final Map<String, dynamic> result = results.first as Map<String, dynamic>;
+        if (result['parameters'] != null) {
+          return Map<String, dynamic>.from(result['parameters'] as Map);
+        }
       }
     } catch (e) {
       print('⚠️ [ML Lab] Greška pri učitavanju obrazaca: $e');
