@@ -1365,7 +1365,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
                   return Column(
                     children: [
-                      // KOCKE - Pazar, Dugovi, Kusur
+                      // KOCKE - Pazar, Dugovi
                       // ✅ ISPRAVKA: Računaj statistike direktno iz liste putnika (kao DanasScreen)
                       Builder(
                         builder: (context) {

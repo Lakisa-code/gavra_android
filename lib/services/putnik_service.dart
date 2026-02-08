@@ -270,12 +270,23 @@ class PutnikService {
         final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica, isoDate: isoDate);
 
         // Dohvati uklonjene termine za ovog putnika
-        final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
+        final uklonjeniTerminiRaw = m['uklonjeni_termini'];
+        final List<dynamic> uklonjeniTermini;
+        if (uklonjeniTerminiRaw is List<dynamic>) {
+          uklonjeniTermini = uklonjeniTerminiRaw;
+        } else {
+          // Ako je string ili neki drugi tip, pretvori u praznu listu
+          uklonjeniTermini = [];
+          if (uklonjeniTerminiRaw != null) {
+            debugPrint('⚠️ [PutnikService] uklonjeni_termini nije lista za putnika ${m['ime']}: $uklonjeniTerminiRaw');
+          }
+        }
 
         for (var p in putniciZaDan) {
           // Proveri da li je putnik uklonjen iz ovog termina
           final jeUklonjen = uklonjeniTermini.any((ut) {
-            final utMap = ut as Map<String, dynamic>;
+            if (ut is! Map<String, dynamic>) return false;
+            final utMap = ut;
             final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
             final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
             final utDatum = utMap['datum']?.toString().split('T')[0];
@@ -344,7 +355,17 @@ class PutnikService {
         final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica, isoDate: todayDate);
 
         // ?? Dohvati uklonjene termine za ovog putnika
-        final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
+        final uklonjeniTerminiRaw = m['uklonjeni_termini'];
+        final List<dynamic> uklonjeniTermini;
+        if (uklonjeniTerminiRaw is List<dynamic>) {
+          uklonjeniTermini = uklonjeniTerminiRaw;
+        } else {
+          // Ako je string ili neki drugi tip, pretvori u praznu listu
+          uklonjeniTermini = [];
+          if (uklonjeniTerminiRaw != null) {
+            debugPrint('⚠️ [PutnikService] uklonjeni_termini nije lista za putnika ${m['ime']}: $uklonjeniTerminiRaw');
+          }
+        }
 
         for (var p in putniciZaDan) {
           final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
@@ -359,7 +380,8 @@ class PutnikService {
 
           // ?? Proveri da li je putnik uklonjen iz ovog termina
           final jeUklonjen = uklonjeniTermini.any((ut) {
-            final utMap = ut as Map<String, dynamic>;
+            if (ut is! Map<String, dynamic>) return false;
+            final utMap = ut;
             // Normalizuj vreme za poređenje
             final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
             final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
@@ -877,7 +899,12 @@ class PutnikService {
 
     List<dynamic> uklonjeni = [];
     if (response['uklonjeni_termini'] != null) {
-      uklonjeni = List<dynamic>.from(response['uklonjeni_termini'] as List);
+      final uklonjeniRaw = response['uklonjeni_termini'];
+      if (uklonjeniRaw is List) {
+        uklonjeni = List<dynamic>.from(uklonjeniRaw);
+      } else {
+        debugPrint('⚠️ [PutnikService] uklonjeni_termini nije lista za putnika $id: $uklonjeniRaw');
+      }
     }
 
     // Normalizuj vrednosti pre čuvanja za konzistentno poređenje
@@ -886,7 +913,8 @@ class PutnikService {
 
     // Spreči dupliranje istog termina
     final vecPostoji = uklonjeni.any((ut) {
-      final utMap = ut as Map<String, dynamic>;
+      if (ut is! Map<String, dynamic>) return false;
+      final utMap = ut;
       final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
       final utDatum = utMap['datum']?.toString().split('T')[0];
       return utDatum == normDatum && utVreme == normVreme && utMap['grad'] == grad;
@@ -1581,11 +1609,5 @@ class PutnikService {
     } catch (e) {
       throw Exception('Greška pri dodeljivanju vozača za pravac: $e');
     }
-  }
-
-  /// 🔄 PROVERI I IZVRŠI NEDELJNI RESET ako je potrebno
-  // ⚠️ UKLONJENO: Koristi se WeeklyResetService umesto ove metode
-  Future<void> checkAndPerformWeeklyReset() async {
-    return;
   }
 }

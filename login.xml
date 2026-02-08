@@ -1,7 +1,0 @@
-﻿<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-    <string name="flutter.device_id">SP1A.210812.016_SM-G970F_samsung</string>
-    <boolean name="flutter.app_first_launch_permissions" value="false" />
-    <string name="flutter.registrovani_putnik_telefon">0601234567</string>
-    <string name="flutter.registrovani_putnik_pin">1234</string>
-</map>

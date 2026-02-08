@@ -22,8 +22,6 @@ class DailyCheckInScreen extends StatefulWidget {
 }
 
 class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProviderStateMixin {
-  final TextEditingController _kusurController = TextEditingController();
-  final FocusNode _kusurFocusNode = FocusNode();
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -33,12 +31,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   void initState() {
     super.initState();
     _setupAnimations();
-
-    // Auto-focus na input field
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _kusurFocusNode.requestFocus();
-      // 📊 POMERENO: Popis se prikazuje tek nakon unosa kusura u _submitKusur()
-    });
   }
 
   void _setupAnimations() {
@@ -73,29 +65,15 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   @override
   void dispose() {
     _animationController.dispose();
-    _kusurController.dispose();
-    _kusurFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _submitCheckIn() async {
-    if (_kusurController.text.trim().isEmpty) {
-      _showError('Unesite iznos sitnog novca!');
-      return;
-    }
-
-    final double? iznos = double.tryParse(_kusurController.text.trim());
-
-    if (iznos == null || iznos < 0) {
-      _showError('Unesite valjan iznos za kusur!');
-      return;
-    }
-
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      // 🚀 DIREKTAN POZIV - Opet bez kilometraže
-      await DailyCheckInService.saveCheckIn(widget.vozac, iznos);
+      // 🚀 DIREKTAN POZIV - bez sitnog novca
+      await DailyCheckInService.saveCheckIn(widget.vozac);
 
       if (mounted) {
         // Reset loading state first
@@ -308,14 +286,14 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         child: Row(
                           children: [
                             Icon(
-                              Icons.info_outline,
+                              Icons.check_circle,
                               color: vozacColor,
                               size: 24,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'Unesite iznos sitnog novca za kusur',
+                                'Pritisnite "Potvrdi" da započnete dan',
                                 style: TextStyle(
                                   color: secondaryTextColor,
                                   fontSize: 16,
@@ -326,68 +304,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         ),
                       ),
 
-                      const SizedBox(height: 32),
-
-                      // Input field - Kusur
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: vozacColor.withValues(alpha: 0.2),
-                              blurRadius: 15,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _kusurController,
-                          focusNode: _kusurFocusNode,
-                          keyboardType: TextInputType.number,
-                          style: TextStyle(
-                            color: primaryTextColor,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
-                          decoration: InputDecoration(
-                            labelText: 'Sitan novac (kusur)',
-                            labelStyle: TextStyle(color: vozacColor, fontSize: 14),
-                            hintText: '0',
-                            hintStyle: TextStyle(
-                              color: primaryTextColor.withValues(alpha: 0.4),
-                              fontSize: 24,
-                            ),
-                            suffixText: 'RSD',
-                            suffixStyle: TextStyle(
-                              color: vozacColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            filled: true,
-                            fillColor: lightVozacColor.withValues(alpha: 0.6),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: vozacColor,
-                                width: 2,
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 20,
-                            ),
-                          ),
-                          onSubmitted: (_) => _submitCheckIn(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 48),
 
                       // Submit button
                       SizedBox(

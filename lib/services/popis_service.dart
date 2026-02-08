@@ -76,8 +76,8 @@ class PopisService {
     final naplaceniMesecni = stats['mesecne'] as int? ?? 0;
     final ukupanPazar = stats['pazar'] as double? ?? 0.0;
 
-    // 2. SITAN NOVAC
-    final sitanNovac = await DailyCheckInService.getTodayAmount(vozac) ?? 0.0;
+    // 2. SITAN NOVAC - UVEK 0.0 NAKON UKLANJANJA KUSUR FUNKCIONALNOSTI
+    const double sitanNovac = 0.0;
 
     // 3. KILOMETRAŽA
     late double kilometraza;
@@ -110,7 +110,7 @@ class PopisService {
   /// Sačuvaj popis u bazu
   static Future<void> savePopis(PopisData data) async {
     await DailyCheckInService.saveDailyReport(data.vozac, data.datum, data.toMap());
-    await DailyCheckInService.saveCheckIn(data.vozac, data.sitanNovac, date: data.datum);
+    await DailyCheckInService.saveCheckIn(data.vozac, date: data.datum);
   }
 
   /// Prikaži popis dialog i vrati true ako korisnik želi da sačuva
@@ -189,30 +189,6 @@ class PopisService {
                     Icons.monetization_on,
                     Colors.amber,
                   ),
-
-                  const SizedBox(height: 12),
-
-                  // SITAN NOVAC
-                  if (data.sitanNovac > 0)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.account_balance_wallet, color: Colors.orange, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Sitan novac: ${data.sitanNovac.toStringAsFixed(0)} RSD',
-                            style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
 
                   const SizedBox(height: 12),
 
