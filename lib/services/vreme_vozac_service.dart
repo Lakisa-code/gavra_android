@@ -30,7 +30,10 @@ class VremeVozacService {
   /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
   /// Vraća ime vozača ili null ako nije dodeljen
   Future<String?> getVozacZaVreme(String grad, String vreme, String dan) async {
-    final cacheKey = '$grad|$vreme|$dan';
+    final normalizedVreme = _normalizeTime(vreme);
+    if (normalizedVreme == null) return null;
+
+    final cacheKey = '$grad|$normalizedVreme|$dan';
 
     // Proveri keš prvo
     if (_cache.containsKey(cacheKey)) {
@@ -42,7 +45,7 @@ class VremeVozacService {
           .from('vreme_vozac')
           .select('vozac_ime')
           .eq('grad', grad)
-          .eq('vreme', vreme)
+          .eq('vreme', normalizedVreme)
           .eq('dan', dan)
           .maybeSingle();
 
@@ -59,7 +62,10 @@ class VremeVozacService {
   /// Koristi se u putnik.dart gde ne možemo async
   /// MORA SE PRVO POZVATI loadAllVremeVozac() za učitavanje keša!
   String? getVozacZaVremeSync(String grad, String vreme, String dan) {
-    final cacheKey = '$grad|$vreme|$dan';
+    final normalizedVreme = _normalizeTime(vreme);
+    if (normalizedVreme == null) return null;
+
+    final cacheKey = '$grad|$normalizedVreme|$dan';
     return _cache[cacheKey];
   }
 
@@ -72,12 +78,15 @@ class VremeVozacService {
       _cache.clear();
       for (final row in response as List) {
         final grad = row['grad'] as String;
-        final vreme = row['vreme'] as String;
+        final rawVreme = row['vreme'] as String;
         final dan = row['dan'] as String;
         final vozacIme = row['vozac_ime'] as String?;
 
-        final cacheKey = '$grad|$vreme|$dan';
-        _cache[cacheKey] = vozacIme;
+        final normalizedVreme = _normalizeTime(rawVreme);
+        if (normalizedVreme != null) {
+          final cacheKey = '$grad|$normalizedVreme|$dan';
+          _cache[cacheKey] = vozacIme;
+        }
       }
       // print('✅ Učitano ${_cache.length} vreme_vozac zapisa');
     } catch (e) {
@@ -91,6 +100,12 @@ class VremeVozacService {
   /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
   /// [vozacIme] - 'Ivan', 'Bilevski', 'Goran'
   Future<void> setVozacZaVreme(String grad, String vreme, String dan, String vozacIme) async {
+    // Normalize vreme to ensure consistent HH:MM format
+    final normalizedVreme = _normalizeTime(vreme);
+    if (normalizedVreme == null) {
+      throw Exception('Nevalidan format vremena: "$vreme"');
+    }
+
     // Validacija
     if (!VozacBoja.isValidDriver(vozacIme)) {
       throw Exception('Nevalidan vozač: "$vozacIme". Dozvoljeni: ${VozacBoja.validDrivers.join(", ")}');
@@ -100,14 +115,14 @@ class VremeVozacService {
       // Upsert - ako postoji ažuriraj, ako ne postoji dodaj
       await supabase.from('vreme_vozac').upsert({
         'grad': grad,
-        'vreme': vreme,
+        'vreme': normalizedVreme,
         'dan': dan,
         'vozac_ime': vozacIme,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'grad,vreme,dan');
 
       // Ažuriraj keš
-      final cacheKey = '$grad|$vreme|$dan';
+      final cacheKey = '$grad|$normalizedVreme|$dan';
       _cache[cacheKey] = vozacIme;
 
       // Obavesti listenere
@@ -119,11 +134,16 @@ class VremeVozacService {
 
   /// 🗑️ Ukloni vozača sa vremena
   Future<void> removeVozacZaVreme(String grad, String vreme, String dan) async {
+    final normalizedVreme = _normalizeTime(vreme);
+    if (normalizedVreme == null) {
+      throw Exception('Nevalidan format vremena: "$vreme"');
+    }
+
     try {
-      await supabase.from('vreme_vozac').delete().eq('grad', grad).eq('vreme', vreme).eq('dan', dan);
+      await supabase.from('vreme_vozac').delete().eq('grad', grad).eq('vreme', normalizedVreme).eq('dan', dan);
 
       // Ažuriraj keš
-      final cacheKey = '$grad|$vreme|$dan';
+      final cacheKey = '$grad|$normalizedVreme|$dan';
       _cache.remove(cacheKey);
 
       // Obavesti listenere
@@ -155,5 +175,19 @@ class VremeVozacService {
   /// 🔄 Dispose
   void dispose() {
     _changesController.close();
+  }
+
+  /// 🕒 Helper: Normalize time to HH:MM format
+  String? _normalizeTime(String time) {
+    // Simple normalization: ensure HH:MM format
+    final parts = time.split(':');
+    if (parts.length >= 2) {
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour != null && minute != null && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+        return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+      }
+    }
+    return null;
   }
 }
