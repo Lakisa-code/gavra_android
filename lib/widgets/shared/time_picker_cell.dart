@@ -362,12 +362,15 @@ class TimePickerCell extends StatelessWidget {
                       Icon(Icons.check_circle, size: 12, color: Colors.green),
                       const SizedBox(width: 2),
                     ],
-                    Text(
-                      value!,
-                      style: TextStyle(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: (isPending || isWaiting || locked || isCancelled) ? 12 : 14,
+                    Flexible(
+                      child: Text(
+                        value!.split(':').take(2).join(':'),
+                        style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: (isPending || isWaiting || locked || isCancelled) ? 12 : 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
