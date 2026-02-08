@@ -1,6 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 
 import '../globals.dart';
 import '../helpers/gavra_ui.dart';
@@ -1235,8 +1235,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     required String label,
     required IconData icon,
   }) {
-    final contactPicker = FlutterNativeContactPicker();
-
     return Row(
       children: [
         Expanded(
@@ -1275,13 +1273,27 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             borderRadius: BorderRadius.circular(12),
             onTap: () async {
               try {
-                final contact = await contactPicker.selectContact();
-                if (contact != null && contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
-                  // Uzmi prvi broj telefona
-                  String phoneNumber = contact.phoneNumbers!.first;
-                  // Očisti broj od razmaka i specijalnih karaktera
-                  phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-                  controller.text = phoneNumber;
+                // Traži dozvolu za pristup kontaktima
+                if (await FlutterContacts.requestPermission()) {
+                  // Otvori contacts picker
+                  final Contact? contact = await FlutterContacts.openExternalPicker();
+                  
+                  if (contact != null && contact.phones.isNotEmpty) {
+                    // Uzmi prvi broj telefona
+                    String phoneNumber = contact.phones.first.number;
+                    // Očisti broj od razmaka i specijalnih karaktera
+                    phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                    controller.text = phoneNumber;
+                  }
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Dozvola za pristup kontaktima je odbijena'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
                 }
               } catch (e) {
                 if (mounted) {
