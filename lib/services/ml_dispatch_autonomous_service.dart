@@ -668,10 +668,24 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         final gradNaziv = grad.toString().toLowerCase() == 'bc' ? 'Bela Crkva' : 'Vršac';
         // Formatiranje vremena bez sekundi (5:00:00 -> 5:00)
         final vremeFormatted = dodeljenoVreme.substring(0, dodeljenoVreme.lastIndexOf(':'));
+        
+        // Izračunaj dan iz datuma
+        final date = DateTime.parse(datum.toString());
+        const daniMap = {
+          DateTime.monday: 'ponedeljak',
+          DateTime.tuesday: 'utorak',
+          DateTime.wednesday: 'sredu',
+          DateTime.thursday: 'četvrtak',
+          DateTime.friday: 'petak',
+          DateTime.saturday: 'subotu',
+          DateTime.sunday: 'nedelju'
+        };
+        final danNaziv = daniMap[date.weekday] ?? 'dan';
+        
         await RealtimeNotificationService.sendNotificationToPutnik(
           putnikId: putnikId.toString(),
           title: '✅ Zahtev Odobren',
-          body: 'Vaš zahtev za $gradNaziv u $vremeFormatted je odobren!',
+          body: 'Vaš zahtev za $danNaziv $gradNaziv u $vremeFormatted je odobren!',
           data: {
             'type': 'zahtev_odobren',
             'putnikId': putnikId.toString(),
