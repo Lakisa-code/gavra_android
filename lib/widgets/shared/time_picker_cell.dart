@@ -183,13 +183,7 @@ class TimePickerCell extends StatelessWidget {
       bgColor = Colors.green.shade50;
       textColor = Colors.green.shade800;
     }
-    // 🟢 IMA VREMENA - zelena (osnovna stanja - put putnik je zakazao vrijeme)
-    else if (hasTime) {
-      borderColor = Colors.green;
-      bgColor = Colors.green.shade50;
-      textColor = Colors.green.shade800;
-    }
-    // 🟠 PENDING - narandžasto
+    // 🟠 PENDING - narandžasto (prioritet nad hasTime!)
     else if (isPending) {
       borderColor = Colors.orange;
       bgColor = Colors.orange.shade50;
@@ -200,6 +194,12 @@ class TimePickerCell extends StatelessWidget {
       borderColor = Colors.blue;
       bgColor = Colors.blue.shade50;
       textColor = Colors.blue.shade800;
+    }
+    // 🟢 IMA VREMENA - zelena (osnovna stanja - putnik je zakazao vreme)
+    else if (hasTime) {
+      borderColor = Colors.green;
+      bgColor = Colors.green.shade50;
+      textColor = Colors.green.shade800;
     }
 
     return GestureDetector(
