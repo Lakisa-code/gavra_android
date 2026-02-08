@@ -4,6 +4,16 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'services/theme_manager.dart';
 
+// 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
+extension ColorCompat on Color {
+  Color withValues({double? alpha, double? red, double? green, double? blue}) {
+    if (alpha != null) {
+      return withOpacity(alpha);
+    }
+    return this;
+  }
+}
+
 // 🎨 SAMO TRIPLE BLUE FASHION TEMA!
 
 // ⚡🔷💠 TRIPLE BLUE FASHION - Electric + Ice + Neon kombinacija!
