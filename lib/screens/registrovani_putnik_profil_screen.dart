@@ -1758,57 +1758,59 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     ],
 
                     // 💰 TRENUTNO ZADUŽENJE
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: _ukupnoZaduzenje > 0
-                              ? [Colors.red.withOpacity(0.2), Colors.red.withOpacity(0.05)]
-                              : [Colors.green.withOpacity(0.2), Colors.green.withOpacity(0.05)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _ukupnoZaduzenje > 0 ? Colors.red.withOpacity(0.3) : Colors.green.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            'TRENUTNO STANJE',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                              fontSize: 11,
-                              letterSpacing: 1,
-                            ),
+                    if (_putnikData['cena_po_danu'] != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: _ukupnoZaduzenje > 0
+                                ? [Colors.red.withOpacity(0.2), Colors.red.withOpacity(0.05)]
+                                : [Colors.green.withOpacity(0.2), Colors.green.withOpacity(0.05)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO OK',
-                            style: TextStyle(
-                              color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _ukupnoZaduzenje > 0 ? Colors.red.withOpacity(0.3) : Colors.green.withOpacity(0.3),
+                            width: 1,
                           ),
-                          if (_cenaPoVoznji > 0) ...[
-                            const SizedBox(height: 4),
+                        ),
+                        child: Column(
+                          children: [
                             Text(
-                              'Cena: ${_cenaPoVoznji.toStringAsFixed(0)} RSD / ${tip.toLowerCase() == 'radnik' || tip.toLowerCase() == 'ucenik' ? 'dan' : 'vožnja'}',
+                              'TRENUTNO STANJE',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
-                                fontSize: 10,
-                                fontStyle: FontStyle.italic,
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 11,
+                                letterSpacing: 1,
                               ),
                             ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO OK',
+                              style: TextStyle(
+                                color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (_cenaPoVoznji > 0) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Cena: ${_cenaPoVoznji.toStringAsFixed(0)} RSD / ${tip.toLowerCase() == 'radnik' || tip.toLowerCase() == 'ucenik' ? 'dan' : 'vožnja'}',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.5),
+                                  fontSize: 10,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
 
                     // 📊 Detaljne statistike - dugme za dijalog
                     _buildDetaljneStatistikeDugme(),
@@ -2083,7 +2085,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
 
     // 💰 GAVRA DUG PODSETNIK (od 27. u mesecu)
-    if (novoVreme != null && DateTime.now().day >= 27 && _ukupnoZaduzenje > 0) {
+    if (novoVreme != null && DateTime.now().day >= 27 && _ukupnoZaduzenje > 0 && _putnikData['cena_po_danu'] != null) {
       if (mounted) {
         GavraUI.showSnackBar(
           context,

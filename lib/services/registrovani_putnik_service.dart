@@ -136,7 +136,7 @@ class RegistrovaniPutnikService {
       final putnici = data
           .where((json) {
             final aktivan = json['aktivan'] as bool? ?? false;
-            final obrisan = json['obrisan'] as bool? ?? true;
+            final obrisan = json['obrisan'] as bool? ?? false; // 🛡️ FIX: Default je false (nije obrisan)
             final isDuplicate = json['is_duplicate'] as bool? ?? false;
             return aktivan && !obrisan && !isDuplicate;
           })
@@ -204,7 +204,7 @@ class RegistrovaniPutnikService {
 
       // Proveri da li zadovoljava filter kriterijume (aktivan, nije obrisan, nije duplikat)
       final aktivan = newRecord['aktivan'] as bool? ?? false;
-      final obrisan = newRecord['obrisan'] as bool? ?? true;
+      final obrisan = newRecord['obrisan'] as bool? ?? false; // 🛡️ FIX: Default je false
       final isDuplicate = newRecord['is_duplicate'] as bool? ?? false;
 
       if (!aktivan || obrisan || isDuplicate) {
@@ -234,7 +234,7 @@ class RegistrovaniPutnikService {
 
       // Proveri da li sada zadovoljava filter kriterijume
       final aktivan = newRecord['aktivan'] as bool? ?? false;
-      final obrisan = newRecord['obrisan'] as bool? ?? true;
+      final obrisan = newRecord['obrisan'] as bool? ?? false; // 🛡️ FIX: Default je false
       final isDuplicate = newRecord['is_duplicate'] as bool? ?? false;
       final shouldBeIncluded = aktivan && !obrisan && !isDuplicate;
 

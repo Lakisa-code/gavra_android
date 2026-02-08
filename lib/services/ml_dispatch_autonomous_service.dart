@@ -595,9 +595,9 @@ class MLDispatchAutonomousService extends ChangeNotifier {
               polasci[dan] = danData;
 
               // Sačuvaj ažurirani polasci_po_danu
-              final updateResult = await _supabase
-                  .from('registrovani_putnici')
-                  .update({'polasci_po_danu': json.encode(polasci)}).eq('id', putnikId);
+              // 🛡️ VAŽNO: Ne prepisuj ceo JSON, već ažuriraj samo taj dan!
+              final updateResult =
+                  await _supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
               if (kDebugMode) {
                 print(' [ML Dispatch] ✅ Ažuriran polasci_po_danu za $putnikId ($dan $grad), rezultat: $updateResult');

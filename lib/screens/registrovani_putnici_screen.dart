@@ -1640,6 +1640,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
           if (mounted) {
             setState(() {
               _streamRefreshKey++;
+              // ?? RESET FILTERA: Kada se sačuva putnik, resetuj filtere da se svi vide
+              _selectedFilter = 'svi';
+              _paymentFilter = 'svi';
+              _searchController.clear();
             });
           }
         },
@@ -1667,7 +1671,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       builder: (context) => RegistrovaniPutnikDialog(
         existingPutnik: null, // null indicates adding mode
         onSaved: () {
-          if (mounted) setState(() {});
+          if (mounted)
+            setState(() {
+              // ?? RESET FILTERA: Kada se doda novi putnik, resetuj filtere da se svi vide
+              _selectedFilter = 'svi';
+              _paymentFilter = 'svi';
+              _searchController.clear();
+            });
         },
       ),
     );
