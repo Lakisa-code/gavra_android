@@ -312,6 +312,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final grad = newRecord['grad'].toString().toLowerCase(); // 'bc' ili 'vs'
       final datum = newRecord['datum'].toString();
       final vreme = newRecord['zeljeno_vreme'].toString();
+      
+      // 🛡️ PROVERA: Odbaci stare notifikacije (starije od 2 minuta)
+      final processedAt = newRecord['processed_at'];
+      if (processedAt != null) {
+        final processedTime = DateTime.parse(processedAt.toString());
+        final now = DateTime.now();
+        if (now.difference(processedTime).inMinutes > 2) {
+          debugPrint('⏭️ [SeatRequestApproval] Odbačena stara notifikacija (processed ${now.difference(processedTime).inMinutes} min ago)');
+          return;
+        }
+      }
 
       // Izračunaj dan iz datuma
       final date = DateTime.parse(datum);

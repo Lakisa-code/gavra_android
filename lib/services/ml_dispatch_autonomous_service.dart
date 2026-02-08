@@ -668,7 +668,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         final gradNaziv = grad.toString().toLowerCase() == 'bc' ? 'Bela Crkva' : 'Vršac';
         // Formatiranje vremena bez sekundi (5:00:00 -> 5:00)
         final vremeFormatted = dodeljenoVreme.substring(0, dodeljenoVreme.lastIndexOf(':'));
-        
+
         // Izračunaj dan iz datuma
         final date = DateTime.parse(datum.toString());
         const daniMap = {
@@ -681,7 +681,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
           DateTime.sunday: 'nedelju'
         };
         final danNaziv = daniMap[date.weekday] ?? 'dan';
-        
+
         await RealtimeNotificationService.sendNotificationToPutnik(
           putnikId: putnikId.toString(),
           title: '✅ Zahtev Odobren',
