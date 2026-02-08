@@ -154,6 +154,7 @@ class TimePickerCell extends StatelessWidget {
     final isPending = status == 'pending';
     final isWaiting = status == 'waiting';
     final isApproved = status == 'approved';
+    final isConfirmed = status == 'confirmed';
     final locked = isLocked;
 
     // debugPrint(
@@ -176,8 +177,14 @@ class TimePickerCell extends StatelessWidget {
       bgColor = Colors.grey.shade200;
       textColor = Colors.grey.shade600;
     }
-    // 🟢 APPROVED - zelena
-    else if (isApproved) {
+    // 🟢 APPROVED ili CONFIRMED - zelena
+    else if (isApproved || isConfirmed) {
+      borderColor = Colors.green;
+      bgColor = Colors.green.shade50;
+      textColor = Colors.green.shade800;
+    }
+    // 🟢 IMA VREMENA - zelena (osnovna stanja - put putnik je zakazao vrijeme)
+    else if (hasTime) {
       borderColor = Colors.green;
       bgColor = Colors.green.shade50;
       textColor = Colors.green.shade800;
