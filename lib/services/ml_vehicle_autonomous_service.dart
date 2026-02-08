@@ -304,6 +304,8 @@ class MLVehicleAutonomousService extends ChangeNotifier {
           'adresa_vs',
           'merged_into',
           'merged_from',
+          'putnik', // koristi registrovani_putnici
+          'batch',
         ];
         if (ignoredTables.contains(potential)) continue;
 
