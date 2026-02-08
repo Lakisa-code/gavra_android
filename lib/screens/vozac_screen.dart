@@ -21,6 +21,7 @@ import '../services/route_service.dart'; // 🚐 Dinamički satni redoslijedi
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
+import '../services/vreme_vozac_service.dart'; // 🚐 Za dodeljena vremena vozača
 import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/putnik_helpers.dart'; // 🎯 Centralizovani helperi
@@ -70,6 +71,35 @@ class _VozacScreenState extends State<VozacScreen> {
 
   /// 📅 HELPER: Vraća radni DateTime - vikendom vraća naredni ponedeljak
   DateTime _getWorkingDateTime() => PutnikHelpers.getWorkingDateTime();
+
+  /// 🚐 HELPER: Dobij dodeljena vremena za trenutnog vozača
+  List<Map<String, String>> _getDodeljenaVremena() {
+    if (_currentDriver == null) return [];
+
+    final vozaciZaDan = VremeVozacService().getVozaciZaDanSync(_isoDateToDayAbbr(_getWorkingDateIso()));
+    final dodeljena = <Map<String, String>>[];
+
+    vozaciZaDan.forEach((key, vozac) {
+      if (vozac == _currentDriver) {
+        final parts = key.split('|');
+        if (parts.length == 2) {
+          dodeljena.add({
+            'grad': parts[0],
+            'vreme': parts[1],
+          });
+        }
+      }
+    });
+
+    // Sortiraj po vremenu
+    dodeljena.sort((a, b) {
+      final aTime = a['vreme']!;
+      final bTime = b['vreme']!;
+      return aTime.compareTo(bTime);
+    });
+
+    return dodeljena;
+  }
 
   String? _currentDriver; // 🎯 Trenutni vozač
 
@@ -164,6 +194,12 @@ class _VozacScreenState extends State<VozacScreen> {
     _initializeNotifications();
     _initializeGpsTracking();
     _checkIfPopisSaved();
+    _loadVremeVozacData();
+  }
+
+  // 🚐 UČITAJ VREME VOZAC PODATKE
+  Future<void> _loadVremeVozacData() async {
+    await VremeVozacService().loadAllVremeVozac();
   }
 
   // 🛰️ GPS TRACKING INICIJALIZACIJA
@@ -1492,6 +1528,25 @@ class _VozacScreenState extends State<VozacScreen> {
                           );
                         },
                       ),
+                      // 🚐 DOĐELJENA VREMENA - Prikazuje vremena dodeljena ovom vozaču
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Vaša dodeljena vremena:',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildDodeljenaVremenaChips(),
+                          ],
+                        ),
+                      ),
                       // Lista putnika - koristi PutnikList sa stream-om kao DanasScreen
                       Expanded(
                         child: putnici.isEmpty
@@ -1828,6 +1883,77 @@ class _VozacScreenState extends State<VozacScreen> {
     if (color == Colors.red) return Colors.red[300]!;
     if (color == Colors.orange) return Colors.orange[300]!;
     return color.withValues(alpha: 0.6);
+  }
+
+  // 🚐 WIDGET ZA PRIKAZ DOĐELJENIH VREMENA
+  Widget _buildDodeljenaVremenaChips() {
+    final dodeljenaVremena = _getDodeljenaVremena();
+
+    if (dodeljenaVremena.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: Text(
+            'Nema dodeljenih vremena za današnji dan',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: dodeljenaVremena.map((vremeData) {
+        final grad = vremeData['grad']!;
+        final vreme = vremeData['vreme']!;
+        final isSelected = _selectedGrad == grad && _selectedVreme == vreme;
+
+        return InkWell(
+          onTap: () {
+            setState(() {
+              _selectedGrad = grad;
+              _selectedVreme = vreme;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.blue.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? Colors.blue : Colors.white.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  grad == 'Bela Crkva' ? Icons.location_city : Icons.location_on,
+                  size: 16,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$grad $vreme',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 
   // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA KADA VOZAC KRENE
