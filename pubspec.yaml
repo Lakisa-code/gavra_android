@@ -53,7 +53,7 @@ dependencies:
   # supabase: ^2.10.0  # UKLONJENO 2026-01-05 - duplikat (već u supabase_flutter)
   
   # 🏗️ STATE MANAGEMENT & IMMUTABLE MODELS
-  freezed_annotation: ^3.1.0
+  freezed_annotation: ^2.4.0
   json_annotation: ^4.8.1
 
   # 🗺️ OFFLINE MAPS DATABASE
@@ -73,7 +73,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   build_runner: ^2.4.6
-  freezed: ^3.1.0
+  freezed: ^2.4.0
   json_serializable: ^6.7.1
   flutter_launcher_icons: ^0.14.3
 
