@@ -2134,8 +2134,35 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (!polasci.containsKey(dan)) {
         polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
       } else if (polasci[dan] is! Map) {
-        // Ako nije mapa, kreiraj novu
-        polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
+        // ✅ KRITIČNO: Ako nije mapa, učitaj SVEŽU VERZIJU IZ BAZE da bi sačuvali postojeće podatke!
+        debugPrint('⚠️ [Vreme] polasci[$dan] nije Map! Učitavam iz baze da sačuvam podatke...');
+        if (putnikId != null) {
+          try {
+            final freshData = await supabase
+                .from('registrovani_putnici')
+                .select('polasci_po_danu')
+                .eq('id', putnikId)
+                .maybeSingle();
+            if (freshData != null) {
+              final freshPolasci = _safeMap(freshData['polasci_po_danu']);
+              if (freshPolasci.containsKey(dan) && freshPolasci[dan] is Map) {
+                // Sačuvaj postojeći dan iz baze
+                polasci[dan] = Map<String, dynamic>.from(freshPolasci[dan] as Map);
+                debugPrint('✅ [Vreme] Sačuvani postojeći podaci za $dan: ${polasci[dan]}');
+              } else {
+                // Nema podataka u bazi, kreiraj praznu mapu
+                polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
+              }
+            } else {
+              polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
+            }
+          } catch (e) {
+            debugPrint('❌ [Vreme] Greška pri učitavanju iz baze: $e');
+            polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
+          }
+        } else {
+          polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
+        }
       }
       // Ne kreiramo novu mapu ako dan već postoji - čuvamo sve postojeće markere!
 
