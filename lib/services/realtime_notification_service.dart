@@ -98,9 +98,9 @@ class RealtimeNotificationService {
   }) async {
     try {
       final response =
-          await supabase.from('push_tokens').select('token, provider').eq('user_id', putnikId).maybeSingle();
+          await supabase.from('push_tokens').select('token, provider').eq('user_id', putnikId);
 
-      if (response == null) {
+      if ((response as List).isEmpty) {
         await LocalNotificationService.showRealtimeNotification(
           title: title,
           body: body,
@@ -109,12 +109,12 @@ class RealtimeNotificationService {
         return false;
       }
 
-      final tokens = [
-        {
-          'token': response['token'] as String,
-          'provider': response['provider'] as String,
-        }
-      ];
+      final tokens = (response)
+          .map<Map<String, dynamic>>((t) => {
+                'token': t['token'] as String,
+                'provider': t['provider'] as String,
+              })
+          .toList();
 
       return await sendPushNotification(
         title: title,
