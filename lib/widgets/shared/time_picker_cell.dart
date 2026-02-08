@@ -156,8 +156,8 @@ class TimePickerCell extends StatelessWidget {
     final isApproved = status == 'approved';
     final locked = isLocked;
 
-    debugPrint(
-        '🎨 [TimePickerCell] value=$value, status=$status, isPending=$isPending, dayName=$dayName, locked=$locked, isCancelled=$isCancelled');
+    // debugPrint(
+    //     '🎨 [TimePickerCell] value=$value, status=$status, isPending=$isPending, dayName=$dayName, locked=$locked, isCancelled=$isCancelled');
 
     // Boje za različite statuse
     Color borderColor = Colors.grey.shade300;

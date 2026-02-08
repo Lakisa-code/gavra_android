@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/vozac.dart';
@@ -43,9 +44,9 @@ class VozacBoja {
     try {
       await _loadFromDatabase();
       _isInitialized = true;
-      debugPrint('✅ [VozacBoja] Initialized with ${_bojeCache?.length ?? 0} drivers');
+      if (kDebugMode) debugPrint('✅ [VozacBoja] Initialized with ${_bojeCache?.length ?? 0} drivers');
     } catch (e) {
-      debugPrint('❌ [VozacBoja] Database load failed: $e, using fallback');
+      if (kDebugMode) debugPrint('❌ [VozacBoja] Database load failed: $e, using fallback');
       // Ako baza nije dostupna, koristi fallback
       _bojeCache = Map.from(_fallbackBoje);
       _isInitialized = true;
@@ -54,10 +55,10 @@ class VozacBoja {
 
   /// Učitava boje iz baze podataka
   static Future<void> _loadFromDatabase() async {
-    debugPrint('🔍 [VozacBoja] Loading drivers from database...');
+    if (kDebugMode) debugPrint('🔍 [VozacBoja] Loading drivers from database...');
     final vozacService = VozacService();
     final vozaci = await vozacService.getAllVozaci();
-    debugPrint('✅ [VozacBoja] Loaded ${vozaci.length} drivers from database');
+    if (kDebugMode) debugPrint('✅ [VozacBoja] Loaded ${vozaci.length} drivers from database');
 
     _bojeCache = {};
     _vozaciCache = {};

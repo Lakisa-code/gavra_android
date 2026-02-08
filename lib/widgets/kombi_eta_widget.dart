@@ -181,8 +181,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         }
       }
 
-      // DEBUG: Štampaj šta je pronađeno
-      debugPrint('🚐 KombiEtaWidget: putnikIme=${widget.putnikIme}, eta=$eta, putniciEta=$putniciEta');
+      // // DEBUG: Štampaj šta je pronađeno
+      // debugPrint('🚐 KombiEtaWidget: putnikIme=${widget.putnikIme}, eta=$eta, putniciEta=$putniciEta');
 
       setState(() {
         _isActive = true;
@@ -345,7 +345,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           pokupljenoDate.year == danas.year && pokupljenoDate.month == danas.month && pokupljenoDate.day == danas.day;
 
       if (jeDanas) {
-        debugPrint('✅ KombiEtaWidget: Pokupljen iz baze u ${pokupljenoDate.hour}:${pokupljenoDate.minute}');
+        // debugPrint('✅ KombiEtaWidget: Pokupljen iz baze u ${pokupljenoDate.hour}:${pokupljenoDate.minute}');
         setState(() {
           _jePokupljenIzBaze = true;
           _vremePokupljenja = pokupljenoDate; // 🆕 TAČNO VREME IZ BAZE!
