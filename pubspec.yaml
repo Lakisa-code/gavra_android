@@ -16,7 +16,7 @@ dependencies:
   firebase_messaging: ^16.1.1
   flutter_local_notifications: ^20.0.0
   shared_preferences: ^2.2.2
-  fl_chart: ^1.1.1
+  fl_chart: ^0.68.0
   # Legacy push provider references removed - using FCM + Huawei Push only
   # Huawei Push plugin - za notifikacije
   google_api_availability: ^5.0.0
