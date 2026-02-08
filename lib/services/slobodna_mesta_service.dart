@@ -12,6 +12,7 @@ import 'kapacitet_service.dart';
 import 'putnik_service.dart';
 import 'realtime/realtime_manager.dart';
 import 'voznje_log_service.dart';
+import 'realtime_notification_service.dart';
 
 /// 🎫 Model za slobodna mesta po polasku
 class SlobodnaMesta {
@@ -428,6 +429,27 @@ class SlobodnaMestaService {
         );
       } catch (logError) {
         debugPrint('Greška pri logovanju potvrde: $logError');
+      }
+
+      // 📱 POŠALJI NOTIFIKACIJU PUTNIKU
+      try {
+        final putnikIme = putnikResponse['putnik_ime']?.toString() ?? 'Putnik';
+        final gradNaziv = gradKey.toUpperCase() == 'BC' ? 'Bela Crkva' : 'Vršac';
+        
+        await RealtimeNotificationService.sendNotificationToPutnik(
+          putnikId: putnikId,
+          title: '✅ Zahtev Odobren',
+          body: 'Vaš zahtev za termin $novoVreme u $gradNaziv je odobren za $dan.',
+          data: {
+            'type': 'zahtev_odobren',
+            'putnikId': putnikId,
+            'vreme': novoVreme,
+            'grad': gradKey,
+            'dan': dan,
+          },
+        );
+      } catch (notifError) {
+        debugPrint('Greška pri slanju notifikacije: $notifError');
       }
 
       return {'success': true, 'message': successMessage};
