@@ -11,8 +11,8 @@ import '../utils/putnik_helpers.dart';
 import 'kapacitet_service.dart';
 import 'putnik_service.dart';
 import 'realtime/realtime_manager.dart';
-import 'voznje_log_service.dart';
 import 'realtime_notification_service.dart';
+import 'voznje_log_service.dart';
 
 /// 🎫 Model za slobodna mesta po polasku
 class SlobodnaMesta {

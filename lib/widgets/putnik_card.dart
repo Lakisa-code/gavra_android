@@ -2376,6 +2376,21 @@ class _PutnikCardState extends State<PutnikCard> {
           selectedGrad: _putnik.grad,
         );
 
+        // 🔄 OSVEŽAVANJE: Učitaj putnika ponovno iz baze nakon resetovanja
+        // Ovo je bitno jer trebamo osvežiti _putnik objekat sa novim podacima
+        try {
+          final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
+          if (updatedPutnik != null && mounted) {
+            setState(() {
+              // Zameni _putnik sa osveženim verzijom iz baze
+              _putnik = updatedPutnik;
+            });
+          }
+        } catch (refreshError) {
+          debugPrint('⚠️ Greška pri osvežavanju putnika: $refreshError');
+          // Fallback: Osvežavanje će doći kroz realtime stream
+        }
+
         if (widget.onChanged != null) {
           widget.onChanged!();
         }
