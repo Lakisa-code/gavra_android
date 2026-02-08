@@ -42,11 +42,12 @@ jobs:
 
       - name: Create key.properties
         run: |
+          mkdir -p $GITHUB_WORKSPACE/android
           cat > $GITHUB_WORKSPACE/android/key.properties << EOF
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=gavra-release-key-production.keystore
+          storeFile=$GITHUB_WORKSPACE/android/app/gavra-release-key-production.keystore
           EOF
         shell: bash
 
