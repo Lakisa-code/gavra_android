@@ -1197,23 +1197,22 @@ class PutnikService {
 
     // Ažuriraj dan sa plaćanjem - dozvoli VIŠESTRUKO PLAĆANJE
     final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
-    
+
     // Kreiraj ili ažuriraj niz za plaćanja
     List<Map<String, dynamic>> placanjaLista = [];
     final oldPlacanja = dayData['${place}_plaćanja'];
     if (oldPlacanja is List) {
-      placanjaLista = List<Map<String, dynamic>>.from(
-        oldPlacanja.map((p) => p is Map ? Map<String, dynamic>.from(p) : {})
-      );
+      placanjaLista =
+          List<Map<String, dynamic>>.from(oldPlacanja.map((p) => p is Map ? Map<String, dynamic>.from(p) : {}));
     }
-    
+
     // Dodaj novo plaćanje
     placanjaLista.add({
       'iznos': iznos,
       'vozac': currentDriver,
       'vreme': now.toIso8601String(),
     });
-    
+
     // Ažuriraj aggregirane vrednosti
     dayData['${place}_placeno'] = now.toIso8601String(); // Poslednje plaćanje
     dayData['${place}_placeno_vozac'] = currentDriver;

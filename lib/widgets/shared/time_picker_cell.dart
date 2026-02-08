@@ -375,13 +375,11 @@ class TimePickerCell extends StatelessWidget {
                     ),
                   ],
                 )
-              : isCancelled
-                  ? Icon(Icons.cancel, color: Colors.red.shade400, size: 18)
-                  : Icon(
-                      Icons.access_time,
-                      color: Colors.grey.shade400,
-                      size: 18,
-                    ),
+              : Icon(
+                  Icons.access_time,
+                  color: textColor,
+                  size: 18,
+                ),
         ),
       ),
     );
