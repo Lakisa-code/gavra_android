@@ -14,7 +14,7 @@ dependencies:
   supabase_flutter: ^2.9.0
   firebase_core: ^4.4.0
   firebase_messaging: ^16.1.1
-  flutter_local_notifications: ^20.0.0
+  flutter_local_notifications: ^16.0.0
   shared_preferences: ^2.2.2
   fl_chart: ^0.68.0
   # Legacy push provider references removed - using FCM + Huawei Push only
