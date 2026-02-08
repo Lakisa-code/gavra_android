@@ -1273,17 +1273,53 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             borderRadius: BorderRadius.circular(12),
             onTap: () async {
               try {
-                // Traži dozvolu za pristup kontaktima
-                if (await FlutterContacts.requestPermission()) {
-                  // Otvori contacts picker
-                  final Contact? contact = await FlutterContacts.openExternalPicker();
-                  
-                  if (contact != null && contact.phones.isNotEmpty) {
-                    // Uzmi prvi broj telefona
-                    String phoneNumber = contact.phones.first.number;
-                    // Očisti broj od razmaka i specijalnih karaktera
-                    phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-                    controller.text = phoneNumber;
+                // Request permission
+                final permission = await FlutterContacts.requestPermission();
+                if (permission) {
+                  // Get all contacts
+                  final contacts = await FlutterContacts.getContacts(withProperties: true);
+
+                  if (contacts.isEmpty) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Nema kontakata u imeniku'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  // Show contact list in a dialog
+                  if (mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Izaberi kontakt'),
+                        content: SizedBox(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            itemCount: contacts.length,
+                            itemBuilder: (context, index) {
+                              final contact = contacts[index];
+                              return ListTile(
+                                title: Text(contact.displayName),
+                                subtitle: contact.phones.isNotEmpty ? Text(contact.phones.first.number) : null,
+                                onTap: () {
+                                  if (contact.phones.isNotEmpty) {
+                                    String phoneNumber = contact.phones.first.number;
+                                    phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                    controller.text = phoneNumber;
+                                  }
+                                  Navigator.pop(dialogContext);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
                   }
                 } else {
                   if (mounted) {
