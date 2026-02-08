@@ -20,8 +20,9 @@ class CenaObracunService {
   static const double defaultCenaPosiljkaPoDanu = 500.0; // Pošiljka je 500 RSD
 
   /// Dobija cenu po danu za putnika (SAMO custom cena - više nema default-a)
+  /// Dobija cenu po danu za putnika (custom cena ili default)
   static double getCenaPoDanu(RegistrovaniPutnik putnik) {
-    // 1. MORA imati postavljenu custom cenu (admin manuelno postavlja)
+    // 1. Ako ima postavljenu custom cenu - koristi je
     if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
       return putnik.cenaPoDanu!;
     }
@@ -34,8 +35,8 @@ class CenaObracunService {
       return 300.0;
     }
 
-    // 3. AKO NEMA CUSTOM CENE - GREŠKA (admin mora manuelno postaviti)
-    throw Exception('Putnik ${putnik.putnikIme} nema postavljenu cenu obračuna. Admin mora manuelno postaviti cenu.');
+    // 3. Ako nema custom cene - koristi DEFAULT CENU prema tipu
+    return _getDefaultCenaPoDanu(tipLower);
   }
 
   /// Dobija default cenu po danu za tip putnika (interna)

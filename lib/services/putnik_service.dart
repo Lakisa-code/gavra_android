@@ -1195,11 +1195,33 @@ class PutnikService {
       danKratica = daniKratice[now.weekday - 1];
     }
 
-    // Ažuriraj dan sa plaćanjem
+    // Ažuriraj dan sa plaćanjem - dozvoli VIŠESTRUKO PLAĆANJE
     final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
-    dayData['${place}_placeno'] = now.toIso8601String();
-    dayData['${place}_placeno_vozac'] = currentDriver; // Ime vozača - ISTO KAO POKUPLJENO
-    dayData['${place}_placeno_iznos'] = iznos;
+    
+    // Kreiraj ili ažuriraj niz za plaćanja
+    List<Map<String, dynamic>> placanjaLista = [];
+    final oldPlacanja = dayData['${place}_plaćanja'];
+    if (oldPlacanja is List) {
+      placanjaLista = List<Map<String, dynamic>>.from(
+        oldPlacanja.map((p) => p is Map ? Map<String, dynamic>.from(p) : {})
+      );
+    }
+    
+    // Dodaj novo plaćanje
+    placanjaLista.add({
+      'iznos': iznos,
+      'vozac': currentDriver,
+      'vreme': now.toIso8601String(),
+    });
+    
+    // Ažuriraj aggregirane vrednosti
+    dayData['${place}_placeno'] = now.toIso8601String(); // Poslednje plaćanje
+    dayData['${place}_placeno_vozac'] = currentDriver;
+    dayData['${place}_plaćanja'] = placanjaLista; // Niz svih plaćanja
+    dayData['${place}_placeno_iznos'] = placanjaLista.fold<double>(
+      0,
+      (sum, p) => sum + ((p['iznos'] as num?)?.toDouble() ?? 0),
+    ); // Ukupan iznos
     polasciPoDanu[danKratica] = dayData;
 
     await supabase.from(tabela).update({
