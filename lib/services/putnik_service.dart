@@ -714,8 +714,6 @@ class PutnikService {
         );
       }
 
-      if (kDebugMode) debugPrint('🚐 [PutnikService] Dodajem putnika: ${putnik.ime}, tip: ${putnik.tipPutnika}, mesecnaKarta: ${putnik.mesecnaKarta}');
-
       // 🛡️ STRIKTNA VALIDACIJA VOZACA
       if (putnik.dodeljenVozac == null ||
           putnik.dodeljenVozac!.isEmpty ||

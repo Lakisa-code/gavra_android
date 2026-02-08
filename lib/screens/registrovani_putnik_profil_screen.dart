@@ -102,11 +102,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     _cleanupOldSeatRequests(); // 🧹 Očisti stare seat_requests iz baze
     WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
     _setupRealtimeListener(); // 🎯 Sluša promene statusa u realtime
-
-    // 📅 Proveri podsetnik za raspored
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkWeeklyScheduleReminder();
-    });
   }
 
   /// 🔄 Proverava da li je vreme isteklo (za automatsko otkazivanje)
@@ -483,45 +478,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     } catch (e) {
       debugPrint('❌ [Cleanup] Greška: $e');
-    }
-  }
-
-  // 📅 PROVERA NEDELJNOG RASPODA
-  Future<void> _checkWeeklyScheduleReminder() async {
-    // 1. Proveri tip putnika (samo za radnike i ucenike)
-    final tip = (_putnikData['tip'] ?? '').toString().toLowerCase();
-    if (!tip.contains('radnik') && !tip.contains('ucenik')) {
-      return;
-    }
-
-    // 2. Izračunaj vreme poslednjeg reseta (Petak ponoć / Subota 00:00)
-    final now = DateTime.now();
-    // Weekday: Mon=1, ..., Fri=5, Sat=6, Sun=7
-    int diff = (now.weekday - DateTime.saturday) % 7;
-    if (diff < 0) diff += 7;
-    final lastResetDate = now.subtract(Duration(days: diff));
-    // Reset na 00:00:00
-    final lastResetTime = DateTime(lastResetDate.year, lastResetDate.month, lastResetDate.day);
-
-    // 3. Proveri SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    final lastShownMs = prefs.getInt('last_schedule_reminder_timestamp') ?? 0;
-    final lastShownTime = DateTime.fromMillisecondsSinceEpoch(lastShownMs);
-
-    // Ako je poslednji put prikazano PRE poslednjeg reseta -> prikaži ponovo
-    if (lastShownTime.isBefore(lastResetTime) && mounted) {
-      await GavraUI.showInfoDialog(
-        context,
-        title: '📅 Novi raspored',
-        message: 'Stigao je novi nedeljni ciklus!\n\n'
-            'Molimo vas da potvrdite ili ažurirate vaša vremena vožnje za sledeću nedelju, '
-            'kako bismo na vreme organizovali prevoz.',
-        icon: Icons.calendar_month,
-        buttonText: 'UREDU',
-      );
-
-      // 4. Ažuriraj timestamp da ne prikazuje ponovo do sledećeg reset-a
-      await prefs.setInt('last_schedule_reminder_timestamp', now.millisecondsSinceEpoch);
     }
   }
 

@@ -707,7 +707,6 @@ class Putnik {
       return perVreme;
     }
 
-    // ? UKLONJEN NAJNIŽI PRIORITET: Globalni vozac_id (reset u ponoc)
     return null;
   }
 

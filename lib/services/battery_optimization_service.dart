@@ -72,13 +72,6 @@ class BatteryOptimizationService {
     await prefs.setBool(_dismissedKey, true);
   }
 
-  /// Reset the warning (for testing or if user wants to see it again)
-  static Future<void> resetWarning() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_shownKey);
-    await prefs.remove(_dismissedKey);
-  }
-
   /// Get manufacturer-specific settings intent
   static Future<String?> getManufacturer() async {
     if (!Platform.isAndroid) return null;

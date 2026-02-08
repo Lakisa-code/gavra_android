@@ -26,7 +26,6 @@ import 'services/ml_vehicle_autonomous_service.dart';
 import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
-import 'services/registrovani_putnik_service.dart'; // 👥 Registrovani putnici
 import 'services/route_service.dart'; // 🚐 Dinamički satni redoslijedi iz baze
 import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00 (bez notif)
 import 'services/seat_request_service.dart';
@@ -65,9 +64,6 @@ void main() async {
       anonKey: configService.getSupabaseAnonKey(),
     );
     if (kDebugMode) debugPrint('✅ [Main] Supabase initialized');
-
-    // 🧹 TEMP: Clear realtime cache za test putnika
-    RegistrovaniPutnikService.clearRealtimeCache();
   } catch (e) {
     if (kDebugMode) debugPrint('❌ [Main] Supabase init failed: $e');
     // Možeš dodati fallback ili crash app ako je kritično

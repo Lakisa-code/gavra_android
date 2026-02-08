@@ -405,7 +405,6 @@ class SlobodnaMestaService {
       final danData = Map<String, dynamic>.from(polasci[dan] as Map);
       danData[gradKey] = novoVreme;
 
-      // Resetuj status na 'confirmed' jer je admin/sistem upravo obradio zahtev
       danData['${gradKey}_status'] = 'confirmed';
       danData['${gradKey}_vreme_obrade'] = DateTime.now().toUtc().toIso8601String();
 

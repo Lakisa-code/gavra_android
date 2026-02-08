@@ -186,7 +186,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   void _setRadniDaniFromString(String? radniDaniStr) {
     if (radniDaniStr == null || radniDaniStr.isEmpty) return;
 
-    // Reset all days to false first
     _radniDani = {
       'pon': false,
       'uto': false,

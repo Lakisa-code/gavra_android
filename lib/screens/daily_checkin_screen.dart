@@ -76,7 +76,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       await DailyCheckInService.saveCheckIn(widget.vozac);
 
       if (mounted) {
-        // Reset loading state first
         setState(() => _isLoading = false);
 
         // Haptic feedback

@@ -191,7 +191,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         if (eta == -1 && _vremePokupljenja == null) {
           _vremePokupljenja = DateTime.now();
         }
-        // Resetuj vreme pokupljenja ako ETA više nije -1 (nova vožnja)
         if (eta != null && eta != -1) {
           _vremePokupljenja = null;
         }
@@ -331,7 +330,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         // Nije pokupljen
         setState(() {
           _jePokupljenIzBaze = false;
-          // NE resetuj _vremePokupljenja ovde - možda je vozač aktivan
         });
         return;
       }

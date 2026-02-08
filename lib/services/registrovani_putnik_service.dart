@@ -271,25 +271,6 @@ class RegistrovaniPutnikService {
     }
   }
 
-  /// 🧹 Čisti singleton cache - pozovi kad treba resetovati sve
-  static void clearRealtimeCache() {
-    // Čisti Aktivni stream
-    _sharedSubscription?.cancel();
-    RealtimeManager.instance.unsubscribe('registrovani_putnici');
-    _sharedSubscription = null;
-    _sharedController?.close();
-    _sharedController = null;
-    _lastValue = null;
-
-    // Čisti Svi stream
-    _sharedSviSubscription?.cancel();
-    RealtimeManager.instance.unsubscribe('registrovani_putnici_svi');
-    _sharedSviSubscription = null;
-    _sharedSviController?.close();
-    _sharedSviController = null;
-    _lastSviValue = null;
-  }
-
   /// 📱 Normalizuje broj telefona za poređenje
   static String _normalizePhone(String telefon) {
     var cleaned = telefon.replaceAll(RegExp(r'[\s\-\(\)]'), '');

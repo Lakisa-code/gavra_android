@@ -85,19 +85,4 @@ class DeviceUtils {
       await prefs.setBool(_huaweiDialogShownKey, true);
     } catch (_) {}
   }
-
-  /// 🔄 Resetuj keš (za testiranje)
-  static void resetCache() {
-    _isHuaweiDevice = null;
-    _deviceManufacturer = null;
-    _isHereWeGoInstalled = null;
-  }
-
-  /// 🔄 Resetuj sve preferencije (za testiranje)
-  static Future<void> resetPreferences() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_huaweiDialogShownKey);
-    } catch (_) {}
-  }
 }

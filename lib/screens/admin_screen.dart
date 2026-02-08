@@ -1274,19 +1274,6 @@ class _AdminScreenState extends State<AdminScreen> {
                         if (_currentDriver?.toLowerCase() == 'bojan') ...[
                           // SMS test i debug funkcionalnost uklonjena - servis radi u pozadini
                         ],
-                        // 🎯 SVI ADMIN DUGMIĆI U JEDNOM REDU
-                        Container(
-                          margin: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  // Weekly reset uklonjen
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
                         // 🚢 SMART TRANZIT - EARLY WARNING
                         StreamBuilder<List<Map<String, dynamic>>>(
                           stream: SlobodnaMestaService.streamMissingTransitPassengers(),

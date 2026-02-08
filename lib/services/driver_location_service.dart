@@ -93,7 +93,6 @@ class DriverLocationService {
     _onAllPassengersPickedUp = onAllPassengersPickedUp;
     _isTracking = true;
 
-    // 🚗 Reset daily statistics
     _trackingStartTime = DateTime.now();
     _todayDistance = 0.0;
     _maxSpeed = 0.0;
@@ -302,18 +301,6 @@ class DriverLocationService {
       }, onConflict: 'vozac_id');
     } catch (e) {
       // Error upserting location
-    }
-  }
-
-  /// 🔄 RESET VOZAC LOKACIJA (poziva se pri odjavi ili u ponoć)
-  static Future<void> resetAllVozacLokacije() async {
-    try {
-      await supabase.from('vozac_lokacije').upsert({
-        'aktivan': false,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-    } catch (e) {
-      debugPrint('❌ [DriverLocation] Global reset error: $e');
     }
   }
 

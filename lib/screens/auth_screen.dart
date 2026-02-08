@@ -88,7 +88,6 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
-    // Reset forme
     _imeController.clear();
     _emailController.clear();
     _sifraController.clear();

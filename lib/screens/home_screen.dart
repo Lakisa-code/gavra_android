@@ -986,8 +986,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final aktivniPutnici = lista.where((RegistrovaniPutnik putnik) => !putnik.obrisan && putnik.aktivan).toList()
       ..sort((a, b) => a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase()));
 
-    if (kDebugMode) debugPrint('🏠 [HomeScreen] Učitano ${aktivniPutnici.length} aktivnih putnika za dropdown, uključujući dnevne: ${aktivniPutnici.where((p) => p.tip == 'dnevni').length}');
-
     // 🆕 Učitaj adrese za selektovani grad
     final adreseZaGrad = await AdresaSupabaseService.getAdreseZaGrad(_selectedGrad);
     dostupneAdrese = adreseZaGrad.map((a) => {'id': a.id, 'naziv': a.naziv}).toList()
@@ -2095,8 +2093,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             uniquePutnici[key] = p;
           }
           final sviPutniciBezDuplikata = uniquePutnici.values.toList();
-
-          if (kDebugMode) debugPrint('🏠 [HomeScreen] Učitano ${sviPutniciBezDuplikata.length} putnika za prikaz');
 
           // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN (deduplikovane)
           // DEDUPLICIRAJ za računanje brojača (id + polazak + dan)
