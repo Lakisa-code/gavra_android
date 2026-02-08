@@ -505,13 +505,16 @@ class MLService {
       final learnedWeights = _learnWeightsFromData(allFeatures, allLabels);
 
       // 3. Sačuvaj naučene težine
-      await _supabase.from('ml_config').upsert({
-        'model_name': 'passenger_scoring_weights',
-        'model_version': '1.0',
-        'parameters': learnedWeights.map((k, v) => MapEntry(k, v.toString())),
-        'is_active': true,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      await _supabase.from('ml_config').upsert(
+        {
+          'model_name': 'passenger_scoring_weights',
+          'model_version': '1.0',
+          'parameters': learnedWeights.map((k, v) => MapEntry(k, v.toString())),
+          'is_active': true,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'model_name',
+      );
 
       print('✅ Passenger scoring model trained!');
       print('📈 Learned weights: $learnedWeights');
