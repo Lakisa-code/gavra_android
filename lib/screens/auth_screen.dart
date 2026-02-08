@@ -131,13 +131,75 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   /// Edituj vozača
-  Future<void> _editVozac(int index) async {
-    // Editovanje nije dostupno u ovoj verziji
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Editovanje vozača nije dostupno'),
+  Future<void> _editVozac(Vozac vozac) async {
+    // Popuni form sa postojećim podacima vozača
+    _imeController.text = vozac.ime;
+    _emailController.text = vozac.email ?? '';
+    _sifraController.text = vozac.sifra ?? '';
+    _telefonController.text = vozac.brojTelefona ?? '';
+    
+    // Postavi boju
+    try {
+      final hexColor = int.parse('FF${vozac.boja}', radix: 16);
+      _selectedColor = Color(hexColor);
+    } catch (e) {
+      _selectedColor = Colors.blue;
+    }
+
+    // Prikaži dialog za editovanje
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => _buildVozacDialog(
+        title: 'Uredi vozača: ${vozac.ime}',
+        onSave: () => _updateVozac(vozac.id),
       ),
     );
+  }
+
+  /// Ažuriraj vozača u bazi
+  Future<void> _updateVozac(String vozacId) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final updatedVozac = Vozac(
+      id: vozacId,
+      ime: _imeController.text.trim(),
+      email: _emailController.text.trim().toLowerCase(),
+      sifra: _sifraController.text,
+      brojTelefona: _telefonController.text.trim(),
+      boja: _selectedColor.value.toRadixString(16).padLeft(8, '0').substring(2),
+    );
+
+    try {
+      final vozacService = VozacService();
+      await vozacService.updateVozac(updatedVozac);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vozač ažuriran')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Greška: $e')),
+      );
+      return;
+    }
+
+    _imeController.clear();
+    _emailController.clear();
+    _sifraController.clear();
+    _telefonController.clear();
+    _selectedColor = Colors.blue;
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vozač ažuriran!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   /// Dialog za dodavanje/editovanje vozača
@@ -420,7 +482,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       // Actions - olovka i kanta
                                       IconButton(
                                         icon: Icon(Icons.edit, color: boja, size: 20),
-                                        onPressed: () => _editVozac(index),
+                                        onPressed: () => _editVozac(vozac),
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                         visualDensity: VisualDensity.compact,
