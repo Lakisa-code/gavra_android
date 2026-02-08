@@ -291,11 +291,20 @@ class MLVehicleAutonomousService extends ChangeNotifier {
     for (final String col in columns) {
       if (col.endsWith('_id') && col != 'id') {
         String potential = col.replaceAll('_id', '');
-        
+
         // 🛡️ FIX: Mapiranje specijalnih slučajeva (jednina -> množina)
         if (potential == 'vozac') potential = 'vozaci';
         if (potential == 'putnik') potential = 'registrovani_putnici';
         
+        // 🛡️ FIX: Ignoriši tabele koje ne postoje u bazi
+        final ignoredTables = [
+          'adresa_bela_crkva',
+          'adresa_vrsac',
+          'adresa_bc',
+          'adresa_vs',
+        ];
+        if (ignoredTables.contains(potential)) continue;
+
         // Beba ne može sama da kreira tabele u bazi (nema dozvolu),
         // ali ih sama DODAJE na svoju listu za skeniranje!
         final List<String> current = List<String>.from((_learnedPatterns['discovered_tables'] as List?) ?? []);
