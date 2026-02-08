@@ -1679,11 +1679,16 @@ class PutnikService {
             },
           );
 
+          // 🛡️ KRITIČNA VALIDACIJA: Ne sme da se izvrši UPDATE bez validnog putnikId!
+          if (putnikId == null || putnikId.isEmpty) {
+            throw Exception('🚨 KRITIČNA GREŠKA: putnikId je null ili prazan! Ne mogu resetovati putnika bez ID-a!');
+          }
+
           await supabase.from('registrovani_putnici').update({
             'status': 'radi',
             'polasci_po_danu': polasci, // 🆕 SAČUVAJ AŽURIRANE POLASCI
             'updated_at': DateTime.now().toUtc().toIso8601String(),
-          }).eq('id', putnikId ?? '');
+          }).eq('id', putnikId);
 
           return;
         }
