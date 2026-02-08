@@ -302,6 +302,8 @@ class MLVehicleAutonomousService extends ChangeNotifier {
           'adresa_vrsac',
           'adresa_bc',
           'adresa_vs',
+          'merged_into',
+          'merged_from',
         ];
         if (ignoredTables.contains(potential)) continue;
 
