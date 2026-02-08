@@ -1005,7 +1005,8 @@ class PutnikService {
   /// ? OZNACI KAO POKUPLJEN
   /// [grad] - opcioni parametar za određivanje koje pokupljenje (BC ili VS)
   /// [selectedDan] - opcioni parametar za dan (npr. "Pon", "Uto") - ako nije prosleđen, koristi današnji dan
-  Future<void> oznaciPokupljen(dynamic id, String currentDriver, {String? grad, String? selectedDan}) async {
+  Future<void> oznaciPokupljen(dynamic id, String currentDriver,
+      {String? grad, String? selectedDan, String? selectedVreme}) async {
     // ?? DUPLICATE PREVENTION
     final actionKey = 'pickup_$id';
     if (_isDuplicateAction(actionKey)) {
@@ -1032,19 +1033,6 @@ class PutnikService {
       final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
 
-      // ✅ FIX: Koristi selectedDan umesto DateTime.now() - omogućava pokupljenje za bilo koji dan
-      const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      String danKratica;
-      if (selectedDan != null && selectedDan.isNotEmpty) {
-        // Normalizuj selectedDan (može biti "Pon", "pon", "Ponedeljak" itd.)
-        final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
-        danKratica = daniKratice.contains(normalizedDan) ? normalizedDan : daniKratice[now.weekday - 1];
-      } else {
-        danKratica = daniKratice[now.weekday - 1];
-      }
-      final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
-      final place = jeBC ? 'bc' : 'vs';
-
       // ✅ NOVO: polasci_po_danu je sada JSONB objekat
       Map<String, dynamic> polasciPoDanu = {};
       final rawPolasci = response['polasci_po_danu'];
@@ -1052,6 +1040,42 @@ class PutnikService {
         if (rawPolasci is Map) {
           polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
         }
+      }
+
+      final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
+      final place = jeBC ? 'bc' : 'vs';
+
+      // ✅ FIX: Odredi dan kratica - pronađi koji dan ima taj grad i vreme
+      const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      String danKratica = '';
+
+      // Prvo pokušaj sa selectedDan ako je prosleđen
+      if (selectedDan != null && selectedDan.isNotEmpty) {
+        final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
+        if (daniKratice.contains(normalizedDan)) {
+          danKratica = normalizedDan;
+        }
+      }
+
+      // Ako nije pronađen, pronađi iz polasci_po_danu koji dan ima taj grad i vreme
+      final vremeZaPretragu = selectedVreme ?? putnik.polazak;
+      if (danKratica.isEmpty && vremeZaPretragu.isNotEmpty) {
+        for (var entry in polasciPoDanu.entries) {
+          final dayName = entry.key;
+          final dayData = entry.value;
+          if (dayData is Map) {
+            final vremeDaDay = dayData[place]?.toString();
+            if (vremeDaDay == vremeZaPretragu) {
+              danKratica = dayName;
+              break;
+            }
+          }
+        }
+      }
+
+      // Ako i dalje nije pronađen, koristi danas kao fallback
+      if (danKratica.isEmpty) {
+        danKratica = daniKratice[now.weekday - 1];
       }
 
       // Ažuriraj dan sa pokupljenjem
@@ -1099,11 +1123,14 @@ class PutnikService {
   /// ? OZNACI KAO PLACENO
   /// 💰 OZNACI KAO PLAĆENO
   /// [grad] - parametar za određivanje koje plaćanje (BC ili VS) - ISTO kao oznaciPokupljeno
+  /// [selectedVreme] - vreme polaska da bi se pronašao pravi dan
   Future<void> oznaciPlaceno(
     dynamic id,
     double iznos,
     String currentDriver, {
     String? grad,
+    String? selectedVreme,
+    String? selectedDan,
   }) async {
     // 🚨 DUPLICATE PREVENTION
     final actionKey = 'payment_$id';
@@ -1125,13 +1152,9 @@ class PutnikService {
 
     final now = DateTime.now();
 
-    // ✅ NOVO: Ažuriraj polasci_po_danu JSON sa plaćanjem
+    // ✅ FIX: Odredi dan kratica - pronađi koji dan ima taj grad i vreme
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    final danKratica = daniKratice[now.weekday - 1];
-
-    // ✅ FIX: Izračunaj place iz grad parametra - ISTO kao oznaciPokupljeno!
-    final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
-    final place = jeBC ? 'bc' : 'vs';
+    String danKratica = '';
 
     Map<String, dynamic> polasciPoDanu = {};
     final rawPolasci = response['polasci_po_danu'];
@@ -1139,6 +1162,37 @@ class PutnikService {
       if (rawPolasci is Map) {
         polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
       }
+    }
+
+    // ✅ FIX: Izračunaj place iz grad parametra - ISTO kao oznaciPokupljeno!
+    final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
+    final place = jeBC ? 'bc' : 'vs';
+
+    // Prvo pokušaj sa selectedDan ako je prosleđen
+    if (selectedDan != null && selectedDan.isNotEmpty) {
+      final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
+      if (daniKratice.contains(normalizedDan)) {
+        danKratica = normalizedDan;
+      }
+    }
+
+    // Ako nije pronađen, pronađi dan koji ima taj grad i vreme
+    if (danKratica.isEmpty && selectedVreme != null && selectedVreme.isNotEmpty) {
+      for (var entry in polasciPoDanu.entries) {
+        final dayName = entry.key;
+        final dayData = entry.value;
+        if (dayData is Map) {
+          final vremeDaDay = dayData[place]?.toString();
+          if (vremeDaDay == selectedVreme) {
+            danKratica = dayName;
+            break;
+          }
+        }
+      }
+    }
+    // Ako nije pronađen, koristi danas kao fallback
+    if (danKratica.isEmpty) {
+      danKratica = daniKratice[now.weekday - 1];
     }
 
     // Ažuriraj dan sa plaćanjem
@@ -1234,12 +1288,48 @@ class PutnikService {
 
         // 🆕 FIX: Koristi selectedDan umesto DateTime.now() - omogućava otkazivanje za bilo koji dan
         const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-        String danKratica;
+        String danKratica = '';
+
+        // Prvo pokušaj sa selectedDan ako je prosleđen
         if (selectedDan != null && selectedDan.isNotEmpty) {
-          // Normalizuj selectedDan (može biti "Pon", "pon", "Ponedeljak" itd.)
           final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
-          danKratica = daniKratice.contains(normalizedDan) ? normalizedDan : daniKratice[DateTime.now().weekday - 1];
-        } else {
+          if (daniKratice.contains(normalizedDan)) {
+            danKratica = normalizedDan;
+          }
+        }
+
+        // Ako nije pronađen, pronađi iz polasci_po_danu koji dan ima taj grad i vreme
+        if (danKratica.isEmpty) {
+          // 🆕 Učitaj postojeći polasci_po_danu JSON prvo
+          Map<String, dynamic> polasci = {};
+          final polasciRaw = respMap['polasci_po_danu'];
+          if (polasciRaw != null) {
+            if (polasciRaw is String) {
+              try {
+                polasci = convert.jsonDecode(polasciRaw) as Map<String, dynamic>;
+              } catch (_) {}
+            } else if (polasciRaw is Map) {
+              polasci = Map<String, dynamic>.from(polasciRaw);
+            }
+          }
+
+          if (selectedVreme != null && selectedVreme.isNotEmpty) {
+            for (var entry in polasci.entries) {
+              final dayName = entry.key;
+              final dayData = entry.value;
+              if (dayData is Map) {
+                final vremeDaDay = dayData[place]?.toString();
+                if (vremeDaDay == selectedVreme) {
+                  danKratica = dayName;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // Ako i dalje nije pronađen, koristi danas kao fallback
+        if (danKratica.isEmpty) {
           danKratica = daniKratice[DateTime.now().weekday - 1];
         }
 
@@ -1422,6 +1512,7 @@ class PutnikService {
 
         if (registrovaniList.isNotEmpty) {
           final putnikData = registrovaniList.first;
+          final putnikId = putnikData['id'] as String?;
 
           // 🆕 Učitaj polasci_po_danu JSON
           Map<String, dynamic> polasci = {};
@@ -1443,14 +1534,29 @@ class PutnikService {
             place = 'vs';
           }
 
-          // 🆕 Odredi dan kratica - koristi targetDan ako je prosleđen, inače današnji
-          String danKratica;
+          // 🆕 Odredi dan kratica - pronađi koji dan ima taj grad i vreme u polasci_po_danu
+          String danKratica = '';
           if (targetDan != null && targetDan.isNotEmpty) {
             danKratica = targetDan.toLowerCase();
           } else {
-            final weekday = DateTime.now().weekday;
-            const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-            danKratica = daniKratice[weekday - 1];
+            // 🔍 Pronađi dan koji ima taj grad i vreme
+            for (var entry in polasci.entries) {
+              final dayName = entry.key;
+              final dayData = entry.value;
+              if (dayData is Map) {
+                final vremeDaDay = dayData[place]?.toString();
+                if (vremeDaDay == selectedVreme) {
+                  danKratica = dayName;
+                  break;
+                }
+              }
+            }
+            // Ako nije pronađen, koristi današnji dan kao fallback
+            if (danKratica.isEmpty) {
+              final weekday = DateTime.now().weekday;
+              const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+              danKratica = daniKratice[weekday - 1];
+            }
           }
 
           // 🆕 Obriši SVE markere za današnji dan i taj grad
@@ -1461,6 +1567,44 @@ class PutnikService {
             if (dayDataRaw != null && dayDataRaw is Map) {
               dayData = Map<String, dynamic>.from(dayDataRaw);
             }
+          }
+
+          // 📊 PRE BRISANJA: Loguj šta se resetuje
+          try {
+            final vozacUuid = await VozacMappingService.getVozacUuid(currentDriver);
+            final dagens = DateTime.now().toIso8601String().split('T')[0];
+
+            // Proveritaj da li je putnik bio otkazan
+            final wasOtkazan = dayData.containsKey('${place}_otkazano');
+            final wasPokupljen = dayData.containsKey('${place}_pokupljeno');
+            final wasPlaceno = dayData.containsKey('${place}_placeno');
+
+            // Ako je bilo šta urađeno sa putmikom, loguji povratak na početnu tačku
+            if (wasOtkazan || wasPokupljen || wasPlaceno) {
+              // Loguji kao "reset_kartice" - putnik se vraća na početnu tačku
+              await supabase.from('voznje_log').insert({
+                'putnik_id': putnikId,
+                'datum': dagens,
+                'tip': 'reset_kartice', // 🆕 Novi tip - reset/povratak na početnu tačku
+                'iznos': 0,
+                'vozac_id': vozacUuid,
+                'detalji': {
+                  'place': place,
+                  'dan': danKratica,
+                  'was_otkazan': wasOtkazan,
+                  'was_pokupljen': wasPokupljen,
+                  'was_placeno': wasPlaceno,
+                  'vozac_resetovanja': currentDriver,
+                }.toString(),
+              });
+              // ignore: avoid_print
+              print(
+                  '📊 LOGOVANJE RESET: Putnik $imePutnika resetovan - otkazan=$wasOtkazan, pokupljen=$wasPokupljen, placeno=$wasPlaceno');
+            }
+          } catch (logError) {
+            // Log nije kritičan
+            // ignore: avoid_print
+            print('⚠️ Greška pri logovanju reset-a: $logError');
           }
 
           // Briši otkazivanje
@@ -1477,7 +1621,20 @@ class PutnikService {
           dayData.remove('placeno');
           dayData.remove('placeno_iznos');
           dayData.remove('placeno_vozac');
-          polasci[danKratica] = dayData;
+
+          // 🆕 BRISANJE VREMENA: Ako je dayData potpuno prazna nakon čišćenja, obriši dan iz polasci_po_danu
+          // Ali prvo, ako postoji {place}_vreme, to je čuvar za početno vreme - čuvaj ga!
+          if (dayData.isEmpty || (dayData.length == 1 && dayData.containsKey('${place}_vreme'))) {
+            // Dan je praktično prazan (nema nikakvih akcija) - obriši ga iz objekta
+            polasci.remove(danKratica);
+            // ignore: avoid_print
+            print('🔄 RESET CARD: Dan $danKratica je potpuno obrisana jer je prazna');
+          } else {
+            // Dan ima još nešto (npr. početno vreme) - čuva se
+            polasci[danKratica] = dayData;
+            // ignore: avoid_print
+            print('🔄 RESET CARD: Zadržava se dan $danKratica sa preostalim podacima: $dayData');
+          }
 
           // ✅ Triple-tap resetuje karticu u belo stanje
           // Statistika u voznje_log OSTAJE NETAKNUTA
@@ -1505,7 +1662,7 @@ class PutnikService {
             'status': 'radi',
             'polasci_po_danu': polasci, // 🆕 SAČUVAJ AŽURIRANE POLASCI
             'updated_at': DateTime.now().toUtc().toIso8601String(),
-          }).eq('putnik_ime', imePutnika);
+          }).eq('id', putnikId ?? '');
 
           return;
         }

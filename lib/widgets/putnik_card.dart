@@ -848,6 +848,8 @@ class _PutnikCardState extends State<PutnikCard> {
           iznos,
           widget.currentDriver,
           grad: _putnik.grad,
+          selectedVreme: _putnik.polazak,
+          selectedDan: _putnik.dan,
         );
       }
 
@@ -1247,6 +1249,8 @@ class _PutnikCardState extends State<PutnikCard> {
         _putnik.id!,
         widget.currentDriver,
         grad: _putnik.grad,
+        selectedDan: _putnik.dan,
+        selectedVreme: _putnik.polazak,
       );
 
       if (mounted) {
@@ -2374,6 +2378,7 @@ class _PutnikCardState extends State<PutnikCard> {
           widget.currentDriver,
           selectedVreme: _putnik.polazak,
           selectedGrad: _putnik.grad,
+          targetDan: _putnik.dan,
         );
 
         // 🔄 OSVEŽAVANJE: Učitaj putnika ponovno iz baze nakon resetovanja
