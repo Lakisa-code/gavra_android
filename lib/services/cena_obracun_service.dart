@@ -5,12 +5,11 @@ import '../models/registrovani_putnik.dart';
 
 /// 💰 Servis za obračun mesečne cene za putnike
 ///
-/// Pravila:
-/// - RADNIK: 700 RSD po danu (default)
-/// - UČENIK: 600 RSD po danu (default)
-/// - DNEVNI: Po dogovoru (mora imati custom cenu)
-/// - POŠILJKA: 500 RSD po danu (fiksno)
-/// - CUSTOM CENA PO DANU: Ako putnik ima postavljenu custom cenu, koristi se ona
+/// PRAVILA: Cena se MORA manuelno postaviti od strane admina - više nema default cena!
+/// - RADNIK: Admin postavlja cenu (nema default-a)
+/// - UČENIK: Admin postavlja cenu (nema default-a)
+/// - DNEVNI: Admin postavlja cenu (nema default-a)
+/// - POŠILJKA: Admin postavlja cenu (osim "ZUBI" koji ima fiksnih 300 RSD)
 class CenaObracunService {
   static SupabaseClient get _supabase => supabase;
 
@@ -20,9 +19,9 @@ class CenaObracunService {
   static const double defaultCenaDnevniPoDanu = 600.0;
   static const double defaultCenaPosiljkaPoDanu = 500.0; // Pošiljka je 500 RSD
 
-  /// Dobija cenu po danu za putnika (custom ili default)
+  /// Dobija cenu po danu za putnika (SAMO custom cena - više nema default-a)
   static double getCenaPoDanu(RegistrovaniPutnik putnik) {
-    // 1. Ako putnik ima postavljenu custom cenu, koristi se ona (NAJVEĆI PRIORITET)
+    // 1. MORA imati postavljenu custom cenu (admin manuelno postavlja)
     if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
       return putnik.cenaPoDanu!;
     }
@@ -30,19 +29,13 @@ class CenaObracunService {
     final tipLower = putnik.tip.toLowerCase();
     final imeLower = putnik.putnikIme.toLowerCase();
 
-    // 2. STROGO FIKSNE CENE (Ako nema custom cenu)
+    // 2. STROGO FIKSNE CENE samo za specijalne slučajeve
     if (tipLower == 'posiljka' && imeLower.contains('zubi')) {
       return 300.0;
     }
-    if (tipLower == 'posiljka') {
-      return defaultCenaPosiljkaPoDanu; // 500 RSD
-    }
-    if (tipLower == 'dnevni') {
-      return defaultCenaDnevniPoDanu; // 600 RSD
-    }
 
-    // Inače koristi default na osnovu tipa
-    return _getDefaultCenaPoDanu(putnik.tip);
+    // 3. AKO NEMA CUSTOM CENE - GREŠKA (admin mora manuelno postaviti)
+    throw Exception('Putnik ${putnik.putnikIme} nema postavljenu cenu obračuna. Admin mora manuelno postaviti cenu.');
   }
 
   /// Dobija default cenu po danu za tip putnika (interna)

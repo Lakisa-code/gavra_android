@@ -606,7 +606,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Cena obračuna (opciono)',
+                        'Cena obračuna (obavezno)',
                         style: TextStyle(
                           color: Colors.amber,
                           fontWeight: FontWeight.w600,
@@ -619,7 +619,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ako ostavite prazno, cena se računa automatski (700 RSD radnik, 600 RSD učenik, 600 RSD dnevni, 500 RSD pošiljka).\n• Pošiljka "ZUBI" ima fiksnu cenu od 300 RSD.\n• Radnik/Učenik: naplata po danu. Dnevni/Pošiljka: naplata po svakom pokupljenju.',
+                  'Unesite cenu po danu za obračun. Ova cena će se koristiti za naplatu usluga.\n• Radnik/Učenik: naplata po danu.\n• Dnevni/Pošiljka: naplata po svakom pokupljenju.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12,
@@ -640,6 +640,16 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Cena obračuna je obavezna';
+                    }
+                    final cena = double.tryParse(value);
+                    if (cena == null || cena <= 0) {
+                      return 'Unesite validan iznos veći od 0';
+                    }
+                    return null;
+                  },
                   style: const TextStyle(color: Colors.black),
                 ),
                 const SizedBox(height: 16),
