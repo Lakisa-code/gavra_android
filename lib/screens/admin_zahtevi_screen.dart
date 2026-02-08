@@ -63,7 +63,7 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
       appBar: AppBar(
         title: Text(
           'Monitoring Zahteva 📨',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+          style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -242,7 +242,7 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
                   const SizedBox(width: 8),
                   Text(
                     name,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.montserrat(
                       color: isActive ? Colors.blue.shade900 : Colors.white,
                       fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 14,
@@ -363,7 +363,7 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
                   ),
                   Text(
                     '${_dateFormat.format(createdAt)} ${_timeFormat.format(createdAt)}',
-                    style: GoogleFonts.robotoMono(
+                    style: GoogleFonts.montserrat(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: Colors.indigo.withOpacity(0.6),
@@ -374,7 +374,7 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
               const SizedBox(height: 16),
               Text(
                 _getPutnikNameSync(putnikId),
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.montserrat(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: Colors.indigo.shade900,
@@ -391,7 +391,7 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
                 ),
                 child: Text(
                   detalji,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.montserrat(
                     fontSize: 13,
                     color: Colors.blueGrey.shade800,
                   ),
@@ -424,7 +424,7 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
           const SizedBox(height: 24),
           Text(
             'Nema rezultata',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.montserrat(
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w600,
@@ -433,7 +433,7 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
           const SizedBox(height: 8),
           Text(
             _searchQuery.isEmpty ? 'Kategorija: $_activeFilter' : 'Pretraga: $_searchQuery',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.montserrat(
               color: Colors.white.withOpacity(0.6),
               fontSize: 16,
             ),

@@ -85,7 +85,7 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                           : widget.filterVozacIme != null
                               ? 'Dnevnik: ${widget.filterVozacIme} 📖'
                               : 'Dnevnik Akcija 📖',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
+              style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             if (_searchQuery.isNotEmpty)
               Text('Filter: $_searchQuery', style: const TextStyle(fontSize: 10, color: Colors.white70)),
@@ -207,7 +207,7 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                     const SizedBox(height: 16),
                     Text(
                       _searchQuery.isEmpty ? 'Nema zabeleženih akcija.' : 'Nema rezultata za: "$_searchQuery"',
-                      style: GoogleFonts.poppins(color: Colors.grey.shade600),
+                      style: GoogleFonts.montserrat(color: Colors.grey.shade600),
                     ),
                   ],
                 ),
@@ -376,7 +376,7 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                   children: [
                     Text(
                       _timeFormat.format(createdAt),
-                      style: GoogleFonts.robotoMono(
+                      style: GoogleFonts.montserrat(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.blueGrey.shade900,
@@ -405,7 +405,7 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                           Flexible(
                             child: Text(
                               primaryName,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.montserrat(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                                 color: Colors.indigo.shade900,
@@ -430,7 +430,7 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                       if (isDriverAction)
                         Text(
                           'Putnik: $putnikName',
-                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
+                          style: GoogleFonts.montserrat(fontSize: 12, color: Colors.black54),
                         )
                       else
                         Row(
@@ -443,7 +443,7 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                             const SizedBox(width: 4),
                             Text(
                               detalji.contains('Sistem') ? 'Sistemska akcija' : 'Samostalna akcija',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.montserrat(
                                 fontSize: 11,
                                 color: detalji.contains('Sistem') ? Colors.red.shade800 : Colors.orange.shade800,
                                 fontWeight: FontWeight.w600,
@@ -493,7 +493,7 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
                             ),
                             child: Text(
                               detalji,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.montserrat(
                                 fontSize: 12,
                                 color: Colors.blueGrey.shade800,
                                 fontStyle: FontStyle.italic,
