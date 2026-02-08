@@ -32,12 +32,12 @@ jobs:
 
       - name: Decode Google Play Key
         run: |
-          echo "${{ secrets.GOOGLE_PLAY_KEY_B64 }}" | base64 -d > $GITHUB_WORKSPACE/android/play-store-key.json
+          printf "%s" "${{ secrets.GOOGLE_PLAY_KEY_B64 }}" | base64 -d > $GITHUB_WORKSPACE/android/play-store-key.json
         shell: bash
 
       - name: Decode Android Keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > $GITHUB_WORKSPACE/android/app/gavra-release-key-production.keystore
+          printf "%s" "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > $GITHUB_WORKSPACE/android/app/gavra-release-key-production.keystore
         shell: bash
 
       - name: Create key.properties
