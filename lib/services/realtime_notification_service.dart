@@ -97,7 +97,7 @@ class RealtimeNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      final response = await supabase.from('push_tokens').select('token, provider').eq('user_id', putnikId);
+      final response = await supabase.from('push_tokens').select('token, provider').eq('putnik_id', putnikId);
 
       if ((response as List).isEmpty) {
         await LocalNotificationService.showRealtimeNotification(

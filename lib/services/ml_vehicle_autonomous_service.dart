@@ -241,17 +241,52 @@ class MLVehicleAutonomousService extends ChangeNotifier {
       final List<String> discoveredTables = List<String>.from((_learnedPatterns['discovered_tables'] as List?) ??
           ['registrovani_putnici', 'voznje_log', 'vozila', 'vozaci', 'seat_requests', 'adrese']);
 
+      // 🛡️ FIX: Ukloni ignorisane tabele iz liste
+      final ignoredTables = [
+        'adresa_bela_crkva',
+        'adresa_vrsac',
+        'adresa_bc',
+        'adresa_vs',
+        'merged_into',
+        'merged_from',
+        'putnik', // koristi registrovani_putnici
+        'batch',
+      ];
+      discoveredTables.removeWhere((t) => ignoredTables.contains(t));
+
       // Beba ne gleda red po red, već uzima "fotografiju" cele tabele
       for (final String tableName in discoveredTables) {
+        // 🛡️ FIX: Preskoči ignorisane tabele
+        final ignoredTables = [
+          'adresa_bela_crkva',
+          'adresa_vrsac',
+          'adresa_bc',
+          'adresa_vs',
+          'merged_into',
+          'merged_from',
+          'putnik', // koristi registrovani_putnici
+          'batch',
+        ];
+        if (ignoredTables.contains(tableName)) continue;
+
+        // 🛡️ FIX: Mapiranje specijalnih slučajeva (jednina -> množina)
+        String mappedTableName = tableName;
+        if (mappedTableName == 'vozac') mappedTableName = 'vozaci';
+        if (mappedTableName == 'putnik') mappedTableName = 'registrovani_putnici';
+        if (mappedTableName == 'adresa_bela_crkva') mappedTableName = 'adrese';
+        if (mappedTableName == 'adresa_vrsac') mappedTableName = 'adrese';
+        if (mappedTableName == 'adresa_bc') mappedTableName = 'adrese';
+        if (mappedTableName == 'adresa_vs') mappedTableName = 'adrese';
+
         try {
           // Beba traži najsvežije tragove (sortirano po vremenu)
           List<Map<String, dynamic>> data;
           try {
             data = List<Map<String, dynamic>>.from(
-                await _supabase.from(tableName).select().order('created_at', ascending: false).limit(200));
+                await _supabase.from(mappedTableName).select().order('created_at', ascending: false).limit(200));
           } catch (_) {
             // Fallback ako nema created_at ili order ne radi
-            data = List<Map<String, dynamic>>.from(await _supabase.from(tableName).select().limit(200));
+            data = List<Map<String, dynamic>>.from(await _supabase.from(mappedTableName).select().limit(200));
           }
 
           if (data.isEmpty) continue;
@@ -295,6 +330,10 @@ class MLVehicleAutonomousService extends ChangeNotifier {
         // 🛡️ FIX: Mapiranje specijalnih slučajeva (jednina -> množina)
         if (potential == 'vozac') potential = 'vozaci';
         if (potential == 'putnik') potential = 'registrovani_putnici';
+        if (potential == 'adresa_bela_crkva') potential = 'adrese';
+        if (potential == 'adresa_vrsac') potential = 'adrese';
+        if (potential == 'adresa_bc') potential = 'adrese';
+        if (potential == 'adresa_vs') potential = 'adrese';
 
         // 🛡️ FIX: Ignoriši tabele koje ne postoje u bazi
         final ignoredTables = [

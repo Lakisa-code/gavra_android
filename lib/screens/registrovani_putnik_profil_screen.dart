@@ -308,18 +308,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   Future<void> _handleSeatRequestApproval(PostgresChangePayload payload) async {
     try {
       final newRecord = payload.newRecord;
-      final requestId = newRecord['id'].toString();
       final putnikId = newRecord['putnik_id'].toString();
       final grad = newRecord['grad'].toString().toLowerCase(); // 'bc' ili 'vs'
       final datum = newRecord['datum'].toString();
       final vreme = newRecord['zeljeno_vreme'].toString();
-
-      // 🛡️ KRITIČNO: Odbaci ako je OldRecord već bio 'approved' - to znači da je već obrađeno!
-      final oldRecord = payload.oldRecord;
-      if (oldRecord['status'] == 'approved') {
-        debugPrint('⏭️ [SeatRequestApproval] Odbačen jer je već bio approved (request_id: $requestId)');
-        return;
-      }
 
       // 🛡️ PROVERA: Odbaci stare notifikacije (starije od 2 minuta)
       final processedAt = newRecord['processed_at'];
@@ -2142,35 +2134,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (!polasci.containsKey(dan)) {
         polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
       } else if (polasci[dan] is! Map) {
-        // ✅ KRITIČNO: Ako nije mapa, učitaj SVEŽU VERZIJU IZ BAZE da bi sačuvali postojeće podatke!
-        debugPrint('⚠️ [Vreme] polasci[$dan] nije Map! Učitavam iz baze da sačuvam podatke...');
-        if (putnikId != null) {
-          try {
-            final freshData = await supabase
-                .from('registrovani_putnici')
-                .select('polasci_po_danu')
-                .eq('id', putnikId)
-                .maybeSingle();
-            if (freshData != null) {
-              final freshPolasci = _safeMap(freshData['polasci_po_danu']);
-              if (freshPolasci.containsKey(dan) && freshPolasci[dan] is Map) {
-                // Sačuvaj postojeći dan iz baze
-                polasci[dan] = Map<String, dynamic>.from(freshPolasci[dan] as Map);
-                debugPrint('✅ [Vreme] Sačuvani postojeći podaci za $dan: ${polasci[dan]}');
-              } else {
-                // Nema podataka u bazi, kreiraj praznu mapu
-                polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
-              }
-            } else {
-              polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
-            }
-          } catch (e) {
-            debugPrint('❌ [Vreme] Greška pri učitavanju iz baze: $e');
-            polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
-          }
-        } else {
-          polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
-        }
+        // Ako nije mapa, kreiraj novu
+        polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
       }
       // Ne kreiramo novu mapu ako dan već postoji - čuvamo sve postojeće markere!
 
