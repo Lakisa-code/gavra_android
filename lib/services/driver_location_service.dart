@@ -215,13 +215,7 @@ class DriverLocationService {
     if (!_isTracking || _currentVozacId == null) return;
 
     try {
-      final position = knownPosition ??
-          await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.high,
-              timeLimit: Duration(seconds: 10),
-            ),
-          );
+      final position = knownPosition ?? await Geolocator.getCurrentPosition();
 
       if (_lastPosition != null) {
         final distance = Geolocator.distanceBetween(
@@ -267,12 +261,7 @@ class DriverLocationService {
   /// Stream praćenje sa distance filterom (alternativa timer-u)
   // ignore: unused_element
   void _startStreamTracking() {
-    const locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 50,
-    );
-
-    _positionSubscription = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
+    _positionSubscription = Geolocator.getPositionStream().listen(
       (Position position) {
         _lastPosition = position;
         _sendPositionToSupabase(position);
