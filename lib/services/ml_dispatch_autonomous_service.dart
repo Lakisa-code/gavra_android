@@ -580,17 +580,10 @@ class MLDispatchAutonomousService extends ChangeNotifier {
                 print(' [ML Dispatch] 📊 Raw polasci_po_danu: $rawPolasci (type: ${rawPolasci.runtimeType})');
               }
 
-              // Parsiraj polasci_po_danu - može biti Map ili JSON string
+              // Parsiraj polasci_po_danu - sada je JSONB objekat
               Map<String, dynamic> polasci = {};
               if (rawPolasci is Map) {
                 polasci = Map<String, dynamic>.from(rawPolasci);
-              } else if (rawPolasci is String) {
-                try {
-                  polasci = Map<String, dynamic>.from(json.decode(rawPolasci));
-                } catch (e) {
-                  if (kDebugMode) print(' [ML Dispatch] ⚠️ Greška pri parsiranju JSON: $e');
-                  polasci = {};
-                }
               }
 
               if (kDebugMode) print(' [ML Dispatch] 📊 Parsed polasci: $polasci');
@@ -599,13 +592,6 @@ class MLDispatchAutonomousService extends ChangeNotifier {
               Map<String, dynamic> danData = {};
               if (rawDanData is Map) {
                 danData = Map<String, dynamic>.from(rawDanData);
-              } else if (rawDanData is String) {
-                try {
-                  danData = Map<String, dynamic>.from(json.decode(rawDanData));
-                } catch (e) {
-                  if (kDebugMode) print(' [ML Dispatch] ⚠️ Greška pri parsiranju danData: $e');
-                  danData = {};
-                }
               }
 
               if (kDebugMode) print(' [ML Dispatch] 📊 Trenutni danData za $dan: $danData');

@@ -185,7 +185,8 @@ class PutnikService {
         final controller = _streams[key];
         if (controller != null && !controller.isClosed) {
           controller.add(filteredPutnici);
-          print('✅ INSERT (PRAZNA LISTA): Dodan novi putnik! Nova lista ima ${filteredPutnici.length} putnika za stream $key');
+          print(
+              '✅ INSERT (PRAZNA LISTA): Dodan novi putnik! Nova lista ima ${filteredPutnici.length} putnika za stream $key');
         }
       } else {
         // Pronađi putnika u listi po ID-u
@@ -831,16 +832,9 @@ class PutnikService {
       Map<String, dynamic> polasciPoDanu = {};
       final rawPolasciPoDanu = registrovaniPutnik['polasci_po_danu'];
 
-      // 🛡️ Parseraj polasci_po_danu - može biti String (JSON) ili Map
+      // 🛡️ polasci_po_danu je sada JSONB, direktno parsira kao Map
       if (rawPolasciPoDanu != null) {
-        if (rawPolasciPoDanu is String) {
-          try {
-            polasciPoDanu = convert.jsonDecode(rawPolasciPoDanu) as Map<String, dynamic>;
-          } catch (e) {
-            debugPrint('⚠️ Greška pri parsiranju polasci_po_danu JSON: $e');
-            polasciPoDanu = {};
-          }
-        } else if (rawPolasciPoDanu is Map) {
+        if (rawPolasciPoDanu is Map) {
           polasciPoDanu = Map<String, dynamic>.from(rawPolasciPoDanu);
         }
       }
@@ -1051,15 +1045,11 @@ class PutnikService {
       final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
       final place = jeBC ? 'bc' : 'vs';
 
-      // ✅ NOVO: Ažuriraj polasci_po_danu JSON sa pokupljenjem
+      // ✅ NOVO: polasci_po_danu je sada JSONB objekat
       Map<String, dynamic> polasciPoDanu = {};
       final rawPolasci = response['polasci_po_danu'];
       if (rawPolasci != null) {
-        if (rawPolasci is String) {
-          try {
-            polasciPoDanu = Map<String, dynamic>.from(convert.jsonDecode(rawPolasci));
-          } catch (_) {}
-        } else if (rawPolasci is Map) {
+        if (rawPolasci is Map) {
           polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
         }
       }
@@ -1146,11 +1136,7 @@ class PutnikService {
     Map<String, dynamic> polasciPoDanu = {};
     final rawPolasci = response['polasci_po_danu'];
     if (rawPolasci != null) {
-      if (rawPolasci is String) {
-        try {
-          polasciPoDanu = Map<String, dynamic>.from(convert.jsonDecode(rawPolasci));
-        } catch (_) {}
-      } else if (rawPolasci is Map) {
+      if (rawPolasci is Map) {
         polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
       }
     }

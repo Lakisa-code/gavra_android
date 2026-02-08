@@ -470,13 +470,7 @@ class RegistrovaniPutnikService {
         final rawPolasciDB = trenutnoStanje['polasci_po_danu'];
         Map<String, dynamic>? trenutniPolasci;
 
-        if (rawPolasciDB is String) {
-          try {
-            trenutniPolasci = jsonDecode(rawPolasciDB) as Map<String, dynamic>?;
-          } catch (e) {
-            debugPrint('Greška pri parsu polasci_po_danu stringa: $e');
-          }
-        } else if (rawPolasciDB is Map) {
+        if (rawPolasciDB is Map) {
           trenutniPolasci = Map<String, dynamic>.from(rawPolasciDB);
         }
 
@@ -660,11 +654,7 @@ class RegistrovaniPutnikService {
       Map<String, dynamic> polasciPoDanu = {};
       final rawPolasci = currentData['polasci_po_danu'];
       if (rawPolasci != null) {
-        if (rawPolasci is String) {
-          try {
-            polasciPoDanu = Map<String, dynamic>.from(jsonDecode(rawPolasci));
-          } catch (_) {}
-        } else if (rawPolasci is Map) {
+        if (rawPolasci is Map) {
           polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
         }
       }
