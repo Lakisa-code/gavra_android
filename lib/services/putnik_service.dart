@@ -148,48 +148,71 @@ class PutnikService {
       final params = entry.value;
       final currentList = _lastValues[key];
 
-      if (currentList != null && currentList.isNotEmpty) {
+      // Kreiraj nove putnike za ovaj dan sa update-ovanim podacima
+      String? danKratica;
+      if (params.isoDate != null) {
+        try {
+          final dt = DateTime.parse(params.isoDate!);
+          const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          danKratica = dani[dt.weekday - 1];
+        } catch (_) {}
+      }
+      danKratica ??= _getDayAbbreviationFromName(_getTodayName());
+
+      final todayDate = (params.isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
+      final newPutnici =
+          Putnik.fromRegistrovaniPutniciMultipleForDay(updatedPutnikData, danKratica, isoDate: todayDate);
+
+      // Filtriraj po gradu i vremenu ako su specificirani
+      final filteredPutnici = newPutnici.where((p) {
+        if (params.grad != null && p.grad != params.grad) return false;
+        if (params.vreme != null) {
+          final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+          final normFilterVreme = GradAdresaValidator.normalizeTime(params.vreme!);
+          if (normVreme != normFilterVreme) return false;
+        }
+        return true;
+      }).toList();
+
+      if (filteredPutnici.isEmpty) {
+        // Nema relevantnih putnika za ovaj stream
+        continue;
+      }
+
+      if (currentList == null || currentList.isEmpty) {
+        // Lista je prazna, samo dodaj nove putnike
+        _lastValues[key] = filteredPutnici;
+        final controller = _streams[key];
+        if (controller != null && !controller.isClosed) {
+          controller.add(filteredPutnici);
+          print('✅ INSERT (PRAZNA LISTA): Dodan novi putnik! Nova lista ima ${filteredPutnici.length} putnika za stream $key');
+        }
+      } else {
         // Pronađi putnika u listi po ID-u
         final putnikIndex = currentList.indexWhere((p) => p.id == putnikId);
 
         if (putnikIndex != -1) {
-          // Kreiraj nove putnike za ovaj dan sa update-ovanim podacima
-          String? danKratica;
-          if (params.isoDate != null) {
-            try {
-              final dt = DateTime.parse(params.isoDate!);
-              const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-              danKratica = dani[dt.weekday - 1];
-            } catch (_) {}
-          }
-          danKratica ??= _getDayAbbreviationFromName(_getTodayName());
-
-          final todayDate = (params.isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
-          final newPutnici =
-              Putnik.fromRegistrovaniPutniciMultipleForDay(updatedPutnikData, danKratica, isoDate: todayDate);
-
-          // Filtriraj po gradu i vremenu ako su specificirani
-          final filteredPutnici = newPutnici.where((p) {
-            if (params.grad != null && p.grad != params.grad) return false;
-            if (params.vreme != null) {
-              final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-              final normFilterVreme = GradAdresaValidator.normalizeTime(params.vreme!);
-              if (normVreme != normFilterVreme) return false;
-            }
-            return true;
-          }).toList();
-
-          // Update-uj listu
+          // UPDATE: Zameni stare verzije sa novim
           final newList = List<Putnik>.from(currentList);
-          newList.removeWhere((p) => p.id == putnikId); // Ukloni stare verzije
-          newList.addAll(filteredPutnici); // Dodaj nove verzije
+          newList.removeWhere((p) => p.id == putnikId);
+          newList.addAll(filteredPutnici);
 
-          // Sačuvaj i emituj
           _lastValues[key] = newList;
           final controller = _streams[key];
           if (controller != null && !controller.isClosed) {
             controller.add(newList);
-            print('✅ PARTIAL UPDATE: Emitovana nova lista sa ${newList.length} putnika za stream $key');
+            print('✅ UPDATE: Emitovana nova lista sa ${newList.length} putnika za stream $key');
+          }
+        } else {
+          // INSERT: Novi putnik koji nije bio u listi - dodaj ga
+          final newList = List<Putnik>.from(currentList);
+          newList.addAll(filteredPutnici);
+
+          _lastValues[key] = newList;
+          final controller = _streams[key];
+          if (controller != null && !controller.isClosed) {
+            controller.add(newList);
+            print('✅ INSERT: Dodan novi putnik! Nova lista ima ${newList.length} putnika za stream $key');
           }
         }
       }
