@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../utils/grad_adresa_validator.dart';
 import 'kapacitet_service.dart';
+import 'realtime_notification_service.dart';
 import 'slobodna_mesta_service.dart';
 
 ///  BEBA DISPEČER (ML Dispatch Autonomous Service)
@@ -661,6 +662,25 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         'metadata': {'request_id': requestId, 'assigned_time': dodeljenoVreme},
         'created_at': DateTime.now().toIso8601String(),
       });
+
+      // 📲 Pošalji notifikaciju putniku
+      try {
+        final gradNaziv = grad.toString().toLowerCase() == 'bc' ? 'Bela Crkva' : 'Vršac';
+        await RealtimeNotificationService.sendNotificationToPutnik(
+          putnikId: putnikId.toString(),
+          title: '✅ Zahtev Odobren',
+          body: 'Vaš zahtev za termin $dodeljenoVreme u pravcu $gradNaziv je odobren!',
+          data: {
+            'type': 'zahtev_odobren',
+            'putnikId': putnikId.toString(),
+            'vreme': dodeljenoVreme,
+            'grad': grad.toString(),
+          },
+        );
+        if (kDebugMode) print(' [ML Dispatch] 📲 Notifikacija poslata putniku $putnikId');
+      } catch (notifError) {
+        if (kDebugMode) print(' [ML Dispatch] ⚠️ Greška pri slanju notifikacije: $notifError');
+      }
     } catch (e) {
       if (kDebugMode) print(' [ML Dispatch] Greška pri odobravanju: $e');
     }
