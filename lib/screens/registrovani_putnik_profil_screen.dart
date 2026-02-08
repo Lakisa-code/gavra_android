@@ -22,6 +22,7 @@ import '../services/theme_manager.dart';
 import '../services/voznje_log_service.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
+import '../utils/registrovani_helpers.dart';
 import '../utils/schedule_utils.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 import '../widgets/shared/time_picker_cell.dart';
@@ -2139,18 +2140,27 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
       // Ne kreiramo novu mapu ako dan već postoji - čuvamo sve postojeće markere!
 
+      // Normalize incoming time so admin and putnik use the same canonical format
+      final String? normalizedVreme = novoVreme == null ? null : RegistrovaniHelpers.normalizeTime(novoVreme);
+
+      // Prepare seatVreme (non-null) for APIs that require a String
+      final String seatVreme =
+          (normalizedVreme != null && normalizedVreme.isNotEmpty) ? normalizedVreme : (novoVreme ?? '');
+
       // 🔴 OTKAZIVANJE - ako putnik briše vreme, zabeleži kao otkazano SA STARIM VREMENOM
-      if (novoVreme == null) {
+      if (normalizedVreme == null || normalizedVreme.isEmpty) {
         final staroVreme = (polasci[dan] as Map<String, dynamic>)[tipGrad];
         final staroVremeStr = staroVreme?.toString() ?? '';
+        final staroVremeNorm = RegistrovaniHelpers.normalizeTime(staroVremeStr);
         final otkazanoKey = '${tipGrad}_otkazano';
         final otkazanoVremeKey = '${tipGrad}_otkazano_vreme';
         (polasci[dan] as Map<String, dynamic>)[otkazanoKey] = DateTime.now().toUtc().toIso8601String();
-        // 🆕 Sačuvaj staro vreme da bi se moglo prikazati u crvenom
+        // 🆕 Sačuvaj staro vreme (normalizovano) da bi se moglo prikazati u crvenom
         if (staroVreme != null && staroVremeStr.isNotEmpty) {
-          (polasci[dan] as Map<String, dynamic>)[otkazanoVremeKey] = staroVreme;
+          (polasci[dan] as Map<String, dynamic>)[otkazanoVremeKey] =
+              (staroVremeNorm != null && staroVremeNorm.isNotEmpty) ? staroVremeNorm : staroVremeStr;
         }
-        debugPrint('🔴 [$tipGrad] Putnik otkazao za $dan (staro vreme: $staroVreme)');
+        debugPrint('🔴 [$tipGrad] Putnik otkazao za $dan (staro vreme: $staroVremeStr)');
 
         // 📝 LOG U DNEVNIK
         try {
@@ -2162,10 +2172,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         } catch (_) {}
 
         // 🆕 AKO JE VS RUSH HOUR OTKAZIVANJE - obavesti sve koji čekaju
-        if (tipGrad == 'vs' && ['13:00', '14:00', '15:30'].contains(staroVremeStr)) {
-          debugPrint('🔔 [VS] Rush Hour otkazivanje - proveravamo ko čeka za $staroVremeStr');
-          // Asinhrono obavesti (ne blokiraj UI)
-          _notifyWaitingPassengers(staroVremeStr, dan);
+        if (tipGrad == 'vs' && staroVremeNorm != null && ['13:00', '14:00', '15:30'].contains(staroVremeNorm)) {
+          debugPrint('🔔 [VS] Rush Hour otkazivanje - proveravamo ko čeka za $staroVremeNorm');
+          final notifyVreme = (staroVremeNorm.isNotEmpty) ? staroVremeNorm : staroVremeStr;
+          _notifyWaitingPassengers(notifyVreme, dan);
         }
       } else {
         // Ako postavlja novo vreme, očisti otkazano
@@ -2175,8 +2185,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         (polasci[dan] as Map<String, dynamic>)[otkazanoVremeKey] = null;
       }
 
-      // Ažuriraj samo vreme, čuvaj ostale podatke
-      (polasci[dan] as Map<String, dynamic>)[tipGrad] = novoVreme;
+      // Ažuriraj samo vreme, čuvaj ostale podatke (koristi normalizovano vreme)
+      (polasci[dan] as Map<String, dynamic>)[tipGrad] =
+          (normalizedVreme != null && normalizedVreme.isNotEmpty) ? normalizedVreme : null;
       // Očisti "null" string ako je prisutan
       if ((polasci[dan] as Map<String, dynamic>)[tipGrad] == 'null') {
         (polasci[dan] as Map<String, dynamic>)[tipGrad] = null;
@@ -2217,7 +2228,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           await SeatRequestService.insertSeatRequest(
             putnikId: putnikId,
             dan: dan,
-            vreme: novoVreme,
+            vreme: seatVreme,
             grad: 'bc',
             brojMesta: _putnikData['broj_mesta'] ?? 1,
           );
@@ -2227,7 +2238,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
-              vreme: novoVreme,
+              vreme: seatVreme,
               grad: 'bc',
               tipPutnika: 'Učenik',
               status: 'Čeka potvrdu (Pending)',
@@ -2268,7 +2279,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           await SeatRequestService.insertSeatRequest(
             putnikId: putnikId,
             dan: dan,
-            vreme: novoVreme,
+            vreme: seatVreme,
             grad: 'bc',
             brojMesta: _putnikData['broj_mesta'] ?? 1,
           );
@@ -2278,7 +2289,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
-              vreme: novoVreme,
+              vreme: seatVreme,
               grad: 'bc',
               tipPutnika: 'Radnik',
               status: 'Čeka potvrdu (Pending)',
@@ -2316,7 +2327,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           await SeatRequestService.insertSeatRequest(
             putnikId: putnikId,
             dan: dan,
-            vreme: novoVreme,
+            vreme: seatVreme,
             grad: 'bc',
             brojMesta: _putnikData['broj_mesta'] ?? 1,
           );
@@ -2326,7 +2337,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
-              vreme: novoVreme,
+              vreme: seatVreme,
               grad: 'bc',
               tipPutnika: 'Dnevni',
               status: 'Čeka potvrdu (Pending)',
@@ -2372,7 +2383,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           await SeatRequestService.insertSeatRequest(
             putnikId: putnikId,
             dan: dan,
-            vreme: novoVreme,
+            vreme: seatVreme,
             grad: 'vs',
             brojMesta: _putnikData['broj_mesta'] ?? 1,
           );
@@ -2382,7 +2393,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
-              vreme: novoVreme,
+              vreme: seatVreme,
               grad: 'vs',
               tipPutnika: jeUcenik ? 'Učenik' : 'Radnik',
               status: jeUTranzitu ? 'Prioritetni zahtev (Tranzit)' : 'Čeka potvrdu (Pending)',
@@ -2464,7 +2475,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           }
 
           // 🟢 NORMALAN FLOW - odmah sačuvaj (otkazivanje)
-          _saveNormalFlow(putnikId, polasci, noviRadniDani, tipGrad, dan, novoVreme);
+          _saveNormalFlow(putnikId, polasci, noviRadniDani, tipGrad, dan, normalizedVreme);
         }
       }
     } catch (e) {
