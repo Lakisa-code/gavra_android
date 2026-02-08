@@ -1,0 +1,171 @@
+name: Build & Release to Google Play Alpha
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //; s/+.*//')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Decode Google Play Key
+        run: |
+          echo "${{ secrets.GOOGLE_PLAY_KEY_B64 }}" | base64 -d > $GITHUB_WORKSPACE/android/play-store-key.json
+        shell: bash
+
+      - name: Decode Android Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > $GITHUB_WORKSPACE/android/app/gavra-release-key-production.keystore
+        shell: bash
+
+      - name: Create key.properties
+        run: |
+          cat > $GITHUB_WORKSPACE/android/key.properties << EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=gavra-release-key-production.keystore
+          EOF
+        shell: bash
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build AAB (Android App Bundle)
+        run: |
+          flutter build appbundle \
+            --release \
+            --target-platform android-arm64 \
+            --obfuscate \
+            --split-debug-info=build/app/outputs/mapping
+
+      - name: Upload AAB to Google Play Alpha
+        env:
+          GOOGLE_PLAY_KEY_B64: ${{ secrets.GOOGLE_PLAY_KEY_B64 }}
+        run: |
+          # Decode key
+          echo "$GOOGLE_PLAY_KEY_B64" | base64 -d > google-play-key.json
+          
+          # Install Node dependencies
+          npm install googleapis googleapis-auth
+          
+          # Create upload script
+          cat > upload.js << 'UPLOADEOF'
+          const { google } = require('googleapis');
+          const fs = require('fs');
+          
+          const PACKAGE_NAME = 'com.gavra013.gavra_android';
+          const AAB_PATH = 'build/app/outputs/bundle/release/app-release.aab';
+          const credentials = JSON.parse(fs.readFileSync('google-play-key.json', 'utf8'));
+          
+          async function uploadAAB() {
+            const auth = new google.auth.GoogleAuth({
+              credentials,
+              scopes: ['https://www.googleapis.com/auth/androidpublisher']
+            });
+          
+            const androidPublisher = google.androidpublisher({
+              version: 'v3',
+              auth: await auth.getClient()
+            });
+          
+            try {
+              // Create edit
+              const editRes = await androidPublisher.edits.insert({
+                packageName: PACKAGE_NAME,
+                requestBody: {}
+              });
+              const editId = editRes.data.id;
+              console.log('📝 Created edit:', editId);
+          
+              // Upload bundle
+              const bundleRes = await androidPublisher.edits.bundles.upload({
+                packageName: PACKAGE_NAME,
+                editId: editId,
+                media: {
+                  mimeType: 'application/octet-stream',
+                  body: fs.createReadStream(AAB_PATH)
+                }
+              });
+              
+              const versionCode = bundleRes.data.versionCode;
+              console.log('✅ Bundle uploaded. Version code:', versionCode);
+          
+              // Update alpha track
+              await androidPublisher.edits.tracks.update({
+                packageName: PACKAGE_NAME,
+                editId: editId,
+                track: 'alpha',
+                requestBody: {
+                  track: 'alpha',
+                  releases: [{
+                    name: 'Alpha Build',
+                    versionCodes: [versionCode.toString()],
+                    status: 'completed',
+                    releaseNotes: [{
+                      language: 'sr-RS',
+                      text: 'Alpha release build'
+                    }]
+                  }]
+                }
+              });
+              console.log('✅ Alpha track updated');
+          
+              // Commit
+              const commitRes = await androidPublisher.edits.commit({
+                packageName: PACKAGE_NAME,
+                editId: editId
+              });
+              console.log('✅ Changes committed:', commitRes.data);
+              
+            } catch (error) {
+              console.error('❌ Error:', error.message);
+              process.exit(1);
+            }
+          }
+          
+          uploadAAB();
+          UPLOADEOF
+          
+          node upload.js
+        shell: bash
+
+      - name: Create GitHub release
+        if: success()
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.VERSION }}
+          release_name: Release v${{ env.VERSION }} to Alpha
+          body: |
+            ✅ Successfully built and uploaded to Google Play Alpha!
+            
+            📦 Build Details:
+            - Package: com.gavra013.gavra_android
+            - Track: alpha
+            - Status: Completed
+          draft: false
+          prerelease: true
