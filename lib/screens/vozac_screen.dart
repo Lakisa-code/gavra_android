@@ -1528,25 +1528,6 @@ class _VozacScreenState extends State<VozacScreen> {
                           );
                         },
                       ),
-                      // 🚐 DOĐELJENA VREMENA - Prikazuje vremena dodeljena ovom vozaču
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Vaša dodeljena vremena:',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildDodeljenaVremenaChips(),
-                          ],
-                        ),
-                      ),
                       // Lista putnika - koristi PutnikList sa stream-om kao DanasScreen
                       Expanded(
                         child: putnici.isEmpty
@@ -1622,9 +1603,14 @@ class _VozacScreenState extends State<VozacScreen> {
             final filteredBcVremena = _bcVremena.where((vreme) => getPutnikCount('Bela Crkva', vreme) > 0).toList();
             final filteredVsVremena = _vsVremena.where((vreme) => getPutnikCount('Vršac', vreme) > 0).toList();
 
-            // ✅ IZMENA: Uklonjen fallback. Ako nema putnika, liste su prazne.
-            final bcVremenaToShow = filteredBcVremena;
-            final vsVremenaToShow = filteredVsVremena;
+            // 🚐 DODAJ DOĐELJENA VREMENA ČAK I AKO NEMA PUTNIKA
+            final dodeljenaVremena = _getDodeljenaVremena();
+            final assignedBcTimes = dodeljenaVremena.where((v) => v['grad'] == 'Bela Crkva').map((v) => v['vreme']!).toList();
+            final assignedVsTimes = dodeljenaVremena.where((v) => v['grad'] == 'Vršac').map((v) => v['vreme']!).toList();
+
+            // Spoji filtrirana vremena sa dodeljenim vremenima
+            final bcVremenaToShow = {...filteredBcVremena, ...assignedBcTimes}.toList()..sort();
+            final vsVremenaToShow = {...filteredVsVremena, ...assignedVsTimes}.toList()..sort();
 
             // ✅ SAKRIJ CEO BOTTOM BAR AKO NEMA VOŽNJI
             if (bcVremenaToShow.isEmpty && vsVremenaToShow.isEmpty) {
@@ -1883,77 +1869,6 @@ class _VozacScreenState extends State<VozacScreen> {
     if (color == Colors.red) return Colors.red[300]!;
     if (color == Colors.orange) return Colors.orange[300]!;
     return color.withValues(alpha: 0.6);
-  }
-
-  // 🚐 WIDGET ZA PRIKAZ DOĐELJENIH VREMENA
-  Widget _buildDodeljenaVremenaChips() {
-    final dodeljenaVremena = _getDodeljenaVremena();
-
-    if (dodeljenaVremena.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Center(
-          child: Text(
-            'Nema dodeljenih vremena za današnji dan',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: dodeljenaVremena.map((vremeData) {
-        final grad = vremeData['grad']!;
-        final vreme = vremeData['vreme']!;
-        final isSelected = _selectedGrad == grad && _selectedVreme == vreme;
-
-        return InkWell(
-          onTap: () {
-            setState(() {
-              _selectedGrad = grad;
-              _selectedVreme = vreme;
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.blue.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected ? Colors.blue : Colors.white.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  grad == 'Bela Crkva' ? Icons.location_city : Icons.location_on,
-                  size: 16,
-                  color: Colors.white,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$grad $vreme',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
   }
 
   // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA KADA VOZAC KRENE
