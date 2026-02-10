@@ -17,11 +17,12 @@ class VozacBoja {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// Hardkodovane boje - fallback ako baza nije dostupna
+  /// ✅ Podudaraju se sa bazom (vozaci tabela)
   static const Map<String, Color> _fallbackBoje = {
-    'Bruda': Color(0xFF7C4DFF), // ljubičasta
-    'Bilevski': Color(0xFFFF9800), // narandžasta
-    'Bojan': Color(0xFF00E5FF), // svetla cyan plava - osvežavajuća i moderna
-    'Voja': Color(0xFF26C6DA), // teal
+    'Bruda': Color(0xFF7C4DFF), // ljubičasta (#7C4DFF iz baze)
+    'Bilevski': Color(0xFFFF9800), // narandžasta (#FF9800 iz baze)
+    'Bojan': Color(0xFF00E5FF), // svetla cyan plava (#00E5FF iz baze)
+    'Voja': Color(0xFF4CAF50), // zelena (#4CAF50 iz baze)
   };
 
   // ═══════════════════════════════════════════════════════════════════════════

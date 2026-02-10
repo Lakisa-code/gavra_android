@@ -442,9 +442,9 @@ class Putnik {
 
       // 🔧 FIX: Ako je više mjesta, cena bi trebala biti PO MJESTU, ne ukupan iznos
       final brojMestaBC = RegistrovaniHelpers.getBrojMestaForDay(map, normalizedTarget, 'bc');
-      final cenaBC = iznosPlacanjaBC != null && brojMestaBC > 1 
-        ? iznosPlacanjaBC / brojMestaBC 
-        : (iznosPlacanjaBC ?? iznosPlacanja);
+      final cenaBC = iznosPlacanjaBC != null && brojMestaBC > 1
+          ? iznosPlacanjaBC / brojMestaBC
+          : (iznosPlacanjaBC ?? iznosPlacanja);
 
       putnici.add(
         Putnik(
@@ -505,9 +505,9 @@ class Putnik {
 
       // 🔧 FIX: Ako je više mjesta, cena bi trebala biti PO MJESTU, ne ukupan iznos
       final brojMestaVS = RegistrovaniHelpers.getBrojMestaForDay(map, normalizedTarget, 'vs');
-      final cenaVS = iznosPlacanjaVS != null && brojMestaVS > 1 
-        ? iznosPlacanjaVS / brojMestaVS 
-        : (iznosPlacanjaVS ?? iznosPlacanja);
+      final cenaVS = iznosPlacanjaVS != null && brojMestaVS > 1
+          ? iznosPlacanjaVS / brojMestaVS
+          : (iznosPlacanjaVS ?? iznosPlacanja);
 
       putnici.add(
         Putnik(
