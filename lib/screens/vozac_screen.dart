@@ -13,11 +13,9 @@ import '../services/firebase_service.dart'; // 🎯 Za vozača
 import '../services/kapacitet_service.dart'; // 🎫 Za broj mesta
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
 import '../services/popis_service.dart'; // 📋 Za popis dana
-import '../services/putnik_push_service.dart'; // 📱 Za push notifikacije putnicima
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
-import '../services/route_service.dart'; // 🚐 Dinamički satni redoslijedi
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
@@ -33,6 +31,7 @@ import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
+import '../widgets/shimmer_widgets.dart';
 import 'dugovi_screen.dart';
 import 'tranzit_screen.dart';
 import 'welcome_screen.dart';
@@ -63,8 +62,6 @@ class _VozacScreenState extends State<VozacScreen> {
   List<Putnik> _optimizedRoute = [];
   final bool _isLoading = false;
   bool _isOptimizing = false; // 🔄 Loading state specifically za optimizaciju rute
-  Map<Putnik, Position>? _cachedCoordinates; // 🎯 Keširane koordinate
-  Map<String, int>? _cachedEta; // 🕒 Keširani ETA iz OSRM-a
 
   /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak
   String _getWorkingDateIso() => PutnikHelpers.getWorkingDateIso();
@@ -141,15 +138,12 @@ class _VozacScreenState extends State<VozacScreen> {
         sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
 
-    // Pokušaj iz cache-a, fallback na RouteConfig
-    final cached = RouteService.getCachedVremena(sezona, 'bc');
-    return cached.isNotEmpty
-        ? cached
-        : (sezona == 'praznici'
-            ? RouteConfig.bcVremenaPraznici
-            : sezona == 'zimski'
-                ? RouteConfig.bcVremenaZimski
-                : RouteConfig.bcVremenaLetnji);
+    // Use RouteConfig for schedule times
+    return (sezona == 'praznici'
+        ? RouteConfig.bcVremenaPraznici
+        : sezona == 'zimski'
+            ? RouteConfig.bcVremenaZimski
+            : RouteConfig.bcVremenaLetnji);
   }
 
   List<String> get _vsVremena {
@@ -170,15 +164,12 @@ class _VozacScreenState extends State<VozacScreen> {
         sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
 
-    // Pokušaj iz cache-a, fallback na RouteConfig
-    final cached = RouteService.getCachedVremena(sezona, 'vs');
-    return cached.isNotEmpty
-        ? cached
-        : (sezona == 'praznici'
-            ? RouteConfig.vsVremenaPraznici
-            : sezona == 'zimski'
-                ? RouteConfig.vsVremenaZimski
-                : RouteConfig.vsVremenaLetnji);
+    // Use RouteConfig for schedule times
+    return (sezona == 'praznici'
+        ? RouteConfig.vsVremenaPraznici
+        : sezona == 'zimski'
+            ? RouteConfig.vsVremenaZimski
+            : RouteConfig.vsVremenaLetnji);
   }
 
   List<String> get _sviPolasci {
@@ -199,7 +190,8 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // 🚐 UČITAJ VREME VOZAC PODATKE
   Future<void> _loadVremeVozacData() async {
-    await VremeVozacService().loadAllVremeVozac();
+    VremeVozacService().loadAllVremeVozac();
+    return; // Dodano da vrati Future<void>
   }
 
   // 🛰️ GPS TRACKING INICIJALIZACIJA
@@ -557,7 +549,6 @@ class _VozacScreenState extends State<VozacScreen> {
           setState(() {
             // ✅ KOMBINUJ: optimizovani aktivni + pokupljeni/otkazani na kraju
             _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
-            _cachedCoordinates = result.cachedCoordinates;
           });
 
           // 🔄 REALTIME FIX: Ažuriraj ETA bez restarta trackinga
@@ -597,7 +588,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🎯 OPTIMIZACIJA RUTE - IDENTIČNO KAO DANAS SCREEN
   void _optimizeCurrentRoute(List<Putnik> putnici, {bool isAlreadyOptimized = false}) async {
     // Proveri da li je ulogovan i valjan vozač
-    if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
+    if (_currentDriver == null || !VozacBoja.isValidDriverSync(_currentDriver)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -709,7 +700,6 @@ class _VozacScreenState extends State<VozacScreen> {
         if (mounted) {
           setState(() {
             _optimizedRoute = finalRoute; // Preskočeni + optimizovani
-            _cachedCoordinates = result.cachedCoordinates; // 🎯 Sačuvaj koordinate
             _isRouteOptimized = true;
             _isListReordered = true;
             _currentPassengerIndex = 0;
@@ -909,7 +899,7 @@ class _VozacScreenState extends State<VozacScreen> {
           return true;
         }).toList();
 
-        final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
+        final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriverSync(_currentDriver);
         final bool canPress = !_isOptimizing && !_isLoading && isDriverValid;
 
         final baseColor = _isGpsTracking ? Colors.orange : (_isRouteOptimized ? Colors.green : Colors.white);
@@ -1022,7 +1012,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🗺️ DUGME ZA NAVIGACIJU - OTVARA HERE WeGo SA REDOSLEDOM IZ OPTIMIZOVANE RUTE
   Widget _buildMapsButton() {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
-    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
+    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriverSync(_currentDriver);
     final bool canPress = hasOptimizedRoute && isDriverValid;
     final baseColor = hasOptimizedRoute ? Colors.blue : Colors.white;
 
@@ -1066,27 +1056,12 @@ class _VozacScreenState extends State<VozacScreen> {
 
       // Konvertuj koordinate: Map<Putnik, Position> -> Map<String, Position>
       Map<String, Position>? coordsByName;
-      if (_cachedCoordinates != null) {
-        coordsByName = {};
-        for (final entry in _cachedCoordinates!.entries) {
-          coordsByName[entry.key.ime] = entry.value;
-        }
-      }
 
       // Izvuci redosled imena putnika
       final putniciRedosled = _optimizedRoute.map((p) => p.ime).toList();
 
       // Izračunaj ETA za putnike ako već nisu dostupni
       Map<String, int>? putniciEta;
-      if (_cachedCoordinates != null && _cachedCoordinates!.isNotEmpty) {
-        // Kreiraj simulirane ETA vrednosti na osnovu redosleda (svaki putnik +3 minuta)
-        putniciEta = {};
-        int cumulativeMinutes = 3;
-        for (final putnik in _optimizedRoute) {
-          putniciEta[putnik.ime] = cumulativeMinutes;
-          cumulativeMinutes += 3;
-        }
-      }
 
       await DriverLocationService.instance.startTracking(
         vozacId: _currentDriver!,
@@ -1125,13 +1100,7 @@ class _VozacScreenState extends State<VozacScreen> {
         );
       }
 
-      // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA
-      if (putniciEta != null) {
-        await _sendTransportStartedNotifications(
-          putniciEta: putniciEta,
-          vozacIme: _currentDriver!,
-        );
-      }
+      // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA - bez ETA
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1172,7 +1141,6 @@ class _VozacScreenState extends State<VozacScreen> {
         context: context,
         putnici: _optimizedRoute,
         startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
-        cachedCoordinates: _cachedCoordinates,
       );
 
       if (result.success) {
@@ -1208,7 +1176,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // 📋 POPIS DUGME - IDENTIČNO KAO DANAS SCREEN
   Widget _buildPopisButton() {
-    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
+    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriverSync(_currentDriver);
     final bool canPress = isDriverValid && !_isPopisLoading;
     final baseColor = _isPopisSaved ? Colors.green : Colors.white;
 
@@ -1251,7 +1219,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // 📊 POPIS DANA - KORISTI CENTRALIZOVANI POPIS SERVICE
   Future<void> _showPopisDana() async {
-    if (_currentDriver == null || _currentDriver!.isEmpty || !VozacBoja.isValidDriver(_currentDriver)) {
+    if (_currentDriver == null || _currentDriver!.isEmpty || !VozacBoja.isValidDriverSync(_currentDriver)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1373,7 +1341,31 @@ class _VozacScreenState extends State<VozacScreen> {
                 ),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: Colors.white));
+                    return Column(
+                      children: [
+                        _buildDigitalDateDisplay(),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(child: _buildOptimizeButton()),
+                            const SizedBox(width: 4),
+                            Expanded(child: _buildMapsButton()),
+                            const SizedBox(width: 4),
+                            Expanded(child: _buildPopisButton()),
+                            const SizedBox(width: 4),
+                            Expanded(child: _buildSpeedometerButton()),
+                            const SizedBox(width: 4),
+                            _buildAppBarButton(
+                              icon: Icons.logout,
+                              color: Colors.red.shade400,
+                              onTap: _logout,
+                            ),
+                          ],
+                        ),
+                        _buildStatsRow([], []),
+                        Expanded(child: ShimmerWidgets.putnikListShimmer(itemCount: 5)),
+                      ],
+                    );
                   }
 
                   // 🎯 FILTER: Prikaži ISKLJUČIVO putnike koje je admin dodelio ovom vozaču
@@ -1402,132 +1394,7 @@ class _VozacScreenState extends State<VozacScreen> {
                   return Column(
                     children: [
                       // KOCKE - Pazar, Dugovi
-                      // ✅ ISPRAVKA: Računaj statistike direktno iz liste putnika (kao DanasScreen)
-                      Builder(
-                        builder: (context) {
-                          // 💳 DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
-                          // ❗ KORISTIMO sviPutnici da bi videli SVE dužnike, ne samo moje
-                          final filteredDuzniciRaw = sviPutnici.where((putnik) {
-                            final nijeMesecni = !putnik.isMesecniTip;
-                            if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesečni tip
-
-                            final nijePlatio =
-                                putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
-                            final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
-                            final pokupljen = putnik.jePokupljen;
-
-                            return nijePlatio && nijeOtkazan && pokupljen;
-                          }).toList();
-
-                          // ✅ DEDUPLIKACIJA: Jedan putnik može imati više termina, ali je jedan dužnik
-                          final seenIds = <dynamic>{};
-                          final filteredDuznici = filteredDuzniciRaw.where((p) {
-                            final key = p.id ?? '${p.ime}_${p.dan}';
-                            if (seenIds.contains(key)) return false;
-                            seenIds.add(key);
-                            return true;
-                          }).toList();
-
-                          // 🔄 TRANZIT LOGIKA (X/Y) - Svi koji imaju oba smera (GLOBALNO za taj dan)
-                          final Map<String, List<Putnik>> tranzitMap = {};
-                          for (var p in sviPutnici) {
-                            if (p.jeOtkazan || p.jeOdsustvo || p.obrisan) continue;
-                            if (p.tipPutnika == 'posiljka') continue;
-                            // ✅ GLOBALNO: Brojimo sve putnike da biste videli ukupno stanje za ponedeljak
-                            tranzitMap.putIfAbsent(p.ime, () => []).add(p);
-                          }
-
-                          int tranzitUkupno = 0;
-                          int tranzitZavrseno = 0;
-
-                          tranzitMap.forEach((ime, trips) {
-                            final imaBC = trips.any((t) => t.grad == 'Bela Crkva');
-                            final imaVS = trips.any((t) => t.grad == 'Vršac');
-
-                            if (imaBC && imaVS) {
-                              tranzitUkupno++;
-                              // Završio ako je pokupljen u svim svojim današnjim terminima
-                              if (trips.every((t) => t.jePokupljen)) {
-                                tranzitZavrseno++;
-                              }
-                            }
-                          });
-
-                          return Container(
-                            margin: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                // PAZAR
-                                Expanded(
-                                  child: StreamBuilder<double>(
-                                    stream: StatistikaService.streamPazarZaVozaca(
-                                      vozac: _currentDriver!,
-                                      from: dayStart,
-                                      to: dayEnd,
-                                    ),
-                                    builder: (context, snapshot) {
-                                      final pazar = snapshot.data ?? 0.0;
-                                      return InkWell(
-                                        onTap: () {
-                                          _showStatPopup(
-                                            context,
-                                            'Pazar',
-                                            pazar.toStringAsFixed(0),
-                                            Colors.green,
-                                          );
-                                        },
-                                        child: _buildStatBox(
-                                          'Pazar',
-                                          pazar.toStringAsFixed(0),
-                                          Colors.green,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                // DUGOVI - ✅ ISPRAVKA: Koristi filteredDuznici direktno
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute<void>(
-                                          builder: (context) => DugoviScreen(currentDriver: _currentDriver!),
-                                        ),
-                                      );
-                                    },
-                                    child: _buildStatBox(
-                                      'Dugovi',
-                                      filteredDuznici.length.toString(),
-                                      filteredDuznici.isEmpty ? Colors.blue : Colors.red,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                // 🔄 TRANZIT (Samo brojevi bez teksta)
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute<void>(
-                                          builder: (context) => TranzitScreen(currentDriver: _currentDriver!),
-                                        ),
-                                      );
-                                    },
-                                    child: _buildStatBox(
-                                      '',
-                                      '$tranzitZavrseno/$tranzitUkupno',
-                                      Colors.orange,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                      _buildStatsRow(sviPutnici, mojiPutnici),
                       // Lista putnika - koristi PutnikList sa stream-om kao DanasScreen
                       Expanded(
                         child: putnici.isEmpty
@@ -1605,8 +1472,10 @@ class _VozacScreenState extends State<VozacScreen> {
 
             // 🚐 DODAJ DOĐELJENA VREMENA ČAK I AKO NEMA PUTNIKA
             final dodeljenaVremena = _getDodeljenaVremena();
-            final assignedBcTimes = dodeljenaVremena.where((v) => v['grad'] == 'Bela Crkva').map((v) => v['vreme']!).toList();
-            final assignedVsTimes = dodeljenaVremena.where((v) => v['grad'] == 'Vršac').map((v) => v['vreme']!).toList();
+            final assignedBcTimes =
+                dodeljenaVremena.where((v) => v['grad'] == 'Bela Crkva').map((v) => v['vreme']!).toList();
+            final assignedVsTimes =
+                dodeljenaVremena.where((v) => v['grad'] == 'Vršac').map((v) => v['vreme']!).toList();
 
             // Spoji filtrirana vremena sa dodeljenim vremenima
             final bcVremenaToShow = {...filteredBcVremena, ...assignedBcTimes}.toList()..sort();
@@ -1701,7 +1570,8 @@ class _VozacScreenState extends State<VozacScreen> {
 
     // 🎯 Izračunaj boju za dan (ako smo u admin preview modu)
     final isPreview = widget.previewAsDriver != null && widget.previewAsDriver!.isNotEmpty;
-    final driverColor = isPreview ? VozacBoja.get(widget.previewAsDriver!) : Theme.of(context).colorScheme.onPrimary;
+    final driverColor =
+        isPreview ? VozacBoja.getSync(widget.previewAsDriver!) : Theme.of(context).colorScheme.onPrimary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1798,6 +1668,121 @@ class _VozacScreenState extends State<VozacScreen> {
     );
   }
 
+  // 📊 Stats row
+  Widget _buildStatsRow(List<Putnik> sviPutnici, List<Putnik> mojiPutnici) {
+    final dayStart = DateTime.parse('${_getWorkingDateIso()}T00:00:00');
+    final dayEnd = DateTime.parse('${_getWorkingDateIso()}T23:59:59');
+
+    final filteredDuzniciRaw = sviPutnici.where((putnik) {
+      final nijeMesecni = !putnik.isMesecniTip;
+      if (!nijeMesecni) return false;
+      final nijePlatio = putnik.vremePlacanja == null;
+      final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
+      final pokupljen = putnik.jePokupljen;
+      return nijePlatio && nijeOtkazan && pokupljen;
+    }).toList();
+
+    final seenIds = <dynamic>{};
+    final filteredDuznici = filteredDuzniciRaw.where((p) {
+      final key = p.id ?? '${p.ime}_${p.dan}';
+      if (seenIds.contains(key)) return false;
+      seenIds.add(key);
+      return true;
+    }).toList();
+
+    final Map<String, List<Putnik>> tranzitMap = {};
+    for (var p in sviPutnici) {
+      if (p.jeOtkazan || p.jeOdsustvo || p.obrisan) continue;
+      if (p.tipPutnika == 'posiljka') continue;
+      tranzitMap.putIfAbsent(p.ime, () => []).add(p);
+    }
+
+    int tranzitUkupno = 0;
+    int tranzitZavrseno = 0;
+
+    tranzitMap.forEach((ime, trips) {
+      final imaBC = trips.any((t) => t.grad == 'Bela Crkva');
+      final imaVS = trips.any((t) => t.grad == 'Vršac');
+      if (imaBC && imaVS) {
+        tranzitUkupno++;
+        if (trips.every((t) => t.jePokupljen)) {
+          tranzitZavrseno++;
+        }
+      }
+    });
+
+    return Container(
+      margin: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Expanded(
+            child: StreamBuilder<double>(
+              stream: StatistikaService.streamPazarZaVozaca(
+                vozac: _currentDriver!,
+                from: dayStart,
+                to: dayEnd,
+              ),
+              builder: (context, snapshot) {
+                final pazar = snapshot.data ?? 0.0;
+                return InkWell(
+                  onTap: () {
+                    _showStatPopup(
+                      context,
+                      'Pazar',
+                      pazar.toStringAsFixed(0),
+                      Colors.green,
+                    );
+                  },
+                  child: _buildStatBox(
+                    'Pazar',
+                    pazar.toStringAsFixed(0),
+                    Colors.green,
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => DugoviScreen(currentDriver: _currentDriver!),
+                  ),
+                );
+              },
+              child: _buildStatBox(
+                'Dugovi',
+                filteredDuznici.length.toString(),
+                filteredDuznici.isEmpty ? Colors.blue : Colors.red,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => TranzitScreen(currentDriver: _currentDriver!),
+                  ),
+                );
+              },
+              child: _buildStatBox(
+                '',
+                '$tranzitZavrseno/$tranzitUkupno',
+                Colors.orange,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 📊 POPUP ZA PRIKAZ STATISTIKE
   void _showStatPopup(BuildContext context, String label, String value, Color color) {
     showDialog(
@@ -1869,49 +1854,5 @@ class _VozacScreenState extends State<VozacScreen> {
     if (color == Colors.red) return Colors.red[300]!;
     if (color == Colors.orange) return Colors.orange[300]!;
     return color.withValues(alpha: 0.6);
-  }
-
-  // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA KADA VOZAC KRENE
-  Future<void> _sendTransportStartedNotifications({
-    required Map<String, int> putniciEta,
-    required String vozacIme,
-  }) async {
-    try {
-      // Dohvati tokene za sve putnike
-      final putnikImena = putniciEta.keys.toList();
-      final tokens = await PutnikPushService.getTokensForPutnici(putnikImena);
-
-      if (tokens.isEmpty) {
-        return;
-      }
-
-      // ⚡ OPTIMIZACIJA 2: Pošalji notifikacije PARALELNO, ne sekvencijalno
-      // Umesto: 50+ putnika x 1 sekunda = 50+ sekundi
-      // Sada: Future.wait([...]) = ~2-3 sekunde
-      await Future.wait(
-        tokens.entries.map((entry) async {
-          final putnikIme = entry.key;
-          final tokenInfo = entry.value;
-          final eta = putniciEta[putnikIme] ?? 0;
-
-          return await RealtimeNotificationService.sendPushNotification(
-            title: '🚐 Kombi je krenuo!',
-            body: 'Vozač $vozacIme kreće ka vama. Stiže za ~$eta min.\n📍 Možete pratiti uživo klikom ovde!',
-            tokens: [
-              {'token': tokenInfo['token']!, 'provider': tokenInfo['provider']!}
-            ],
-            data: {
-              'type': 'transport_started',
-              'eta_minutes': eta,
-              'vozac': vozacIme,
-              'putnik_ime': putnikIme,
-            },
-          );
-        }),
-        eagerError: false, // Nastavi i ako neka notifikacija padne
-      );
-    } catch (e) {
-      // Error sending notifications
-    }
   }
 }

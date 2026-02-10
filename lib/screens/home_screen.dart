@@ -24,7 +24,6 @@ import '../services/racun_service.dart';
 import '../services/realtime/realtime_manager.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart';
-import '../services/route_service.dart'; // 🚐 Dinamički satni redoslijedi
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
@@ -100,15 +99,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
 
-    // Pokušaj iz cache-a, fallback na RouteConfig
-    final cached = RouteService.getCachedVremena(sezona, 'bc');
-    return cached.isNotEmpty
-        ? cached
-        : (sezona == 'praznici'
-            ? RouteConfig.bcVremenaPraznici
-            : sezona == 'zimski'
-                ? RouteConfig.bcVremenaZimski
-                : RouteConfig.bcVremenaLetnji);
+    // Koristi RouteConfig
+    return (sezona == 'praznici'
+        ? RouteConfig.bcVremenaPraznici
+        : sezona == 'zimski'
+            ? RouteConfig.bcVremenaZimski
+            : RouteConfig.bcVremenaLetnji);
   }
 
   List<String> get vsVremena {
@@ -129,15 +125,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
 
-    // Pokušaj iz cache-a, fallback na RouteConfig
-    final cached = RouteService.getCachedVremena(sezona, 'vs');
-    return cached.isNotEmpty
-        ? cached
-        : (sezona == 'praznici'
-            ? RouteConfig.vsVremenaPraznici
-            : sezona == 'zimski'
-                ? RouteConfig.vsVremenaZimski
-                : RouteConfig.vsVremenaLetnji);
+    // Koristi RouteConfig
+    return (sezona == 'praznici'
+        ? RouteConfig.vsVremenaPraznici
+        : sezona == 'zimski'
+            ? RouteConfig.vsVremenaZimski
+            : RouteConfig.vsVremenaLetnji);
   }
 
   // 📝 DINAMIČKA LISTA POLAZAKA za BottomNavBar
@@ -222,10 +215,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _initializeAsync() async {
     try {
       await _initializeCurrentDriver();
-      // 🎫 Učitaj kapacitet cache na startu
-      await KapacitetService.ensureCacheLoaded();
       // 🔒 If the current driver is missing or invalid, redirect to welcome/login
-      if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
+      if (_currentDriver == null || !VozacBoja.isValidDriverSync(_currentDriver)) {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
@@ -240,8 +231,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _setupRealtimeMonitoring();
       // StreamBuilder će automatski učitati data - ne treba eksplicitno _loadPutnici()
       _setupRealtimeListener();
-
-      // CACHE UKLONJEN - koristimo direktne Supabase pozive
 
       // Inicijalizuj lokalne notifikacije za heads-up i zvuk
       if (mounted) {
@@ -1292,7 +1281,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       final adresa = await putnik.getAdresaZaSelektovaniGrad(_selectedGrad);
                                       setStateDialog(() {
                                         adresaController.text = adresa == 'Nema adresa' ? '' : adresa;
-                                        // Reset "samo danas" opcije kad se promeni putnik
+                                        // Očisti "samo danas" opcije kad se promeni putnik
                                         promeniAdresuSamoDanas = false;
                                         samoDanasAdresa = null;
                                         samoDanasAdresaId = null;
@@ -1646,7 +1635,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // STRIKTNA VALIDACIJA VOZAČA - PROVERI NULL, EMPTY I VALID DRIVER
                                         if (_currentDriver == null ||
                                             _currentDriver!.isEmpty ||
-                                            !VozacBoja.isValidDriver(_currentDriver)) {
+                                            !VozacBoja.isValidDriverSync(_currentDriver)) {
                                           if (!context.mounted) return;
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
@@ -1663,7 +1652,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                         // 🎫 PROVERA KAPACITETA - da li ima slobodnih mesta
                                         // ⚠️ SAMO ZA PUTNIKE - vozači mogu dodavati bez ograničenja
-                                        final isVozac = VozacBoja.isValidDriver(_currentDriver);
+                                        final isVozac = VozacBoja.isValidDriverSync(_currentDriver);
                                         if (!isVozac) {
                                           final gradKey = _selectedGrad.toLowerCase().contains('bela') ? 'BC' : 'VS';
                                           final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
@@ -2081,7 +2070,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 odgovarajuciDan &&
                 odgovarajuciGrad &&
                 odgovarajuceVreme &&
-                normalizedStatus != 'obrisan';
+                normalizedStatus != 'obrisan' &&
+                !putnik.jeOtkazan;
             return prikazi;
           });
           final sviPutnici = filtered.toList();
@@ -2205,7 +2195,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     height: 33,
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: VozacBoja.get(_currentDriver), // opaque (100%)
+                                      color: VozacBoja.getSync(_currentDriver), // opaque (100%)
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: Theme.of(context).glassBorder,

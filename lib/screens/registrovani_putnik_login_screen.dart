@@ -517,19 +517,6 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
     }
   }
 
-  /// Resetuj na početak
-  void _resetFlow() {
-    setState(() {
-      _currentStep = _LoginStep.telefon;
-      _errorMessage = null;
-      _infoMessage = null;
-      _putnikData = null;
-      _putnikCandidates = null;
-      _emailController.clear();
-      _pinController.clear();
-    });
-  }
-
   @override
   void dispose() {
     _telefonController.dispose();
@@ -553,14 +540,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
-          actions: [
-            if (_currentStep != _LoginStep.telefon)
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white),
-                onPressed: _resetFlow,
-                tooltip: 'Počni od početka',
-              ),
-          ],
+          actions: [],
         ),
         body: SafeArea(
           child: SingleChildScrollView(

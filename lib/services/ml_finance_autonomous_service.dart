@@ -130,9 +130,9 @@ class MLFinanceAutonomousService extends ChangeNotifier {
     _loadHistoricalMemory();
     await reconstructFinancialState();
     _subscribeToTransactions();
-    _analysisTimer = Timer.periodic(const Duration(minutes: 15), (timer) {
-      reconstructFinancialState();
-    });
+    // _analysisTimer = Timer.periodic(const Duration(minutes: 15), (timer) {
+    //   reconstructFinancialState();
+    // });
   }
 
   void _loadHistoricalMemory() {

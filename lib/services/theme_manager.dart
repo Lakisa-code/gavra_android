@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'theme_registry.dart';
 
@@ -8,8 +7,6 @@ class ThemeManager extends ChangeNotifier {
   factory ThemeManager() => _instance;
   ThemeManager._internal();
   static final ThemeManager _instance = ThemeManager._internal();
-
-  static const String _selectedThemeKey = 'selected_theme_id';
 
   String _currentThemeId = 'triple_blue_fashion';
   ThemeDefinition? _currentTheme;
@@ -38,18 +35,10 @@ class ThemeManager extends ChangeNotifier {
 
   /// Initialize - učitaj poslednju selekciju
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedThemeId = prefs.getString(_selectedThemeKey);
-
-    if (savedThemeId != null && ThemeRegistry.hasTheme(savedThemeId)) {
-      _currentThemeId = savedThemeId;
-      _currentTheme = ThemeRegistry.getTheme(_currentThemeId);
-    } else {
-      // Fallback na default temu
-      final defaultTheme = ThemeRegistry.defaultTheme;
-      _currentThemeId = defaultTheme.id;
-      _currentTheme = defaultTheme;
-    }
+    // Fallback na default temu
+    final defaultTheme = ThemeRegistry.defaultTheme;
+    _currentThemeId = defaultTheme.id;
+    _currentTheme = defaultTheme;
 
     _themeNotifier.value = currentThemeData; // Ažuriraj ValueNotifier
     notifyListeners();
@@ -64,10 +53,6 @@ class ThemeManager extends ChangeNotifier {
     final oldThemeId = _currentThemeId;
     _currentThemeId = themeId;
     _currentTheme = ThemeRegistry.getTheme(themeId);
-
-    // Sačuvaj u SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_selectedThemeKey, themeId);
 
     // Analytics - loguj promenu teme
     await _logThemeChange(oldThemeId, themeId);

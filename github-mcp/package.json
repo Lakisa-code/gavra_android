@@ -1,0 +1,32 @@
+{
+    "name": "github-mcp",
+    "version": "1.0.0",
+    "description": "MCP server for GitHub API interactions - GitHub Secrets management",
+    "type": "module",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "dev": "ts-node src/index.ts",
+        "watch": "tsc --watch"
+    },
+    "keywords": [
+        "mcp",
+        "github",
+        "secrets",
+        "api"
+    ],
+    "author": "Bojan",
+    "license": "MIT",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^0.7.0",
+        "@octokit/rest": "^21.0.0",
+        "dotenv": "^16.4.5",
+        "libsodium-wrappers": "^0.7.13"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "typescript": "^5.4.0",
+        "ts-node": "^10.9.0"
+    }
+}

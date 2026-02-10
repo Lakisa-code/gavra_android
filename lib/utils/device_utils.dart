@@ -1,16 +1,12 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// 🔧 DEVICE UTILITIES
 /// Detekcija Huawei uređaja i provera instaliranih aplikacija
 class DeviceUtils {
   static final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
-
-  // 🔑 SharedPreferences ključevi
-  static const String _huaweiDialogShownKey = 'huawei_herewego_dialog_shown';
 
   // 📱 Keširane vrednosti
   static bool? _isHuaweiDevice;
@@ -66,23 +62,5 @@ class DeviceUtils {
       _isHereWeGoInstalled = false;
       return false;
     }
-  }
-
-  /// 💾 Da li je Huawei HERE WeGo dialog već prikazan?
-  static Future<bool> wasHuaweiDialogShown() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_huaweiDialogShownKey) ?? false;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /// 💾 Označi da je Huawei HERE WeGo dialog prikazan
-  static Future<void> markHuaweiDialogShown() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_huaweiDialogShownKey, true);
-    } catch (_) {}
   }
 }

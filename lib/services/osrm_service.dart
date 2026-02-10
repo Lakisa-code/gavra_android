@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
-import 'adresa_supabase_service.dart';
 import 'unified_geocoding_service.dart';
 
 /// 🗺️ OSRM SERVICE - OpenStreetMap Routing Machine
@@ -24,9 +23,6 @@ class OsrmService {
     }
 
     try {
-      // 🧹 Očisti cache pre geocodinga da dobijemo sveže koordinate iz baze
-      AdresaSupabaseService.clearCache();
-
       final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(
         putnici,
         onProgress: onGeocodingProgress,

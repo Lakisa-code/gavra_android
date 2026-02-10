@@ -133,7 +133,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   @override
   Widget build(BuildContext context) {
     // 🎨 KORISTI BOJU VOZAČA KAO GLAVNU TEMU
-    final vozacColor = VozacBoja.get(widget.vozac);
+    final vozacColor = VozacBoja.getSync(widget.vozac);
 
     // 🎨 Kreiranje paleta boja na osnovu vozačeve boje
     final lightVozacColor = Color.lerp(vozacColor, Colors.white, 0.7)!; // Vrlo svetla verzija

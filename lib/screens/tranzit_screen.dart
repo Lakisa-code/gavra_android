@@ -114,7 +114,7 @@ class _TranzitScreenState extends State<TranzitScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final driverColor = VozacBoja.get(widget.currentDriver);
+    final driverColor = VozacBoja.getSync(widget.currentDriver);
     final workingDate = PutnikHelpers.getWorkingDateIso();
 
     return Container(

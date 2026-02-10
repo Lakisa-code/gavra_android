@@ -46,8 +46,7 @@ class AppSettingsService {
   static Future<void> setNavBarType(String type) async {
     await supabase
         .from('app_settings')
-        .update({'nav_bar_type': type, 'updated_at': DateTime.now().toIso8601String()})
-        .eq('id', 'global');
+        .update({'nav_bar_type': type, 'updated_at': DateTime.now().toIso8601String()}).eq('id', 'global');
 
     // 📝 LOG U DNEVNIK
     try {
@@ -57,10 +56,8 @@ class AppSettingsService {
 
   /// Postavi dnevni_zakazivanje_aktivno (samo admin može)
   static Future<void> setDnevniZakazivanjeAktivno(bool aktivno) async {
-    await supabase
-        .from('app_settings')
-        .update({'dnevni_zakazivanje_aktivno': aktivno, 'updated_at': DateTime.now().toIso8601String()})
-        .eq('id', 'global');
+    await supabase.from('app_settings').update(
+        {'dnevni_zakazivanje_aktivno': aktivno, 'updated_at': DateTime.now().toIso8601String()}).eq('id', 'global');
 
     // 📝 LOG U DNEVNIK
     try {
@@ -71,7 +68,6 @@ class AppSettingsService {
     } catch (_) {}
   }
 
-  /// Cleanup
   static void dispose() {
     _subscription?.cancel();
     RealtimeManager.instance.unsubscribe('app_settings');

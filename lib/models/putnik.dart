@@ -92,9 +92,9 @@ class Putnik {
 
   // NOVI: Factory za registrovani_putnici tabelu
   factory Putnik.fromRegistrovaniPutnici(Map<String, dynamic> map) {
-    final weekday = DateTime.now().weekday;
-    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    final danKratica = daniKratice[weekday - 1];
+    // FIX: Use passenger's day, not today's day
+    final danFromMap = map['radni_dani'] as String? ?? 'Pon';
+    final danKratica = danFromMap.toLowerCase().substring(0, 3);
     final grad = _determineGradFromRegistrovani(map);
     // Choose place key: 'bc' for Bela Crkva, 'vs' for Vršac
     final place = grad.toLowerCase().contains('vr') || grad.contains('Vršac') ? 'vs' : 'bc';

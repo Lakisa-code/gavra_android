@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../config/route_config.dart';
 import '../../globals.dart';
 import '../../helpers/gavra_ui.dart';
-import '../../services/route_service.dart';
 import '../../services/theme_manager.dart';
 import '../../utils/schedule_utils.dart';
 
@@ -416,25 +415,19 @@ class TimePickerCell extends StatelessWidget {
         sezona = jeZimski ? 'zimski' : 'letnji';
     }
 
-    // Učitaj vremena iz RouteService cache-a
-    // (Vremena su već učitana pri app startup-u)
+    // Učitaj vremena iz RouteService
     final gradCode = isBC ? 'bc' : 'vs';
 
-    // Prvo pokušaj iz cache-a
-    vremena = RouteService.getCachedVremena(sezona, gradCode);
-
-    // Ako cache nema, koristi fallback iz RouteConfig
-    if (vremena.isEmpty) {
-      switch (sezona) {
-        case 'praznici':
-          vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
-          break;
-        case 'zimski':
-          vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
-          break;
-        default:
-          vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
-      }
+    // Koristi fallback iz RouteConfig
+    switch (sezona) {
+      case 'praznici':
+        vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
+        break;
+      case 'zimski':
+        vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+        break;
+      default:
+        vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
     }
 
     showDialog(

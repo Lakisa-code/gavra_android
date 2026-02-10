@@ -287,7 +287,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
   }
 
   Widget _buildVozacCard(String vozac, VozacStatsV2 stats) {
-    final boja = VozacBoja.getColor(vozac);
+    final boja = VozacBoja.getSync(vozac);
     final emoji = _vozaciEmoji[vozac] ?? '🚗';
     final uspesnost = stats.pokupljeni + stats.otkazani > 0
         ? ((stats.pokupljeni / (stats.pokupljeni + stats.otkazani)) * 100).round()

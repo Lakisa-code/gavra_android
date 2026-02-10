@@ -337,8 +337,6 @@ class RegistrovaniPutnikService {
           *
         ''').single();
 
-    clearCache();
-
     return RegistrovaniPutnik.fromMap(response);
   }
 
@@ -544,8 +542,6 @@ class RegistrovaniPutnikService {
           *
         ''').single();
 
-    clearCache();
-
     return RegistrovaniPutnik.fromMap(response);
   }
 
@@ -556,8 +552,6 @@ class RegistrovaniPutnikService {
         'aktivan': aktivnost,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
-
-      clearCache();
 
       return true;
     } catch (e) {
@@ -697,8 +691,6 @@ class RegistrovaniPutnikService {
         'obrisan': true,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
-
-      clearCache();
 
       return true;
     } catch (e) {
@@ -854,12 +846,6 @@ class RegistrovaniPutnikService {
   }
 
   // ==================== ENHANCED CAPABILITIES ====================
-
-  static final Map<String, dynamic> _cache = {};
-
-  static void clearCache() {
-    _cache.clear();
-  }
 
   /// 🔍 Dobija vozača iz poslednjeg plaćanja za mesečnog putnika
   /// Koristi direktan Supabase stream

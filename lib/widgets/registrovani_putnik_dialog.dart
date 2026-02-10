@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../globals.dart';
 import '../helpers/gavra_ui.dart';
@@ -73,6 +74,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   final Map<String, TextEditingController> _polazakBcControllers = {};
   final Map<String, TextEditingController> _polazakVsControllers = {};
 
+  // Original polasci_po_danu to preserve status/notes when updating
+  Map<String, dynamic>? _originalPolasciPoDanu;
+
   // Form data
   String _tip = 'radnik';
   Map<String, bool> _radniDani = {
@@ -136,9 +140,19 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     }
   }
 
-  void _loadDataFromExistingPutnik() {
+  void _loadDataFromExistingPutnik() async {
     if (widget.isEditing) {
       final putnik = widget.existingPutnik!;
+
+      // Fetch raw polasci_po_danu to preserve status/notes
+      try {
+        final response =
+            await supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnik.id).single();
+        _originalPolasciPoDanu = response['polasci_po_danu'];
+      } catch (e) {
+        debugPrint('Error fetching original polasci_po_danu: $e');
+        _originalPolasciPoDanu = null;
+      }
 
       // Load basic info
       _imeController.text = putnik.putnikIme;
@@ -208,7 +222,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     final putnik = widget.existingPutnik;
     if (putnik == null) return;
 
-    // Try batch fetch for both ids (faster & respects cache)
+    // Try batch fetch for both ids
     try {
       final idsToFetch = <String>[];
       if (putnik.adresaBelaCrkvaId != null && putnik.adresaBelaCrkvaId!.isNotEmpty) {
@@ -1273,12 +1287,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             borderRadius: BorderRadius.circular(12),
             onTap: () async {
               try {
-                // Request permission
-                final permission = await FlutterContacts.requestPermission();
-                if (permission) {
-                  // Get all contacts
+                // First check current permission status
+                final status = await Permission.contacts.status;
+                if (status.isGranted || status.isLimited) {
+                  // Permission already granted, get contacts
                   final contacts = await FlutterContacts.getContacts(withProperties: true);
-
                   if (contacts.isEmpty) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1290,45 +1303,47 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                     }
                     return;
                   }
-
-                  // Show contact list in a dialog
+                  // Show contact list
                   if (mounted) {
-                    showDialog(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        title: const Text('Izaberi kontakt'),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: ListView.builder(
-                            itemCount: contacts.length,
-                            itemBuilder: (context, index) {
-                              final contact = contacts[index];
-                              return ListTile(
-                                title: Text(contact.displayName),
-                                subtitle: contact.phones.isNotEmpty ? Text(contact.phones.first.number) : null,
-                                onTap: () {
-                                  if (contact.phones.isNotEmpty) {
-                                    String phoneNumber = contact.phones.first.number;
-                                    phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-                                    controller.text = phoneNumber;
-                                  }
-                                  Navigator.pop(dialogContext);
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    );
+                    _showContactPickerDialog(context, contacts, controller);
+                  }
+                } else if (status.isPermanentlyDenied) {
+                  // Permission permanently denied, show settings dialog
+                  if (mounted) {
+                    _showPermissionSettingsDialog(context);
                   }
                 } else {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Dozvola za pristup kontaktima je odbijena'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
+                  // Request permission
+                  final permission = await FlutterContacts.requestPermission();
+                  if (permission) {
+                    // Get all contacts
+                    final contacts = await FlutterContacts.getContacts(withProperties: true);
+
+                    if (contacts.isEmpty) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Nema kontakata u imeniku'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
+                    // Show contact list
+                    if (mounted) {
+                      _showContactPickerDialog(context, contacts, controller);
+                    }
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Dozvola za pristup kontaktima je odbijena'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
                   }
                 }
               } catch (e) {
@@ -1434,9 +1449,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   /// Vraća polasci_po_danu u formatu koji baza očekuje: {dan: {bc: time, vs: time}}
-  Map<String, Map<String, String?>> _getPolasciPoDanuMap() {
-    final Map<String, Map<String, String?>> normalizedPolasci = {};
+  /// Za editovanje, čuva postojeće status/note podatke
+  Map<String, dynamic> _getPolasciPoDanuMap() {
+    // Start with existing data to preserve status/notes
+    final Map<String, dynamic> result =
+        _originalPolasciPoDanu != null ? Map<String, dynamic>.from(_originalPolasciPoDanu!) : {};
 
+    // Update times from form
     for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
       final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
       final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
@@ -1444,10 +1463,20 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final bc = bcRaw.isNotEmpty ? RegistrovaniHelpers.normalizeTime(bcRaw) : null;
       final vs = vsRaw.isNotEmpty ? RegistrovaniHelpers.normalizeTime(vsRaw) : null;
 
-      normalizedPolasci[dan] = {'bc': bc, 'vs': vs};
+      // Ensure day exists
+      if (result[dan] == null || result[dan] is! Map) {
+        result[dan] = {};
+      }
+      final danData = Map<String, dynamic>.from(result[dan] as Map);
+
+      // Update times, preserve other data
+      danData['bc'] = bc;
+      danData['vs'] = vs;
+
+      result[dan] = danData;
     }
 
-    return normalizedPolasci;
+    return result;
   }
 
   String? _validateForm() {
@@ -1693,5 +1722,63 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'firma_ziro': _firmaZiroController.text.isEmpty ? null : _firmaZiroController.text.trim(),
       'firma_adresa': _firmaAdresaController.text.isEmpty ? null : _firmaAdresaController.text.trim(),
     };
+  }
+
+  /// Helper method to show contact picker dialog
+  void _showContactPickerDialog(BuildContext context, List<Contact> contacts, TextEditingController controller) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Izaberi kontakt'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            itemCount: contacts.length,
+            itemBuilder: (context, index) {
+              final contact = contacts[index];
+              return ListTile(
+                title: Text(contact.displayName),
+                subtitle: contact.phones.isNotEmpty ? Text(contact.phones.first.number) : null,
+                onTap: () {
+                  if (contact.phones.isNotEmpty) {
+                    String phoneNumber = contact.phones.first.number;
+                    phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                    controller.text = phoneNumber;
+                  }
+                  Navigator.pop(dialogContext);
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Helper method to show permission settings dialog
+  void _showPermissionSettingsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Dozvola za kontakte'),
+          content: const Text('Dozvola za pristup kontaktima je trajno odbijena. '
+              'Da biste mogli da birate kontakte, omogućite dozvolu u podešavanjima aplikacije.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Otkaži'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                openAppSettings();
+              },
+              child: const Text('Otvori podešavanja'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

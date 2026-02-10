@@ -104,7 +104,6 @@ class SmartNavigationService {
             ? osrmResult.totalDistanceKm! * 1000 // km -> m
             : await _calculateTotalDistance(currentPosition, optimizedRoute, coordinates),
         skippedPutnici: skipped.isNotEmpty ? skipped : null,
-        cachedCoordinates: coordinates,
         putniciEta: osrmResult.putniciEta,
       );
     } catch (e) {
@@ -121,22 +120,15 @@ class SmartNavigationService {
   ///
   /// [context] - BuildContext za dijaloge
   /// [putnici] - Lista optimizovanih putnika
-  /// [cachedCoordinates] - Keširane koordinate iz optimizeRouteOnly
   /// [startCity] - Početni grad (za krajnju destinaciju)
   static Future<NavigationResult> startMultiProviderNavigation({
     required BuildContext context,
     required List<Putnik> putnici,
     required String startCity,
-    Map<Putnik, Position>? cachedCoordinates,
   }) async {
     try {
       // 1. DOBIJ KOORDINATE
-      Map<Putnik, Position> coordinates;
-      if (cachedCoordinates != null && cachedCoordinates.isNotEmpty) {
-        coordinates = cachedCoordinates;
-      } else {
-        coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(putnici);
-      }
+      final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(putnici);
 
       if (coordinates.isEmpty) {
         return NavigationResult.error('❌ Nijedan putnik nema validnu adresu');
@@ -161,7 +153,6 @@ class SmartNavigationService {
         return NavigationResult.success(
           message: result.message,
           optimizedPutnici: result.launchedPutnici ?? putnici,
-          cachedCoordinates: coordinates,
         );
       } else {
         return NavigationResult.error(result.message);
@@ -231,7 +222,6 @@ class NavigationResult {
     this.optimizedPutnici,
     this.totalDistance,
     this.skippedPutnici,
-    this.cachedCoordinates,
     this.putniciEta,
   });
 
@@ -240,7 +230,6 @@ class NavigationResult {
     required List<Putnik> optimizedPutnici,
     double? totalDistance,
     List<Putnik>? skippedPutnici,
-    Map<Putnik, Position>? cachedCoordinates,
     Map<String, int>? putniciEta,
   }) {
     return NavigationResult._(
@@ -249,7 +238,6 @@ class NavigationResult {
       optimizedPutnici: optimizedPutnici,
       totalDistance: totalDistance,
       skippedPutnici: skippedPutnici,
-      cachedCoordinates: cachedCoordinates,
       putniciEta: putniciEta,
     );
   }
@@ -265,6 +253,5 @@ class NavigationResult {
   final List<Putnik>? optimizedPutnici;
   final double? totalDistance;
   final List<Putnik>? skippedPutnici;
-  final Map<Putnik, Position>? cachedCoordinates;
   final Map<String, int>? putniciEta;
 }

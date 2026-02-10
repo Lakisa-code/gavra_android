@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // foundation import not needed here
 import '../globals.dart'; // Import za navigatorKey
@@ -9,8 +8,6 @@ import '../services/theme_manager.dart';
 
 /// 🔐 CENTRALIZOVANI SERVIS ZA SVE DOZVOLE
 class PermissionService {
-  static const String _firstLaunchKey = 'app_first_launch_permissions';
-
   /// 🚀 INICIJALNO ZAHTEVANJE SVIH DOZVOLA (poziva se u main.dart)
   static Future<bool> requestAllPermissionsOnFirstLaunch(
     BuildContext context,
@@ -21,15 +18,8 @@ class PermissionService {
       return true; // Preskoči dialog u screenshot modu
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final isFirstLaunch = prefs.getBool(_firstLaunchKey) ?? true;
-
-    if (isFirstLaunch) {
-      if (!context.mounted) return false;
-      return await _showPermissionSetupDialog(context);
-    }
-
-    return await _checkExistingPermissions();
+    // Always show dialog
+    return await _showPermissionSetupDialog(context);
   }
 
   /// 📱 DIALOG ZA POČETNO PODEŠAVANJE DOZVOLA
@@ -224,6 +214,12 @@ class PermissionService {
         'subtitle': 'za kontaktiranje putnika',
       },
       {
+        'icon': Icons.contacts_rounded,
+        'color': const Color(0xFFFF9800),
+        'title': 'Kontakti',
+        'subtitle': 'za biranje broja iz imenika',
+      },
+      {
         'icon': Icons.notifications_rounded,
         'color': const Color(0xFF9C27B0),
         'title': 'Notifikacije',
@@ -295,21 +291,20 @@ class PermissionService {
 
       final permissions = [
         Permission.phone,
+        Permission.contacts,
         Permission.notification,
       ];
       final Map<Permission, PermissionStatus> statuses = await permissions.request();
 
       final phoneStatus = statuses[Permission.phone] ?? PermissionStatus.denied;
+      final contactsStatus = statuses[Permission.contacts] ?? PermissionStatus.denied;
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_firstLaunchKey, false);
-
-      final allCriticalGranted = locationStatus && (phoneStatus.isGranted || phoneStatus.isLimited);
+      final allCriticalGranted = locationStatus &&
+          (phoneStatus.isGranted || phoneStatus.isLimited) &&
+          (contactsStatus.isGranted || contactsStatus.isLimited);
 
       return allCriticalGranted;
     } catch (e) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_firstLaunchKey, false);
       return false;
     }
   }
@@ -323,18 +318,6 @@ class PermissionService {
       }
 
       return permission != LocationPermission.denied && permission != LocationPermission.deniedForever;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /// 🔍 PROVERA POSTOJEĆIH DOZVOLA
-  static Future<bool> _checkExistingPermissions() async {
-    try {
-      final location = await _isLocationPermissionGranted();
-      final phone = await Permission.phone.status;
-
-      return location && (phone.isGranted || phone.isLimited);
     } catch (e) {
       return false;
     }

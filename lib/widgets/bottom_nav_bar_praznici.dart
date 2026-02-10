@@ -212,7 +212,7 @@ class _PolazakRow extends StatelessWidget {
     if (selectedDan == null) return null;
     final danKratica = _getDanKratica(selectedDan!);
     final vozac = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
-    if (vozac != null) return VozacBoja.get(vozac);
+    if (vozac != null) return VozacBoja.getSync(vozac);
     return null;
   }
 

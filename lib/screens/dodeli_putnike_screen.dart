@@ -8,7 +8,7 @@ import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/kapacitet_service.dart';
 import '../services/putnik_service.dart';
-import '../services/route_service.dart'; // 🚐 Dinamički satni redoslijedi
+import '../services/realtime/realtime_manager.dart'; // 🎯 Realtime manager
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart'; // 🆕 Per-vreme dodeljivanje
 import '../utils/date_utils.dart' as app_date_utils;
@@ -79,15 +79,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
 
-    // Pokušaj iz cache-a, fallback na RouteConfig
-    final cached = RouteService.getCachedVremena(sezona, 'bc');
-    return cached.isNotEmpty
-        ? cached
-        : (sezona == 'praznici'
-            ? RouteConfig.bcVremenaPraznici
-            : sezona == 'zimski'
-                ? RouteConfig.bcVremenaZimski
-                : RouteConfig.bcVremenaLetnji);
+    // Koristi RouteConfig
+    return (sezona == 'praznici'
+        ? RouteConfig.bcVremenaPraznici
+        : sezona == 'zimski'
+            ? RouteConfig.bcVremenaZimski
+            : RouteConfig.bcVremenaLetnji);
   }
 
   List<String> get vsVremena {
@@ -108,15 +105,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
     }
 
-    // Pokušaj iz cache-a, fallback na RouteConfig
-    final cached = RouteService.getCachedVremena(sezona, 'vs');
-    return cached.isNotEmpty
-        ? cached
-        : (sezona == 'praznici'
-            ? RouteConfig.vsVremenaPraznici
-            : sezona == 'zimski'
-                ? RouteConfig.vsVremenaZimski
-                : RouteConfig.vsVremenaLetnji);
+    // Koristi RouteConfig
+    return (sezona == 'praznici'
+        ? RouteConfig.vsVremenaPraznici
+        : sezona == 'zimski'
+            ? RouteConfig.vsVremenaZimski
+            : RouteConfig.vsVremenaLetnji);
   }
 
   // 📋 Svi polasci za BottomNavBar
@@ -130,7 +124,17 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   void initState() {
     super.initState();
     _selectedDay = _getTodayName();
+    _setupRealtimeListener();
     _setupStream();
+  }
+
+  void _setupRealtimeListener() {
+    // Slušaj promjene u registrovani_putnici tabeli
+    RealtimeManager.instance.subscribe('registrovani_putnici').listen((_) {
+      if (mounted) {
+        _setupStream();
+      }
+    });
   }
 
   @override
@@ -262,7 +266,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   }
 
   Future<void> _showVozacPicker(Putnik putnik) async {
-    final vozaci = VozacBoja.validDrivers;
+    final vozaci = VozacBoja.validDriversSync;
     final currentVozac = putnik.dodeljenVozac ?? 'Nedodeljen';
     final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
 
@@ -356,7 +360,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                           Builder(builder: (context) {
                             final vozac = 'Bojan';
                             final isSelected = vozac == currentVozac;
-                            final color = VozacBoja.get(vozac);
+                            final color = VozacBoja.getSync(vozac);
                             return ListTile(
                               leading: Container(
                                 width: 40,
@@ -364,13 +368,13 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                 decoration: BoxDecoration(
                                   color: color.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: color, width: 2),
+                                  border: Border.all(color: Colors.white, width: 2),
                                 ),
                                 child: Center(
                                   child: Text(
                                     vozac[0],
                                     style: TextStyle(
-                                      color: color,
+                                      color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18,
                                     ),
@@ -385,7 +389,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                 ),
                               ),
                               trailing: isSelected
-                                  ? Icon(Icons.check_circle, color: color)
+                                  ? Icon(Icons.check_circle, color: Colors.white)
                                   : const Icon(Icons.circle_outlined, color: Colors.grey),
                               onTap: () => Navigator.pop(context, vozac),
                             );
@@ -395,7 +399,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                         // 3️⃣ OSTALI VOZAČI
                         ...vozaci.where((v) => v != 'Bojan').map((vozac) {
                           final isSelected = vozac == currentVozac;
-                          final color = VozacBoja.get(vozac);
+                          final color = VozacBoja.getSync(vozac);
                           return ListTile(
                             leading: Container(
                               width: 40,
@@ -403,13 +407,13 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: color, width: 2),
+                                border: Border.all(color: Colors.white, width: 2),
                               ),
                               child: Center(
                                 child: Text(
                                   vozac[0],
                                   style: TextStyle(
-                                    color: color,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                   ),
@@ -424,7 +428,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               ),
                             ),
                             trailing: isSelected
-                                ? Icon(Icons.check_circle, color: color)
+                                ? Icon(Icons.check_circle, color: Colors.white)
                                 : const Icon(Icons.circle_outlined, color: Colors.grey),
                             onTap: () => Navigator.pop(context, vozac),
                           );
@@ -464,7 +468,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
               content: Text(noviVozac == null
                   ? '✅ ${putnik.ime} uklonjen sa vozača ($pravacLabel)'
                   : '✅ ${putnik.ime} → $noviVozac ($pravacLabel)'),
-              backgroundColor: noviVozac == null ? Colors.grey : VozacBoja.get(noviVozac),
+              backgroundColor: noviVozac == null ? Colors.grey : VozacBoja.getSync(noviVozac),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -485,7 +489,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   /// 🆕 DODELI CELO VREME VOZAČU
   /// Prikazuje picker za izbor vozača koji će voziti CEO termin (npr. BC 18:00)
   Future<void> _showVremeVozacPicker() async {
-    final vozaci = VozacBoja.validDrivers;
+    final vozaci = VozacBoja.validDriversSync;
     final vremeVozacService = VremeVozacService();
     final danKratica = _currentDayKratica;
 
@@ -557,7 +561,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: currentVozac != 'Nije dodeljeno' ? VozacBoja.get(currentVozac) : Colors.grey,
+                                color: currentVozac != 'Nije dodeljeno' ? VozacBoja.getSync(currentVozac) : Colors.grey,
                               ),
                             ),
                           ],
@@ -574,7 +578,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                       children: [
                         ...vozaci.map((vozac) {
                           final isSelected = vozac == currentVozac;
-                          final color = VozacBoja.get(vozac);
+                          final color = VozacBoja.getSync(vozac);
                           return ListTile(
                             leading: Container(
                               width: 40,
@@ -582,13 +586,13 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: color, width: 2),
+                                border: Border.all(color: Colors.white, width: 2),
                               ),
                               child: Center(
                                 child: Text(
                                   vozac[0],
                                   style: TextStyle(
-                                    color: color,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                   ),
@@ -603,7 +607,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               ),
                             ),
                             trailing: isSelected
-                                ? Icon(Icons.check_circle, color: color)
+                                ? Icon(Icons.check_circle, color: Colors.white)
                                 : const Icon(Icons.circle_outlined, color: Colors.grey),
                             onTap: () => Navigator.pop(context, vozac),
                           );
@@ -678,7 +682,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('✅ $vremeLabel → $selected (ceo termin)'),
-                backgroundColor: VozacBoja.get(selected),
+                backgroundColor: VozacBoja.getSync(selected),
                 duration: const Duration(seconds: 2),
               ),
             );
@@ -713,14 +717,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     );
 
     if (terminVozac != null) {
-      final color = VozacBoja.get(terminVozac);
+      final color = VozacBoja.getSync(terminVozac);
       // Samo badge sa vozačem, bez "Dodeli Putnike" teksta da ne bude overflow
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color, width: 1.5),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -729,7 +733,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
               width: 10,
               height: 10,
               decoration: BoxDecoration(
-                color: color,
+                color: Colors.white,
                 shape: BoxShape.circle,
               ),
             ),
@@ -739,7 +743,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: Colors.white,
               ),
             ),
           ],
@@ -857,7 +861,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                             itemCount: _putnici.length,
                             itemBuilder: (context, index) {
                               final putnik = _putnici[index];
-                              final vozacColor = VozacBoja.getColorOrDefault(putnik.dodeljenVozac, Colors.grey);
+                              final vozacColor = VozacBoja.getColorOrDefaultSync(putnik.dodeljenVozac, Colors.grey);
                               final isSelected = putnik.id != null && _selectedPutnici.contains(putnik.id);
 
                               // 🎨 Boja kartice prema statusu putnika
@@ -987,16 +991,17 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                       child: Row(
                         children: [
                           // Vozači dugmići
-                          ...VozacBoja.validDrivers.map((vozac) {
-                            final color = VozacBoja.get(vozac);
+                          ...VozacBoja.validDriversSync.map((vozac) {
+                            final color = VozacBoja.getSync(vozac);
                             return Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 4),
                               child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: color.withValues(alpha: 0.2),
-                                  foregroundColor: color,
+                                  foregroundColor: Colors.white,
                                 ),
-                                icon: Text(vozac[0], style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+                                icon:
+                                    Text(vozac[0], style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                 label: Text(vozac),
                                 onPressed: () => _bulkPrebaci(vozac),
                               ),
@@ -1043,7 +1048,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: VozacBoja.get(noviVozac),
+              backgroundColor: VozacBoja.getSync(noviVozac),
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Prebaci', style: TextStyle(color: Colors.white)),
@@ -1084,7 +1089,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ Prebačeno $uspesno putnika na $noviVozac${greska > 0 ? " (greške: $greska)" : ""}'),
-          backgroundColor: VozacBoja.get(noviVozac),
+          backgroundColor: VozacBoja.getSync(noviVozac),
         ),
       );
     }

@@ -7,6 +7,7 @@ import '../services/auth_manager.dart';
 import '../services/biometric_service.dart';
 import '../services/daily_checkin_service.dart';
 import '../services/theme_manager.dart';
+import '../services/vozac_service.dart';
 import 'daily_checkin_screen.dart';
 import 'home_screen.dart';
 import 'vozac_screen.dart';
@@ -134,8 +135,47 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     super.dispose();
   }
 
-  /// Učitaj vozače iz SharedPreferences
+  /// Učitaj vozače iz Supabase-a, sa fallback na SharedPreferences
   Future<List<Map<String, dynamic>>> _loadVozaci() async {
+    try {
+      // 🔄 NOVO: Prvo pokušaj da učitaš iz Supabase-a
+      final vozacService = VozacService();
+      final vozaciFromDB = await vozacService.getAllVozaci();
+
+      // Pretvori u format koji se koristi u login screen-u
+      final vozaciMaps = vozaciFromDB.map((v) {
+        // Pretvori boja (hex string) u int ako je potrebno
+        int bojaInt = 0xFFFFFFFF; // default white
+        if (v.boja != null && v.boja!.isNotEmpty) {
+          try {
+            final hex = v.boja!.replaceFirst('#', '');
+            bojaInt = int.parse('FF$hex', radix: 16);
+          } catch (e) {
+            debugPrint('⚠️ Greška pri parsiranju boje: ${v.boja}');
+          }
+        }
+
+        return <String, dynamic>{
+          'id': v.id,
+          'ime': v.ime,
+          'email': v.email ?? '',
+          'sifra': v.sifra ?? '',
+          'telefon': v.brojTelefona ?? '',
+          'boja': bojaInt,
+        };
+      }).toList();
+
+      // Ako imaš vozače iz DB-a, koristi ih
+      if (vozaciMaps.isNotEmpty) {
+        debugPrint('✅ Učitani vozači iz Supabase-a: ${vozaciMaps.length}');
+        return vozaciMaps;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Greška pri učitavanju vozača iz Supabase-a: $e');
+      // Nastavi sa SharedPreferences fallback-om
+    }
+
+    // 📱 FALLBACK: Ako Supabase fails, koristi SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final vozaciJson = prefs.getString('auth_vozaci');
     if (vozaciJson != null) {
@@ -179,6 +219,13 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
         'sifra': '333333',
         'telefon': '0677662993',
         'boja': 0xFFFFD700, // žuta (Gold)
+      },
+      <String, dynamic>{
+        'ime': 'Voja',
+        'email': 'voja@gmail.com',
+        'sifra': '555555',
+        'telefon': '0600000000',
+        'boja': 0xFF26C6DA, // teal
       },
     ];
 

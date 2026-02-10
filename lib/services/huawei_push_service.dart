@@ -26,11 +26,9 @@ class HuaweiPushService {
   // 🛡️ ZAŠTITA OD VIŠESTRUKOG POZIVANJA
   bool _initialized = false;
   bool _initializing = false;
-  String? _cachedToken;
 
   /// Initialize and request token. This method is safe to call even when
   /// HMS is not available on the device — it will simply return null.
-  /// 🛡️ SAFE TO CALL MULTIPLE TIMES - vraća cached token ako već inicijalizovan
   Future<String?> initialize() async {
     // 🍎 iOS ne podržava Huawei Push - preskoči
     if (Platform.isIOS) {
@@ -38,10 +36,10 @@ class HuaweiPushService {
       return null;
     }
 
-    // 🛡️ Ako je već inicijalizovan, vrati cached token
-    if (_initialized && _cachedToken != null) {
-      debugPrint('📱 [HuaweiPush] Already initialized with token: ${_cachedToken!.substring(0, 10)}...');
-      return _cachedToken;
+    // 🛡️ Ako je već inicijalizovan, vrati null
+    if (_initialized) {
+      debugPrint('📱 [HuaweiPush] Already initialized');
+      return null;
     }
 
     // 🛡️ Ako je inicijalizacija u toku, sačekaj
@@ -50,9 +48,9 @@ class HuaweiPushService {
       // Čekaj do 5 sekundi da se završi tekuća inicijalizacija
       for (int i = 0; i < 50; i++) {
         await Future.delayed(const Duration(milliseconds: 100));
-        if (_initialized) return _cachedToken;
+        if (_initialized) return null;
       }
-      return _cachedToken;
+      return null;
     }
 
     debugPrint('📱 [HuaweiPush] Starting Huawei Push initialization...');
@@ -65,7 +63,6 @@ class HuaweiPushService {
       _tokenSub?.cancel();
       _tokenSub = Push.getTokenStream.listen((String? newToken) async {
         if (newToken != null && newToken.isNotEmpty) {
-          _cachedToken = newToken;
           await _registerTokenWithServer(newToken);
         }
       });
@@ -127,7 +124,6 @@ class HuaweiPushService {
         final firstValue = await Push.getTokenStream.first.timeout(const Duration(seconds: 5));
         if (firstValue.isNotEmpty) {
           debugPrint('📱 [HuaweiPush] Token received on stream: ${firstValue.substring(0, 10)}...');
-          _cachedToken = firstValue;
           await _registerTokenWithServer(firstValue);
           _initialized = true;
           _initializing = false;
@@ -150,16 +146,13 @@ class HuaweiPushService {
 
       _initialized = true;
       _initializing = false;
-      return _cachedToken;
+      return null;
     } catch (e) {
       // Non-fatal: plugin may throw if not configured on device.
       _initializing = false;
       return null;
     }
   }
-
-  /// 🔑 GETTER ZA CACHED TOKEN - ne poziva initialize()
-  String? get cachedToken => _cachedToken;
 
   /// 🔔 SETUP MESSAGE LISTENER - sluša dolazne Huawei push poruke
   void _setupMessageListener() {
@@ -203,13 +196,6 @@ class HuaweiPushService {
     }
   }
 
-  Future<void> dispose() async {
-    await _tokenSub?.cancel();
-    _tokenSub = null;
-    await _messageSub?.cancel();
-    _messageSub = null;
-  }
-
   /// Registruje HMS token u push_tokens tabelu
   /// Koristi unificirani PushTokenService
   Future<void> _registerTokenWithServer(String token) async {
@@ -234,9 +220,9 @@ class HuaweiPushService {
     );
   }
 
-  /// Attempt to register a pending token saved while Supabase wasn't initialized.
-  /// Delegira na PushTokenService
+  /// Pokušaj registracije pending tokena (ako postoji)
   Future<void> tryRegisterPendingToken() async {
+    // Delegiraj na PushTokenService
     await PushTokenService.tryRegisterPendingToken();
   }
 }

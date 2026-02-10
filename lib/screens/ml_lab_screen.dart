@@ -1437,7 +1437,7 @@ class _MLLabScreenState extends State<MLLabScreen> with SingleTickerProviderStat
           ListTile(
             leading: const Icon(Icons.cleaning_services, color: Colors.red),
             title: const Text('Očisti AI Cache'),
-            subtitle: const Text('Resetuje kratkoročnu memoriju beba-logike.'),
+            subtitle: const Text('Očisti kratkoročnu memoriju beba-logike.'),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('AI Cache očišćen! 🧼')),

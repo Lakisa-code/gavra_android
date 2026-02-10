@@ -14,20 +14,14 @@ import 'screens/welcome_screen.dart';
 import 'services/adresa_supabase_service.dart';
 import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
 import 'services/battery_optimization_service.dart'; // 🔋 Huawei/Xiaomi battery warning
-import 'services/cache_service.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
-import 'services/ml_champion_service.dart';
-import 'services/ml_dispatch_autonomous_service.dart';
-import 'services/ml_finance_autonomous_service.dart';
 import 'services/ml_service.dart'; // 🧠 ML servis za trening modela
 import 'services/ml_vehicle_autonomous_service.dart';
 import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
-import 'services/route_service.dart'; // 🚐 Dinamički satni redoslijedi iz baze
-import 'services/scheduled_popis_service.dart'; // 📊 Automatski popis u 21:00 (bez notif)
 import 'services/seat_request_service.dart';
 import 'services/slobodna_mesta_service.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
@@ -38,7 +32,16 @@ import 'services/voznje_log_service.dart';
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
-import 'utils/vozac_boja.dart'; // 🎨 Vozač boje i cache
+
+// 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
+extension ColorCompat on Color {
+  Color withValues({double? alpha, double? red, double? green, double? blue}) {
+    if (alpha != null) {
+      return withOpacity(alpha);
+    }
+    return this;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -155,16 +158,16 @@ Future<void> _initAppServices() async {
 
   final services = [
     VozacMappingService.initialize(),
-    VozacBoja.initialize(),
-    VremeVozacService().loadAllVremeVozac(),
+    // VozacBoja.initialize(), // Uklonjeno - VozacBoja je sada sync
     AppSettingsService.initialize(),
-    CacheService.initialize(),
-    RouteService.refreshCache(), // 🚐 Učitaj satne redoslijede iz baze
   ];
 
   for (var service in services) {
-    unawaited(service.timeout(const Duration(seconds: 3), onTimeout: () => {}));
+    unawaited(service);
   }
+
+  // Sync inicijalizacija
+  VremeVozacService().loadAllVremeVozac();
 
   // 🔔 Initialize centralized realtime manager (monitoring sve tabele)
   unawaited(RealtimeManager.instance.initializeAll());
@@ -173,11 +176,6 @@ Future<void> _initAppServices() async {
   // NOTE: RouteService.setupRealtimeListener() je sada dio RealtimeManager.initializeAll()
   // NOTE: KapacitetService.startGlobalRealtimeListener() je sada dio RealtimeManager.initializeAll()
   unawaited(WeatherAlertService.checkAndSendWeatherAlerts());
-
-  unawaited(MLVehicleAutonomousService().start());
-  unawaited(MLDispatchAutonomousService().start());
-  unawaited(MLChampionService().start());
-  unawaited(MLFinanceAutonomousService().start());
 
   // 🧠 Treniraj ML model za ocenjivanje putnika
   unawaited(MLService.trainPassengerScoringModel());
@@ -191,8 +189,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  Timer? _cleanupTimer;
-
   @override
   void initState() {
     super.initState();
@@ -232,18 +228,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Future<void> _forceSubscribeToTopics() async {
-    try {
-      await Future<void>.delayed(const Duration(seconds: 2)); // Wait for Firebase init
-      if (!mounted) return; // 🛡️ Zaštita od poziva nakon dispose
-      await RealtimeNotificationService.subscribeToDriverTopics('test_driver');
-    } catch (e) {
-      // FORCE subscribe failed
-    }
+    // REMOVED: Force subscribe to test_driver topics - proper subscription happens in home_screen.dart
+    // when the actual driver logs in
   }
 
   @override
   void dispose() {
-    _cleanupTimer?.cancel(); // 🧹 Cancel periodic timer
     WidgetsBinding.instance.removeObserver(this);
     // 🧹 CLEANUP: Zatvori stream controllere
     WeatherService.dispose();
@@ -274,22 +264,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Future<void> _initializeApp() async {
     try {
-      // 🚀 OPTIMIZOVANA INICIJALIZACIJA SA CACHE CLEANUP
+      // 🚀 OPTIMIZOVANA INICIJALIZACIJA
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
       // 🎨 Inicijalizuj ThemeManager
       await ThemeManager().initialize();
-
-      // 📊 Automatski popis u 21:00 (samo čuva u bazu, BEZ notifikacija)
-      await ScheduledPopisService.initialize();
-
-      // 🧹 PERIODIČKI CLEANUP - svaki put kada se app pokrene
-      CacheService.performAutomaticCleanup();
-
-      // 🔥 Kreiranje timer-a za automatski cleanup svakih 10 minuta
-      _cleanupTimer = Timer.periodic(const Duration(minutes: 10), (_) {
-        CacheService.performAutomaticCleanup();
-      });
 
       // Inicijalizacija završena
     } catch (_) {

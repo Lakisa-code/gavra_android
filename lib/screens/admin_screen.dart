@@ -106,7 +106,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   /// 🚗 VOZAČ PICKER DIALOG - Admin može da vidi ekran bilo kog vozača
   void _showVozacPickerDialog(BuildContext context) {
-    final vozaci = VozacBoja.validDrivers;
+    final vozaci = VozacBoja.validDriversSync;
 
     showDialog<void>(
       context: context,
@@ -120,7 +120,7 @@ class _AdminScreenState extends State<AdminScreen> {
               itemCount: vozaci.length,
               itemBuilder: (context, index) {
                 final vozac = vozaci[index];
-                final boja = VozacBoja.get(vozac);
+                final boja = VozacBoja.getSync(vozac);
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: boja,
@@ -1060,7 +1060,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   pazar,
                 );
 
-                final Map<String, Color> vozacBoje = VozacBoja.boje;
+                final Map<String, Color> vozacBoje = VozacBoja.bojeSync;
                 final List<String> vozaciRedosled = [
                   'Bruda',
                   'Bilevski',

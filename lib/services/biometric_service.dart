@@ -1,7 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// 🔐 BIOMETRIC SERVICE
 /// Servis za biometrijsku autentifikaciju (otisak prsta, Face ID)
@@ -50,20 +49,13 @@ class BiometricService {
 
   /// Da li je biometrija uključena za korisnika
   static Future<bool> isBiometricEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_biometricEnabledKey) ?? false;
+    // Return false
+    return false;
   }
 
   /// Uključi/isključi biometriju
   static Future<void> setBiometricEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_biometricEnabledKey, enabled);
-
-    if (!enabled) {
-      // Obriši sačuvane kredencijale
-      await _secureStorage.delete(key: _savedPhoneKey);
-      await _secureStorage.delete(key: _savedPinKey);
-    }
+    // Do nothing
   }
 
   /// Sačuvaj kredencijale za biometrijsku prijavu

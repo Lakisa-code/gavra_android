@@ -21,8 +21,6 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   //  REALTIME
   RealtimeChannel? _bookingStream;
 
-  // Interna memorija bebe (100% Unsupervised)
-  final Map<String, double> _recurrentFactors = {};
   final Map<String, String> _passengerAffinity = {}; // putnik_id -> vozac_ime (Naučeno)
   double _avgHourlyBookings = 0.5;
 
@@ -144,24 +142,24 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   }
 
   void _startVelocityMonitoring() {
-    _velocityTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
-      await _analyzeRealtimeDemand();
-    });
+    // _velocityTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+    //   await _analyzeRealtimeDemand();
+    // });
   }
 
   void _startIntegrityCheck() {
-    Timer.periodic(const Duration(minutes: 5), (timer) async {
-      _currentAdvice.clear();
-      await _analyzeMultiVanSplits();
-      await _analyzeOptimalGrouping();
-      await _analyzeCapacityOverflow();
+    // Timer.periodic(const Duration(minutes: 5), (timer) async {
+    //   _currentAdvice.clear();
+    //   await _analyzeMultiVanSplits();
+    //   await _analyzeOptimalGrouping();
+    //   await _analyzeCapacityOverflow();
 
-      if (_isAutopilotEnabled) {
-        await _executeAutopilotActions();
-      }
+    //   if (_isAutopilotEnabled) {
+    //     await _executeAutopilotActions();
+    //   }
 
-      notifyListeners();
-    });
+    //   notifyListeners();
+    // });
   }
 
   ///  AUTOPILOT EXECUTION
@@ -241,7 +239,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         final vremeVrednost = parts[1];
         final gradKod = GradAdresaValidator.isBelaCrkva(gradIme) ? 'BC' : 'VS';
 
-        // 🎫 Učitaj stvarni kapacitet iz KapacitetService (sinhrono iz cache-a)
+        // 🎫 Učitaj stvarni kapacitet iz KapacitetService
         final int baseKapacitet = KapacitetService.getKapacitetSync(gradKod, vremeVrednost);
         final int totalKapacitet = driversCount * baseKapacitet;
 

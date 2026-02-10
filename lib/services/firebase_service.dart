@@ -1,7 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_manager.dart';
 import 'firebase_background_handler.dart';
@@ -43,15 +42,11 @@ class FirebaseService {
   /// Postavlja trenutnog vozača
   static Future<void> setCurrentDriver(String driver) async {
     _currentDriver = driver;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('current_driver', driver);
   }
 
   /// Briše trenutnog vozača
   static Future<void> clearCurrentDriver() async {
     _currentDriver = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('current_driver');
   }
 
   /// Dobija FCM token

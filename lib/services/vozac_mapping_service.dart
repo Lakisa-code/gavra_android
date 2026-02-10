@@ -4,18 +4,14 @@ import 'vozac_service.dart';
 class VozacMappingService {
   static final VozacService _vozacService = VozacService();
 
-  /// Cache za mapiranje imena vozača u UUID-ove
   static Map<String, String>? _vozacNameToUuid;
   static Map<String, String>? _vozacUuidToName;
-  static DateTime? _lastCacheUpdate;
   static bool _isInitialized = false;
-
-  static const Duration _cacheValidityPeriod = Duration(minutes: 30);
 
   // Expose status
   static bool get isInitialized => _isInitialized;
 
-  /// 🚀 INICIJALIZACIJA CACHE-A NA STARTUP
+  /// 🚀 INICIJALIZACIJA NA STARTUP
   static Future<void> initialize() async {
     if (_isInitialized) return;
     try {
@@ -26,6 +22,11 @@ class VozacMappingService {
       _vozacUuidToName = {};
       _isInitialized = true;
     }
+  }
+
+  /// Osveži mapiranje vozača
+  static Future<void> refreshMapping() async {
+    await _loadMappingFromDatabase();
   }
 
   /// Učitava mapiranje vozača iz baze podataka
@@ -42,42 +43,24 @@ class VozacMappingService {
 
         _vozacNameToUuid![vozac.punoIme] = vozac.id;
       }
-
-      _lastCacheUpdate = DateTime.now();
     } catch (e) {
       _vozacNameToUuid = {};
       _vozacUuidToName = {};
-      _lastCacheUpdate = null;
       rethrow;
-    }
-  }
-
-  /// Proverava da li je cache valjan
-  static bool _isCacheValid() {
-    if (_lastCacheUpdate == null || _vozacNameToUuid == null) {
-      return false;
-    }
-
-    final now = DateTime.now();
-    return now.difference(_lastCacheUpdate!) < _cacheValidityPeriod;
-  }
-
-  /// Osigurava da je mapiranje učitano i validno
-  static Future<void> _ensureMappingLoaded() async {
-    if (!_isCacheValid()) {
-      await _loadMappingFromDatabase();
     }
   }
 
   /// Dobij UUID vozača na osnovu imena
   static Future<String?> getVozacUuid(String ime) async {
-    await _ensureMappingLoaded();
+    if (_vozacNameToUuid == null) {
+      await _loadMappingFromDatabase();
+    }
     return _vozacNameToUuid?[ime];
   }
 
   /// Dobij ime vozača na osnovu UUID-a
   static Future<String?> getVozacIme(String uuid) async {
-    await _ensureMappingLoaded();
+    await initialize();
     return _vozacUuidToName?[uuid];
   }
 
@@ -89,16 +72,9 @@ class VozacMappingService {
     return await getVozacIme(uuid); // Može biti null
   }
 
-  /// Forsira ponovno učitavanje mapiranja iz baze
-  static Future<void> refreshMapping() async {
-    _lastCacheUpdate = null;
-    await _ensureMappingLoaded();
-  }
-
   // KOMPATIBILNOST: Sinhrone metode za modele i mesta gde async nije moguć
-  // Ove metode koriste cache ako je dostupan, inače fallback
 
-  /// Dobij ime vozača sa fallback sinhron (koristi cache ili null)
+  /// Dobij ime vozača sa fallback sinhron
   static String? getVozacImeWithFallbackSync(String? uuid) {
     if (uuid == null || uuid.isEmpty) return null;
 
@@ -109,7 +85,7 @@ class VozacMappingService {
     return _vozacUuidToName?[uuid]; // Može biti null
   }
 
-  /// Dobij UUID vozača sinhron (koristi cache ili null)
+  /// Dobij UUID vozača sinhron
   static String? getVozacUuidSync(String ime) {
     if (!_isInitialized || _vozacNameToUuid == null) {
       return null;

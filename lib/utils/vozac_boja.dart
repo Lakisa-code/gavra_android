@@ -6,15 +6,11 @@ import '../services/vozac_service.dart';
 
 /// VozacBoja - Centralizovana logika boja za vozače
 ///
-/// Ova klasa sada podržava dinamičko učitavanje boja iz baze podataka
-/// sa fallback-om na hardkodovane vrednosti za backward kompatibilnost.
+/// Ova klasa sada učitava boje direktno iz baze podataka
+/// za svaki poziv, sa fallback-om na hardkodovane vrednosti.
 ///
-/// ## Inicijalizacija:
-/// Pozovite `VozacBoja.initialize()` na startupu aplikacije (npr. u main.dart)
-/// da bi se boje učitale iz baze pre korišćenja.
-///
-/// ## Cache:
-/// Boje se keširaju na 30 minuta. Možete pozvati `refreshCache()` za ručno osvežavanje.
+/// ## Korišćenje:
+/// Svi metodi su sada async i vraćaju sveže podatke iz baze.
 class VozacBoja {
   // ═══════════════════════════════════════════════════════════════════════════
   // FALLBACK KONSTANTE (koriste se ako baza nije dostupna)
@@ -25,90 +21,45 @@ class VozacBoja {
     'Bruda': Color(0xFF7C4DFF), // ljubičasta
     'Bilevski': Color(0xFFFF9800), // narandžasta
     'Bojan': Color(0xFF00E5FF), // svetla cyan plava - osvežavajuća i moderna
+    'Voja': Color(0xFF26C6DA), // teal
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CACHE ZA DINAMIČKO UČITAVANJE
+  // JAVNI API (direktno iz baze)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static Map<String, Color>? _bojeCache;
-  static Map<String, Vozac>? _vozaciCache;
-  static DateTime? _lastCacheUpdate;
-  static bool _isInitialized = false;
-  static const Duration _cacheValidityPeriod = Duration(minutes: 30);
-
-  /// INICIJALIZACIJA - Pozovite na startupu aplikacije
-  static Future<void> initialize() async {
-    if (_isInitialized && _isCacheValid()) return;
-
+  /// Vraća mapu svih boja (dinamičke + fallback) - uvek sveže iz baze
+  static Future<Map<String, Color>> get boje async {
     try {
-      await _loadFromDatabase();
-      _isInitialized = true;
-      if (kDebugMode) debugPrint('✅ [VozacBoja] Initialized with ${_bojeCache?.length ?? 0} drivers');
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+
+      final Map<String, Color> result = {};
+
+      for (var vozac in vozaci) {
+        // Koristi boju iz baze ako postoji, inače fallback
+        if (vozac.color != null) {
+          result[vozac.ime] = vozac.color!;
+        } else if (_fallbackBoje.containsKey(vozac.ime)) {
+          result[vozac.ime] = _fallbackBoje[vozac.ime]!;
+        }
+      }
+
+      // Dodaj fallback boje za vozače koji nisu u bazi
+      for (var entry in _fallbackBoje.entries) {
+        result.putIfAbsent(entry.key, () => entry.value);
+      }
+
+      return Map.unmodifiable(result);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ [VozacBoja] Database load failed: $e, using fallback');
-      // Ako baza nije dostupna, koristi fallback
-      _bojeCache = Map.from(_fallbackBoje);
-      _isInitialized = true;
+      return _fallbackBoje;
     }
-  }
-
-  /// Učitava boje iz baze podataka
-  static Future<void> _loadFromDatabase() async {
-    if (kDebugMode) debugPrint('🔍 [VozacBoja] Loading drivers from database...');
-    final vozacService = VozacService();
-    final vozaci = await vozacService.getAllVozaci();
-    if (kDebugMode) debugPrint('✅ [VozacBoja] Loaded ${vozaci.length} drivers from database');
-
-    _bojeCache = {};
-    _vozaciCache = {};
-
-    for (var vozac in vozaci) {
-      _vozaciCache![vozac.ime] = vozac;
-
-      // Koristi boju iz baze ako postoji, inače fallback
-      if (vozac.color != null) {
-        _bojeCache![vozac.ime] = vozac.color!;
-      } else if (_fallbackBoje.containsKey(vozac.ime)) {
-        _bojeCache![vozac.ime] = _fallbackBoje[vozac.ime]!;
-      }
-    }
-
-    // Dodaj fallback boje za vozače koji nisu u bazi
-    for (var entry in _fallbackBoje.entries) {
-      _bojeCache!.putIfAbsent(entry.key, () => entry.value);
-    }
-
-    _lastCacheUpdate = DateTime.now();
-  }
-
-  /// Proverava da li je cache validan
-  static bool _isCacheValid() {
-    if (_bojeCache == null || _lastCacheUpdate == null) return false;
-    return DateTime.now().difference(_lastCacheUpdate!) < _cacheValidityPeriod;
-  }
-
-  /// Osvežava cache (pozovite nakon izmena u bazi)
-  static Future<void> refreshCache() async {
-    _isInitialized = false;
-    await initialize();
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // JAVNI API (backward kompatibilan)
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /// Vraća mapu svih boja (dinamičke + fallback)
-  static Map<String, Color> get boje {
-    if (_bojeCache != null && _isCacheValid()) {
-      return Map.unmodifiable(_bojeCache!);
-    }
-    return _fallbackBoje;
   }
 
   /// Vraća boju za vozača - baca grešku ako vozač nije validan
-  static Color get(String? ime) {
-    final currentBoje = boje;
+  static Future<Color> get(String? ime) async {
+    final currentBoje = await boje;
     if (ime != null && currentBoje.containsKey(ime)) {
       return currentBoje[ime]!;
     }
@@ -116,25 +67,36 @@ class VozacBoja {
   }
 
   /// Proverava da li je vozač prepoznat/valjan
-  static bool isValidDriver(String? ime) {
-    return ime != null && boje.containsKey(ime);
+  static Future<bool> isValidDriver(String? ime) async {
+    if (ime == null) return false;
+    final currentBoje = await boje;
+    return currentBoje.containsKey(ime);
   }
 
   /// Vraća Vozac objekat za dato ime (sa ID-om)
-  static Vozac? getVozac(String? ime) {
-    if (ime == null || _vozaciCache == null) return null;
-    return _vozaciCache![ime];
+  static Future<Vozac?> getVozac(String? ime) async {
+    if (ime == null) return null;
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      return vozaci.firstWhere((v) => v.ime == ime);
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Lista svih validnih vozača
-  static List<String> get validDrivers => boje.keys.toList();
+  static Future<List<String>> get validDrivers async {
+    final currentBoje = await boje;
+    return currentBoje.keys.toList();
+  }
 
   /// Vraća boju vozača ili default boju ako vozač nije registrovan
   /// FIX: Case-insensitive poređenje za robusnost
-  static Color getColorOrDefault(String? ime, Color defaultColor) {
+  static Future<Color> getColorOrDefault(String? ime, Color defaultColor) async {
     if (ime == null || ime.isEmpty) return defaultColor;
 
-    final currentBoje = boje;
+    final currentBoje = await boje;
     // Prvo probaj exact match
     if (currentBoje.containsKey(ime)) {
       return currentBoje[ime]!;
@@ -151,8 +113,31 @@ class VozacBoja {
     return defaultColor;
   }
 
-  /// Alias za get() metodu - za kompatibilnost
-  static Color getColor(String? ime) => get(ime);
+  /// Vraća boju za vozača - baca grešku ako vozač nije validan (SYNC verzija)
+  static Color getSync(String? ime) {
+    if (ime != null && _fallbackBoje.containsKey(ime)) {
+      return _fallbackBoje[ime]!;
+    }
+    throw ArgumentError('Vozač "$ime" nije registrovan. Validni vozači: ${_fallbackBoje.keys.join(", ")}');
+  }
+
+  /// Proverava da li je vozač prepoznat/valjan (SYNC verzija)
+  static bool isValidDriverSync(String? ime) {
+    if (ime == null) return false;
+    return _fallbackBoje.containsKey(ime);
+  }
+
+  /// Vraća boju vozača ili default boju ako vozač nije registrovan (SYNC verzija)
+  static Color getColorOrDefaultSync(String? ime, Color defaultColor) {
+    if (ime == null || ime.isEmpty) return defaultColor;
+    return _fallbackBoje[ime] ?? defaultColor;
+  }
+
+  /// Lista svih validnih vozača (SYNC verzija)
+  static List<String> get validDriversSync => _fallbackBoje.keys.toList();
+
+  /// Vraća mapu boja (SYNC verzija - samo fallback)
+  static Map<String, Color> get bojeSync => _fallbackBoje;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // EMAIL I TELEFON VALIDACIJA (ostaje hardkodovano za sada)
@@ -165,6 +150,7 @@ class VozacBoja {
     'Bilevski': 'bilyboy1983@gmail.com',
     'Svetlana': 'risticsvetlana2911@yahoo.com',
     'Ivan': 'bradvarevicivan99@gmail.com',
+    'Voja': 'voja@gmail.com',
   };
 
   // VALIDACIJA: email -> vozač mapiranje
@@ -174,6 +160,7 @@ class VozacBoja {
     'bilyboy1983@gmail.com': 'Bilevski',
     'risticsvetlana2911@yahoo.com': 'Svetlana',
     'bradvarevicivan99@gmail.com': 'Ivan',
+    'voja@gmail.com': 'Voja',
   };
 
   // BROJEVI TELEFONA VOZAČA
@@ -183,6 +170,7 @@ class VozacBoja {
     'Bilevski': '0638466418',
     'Svetlana': '0658464160',
     'Ivan': '0677662993',
+    'Voja': '0600000000',
   };
 
   // HELPER FUNKCIJE ZA EMAIL VALIDACIJU

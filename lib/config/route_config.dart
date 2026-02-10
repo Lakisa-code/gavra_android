@@ -98,8 +98,6 @@ class RouteConfig {
 
   // 🏠 GEOCODING KONFIGURACIJA
   static const Duration nominatimBatchDelay = Duration(milliseconds: 1000);
-  static const Duration geocodingMemoryCacheDuration = Duration(hours: 1);
-  static const Duration geocodingDiskCacheDuration = Duration(days: 7);
 
   /// 🚐 Dobija vremena polazaka za određeni grad i sezonu
   /// Učitava iz baze putem RouteService-a sa fallbackom na hardkodovane vrednosti

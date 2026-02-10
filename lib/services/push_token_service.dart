@@ -1,7 +1,4 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -18,9 +15,6 @@ class PushTokenService {
 
   /// Proveri da li je Supabase inicijalizovan
   static bool get _isSupabaseReady => isSupabaseReady;
-
-  /// Ključ za čuvanje pending tokena u SharedPreferences
-  static const _pendingTokenKey = 'pending_push_token';
 
   /// 📲 Registruje push token direktno u Supabase bazu
   ///
@@ -45,17 +39,9 @@ class PushTokenService {
         return false;
       }
 
-      // ⏳ Proveri da li je Supabase spreman - ako nije, sačuvaj kao pending
+      // ⏳ Proveri da li je Supabase spreman - ako nije, preskači
       if (!_isSupabaseReady) {
-        if (kDebugMode) debugPrint('⏳ [PushToken] Supabase nije spreman, čuvam kao pending');
-        await savePendingToken(
-          token: token,
-          provider: provider,
-          userType: userType,
-          userId: userId,
-          vozacId: vozacId,
-          putnikId: putnikId,
-        );
+        if (kDebugMode) debugPrint('⏳ [PushToken] Supabase nije spreman, preskačem registraciju');
         return false;
       }
 
@@ -145,72 +131,19 @@ class PushTokenService {
     String? vozacId,
     String? putnikId,
   }) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final pendingData = jsonEncode({
-        'token': token,
-        'provider': provider,
-        'user_type': userType,
-        'user_id': userId,
-        'vozac_id': vozacId,
-        'putnik_id': putnikId,
-        'saved_at': DateTime.now().toUtc().toIso8601String(),
-      });
-      await prefs.setString(_pendingTokenKey, pendingData);
-
-      if (kDebugMode) {
-        debugPrint('💾 [PushToken] Pending token sačuvan: $provider/$userType');
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri čuvanju pending tokena: $e');
-    }
+    // Do nothing
   }
 
   /// 🔄 Pokušaj registrovati pending token
   /// Poziva se nakon što Supabase postane dostupan
   static Future<bool> tryRegisterPendingToken() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final pendingData = prefs.getString(_pendingTokenKey);
-
-      if (pendingData == null) return false;
-
-      final data = jsonDecode(pendingData) as Map<String, dynamic>;
-      final token = data['token'] as String?;
-      final provider = data['provider'] as String?;
-
-      if (token == null || provider == null) {
-        await _clearPendingToken();
-        return false;
-      }
-
-      if (kDebugMode) {
-        debugPrint('🔄 [PushToken] Pokušavam registrovati pending token: $provider');
-      }
-
-      // Pokušaj registraciju
-      final success = await registerToken(
-        token: token,
-        provider: provider,
-        userType: data['user_type'] as String? ?? 'vozac',
-        userId: data['user_id'] as String?,
-        vozacId: data['vozac_id'] as String?,
-        putnikId: data['putnik_id'] as String?,
-      );
-
-      return success;
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri registraciji pending tokena: $e');
-      return false;
-    }
+    // Return false
+    return false;
   }
 
   /// 🗑️ Obriši pending token iz SharedPreferences
   static Future<void> _clearPendingToken() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_pendingTokenKey);
-    } catch (_) {}
+    // Do nothing
   }
 
   /// 🗑️ Obriši token iz baze (logout, deregistracija)

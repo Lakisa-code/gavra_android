@@ -16,8 +16,6 @@ import '../globals.dart';
 class MLService {
   static SupabaseClient get _supabase => supabase;
   static Map<String, double> _modelCoefficients = {};
-  static final Map<String, PassengerScore> _passengerScoreCache = {};
-  static DateTime? _lastCacheUpdate;
 
   // 📊 OCCUPANCY PREDICTION
 
@@ -236,11 +234,6 @@ class MLService {
   /// Oceni kvalitet putnika koristeći PRAVO mašinsko učenje
   /// Model SAM uči šta je važno analizirajući istorijske podatke
   static Future<PassengerScore> scorePassenger(String putnikId) async {
-    // Check cache first
-    if (_passengerScoreCache.containsKey(putnikId)) {
-      return _passengerScoreCache[putnikId]!;
-    }
-
     try {
       // Get passenger data
       final putnik = await _supabase.from('registrovani_putnici').select().eq('id', putnikId).maybeSingle();
@@ -313,9 +306,6 @@ class MLService {
         tier: tier,
         tripCount: history.length,
       );
-
-      // Cache the score
-      _passengerScoreCache[putnikId] = score;
 
       return score;
     } catch (e) {
@@ -1063,29 +1053,12 @@ class MLService {
     required bool showedUp,
   }) async {
     try {
-      // Invalidate cache for this passenger
-      _passengerScoreCache.remove(putnikId);
-
-      // Recalculate score (will be cached on next access)
+      // Recalculate score
       await scorePassenger(putnikId);
 
       print('✅ Passenger score updated: $putnikId');
     } catch (e) {
       print('❌ Score update error: $e');
-    }
-  }
-
-  /// Automatski refresh modela svakih 24h
-  Future<void> autoRefreshModel() async {
-    final now = DateTime.now();
-
-    // Refresh cache every 6 hours
-    if (_lastCacheUpdate == null || now.difference(_lastCacheUpdate!).inHours >= 6) {
-      print('🔄 Auto-refreshing model and cache...');
-      await loadModelCoefficients();
-      _passengerScoreCache.clear();
-      _lastCacheUpdate = now;
-      print('✅ Cache refreshed');
     }
   }
 

@@ -79,34 +79,15 @@ class WeatherService {
     'VS': {'lat': 45.1167, 'lon': 21.3036}, // Vršac
   };
 
-  // Cache za podatke (osvežava se svakih 15 minuta)
-  static final Map<String, WeatherData?> _dataCache = {};
-  static final Map<String, DateTime> _cacheTime = {};
-  static const _cacheDuration = Duration(minutes: 15);
-
   // Stream controlleri za real-time temperature
   static final _bcController = StreamController<WeatherData?>.broadcast();
   static final _vsController = StreamController<WeatherData?>.broadcast();
 
-  /// Stream za BC - odmah emituje cached vrednost ako postoji
-  static Stream<WeatherData?> get bcWeatherStream async* {
-    // Prvo emituj cached vrednost ako postoji
-    if (_dataCache.containsKey('BC')) {
-      yield _dataCache['BC'];
-    }
-    // Zatim slušaj nove podatke
-    yield* _bcController.stream;
-  }
+  /// Stream za BC
+  static Stream<WeatherData?> get bcWeatherStream => _bcController.stream;
 
-  /// Stream za VS - odmah emituje cached vrednost ako postoji
-  static Stream<WeatherData?> get vsWeatherStream async* {
-    // Prvo emituj cached vrednost ako postoji
-    if (_dataCache.containsKey('VS')) {
-      yield _dataCache['VS'];
-    }
-    // Zatim slušaj nove podatke
-    yield* _vsController.stream;
-  }
+  /// Stream za VS
+  static Stream<WeatherData?> get vsWeatherStream => _vsController.stream;
 
   /// Dohvati trenutnu temperaturu za grad (legacy - za kompatibilnost)
   static Future<double?> getTemperature(String grad) async {
@@ -116,13 +97,6 @@ class WeatherService {
 
   /// Dohvati kompletne vremenske podatke za grad
   static Future<WeatherData?> getWeatherData(String grad) async {
-    // Proveri cache
-    if (_dataCache.containsKey(grad) &&
-        _cacheTime.containsKey(grad) &&
-        DateTime.now().difference(_cacheTime[grad]!) < _cacheDuration) {
-      return _dataCache[grad];
-    }
-
     try {
       final coords = _gradKoordinate[grad];
       if (coords == null) return null;
@@ -214,10 +188,6 @@ class WeatherService {
           precipitationStartTime: precipStartTime,
         );
 
-        // Sačuvaj u cache
-        _dataCache[grad] = weatherData;
-        _cacheTime[grad] = DateTime.now();
-
         // Emituj na stream
         if (grad == 'BC') {
           _bcController.add(weatherData);
@@ -228,8 +198,8 @@ class WeatherService {
         return weatherData;
       }
     } catch (e) {
-      // Greška - vrati cached vrednost ako postoji
-      return _dataCache[grad];
+      // Greška
+      return null;
     }
 
     return null;

@@ -172,7 +172,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       // 🔄 FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
       final driverName = VozacBoja.getVozacForEmail(email);
       // Ne dozvoli auto-login ako vozač nije prepoznat
-      if (driverName == null || !VozacBoja.isValidDriver(driverName)) {
+      if (driverName == null || !VozacBoja.isValidDriverSync(driverName)) {
         // Ostani na welcome/login i ne auto-login
         return;
       }
@@ -289,7 +289,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     _fadeController.dispose();
     _slideController.dispose();
     _pulseController.dispose();
-    _audioPlayer.dispose(); // Dodano za cleanup audio player-a
+    _audioPlayer.dispose();
     super.dispose();
   }
 

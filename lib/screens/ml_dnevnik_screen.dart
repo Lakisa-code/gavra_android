@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../services/putnik_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../services/voznje_log_service.dart';
 
@@ -24,43 +23,14 @@ class MLDnevnikScreen extends StatefulWidget {
 }
 
 class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
-  final Map<String, String> _putnikNamesCache = {};
   final DateFormat _timeFormat = DateFormat('HH:mm');
   final DateFormat _dateFormat = DateFormat('dd.MM');
   String _searchQuery = '';
 
-  /// 📦 Keširanje imena putnika u serijama
-  Future<void> _precacheNames(List<Map<String, dynamic>> logs) async {
-    final idsToFetch = <String>{};
-    for (var l in logs) {
-      final id = l['putnik_id']?.toString();
-      if (id != null && !_putnikNamesCache.containsKey(id)) {
-        idsToFetch.add(id);
-      }
-    }
-
-    if (idsToFetch.isEmpty) return;
-
-    try {
-      final List<dynamic> response = await PutnikService()
-          .supabase
-          .from('registrovani_putnici')
-          .select('id, putnik_ime')
-          .inFilter('id', idsToFetch.toList());
-
-      for (var p in response) {
-        _putnikNamesCache[p['id'].toString()] = p['putnik_ime'].toString();
-      }
-
-      if (mounted) setState(() {});
-    } catch (e) {
-      debugPrint('❌ Precache error (Dnevnik): $e');
-    }
-  }
-
   String _getPutnikNameSync(dynamic id) {
     if (id == null) return 'Sistem';
-    return _putnikNamesCache[id.toString()] ?? '...';
+    // Return placeholder
+    return '...';
   }
 
   @override
@@ -181,11 +151,6 @@ class _MLDnevnikScreenState extends State<MLDnevnikScreen> {
               return Center(child: Text('Greška: ${snapshot.error}'));
             }
             var logs = snapshot.data ?? [];
-
-            // 📦 Pokreni keširanje imena
-            if (logs.isNotEmpty) {
-              _precacheNames(logs);
-            }
 
             // SEARCH FILTER
             if (_searchQuery.isNotEmpty) {

@@ -8,26 +8,16 @@ import 'realtime/realtime_manager.dart';
 /// Servis za rad sa normalizovanim adresama iz Supabase tabele
 /// 🎯 KORISTI UUID REFERENCE umesto TEXT polja
 class AdresaSupabaseService {
-  /// Cache za brže učitavanje
-  static final Map<String, Adresa> _cache = {};
-  static DateTime? _lastCacheUpdate;
-  static const Duration _cacheExpiry = Duration(minutes: 10);
-
   static StreamSubscription? _adreseSubscription;
   static final StreamController<List<Adresa>> _adreseController = StreamController<List<Adresa>>.broadcast();
 
   /// Dobija adresu po UUID-u
   static Future<Adresa?> getAdresaByUuid(String uuid) async {
-    if (_cache.containsKey(uuid) && _isCacheValid()) {
-      return _cache[uuid];
-    }
-
     try {
       final response =
           await supabase.from('adrese').select('id, naziv, grad, gps_lat, gps_lng').eq('id', uuid).single();
 
       final adresa = Adresa.fromMap(response);
-      _cache[uuid] = adresa;
       return adresa;
     } catch (e) {
       return null;
@@ -95,7 +85,6 @@ class AdresaSupabaseService {
           .maybeSingle();
       if (response != null) {
         final adresa = Adresa.fromMap(response);
-        _cache[adresa.id] = adresa;
         return adresa;
       }
       return null;
@@ -163,7 +152,6 @@ class AdresaSupabaseService {
                 .single();
 
             final updatedAdresa = Adresa.fromMap(response);
-            _cache[updatedAdresa.id] = updatedAdresa;
             return updatedAdresa;
           }
         }
@@ -191,24 +179,6 @@ class AdresaSupabaseService {
     }
   }
 
-  /// Očisti cache
-  static void clearCache() {
-    _cache.clear();
-    _lastCacheUpdate = null;
-  }
-
-  /// Proveri da li je cache valjan
-  static bool _isCacheValid() {
-    if (_lastCacheUpdate == null) return false;
-    return DateTime.now().difference(_lastCacheUpdate!) < _cacheExpiry;
-  }
-
-  /// Refresuj cache
-  static Future<void> refreshCache() async {
-    clearCache();
-    _lastCacheUpdate = DateTime.now();
-  }
-
   /// Helper metoda za dobijanje adresa u formatu za dropdown
   static Future<List<Map<String, dynamic>>> getAdreseDropdownData(String grad) async {
     final adrese = await getAdreseZaGrad(grad);
@@ -217,29 +187,14 @@ class AdresaSupabaseService {
         .toList();
   }
 
-  /// Batch učitavanje adresa (za optimizaciju)
+  /// Batch učitavanje adresa
   static Future<Map<String, Adresa>> getAdreseByUuids(List<String> uuids) async {
     final Map<String, Adresa> result = {};
 
-    final List<String> needToFetch = [];
     for (final uuid in uuids) {
-      if (_cache.containsKey(uuid) && _isCacheValid()) {
-        result[uuid] = _cache[uuid]!;
-      } else {
-        needToFetch.add(uuid);
-      }
-    }
-
-    if (needToFetch.isNotEmpty) {
-      try {
-        for (final uuid in needToFetch) {
-          final adresa = await getAdresaByUuid(uuid);
-          if (adresa != null) {
-            result[uuid] = adresa;
-          }
-        }
-      } catch (e) {
-        // 🔇 Ignore
+      final adresa = await getAdresaByUuid(uuid);
+      if (adresa != null) {
+        result[uuid] = adresa;
       }
     }
 
@@ -259,18 +214,13 @@ class AdresaSupabaseService {
         'gps_lng': lng, // Direct column
       }).eq('id', uuid);
 
-      if (_cache.containsKey(uuid)) {
-        final existing = _cache[uuid]!;
-        _cache[uuid] = existing.withCoordinates(lat, lng);
-      }
-
       return true;
     } catch (e) {
       return false;
     }
   }
 
-  /// 🧹 Čisti realtime cache i subscription
+  /// 🧹 Čisti realtime subscription
   static void dispose() {
     _adreseSubscription?.cancel();
     _adreseSubscription = null;

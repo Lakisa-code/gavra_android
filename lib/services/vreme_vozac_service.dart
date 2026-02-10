@@ -17,8 +17,8 @@ class VremeVozacService {
   // Supabase client
   SupabaseClient get _supabase => supabase;
 
-  // 🗄️ Keš za brzo čitanje - ključ je "grad|vreme|dan"
-  final Map<String, String?> _cache = {};
+  // Cache za sync pristup
+  final Map<String, String> _cache = {};
 
   // Stream controller za obaveštavanje o promenama
   final _changesController = StreamController<void>.broadcast();
@@ -33,13 +33,6 @@ class VremeVozacService {
     final normalizedVreme = _normalizeTime(vreme);
     if (normalizedVreme == null) return null;
 
-    final cacheKey = '$grad|$normalizedVreme|$dan';
-
-    // Proveri keš prvo
-    if (_cache.containsKey(cacheKey)) {
-      return _cache[cacheKey];
-    }
-
     try {
       final response = await _supabase
           .from('vreme_vozac')
@@ -50,47 +43,10 @@ class VremeVozacService {
           .maybeSingle();
 
       final vozacIme = response?['vozac_ime'] as String?;
-      _cache[cacheKey] = vozacIme;
       return vozacIme;
     } catch (e) {
       // print('⚠️ Greška pri čitanju vreme_vozac: $e');
       return null;
-    }
-  }
-
-  /// 🔍 Dobij vozača za specifično vreme - SINHRONO iz keša
-  /// Koristi se u putnik.dart gde ne možemo async
-  /// MORA SE PRVO POZVATI loadAllVremeVozac() za učitavanje keša!
-  String? getVozacZaVremeSync(String grad, String vreme, String dan) {
-    final normalizedVreme = _normalizeTime(vreme);
-    if (normalizedVreme == null) return null;
-
-    final cacheKey = '$grad|$normalizedVreme|$dan';
-    return _cache[cacheKey];
-  }
-
-  /// 📥 Učitaj sve vreme_vozac zapise u keš
-  /// Poziva se na početku aplikacije i nakon promena
-  Future<void> loadAllVremeVozac() async {
-    try {
-      final response = await _supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime');
-
-      _cache.clear();
-      for (final row in response as List) {
-        final grad = row['grad'] as String;
-        final rawVreme = row['vreme'] as String;
-        final dan = row['dan'] as String;
-        final vozacIme = row['vozac_ime'] as String?;
-
-        final normalizedVreme = _normalizeTime(rawVreme);
-        if (normalizedVreme != null) {
-          final cacheKey = '$grad|$normalizedVreme|$dan';
-          _cache[cacheKey] = vozacIme;
-        }
-      }
-      // print('✅ Učitano ${_cache.length} vreme_vozac zapisa');
-    } catch (e) {
-      // print('⚠️ Greška pri učitavanju vreme_vozac: $e');
     }
   }
 
@@ -107,8 +63,9 @@ class VremeVozacService {
     }
 
     // Validacija
-    if (!VozacBoja.isValidDriver(vozacIme)) {
-      throw Exception('Nevalidan vozač: "$vozacIme". Dozvoljeni: ${VozacBoja.validDrivers.join(", ")}');
+    if (!(VozacBoja.isValidDriverSync(vozacIme))) {
+      final validDrivers = VozacBoja.validDriversSync;
+      throw Exception('Nevalidan vozač: "$vozacIme". Dozvoljeni: ${validDrivers.join(", ")}');
     }
 
     try {
@@ -121,9 +78,9 @@ class VremeVozacService {
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'grad,vreme,dan');
 
-      // Ažuriraj keš
-      final cacheKey = '$grad|$normalizedVreme|$dan';
-      _cache[cacheKey] = vozacIme;
+      // Ažuriraj cache
+      final key = '$grad|$normalizedVreme|$dan';
+      _cache[key] = vozacIme;
 
       // Obavesti listenere
       _changesController.add(null);
@@ -142,9 +99,9 @@ class VremeVozacService {
     try {
       await supabase.from('vreme_vozac').delete().eq('grad', grad).eq('vreme', normalizedVreme).eq('dan', dan);
 
-      // Ažuriraj keš
-      final cacheKey = '$grad|$normalizedVreme|$dan';
-      _cache.remove(cacheKey);
+      // Ažuriraj cache
+      final key = '$grad|$normalizedVreme|$dan';
+      _cache.remove(key);
 
       // Obavesti listenere
       _changesController.add(null);
@@ -153,28 +110,50 @@ class VremeVozacService {
     }
   }
 
-  /// 📋 Dobij sve dodelјene vozače za dan
-  /// Vraća mapu: { "Bela Crkva|18:00": "Ivan", "Vršac|13:00": "Bilevski" }
+  /// 🔍 Dobij vozača za specifično vreme (SYNC verzija)
+  /// [grad] - 'Bela Crkva' ili 'Vršac'
+  /// [vreme] - '18:00', '5:00', itd.
+  /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
+  /// Vraća ime vozača ili null ako nije dodeljen
+  String? getVozacZaVremeSync(String grad, String vreme, String dan) {
+    final normalizedVreme = _normalizeTime(vreme);
+    if (normalizedVreme == null) return null;
+
+    final key = '$grad|$normalizedVreme|$dan';
+    return _cache[key];
+  }
+
+  /// 🔍 Dobij vozače za ceo dan (SYNC verzija)
+  /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
+  /// Vraća mapu 'grad|vreme' -> vozac_ime
   Map<String, String> getVozaciZaDanSync(String dan) {
     final result = <String, String>{};
-    for (final entry in _cache.entries) {
-      final parts = entry.key.split('|');
-      if (parts.length == 3 && parts[2] == dan && entry.value != null) {
-        final displayKey = '${parts[0]}|${parts[1]}'; // "Bela Crkva|18:00"
-        result[displayKey] = entry.value!;
+    _cache.forEach((key, vozac) {
+      final parts = key.split('|');
+      if (parts.length == 3 && parts[2] == dan) {
+        final gradVreme = '${parts[0]}|${parts[1]}';
+        result[gradVreme] = vozac;
       }
-    }
+    });
     return result;
   }
 
-  /// 🧹 Očisti keš (koristi se pri logout-u)
-  void clearCache() {
-    _cache.clear();
-  }
-
-  /// 🔄 Dispose
-  void dispose() {
-    _changesController.close();
+  /// 🔄 Učitaj sve vreme-vozač mapiranja (SYNC verzija)
+  Future<void> loadAllVremeVozac() async {
+    try {
+      final response = await _supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime');
+      _cache.clear();
+      for (final row in response) {
+        final grad = row['grad'] as String;
+        final vreme = row['vreme'] as String;
+        final dan = row['dan'] as String;
+        final vozacIme = row['vozac_ime'] as String;
+        final key = '$grad|$vreme|$dan';
+        _cache[key] = vozacIme;
+      }
+    } catch (e) {
+      // print('⚠️ Greška pri učitavanju vreme_vozac cache: $e');
+    }
   }
 
   /// 🕒 Helper: Normalize time to HH:MM format

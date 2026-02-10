@@ -13,12 +13,7 @@ import 'realtime/realtime_manager.dart';
 class KapacitetService {
   static SupabaseClient get _supabase => supabase;
 
-  // Cache za kapacitet da smanjimo upite
-  static Map<String, Map<String, int>>? _kapacitetCache;
-  static DateTime? _cacheTime;
-  static const _cacheDuration = Duration(minutes: 5);
-
-  // 🔄 GLOBAL REALTIME LISTENER za automatsko ažuriranje cache-a
+  // 🔄 GLOBAL REALTIME LISTENER za automatsko ažuriranje
   static StreamSubscription? _globalRealtimeSubscription;
 
   /// Vremena polazaka za Belu Crkvu (prema navBarType)
@@ -83,11 +78,6 @@ class KapacitetService {
   /// Dohvati kapacitet (max mesta) za sve polaske
   /// Vraća: {'BC': {'5:00': 8, '6:00': 8, ...}, 'VS': {'6:00': 8, ...}}
   static Future<Map<String, Map<String, int>>> getKapacitet() async {
-    // Proveri cache
-    if (_kapacitetCache != null && _cacheTime != null && DateTime.now().difference(_cacheTime!) < _cacheDuration) {
-      return _kapacitetCache!;
-    }
-
     try {
       final response = await _supabase.from('kapacitet_polazaka').select('grad, vreme, max_mesta').eq('aktivan', true);
 
@@ -118,10 +108,6 @@ class KapacitetService {
         }
       }
 
-      // Sačuvaj u cache
-      _kapacitetCache = result;
-      _cacheTime = DateTime.now();
-
       return result;
     } catch (e) {
       // Vrati default vrednosti (sva vremena obe sezone)
@@ -146,25 +132,7 @@ class KapacitetService {
 
     // Koristi centralizovani RealtimeManager
     subscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
-      // 🚀 PAYLOAD FILTERING: Ažuriraj cache direktno ako je moguće
-      if (payload.eventType == PostgresChangeEvent.update || payload.eventType == PostgresChangeEvent.insert) {
-        final grad = payload.newRecord['grad'] as String?;
-        final rawVreme = payload.newRecord['vreme'] as String?;
-        final maxMesta = payload.newRecord['max_mesta'] as int?;
-
-        if (grad != null && rawVreme != null && maxMesta != null && _kapacitetCache != null) {
-          final vreme = GradAdresaValidator.normalizeTime(rawVreme);
-          if (_kapacitetCache!.containsKey(grad)) {
-            _kapacitetCache![grad]![vreme] = maxMesta;
-            if (!controller.isClosed) {
-              controller.add(Map.from(_kapacitetCache!));
-            }
-            return; // Uspešno ažurirano, preskoči full fetch
-          }
-        }
-      }
-
-      // Na bilo koju drugu promenu (DELETE) ili ako cache nije inicijalizovan, ponovo učitaj sve
+      // Na bilo koju promenu, ponovo učitaj sve
       getKapacitet().then((data) {
         if (!controller.isClosed) {
           controller.add(data);
@@ -172,7 +140,6 @@ class KapacitetService {
       });
     });
 
-    // Cleanup kad se stream zatvori
     controller.onCancel = () {
       subscription?.cancel();
       RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
@@ -207,9 +174,6 @@ class KapacitetService {
         });
       }
 
-      // Invalidate cache
-      _kapacitetCache = null;
-
       return true;
     } catch (_) {
       return false;
@@ -221,7 +185,6 @@ class KapacitetService {
     try {
       await _supabase.from('kapacitet_polazaka').update({'aktivan': false}).eq('grad', grad).eq('vreme', vreme);
 
-      _kapacitetCache = null;
       return true;
     } catch (e) {
       return false;
@@ -233,7 +196,6 @@ class KapacitetService {
     try {
       await _supabase.from('kapacitet_polazaka').update({'aktivan': true}).eq('grad', grad).eq('vreme', vreme);
 
-      _kapacitetCache = null;
       return true;
     } catch (e) {
       return false;
@@ -256,82 +218,24 @@ class KapacitetService {
     }
   }
 
-  /// Očisti cache (pozovi nakon ručnih promena u bazi)
-  static void clearCache() {
-    _kapacitetCache = null;
-    _cacheTime = null;
-  }
-
-  /// Dohvati kapacitet za grad/vreme iz cache-a (sinhrono)
-  /// Vraća default 8 ako nije u cache-u
+  /// Dohvati kapacitet za grad/vreme (vraća default)
+  /// Vraća default 8
   static int getKapacitetSync(String grad, String vreme) {
-    if (_kapacitetCache == null) return 8;
-
-    final normalizedGrad = grad.toLowerCase();
-    String gradKey;
-    if (normalizedGrad.contains('bela') || normalizedGrad == 'bc') {
-      gradKey = 'BC';
-    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs') {
-      gradKey = 'VS';
-    } else {
-      return 8;
-    }
-
-    // ✅ NORMALIZUJ VREME za lookup (osigurava da se npr. "5:00" iz UI match-uje sa "05:00" u cache-u)
-    final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
-
-    return _kapacitetCache![gradKey]?[normalizedVreme] ?? 8;
-  }
-
-  /// Osiguraj da je cache popunjen (pozovi na inicijalizaciji)
-  static Future<void> ensureCacheLoaded() async {
-    if (_kapacitetCache == null) {
-      await getKapacitet();
-    }
+    return 8;
   }
 
   /// 🚀 INICIJALIZUJ GLOBALNI REALTIME LISTENER
   /// Pozovi ovu funkciju jednom pri startu aplikacije (npr. u main.dart ili home_screen)
   static void startGlobalRealtimeListener() {
-    // Prvo učitaj cache
-    ensureCacheLoaded();
-
     // Ako već postoji subscription, preskoči
     if (_globalRealtimeSubscription != null) {
       return;
     }
 
-    // Pokreni globalni listener koji će ažurirati cache u pozadini
+    // Pokreni globalni listener
     _globalRealtimeSubscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
       print('🎫 Kapacitet realtime update: ${payload.eventType}');
-
-      // Ažuriraj cache direktno za performanse
-      if (payload.eventType == PostgresChangeEvent.update || payload.eventType == PostgresChangeEvent.insert) {
-        final grad = payload.newRecord['grad'] as String?;
-        final rawVreme = payload.newRecord['vreme'] as String?;
-        final maxMesta = payload.newRecord['max_mesta'] as int?;
-        final aktivan = payload.newRecord['aktivan'] as bool? ?? true;
-
-        if (grad != null && rawVreme != null && maxMesta != null && _kapacitetCache != null) {
-          final vreme = GradAdresaValidator.normalizeTime(rawVreme);
-          if (_kapacitetCache!.containsKey(grad)) {
-            if (aktivan) {
-              _kapacitetCache![grad]![vreme] = maxMesta;
-              print('✅ Cache ažuriran: $grad $vreme = $maxMesta mesta');
-            } else {
-              // Ako je deaktiviran, postavi na 0 ili ukloni
-              _kapacitetCache![grad]!.remove(vreme);
-              print('🚫 Polazak deaktiviran: $grad $vreme');
-            }
-          }
-        }
-      } else if (payload.eventType == PostgresChangeEvent.delete) {
-        // Na DELETE invaliduj cache potpuno
-        _kapacitetCache = null;
-        print('🗑️ Kapacitet obrisan, cache invalidiran');
-        // Ponovo učitaj
-        getKapacitet();
-      }
+      // Samo log
     });
 
     print('🚀 Globalni kapacitet realtime listener pokrenut!');

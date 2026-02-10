@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../services/putnik_service.dart';
 import '../services/seat_request_service.dart';
 import '../services/voznje_log_service.dart';
 import '../theme.dart';
@@ -15,45 +14,16 @@ class AdminZahteviScreen extends StatefulWidget {
 }
 
 class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
-  final Map<String, String> _putnikNamesCache = {};
   final DateFormat _timeFormat = DateFormat('HH:mm');
   final DateFormat _dateFormat = DateFormat('dd.MM.yyyy');
 
   String _activeFilter = 'Sve'; // 'Sve', 'Na čekanju', 'Obrađeno', 'Otkazano'
   String _searchQuery = '';
 
-  /// 📦 Keširanje imena putnika u serijama kako bi se izbeglo "beskonačno učitavanje"
-  Future<void> _precacheNames(List<Map<String, dynamic>> logs) async {
-    final idsToFetch = <String>{};
-    for (var l in logs) {
-      final id = l['putnik_id']?.toString();
-      if (id != null && !_putnikNamesCache.containsKey(id)) {
-        idsToFetch.add(id);
-      }
-    }
-
-    if (idsToFetch.isEmpty) return;
-
-    try {
-      final List<dynamic> response = await PutnikService()
-          .supabase
-          .from('registrovani_putnici')
-          .select('id, putnik_ime') // Fix: column is putnik_ime
-          .inFilter('id', idsToFetch.toList());
-
-      for (var p in response) {
-        _putnikNamesCache[p['id'].toString()] = p['putnik_ime'].toString(); // Fix: column is putnik_ime
-      }
-
-      if (mounted) setState(() {});
-    } catch (e) {
-      debugPrint('❌ Precache error: $e');
-    }
-  }
-
   String _getPutnikNameSync(dynamic id) {
     if (id == null) return 'Sistem/Nepoznato';
-    return _putnikNamesCache[id.toString()] ?? 'Učitavanje...';
+    // Return placeholder
+    return 'Učitavanje...';
   }
 
   @override
@@ -105,11 +75,6 @@ class _AdminZahteviScreenState extends State<AdminZahteviScreen> {
 
                         final activeReqs = activeSnapshot.data ?? [];
                         var logs = snapshot.data ?? [];
-
-                        // Precache names for both
-                        if (activeReqs.isNotEmpty || logs.isNotEmpty) {
-                          _precacheNames([...activeReqs, ...logs]);
-                        }
 
                         // Map active requests to a log-like format for UI consistency
                         final mappedActive = activeReqs

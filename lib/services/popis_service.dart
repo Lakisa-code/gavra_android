@@ -115,7 +115,7 @@ class PopisService {
 
   /// Prikaži popis dialog i vrati true ako korisnik želi da sačuva
   static Future<bool> showPopisDialog(BuildContext context, PopisData data, {bool isAutomatic = false}) async {
-    final vozacColor = VozacBoja.get(data.vozac);
+    final vozacColor = VozacBoja.getSync(data.vozac);
 
     final result = await showDialog<bool>(
       context: context,

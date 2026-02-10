@@ -58,10 +58,6 @@ class _PutnikCardState extends State<PutnikCard> {
   // 🔒 GLOBALNI LOCK - blokira SVE kartice dok jedan putnik nije završen u bazi
   static bool _globalProcessingLock = false;
 
-  // Za brži admin reset
-  int _tapCount = 0;
-  Timer? _tapTimer;
-
   @override
   void initState() {
     super.initState();
@@ -72,7 +68,7 @@ class _PutnikCardState extends State<PutnikCard> {
   void didUpdateWidget(PutnikCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 🔧 FIX: UVEK ažuriraj _putnik kada se widget promeni
-    // Ovo garantuje da realtime promene (pokupljenje, otkazivanje, reset)
+    // Ovo garantuje da realtime promene (pokupljenje, otkazivanje)
     // budu odmah vidljive bez obzira na == operator
     _putnik = widget.putnik;
   }
@@ -1190,35 +1186,7 @@ class _PutnikCardState extends State<PutnikCard> {
   @override
   void dispose() {
     _longPressTimer?.cancel();
-    _tapTimer?.cancel();
     super.dispose();
-  }
-
-  void _handleTap() {
-    _tapCount++;
-
-    // Ako je ovo prvi tap, kreni timer
-    if (_tapCount == 1) {
-      _tapTimer?.cancel();
-      _tapTimer = Timer(const Duration(milliseconds: 500), () {
-        // Ako nismo dobili 3 tap-a za 500ms, resetuj
-        _tapCount = 0;
-      });
-    }
-
-    // Ako smo dobili 3 tap-a
-    if (_tapCount == 3) {
-      _tapTimer?.cancel();
-      _tapCount = 0; // Reset odmah
-
-      // Triple tap - admin reset kartice u početno stanje (ako je admin)
-      final bool isAdmin = widget.currentDriver == 'Bojan' || widget.currentDriver == 'Svetlana';
-      if (isAdmin) {
-        _handleReset();
-      } else {
-        debugPrint('🔒 Triple tap dostupan samo adminu (${widget.currentDriver})');
-      }
-    }
   }
 
   void _startLongPressTimer() {
@@ -1345,7 +1313,6 @@ class _PutnikCardState extends State<PutnikCard> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque, // ✅ FIX: Hvata tap na celoj kartici
-      onTap: _handleTap, // Triple tap za reset kartice u početno stanje
       onLongPressStart: (_) => _startLongPressTimer(),
       onLongPressEnd: (_) => _cancelLongPressTimer(),
       onLongPressCancel: _cancelLongPressTimer,
@@ -1947,7 +1914,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Pokupljen: ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.getColorOrDefault(
+                            color: VozacBoja.getColorOrDefaultSync(
                               _putnik.pokupioVozac ?? _putnik.vozac,
                               Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
@@ -1961,7 +1928,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.getColorOrDefault(
+                            color: VozacBoja.getColorOrDefaultSync(
                               _putnik.naplatioVozac,
                               Colors.green,
                             ),
@@ -1978,7 +1945,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Otkazao: ${_formatOtkazivanje(_putnik.vremeOtkazivanja!)}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.getColorOrDefault(
+                            color: VozacBoja.getColorOrDefaultSync(
                               _putnik.otkazaoVozac,
                               Colors.red,
                             ),
@@ -2346,50 +2313,6 @@ class _PutnikCardState extends State<PutnikCard> {
             SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
           );
         }
-      }
-    }
-  }
-
-  // 🔄 RESETUJ KARTICU U POČETNO STANJE - triple tap
-  Future<void> _handleReset() async {
-    try {
-      await PutnikService().resetPutnikCard(
-        _putnik.ime,
-        widget.currentDriver,
-        selectedVreme: _putnik.polazak,
-        selectedGrad: _putnik.grad,
-        targetDan: _putnik.dan,
-      );
-
-      // 🔄 OSVEŽAVANJE: Učitaj putnika ponovno iz baze nakon resetovanja
-      // Ovo je bitno jer trebamo osvežiti _putnik objekat sa novim podacima
-      try {
-        final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
-        if (updatedPutnik != null && mounted) {
-          setState(() {
-            // Zameni _putnik sa osveženim verzijom iz baze
-            _putnik = updatedPutnik;
-          });
-        }
-      } catch (refreshError) {
-        debugPrint('⚠️ Greška pri osvežavanju putnika: $refreshError');
-        // Fallback: Osvežavanje će doći kroz realtime stream
-      }
-
-      if (widget.onChanged != null) {
-        widget.onChanged!();
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SmartSnackBar.success('${_putnik.ime} resetovan/a u početno stanje', context),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SmartSnackBar.error('Greška pri resetovanju: $e', context),
-        );
       }
     }
   }

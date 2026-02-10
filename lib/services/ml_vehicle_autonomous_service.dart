@@ -32,7 +32,6 @@ class MLVehicleAutonomousService extends ChangeNotifier {
   // 💡 AI Inferences (Biznis otkrića - "Beba" uči ko koga vozi)
   final List<AIInference> _businessInferences = [];
   bool _isMonitoring = false;
-  Timer? _monitoringTimer;
   int _monitoringIntervalMinutes = 30;
   double _dynamicConfidenceThreshold = 0.25; // Beba sama menja ovaj prag (25% početno)
 
@@ -90,7 +89,6 @@ class MLVehicleAutonomousService extends ChangeNotifier {
 
   /// 🛑 STOP ML LAB
   void stop() {
-    _monitoringTimer?.cancel();
     _unsubscribeFromRealtime();
     _isMonitoring = false;
     print('🛑 [ML Lab] Autonomni sistem zaustavljen.');
@@ -568,14 +566,7 @@ class MLVehicleAutonomousService extends ChangeNotifier {
   }
 
   void _restartMonitoringTimer() {
-    // Timer koristimo samo kao backup ili za noćno čišćenje
-    _monitoringTimer?.cancel();
-    _monitoringTimer = Timer.periodic(Duration(minutes: _monitoringIntervalMinutes), (_) {
-      // Ako stream radi, timer ne mora ništa da radi, ali neka stoji kao osigurač
-      if (_vehicleStream == null) {
-        _monitorAndLearn();
-      }
-    });
+    // Tajmer je uklonjen - monitoring se oslanja samo na stream
   }
 
   Future<void> _adaptParameters() async {
@@ -618,10 +609,10 @@ class MLVehicleAutonomousService extends ChangeNotifier {
     final now = DateTime.now();
     var nextRun = DateTime(now.year, now.month, now.day, 2, 0);
     if (now.hour >= 2) nextRun = nextRun.add(const Duration(days: 1));
-    Timer(nextRun.difference(now), () {
-      _autoLearn();
-      _scheduleNightlyAnalysis();
-    });
+    // Timer(nextRun.difference(now), () {
+    //   _autoLearn();
+    //   _scheduleNightlyAnalysis();
+    // });
   }
 
   Future<void> _loadLearnedPatterns() async {

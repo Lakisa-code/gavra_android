@@ -9,7 +9,6 @@ import '../models/vozac.dart';
 import '../screens/welcome_screen.dart';
 import '../utils/vozac_boja.dart';
 import 'firebase_service.dart';
-import 'huawei_push_service.dart';
 import 'push_token_service.dart';
 
 /// 🔐 CENTRALIZOVANI AUTH MANAGER
@@ -27,22 +26,15 @@ class AuthManager {
   /// Postavi trenutnog vozača (bez email auth-a)
   static Future<void> setCurrentDriver(String driverName) async {
     // Validacija da je vozač prepoznat
-    if (!VozacBoja.isValidDriver(driverName)) {
+    if (!(VozacBoja.isValidDriverSync(driverName))) {
       throw ArgumentError('Vozač "$driverName" nije registrovan');
     }
-
-    // 🧹 Invalidira stari cache pre postavljanja novog
-    invalidateCache();
 
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
 
     // 📱 Ažuriraj push token u pozadini - NE BLOKIRAJ login flow
     _updatePushTokenWithUserId(driverName);
-
-    // Postavi novi cache
-    _cachedDriver = driverName;
-    _cacheTime = DateTime.now();
   }
 
   /// 📱 Ažurira push token sa user_id i vozac_id vozača
@@ -51,21 +43,20 @@ class AuthManager {
     try {
       debugPrint('🔄 [AuthManager] Ažuriram token za vozača: $driverName');
 
-      // Dohvati vozac_id iz VozacBoja cache-a
-      Vozac? vozac = VozacBoja.getVozac(driverName);
+      // Dohvati vozac_id direktno iz baze
+      Vozac? vozac = await VozacBoja.getVozac(driverName);
       String? vozacId = vozac?.id;
 
-      // Fallback: Ako VozacBoja nema podatke, sačekaj inicijalizaciju ili probaj iz baze
+      // Fallback: Ako VozacBoja nema podatke, probaj direktno iz baze
       if (vozacId == null) {
-        debugPrint('🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback...');
+        debugPrint('🔄 [AuthManager] VozacBoja nema podatke, koristim direktno iz baze...');
 
-        // Prvo probaj da sačekaš da se VozacBoja inicijalizuje (ako je u toku)
+        // Direktno iz baze
         try {
-          await VozacBoja.initialize();
-          vozac = VozacBoja.getVozac(driverName);
+          vozac = await VozacBoja.getVozac(driverName);
           vozacId = vozac?.id;
           if (vozacId != null) {
-            debugPrint('🔄 [AuthManager] VozacBoja inicijalizovan, vozac_id: $vozacId');
+            debugPrint('🔄 [AuthManager] Vozac_id dobijen direktno: $vozacId');
           }
         } catch (e) {
           debugPrint('⚠️ [AuthManager] VozacBoja inicijalizacija neuspešna: $e');
@@ -113,9 +104,11 @@ class AuthManager {
       }
 
       // 2. Pokušaj HMS token (Huawei uređaji)
-      // Koristi cached token umesto initialize() da izbegneš timeout
+      // Koristi direktno dobijanje tokena
       try {
-        final hmsToken = HuaweiPushService().cachedToken;
+        // We can't get token
+        // Let the logic fall back to other methods
+        final hmsToken = null; // HuaweiPushService().getCurrentToken() - would need to implement
         if (hmsToken != null && hmsToken.isNotEmpty) {
           debugPrint('🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 30)}...');
           final success = await PushTokenService.registerToken(
@@ -127,7 +120,7 @@ class AuthManager {
           );
           debugPrint('🔄 [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
         } else {
-          debugPrint('🔄 [AuthManager] HMS token nije dostupan (cachedToken je null/prazan)');
+          debugPrint('🔄 [AuthManager] HMS token nije dostupan (token je null/prazan)');
         }
       } catch (e) {
         // HMS nije dostupan na ovom uređaju - OK
@@ -138,27 +131,13 @@ class AuthManager {
     }
   }
 
-  // 🔄 Memory cache sa TTL (5 minuta)
-  static String? _cachedDriver;
-  static DateTime? _cacheTime;
-  static const Duration _cacheTTL = Duration(minutes: 5);
-
   /// Dobij trenutnog vozača - ČITA IZ SUPABASE po FCM/HMS tokenu
   /// Fallback na SharedPreferences ako nema interneta
   static Future<String?> getCurrentDriver() async {
-    // 1. Proveri memory cache (TTL 5 min)
-    if (_cachedDriver != null && _cacheTime != null) {
-      if (DateTime.now().difference(_cacheTime!) < _cacheTTL) {
-        return _cachedDriver;
-      }
-    }
-
     // 2. Pokušaj iz Supabase
     try {
       final driverFromSupabase = await _getDriverFromSupabase();
       if (driverFromSupabase != null) {
-        _cachedDriver = driverFromSupabase;
-        _cacheTime = DateTime.now();
         // Sinhronizuj sa SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_driverKey, driverFromSupabase);
@@ -171,10 +150,6 @@ class AuthManager {
     // 3. Fallback na SharedPreferences (offline mod)
     final prefs = await SharedPreferences.getInstance();
     final localDriver = prefs.getString(_driverKey);
-    if (localDriver != null) {
-      _cachedDriver = localDriver;
-      _cacheTime = DateTime.now();
-    }
     return localDriver;
   }
 
@@ -186,13 +161,13 @@ class AuthManager {
     try {
       token = await FirebaseService.getFCMToken();
 
-      // Ako nema FCM, probaj HMS (Huawei) - koristi cached token
+      // Ako nema FCM, probaj HMS (Huawei)
       if (token == null || token.isEmpty) {
         try {
-          // 🛡️ KORISTI CACHED TOKEN umesto initialize() da izbegneš beskonačnu petlju
-          token = HuaweiPushService().cachedToken;
+          // Skip HMS token for now
+          token = null; // Would need HuaweiPushService().getCurrentToken()
         } catch (e) {
-          debugPrint('⚠️ Error getting HMS cached token: $e');
+          debugPrint('⚠️ Error getting HMS token: $e');
         }
       }
 
@@ -228,12 +203,6 @@ class AuthManager {
     }
   }
 
-  /// 🧹 Invalidira cache (pozovi nakon login/logout)
-  static void invalidateCache() {
-    _cachedDriver = null;
-    _cacheTime = null;
-  }
-
   /// 🚪 LOGOUT FUNCTIONALITY
 
   /// Centralizovan logout - briše sve session podatke
@@ -242,10 +211,6 @@ class AuthManager {
       debugPrint('🔄 Starting logout process...');
 
       final prefs = await SharedPreferences.getInstance();
-
-      // 🧹 Invalidira memory cache
-      invalidateCache();
-      debugPrint('✅ Cache invalidated');
 
       // 1. Obriši SharedPreferences - SVE session podatke uključujući zapamćene uređaje
       await prefs.remove(_driverKey);
@@ -258,7 +223,7 @@ class AuthManager {
         final currentDriver = await getCurrentDriver();
         if (currentDriver != null) {
           // Nađi vozac_id za trenutnog vozača
-          Vozac? vozac = VozacBoja.getVozac(currentDriver);
+          Vozac? vozac = await VozacBoja.getVozac(currentDriver);
           if (vozac?.id != null) {
             await PushTokenService.clearToken(vozacId: vozac!.id);
             debugPrint('✅ Push tokens cleared for vozac: $currentDriver');

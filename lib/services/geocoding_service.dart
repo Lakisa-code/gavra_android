@@ -2,13 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'cache_service.dart';
 
 class GeocodingService {
   static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
-  static const String _cachePrefix = 'geocoding_';
 
   // 🚀 BATCH PROCESSING VARIABLES
   static final Map<String, Completer<String?>> _pendingRequests = {};
@@ -42,31 +38,7 @@ class GeocodingService {
       _pendingRequests[requestKey] = completer;
       _processingRequests.add(requestKey);
 
-      final cacheKey = CacheKeys.geocoding(requestKey);
-
-      // 1. Prvo proveri memory cache (najbrži)
-      final memoryCached = CacheService.getFromMemory<String>(
-        cacheKey,
-        maxAge: const Duration(hours: 6), // Koordinate se retko menjaju
-      );
-      if (memoryCached != null) {
-        _completeRequest(requestKey, memoryCached);
-        return memoryCached;
-      }
-
-      // 2. Proveri disk cache
-      final diskCached = await CacheService.getFromDisk<String>(
-        cacheKey,
-        maxAge: const Duration(days: 7), // Koordinate su stabilne
-      );
-      if (diskCached != null) {
-        // Sacuvaj u memory za sledeći put
-        CacheService.saveToMemory(cacheKey, diskCached);
-        _completeRequest(requestKey, diskCached);
-        return diskCached;
-      }
-
-      // 3. Pozovi API (Photon -> Nominatim fallback)
+      // 1. Idi direktno na API
       try {
         // PRIMARNO: Photon (Komoot)
         // Bolji za fuzzy pretragu ("Šipad", "Pumpa"...)
@@ -77,8 +49,6 @@ class GeocodingService {
         coords ??= await _fetchFromNominatim(grad, adresa);
 
         if (coords != null) {
-          CacheService.saveToMemory(cacheKey, coords);
-          await CacheService.saveToDisk(cacheKey, coords);
           _completeRequest(requestKey, coords);
         } else {
           _completeRequest(requestKey, null);
@@ -180,29 +150,6 @@ class GeocodingService {
       // Silently ignore errors
     }
     return null;
-  }
-
-  // Obriši cache (za admin)
-  static Future<void> clearCache() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys().where((key) => key.startsWith(_cachePrefix));
-      for (final key in keys) {
-        await prefs.remove(key);
-      }
-    } catch (e) {
-      // 🔇 Ignore
-    }
-  }
-
-  /// Prebroji cache entries
-  static Future<int> getCacheCount() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getKeys().where((key) => key.startsWith(_cachePrefix)).length;
-    } catch (e) {
-      return 0;
-    }
   }
 
   /// 🚫 PROVERI DA LI JE GRAD VAN DOZVOLJENE RELACIJE

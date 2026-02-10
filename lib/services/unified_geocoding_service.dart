@@ -12,7 +12,6 @@ import 'package:geolocator/geolocator.dart';
 import '../config/route_config.dart';
 import '../models/putnik.dart';
 import 'adresa_supabase_service.dart';
-import 'cache_service.dart';
 import 'geocoding_service.dart';
 
 /// Callback za praćenje progresa geocodinga
@@ -33,7 +32,7 @@ class GeocodingResult {
 
   final Putnik putnik;
   final Position? position;
-  final String? source; // 'database', 'memory_cache', 'disk_cache', 'nominatim'
+  final String? source; // 'database', 'nominatim'
   final String? error;
 
   bool get success => position != null;
@@ -117,36 +116,7 @@ class UnifiedGeocodingService {
         }
       }
 
-      // PRIORITET 2: Memory cache
-      if (position == null) {
-        final cacheKey = _getCacheKey(putnik);
-        final memoryCached = CacheService.getFromMemory<String>(
-          cacheKey,
-          maxAge: RouteConfig.geocodingMemoryCacheDuration,
-        );
-        if (memoryCached != null) {
-          position = _parsePosition(memoryCached);
-          if (position != null) source = 'memory_cache';
-        }
-      }
-
-      // PRIORITET 3: Disk cache
-      if (position == null) {
-        final cacheKey = _getCacheKey(putnik);
-        final diskCached = await CacheService.getFromDisk<String>(
-          cacheKey,
-          maxAge: RouteConfig.geocodingDiskCacheDuration,
-        );
-        if (diskCached != null) {
-          position = _parsePosition(diskCached);
-          if (position != null) {
-            source = 'disk_cache';
-            CacheService.saveToMemory(cacheKey, diskCached);
-          }
-        }
-      }
-
-      // PRIORITET 4: Nominatim API
+      // PRIORITET 3: Nominatim API
       if (position == null) {
         final addressToGeocode = realAddressName ?? putnik.adresa!;
         final coordsString = await GeocodingService.getKoordinateZaAdresu(
@@ -158,10 +128,6 @@ class UnifiedGeocodingService {
           position = _parsePosition(coordsString);
           if (position != null) {
             source = 'nominatim';
-
-            final cacheKey = _getCacheKey(putnik);
-            CacheService.saveToMemory(cacheKey, coordsString);
-            await CacheService.saveToDisk(cacheKey, coordsString);
 
             if (saveToDatabase) {
               await _saveCoordinatesToDatabase(
@@ -207,11 +173,6 @@ class UnifiedGeocodingService {
       return false;
     }
     return true;
-  }
-
-  /// Generiši cache key za putnika
-  static String _getCacheKey(Putnik putnik) {
-    return CacheKeys.geocoding('${putnik.grad}_${putnik.adresa}');
   }
 
   /// Parsiraj koordinate iz stringa "lat,lng"
@@ -320,8 +281,6 @@ class UnifiedGeocodingService {
       'success': 0,
       'failed': 0,
       'from_database': 0,
-      'from_memory_cache': 0,
-      'from_disk_cache': 0,
       'from_nominatim': 0,
     };
 
@@ -331,12 +290,6 @@ class UnifiedGeocodingService {
         switch (result.source) {
           case 'database':
             stats['from_database'] = stats['from_database']! + 1;
-            break;
-          case 'memory_cache':
-            stats['from_memory_cache'] = stats['from_memory_cache']! + 1;
-            break;
-          case 'disk_cache':
-            stats['from_disk_cache'] = stats['from_disk_cache']! + 1;
             break;
           case 'nominatim':
             stats['from_nominatim'] = stats['from_nominatim']! + 1;
