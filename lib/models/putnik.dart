@@ -440,6 +440,12 @@ class Putnik {
       // ?? Ako je otkazan bez polaska, koristi placeholder
       final efectivePolazakBC = polazakBC ?? 'Otkazano';
 
+      // 🔧 FIX: Ako je više mjesta, cena bi trebala biti PO MJESTU, ne ukupan iznos
+      final brojMestaBC = RegistrovaniHelpers.getBrojMestaForDay(map, normalizedTarget, 'bc');
+      final cenaBC = iznosPlacanjaBC != null && brojMestaBC > 1 
+        ? iznosPlacanjaBC / brojMestaBC 
+        : (iznosPlacanjaBC ?? iznosPlacanja);
+
       putnici.add(
         Putnik(
           id: map['id'], // ? Direktno proslijedi ID bez parsiranja
@@ -454,7 +460,7 @@ class Putnik {
           vremePokupljenja: vremePokupljenjaBC, // ? NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaBC, // ? FIX: Citaj iz JSON-a za BC
           placeno: (iznosPlacanjaBC ?? 0) > 0, // ? FIX: placeno ako ima iznos
-          cena: iznosPlacanjaBC ?? iznosPlacanja, // ? FIX: citaj iz JSON-a
+          cena: cenaBC, // 🔧 FIX: Koristi cenu po mjestu, ne ukupan iznos
           // ? NOVO: Citaj naplatioVozac iz polasci_po_danu
           naplatioVozac: naplatioVozacBC ?? _getVozacIme(map['vozac_id'] as String?),
           // ? NOVO: Citaj pokupioVozac iz polasci_po_danu
@@ -497,6 +503,12 @@ class Putnik {
       // ?? Ako je otkazan bez polaska, koristi placeholder
       final efectivePolazakVS = polazakVS ?? 'Otkazano';
 
+      // 🔧 FIX: Ako je više mjesta, cena bi trebala biti PO MJESTU, ne ukupan iznos
+      final brojMestaVS = RegistrovaniHelpers.getBrojMestaForDay(map, normalizedTarget, 'vs');
+      final cenaVS = iznosPlacanjaVS != null && brojMestaVS > 1 
+        ? iznosPlacanjaVS / brojMestaVS 
+        : (iznosPlacanjaVS ?? iznosPlacanja);
+
       putnici.add(
         Putnik(
           id: map['id'], // ? Direktno proslijedi ID bez parsiranja
@@ -511,7 +523,7 @@ class Putnik {
           vremePokupljenja: vremePokupljenjaVS, // ? NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaVS, // ? FIX: Citaj iz JSON-a za VS
           placeno: (iznosPlacanjaVS ?? 0) > 0, // ? FIX: placeno ako ima iznos
-          cena: iznosPlacanjaVS ?? iznosPlacanja, // ? FIX: citaj iz JSON-a
+          cena: cenaVS, // 🔧 FIX: Koristi cenu po mjestu, ne ukupan iznos
           // ? NOVO: Citaj naplatioVozac iz polasci_po_danu
           naplatioVozac: naplatioVozacVS ?? _getVozacIme(map['vozac_id'] as String?),
           // ? NOVO: Citaj pokupioVozac iz polasci_po_danu
