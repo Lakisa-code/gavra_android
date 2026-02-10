@@ -85,6 +85,11 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   Set<String> _lastPutnikIds = {};
   Timer? _paymentUpdateDebounceTimer; // ⏱️ DEBOUNCE TIMER za payment updates
 
+  // 📊 BROJANJE PUTNIKA PO TIPU
+  int _brojRadnika = 0;
+  int _brojUcenika = 0;
+  int _brojDnevnih = 0;
+
   @override
   void initState() {
     super.initState();
@@ -365,6 +370,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Filter za radnike sa brojem
                     Stack(
@@ -418,7 +424,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                               minHeight: 24,
                             ),
                             child: Text(
-                              '0', // Count not available
+                              _brojRadnika.toString(),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -482,7 +488,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                               minHeight: 24,
                             ),
                             child: Text(
-                              '0', // Count not available
+                              _brojUcenika.toString(),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -546,7 +552,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                               minHeight: 24,
                             ),
                             child: Text(
-                              '0', // Count not available
+                              _brojDnevnih.toString(),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -655,6 +661,23 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   }
 
                   final sviPutnici = snapshot.data ?? [];
+
+                  // 📊 PREBROJAVANJE PUTNIKA PO TIPU
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      final radnika = sviPutnici.where((p) => p.tip == 'radnik').length;
+                      final ucenika = sviPutnici.where((p) => p.tip == 'ucenik').length;
+                      final dnevnih = sviPutnici.where((p) => p.tip == 'dnevni' || p.tip == 'posiljka').length;
+
+                      if (_brojRadnika != radnika || _brojUcenika != ucenika || _brojDnevnih != dnevnih) {
+                        setState(() {
+                          _brojRadnika = radnika;
+                          _brojUcenika = ucenika;
+                          _brojDnevnih = dnevnih;
+                        });
+                      }
+                    }
+                  });
 
                   // Filtriraj lokalno
                   final filteredPutnici = _filterPutniciDirect(
