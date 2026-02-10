@@ -45,38 +45,70 @@
 
 ---
 
-## 🔑 Phase 2: Secrets Management
+## 🔑 Phase 2: Secrets Management & Rotation
 
-**Status**: ⏳ PENDING
+**Status**: 🚨 CRITICAL - EXPOSED SECRETS DETECTED
 
-### 2.1 Create `.env.example` (template)
-- [ ] Create `.env.example` with placeholder values
-- [ ] Add to git (for documentation)
-- [ ] Example structure:
+### ⚠️ SECURITY INCIDENT
+- `.env` fajl je bio commitovan sa svim tajnama
+- Sve tajne su sada vidljive u GitHub istoriji
+- **SVEĆE SE MORAJU ROTIRATI** (novi ključevi generisati)
+
+### 2.1 ✅ COMPLETED - `.env.example` kreiran
+- [x] `.env.example` sa template vrednostima
+- [x] Dodano u git za dokumentaciju
+- [x] Bez tajnih ključeva
+
+### 2.2 🚨 URGENT - Revokuj ekspozirane ključeve
+
+**SUPABASE** (https://supabase.com/dashboard)
+- [ ] Idi u: Settings → API → Service Role Secret
+- [ ] Obriši stari: `sb_secret_KjG-h8DIdo5v2WgIxnDyWw_9By0UDcA`
+- [ ] Generiši novi
+- [ ] Kopiraj u lokalnu `.env`
+
+**GOOGLE CLOUD / PLAY STORE** (https://console.cloud.google.com)
+- [ ] Idi u: APIs & Services → Credentials
+- [ ] Obriši stari Service Account key sa JSON-om
+- [ ] Kreiraj novi
+- [ ] Download i kopiraj u lokalnu `.env`
+
+**HUAWEI** (https://developer.huawei.com/consumer/en/service/josp/agc/index.html)
+- [ ] Idi u: AppGallery Connect → Project → Project Settings
+- [ ] Obriši stari CLIENT_SECRET
+- [ ] Generiši novi
+- [ ] Kopiraj u lokalnu `.env`
+
+**APP STORE** (https://appstoreconnect.apple.com)
+- [ ] Idi u: Users and Access → Integrations
+- [ ] Obriši stari App Store Connect API key
+- [ ] Generiši novi
+- [ ] Kopiraj u lokalnu `.env`
+
+**GITHUB TOKEN** (https://github.com/settings/tokens)
+- [ ] Obriši stari GitHub token
+- [ ] Generiši novi sa istim dozvolama
+- [ ] Kopiraj u lokalnu `.env`
+
+**MessageBird** (https://dashboard.messagebird.com)
+- [ ] Obriši stari API key
+- [ ] Generiši novi
+- [ ] Kopiraj u lokalnu `.env`
+
+### 2.3 Ažuriraj lokalnu `.env`
+Posle što generiš sve nove ključeve:
+```bash
+# Copy from .env.example
+cp .env.example .env
+
+# Edit .env i ispuni sve nove vrednosti
+# VAŽNO: .env je u .gitignore - nikada se ne commituje!
 ```
-# Supabase
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_KEY=your-service-key-here
 
-# Google Cloud
-GOOGLE_API_KEY=your-google-api-key-here
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-
-# MessageBird
-MESSAGEBIRD_API_KEY=your-messagebird-key-here
-```
-
-### 2.2 Organize local secrets
-- [ ] Create local `.env` file (NEVER commit)
-- [ ] Store in: `c:\Users\Bojan\gavra_android\.env`
-- [ ] Ensure `.gitignore` includes: `.env`
-
-### 2.3 Update all `.env.local` or environment-specific files
-- [ ] appstore-mcp/.env (local only)
-- [ ] google-play-mcp/.env (local only)
-- [ ] github-mcp/.env (local only)
-- [ ] huawei-appgallery-mcp/.env (local only)
+### 2.4 ✅ Verifikuj `.gitignore`
+- [x] `.env` je u `.gitignore` ✓
+- [x] `.env.example` je vidljiv (bez tajni) ✓
+- [x] Svi drugi secret fajlovi su ignorirani ✓
 
 ---
 
@@ -214,5 +246,20 @@ git config user.email
 
 ---
 
-**Last Updated**: February 10, 2026, 15:45
-**Status**: 🟢 PHASE 1 COMPLETE - READY FOR PHASE 2
+**Last Updated**: February 10, 2026, 16:00
+**Status**: 🚨 PHASE 2 - SECRETS EXPOSED, NEED ROTATION
+
+---
+
+## 📋 Quick Action List
+
+**DO IMMEDIATELY** (Next 24 hours):
+1. [ ] Revokuješ sve ključeve iz starog `.env` (vidim sve gore)
+2. [ ] Generiši nove ključeve
+3. [ ] Ispuniš novi `.env` (lokalno, ne commituj)
+4. [ ] Testiraj app sa novim ključevima
+
+**Ja mogu da pomognem sa:**
+- [ ] Kreiranjem skripti za brže ažuriranje
+- [ ] Testing novog `.env` okruženja
+- [ ] Setup-om pre-commit hooks (Phase 3)
