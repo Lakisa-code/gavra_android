@@ -7,10 +7,12 @@ import '../services/vozac_service.dart';
 /// VozacBoja - Centralizovana logika boja za vozače
 ///
 /// Ova klasa sada učitava boje direktno iz baze podataka
-/// za svaki poziv, sa fallback-om na hardkodovane vrednosti.
+/// sa cache mehanizmom koji se inicijalizuje asinkrono.
 ///
 /// ## Korišćenje:
-/// Svi metodi su sada async i vraćaju sveže podatke iz baze.
+/// 1. Async metodi vraćaju sveže podatke iz baze
+/// 2. Sync metodi koriste cache (inicijalizovan pri startu)
+/// 3. Cache se ažurira automatski
 class VozacBoja {
   // ═══════════════════════════════════════════════════════════════════════════
   // FALLBACK KONSTANTE (koriste se ako baza nije dostupna)
@@ -26,7 +28,58 @@ class VozacBoja {
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // JAVNI API (direktno iz baze)
+  // CACHE MEHANIZAM - za sinkronu upotrebu nakon inicijalizacije
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Cache boja učitanih iz baze
+  static Map<String, Color> _cachedBoje = _fallbackBoje;
+
+  /// Cache vozača učitanih iz baze
+  static List<Vozac> _cachedVozaci = [];
+
+  /// Da li je cache inicijalizovan
+  static bool _isInitialized = false;
+
+  /// Inicijalizuj cache pri startu aplikacije
+  static Future<void> initialize() async {
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+
+      final Map<String, Color> result = {};
+
+      for (var vozac in vozaci) {
+        // Koristi boju iz baze ako postoji, inače fallback
+        if (vozac.color != null) {
+          result[vozac.ime] = vozac.color!;
+        } else if (_fallbackBoje.containsKey(vozac.ime)) {
+          result[vozac.ime] = _fallbackBoje[vozac.ime]!;
+        }
+      }
+
+      // Dodaj fallback boje za vozače koji nisu u bazi
+      for (var entry in _fallbackBoje.entries) {
+        result.putIfAbsent(entry.key, () => entry.value);
+      }
+
+      _cachedBoje = Map.unmodifiable(result);
+      _cachedVozaci = vozaci;
+      _isInitialized = true;
+
+      if (kDebugMode) {
+        debugPrint('✅ [VozacBoja] Cache initialized with ${vozaci.length} drivers from database');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [VozacBoja] Cache initialization failed: $e, using fallback');
+      }
+      _cachedBoje = _fallbackBoje;
+      _isInitialized = true;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // JAVNI API - ASYNC (direktno iz baze)
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// Vraća mapu svih boja (dinamičke + fallback) - uvek sveže iz baze
@@ -114,35 +167,39 @@ class VozacBoja {
     return defaultColor;
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // JAVNI API - SYNC (koristi cache, inicijalizovan pri startu)
+  // ═══════════════════════════════════════════════════════════════════════════
+
   /// Vraća boju za vozača - baca grešku ako vozač nije validan (SYNC verzija)
   static Color getSync(String? ime) {
-    if (ime != null && _fallbackBoje.containsKey(ime)) {
-      return _fallbackBoje[ime]!;
+    if (ime != null && _cachedBoje.containsKey(ime)) {
+      return _cachedBoje[ime]!;
     }
-    throw ArgumentError('Vozač "$ime" nije registrovan. Validni vozači: ${_fallbackBoje.keys.join(", ")}');
+    throw ArgumentError('Vozač "$ime" nije registrovan. Validni vozači: ${_cachedBoje.keys.join(", ")}');
   }
 
   /// Proverava da li je vozač prepoznat/valjan (SYNC verzija)
   static bool isValidDriverSync(String? ime) {
     if (ime == null) return false;
-    return _fallbackBoje.containsKey(ime);
+    return _cachedBoje.containsKey(ime);
   }
 
   /// Vraća boju vozača ili default boju ako vozač nije registrovan (SYNC verzija)
   static Color getColorOrDefaultSync(String? ime, Color defaultColor) {
     if (ime == null || ime.isEmpty) return defaultColor;
-    return _fallbackBoje[ime] ?? defaultColor;
+    return _cachedBoje[ime] ?? defaultColor;
   }
 
   /// Lista svih validnih vozača (SYNC verzija)
-  static List<String> get validDriversSync => _fallbackBoje.keys.toList();
+  static List<String> get validDriversSync => _cachedBoje.keys.toList();
 
-  /// Vraća mapu boja (SYNC verzija - samo fallback)
-  static Map<String, Color> get bojeSync => _fallbackBoje;
+  /// Vraća mapu boja (SYNC verzija - iz cache-a)
+  static Map<String, Color> get bojeSync => _cachedBoje;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // EMAIL I TELEFON VALIDACIJA (ostaje hardkodovano za sada)
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
 
   // DOZVOLJENI EMAIL ADRESE ZA VOZAČE - STRIKTNO!
   static const Map<String, String> dozvoljenEmails = {

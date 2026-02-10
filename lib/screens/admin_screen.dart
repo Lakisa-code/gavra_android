@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import '../globals.dart';
 import '../models/putnik.dart';
@@ -13,6 +14,7 @@ import '../services/slobodna_mesta_service.dart'; // 🚢 SMART TRANZIT
 import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
 import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
+import '../services/vozac_service.dart'; // 🚗 VOZAČ SERVIS
 import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
@@ -105,53 +107,75 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   /// 🚗 VOZAČ PICKER DIALOG - Admin može da vidi ekran bilo kog vozača
-  void _showVozacPickerDialog(BuildContext context) {
-    final vozaci = VozacBoja.validDriversSync;
-
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Izaberi vozača'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: vozaci.length,
-              itemBuilder: (context, index) {
-                final vozac = vozaci[index];
-                final boja = VozacBoja.getSync(vozac);
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: boja,
-                    child: Text(
-                      vozac[0].toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  title: Text(vozac),
-                  onTap: () {
-                    Navigator.of(dialogContext).pop();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (context) => VozacScreen(previewAsDriver: vozac),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Otkaži'),
-            ),
-          ],
+  void _showVozacPickerDialog(BuildContext context) async {
+    // Asinkrono učitaj vozače iz baze umesto fallback vrednosti
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      
+      if (!mounted) return;
+      
+      if (vozaci.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Nema učitanih vozača')),
         );
-      },
-    );
+        return;
+      }
+
+      if (!mounted) return;
+      
+      showDialog<void>(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Izaberi vozača'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: vozaci.length,
+                itemBuilder: (context, index) {
+                  final vozac = vozaci[index];
+                  final boja = vozac.color ?? Color(0xFFBDBDBD); // Gray fallback
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: boja,
+                      child: Text(
+                        vozac.ime[0].toUpperCase(),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    title: Text(vozac.ime),
+                    subtitle: Text(vozac.email ?? ''),
+                    onTap: () {
+                      Navigator.of(dialogContext).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) => VozacScreen(previewAsDriver: vozac.ime),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Otkaži'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Error loading drivers: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ Greška pri učitavanju vozača')),
+      );
+    }
   }
 
   void _loadCurrentDriver() async {

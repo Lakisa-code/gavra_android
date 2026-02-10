@@ -32,6 +32,7 @@ import 'services/voznje_log_service.dart';
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
+import 'utils/vozac_boja.dart'; // 🎨 VOZAČ BOJE - cache mehanizam
 
 // 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
 extension ColorCompat on Color {
@@ -158,7 +159,7 @@ Future<void> _initAppServices() async {
 
   final services = [
     VozacMappingService.initialize(),
-    // VozacBoja.initialize(), // Uklonjeno - VozacBoja je sada sync
+    VozacBoja.initialize(), // 🎨 Inicijalizuj cache vozača i boja
     AppSettingsService.initialize(),
   ];
 
