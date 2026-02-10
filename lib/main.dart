@@ -157,8 +157,16 @@ Future<void> _initAppServices() async {
   // Sada nije potrebna provera - Supabase je već inicijalizovan u main() liniji 69
   if (kDebugMode) debugPrint('⚙️ [Main] Starting app services...');
 
+  // 🚗 PRVO - Inicijalizuj vozač mapiranje (MORA biti pre stream-ova!)
+  try {
+    await VozacMappingService.initialize();
+    if (kDebugMode) debugPrint('✅ [Main] VozacMappingService initialized');
+  } catch (e) {
+    if (kDebugMode) debugPrint('❌ [Main] VozacMappingService init failed: $e');
+  }
+
+  // Ostali servisi se mogu pokrenuti paralelno
   final services = [
-    VozacMappingService.initialize(),
     VozacBoja.initialize(), // 🎨 Inicijalizuj cache vozača i boja
     AppSettingsService.initialize(),
   ];

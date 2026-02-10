@@ -454,12 +454,15 @@ class VoznjeLogService {
     final fromStr = from.toIso8601String().split('T')[0];
     final toStr = to.toIso8601String().split('T')[0];
 
-    // ✅ FIX: Filtriraj stream direktno da ne probijemo limit od 100 redova
+    // ✅ FIX: Filtriraj stream UVEK po datumu - koristi filter za range
     Stream<List<Map<String, dynamic>>> query;
     if (fromStr == toStr) {
+      // Isti dan - koristi eq filter
       query = _supabase.from('voznje_log').stream(primaryKey: ['id']).eq('datum', fromStr).limit(500);
     } else {
-      query = _supabase.from('voznje_log').stream(primaryKey: ['id']).order('created_at', ascending: false).limit(500);
+      // Različiti dani - učitaj sve i filtriraj u kodu
+      // NOTE: Supabase stream ne podržava gte/lte, trebajmo filter u map()
+      query = _supabase.from('voznje_log').stream(primaryKey: ['id']).order('datum', ascending: false).limit(500);
     }
 
     return query.map((records) {
