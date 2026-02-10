@@ -1388,8 +1388,24 @@ class _VozacScreenState extends State<VozacScreen> {
                     return gradMatch && vremeMatch;
                   }).toList();
 
-                  final putnici =
-                      _isRouteOptimized && _optimizedRoute.isNotEmpty ? _optimizedRoute : filteredByGradVreme;
+                  // 🔧 FIX: Uvek koristi `filteredByGradVreme` kao izvor istine (iz streama)
+                  // Ako je ruta optimizovana, sortiraj po redosledu iz `_optimizedRoute`
+                  List<Putnik> putnici = filteredByGradVreme;
+                  
+                  if (_isRouteOptimized && _optimizedRoute.isNotEmpty) {
+                    // Sortiraj filteredByGradVreme prema redosledu u _optimizedRoute
+                    final optimizedOrder = <dynamic, int>{};
+                    
+                    for (int i = 0; i < _optimizedRoute.length; i++) {
+                      optimizedOrder[_optimizedRoute[i].id] = i;
+                    }
+                    
+                    putnici.sort((a, b) {
+                      final aIndex = optimizedOrder[a.id] ?? 999;
+                      final bIndex = optimizedOrder[b.id] ?? 999;
+                      return aIndex.compareTo(bIndex);
+                    });
+                  }
 
                   return Column(
                     children: [

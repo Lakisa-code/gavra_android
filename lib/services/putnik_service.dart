@@ -1260,38 +1260,12 @@ class PutnikService {
         }).eq('id', id.toString());
 
         try {
-          // ?? Izracunaj koliko sati pre polaska je otkazano
-          int? satiPrePolaska;
-          try {
-            final vremePolaskaStr = selectedVreme ?? respMap['vreme_polaska'] as String? ?? '';
-            if (vremePolaskaStr.isNotEmpty && vremePolaskaStr.contains(':')) {
-              final parts = vremePolaskaStr.split(':');
-              final sat = int.tryParse(parts[0]) ?? 0;
-              final minut = int.tryParse(parts[1]) ?? 0;
-
-              // Izracunaj datum polaska iz dana
-              final targetWeekday =
-                  {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7}[danKratica] ?? now.weekday;
-              var polazakDatum = DateTime(now.year, now.month, now.day, sat, minut);
-
-              // Ako je drugi dan u nedelji, pomeri datum
-              int daysToAdd = targetWeekday - now.weekday;
-              if (daysToAdd < 0) daysToAdd += 7;
-              polazakDatum = polazakDatum.add(Duration(days: daysToAdd));
-
-              final razlika = polazakDatum.difference(now);
-              satiPrePolaska = razlika.inHours;
-              if (satiPrePolaska < 0) satiPrePolaska = 0;
-            }
-          } catch (_) {}
-
           await supabase.from('voznje_log').insert({
             'putnik_id': id.toString(),
             'datum': danas,
             'tip': 'otkazivanje',
             'iznos': 0,
             'vozac_id': vozacUuid,
-            'sati_pre_polaska': satiPrePolaska,
           });
         } catch (logError) {
           // Log insert not critical

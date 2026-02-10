@@ -366,30 +366,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    // Dugme za refresh
-                    IconButton(
-                      icon: const Icon(
-                        Icons.refresh,
-                        color: Colors.white70,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(1, 1),
-                            blurRadius: 3,
-                            color: Colors.black54,
-                          ),
-                        ],
-                      ),
-                      onPressed: () async {
-                        // Force refresh plaćanja
-                        final currentPutnici = await RegistrovaniPutnikService().getAktivniregistrovaniPutnici();
-                        if (currentPutnici.isNotEmpty) {
-                          await _ucitajSvePodatke(currentPutnici);
-                        }
-                        setState(() {}); // Force rebuild
-                      },
-                      tooltip: 'Osveži listu putnika',
-                    ),
-                    const SizedBox(width: 8),
                     // Filter za radnike sa brojem
                     Stack(
                       children: [
