@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "gavra-notif-20250920162521",
+  "private_key_id": "a00945c419378accf11d57770f75edaa6d4938bf",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCmU9Dm5FgX661m\nmFpQiU9E14p/Xdn6Coy3y/MNjUH4iULdEY1QH82KafxWgZ1JH52Ah2gExuEEFA35\nyhO1hmsJa+AtU06FtBvNHgSey0QyS6zC3cbO6QwejubQwzxtnJow/zt5fndxAaEV\nyKcap1sFQyevSqj3+jCkHcoeCE1tXI2QKDxFoAWG2xVJdLaED7XHTTdBb8sPGem2\ns4Ceh0oZkQBndMDuWwEebq4zAgxsL+PXJJnH3xCsN3CubJ6aLcf07Fg2LXqnIMRW\nO3ShI6NFU1jCHpxAkdVPeQX70/SndEQgUkfPcVc5RTIJ6DRRKcFNG9EWgx9iABr4\n+4U6VfUjAgMBAAECggEAJ3DDniSygQWZSjVBYUyWF/B2fopOOH0M7j52BZYj+R/v\nU4WoeUH5VuOX+xlkJyVQj1xMfal9TR7GS5+v+cEEm6jRcV4KRik12HdQSClSJA0O\ny+yUCpd3kL15HTLWnvVeGNVFEKO9BfaJcKVyfp8FteM9Q1NUau0QYLJRrbpxRcel\nFe/x7v/XNvtzZwo+h1nXIdQLNcoquoZ03vJiuGMvgLZfwhSr+hb+zFjd9CGIraq0\n5V1Hz1yRrZLh01RjdFl+vNpN4t5xnQ08nWByU17ggoT2QhlDqwq6TUCksLoiLhrP\n/ubbeTq+s8BkGq9ClvBTlmvef/bGwRHmMUREapEcfQKBgQDcPTamciGhCNzpi3IK\nfA9XArRRthBrvCFF9+q9jNqL4x2YtO4nL2kWm5zpQdqZ549rEEf9mhLN4BNqUKKL\nec0uTkokAUBgxo2r0M6LRGmRUt65P1Qt+/KE0C8B5gsYwzM8Zh3wKauKyKlDcmBE\nG9dBwwNZkkj/xsCwzCYmanBA1QKBgQDBVaDYNJLGQ0nM+x+IHkzH55dnu+Vji9mK\nR4og6WZOUA1QSBglx362n5ZBXP7PthS4qIPy9O9OiDq8E9aQmzWx0cajclc0W5kb\nEH1/I3aKaIKpbTw/Q+pq9ijqCxR67VbMNv2SSDXM3CkNEvls1Qe8Eu4THaUDg51S\n0EWZNkCaFwKBgB9KNxx4tJxrZO9tV1tz+r3y7Wl6g2S7CsMlEN2zSE19i/PpKLi6\nfKSwoR9msscQ5ghg/Mlj/W3wevGs2RsVx/ffOZtZ7iqRqwkRFnck1hbGfkw1WiFa\nXT9PUI5lf4gaG4pmO7SmRu/lyF6DvneOuQtnyG8OYH6uXyv/JSBqGN6tAoGATn5l\nf2JY9QX8wKx0cN9cbQ0p+4Pd7jypZesFubcJQmJeBWo/45bLa3n/lyoailpyr0Y7\nzDiFsGy+6/1h7/QUKM3yyAl0Pl2yG7rmOOg9CJTF9+PRwh3g3uxyUBOPjRkvVFo/\nOVT4AuSgBh7eBcG4EjPdVQWEKZkWFrlYiIvuTqECgYBKLMLE450OTU6RPK7uNLXh\ncw+LlplWGUnuu8hk0iiMB0XI+zMM7vpGlkmbqv4tWO0QSThYFO7usxOTJNzWUxia\n4FPu8Sd8howpfWLaAlvfkNrAn7hiuzQfGVU+njurb2Xl7bV5euTi4ZH0SclHOzGu\n2Idm4bOVX1JuQdyocVnLrw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "gavra-play-store@gavra-notif-20250920162521.iam.gserviceaccount.com",
+  "client_id": "114763935157287009259",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gavra-play-store%40gavra-notif-20250920162521.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

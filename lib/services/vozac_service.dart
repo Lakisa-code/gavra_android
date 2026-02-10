@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -25,8 +26,11 @@ class VozacService {
   /// Dohvata sve vozače
   Future<List<Vozac>> getAllVozaci() async {
     final response = await _supabase.from('vozaci').select('id, ime, email, telefon, sifra, boja').order('ime');
-
-    return response.map((json) => Vozac.fromMap(json)).toList();
+    final vozaci = response.map((json) => Vozac.fromMap(json)).toList();
+    if (kDebugMode && vozaci.isNotEmpty) {
+      debugPrint('✅ [VozacService] Učitano ${vozaci.length} vozača iz Supabase');
+    }
+    return vozaci;
   }
 
   /// Dodaje novog vozača
@@ -59,13 +63,15 @@ class VozacService {
   }
 
   void _refreshVozaciStream() async {
-    final vozaci = await getAllVozaci();
-    if (!_vozaciController.isClosed) {
-      _vozaciController.add(vozaci);
+    try {
+      final vozaci = await getAllVozaci();
+      if (!_vozaciController.isClosed) {
+        _vozaciController.add(vozaci);
+      }
+    } catch (e) {
+      debugPrint('❌ [VozacService] Greška pri osvežavanju stream-a: $e');
     }
-  }
-
-  /// 🧹 Čisti realtime subscription
+  }  /// 🧹 Čisti realtime subscription
   static void dispose() {
     _vozaciSubscription?.cancel();
     _vozaciSubscription = null;
