@@ -118,7 +118,9 @@ class CardColorHelper {
       return CardState.otkazano;
     }
     if (putnik.jePokupljen) {
-      final bool isPlaceno = (putnik.iznosPlacanja ?? 0) > 0;
+      // 🆕 PRAVI FIX: Proveravamo `placeno` polje umesto iznosa
+      // `placeno` je true samo ako je putnik STVARNO platio
+      final bool isPlaceno = putnik.placeno == true;
       // radnik/ucenik → zelena, dnevni → plava
       final bool isMesecniTip = putnik.isMesecniTip;
       if (isPlaceno || isMesecniTip) {
@@ -140,7 +142,8 @@ class CardColorHelper {
       return CardState.otkazano;
     }
     if (putnik.jePokupljen) {
-      final bool isPlaceno = (putnik.iznosPlacanja ?? 0) > 0;
+      // 🆕 PRAVI FIX: Proveravamo `placeno` polje umesto iznosa
+      final bool isPlaceno = putnik.placeno == true;
       final bool isMesecniTip = putnik.isMesecniTip;
       if (isPlaceno || isMesecniTip) {
         return CardState.placeno;

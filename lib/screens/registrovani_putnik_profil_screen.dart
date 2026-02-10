@@ -1906,6 +1906,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           'vs_otkazano': parseVreme(value['vs_otkazano']),
           'bc_otkazano_vreme': parseVreme(value['bc_otkazano_vreme']),
           'vs_otkazano_vreme': parseVreme(value['vs_otkazano_vreme']),
+          'bc_placanja': value['bc_placanja'], // 🆕 Dodaj plaćanja za BC
+          'vs_placanja': value['vs_placanja'], // 🆕 Dodaj plaćanja za VS
         };
       }
     });

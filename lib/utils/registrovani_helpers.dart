@@ -518,12 +518,8 @@ class RegistrovaniHelpers {
     if (dayData == null || dayData is! Map) return null;
 
     // Ključ je npr. 'bc_placeno_iznos' ili 'vs_placeno_iznos'
-    // 🆕 FALLBACK LOGIKA: Proveri i drugi grad
+    // 🔧 FIX: Nemoj koristiti fallback logiku! Ako nema plaćanja za ovaj grad, vrati null
     var iznos = dayData['${place}_placeno_iznos'];
-    if (iznos == null) {
-      final otherPlace = place == 'bc' ? 'vs' : 'bc';
-      iznos = dayData['${otherPlace}_placeno_iznos'];
-    }
 
     if (iznos == null) return null;
     if (iznos is num) return iznos.toDouble();

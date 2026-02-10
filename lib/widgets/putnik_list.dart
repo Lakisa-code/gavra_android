@@ -53,7 +53,8 @@ class PutnikList extends StatelessWidget {
     // Pokupljeni putnici (plavi/zeleni ostaju normalno)
     if (p.jePokupljen) {
       // 🟢 ZELENE - Plaćeni ili mesečni
-      final bool isPlaceno = (p.iznosPlacanja ?? 0) > 0;
+      // 🆕 FIX: Koristi `placeno` umesto iznosa
+      final bool isPlaceno = p.placeno == true;
       final bool isMesecniTip = p.isMesecniTip;
       if (isPlaceno || isMesecniTip) {
         return 5; // zelene

@@ -1903,7 +1903,7 @@ class _PutnikCardState extends State<PutnikCard> {
               if (_putnik.vremePokupljenja != null ||
                   _putnik.jeOtkazan ||
                   _putnik.jeOdsustvo ||
-                  (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0))
+                  (_putnik.placeno == true))
                 Padding(
                   padding: const EdgeInsets.only(top: 2.0),
                   child: Row(
@@ -1922,7 +1922,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           ),
                         ),
                       // Plaćeno info
-                      if (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0) ...[
+                      if (_putnik.placeno == true) ...[
                         if (_putnik.vremePokupljenja != null) const SizedBox(width: 12),
                         Text(
                           'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
@@ -1938,9 +1938,7 @@ class _PutnikCardState extends State<PutnikCard> {
                       ],
                       // Otkazano info
                       if (_putnik.jeOtkazan && _putnik.vremeOtkazivanja != null) ...[
-                        if (_putnik.vremePokupljenja != null ||
-                            (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0))
-                          const SizedBox(width: 12),
+                        if (_putnik.vremePokupljenja != null || (_putnik.placeno == true)) const SizedBox(width: 12),
                         Text(
                           'Otkazao: ${_formatOtkazivanje(_putnik.vremeOtkazivanja!)}',
                           style: TextStyle(
@@ -1955,9 +1953,7 @@ class _PutnikCardState extends State<PutnikCard> {
                       ],
                       // Odsustvo info
                       if (_putnik.jeOdsustvo) ...[
-                        if (_putnik.vremePokupljenja != null ||
-                            _putnik.jeOtkazan ||
-                            (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0))
+                        if (_putnik.vremePokupljenja != null || _putnik.jeOtkazan || (_putnik.placeno == true))
                           const SizedBox(width: 12),
                         Text(
                           _putnik.jeBolovanje
