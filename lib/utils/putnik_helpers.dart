@@ -24,16 +24,7 @@ class PutnikHelpers {
     // Ne računaj ako je na odsustvu (bolovanje/godišnji)
     if (p.jeOdsustvo) return false;
 
-    // 🆕 Ne računaj ako je status 'ceka_mesto' (VIP lista čekanja za drugi kombi)
-    if (p.status == 'ceka_mesto') return false;
-
-    // 🆕 Ne računaj ako je status 'pending' (zahtev čeka potvrdu admina)
-    if (p.status == 'pending') return false;
-
-    // 🆕 Ne računaj ako je status 'waiting' (zahtev čeka mesto)
-    if (p.status == 'waiting') return false;
-
-    // 🆕 POŠILJKE NE ZAUZIMAJU MESTA
+    // POŠILJKE NE ZAUZIMAJU MESTA
     if (p.tipPutnika == 'posiljka') return false;
 
     return true;

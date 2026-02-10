@@ -53,13 +53,43 @@ class VozacService {
   /// 🛰️ REALTIME STREAM: Dohvata sve vozače u realnom vremenu
   Stream<List<Vozac>> streamAllVozaci() {
     if (_vozaciSubscription == null) {
-      _vozaciSubscription = RealtimeManager.instance.subscribe('vozaci').listen((payload) {
+      // Emituj praznu listu odmah ako Supabase nije spreman
+      if (!isSupabaseReady) {
+        if (!_vozaciController.isClosed) {
+          _vozaciController.add([]);
+        }
+        // Periodično proveravaj da li je Supabase postao spreman
+        _waitForSupabaseAndSubscribe();
+      } else {
+        _vozaciSubscription = RealtimeManager.instance.subscribe('vozaci').listen((payload) {
+          _refreshVozaciStream();
+        });
+        // Inicijalno učitavanje
         _refreshVozaciStream();
-      });
-      // Inicijalno učitavanje
-      _refreshVozaciStream();
+      }
     }
     return _vozaciController.stream;
+  }
+
+  /// Čeka da Supabase postane spreman, pa se pretplati
+  void _waitForSupabaseAndSubscribe() {
+    const checkInterval = Duration(milliseconds: 500);
+    const maxAttempts = 20; // 10 sekundi maksimum
+    int attempts = 0;
+
+    Timer.periodic(checkInterval, (timer) {
+      attempts++;
+      if (isSupabaseReady || attempts >= maxAttempts) {
+        timer.cancel();
+        if (isSupabaseReady && _vozaciSubscription == null) {
+          _vozaciSubscription = RealtimeManager.instance.subscribe('vozaci').listen((payload) {
+            _refreshVozaciStream();
+          });
+          // Inicijalno učitavanje
+          _refreshVozaciStream();
+        }
+      }
+    });
   }
 
   void _refreshVozaciStream() async {
@@ -70,8 +100,14 @@ class VozacService {
       }
     } catch (e) {
       debugPrint('❌ [VozacService] Greška pri osvežavanju stream-a: $e');
+      // Emituj praznu listu u slučaju greške da se ne zaglavi loading
+      if (!_vozaciController.isClosed) {
+        _vozaciController.add([]);
+      }
     }
-  }  /// 🧹 Čisti realtime subscription
+  }
+
+  /// 🧹 Čisti realtime subscription
   static void dispose() {
     _vozaciSubscription?.cancel();
     _vozaciSubscription = null;

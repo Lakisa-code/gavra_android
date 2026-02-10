@@ -1886,12 +1886,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final now = DateTime.now();
         if (_isDanas(danName)) {
           // BC Pending
-          if (bcStatus == 'pending' && bcVreme != null && _isExpired(bcVreme, now)) {
+          if (bcStatus == 'waiting' && bcVreme != null && _isExpired(bcVreme, now)) {
             bcVreme = null;
             _autoCancelPending(danName, 'bc');
           }
           // VS Pending
-          if (vsStatus == 'pending' && vsVreme != null && _isExpired(vsVreme, now)) {
+          if (vsStatus == 'waiting' && vsVreme != null && _isExpired(vsVreme, now)) {
             vsVreme = null;
             _autoCancelPending(danName, 'vs');
           }
@@ -1971,9 +1971,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             final bcVreme = danPolasci?['bc'];
             final vsVreme = danPolasci?['vs'];
             final bcStatus = danPolasci?['bc_status']?.toString();
-            // 🆕 Mapiranje 'ceka_mesto' statusa u 'waiting' za UI
-            final vsStatusRaw = danPolasci?['vs_status']?.toString();
-            final vsStatus = vsStatusRaw == 'ceka_mesto' ? 'waiting' : vsStatusRaw;
+            // Koristi 'waiting' status direktno
+            final vsStatus = danPolasci?['vs_status']?.toString();
             final bcOtkazano = danPolasci?['bc_otkazano'] != null;
             final vsOtkazano = danPolasci?['vs_otkazano'] != null;
             // 🆕 Otkazano vreme - prikazuje se u crvenom

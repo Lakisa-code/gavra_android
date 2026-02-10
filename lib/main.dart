@@ -169,9 +169,10 @@ Future<void> _initAppServices() async {
   // Sync inicijalizacija
   VremeVozacService().loadAllVremeVozac();
 
-  // 🚗 Initialize VozacService stream JEDNOM - pun gas bez čekanja!
-  // Ovo osigurava da stream bude spreman za sve ekrane koji ga koriste
-  VozacService().streamAllVozaci();
+  // 🚗 Initialize VozacService stream JEDNOM - pokrenuti stream sa listen() da počne emisija
+  VozacService().streamAllVozaci().listen((_) {
+    // Samo slušamo, ne radimo ništa - samo da stream počne da emituje podatke
+  });
 
   // 🔔 Initialize centralized realtime manager (monitoring sve tabele)
   unawaited(RealtimeManager.instance.initializeAll());

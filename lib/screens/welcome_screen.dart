@@ -8,14 +8,12 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/vozac.dart';
 import '../services/auth_manager.dart';
 import '../services/biometric_service.dart';
-import '../services/daily_checkin_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/theme_manager.dart';
 import '../services/vozac_service.dart';
 import '../utils/vozac_boja.dart';
-import 'daily_checkin_screen.dart';
 import 'home_screen.dart';
 import 'o_nama_screen.dart';
 import 'registrovani_putnik_login_screen.dart';
@@ -72,7 +70,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   Future<void> _loadDrivers() async {
     try {
       final vozacService = VozacService();
-      final vozaci = await vozacService.getAllVozaci();
+      final vozaci = await vozacService.getAllVozaci().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Supabase query timed out');
+        },
+      );
       if (!mounted) return;
       setState(() {
         _drivers = vozaci;
@@ -182,37 +185,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
       if (!mounted) return;
 
-      // Direktno na Daily Check-in ili Home Screen
-      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(driverName);
-
-      if (!hasCheckedIn) {
-        if (!mounted) return;
-        // Navigate to DailyCheckInScreen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(
-            builder: (context) => DailyCheckInScreen(
-              vozac: driverName,
-              onCompleted: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => _getScreenForDriver(driverName),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      } else {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(
-            builder: (context) => _getScreenForDriver(driverName),
-          ),
-        );
-      }
+      // Direktno na Home Screen bez daily check-in
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute<void>(
+          builder: (context) => _getScreenForDriver(driverName),
+        ),
+      );
       return;
     }
 
@@ -220,39 +199,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     final activeDriver = await AuthManager.getCurrentDriver();
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
-      // Vozač je već logovan - PROVERI DAILY CHECK-IN
-      // (dozvole su već zatražene u _requestPermissionsAndCheckLogin)
-
-      // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
-      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(activeDriver);
-
+      // Vozač je već logovan - direktno na HomeScreen bez check-in
       if (!mounted) return;
 
-      if (!hasCheckedIn) {
-        // Navigate to DailyCheckInScreen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(
-            builder: (context) => DailyCheckInScreen(
-              vozac: activeDriver,
-              onCompleted: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => const HomeScreen(),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      } else {
-        // DIREKTNO NA HOME SCREEN
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(builder: (context) => _getHomeScreen()),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute<void>(builder: (context) => _getHomeScreen()),
+      );
     }
   }
 
@@ -373,37 +326,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
         if (!mounted) return;
 
-        // Direktno na Daily Check-in ili Home Screen
-        final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(correctName);
-
-        if (!hasCheckedIn) {
-          if (!mounted) return;
-          // Navigate to DailyCheckInScreen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => DailyCheckInScreen(
-                vozac: correctName,
-                onCompleted: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => _getScreenForDriver(correctName),
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-        } else {
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => _getScreenForDriver(correctName),
-            ),
-          );
-        }
+        // Direktno na Home Screen bez daily check-in
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute<void>(
+            builder: (context) => _getScreenForDriver(correctName),
+          ),
+        );
       }
     }
 

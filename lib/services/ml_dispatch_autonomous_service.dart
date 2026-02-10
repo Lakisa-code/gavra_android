@@ -1,11 +1,9 @@
 ﻿import 'dart:async';
-import 'dart:convert'; // Added for safe JSON parsing
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../utils/grad_adresa_validator.dart';
 import 'kapacitet_service.dart';
 import 'realtime_notification_service.dart';
 import 'slobodna_mesta_service.dart';
@@ -42,25 +40,12 @@ class MLDispatchAutonomousService extends ChangeNotifier {
   /// Prekidač za 100% Autonomiju
   void toggleAutopilot(bool value) {
     _isAutopilotEnabled = value;
-    if (kDebugMode) print(' [ML Dispatch] Autopilot: ');
+    if (kDebugMode) print(' [ML Dispatch] Autopilot: $_isAutopilotEnabled');
     notifyListeners();
   }
 
   /// Broj putnika za koje je sistem naučio afinitet iz istorije (Pure Data)
   double get learnedAffinityCount => _passengerAffinity.length.toDouble();
-
-  /// HELPER za bezbedno kastovanje JSONB podataka koji mogu doći kao String ili Map
-  Map<String, dynamic> _safeMap(dynamic raw) {
-    if (raw == null) return {};
-    if (raw is Map) return Map<String, dynamic>.from(raw);
-    if (raw is String) {
-      try {
-        final decoded = json.decode(raw);
-        if (decoded is Map) return Map<String, dynamic>.from(decoded);
-      } catch (_) {}
-    }
-    return {};
-  }
 
   ///  LEARN FLOW (Unsupervised Affinity Learning)
   Future<void> _learnFromHistory() async {
@@ -98,7 +83,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         _avgHourlyBookings = recentRequests.length / 48.0;
       }
     } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Greška pri učenju: ');
+      if (kDebugMode) print(' [ML Dispatch] Greška pri učenju istorije: $e');
     } finally {
       notifyListeners();
     }
@@ -131,7 +116,7 @@ class MLDispatchAutonomousService extends ChangeNotifier {
           )
           .subscribe();
     } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Stream error: ');
+      if (kDebugMode) print(' [ML Dispatch] Stream subscribe error: $e');
     }
   }
 
@@ -160,225 +145,6 @@ class MLDispatchAutonomousService extends ChangeNotifier {
 
     //   notifyListeners();
     // });
-  }
-
-  ///  AUTOPILOT EXECUTION
-  Future<void> _executeAutopilotActions() async {
-    for (var advice in _currentAdvice) {
-      if (advice.priority == AdvicePriority.critical) {
-        if (kDebugMode) print(' [Autopilot] REŠAVAM KRITIČNO: ${advice.title}');
-        if (advice.title.contains('Preopterećenje')) {
-          await _sendAutonomousAlert('Potreban rezervni kombi za: ${advice.description}');
-        }
-      }
-    }
-  }
-
-  Future<void> _sendAutonomousAlert(String message) async {
-    try {
-      await _supabase.from('admin_audit_logs').insert({
-        'action_type': 'AUTOPILOT_ACTION',
-        'details': message,
-        'admin_name': 'system',
-        'metadata': {'severity': 'critical'},
-        'created_at': DateTime.now().toIso8601String(),
-      });
-    } catch (_) {}
-  }
-
-  ///  TATA, TATA! (Capacity Overflow Alert)
-  Future<void> _analyzeCapacityOverflow() async {
-    try {
-      final String danDanas = _getDanKratica();
-      final dynamic shadowData =
-          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').neq('tip', 'posiljka');
-
-      Map<String, List<String>> demandMap = {};
-      Map<String, Set<String>> driverMap = {};
-
-      if (shadowData is List) {
-        for (var p in shadowData) {
-          final allDays = _safeMap(p['polasci_po_danu']);
-          if (allDays.isEmpty) continue;
-
-          final dayData = _safeMap(allDays[danDanas]);
-          if (dayData.isEmpty) continue;
-
-          for (var gradCode in ['bc', 'vs']) {
-            String? vreme = dayData[gradCode]?.toString();
-            if (vreme == null || vreme == 'null') continue;
-
-            // ✅ NORMALIZUJ VREME za ML analizu
-            String normTime = GradAdresaValidator.normalizeTime(vreme);
-            String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
-
-            // NOVO: Đaci se sada uvek broje u kapacitetu (i za BC),
-            // jer je korisnik tražio "Mesto je Mesto" i za BC u smislu prikaza/upozorenja.
-
-            final key = '${grad}_$normTime'; // 🎯 FIX: Grupiši po terminu, ne globalno
-            demandMap.putIfAbsent(key, () => []).add(p['id'].toString());
-
-            final String? vozac = dayData['__vozac']?.toString() ?? dayData['_vozac']?.toString();
-            if (vozac != null && vozac != 'null') {
-              driverMap.putIfAbsent(key, () => {}).add(vozac);
-            }
-          }
-        }
-      }
-
-      for (var entry in demandMap.entries) {
-        final key = entry.key;
-        final passengers = entry.value;
-
-        int count = passengers.length;
-        int driversCount = driverMap[key]?.length ?? 1;
-
-        // 🏙️ Odredi grad i vreme za lookup kapaciteta
-        final parts = key.split('_');
-        final gradIme = parts[0];
-        final vremeVrednost = parts[1];
-        final gradKod = GradAdresaValidator.isBelaCrkva(gradIme) ? 'BC' : 'VS';
-
-        // 🎫 Učitaj stvarni kapacitet iz KapacitetService
-        final int baseKapacitet = KapacitetService.getKapacitetSync(gradKod, vremeVrednost);
-        final int totalKapacitet = driversCount * baseKapacitet;
-
-        if (count > totalKapacitet) {
-          _currentAdvice.add(DispatchAdvice(
-            title: ' 🚨 TATA, TATA! (Preopterećenje)',
-            description:
-                'U terminu $gradIme $vremeVrednost ima $count putnika na $driversCount van-a (kapacitet: $totalKapacitet). Kapacitet premašen!',
-            priority: AdvicePriority.critical,
-            action: 'Dodaj vozilo',
-          ));
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Overflow error: $e');
-    }
-  }
-
-  String _getDanKratica() {
-    final now = DateTime.now();
-    const dani = ['pon', 'pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    return dani[now.weekday];
-  }
-
-  ///  SMART GROUPING (Spajanje Vans-ova)
-  Future<void> _analyzeOptimalGrouping() async {
-    try {
-      final String danDanas = _getDanKratica();
-      final dynamic shadowData =
-          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').neq('tip', 'posiljka');
-
-      Map<String, List<String>> demandMap = {};
-
-      if (shadowData is List) {
-        for (var p in shadowData) {
-          final allDays = _safeMap(p['polasci_po_danu']);
-          if (allDays.isEmpty) continue;
-
-          final dayData = _safeMap(allDays[danDanas]);
-          if (dayData.isEmpty) continue;
-
-          for (var gradCode in ['bc', 'vs']) {
-            String? vreme = dayData[gradCode]?.toString();
-            if (vreme == null || vreme == 'null') continue;
-            String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
-            String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
-
-            final key = '${grad}_$normTime'; // 🎯 FIX: Grupiši po terminu
-            demandMap.putIfAbsent(key, () => []).add(p['id'].toString());
-          }
-        }
-      }
-
-      List<String> sortedKeys = demandMap.keys.toList()..sort();
-      for (int i = 0; i < sortedKeys.length - 1; i++) {
-        String keyA = sortedKeys[i];
-        String keyB = sortedKeys[i + 1];
-
-        String gradA = keyA.split('_')[0];
-        String gradB = keyB.split('_')[0];
-        if (gradA != gradB) continue;
-
-        DateTime timeA = _parseTime(keyA.split('_')[1]);
-        DateTime timeB = _parseTime(keyB.split('_')[1]);
-
-        if (timeB.difference(timeA).inMinutes <= 35) {
-          int totalCount = demandMap[keyA]!.length + demandMap[keyB]!.length;
-          if (totalCount <= 8) {
-            _currentAdvice.add(DispatchAdvice(
-              title: '💡 PRILIKA ZA SPAJANJE',
-              description:
-                  'Termini ${keyA.split('_')[1]} i ${keyB.split('_')[1]} ($gradA) imaju ukupno $totalCount putnika. Može jedan van.',
-              priority: AdvicePriority.smart,
-              action: 'Spoji rute',
-              proposedChange: 'Spoji $keyA u $keyB',
-            ));
-          }
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Grouping error: $e');
-    }
-  }
-
-  DateTime _parseTime(String t) {
-    try {
-      final parts = t.split(':');
-      return DateTime(2024, 1, 1, int.parse(parts[0]), int.parse(parts[1]));
-    } catch (_) {
-      return DateTime(2024, 1, 1, 0, 0);
-    }
-  }
-
-  ///  AUTONOMNI SPLIT
-  Future<void> _analyzeMultiVanSplits() async {
-    try {
-      final String danDanas = _getDanKratica();
-      final dynamic shadowData = await _supabase.from('registrovani_putnici').select('id, putnik_ime, polasci_po_danu');
-
-      Map<String, Set<String>> overlaps = {};
-
-      if (shadowData is List) {
-        for (var p in shadowData) {
-          final allDays = _safeMap(p['polasci_po_danu']);
-          if (allDays.isEmpty) continue;
-
-          final dayData = _safeMap(allDays[danDanas]);
-          if (dayData.isEmpty) continue;
-
-          for (var gradCode in ['bc', 'vs']) {
-            String? vreme = dayData[gradCode]?.toString();
-            if (vreme == null || vreme == 'null') continue;
-            String normTime = vreme.startsWith('0') ? vreme.substring(1) : vreme;
-            String grad = gradCode == 'bc' ? 'Bela Crkva' : 'Vršac';
-
-            final key = '${grad}_$normTime'; // 🎯 FIX: Grupiši po terminu
-            final String? vozac = dayData['__vozac']?.toString() ?? dayData['_vozac']?.toString();
-            if (vozac != null && vozac != 'null') {
-              overlaps.putIfAbsent(key, () => {}).add(vozac);
-            }
-          }
-        }
-      }
-
-      overlaps.forEach((key, drivers) {
-        if (drivers.length >= 2) {
-          final grad = key.split('_')[0];
-          final vreme = key.split('_')[1];
-          _currentAdvice.add(DispatchAdvice(
-            title: '🚢 AUTONOMNI SPLIT ($grad $vreme)',
-            description: 'Detektovano više vozača: ${drivers.join(", ")}. Optimizuj raspored.',
-            priority: AdvicePriority.critical,
-            action: 'Sinhronizuj',
-          ));
-        }
-      });
-    } catch (e) {
-      if (kDebugMode) print(' [ML Dispatch] Split error: $e');
-    }
   }
 
   Future<void> _analyzeRealtimeDemand() async {
@@ -410,27 +176,51 @@ class MLDispatchAutonomousService extends ChangeNotifier {
       if (pendingRequests.isEmpty) return;
 
       for (var request in pendingRequests) {
-        final requestId = request['id'];
-        final putnikId = request['putnik_id'];
+        final requestId = request['id'] as String?;
+        final putnikId = request['putnik_id'] as String?;
 
-        // Dobavi tip putnika posebnim upitom
-        final putnikData = await _supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).maybeSingle();
+        // Provera da li su ključni podaci dostupni
+        if (requestId == null || requestId.isEmpty || putnikId == null || putnikId.isEmpty) {
+          if (kDebugMode) {
+            print(' [ML Dispatch] ❌ Zahtev ima null requestId ili putnikId - preskačem');
+          }
+          continue;
+        }
 
-        final putnikTip = putnikData?['tip'] ?? 'radnik'; // default radnik
-        final datum = DateTime.parse(request['datum']);
-        final vremeSlanjaZahteva = DateTime.parse(request['created_at']);
-        final sada = DateTime.now();
+        // Dobaji tip putnika posebnim upitom
+        try {
+          final putnikData =
+              await _supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).maybeSingle() as Map?;
 
-        // Odredi vreme čekanja po BC LOGIKA pravilima - računaj od vremena slanja zahteva
-        final delay = _calculateProcessingDelay(putnikTip, datum, vremeSlanjaZahteva);
+          final putnikTip = (putnikData?['tip'] as String?) ?? 'radnik'; // default radnik
+          final datumStr = request['datum'] as String?;
+          final vremeSlanjaZahtevaStr = request['created_at'] as String?;
 
-        if (delay != null) {
-          // Zakazaj obradu za kasnije
-          Future.delayed(delay, () => _processSingleRequest(requestId));
-          if (kDebugMode) print(' [ML Dispatch] Zakazao obradu za $requestId za ${delay.inMinutes} min');
-        } else {
-          // Odmah obradi
-          await _processSingleRequest(requestId);
+          if (datumStr == null || vremeSlanjaZahtevaStr == null) {
+            if (kDebugMode) print(' [ML Dispatch] ❌ Zahtev $requestId nema datuma ili vremena');
+            continue;
+          }
+
+          final datum = DateTime.tryParse(datumStr);
+          final vremeSlanjaZahteva = DateTime.tryParse(vremeSlanjaZahtevaStr);
+
+          if (datum == null || vremeSlanjaZahteva == null) {
+            if (kDebugMode) print(' [ML Dispatch] ❌ Zahtev $requestId ima invalidan datum format');
+            continue;
+          }
+
+          // Odredi vreme čekanja po BC LOGIKA pravilima - računaj od vremena slanja zahteva
+          final delay = _calculateProcessingDelay(putnikTip, datum, vremeSlanjaZahteva);
+
+          if (delay != null) {
+            // Zakazaj obradu za kasnije
+            Future.delayed(delay, () => _processSingleRequest(requestId));
+          } else {
+            // Odmah obradi
+            await _processSingleRequest(requestId);
+          }
+        } catch (e) {
+          if (kDebugMode) print(' [ML Dispatch] ❌ Greška pri obradi zahteva $requestId: $e');
         }
       }
     } catch (e) {
@@ -487,10 +277,18 @@ class MLDispatchAutonomousService extends ChangeNotifier {
 
       if (request == null) return; // Već obrađen
 
-      final grad = request['grad'];
-      final vreme = request['zeljeno_vreme'];
-      final datum = request['datum'];
-      final brojMesta = request['broj_mesta'] ?? 1;
+      final grad = request['grad'] as String?;
+      final vreme = request['zeljeno_vreme'] as String?;
+      final datum = request['datum'] as String?;
+      final brojMesta = (request['broj_mesta'] as int?) ?? 1;
+
+      // Proveri da li su kritični podaci dostupni
+      if (grad == null || grad.isEmpty || vreme == null || vreme.isEmpty || datum == null || datum.isEmpty) {
+        if (kDebugMode) {
+          print(' [ML Dispatch] ❌ Zahtev $requestId ima nepotpune podatke: grad=$grad, vreme=$vreme, datum=$datum');
+        }
+        return;
+      }
 
       // Proveri kapacitet
       final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
@@ -557,16 +355,13 @@ class MLDispatchAutonomousService extends ChangeNotifier {
         'processed_at': DateTime.now().toIso8601String(),
       }).eq('id', requestId);
 
-      if (kDebugMode) print(' [ML Dispatch] 🔄 Sinhronizujem polasci_po_danu za $putnikId, grad: $grad, datum: $datum');
-
+      // Sinhronizuj polasci_po_danu
       if (putnikId != null && grad != null && datum != null) {
         try {
           // Izračunaj dan u nedelji (1=pon, 2=uto, ..., 7=ned)
           final dateTime = DateTime.parse(datum);
           final danMap = {1: 'pon', 2: 'uto', 3: 'sre', 4: 'cet', 5: 'pet', 6: 'sub', 7: 'ned'};
           final dan = danMap[dateTime.weekday];
-
-          if (kDebugMode) print(' [ML Dispatch] 📅 Izračunat dan: $dan (weekday: ${dateTime.weekday})');
 
           if (dan != null) {
             // Dobij trenutni polasci_po_danu
@@ -575,9 +370,6 @@ class MLDispatchAutonomousService extends ChangeNotifier {
 
             if (putnikResponse != null) {
               final rawPolasci = putnikResponse['polasci_po_danu'];
-              if (kDebugMode) {
-                print(' [ML Dispatch] 📊 Raw polasci_po_danu: $rawPolasci (type: ${rawPolasci.runtimeType})');
-              }
 
               // Parsiraj polasci_po_danu - sada je JSONB objekat
               Map<String, dynamic> polasci = {};
@@ -585,21 +377,15 @@ class MLDispatchAutonomousService extends ChangeNotifier {
                 polasci = Map<String, dynamic>.from(rawPolasci);
               }
 
-              if (kDebugMode) print(' [ML Dispatch] 📊 Parsed polasci: $polasci');
-
               final rawDanData = polasci[dan];
               Map<String, dynamic> danData = {};
               if (rawDanData is Map) {
                 danData = Map<String, dynamic>.from(rawDanData);
               }
 
-              if (kDebugMode) print(' [ML Dispatch] 📊 Trenutni danData za $dan: $danData');
-
               // Ažuriraj vrijeme i status na approved
-              danData['${grad.toLowerCase()}'] = dodeljenoVreme; // 🛡️ DODAJ VRIJEME!
+              danData['${grad.toLowerCase()}'] = dodeljenoVreme;
               danData['${grad.toLowerCase()}_status'] = 'approved';
-
-              if (kDebugMode) print(' [ML Dispatch] 📝 Novi danData: $danData');
 
               polasci[dan] = danData;
 
@@ -620,36 +406,23 @@ class MLDispatchAutonomousService extends ChangeNotifier {
               }
 
               // Sačuvaj ažurirani polasci_po_danu
-              // 🛡️ VAŽNO: Ne prepisuj ceo JSON, već ažuriraj samo taj dan!
-              if (kDebugMode) {
-                print(' [ML Dispatch] 📝 Pre update-a: polasci.length=${polasci.length}, putnikId=$putnikId');
-              }
-
               try {
-                final updateResult = await _supabase
-                    .from('registrovani_putnici')
-                    .update({'polasci_po_danu': polasci}).eq('id', putnikId);
+                await _supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
                 if (kDebugMode) {
-                  print(' [ML Dispatch] ✅ Ažuriran polasci_po_danu za $putnikId ($dan $grad), rezultat: $updateResult');
+                  print(' [ML Dispatch] ✅ Ažuriran polasci_po_danu za $putnikId ($dan $grad)');
                 }
               } catch (updateError) {
                 if (kDebugMode) {
-                  print(' [ML Dispatch] ❌ GREŠKA PRI UPDATE-U: $updateError - putnikId=$putnikId');
+                  print(' [ML Dispatch] ❌ GREŠKA PRI UPDATE-U: $updateError');
                 }
                 rethrow;
               }
-            } else {
-              if (kDebugMode) print(' [ML Dispatch] ⚠️ Nije pronađen putnik $putnikId');
             }
-          } else {
-            if (kDebugMode) print(' [ML Dispatch] ⚠️ Nevažeći dan u nedelji: ${dateTime.weekday}');
           }
         } catch (e) {
           if (kDebugMode) print(' [ML Dispatch] ⚠️ Greška pri ažuriranju polasci_po_danu: $e');
         }
-      } else {
-        if (kDebugMode) print(' [ML Dispatch] ⚠️ Nedostaju podaci: putnikId=$putnikId, grad=$grad, datum=$datum');
       }
 
       // Loguj odluku

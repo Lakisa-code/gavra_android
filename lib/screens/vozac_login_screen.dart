@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -5,10 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_manager.dart';
 import '../services/biometric_service.dart';
-import '../services/daily_checkin_service.dart';
 import '../services/theme_manager.dart';
 import '../services/vozac_service.dart';
-import 'daily_checkin_screen.dart';
 import 'home_screen.dart';
 import 'vozac_screen.dart';
 
@@ -138,9 +137,14 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
   /// Učitaj vozače iz Supabase-a, sa fallback na SharedPreferences
   Future<List<Map<String, dynamic>>> _loadVozaci() async {
     try {
-      // 🔄 NOVO: Prvo pokušaj da učitaš iz Supabase-a
+      // 🔄 NOVO: Prvo pokušaj da učitaš iz Supabase-a sa timeout-om
       final vozacService = VozacService();
-      final vozaciFromDB = await vozacService.getAllVozaci();
+      final vozaciFromDB = await vozacService.getAllVozaci().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Supabase query timed out');
+        },
+      );
 
       // Pretvori u format koji se koristi u login screen-u
       final vozaciMaps = vozaciFromDB.map((v) {
@@ -292,36 +296,13 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
       if (!mounted) return;
 
-      // Proveri daily check-in
-      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(widget.vozacIme);
-
-      if (!mounted) return;
-
-      if (!hasCheckedIn) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DailyCheckInScreen(
-              vozac: widget.vozacIme,
-              onCompleted: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => _getScreenForDriver(widget.vozacIme),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => _getScreenForDriver(widget.vozacIme),
-          ),
-        );
-      }
+      // Direktno na Home Screen bez daily check-in
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => _getScreenForDriver(widget.vozacIme),
+        ),
+      );
     } catch (e) {
       _showError('Greška: $e');
     } finally {
@@ -331,7 +312,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
   Widget _getScreenForDriver(String driverName) {
     // Vozači koji koriste VozacScreen umesto HomeScreen
-    if (driverName == 'Ivan' || driverName == 'Voja') {
+    if (driverName == 'Voja') {
       return const VozacScreen();
     }
     return const HomeScreen();

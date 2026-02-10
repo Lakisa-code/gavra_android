@@ -106,7 +106,7 @@ class SlobodnaMestaService {
       }
 
       // 🆕 Brojimo SAMO one koji su na čekanju
-      if (p.status != 'ceka_mesto') continue;
+      if (p.status != 'waiting') continue;
 
       // Proveri datum/dan
       final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
@@ -435,7 +435,7 @@ class SlobodnaMestaService {
       try {
         final putnikIme = putnikResponse['putnik_ime']?.toString() ?? 'Putnik';
         final gradNaziv = gradKey.toUpperCase() == 'BC' ? 'Bela Crkva' : 'Vršac';
-        
+
         await RealtimeNotificationService.sendNotificationToPutnik(
           putnikId: putnikId,
           title: '✅ Zahtev Odobren',
@@ -479,7 +479,7 @@ class SlobodnaMestaService {
         final vsVreme = danData['vs'] as String?;
         final vsStatus = danData['vs_status'] as String?;
 
-        if (vsVreme == vreme && vsStatus == 'ceka_mesto') {
+        if (vsVreme == vreme && vsStatus == 'waiting') {
           count++;
         }
       }
@@ -512,7 +512,7 @@ class SlobodnaMestaService {
         final vsVreme = danData['vs'] as String?;
         final vsStatus = danData['vs_status'] as String?;
 
-        if (vsVreme == vreme && vsStatus == 'ceka_mesto') {
+        if (vsVreme == vreme && vsStatus == 'waiting') {
           // Potvrdi ovog putnika
           (polasci[dan.toLowerCase()] as Map<String, dynamic>)['vs_status'] = 'confirmed';
 
@@ -566,7 +566,7 @@ class SlobodnaMestaService {
         final vsStatus = danData['vs_status'] as String?;
         final vsCekaOd = danData['vs_ceka_od'] as String?;
 
-        if (vsVreme == vreme && vsStatus == 'ceka_mesto') {
+        if (vsVreme == vreme && vsStatus == 'waiting') {
           // Parsiraj timestamp ili koristi davni datum ako nema
           final timestamp = vsCekaOd != null ? DateTime.tryParse(vsCekaOd) ?? DateTime(2000) : DateTime(2000);
           waitingList.add(MapEntry(row['id'] as String, timestamp));
@@ -885,8 +885,8 @@ class SlobodnaMestaService {
         final vsVreme = danData['vs'] as String?;
         final vsStatus = danData['vs_status'] as String?;
 
-        // Proveri da li je zaista zauzeto mesto (status nije ceka_mesto)
-        if (vsVreme == vreme && vsStatus != 'ceka_mesto') {
+        // Proveri da li je zaista zauzeto mesto (status nije waiting)
+        if (vsVreme == vreme && vsStatus != 'waiting') {
           count++;
         }
       }
@@ -916,8 +916,8 @@ class SlobodnaMestaService {
         final bcVreme = danData['bc'] as String?;
         final bcStatus = danData['bc_status'] as String?;
 
-        // Proveri da li je zaista zauzeto mesto (status nije ceka_mesto)
-        if (bcVreme == vreme && bcStatus != 'ceka_mesto') {
+        // Proveri da li je zaista zauzeto mesto (status nije waiting)
+        if (bcVreme == vreme && bcStatus != 'waiting') {
           count++;
         }
       }

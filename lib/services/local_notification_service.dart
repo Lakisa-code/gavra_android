@@ -1072,10 +1072,10 @@ class LocalNotificationService {
         });
       }
 
-      // Potvrdi status 'ceka_mesto' (za svaki slučaj)
+      // Potvrdi status 'waiting' (čeka mesto)
       polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
       (polasci[dan] as Map<String, dynamic>)['vs'] = zeljeniTermin;
-      (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'ceka_mesto';
+      (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'waiting';
 
       // Sačuvaj u bazu
       await supabase.from('registrovani_putnici').update({
@@ -1116,7 +1116,7 @@ class LocalNotificationService {
         title: '✅ Zahtev primljen',
         body:
             '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
-        data: {'type': 'vs_ceka_mesto_confirmed', 'termin': zeljeniTermin},
+        data: {'type': 'vs_waiting_confirmed', 'termin': zeljeniTermin},
       );
     } catch (e) {
       // 🔇 Ignore

@@ -325,30 +325,36 @@ class _AuthScreenState extends State<AuthScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: false,
-          title: const Text(
-            '🔐 Auth Admin',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
-              onPressed: () {
-                _imeController.clear();
-                _emailController.clear();
-                _sifraController.clear();
-                _telefonController.clear();
-                _selectedColor = Colors.blue;
+          centerTitle: true,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                '🔐 Auth Admin',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 12),
+              IconButton(
+                icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
+                onPressed: () {
+                  _imeController.clear();
+                  _emailController.clear();
+                  _sifraController.clear();
+                  _telefonController.clear();
+                  _selectedColor = Colors.blue;
 
-                showDialog(
-                  context: context,
-                  builder: (ctx) => _buildVozacDialog(
-                    title: 'Dodaj vozača',
-                    onSave: _addVozac,
-                  ),
-                );
-              },
-            ),
-          ],
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => _buildVozacDialog(
+                      title: 'Dodaj vozača',
+                      onSave: _addVozac,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
         body: StreamBuilder<List<Vozac>>(
           stream: _vozaciStream,
