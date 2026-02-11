@@ -105,45 +105,11 @@ class PermissionService {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
-                          Row(
+                          Column(
                             children: [
-                              // PRESKOČI dugme - crvenkasto
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.red.shade300.withValues(alpha: 0.6),
-                                      Colors.red.shade400.withValues(alpha: 0.6),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3),
-                                  ),
-                                ),
-                                child: TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'PRESKOČI',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              // ODOBRI DOZVOLE dugme - zelena boja
-                              Expanded(
+                              // ODOBRI DOZVOLE dugme - zelena boja (gore)
+                              SizedBox(
+                                width: double.infinity,
                                 child: Container(
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
@@ -178,6 +144,44 @@ class PermissionService {
                                       'ODOBRI',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              // PRESKOČI dugme - crvenkasto (dole)
+                              SizedBox(
+                                width: double.infinity,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.red.shade300.withValues(alpha: 0.6),
+                                        Colors.red.shade400.withValues(alpha: 0.6),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: TextButton(
+                                    onPressed: () => Navigator.of(context).pop(false),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'PRESKOČI',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
                                         fontSize: 13,
                                       ),
                                     ),

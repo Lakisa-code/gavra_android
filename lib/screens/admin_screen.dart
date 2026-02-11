@@ -1159,12 +1159,12 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: (vozacBoje[vozac] ?? Colors.blueGrey).withAlpha(
-                                      20,
+                                      60,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
                                       color: (vozacBoje[vozac] ?? Colors.blueGrey).withAlpha(
-                                        70,
+                                        120,
                                       ),
                                     ),
                                   ),
