@@ -385,9 +385,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                 begin: Alignment(-1.5 + 3 * _pulseController.value, 0),
                                 end: Alignment(-0.5 + 3 * _pulseController.value, 0),
                                 colors: [
-                                  Colors.white.withValues(alpha: 0.6),
+                                  Colors.white.withOpacity(0.6),
                                   Colors.white,
-                                  Colors.white.withValues(alpha: 0.6),
+                                  Colors.white.withOpacity(0.6),
                                 ],
                                 stops: const [0.0, 0.5, 1.0],
                               ).createShader(bounds);
@@ -445,7 +445,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                       'Vaš pouzdani prevoz',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: Colors.white.withOpacity(0.7),
                         letterSpacing: 2,
                         fontWeight: FontWeight.w300,
                       ),
@@ -480,7 +480,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.amber.withValues(alpha: 0.4),
+                              color: Colors.amber.withOpacity(0.4),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -530,10 +530,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
+                                color: Colors.white.withOpacity(0.08),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: Colors.white.withOpacity(0.2),
                                   width: 1.5,
                                 ),
                               ),
@@ -541,14 +541,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                 children: [
                                   Icon(
                                     Icons.info_outline,
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: Colors.white.withOpacity(0.9),
                                     size: 28,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'O nama',
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color: Colors.white.withOpacity(0.9),
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 1,
@@ -569,10 +569,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
+                                color: Colors.white.withOpacity(0.08),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: Colors.white.withOpacity(0.2),
                                   width: 1.5,
                                 ),
                               ),
@@ -580,14 +580,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                 children: [
                                   Icon(
                                     Icons.local_taxi,
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: Colors.white.withOpacity(0.9),
                                     size: 28,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Vozači',
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color: Colors.white.withOpacity(0.9),
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 1,
@@ -616,7 +616,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             gradient: LinearGradient(
                               colors: [
                                 Colors.transparent,
-                                Colors.white.withValues(alpha: 0.3),
+                                Colors.white.withOpacity(0.3),
                                 Colors.transparent,
                               ],
                             ),
@@ -629,7 +629,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                           style: TextStyle(
                             fontSize: 10,
                             letterSpacing: 1,
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: Colors.white.withOpacity(0.5),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -639,21 +639,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1,
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: Colors.white.withOpacity(0.7),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
+                            color: Colors.white.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             'v6.0.15 • 2025-2026',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: Colors.white.withOpacity(0.5),
                               letterSpacing: 1,
                             ),
                           ),
@@ -689,12 +689,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Colors.white.withOpacity(0.2),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
+                  color: Colors.black.withOpacity(0.5),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -746,15 +746,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                (driver.color ?? Colors.blue).withValues(alpha: 0.8),
-                                Colors.white.withValues(alpha: 0.1),
+                                (driver.color ?? Colors.blue).withOpacity(0.8),
+                                Colors.white.withOpacity(0.1),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: (driver.color ?? Colors.blue).withValues(alpha: 0.6),
+                              color: (driver.color ?? Colors.blue).withOpacity(0.6),
                               width: 1.5,
                             ),
                           ),
@@ -787,7 +787,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   child: Text(
                     'Otkaži',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: Colors.white.withOpacity(0.7),
                       fontSize: 16,
                     ),
                   ),
@@ -800,3 +800,5 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     );
   }
 }
+
+
