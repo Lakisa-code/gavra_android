@@ -230,10 +230,10 @@ class KapacitetService {
   static int getKapacitetSync(String grad, String vreme) {
     // Normalizuj vreme
     final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
-    
+
     // Normalizuj grad (BC ili VS)
     final gradKey = GradAdresaValidator.isBelaCrkva(grad) ? 'BC' : 'VS';
-    
+
     // Vrati iz cache-a ili default 8
     return _kapacitetCache[gradKey]?[normalizedVreme] ?? 8;
   }
@@ -241,7 +241,7 @@ class KapacitetService {
   /// Inicijalizuj cache pri startu
   static Future<void> initializeKapacitetCache() async {
     if (_kapacitetCacheInitialized) return;
-    
+
     try {
       final data = await getKapacitet();
       _kapacitetCache = data;
@@ -254,7 +254,7 @@ class KapacitetService {
       };
       _kapacitetCacheInitialized = true;
     }
-    
+
     // Pokreni realtime listener za ažuriranje cache-a
     startGlobalRealtimeListener();
   }

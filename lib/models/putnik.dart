@@ -440,11 +440,10 @@ class Putnik {
       // ?? Ako je otkazan bez polaska, koristi placeholder
       final efectivePolazakBC = polazakBC ?? 'Otkazano';
 
-      // 🔧 FIX: Ako je više mjesta, cena bi trebala biti PO MJESTU, ne ukupan iznos
+      // ✅ ISPRAVLJENO: Čuvaj UKUPAN iznos plaćanja (ne deli sa brojem mesta)
+      // Primer: ako je plaćeno 1200 za x2 mesta, prikaži 1200 (ne 600)
       final brojMestaBC = RegistrovaniHelpers.getBrojMestaForDay(map, normalizedTarget, 'bc');
-      final cenaBC = iznosPlacanjaBC != null && brojMestaBC > 1
-          ? iznosPlacanjaBC / brojMestaBC
-          : (iznosPlacanjaBC ?? iznosPlacanja);
+      final cenaBC = iznosPlacanjaBC ?? iznosPlacanja;
 
       putnici.add(
         Putnik(
@@ -503,11 +502,10 @@ class Putnik {
       // ?? Ako je otkazan bez polaska, koristi placeholder
       final efectivePolazakVS = polazakVS ?? 'Otkazano';
 
-      // 🔧 FIX: Ako je više mjesta, cena bi trebala biti PO MJESTU, ne ukupan iznos
+      // ✅ ISPRAVLJENO: Čuvaj UKUPAN iznos plaćanja (ne deli sa brojem mesta)
+      // Primer: ako je plaćeno 1200 za x2 mesta, prikaži 1200 (ne 600)
       final brojMestaVS = RegistrovaniHelpers.getBrojMestaForDay(map, normalizedTarget, 'vs');
-      final cenaVS = iznosPlacanjaVS != null && brojMestaVS > 1
-          ? iznosPlacanjaVS / brojMestaVS
-          : (iznosPlacanjaVS ?? iznosPlacanja);
+      final cenaVS = iznosPlacanjaVS ?? iznosPlacanja;
 
       putnici.add(
         Putnik(
