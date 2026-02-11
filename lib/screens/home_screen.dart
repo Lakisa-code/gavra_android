@@ -2810,8 +2810,8 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton> with Single
                 boxShadow: _isPressed
                     ? widget.boxShadow.map((shadow) {
                         return BoxShadow(
-                          color: shadow.color.withValues(
-                            alpha: (shadow.color.a * 1.5).clamp(0.0, 1.0),
+                          color: shadow.color.withOpacity(
+                            (shadow.color.a * 1.5).clamp(0.0, 1.0),
                           ),
                           blurRadius: shadow.blurRadius * 1.2,
                           offset: shadow.offset,

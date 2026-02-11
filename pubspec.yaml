@@ -100,6 +100,11 @@ flutter:
         - asset: assets/fonts/Roboto-Regular.ttf
         - asset: assets/fonts/Roboto-Bold.ttf
           weight: 700
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/montserrat/Montserrat-Regular.ttf
+        - asset: assets/fonts/montserrat/Montserrat-Bold.ttf
+          weight: 700
 
   assets:
     - .env # 🔐 Environment varijable (Supabase kredencijali)
