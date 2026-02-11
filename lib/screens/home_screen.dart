@@ -420,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Colors.black.withOpacity(0.2),
                     blurRadius: 15,
                     spreadRadius: 2,
                     offset: const Offset(0, 8),
@@ -481,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.1),
+                                color: Colors.white.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -523,15 +523,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             return Container(
                               margin: const EdgeInsets.symmetric(vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
+                                color: Colors.white.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.3),
+                                  color: Colors.white.withOpacity(0.3),
                                   width: 1,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.white.withValues(alpha: 0.1),
+                                    color: Colors.white.withOpacity(0.1),
                                     blurRadius: 8,
                                     spreadRadius: 1,
                                   ),
@@ -568,12 +568,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 Shadow(
                                                   offset: const Offset(1, 1),
                                                   blurRadius: 2,
-                                                  color: Colors.black.withValues(alpha: 0.5),
+                                                  color: Colors.black.withOpacity(0.5),
                                                 ),
                                                 Shadow(
                                                   offset: const Offset(-0.5, -0.5),
                                                   blurRadius: 1,
-                                                  color: Colors.white.withValues(alpha: 0.3),
+                                                  color: Colors.white.withOpacity(0.3),
                                                 ),
                                               ],
                                             ),
@@ -669,7 +669,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           icon: const Icon(Icons.print),
                           label: const Text('Štampaj sve'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            backgroundColor: Colors.white.withOpacity(0.2),
                             foregroundColor: Colors.white,
                           ),
                           onPressed: () async {
@@ -873,7 +873,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: Theme.of(dialogContext).colorScheme.dangerPrimary.withValues(alpha: 0.5),
+            color: Theme.of(dialogContext).colorScheme.dangerPrimary.withOpacity(0.5),
             width: 2,
           ),
         ),
@@ -898,7 +898,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         content: Text(
           'Da li ste sigurni da se želite odjaviti?',
           style: TextStyle(
-            color: Theme.of(dialogContext).colorScheme.onSurface.withValues(alpha: 0.8),
+            color: Theme.of(dialogContext).colorScheme.onSurface.withOpacity(0.8),
             fontSize: 16,
           ),
         ),
@@ -1018,7 +1018,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Colors.black.withOpacity(0.2),
                     blurRadius: 15,
                     spreadRadius: 2,
                     offset: const Offset(0, 8),
@@ -1069,10 +1069,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.2),
+                              color: Colors.red.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(15),
                               border: Border.all(
-                                color: Colors.red.withValues(alpha: 0.4),
+                                color: Colors.red.withOpacity(0.4),
                               ),
                             ),
                             child: const Icon(
@@ -1105,7 +1105,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: Colors.black.withOpacity(0.1),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1151,7 +1151,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: Colors.black.withOpacity(0.1),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1474,17 +1474,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: selectedPutnik!.tip == 'radnik'
-                                          ? Colors.blue.withValues(alpha: 0.15)
+                                          ? Colors.blue.withOpacity(0.15)
                                           : selectedPutnik!.tip == 'dnevni'
-                                              ? Colors.orange.withValues(alpha: 0.15)
-                                              : Colors.green.withValues(alpha: 0.15),
+                                              ? Colors.orange.withOpacity(0.15)
+                                              : Colors.green.withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: selectedPutnik!.tip == 'radnik'
-                                            ? Colors.blue.withValues(alpha: 0.4)
+                                            ? Colors.blue.withOpacity(0.4)
                                             : selectedPutnik!.tip == 'dnevni'
-                                                ? Colors.orange.withValues(alpha: 0.4)
-                                                : Colors.green.withValues(alpha: 0.4),
+                                                ? Colors.orange.withOpacity(0.4)
+                                                : Colors.green.withOpacity(0.4),
                                       ),
                                     ),
                                     child: Row(
@@ -1548,10 +1548,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           child: Container(
                             height: 40,
                             decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.2),
+                              color: Colors.red.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(15),
                               border: Border.all(
-                                color: Colors.red.withValues(alpha: 0.4),
+                                color: Colors.red.withOpacity(0.4),
                               ),
                             ),
                             child: TextButton(
@@ -1582,14 +1582,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             duration: const Duration(milliseconds: 200),
                             height: 40,
                             decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.3),
+                              color: Colors.green.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(15),
                               border: Border.all(
-                                color: Colors.green.withValues(alpha: 0.6),
+                                color: Colors.green.withOpacity(0.6),
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
+                                  color: Colors.black.withOpacity(0.2),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1897,7 +1897,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
+                            color: Theme.of(context).colorScheme.surface.withOpacity(0.25),
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: Row(
@@ -2910,3 +2910,4 @@ class _HomeScreenButton extends StatelessWidget {
     );
   }
 }
+

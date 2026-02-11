@@ -150,7 +150,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withValues(alpha: 0.3), width: 2),
+        side: BorderSide(color: color.withOpacity(0.3), width: 2),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -186,7 +186,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
+                    color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -719,3 +719,4 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
     );
   }
 }
+

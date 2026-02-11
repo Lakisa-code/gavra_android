@@ -570,7 +570,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                 Text(
                   _getStepSubtitle(),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: Colors.white.withOpacity(0.7),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -586,9 +586,9 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.2),
+                      color: Colors.green.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                      border: Border.all(color: Colors.green.withOpacity(0.5)),
                     ),
                     child: Row(
                       children: [
@@ -616,9 +616,9 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.2),
+                      color: Colors.red.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                      border: Border.all(color: Colors.red.withOpacity(0.5)),
                     ),
                     child: Row(
                       children: [
@@ -692,7 +692,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -702,7 +702,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                       Expanded(
                         child: Text(
                           _getInfoText(),
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                         ),
                       ),
                     ],
@@ -735,7 +735,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       height: 12,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: active ? Colors.amber : Colors.white.withValues(alpha: 0.3),
+        color: active ? Colors.amber : Colors.white.withOpacity(0.3),
       ),
     );
   }
@@ -744,7 +744,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
     return Container(
       width: 40,
       height: 2,
-      color: active ? Colors.amber : Colors.white.withValues(alpha: 0.3),
+      color: active ? Colors.amber : Colors.white.withOpacity(0.3),
     );
   }
 
@@ -787,9 +787,9 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                  border: Border.all(color: Colors.amber.withOpacity(0.4)),
                 ),
                 child: Row(
                   children: [
@@ -811,7 +811,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                           ),
                           Text(
                             tip.toUpperCase(),
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
                           ),
                         ],
                       ),
@@ -830,9 +830,9 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
   Widget _buildTelefonInput() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.amber.withOpacity(0.3)),
       ),
       child: TextField(
         controller: _telefonController,
@@ -841,7 +841,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         textAlign: TextAlign.center,
         decoration: InputDecoration(
           hintText: '06x xxx xxxx',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
           prefixIcon: const Icon(Icons.phone, color: Colors.amber),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -854,9 +854,9 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
   Widget _buildEmailInput() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.amber.withOpacity(0.3)),
       ),
       child: TextField(
         controller: _emailController,
@@ -865,7 +865,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         textAlign: TextAlign.center,
         decoration: InputDecoration(
           hintText: 'vašemail@example.com',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
           prefixIcon: const Icon(Icons.email, color: Colors.amber),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -880,9 +880,9 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+            border: Border.all(color: Colors.amber.withOpacity(0.3)),
           ),
           child: TextField(
             controller: _pinController,
@@ -893,7 +893,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
             obscureText: true,
             decoration: InputDecoration(
               hintText: '• • • •',
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), letterSpacing: 8),
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), letterSpacing: 8),
               prefixIcon: const Icon(Icons.lock, color: Colors.amber),
               border: InputBorder.none,
               counterText: '',
@@ -929,10 +929,10 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
           child: Text(
             'Zaboravio/la sam PIN',
             style: TextStyle(
-              color: Colors.amber.withValues(alpha: 0.9),
+              color: Colors.amber.withOpacity(0.9),
               fontSize: 14,
               decoration: TextDecoration.underline,
-              decorationColor: Colors.amber.withValues(alpha: 0.5),
+              decorationColor: Colors.amber.withOpacity(0.5),
             ),
           ),
         ),
@@ -1046,9 +1046,9 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
+            color: Colors.green.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+            border: Border.all(color: Colors.green.withOpacity(0.3)),
           ),
           child: Column(
             children: [
@@ -1065,7 +1065,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
               const SizedBox(height: 8),
               Text(
                 'Admin će pregledati vaš zahtev i dodeliti vam PIN.\nBićete obavešteni kada PIN bude spreman.',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                style: TextStyle(color: Colors.white.withOpacity(0.7)),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1165,3 +1165,4 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
     }
   }
 }
+

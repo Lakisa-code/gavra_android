@@ -1,38 +1,38 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../globals.dart';
 import '../models/putnik.dart';
-import '../services/admin_security_service.dart'; // 🔐 ADMIN SECURITY
-import '../services/app_settings_service.dart'; // 🚌 NAV BAR SETTINGS
+import '../services/admin_security_service.dart'; // ?? ADMIN SECURITY
+import '../services/app_settings_service.dart'; // ?? NAV BAR SETTINGS
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/pin_zahtev_service.dart'; // 📨 PIN ZAHTEVI
-import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
+import '../services/pin_zahtev_service.dart'; // ?? PIN ZAHTEVI
+import '../services/putnik_service.dart'; // ? VRACEN na stari servis zbog gre�aka u novom
 import '../services/realtime_notification_service.dart';
-import '../services/slobodna_mesta_service.dart'; // 🚢 SMART TRANZIT
-import '../services/statistika_service.dart'; // 📊 STATISTIKA
+import '../services/slobodna_mesta_service.dart'; // ?? SMART TRANZIT
+import '../services/statistika_service.dart'; // ?? STATISTIKA
 import '../services/theme_manager.dart';
-import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
-import '../services/vozac_service.dart'; // 🚗 VOZAČ SERVIS
+import '../services/vozac_mapping_service.dart'; // ?? VOZAC MAPIRANJE
+import '../services/vozac_service.dart'; // ?? VOZAC SERVIS
 import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
-import 'admin_zahtevi_screen.dart'; // 📨 MONITORING ZAHTEVA
-import 'adrese_screen.dart'; // 📍 Upravljanje adresama
+import 'admin_zahtevi_screen.dart'; // ?? MONITORING ZAHTEVA
+import 'adrese_screen.dart'; // ?? Upravljanje adresama
 import 'auth_screen.dart'; // DODANO za auth admin
-import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
+import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozacima
 import 'dugovi_screen.dart';
-import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
+import 'finansije_screen.dart'; // ?? Finansijski izve�taj
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
-import 'ml_lab_screen.dart'; // 🧪 ML LAB
-import 'odrzavanje_screen.dart'; // 📖 Kolska knjiga - vozila
-import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
-import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
-import 'tranzit_screen.dart'; // 🚢 SMART TRANZIT
+import 'ml_lab_screen.dart'; // ?? ML LAB
+import 'odrzavanje_screen.dart'; // ?? Kolska knjiga - vozila
+import 'pin_zahtevi_screen.dart'; // ?? PIN ZAHTEVI
+import 'registrovani_putnici_screen.dart'; // DODANO za mesecne putnike
+import 'tranzit_screen.dart'; // ?? SMART TRANZIT
 import 'vozac_screen.dart'; // DODANO za vozac screen
-import 'vozaci_statistika_screen_v2.dart'; // 📊 Statistika vozača
+import 'vozaci_statistika_screen_v2.dart'; // ?? Statistika vozaca
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -43,11 +43,11 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   String? _currentDriver;
-  final PutnikService _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
+  final PutnikService _putnikService = PutnikService(); // ? VRACEN na stari servis zbog gre�aka u novom
 
-  // 📨 PIN ZAHTEVI - broj zahteva koji čekaju
+  // ?? PIN ZAHTEVI - broj zahteva koji cekaju
   int _brojPinZahteva = 0;
-  // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnog Timer-a
+  // ?? TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnog Timer-a
 
   //
   // Statistika pazara
@@ -62,11 +62,11 @@ class _AdminScreenState extends State<AdminScreen> {
     // Admin screen supports all days now, including weekends
     _selectedDan = todayName;
 
-    // 🔄 FORSIRANA INICIJALIZACIJA VOZAČ MAPIRANJA
+    // ?? FORSIRANA INICIJALIZACIJA VOZAC MAPIRANJA
     VozacMappingService.refreshMapping();
 
     _loadCurrentDriver();
-    _loadBrojPinZahteva(); // 📨 Učitaj broj PIN zahteva
+    _loadBrojPinZahteva(); // ?? Ucitaj broj PIN zahteva
 
     // Inicijalizuj heads-up i zvuk notifikacije
     try {
@@ -106,9 +106,9 @@ class _AdminScreenState extends State<AdminScreen> {
     super.dispose();
   }
 
-  /// 🚗 VOZAČ PICKER DIALOG - Admin može da vidi ekran bilo kog vozača
+  /// ?? VOZAC PICKER DIALOG - Admin mo�e da vidi ekran bilo kog vozaca
   void _showVozacPickerDialog(BuildContext context) async {
-    // Asinkrono učitaj vozače iz baze umesto fallback vrednosti
+    // Asinkrono ucitaj vozace iz baze umesto fallback vrednosti
     try {
       final vozacService = VozacService();
       final vozaci = await vozacService.getAllVozaci();
@@ -117,7 +117,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
       if (vozaci.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ Nema učitanih vozača')),
+          const SnackBar(content: Text('? Nema ucitanih vozaca')),
         );
         return;
       }
@@ -128,7 +128,7 @@ class _AdminScreenState extends State<AdminScreen> {
         context: context,
         builder: (BuildContext dialogContext) {
           return AlertDialog(
-            title: const Text('Izaberi vozača'),
+            title: const Text('Izaberi vozaca'),
             content: SizedBox(
               width: double.maxFinite,
               child: ListView.builder(
@@ -162,17 +162,17 @@ class _AdminScreenState extends State<AdminScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Otkaži'),
+                child: const Text('Otka�i'),
               ),
             ],
           );
         },
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error loading drivers: $e');
+      if (kDebugMode) debugPrint('? Error loading drivers: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Greška pri učitavanju vozača')),
+        const SnackBar(content: Text('? Gre�ka pri ucitavanju vozaca')),
       );
     }
   }
@@ -193,7 +193,7 @@ class _AdminScreenState extends State<AdminScreen> {
     });
   }
 
-  // 📨 Učitaj broj PIN zahteva koji čekaju
+  // ?? Ucitaj broj PIN zahteva koji cekaju
   Future<void> _loadBrojPinZahteva() async {
     try {
       final broj = await PinZahtevService.brojZahtevaKojiCekaju();
@@ -201,11 +201,11 @@ class _AdminScreenState extends State<AdminScreen> {
         setState(() => _brojPinZahteva = broj);
       }
     } catch (e) {
-      // Ignorišemo grešku, badge jednostavno neće prikazati broj
+      // Ignori�emo gre�ku, badge jednostavno nece prikazati broj
     }
   }
 
-  // 📊 STATISTIKE MENI - otvara BottomSheet sa opcijama
+  // ?? STATISTIKE MENI - otvara BottomSheet sa opcijama
   void _showStatistikeMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -233,14 +233,14 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  '📊 Statistike',
+                  '?? Statistike',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const Text('📈', style: TextStyle(fontSize: 24)),
-                  title: const Text('Statistika Vozača'),
-                  subtitle: const Text('Pazar, vožnje, dnevnice'),
+                  leading: const Text('??', style: TextStyle(fontSize: 24)),
+                  title: const Text('Statistika Vozaca'),
+                  subtitle: const Text('Pazar, vo�nje, dnevnice'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.pop(context);
@@ -254,9 +254,9 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const Text('💰', style: TextStyle(fontSize: 24)),
+                  leading: const Text('??', style: TextStyle(fontSize: 24)),
                   title: const Text('Finansije'),
-                  subtitle: const Text('Prihodi, troškovi, neto zarada'),
+                  subtitle: const Text('Prihodi, tro�kovi, neto zarada'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.pop(context);
@@ -270,7 +270,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const Text('📖', style: TextStyle(fontSize: 24)),
+                  leading: const Text('??', style: TextStyle(fontSize: 24)),
                   title: const Text('Kolska knjiga'),
                   subtitle: const Text('Servisi, registracija, gume...'),
                   trailing: const Icon(Icons.chevron_right),
@@ -288,7 +288,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 ListTile(
                   leading: const Icon(Icons.science, size: 24, color: Colors.blue),
                   title: const Text('ML Lab'),
-                  subtitle: const Text('Machine Learning analiza i predviđanja'),
+                  subtitle: const Text('Machine Learning analiza i predvidanja'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.pop(context);
@@ -309,13 +309,13 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  // Mapiranje punih imena dana u skraćenice za filtriranje
+  // Mapiranje punih imena dana u skracenice za filtriranje
   String _getShortDayName(String fullDayName) {
     final dayMapping = {
       'ponedeljak': 'Pon',
       'utorak': 'Uto',
       'sreda': 'Sre',
-      'četvrtak': 'Čet',
+      'cetvrtak': 'Cet',
       'petak': 'Pet',
     };
     final key = fullDayName.trim().toLowerCase();
@@ -345,7 +345,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
-              // No boxShadow — keep AppBar fully transparent and only glass border
+              // No boxShadow � keep AppBar fully transparent and only glass border
             ),
             child: SafeArea(
               child: Padding(
@@ -503,15 +503,15 @@ class _AdminScreenState extends State<AdminScreen> {
                                                       label = 'Auto';
                                                       break;
                                                     case 'zimski':
-                                                      label = '❄️☃️';
+                                                      label = '????';
                                                       useEmoji = true;
                                                       break;
                                                     case 'letnji':
-                                                      label = '☀️🌴';
+                                                      label = '????';
                                                       useEmoji = true;
                                                       break;
                                                     case 'praznici':
-                                                      label = '🎄🎁';
+                                                      label = '????';
                                                       useEmoji = true;
                                                       break;
                                                     default:
@@ -565,7 +565,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                               'Ponedeljak',
                                               'Utorak',
                                               'Sreda',
-                                              'Četvrtak',
+                                              'Cetvrtak',
                                               'Petak',
                                               'Subota',
                                               'Nedelja'
@@ -584,7 +584,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             'Ponedeljak',
                                             'Utorak',
                                             'Sreda',
-                                            'Četvrtak',
+                                            'Cetvrtak',
                                             'Petak',
                                             'Subota',
                                             'Nedelja'
@@ -608,7 +608,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             },
                           ),
                           const SizedBox(height: 4),
-                          // TREĆI RED - Auth, PIN, Statistike, Dodeli (4 dugmeta)
+                          // TRECI RED - Auth, PIN, Statistike, Dodeli (4 dugmeta)
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final screenWidth = constraints.maxWidth;
@@ -730,7 +730,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                         child: const Center(
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
-                                                child: Text('📈📊', style: TextStyle(fontSize: 14)))),
+                                                child: Text('????', style: TextStyle(fontSize: 14)))),
                                       ),
                                     ),
                                   ),
@@ -772,7 +772,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             },
                           ),
                           const SizedBox(height: 4),
-                          // ČETVRTI RED - Vozač, Monitor, Mesta, Dnevni (4 dugmeta)
+                          // CETVRTI RED - Vozac, Monitor, Mesta, Dnevni (4 dugmeta)
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final screenWidth = constraints.maxWidth;
@@ -784,7 +784,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
-                                  // VOZAČ - Dropdown za admin preview
+                                  // VOZAC - Dropdown za admin preview
                                   SizedBox(
                                     width: buttonWidth,
                                     child: InkWell(
@@ -801,7 +801,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                         child: Center(
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
-                                                child: const Text('Vozač',
+                                                child: const Text('Vozac',
                                                     style: TextStyle(
                                                         fontWeight: FontWeight.w600,
                                                         fontSize: 14,
@@ -963,7 +963,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   children: [
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    const Text('Učitavanje admin panela...'),
+                    const Text('Ucitavanje admin panela...'),
                   ],
                 ),
               );
@@ -976,13 +976,13 @@ class _AdminScreenState extends State<AdminScreen> {
                   children: [
                     const Icon(Icons.error, color: Colors.red, size: 64),
                     const SizedBox(height: 16),
-                    Text('Greška: ${snapshot.error}'),
+                    Text('Gre�ka: ${snapshot.error}'),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        if (mounted) setState(() {}); // Pokušaj ponovo
+                        if (mounted) setState(() {}); // Poku�aj ponovo
                       },
-                      child: const Text('Pokušaj ponovo'),
+                      child: const Text('Poku�aj ponovo'),
                     ),
                   ],
                 ),
@@ -994,45 +994,45 @@ class _AdminScreenState extends State<AdminScreen> {
             }
             final allPutnici = snapshot.data!;
             final filteredPutnici = allPutnici.where((putnik) {
-              // 🗓️ FILTER PO DANU - Samo po danu nedelje
+              // ??? FILTER PO DANU - Samo po danu nedelje
               // Filtriraj po odabranom danu
               final shortDayName = _getShortDayName(_selectedDan);
               return putnik.dan == shortDayName;
             }).toList();
-            // ✅ DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
+            // ? DU�NICI - putnici sa PLAVOM KARTICOM (nisu mesecni tip) koji nisu platili
             final filteredDuznici = filteredPutnici.where((putnik) {
               final nijeMesecni = !putnik.isMesecniTip;
-              if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesečni tip
+              if (!nijeMesecni) return false; // ? FIX: Plava kartica = nije mesecni tip
 
-              final nijePlatio = putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
+              final nijePlatio = putnik.vremePlacanja == null; // ? FIX: Nije platio ako nema vremePlacanja
               final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
               final pokupljen = putnik.jePokupljen;
 
-              // ✅ NOVA LOGIKA: SVI (admin i vozači) vide SVE dužnike
-              // Omogućava vozačima da naplate dugove drugih vozača
+              // ? NOVA LOGIKA: SVI (admin i vozaci) vide SVE du�nike
+              // Omogucava vozacima da naplate dugove drugih vozaca
               // Uklonjeno AdminSecurityService.canViewDriverData filtriranje
 
               return nijePlatio && nijeOtkazan && pokupljen;
             }).toList();
 
-            // Izračunaj pazar po vozačima - KORISTI DIREKTNO filteredPutnici UMESTO DATUMA 💰
-            // ✅ ISPRAVKA: Umesto kalkulacije datuma, koristi već filtrirane putnike po danu
-            // Ovo omogućava prikaz pazara za odabrani dan (Pon, Uto, itd.) direktno
+            // Izracunaj pazar po vozacima - KORISTI DIREKTNO filteredPutnici UMESTO DATUMA ??
+            // ? ISPRAVKA: Umesto kalkulacije datuma, koristi vec filtrirane putnike po danu
+            // Ovo omogucava prikaz pazara za odabrani dan (Pon, Uto, itd.) direktno
 
-            // 📅 KALKULIRAJ DATUM NA OSNOVU DROPDOWN SELEKCIJE
+            // ?? KALKULIRAJ DATUM NA OSNOVU DROPDOWN SELEKCIJE
             final DateTime streamFrom, streamTo;
 
-            // Odabran je specifičan dan, pronađi taj dan u trenutnoj nedelji
+            // Odabran je specifican dan, pronadi taj dan u trenutnoj nedelji
             final now = DateTime.now();
-            final currentWeekday = now.weekday; // 1=Pon, 2=Uto, 3=Sre, 4=Čet, 5=Pet
+            final currentWeekday = now.weekday; // 1=Pon, 2=Uto, 3=Sre, 4=Cet, 5=Pet
 
-            // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
+            // ? KORISTI CENTRALNU FUNKCIJU IZ DateUtils
             final targetWeekday = app_date_utils.DateUtils.getDayWeekdayNumber(_selectedDan);
 
-            // 🎯 USKLADI SA DANAS SCREEN: Ako je odabrani dan isti kao danas, koristi današnji datum
+            // ?? USKLADI SA DANAS SCREEN: Ako je odabrani dan isti kao danas, koristi dana�nji datum
             final DateTime targetDate;
             if (targetWeekday == currentWeekday) {
-              // Isti dan kao danas - koristi današnji datum (kao danas screen)
+              // Isti dan kao danas - koristi dana�nji datum (kao danas screen)
               targetDate = now;
             } else {
               // Standardna logika za ostale dane
@@ -1040,12 +1040,12 @@ class _AdminScreenState extends State<AdminScreen> {
               targetDate = now.add(Duration(days: daysFromToday));
             }
 
-            // ✅ KORISTI UTILS ZA KREIRANJE DATE RANGE
+            // ? KORISTI UTILS ZA KREIRANJE DATE RANGE
             final dateRange = app_date_utils.DateUtils.getDateRange(targetDate);
             streamFrom = dateRange['from']!;
             streamTo = dateRange['to']!;
 
-            // 🎯 KORISTI StatistikaService.streamPazarZaSveVozace() - BEZ RxDart
+            // ?? KORISTI StatistikaService.streamPazarZaSveVozace() - BEZ RxDart
             return StreamBuilder<Map<String, double>>(
               stream: StatistikaService.streamPazarZaSveVozace(from: streamFrom, to: streamTo),
               builder: (context, pazarSnapshot) {
@@ -1055,19 +1055,19 @@ class _AdminScreenState extends State<AdminScreen> {
 
                 final pazarMap = pazarSnapshot.data!;
 
-                // 🎯 IDENTIČNA LOGIKA SA DANAS SCREEN: uzmi direktno vrednost iz mape
+                // ?? IDENTICNA LOGIKA SA DANAS SCREEN: uzmi direktno vrednost iz mape
                 final ukupno = pazarMap['_ukupno'] ?? 0.0;
 
-                // Ukloni '_ukupno' ključ za čist prikaz
+                // Ukloni '_ukupno' kljuc za cist prikaz
                 final Map<String, double> pazar = Map.from(pazarMap)..remove('_ukupno');
 
-                // 👥 FILTER PO VOZAČU - Prikaži samo naplate trenutnog vozača ili sve za admin
-                // 🔐 KORISTI ADMIN SECURITY SERVICE za filtriranje privilegija
+                // ?? FILTER PO VOZACU - Prika�i samo naplate trenutnog vozaca ili sve za admin
+                // ?? KORISTI ADMIN SECURITY SERVICE za filtriranje privilegija
                 if (_currentDriver == null) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(16.0),
-                      child: Text('⏳ Učitavanje...'),
+                      child: Text('? Ucitavanje...'),
                     ),
                   );
                 }
@@ -1086,15 +1086,15 @@ class _AdminScreenState extends State<AdminScreen> {
                   'Voja',
                 ];
 
-                // Filter vozače redosled na osnovu trenutnog vozača
-                // 🔐 KORISTI ADMIN SECURITY SERVICE za filtriranje vozača
+                // Filter vozace redosled na osnovu trenutnog vozaca
+                // ?? KORISTI ADMIN SECURITY SERVICE za filtriranje vozaca
                 final List<String> prikazaniVozaci = AdminSecurityService.getVisibleDrivers(
                   _currentDriver!,
                   vozaciRedosled,
                 );
                 return SingleChildScrollView(
                   // ensure we respect device safe area / system nav bar at the
-                  // bottom — some devices (Samsung) have a system bar which can
+                  // bottom � some devices (Samsung) have a system bar which can
                   // cause a tiny overflow (2px on some screens). Add extra
                   // bottom padding based on MediaQuery so the content can scroll
                   // clear of system UI on all devices.
@@ -1104,7 +1104,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        //  Info box za individualnog vozača
+                        //  Info box za individualnog vozaca
                         if (!isAdmin)
                           Container(
                             width: double.infinity,
@@ -1125,7 +1125,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Prikazuju se samo VAŠE naplate, vozač: $_currentDriver',
+                                    'Prikazuju se samo VA�E naplate, vozac: $_currentDriver',
                                     style: TextStyle(
                                       color: Colors.green[700],
                                       fontSize: 12,
@@ -1137,7 +1137,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             ),
                           ),
                         const SizedBox(height: 12),
-                        // 👥 VOZAČI PAZAR (BEZ DEPOZITA)
+                        // ?? VOZACI PAZAR (BEZ DEPOZITA)
                         Column(
                           children: prikazaniVozaci
                               .map(
@@ -1229,7 +1229,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         Container(
                           width: double.infinity,
                           // increased slightly to provide safe headroom across
-                          // devices (prevent tiny 1–3px overflows caused by
+                          // devices (prevent tiny 1�3px overflows caused by
                           // font metrics / shadows on some phones)
                           height: 76,
                           padding: const EdgeInsets.symmetric(
@@ -1237,7 +1237,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2), // Glassmorphism
+                            color: Colors.white.withOpacity(0.2), // Glassmorphism
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: Theme.of(context).glassBorder, // Transparentni border
@@ -1245,7 +1245,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.green.withValues(alpha: 0.3),
+                                color: Colors.green.withOpacity(0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -1273,7 +1273,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       letterSpacing: 1,
                                     ),
                                   ),
-                                  // 💰 UKUPAN PAZAR (BEZ DEPOZITA)
+                                  // ?? UKUPAN PAZAR (BEZ DEPOZITA)
                                   Text(
                                     '${(isAdmin ? ukupno : filteredPazar.values.fold(0.0, (sum, val) => sum + val)).toStringAsFixed(0)} RSD',
                                     style: TextStyle(
@@ -1287,11 +1287,11 @@ class _AdminScreenState extends State<AdminScreen> {
                             ],
                           ),
                         ),
-                        // 📱 SMS TEST DUGME - samo za Bojan
+                        // ?? SMS TEST DUGME - samo za Bojan
                         if (_currentDriver?.toLowerCase() == 'bojan') ...[
                           // SMS test i debug funkcionalnost uklonjena - servis radi u pozadini
                         ],
-                        // 🚢 SMART TRANZIT - EARLY WARNING
+                        // ?? SMART TRANZIT - EARLY WARNING
                         StreamBuilder<List<Map<String, dynamic>>>(
                           stream: SlobodnaMestaService.streamMissingTransitPassengers(),
                           builder: (context, snapshot) {
@@ -1307,9 +1307,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                 margin: const EdgeInsets.only(top: 8),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.withValues(alpha: 0.2),
+                                  color: Colors.orange.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
                                 ),
                                 child: Row(
                                   children: [
@@ -1338,7 +1338,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             );
                           },
                         ),
-                        // 📊 PROJEKTOVANO OPTEREĆENJE
+                        // ?? PROJEKTOVANO OPTERECENJE
                         StreamBuilder<Map<String, dynamic>>(
                           stream: SlobodnaMestaService.streamProjectedOccupancyStats(),
                           builder: (context, snapshot) {
@@ -1354,15 +1354,15 @@ class _AdminScreenState extends State<AdminScreen> {
                               margin: const EdgeInsets.only(top: 8),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.blue.withValues(alpha: 0.1),
+                                color: Colors.blue.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                                border: Border.all(color: Colors.blue.withOpacity(0.3)),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    '📊 PROJEKCIJA ZA VS -> BC (DANAS)',
+                                    '?? PROJEKCIJA ZA VS -> BC (DANAS)',
                                     style:
                                         TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
@@ -1371,7 +1371,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Ukupno očekivano: $totalProjected',
+                                        'Ukupno ocekivano: $totalProjected',
                                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                       ),
                                       Text(
@@ -1390,7 +1390,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4),
                                       child: Text(
-                                        '⚠️ Još $missing tranzitnih putnika treba da bukira.',
+                                        '?? Jo� $missing tranzitnih putnika treba da bukira.',
                                         style: const TextStyle(color: Colors.orange, fontSize: 11),
                                       ),
                                     ),
@@ -1413,5 +1413,6 @@ class _AdminScreenState extends State<AdminScreen> {
 
   // String _getTodayName() { ... } // unused
 
-  // (Funkcija za dijalog sa dužnicima je uklonjena - sada se koristi DugoviScreen)
+  // (Funkcija za dijalog sa du�nicima je uklonjena - sada se koristi DugoviScreen)
 }
+

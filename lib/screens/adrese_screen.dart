@@ -240,18 +240,18 @@ class _AdreseScreenState extends State<AdreseScreen> {
                                 : null,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.blue, width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.black.withValues(alpha: 0.3),
+                            fillColor: Colors.black.withOpacity(0.3),
                           ),
                           style: const TextStyle(color: Colors.white, fontSize: 16),
                           onChanged: (value) => setState(() => _searchQuery = value),
@@ -337,11 +337,11 @@ class _AdreseScreenState extends State<AdreseScreen> {
       onSelected: (value) {
         setState(() => _filterGrad = label);
       },
-      backgroundColor: Colors.black.withValues(alpha: 0.3),
-      selectedColor: Colors.blue.withValues(alpha: 0.6),
+      backgroundColor: Colors.black.withOpacity(0.3),
+      selectedColor: Colors.blue.withOpacity(0.6),
       checkmarkColor: Colors.white,
       side: BorderSide(
-        color: selected ? Colors.blue : Colors.white.withValues(alpha: 0.3),
+        color: selected ? Colors.blue : Colors.white.withOpacity(0.3),
         width: selected ? 2 : 1,
       ),
       labelStyle: TextStyle(
@@ -356,15 +356,15 @@ class _AdreseScreenState extends State<AdreseScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor:
-              adresa.grad == 'Bela Crkva' ? Colors.green.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2),
+              adresa.grad == 'Bela Crkva' ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
           child: Icon(
             Icons.location_on,
             color: adresa.grad == 'Bela Crkva' ? Colors.green : Colors.orange,
@@ -584,3 +584,4 @@ class _AdresaDialogState extends State<_AdresaDialog> {
     );
   }
 }
+

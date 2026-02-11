@@ -51,7 +51,7 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: Colors.black.withOpacity(0.3),
                 blurRadius: 20,
                 spreadRadius: 2,
                 offset: const Offset(0, 10),
@@ -101,10 +101,10 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.2),
+                          color: Colors.red.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.red.withValues(alpha: 0.4),
+                            color: Colors.red.withOpacity(0.4),
                           ),
                         ),
                         child: const Icon(
@@ -167,7 +167,7 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 side: BorderSide(
-                                  color: Colors.grey.withValues(alpha: 0.5),
+                                  color: Colors.grey.withOpacity(0.5),
                                 ),
                               ),
                             ),
@@ -269,9 +269,9 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.2),
+                  color: Colors.orange.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
                 ),
                 child: Row(
                   children: [
@@ -453,3 +453,4 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
     );
   }
 }
+

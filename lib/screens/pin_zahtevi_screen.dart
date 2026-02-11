@@ -137,7 +137,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
                 hintText: '0000',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
                 counterText: '',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -292,7 +292,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.amber.withValues(alpha: 0.2),
+                  backgroundColor: Colors.amber.withOpacity(0.2),
                   child: Text(
                     ime.isNotEmpty ? ime[0].toUpperCase() : '?',
                     style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
@@ -317,7 +317,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                             : tip == 'ucenik'
                                 ? '🎓 Učenik'
                                 : tip,
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+                        style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
                       ),
                     ],
                   ),
@@ -325,7 +325,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.2),
+                    color: Colors.orange.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
@@ -385,11 +385,11 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white.withValues(alpha: 0.5), size: 18),
+        Icon(icon, color: Colors.white.withOpacity(0.5), size: 18),
         const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
         ),
         Expanded(
           child: Text(
@@ -402,3 +402,4 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     );
   }
 }
+

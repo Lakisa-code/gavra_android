@@ -202,19 +202,19 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
                             colors: [
-                              softVozacColor.withValues(alpha: 0.8),
-                              softVozacColor.withValues(alpha: 0.4),
+                              softVozacColor.withOpacity(0.8),
+                              softVozacColor.withOpacity(0.4),
                             ],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: softVozacColor.withValues(alpha: 0.3),
+                              color: softVozacColor.withOpacity(0.3),
                               blurRadius: 20,
                               spreadRadius: 5,
                             ),
                             // Dodatni warm glow
                             BoxShadow(
-                              color: const Color(0xFFFFE0B2).withValues(alpha: 0.2),
+                              color: const Color(0xFFFFE0B2).withOpacity(0.2),
                               blurRadius: 30,
                               spreadRadius: 10,
                             ),
@@ -223,7 +223,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         child: Icon(
                           Icons.light_mode_outlined, // Mekša jutarnja ikona
                           size: 60,
-                          color: Colors.white.withValues(alpha: 0.95),
+                          color: Colors.white.withOpacity(0.95),
                         ),
                       ),
 
@@ -238,7 +238,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           color: primaryTextColor,
                           shadows: [
                             Shadow(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: Colors.white.withOpacity(0.8),
                               blurRadius: 2,
                             ),
                           ],
@@ -252,11 +252,11 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: vozacColor.withValues(alpha: 0.9),
+                          color: vozacColor.withOpacity(0.9),
                           letterSpacing: 1.2,
                           shadows: [
                             Shadow(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: Colors.white.withOpacity(0.8),
                               blurRadius: 2,
                             ),
                           ],
@@ -269,14 +269,14 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: lightVozacColor.withValues(alpha: 0.9),
+                          color: lightVozacColor.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: vozacColor.withValues(alpha: 0.4),
+                            color: vozacColor.withOpacity(0.4),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: vozacColor.withValues(alpha: 0.15),
+                              color: vozacColor.withOpacity(0.15),
                               blurRadius: 10,
                               spreadRadius: 2,
                             ),
@@ -320,7 +320,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                             backgroundColor: vozacColor,
                             foregroundColor: Colors.white,
                             elevation: 6,
-                            shadowColor: vozacColor.withValues(alpha: 0.3),
+                            shadowColor: vozacColor.withOpacity(0.3),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -355,3 +355,4 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     );
   }
 }
+

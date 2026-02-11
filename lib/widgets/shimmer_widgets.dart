@@ -154,6 +154,48 @@ class ShimmerWidgets {
     );
   }
 
+  /// 📊 Shimmer za zaglavlje sa datumom i dugmičima (za vozac_screen)
+  static Widget vozacHeaderShimmer(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      highlightColor: Theme.of(context).colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Datum
+            Container(
+              width: double.infinity,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Dugmići (5 redova)
+            Row(
+              children: List.generate(
+                5,
+                (index) => Expanded(
+                  child: Container(
+                    height: 36,
+                    margin: EdgeInsets.only(right: index < 4 ? 4 : 0),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 💎 Custom shimmer wrapper
   static Widget shimmerWrapper({
     required BuildContext context,

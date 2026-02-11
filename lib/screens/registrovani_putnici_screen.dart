@@ -413,7 +413,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.red.withValues(alpha: 0.4),
+                                  color: Colors.red.withOpacity(0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -477,7 +477,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.teal.withValues(alpha: 0.4),
+                                  color: Colors.teal.withOpacity(0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -541,7 +541,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.blue.withValues(alpha: 0.4),
+                                  color: Colors.blue.withOpacity(0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -592,18 +592,18 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
               padding: const EdgeInsets.all(16),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: Colors.white.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
                       blurRadius: 10,
                       spreadRadius: 1,
                       offset: const Offset(0, 3),
                     ),
                   ],
                   border: Border.all(
-                    color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                    color: Theme.of(context).primaryColor.withOpacity(0.2),
                   ),
                 ),
                 child: TextField(
@@ -1003,10 +1003,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.05),
+                    color: Colors.blue.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.blue.withValues(alpha: 0.2),
+                      color: Colors.blue.withOpacity(0.2),
                     ),
                   ),
                   child: Column(
@@ -1042,7 +1042,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withValues(alpha: 0.1),
+                              color: Colors.blue.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -1123,10 +1123,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
+                        color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: Colors.green.withValues(alpha: 0.3),
+                          color: Colors.green.withOpacity(0.3),
                         ),
                       ),
                       child: Row(
@@ -1166,10 +1166,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
+                        color: Colors.red.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: Colors.red.withValues(alpha: 0.3),
+                          color: Colors.red.withOpacity(0.3),
                         ),
                       ),
                       child: Row(
@@ -1274,19 +1274,19 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              color.withValues(alpha: 0.15),
-              color.withValues(alpha: 0.08),
+              color.withOpacity(0.15),
+              color.withOpacity(0.08),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: color.withValues(alpha: 0.3),
+            color: color.withOpacity(0.3),
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -1414,10 +1414,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                 ),
               ),
               child: Column(
@@ -2194,7 +2194,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -2542,3 +2542,4 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return prefs.getString('ime_vozaca') ?? 'Gavra';
   }
 }
+

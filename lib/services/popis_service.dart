@@ -138,10 +138,10 @@ class PopisService {
           child: Card(
             margin: const EdgeInsets.all(0),
             elevation: 4,
-            color: vozacColor.withValues(alpha: 0.25),
+            color: vozacColor.withOpacity(0.25),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: vozacColor.withValues(alpha: 0.6), width: 2),
+              side: BorderSide(color: vozacColor.withOpacity(0.6), width: 2),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -180,7 +180,7 @@ class PopisService {
 
                   _buildStatRow('Kilometraža', '${data.kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
 
-                  Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24)),
+                  Divider(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24)),
 
                   // UKUPAN PAZAR
                   _buildStatRow(
@@ -252,9 +252,9 @@ class PopisService {
       margin: const EdgeInsets.symmetric(horizontal: 2),
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Text(
         text,
@@ -264,3 +264,4 @@ class PopisService {
     );
   }
 }
+

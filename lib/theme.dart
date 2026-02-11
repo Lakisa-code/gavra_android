@@ -219,9 +219,9 @@ extension ThemeGradients on ThemeData {
 
   // Glassmorphism kontejner boje
   Color get glassContainer => Colors.transparent;
-  Color get glassBorder => Colors.white.withValues(alpha: 0.13);
+  Color get glassBorder => Colors.white.withOpacity(0.13);
   BoxShadow get glassShadow => BoxShadow(
-        color: Colors.black.withValues(alpha: 0.22),
+        color: Colors.black.withOpacity(0.22),
         blurRadius: 24,
         offset: const Offset(0, 8),
       );
@@ -254,22 +254,22 @@ class TripleBlueFashionStyles {
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
       width: 2,
-      color: const Color(0xFF1FA2FF).withValues(alpha: 0.4),
+      color: const Color(0xFF1FA2FF).withOpacity(0.4),
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withValues(alpha: 0.3),
+        color: const Color(0xFF021B79).withOpacity(0.3),
         blurRadius: 32,
         offset: const Offset(0, 12),
         spreadRadius: 4,
       ),
       BoxShadow(
-        color: const Color(0xFF4F7CAC).withValues(alpha: 0.2),
+        color: const Color(0xFF4F7CAC).withOpacity(0.2),
         blurRadius: 24,
         offset: const Offset(0, 8),
       ),
       BoxShadow(
-        color: const Color(0xFFE91E63).withValues(alpha: 0.4),
+        color: const Color(0xFFE91E63).withOpacity(0.4),
         blurRadius: 36,
         offset: const Offset(0, 16),
         spreadRadius: 6,
@@ -286,11 +286,11 @@ class TripleBlueFashionStyles {
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
       width: 1.5,
-      color: const Color(0xFF1FA2FF).withValues(alpha: 0.6),
+      color: const Color(0xFF1FA2FF).withOpacity(0.6),
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withValues(alpha: 0.4),
+        color: const Color(0xFF021B79).withOpacity(0.4),
         blurRadius: 24,
         offset: const Offset(0, 12),
         spreadRadius: 2,
@@ -302,12 +302,12 @@ class TripleBlueFashionStyles {
     color: const Color(0xFFF0F9FF), // Svetla pozadina
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
-      color: const Color(0xFF1FA2FF).withValues(alpha: 0.4), // Plavi border
+      color: const Color(0xFF1FA2FF).withOpacity(0.4), // Plavi border
       width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withValues(alpha: 0.2), // Plava senka
+        color: const Color(0xFF021B79).withOpacity(0.2), // Plava senka
         blurRadius: 16,
         offset: const Offset(0, 8),
       ),
@@ -318,12 +318,12 @@ class TripleBlueFashionStyles {
     color: Colors.white,
     borderRadius: BorderRadius.circular(24),
     border: Border.all(
-      color: const Color(0xFF1FA2FF).withValues(alpha: 0.5), // Plavi border
+      color: const Color(0xFF1FA2FF).withOpacity(0.5), // Plavi border
       width: 2,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withValues(alpha: 0.3), // Plava senka
+        color: const Color(0xFF021B79).withOpacity(0.3), // Plava senka
         blurRadius: 36,
         offset: const Offset(0, 16),
         spreadRadius: 8,
@@ -339,7 +339,7 @@ class DarkSteelGreyStyles {
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
       width: 2,
-      color: Colors.grey.withValues(alpha: 0.4), // Siva boja umesto plave
+      color: Colors.grey.withOpacity(0.4), // Siva boja umesto plave
     ),
     // BEZ SHADOW-A!
   );
@@ -353,7 +353,7 @@ class DarkSteelGreyStyles {
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
       width: 1.5,
-      color: Colors.grey.withValues(alpha: 0.6), // Siva boja umesto plave
+      color: Colors.grey.withOpacity(0.6), // Siva boja umesto plave
     ),
     // BEZ SHADOW-A!
   );
@@ -362,7 +362,7 @@ class DarkSteelGreyStyles {
     color: Colors.grey[800], // Tamno siva pozadina
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
-      color: Colors.grey.withValues(alpha: 0.4), // Siva boja umesto plave
+      color: Colors.grey.withOpacity(0.4), // Siva boja umesto plave
       width: 1.5,
     ),
     // BEZ SHADOW-A!
@@ -372,7 +372,7 @@ class DarkSteelGreyStyles {
     color: Colors.grey[900], // Tamno siva pozadina
     borderRadius: BorderRadius.circular(24),
     border: Border.all(
-      color: Colors.grey.withValues(alpha: 0.5), // Siva boja umesto plave
+      color: Colors.grey.withOpacity(0.5), // Siva boja umesto plave
       width: 2,
     ),
     // BEZ SHADOW-A!
@@ -386,11 +386,11 @@ class DarkPinkStyles {
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
       width: 2,
-      color: const Color(0xFFE91E8C).withValues(alpha: 0.5), // Neon pink border
+      color: const Color(0xFFE91E8C).withOpacity(0.5), // Neon pink border
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFFE91E8C).withValues(alpha: 0.3), // Pink glow
+        color: const Color(0xFFE91E8C).withOpacity(0.3), // Pink glow
         blurRadius: 24,
         offset: const Offset(0, 8),
         spreadRadius: 2,
@@ -407,11 +407,11 @@ class DarkPinkStyles {
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
       width: 1.5,
-      color: const Color(0xFFE91E8C).withValues(alpha: 0.6), // Neon pink border
+      color: const Color(0xFFE91E8C).withOpacity(0.6), // Neon pink border
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFFE91E8C).withValues(alpha: 0.4), // Pink glow
+        color: const Color(0xFFE91E8C).withOpacity(0.4), // Pink glow
         blurRadius: 20,
         offset: const Offset(0, 8),
         spreadRadius: 2,
@@ -423,12 +423,12 @@ class DarkPinkStyles {
     color: const Color(0xFF2D1F2D), // Tamno ljubičasta pozadina
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
-      color: const Color(0xFFE91E8C).withValues(alpha: 0.4), // Pink border
+      color: const Color(0xFFE91E8C).withOpacity(0.4), // Pink border
       width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFFE91E8C).withValues(alpha: 0.2), // Pink glow
+        color: const Color(0xFFE91E8C).withOpacity(0.2), // Pink glow
         blurRadius: 12,
         offset: const Offset(0, 4),
       ),
@@ -439,12 +439,12 @@ class DarkPinkStyles {
     color: const Color(0xFF1A0A14), // Skoro crna pozadina
     borderRadius: BorderRadius.circular(24),
     border: Border.all(
-      color: const Color(0xFFE91E8C).withValues(alpha: 0.5), // Pink border
+      color: const Color(0xFFE91E8C).withOpacity(0.5), // Pink border
       width: 2,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFFE91E8C).withValues(alpha: 0.3), // Pink glow
+        color: const Color(0xFFE91E8C).withOpacity(0.3), // Pink glow
         blurRadius: 32,
         offset: const Offset(0, 12),
         spreadRadius: 4,
@@ -452,3 +452,4 @@ class DarkPinkStyles {
     ],
   );
 }
+

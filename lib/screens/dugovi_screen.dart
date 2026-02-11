@@ -161,7 +161,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                 ),
                 Text(
                   'Svi neplaćeni putnici (Plava kartica)',
-                  style: TextStyle(fontSize: 12, color: Colors.white70.withValues(alpha: 0.8)),
+                  style: TextStyle(fontSize: 12, color: Colors.white70.withOpacity(0.8)),
                 ),
               ],
             ),
@@ -198,3 +198,4 @@ class _DugoviScreenState extends State<DugoviScreen> {
     );
   }
 }
+

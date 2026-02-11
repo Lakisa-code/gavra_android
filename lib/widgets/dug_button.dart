@@ -85,7 +85,7 @@ class DugButton extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.red.withValues(alpha: 0.2),
+                color: Colors.red.withOpacity(0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -146,3 +146,4 @@ class DugButton extends StatelessWidget {
     }
   }
 }
+

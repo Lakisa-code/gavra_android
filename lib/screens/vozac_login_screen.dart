@@ -390,7 +390,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                 Text(
                   'Potvrdi svoje podatke za prijavu',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: Colors.white.withOpacity(0.7),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -435,7 +435,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                   obscureText: !_sifraVisible,
                   decoration: InputDecoration(
                     labelText: 'Šifra',
-                    labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                    labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                     prefixIcon: Icon(Icons.lock, color: isDark ? currentTheme.colorScheme.primary : Colors.amber),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -445,7 +445,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                       onPressed: () => setState(() => _sifraVisible = !_sifraVisible),
                     ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.1),
+                    fillColor: Colors.white.withOpacity(0.1),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -453,7 +453,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: (isDark ? currentTheme.colorScheme.primary : Colors.amber).withValues(alpha: 0.3)),
+                          color: (isDark ? currentTheme.colorScheme.primary : Colors.amber).withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -515,7 +515,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white24),
                   ),
@@ -526,7 +526,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                       Expanded(
                         child: Text(
                           'Unesi iste podatke koje je admin postavio za tebe.',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                         ),
                       ),
                     ],
@@ -544,17 +544,17 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     final accentColor = isDark ? currentTheme.colorScheme.primary as Color : Colors.amber;
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
       prefixIcon: Icon(icon, color: accentColor),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.1),
+      fillColor: Colors.white.withOpacity(0.1),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: accentColor.withValues(alpha: 0.3)),
+        borderSide: BorderSide(color: accentColor.withOpacity(0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -567,3 +567,4 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     );
   }
 }
+

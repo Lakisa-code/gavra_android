@@ -211,7 +211,7 @@ class _TranzitScreenState extends State<TranzitScreen> with SingleTickerProvider
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.swap_horiz, size: 80, color: Colors.white.withValues(alpha: 0.3)),
+          Icon(Icons.swap_horiz, size: 80, color: Colors.white.withOpacity(0.3)),
           const SizedBox(height: 16),
           const Text(
             'Nema putnika u tranzitu za danas',
@@ -233,12 +233,12 @@ class _TranzitScreenState extends State<TranzitScreen> with SingleTickerProvider
         final List<Putnik> trips = item['trips'];
 
         return Card(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: Colors.white.withOpacity(0.1),
           margin: const EdgeInsets.only(bottom: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isZavrseno ? Colors.green.withValues(alpha: 0.5) : Colors.orange.withValues(alpha: 0.5),
+              color: isZavrseno ? Colors.green.withOpacity(0.5) : Colors.orange.withOpacity(0.5),
               width: 1,
             ),
           ),
@@ -258,7 +258,7 @@ class _TranzitScreenState extends State<TranzitScreen> with SingleTickerProvider
             subtitle: Text(
               '${trips.length} termina zakazano',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Colors.white.withOpacity(0.6),
                 fontSize: 12,
               ),
             ),
@@ -293,7 +293,7 @@ class _TranzitScreenState extends State<TranzitScreen> with SingleTickerProvider
       itemBuilder: (context, index) {
         final putnik = _missingReturnPutnici[index];
         return Card(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: Colors.white.withOpacity(0.1),
           margin: const EdgeInsets.only(bottom: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -328,3 +328,4 @@ class _TranzitScreenState extends State<TranzitScreen> with SingleTickerProvider
     );
   }
 }
+

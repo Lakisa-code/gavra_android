@@ -225,7 +225,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -270,7 +270,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
           color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
+            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
           ),
         ),
         child: Text(
@@ -320,7 +320,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: boja.withValues(alpha: 0.15),
+                        color: boja.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
@@ -395,7 +395,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
       ),
       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -411,7 +411,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: color.withValues(alpha: 0.8),
+                  color: color.withOpacity(0.8),
                 ),
               ),
             ],
@@ -451,3 +451,4 @@ class VozacStatsV2 {
     this.pazar = 0,
   });
 }
+

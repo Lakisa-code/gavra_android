@@ -121,7 +121,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     if (danaDoIsteka >= 15 && danaDoIsteka <= 30) {
       return [
         BoxShadow(
-          color: Colors.lime.withValues(alpha: 0.6),
+          color: Colors.lime.withOpacity(0.6),
           blurRadius: 12,
           spreadRadius: 3,
         ),
@@ -229,7 +229,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? (color == Colors.white ? Colors.grey.shade200 : color.withValues(alpha: 0.2))
+                            ? (color == Colors.white ? Colors.grey.shade200 : color.withOpacity(0.2))
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
@@ -537,7 +537,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: badgeColor?.withValues(alpha: 0.1),
+                      color: badgeColor?.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -1015,3 +1015,4 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     );
   }
 }
+

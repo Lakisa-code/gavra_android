@@ -274,7 +274,7 @@ class _RegistracijaCountdownWidgetState extends State<RegistracijaCountdownWidge
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color == Colors.white ? Colors.grey.shade200 : color.withValues(alpha: 0.2),
+              color: color == Colors.white ? Colors.grey.shade200 : color.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: borderColor, width: 2),
             ),
@@ -321,3 +321,4 @@ class _RegistracijaCountdownWidgetState extends State<RegistracijaCountdownWidge
     );
   }
 }
+

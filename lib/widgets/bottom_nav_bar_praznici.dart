@@ -112,7 +112,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             blurRadius: 24,
             offset: const Offset(0, -8),
             spreadRadius: 2,
@@ -251,12 +251,12 @@ class _PolazakRow extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: selected
                             ? (currentThemeId == 'dark_steel_grey'
-                                ? const Color(0xFF4A4A4A).withValues(alpha: 0.15)
+                                ? const Color(0xFF4A4A4A).withOpacity(0.15)
                                 : currentThemeId == 'passionate_rose'
-                                    ? const Color(0xFFDC143C).withValues(alpha: 0.15)
+                                    ? const Color(0xFFDC143C).withOpacity(0.15)
                                     : currentThemeId == 'dark_pink'
-                                        ? const Color(0xFFE91E8C).withValues(alpha: 0.15)
-                                        : Colors.blueAccent.withValues(alpha: 0.15))
+                                        ? const Color(0xFFE91E8C).withOpacity(0.15)
+                                        : Colors.blueAccent.withOpacity(0.15))
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
@@ -333,3 +333,4 @@ class _PolazakRow extends StatelessWidget {
     );
   }
 }
+

@@ -469,12 +469,12 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 24),
+          Icon(icon, color: Colors.white.withOpacity(0.8), size: 24),
           const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Colors.white.withOpacity(0.9),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 1,
@@ -500,14 +500,14 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withValues(alpha: 0.9),
-                      Colors.white.withValues(alpha: 0.7),
+                      Colors.white.withOpacity(0.9),
+                      Colors.white.withOpacity(0.7),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: Colors.black.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -548,7 +548,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
               child: Text(
                 'Vozač: $_vozacIme',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: Colors.white.withOpacity(0.7),
                   fontSize: 12,
                 ),
               ),
@@ -568,13 +568,13 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            baseColor.withValues(alpha: 0.15),
-            baseColor.withValues(alpha: 0.05),
+            baseColor.withOpacity(0.15),
+            baseColor.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
+          color: Colors.white.withOpacity(0.25),
           width: 1,
         ),
       ),
@@ -589,3 +589,4 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     return '~$minutes min';
   }
 }
+

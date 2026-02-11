@@ -181,7 +181,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                 Text(
                   imaSifru ? 'Promeni svoju šifru' : 'Postavi novu šifru',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: Colors.white.withOpacity(0.7),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -196,7 +196,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                     obscureText: !_staraSifraVisible,
                     decoration: InputDecoration(
                       labelText: 'Trenutna šifra',
-                      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                       prefixIcon: const Icon(Icons.lock_outline, color: Colors.amber),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -206,14 +206,14 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                         onPressed: () => setState(() => _staraSifraVisible = !_staraSifraVisible),
                       ),
                       filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.1),
+                      fillColor: Colors.white.withOpacity(0.1),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.amber.withValues(alpha: 0.3)),
+                        borderSide: BorderSide(color: Colors.amber.withOpacity(0.3)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -237,7 +237,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                   obscureText: !_novaSifraVisible,
                   decoration: InputDecoration(
                     labelText: 'Nova šifra',
-                    labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                    labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                     prefixIcon: const Icon(Icons.lock, color: Colors.amber),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -247,14 +247,14 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                       onPressed: () => setState(() => _novaSifraVisible = !_novaSifraVisible),
                     ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.1),
+                    fillColor: Colors.white.withOpacity(0.1),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.amber.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(color: Colors.amber.withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -280,7 +280,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                   obscureText: !_potvrdaVisible,
                   decoration: InputDecoration(
                     labelText: 'Potvrdi novu šifru',
-                    labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                    labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                     prefixIcon: const Icon(Icons.lock_clock, color: Colors.amber),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -290,14 +290,14 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                       onPressed: () => setState(() => _potvrdaVisible = !_potvrdaVisible),
                     ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.1),
+                    fillColor: Colors.white.withOpacity(0.1),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.amber.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(color: Colors.amber.withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -344,7 +344,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white24),
                   ),
@@ -355,7 +355,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                       Expanded(
                         child: Text(
                           'Nova šifra će važiti od sledeće prijave.',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                         ),
                       ),
                     ],
@@ -369,3 +369,4 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
     );
   }
 }
+

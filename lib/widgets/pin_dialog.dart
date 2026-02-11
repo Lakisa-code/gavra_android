@@ -174,9 +174,9 @@ class _PinDialogState extends State<PinDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                border: Border.all(color: Colors.amber.withOpacity(0.5)),
               ),
               child: Column(
                 children: [
@@ -261,7 +261,7 @@ class _PinDialogState extends State<PinDialog> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.2),
+                  color: Colors.orange.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -290,3 +290,4 @@ class _PinDialogState extends State<PinDialog> {
     );
   }
 }
+

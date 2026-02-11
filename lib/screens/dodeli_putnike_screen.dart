@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,9 +8,9 @@ import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/kapacitet_service.dart';
 import '../services/putnik_service.dart';
-import '../services/realtime/realtime_manager.dart'; // 🎯 Realtime manager
+import '../services/realtime/realtime_manager.dart'; // ?? Realtime manager
 import '../services/theme_manager.dart';
-import '../services/vreme_vozac_service.dart'; // 🆕 Per-vreme dodeljivanje
+import '../services/vreme_vozac_service.dart'; // ?? Per-vreme dodeljivanje
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_count_helper.dart';
@@ -20,9 +20,9 @@ import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 
-/// 🎯 DODELI PUTNIKE SCREEN
-/// Omogućava adminima (Bojan, Svetlana) da dodele putnike vozačima
-/// UI identičan HomeScreen-u: izbor dan/vreme/grad, lista putnika sa bojama vozača
+/// ?? DODELI PUTNIKE SCREEN
+/// Omogucava adminima (Bojan, Svetlana) da dodele putnike vozacima
+/// UI identican HomeScreen-u: izbor dan/vreme/grad, lista putnika sa bojama vozaca
 class DodeliPutnikeScreen extends StatefulWidget {
   const DodeliPutnikeScreen({super.key});
 
@@ -33,21 +33,21 @@ class DodeliPutnikeScreen extends StatefulWidget {
 class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   final PutnikService _putnikService = PutnikService();
 
-  // Filteri - identično kao HomeScreen
+  // Filteri - identicno kao HomeScreen
   String _selectedDay = 'Ponedeljak';
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
 
   // Stream subscription
   StreamSubscription<List<Putnik>>? _putnikSubscription;
-  String? _currentStreamKey; // 🆕 Čuvaj ključ trenutnog streama
+  String? _currentStreamKey; // ?? Cuvaj kljuc trenutnog streama
   List<Putnik> _putnici = [];
   bool _isLoading = true;
 
   // Svi putnici za count u BottomNavBar
   List<Putnik> _allPutnici = [];
 
-  // 🎯 MULTI-SELECT MODE
+  // ?? MULTI-SELECT MODE
   bool _isSelectionMode = false;
   final Set<String> _selectedPutnici = {};
 
@@ -56,11 +56,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     'Ponedeljak',
     'Utorak',
     'Sreda',
-    'Četvrtak',
+    'Cetvrtak',
     'Petak',
   ];
 
-  // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
+  // ?? DINAMICKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
     String sezona;
@@ -113,10 +113,10 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
             : RouteConfig.vsVremenaLetnji);
   }
 
-  // 📋 Svi polasci za BottomNavBar
+  // ?? Svi polasci za BottomNavBar
   List<String> get _sviPolasci {
     final bcList = bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = vsVremena.map((v) => '$v Vršac').toList();
+    final vsList = vsVremena.map((v) => '$v Vr�ac').toList();
     return [...bcList, ...vsList];
   }
 
@@ -129,7 +129,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   }
 
   void _setupRealtimeListener() {
-    // Slušaj promjene u registrovani_putnici tabeli
+    // Slu�aj promjene u registrovani_putnici tabeli
     RealtimeManager.instance.subscribe('registrovani_putnici').listen((_) {
       if (mounted) {
         _setupStream();
@@ -145,24 +145,24 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   String _getTodayName() {
     final today = DateTime.now();
-    // Vikendom (subota=6, nedelja=7) prikaži ponedeljak
+    // Vikendom (subota=6, nedelja=7) prika�i ponedeljak
     if (today.weekday == DateTime.saturday || today.weekday == DateTime.sunday) {
       return 'Ponedeljak';
     }
     return app_date_utils.DateUtils.getTodayFullName();
   }
 
-  // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
+  // ? KORISTI CENTRALNU FUNKCIJU IZ DateUtils
 
   void _setupStream() {
-    // 🆕 Zatvori stari stream ako postoji
+    // ?? Zatvori stari stream ako postoji
     _putnikSubscription?.cancel();
 
     final isoDate = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
 
-    // 🆕 Ako menjamo datum, zatvori stari stream eksplicitno
+    // ?? Ako menjamo datum, zatvori stari stream eksplicitno
     if (_currentStreamKey != null) {
-      // Ekstraktuj isoDate iz starog ključa
+      // Ekstraktuj isoDate iz starog kljuca
       final oldIsoDate = _currentStreamKey!.split('|')[0];
       if (oldIsoDate.isNotEmpty && oldIsoDate != isoDate) {
         PutnikService.closeStream(isoDate: oldIsoDate);
@@ -183,7 +183,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       if (mounted) {
         final danAbbrev = app_date_utils.DateUtils.getDayAbbreviation(_selectedDay);
 
-        // Sačuvaj sve putnike za dan (za BottomNavBar count)
+        // Sacuvaj sve putnike za dan (za BottomNavBar count)
         _allPutnici = putnici.where((p) {
           return p.dan.toLowerCase() == danAbbrev.toLowerCase();
         }).toList();
@@ -195,19 +195,19 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           return vremeMatch && gradMatch;
         }).toList();
 
-        // 🔢 Sortiraj po redosledu: Nedodeljeni → Bojan → Ostali vozači
+        // ?? Sortiraj po redosledu: Nedodeljeni ? Bojan ? Ostali vozaci
         filtered.sort((a, b) {
           // Prvo po statusu (da aktivni budu gore, otkazani i odsustvo dole)
           int getStatusPriority(Putnik p) {
-            if (p.jeOdsustvo) return 3; // žuti na dno
-            if (p.jeOtkazan) return 2; // crveni iznad žutih
+            if (p.jeOdsustvo) return 3; // �uti na dno
+            if (p.jeOtkazan) return 2; // crveni iznad �utih
             return 0; // aktivni na vrh
           }
 
           final statusCompare = getStatusPriority(a).compareTo(getStatusPriority(b));
           if (statusCompare != 0) return statusCompare;
 
-          // Zatim po vozaču: Nedodeljeni=0, Bojan=1, ostali=2
+          // Zatim po vozacu: Nedodeljeni=0, Bojan=1, ostali=2
           int getVozacPriority(Putnik p) {
             final vozac = p.dodeljenVozac ?? 'Nedodeljen';
             if (vozac == 'Nedodeljen' || vozac.isEmpty) return 0;
@@ -218,7 +218,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           final vozacCompare = getVozacPriority(a).compareTo(getVozacPriority(b));
           if (vozacCompare != 0) return vozacCompare;
 
-          // Unutar iste grupe vozača - alfabetski po imenu putnika
+          // Unutar iste grupe vozaca - alfabetski po imenu putnika
           return a.ime.toLowerCase().compareTo(b.ime.toLowerCase());
         });
 
@@ -230,7 +230,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     });
   }
 
-  // 📊 Broj putnika za BottomNavBar - REFAKTORISANO: koristi PutnikCountHelper za konzistentnost
+  // ?? Broj putnika za BottomNavBar - REFAKTORISANO: koristi PutnikCountHelper za konzistentnost
   int _getPutnikCount(String grad, String vreme) {
     final isoDate = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
     final danAbbrev = app_date_utils.DateUtils.getDayAbbreviation(_selectedDay);
@@ -255,10 +255,10 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  /// 🆕 Vraća kraticu pravca: 'bc' za Bela Crkva, 'vs' za Vršac
+  /// ?? Vraca kraticu pravca: 'bc' za Bela Crkva, 'vs' za Vr�ac
   String get _currentPlaceKratica => _selectedGrad == 'Bela Crkva' ? 'bc' : 'vs';
 
-  /// 🆕 Vraća kraticu dana: 'pon', 'uto', itd.
+  /// ?? Vraca kraticu dana: 'pon', 'uto', itd.
   String get _currentDayKratica {
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     final index = _dani.indexOf(_selectedDay);
@@ -313,7 +313,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               ),
                             ),
                             Text(
-                              '$pravacLabel $_selectedVreme • Vozač: $currentVozac',
+                              '$pravacLabel $_selectedVreme � Vozac: $currentVozac',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -325,19 +325,19 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                     ],
                   ),
                 ),
-                // Lista vozača - scrollable
+                // Lista vozaca - scrollable
                 Flexible(
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 1️⃣ NEDODELJENI - prvi
+                        // 1?? NEDODELJENI - prvi
                         ListTile(
                           leading: Container(
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: Colors.grey.withValues(alpha: 0.2),
+                              color: Colors.grey.withOpacity(0.2),
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.grey, width: 2),
                             ),
@@ -355,7 +355,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                           onTap: () => Navigator.pop(context, '_NONE_'),
                         ),
                         const Divider(),
-                        // 2️⃣ BOJAN - drugi (admin)
+                        // 2?? BOJAN - drugi (admin)
                         if (vozaci.contains('Bojan')) ...[
                           Builder(builder: (context) {
                             final vozac = 'Bojan';
@@ -366,7 +366,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.2),
+                                  color: color.withOpacity(0.2),
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
                                 ),
@@ -396,7 +396,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                           }),
                           const Divider(),
                         ],
-                        // 3️⃣ OSTALI VOZAČI
+                        // 3?? OSTALI VOZACI
                         ...vozaci.where((v) => v != 'Bojan').map((vozac) {
                           final isSelected = vozac == currentVozac;
                           final color = VozacBoja.getSync(vozac);
@@ -405,7 +405,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.2),
+                                color: color.withOpacity(0.2),
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 2),
                               ),
@@ -447,21 +447,21 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     if (selected != null && selected != currentVozac && putnik.id != null) {
       try {
-        // ➖ Ako je izabrano "Bez vozača", postavi null
+        // ? Ako je izabrano "Bez vozaca", postavi null
         final noviVozac = selected == '_NONE_' ? null : selected;
         final pravac = _currentPlaceKratica; // 'bc' ili 'vs'
         final dan = _currentDayKratica; // 'pon', 'uto', itd.
 
-        // 🆕 Sačuvaj per-pravac per-vreme (bc_5:00_vozac ili vs_14:00_vozac u polasci_po_danu)
+        // ?? Sacuvaj per-pravac per-vreme (bc_5:00_vozac ili vs_14:00_vozac u polasci_po_danu)
         await _putnikService.dodelPutnikaVozacuZaPravac(
           putnik.id!,
           noviVozac,
           pravac,
-          vreme: _selectedVreme, // 🆕 Prosleđivanje vremena
+          vreme: _selectedVreme, // ?? Prosledivanje vremena
           selectedDan: dan,
         );
 
-        // Čekaj 300ms da se baza ažurira prije nego što osveži UI
+        // Cekaj 300ms da se baza a�urira prije nego �to osve�i UI
         await Future.delayed(const Duration(milliseconds: 300));
 
         if (mounted) {
@@ -469,8 +469,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(noviVozac == null
-                  ? '✅ ${putnik.ime} uklonjen sa vozača ($pravacLabel)'
-                  : '✅ ${putnik.ime} → $noviVozac ($pravacLabel)'),
+                  ? '? ${putnik.ime} uklonjen sa vozaca ($pravacLabel)'
+                  : '? ${putnik.ime} ? $noviVozac ($pravacLabel)'),
               backgroundColor: noviVozac == null ? Colors.grey : VozacBoja.getSync(noviVozac),
               duration: const Duration(seconds: 2),
             ),
@@ -480,7 +480,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Greška: $e'),
+              content: Text('? Gre�ka: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -489,14 +489,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  /// 🆕 DODELI CELO VREME VOZAČU
-  /// Prikazuje picker za izbor vozača koji će voziti CEO termin (npr. BC 18:00)
+  /// ?? DODELI CELO VREME VOZACU
+  /// Prikazuje picker za izbor vozaca koji ce voziti CEO termin (npr. BC 18:00)
   Future<void> _showVremeVozacPicker() async {
     final vozaci = VozacBoja.validDriversSync;
     final vremeVozacService = VremeVozacService();
     final danKratica = _currentDayKratica;
 
-    // Dohvati trenutnog vozača za ovo vreme (ako postoji)
+    // Dohvati trenutnog vozaca za ovo vreme (ako postoji)
     final currentVozac = vremeVozacService.getVozacZaVremeSync(
           _selectedGrad,
           _selectedVreme,
@@ -528,7 +528,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
+                    color: Colors.blue.withOpacity(0.1),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     border: Border(
                       bottom: BorderSide(
@@ -552,7 +552,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               ),
                             ),
                             Text(
-                              'Svi putnici na ovom terminu idu sa izabranim vozačem',
+                              'Svi putnici na ovom terminu idu sa izabranim vozacem',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey[600],
@@ -573,7 +573,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                     ],
                   ),
                 ),
-                // Lista vozača
+                // Lista vozaca
                 Flexible(
                   child: SingleChildScrollView(
                     child: Column(
@@ -587,7 +587,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.2),
+                                color: color.withOpacity(0.2),
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 2),
                               ),
@@ -622,7 +622,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: Colors.grey.withValues(alpha: 0.2),
+                              color: Colors.grey.withOpacity(0.2),
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.grey, width: 2),
                             ),
@@ -666,12 +666,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ $vremeLabel - dodeljivanje uklonjeno'),
+                content: Text('? $vremeLabel - dodeljivanje uklonjeno'),
                 backgroundColor: Colors.grey,
                 duration: const Duration(seconds: 2),
               ),
             );
-            // Čekaj 300ms da se baza ažurira prije nego što refresh-uješ stream
+            // Cekaj 300ms da se baza a�urira prije nego �to refresh-uje� stream
             await Future.delayed(const Duration(milliseconds: 300));
             if (mounted) {
               _setupStream();
@@ -687,12 +687,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ $vremeLabel → $selected (ceo termin)'),
+                content: Text('? $vremeLabel ? $selected (ceo termin)'),
                 backgroundColor: VozacBoja.getSync(selected),
                 duration: const Duration(seconds: 2),
               ),
             );
-            // Čekaj 300ms da se baza ažurira prije nego što refresh-uješ stream
+            // Cekaj 300ms da se baza a�urira prije nego �to refresh-uje� stream
             await Future.delayed(const Duration(milliseconds: 300));
             if (mounted) {
               _setupStream();
@@ -703,7 +703,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Greška: $e'),
+              content: Text('? Gre�ka: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -712,7 +712,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  /// 🆕 WIDGET: AppBar title sa indikatorom dodeljenog vozača
+  /// ?? WIDGET: AppBar title sa indikatorom dodeljenog vozaca
   Widget _buildAppBarTitle() {
     if (_isSelectionMode) {
       return Text('${_selectedPutnici.length} selektovano');
@@ -727,11 +727,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     if (terminVozac != null) {
       final color = VozacBoja.getSync(terminVozac);
-      // Samo badge sa vozačem, bez "Dodeli Putnike" teksta da ne bude overflow
+      // Samo badge sa vozacem, bez "Dodeli Putnike" teksta da ne bude overflow
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.3),
+          color: color.withOpacity(0.3),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white, width: 1.5),
         ),
@@ -766,10 +766,10 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light, // 🎨 Bele ikonice u status baru
+      value: SystemUiOverlayStyle.light, // ?? Bele ikonice u status baru
       child: Container(
         decoration: BoxDecoration(
-          gradient: ThemeManager().currentGradient, // 🎨 Theme-aware gradijent
+          gradient: ThemeManager().currentGradient, // ?? Theme-aware gradijent
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -791,10 +791,10 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                   )
                 : null,
             actions: [
-              // 🆕 Dodeli celo vreme vozaču
+              // ?? Dodeli celo vreme vozacu
               IconButton(
                 icon: const Icon(Icons.groups),
-                tooltip: 'Dodeli termin vozaču',
+                tooltip: 'Dodeli termin vozacu',
                 onPressed: _showVremeVozacPicker,
               ),
               // Izbor dana
@@ -841,7 +841,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           ),
           body: Column(
             children: [
-              // 📋 LISTA PUTNIKA
+              // ?? LISTA PUTNIKA
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
@@ -873,20 +873,20 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               final vozacColor = VozacBoja.getColorOrDefaultSync(putnik.dodeljenVozac, Colors.grey);
                               final isSelected = putnik.id != null && _selectedPutnici.contains(putnik.id);
 
-                              // 🎨 Boja kartice prema statusu putnika
+                              // ?? Boja kartice prema statusu putnika
                               Color? cardColor;
                               Color? borderColor;
                               String? statusText;
                               if (putnik.jeOtkazan) {
-                                cardColor = Colors.red.withValues(alpha: 0.15);
+                                cardColor = Colors.red.withOpacity(0.15);
                                 borderColor = Colors.red;
-                                statusText = '❌ OTKAZAN';
+                                statusText = '? OTKAZAN';
                               } else if (putnik.jeOdsustvo) {
-                                cardColor = Colors.amber.withValues(alpha: 0.15);
+                                cardColor = Colors.amber.withOpacity(0.15);
                                 borderColor = Colors.amber;
-                                statusText = '🏖️ ${putnik.status?.toUpperCase() ?? "ODSUSTVO"}';
+                                statusText = '??? ${putnik.status?.toUpperCase() ?? "ODSUSTVO"}';
                               } else if (isSelected) {
-                                cardColor = vozacColor.withValues(alpha: 0.1);
+                                cardColor = vozacColor.withOpacity(0.1);
                               }
 
                               return Card(
@@ -917,7 +917,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                         )
                                       : CircleAvatar(
                                           backgroundColor:
-                                              borderColor?.withValues(alpha: 0.3) ?? vozacColor.withValues(alpha: 0.2),
+                                              borderColor?.withOpacity(0.3) ?? vozacColor.withOpacity(0.2),
                                           child: Text(
                                             '${index + 1}',
                                             style: TextStyle(
@@ -937,7 +937,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${putnik.adresa ?? putnik.grad} • ${putnik.dodeljenVozac ?? "Nedodeljen"}',
+                                        '${putnik.adresa ?? putnik.grad} � ${putnik.dodeljenVozac ?? "Nedodeljen"}',
                                         style: TextStyle(color: borderColor ?? vozacColor),
                                       ),
                                       if (statusText != null)
@@ -954,7 +954,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                   trailing: _isSelectionMode
                                       ? CircleAvatar(
                                           radius: 16,
-                                          backgroundColor: vozacColor.withValues(alpha: 0.2),
+                                          backgroundColor: vozacColor.withOpacity(0.2),
                                           child: Text(
                                             '${index + 1}',
                                             style: TextStyle(color: vozacColor, fontSize: 12),
@@ -989,9 +989,9 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
               ),
             ],
           ),
-          // 🎯 BOTTOM NAV BAR - identično kao HomeScreen (sa kapacitetom i praznicima)
+          // ?? BOTTOM NAV BAR - identicno kao HomeScreen (sa kapacitetom i praznicima)
           bottomNavigationBar: _buildBottomNavBar(),
-          // 🎯 PERSISTENT BOTTOM SHEET za bulk akcije (kad je selection mode aktivan)
+          // ?? PERSISTENT BOTTOM SHEET za bulk akcije (kad je selection mode aktivan)
           persistentFooterButtons: _isSelectionMode && _selectedPutnici.isNotEmpty
               ? [
                   Expanded(
@@ -999,14 +999,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          // Vozači dugmići
+                          // Vozaci dugmici
                           ...VozacBoja.validDriversSync.map((vozac) {
                             final color = VozacBoja.getSync(vozac);
                             return Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 4),
                               child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: color.withValues(alpha: 0.2),
+                                  backgroundColor: color.withOpacity(0.2),
                                   foregroundColor: Colors.white,
                                 ),
                                 icon:
@@ -1017,14 +1017,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                             );
                           }),
                           const SizedBox(width: 8),
-                          // Obriši dugme
+                          // Obri�i dugme
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.withValues(alpha: 0.2),
+                              backgroundColor: Colors.red.withOpacity(0.2),
                               foregroundColor: Colors.red,
                             ),
                             icon: const Icon(Icons.delete),
-                            label: const Text('Obriši'),
+                            label: const Text('Obri�i'),
                             onPressed: _bulkObrisi,
                           ),
                         ],
@@ -1038,7 +1038,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     );
   }
 
-  // 🎯 BULK PREBACIVANJE NA VOZAČA
+  // ?? BULK PREBACIVANJE NA VOZACA
   Future<void> _bulkPrebaci(String noviVozac) async {
     if (_selectedPutnici.isEmpty) return;
 
@@ -1049,11 +1049,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Prebaci na $noviVozac?'),
-        content: Text('Da li želiš da prebaciš $count putnika na vozača $noviVozac za $pravacLabel pravac?'),
+        content: Text('Da li �eli� da prebaci� $count putnika na vozaca $noviVozac za $pravacLabel pravac?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Otkaži'),
+            child: const Text('Otka�i'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1076,23 +1076,23 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     for (final id in _selectedPutnici.toList()) {
       try {
-        // 🆕 Koristi per-pravac per-vreme dodeljivanje
+        // ?? Koristi per-pravac per-vreme dodeljivanje
         await _putnikService.dodelPutnikaVozacuZaPravac(
           id,
           noviVozac,
           pravac,
-          vreme: _selectedVreme, // 🆕 Prosleđivanje vremena
+          vreme: _selectedVreme, // ?? Prosledivanje vremena
           selectedDan: dan,
         );
         uspesno++;
-        // Čekaj između operacija da se baza ažurira
+        // Cekaj izmedu operacija da se baza a�urira
         await Future.delayed(const Duration(milliseconds: 100));
       } catch (e) {
         greska++;
       }
     }
 
-    // Čekaj da se sve operacije kompletan prije osvežavanja streama
+    // Cekaj da se sve operacije kompletan prije osve�avanja streama
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (mounted) {
@@ -1102,7 +1102,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Prebačeno $uspesno putnika na $noviVozac${greska > 0 ? " (greške: $greska)" : ""}'),
+          content: Text('? Prebaceno $uspesno putnika na $noviVozac${greska > 0 ? " (gre�ke: $greska)" : ""}'),
           backgroundColor: VozacBoja.getSync(noviVozac),
         ),
       );
@@ -1111,7 +1111,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  // 🗑️ BULK BRISANJE PUTNIKA
+  // ??? BULK BRISANJE PUTNIKA
   Future<void> _bulkObrisi() async {
     if (_selectedPutnici.isEmpty) return;
 
@@ -1119,17 +1119,17 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Obriši putnike?'),
-        content: Text('Da li sigurno želiš da obrišeš $count putnika? Ova akcija se ne može poništiti.'),
+        title: const Text('Obri�i putnike?'),
+        content: Text('Da li sigurno �eli� da obri�e� $count putnika? Ova akcija se ne mo�e poni�titi.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Otkaži'),
+            child: const Text('Otka�i'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Obriši', style: TextStyle(color: Colors.white)),
+            child: const Text('Obri�i', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1145,14 +1145,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         await _putnikService.otkaziPutnika(id, 'Admin',
             selectedVreme: _selectedVreme, selectedGrad: _selectedGrad, selectedDan: _selectedDay);
         uspesno++;
-        // Čekaj između operacija da se baza ažurira
+        // Cekaj izmedu operacija da se baza a�urira
         await Future.delayed(const Duration(milliseconds: 100));
       } catch (e) {
         greska++;
       }
     }
 
-    // Čekaj da se sve operacije kompletan prije osvežavanja streama
+    // Cekaj da se sve operacije kompletan prije osve�avanja streama
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (mounted) {
@@ -1162,7 +1162,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('🗑️ Obrisano $uspesno putnika${greska > 0 ? " (greške: $greska)" : ""}'),
+          content: Text('??? Obrisano $uspesno putnika${greska > 0 ? " (gre�ke: $greska)" : ""}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -1171,7 +1171,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  /// 🎯 Helper metoda za kreiranje bottom nav bar-a (identično kao HomeScreen)
+  /// ?? Helper metoda za kreiranje bottom nav bar-a (identicno kao HomeScreen)
   Widget _buildBottomNavBar() {
     final navType = navBarTypeNotifier.value;
     final now = DateTime.now();
@@ -1230,3 +1230,4 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 }
+

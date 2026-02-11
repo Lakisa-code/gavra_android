@@ -343,7 +343,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 15,
               spreadRadius: 2,
               offset: const Offset(0, 8),
@@ -406,10 +406,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.2),
+                color: Colors.red.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
-                  color: Colors.red.withValues(alpha: 0.4),
+                  color: Colors.red.withOpacity(0.4),
                 ),
               ),
               child: const Icon(
@@ -524,18 +524,18 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white.withValues(alpha: 0.2),
-                    Colors.white.withValues(alpha: 0.1),
+                    Colors.white.withOpacity(0.2),
+                    Colors.white.withOpacity(0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: Colors.white.withOpacity(0.3),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -549,10 +549,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: Colors.white.withOpacity(0.3),
                           ),
                         ),
                         child: const Icon(
@@ -607,9 +607,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.amber.withValues(alpha: 0.1),
+              color: Colors.amber.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+              border: Border.all(color: Colors.amber.withOpacity(0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -635,7 +635,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 Text(
                   'Unesite cenu po danu za obračun. Ova cena će se koristiti za naplatu usluga.\n• Radnik/Učenik: naplata po danu.\n• Dnevni/Pošiljka: naplata po svakom pokupljenju.',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: Colors.white.withOpacity(0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -688,10 +688,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _trebaRacun ? Colors.green.withValues(alpha: 0.15) : Colors.grey.withValues(alpha: 0.1),
+                    color: _trebaRacun ? Colors.green.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _trebaRacun ? Colors.green.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.3),
+                      color: _trebaRacun ? Colors.green.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
                     ),
                   ),
                   child: Column(
@@ -741,7 +741,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                               child: Text(
                                 '${_firmaNazivController.text}\nPIB: ${_firmaPibController.text}',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
+                                  color: Colors.white.withOpacity(0.8),
                                   fontSize: 12,
                                 ),
                               ),
@@ -1037,10 +1037,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.2),
+                color: Colors.red.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
-                  color: Colors.red.withValues(alpha: 0.4),
+                  color: Colors.red.withOpacity(0.4),
                 ),
               ),
               child: TextButton(
@@ -1071,14 +1071,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
               duration: const Duration(milliseconds: 200),
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.3),
+                color: Colors.green.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
-                  color: Colors.green.withValues(alpha: 0.6),
+                  color: Colors.green.withOpacity(0.6),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Colors.black.withOpacity(0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -1177,7 +1177,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -1230,14 +1230,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
+          borderSide: BorderSide(color: Colors.grey.withOpacity(0.5)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.blue, width: 2),
         ),
         prefixIcon: icon != null ? Icon(icon, color: Colors.blue, size: 20) : null,
-        fillColor: Colors.white.withValues(alpha: 0.9),
+        fillColor: Colors.white.withOpacity(0.9),
         filled: true,
       ),
     );
@@ -1266,14 +1266,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
+                borderSide: BorderSide(color: Colors.grey.withOpacity(0.5)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Colors.blue, width: 2),
               ),
               prefixIcon: Icon(icon, color: Colors.blue, size: 20),
-              fillColor: Colors.white.withValues(alpha: 0.9),
+              fillColor: Colors.white.withOpacity(0.9),
               filled: true,
             ),
           ),
@@ -1389,14 +1389,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
+          borderSide: BorderSide(color: Colors.grey.withOpacity(0.5)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.blue, width: 2),
         ),
         prefixIcon: Icon(icon, color: Colors.blue, size: 20),
-        fillColor: Colors.white.withValues(alpha: 0.9),
+        fillColor: Colors.white.withOpacity(0.9),
         filled: true,
       ),
       dropdownColor: Theme.of(context).colorScheme.surface,
@@ -1782,3 +1782,4 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     );
   }
 }
+
