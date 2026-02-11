@@ -20,38 +20,44 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
-      - name: 🔐 Setup App Store Connect API Key
+      - name: 🔐 Setup App Store Connect Credentials
+        env:
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
         run: |
-          mkdir -p ~/private_keys
-          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          # Create directory for API keys
+          mkdir -p ~/.appstoreconnect/private_keys
+          
+          # Decode and save API key
+          echo "$APPSTORE_API_KEY_P8" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
+          
+          echo "✅ App Store Connect API Key Setup Complete"
 
-      - name: 🔐 Setup iOS Code Signing
-        uses: apple-actions/import-codesign-certs@v2
-        with:
-          p12-file-base64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
-          p12-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-
-      - name: 📦 Setup provisioning profile
-        run: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
-
-      - name: 🔨 Build iOS App
+      - name: 🔨 Build iOS App (IPA)
         run: |
           flutter build ipa \
             --release \
-            --export-options-template=ios/ExportOptions.plist \
+            --no-codesign \
             --verbose
+        env:
+          JAVA_TOOL_OPTIONS: "-Xmx4096m"
 
-      - name: 📤 Upload to TestFlight
-        uses: apple-actions/upload-testflight-build@v1
-        with:
-          app-path: 'build/ios/ipa/gavra_android.ipa'
-          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
-          api-private-key: ${{ secrets.APPSTORE_API_KEY_P8 }}
-          bundle-id: 'com.gavra013.gavra-android'
+      - name: 📤 Upload to TestFlight via Transporter
+        run: |
+          # Install Transporter (Apple's official upload tool)
+          xcrun altool --validate-app \
+            -f build/ios/ipa/gavra_android.ipa \
+            -t ios \
+            -u ${{ secrets.APPSTORE_USERNAME }} \
+            -p ${{ secrets.APPSTORE_APP_PASSWORD }}
+          
+          xcrun altool --upload-app \
+            -f build/ios/ipa/gavra_android.ipa \
+            -t ios \
+            -u ${{ secrets.APPSTORE_USERNAME }} \
+            -p ${{ secrets.APPSTORE_APP_PASSWORD }}
 
       - name: ✅ Upload complete
         run: |
@@ -59,10 +65,11 @@ jobs:
           echo ""
           echo "📦 Build Details:"
           echo "  - App: Gavra 013"
+          echo "  - Version: 6.0.54 (424)"
           echo "  - Track: TestFlight (Closed Testing)"
-          echo "  - Status: Ready for testers"
+          echo "  - Status: Ready for review"
           echo ""
           echo "⏭️  Next steps:"
           echo "  1. Review in App Store Connect"
-          echo "  2. Notify testers about new build"
-          echo "  3. Monitor TestFlight feedback"
+          echo "  2. Approve build in TestFlight"
+          echo "  3. Notify testers"
