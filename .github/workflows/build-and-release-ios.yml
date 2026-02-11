@@ -20,44 +20,38 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
-      - name: 🔐 Setup App Store Connect Credentials
-        env:
-          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-          APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
+      - name: 🔧 Setup Fastlane
         run: |
-          # Create directory for API keys
+          brew install fastlane
+          cd ios
+          fastlane setup_ci
+          cd ..
+
+      - name: 🔐 Setup App Store Connect API Key
+        run: |
           mkdir -p ~/.appstoreconnect/private_keys
-          
-          # Decode and save API key
-          echo "$APPSTORE_API_KEY_P8" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
-          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
-          
-          echo "✅ App Store Connect API Key Setup Complete"
+          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
 
       - name: 🔨 Build iOS App (IPA)
         run: |
           flutter build ipa \
             --release \
-            --no-codesign \
             --verbose
         env:
           JAVA_TOOL_OPTIONS: "-Xmx4096m"
 
-      - name: 📤 Upload to TestFlight via Transporter
+      - name: 📤 Upload to TestFlight via Fastlane
         run: |
-          # Install Transporter (Apple's official upload tool)
-          xcrun altool --validate-app \
-            -f build/ios/ipa/gavra_android.ipa \
-            -t ios \
-            -u ${{ secrets.APPSTORE_USERNAME }} \
-            -p ${{ secrets.APPSTORE_APP_PASSWORD }}
-          
-          xcrun altool --upload-app \
-            -f build/ios/ipa/gavra_android.ipa \
-            -t ios \
-            -u ${{ secrets.APPSTORE_USERNAME }} \
-            -p ${{ secrets.APPSTORE_APP_PASSWORD }}
+          cd ios
+          fastlane pilot upload \
+            --ipa ../build/ios/ipa/gavra_android.ipa \
+            --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
+            --api_key_id ${{ secrets.APPSTORE_KEY_ID }} \
+            --api_issuer_id ${{ secrets.APPSTORE_ISSUER_ID }} \
+            --skip_waiting_for_build_processing true \
+            --changelog "TestFlight Build - Closed Testing"
+          cd ..
 
       - name: ✅ Upload complete
         run: |
