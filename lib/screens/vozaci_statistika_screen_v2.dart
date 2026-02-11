@@ -22,8 +22,7 @@ class _VozaciStatistikaScreenV2State extends State<VozaciStatistikaScreenV2> {
     'Bruda': '🚐',
     'Bilevski': '🚗',
     'Bojan': '🚙',
-    'Svetlana': '🚕',
-    'Ivan': '🚘',
+    'Voja': '🚖',
   };
 
   List<String> get _vozaciRedosled => _vozaciEmoji.keys.toList();

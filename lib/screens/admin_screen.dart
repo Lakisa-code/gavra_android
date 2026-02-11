@@ -112,9 +112,9 @@ class _AdminScreenState extends State<AdminScreen> {
     try {
       final vozacService = VozacService();
       final vozaci = await vozacService.getAllVozaci();
-      
+
       if (!mounted) return;
-      
+
       if (vozaci.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('❌ Nema učitanih vozača')),
@@ -123,7 +123,7 @@ class _AdminScreenState extends State<AdminScreen> {
       }
 
       if (!mounted) return;
-      
+
       showDialog<void>(
         context: context,
         builder: (BuildContext dialogContext) {
@@ -178,26 +178,20 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  void _loadCurrentDriver() async {
-    try {
-      final driver = await FirebaseService.getCurrentDriver().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          return null;
-        },
-      );
+  void _loadCurrentDriver() {
+    FirebaseService.getCurrentDriver().then((driver) {
       if (mounted) {
         setState(() {
           _currentDriver = driver;
         });
       }
-    } catch (e) {
+    }).catchError((Object e) {
       if (mounted) {
         setState(() {
           _currentDriver = null;
         });
       }
-    }
+    });
   }
 
   // 📨 Učitaj broj PIN zahteva koji čekaju
@@ -1078,6 +1072,15 @@ class _AdminScreenState extends State<AdminScreen> {
 
                 // 👥 FILTER PO VOZAČU - Prikaži samo naplate trenutnog vozača ili sve za admin
                 // 🔐 KORISTI ADMIN SECURITY SERVICE za filtriranje privilegija
+                if (_currentDriver == null) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('⏳ Učitavanje...'),
+                    ),
+                  );
+                }
+
                 final bool isAdmin = AdminSecurityService.isAdmin(_currentDriver!);
                 final Map<String, double> filteredPazar = AdminSecurityService.filterPazarByPrivileges(
                   _currentDriver!,
@@ -1089,8 +1092,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   'Bruda',
                   'Bilevski',
                   'Bojan',
-                  'Svetlana',
-                  'Ivan',
+                  'Voja',
                 ];
 
                 // Filter vozače redosled na osnovu trenutnog vozača

@@ -483,10 +483,12 @@ class VoznjeLogService {
 
         if (iznos <= 0) continue;
 
-        // Konvertuj UUID u ime vozača
+        // Konvertuj UUID u ime vozača sa fallback-om
         String vozacIme = vozacId ?? '';
         if (vozacId != null && vozacId.isNotEmpty) {
-          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
+          // Prvo pokušaj iz mapiranja, zatim fallback UUID->vozač mapa
+          vozacIme =
+              VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? _mapUuidToVozacHardcoded(vozacId) ?? vozacId;
         }
         if (vozacIme.isEmpty) continue;
 
@@ -499,7 +501,25 @@ class VoznjeLogService {
     });
   }
 
-  /// ✅ TRAJNO REŠENJE: Broj uplata za vozača u periodu
+  /// ✅ FALLBACK MAPIRANJE UUID -> VOZAC IME
+  /// Koristi se kada mapiranje nije inicijalizovano
+  static String? _mapUuidToVozacHardcoded(String? uuid) {
+    if (uuid == null) return null;
+
+    switch (uuid) {
+      case 'c05c22fe-64cd-48c4-8da2-d32baa0d7573':
+        return 'Bojan';
+      case '9aedc515-4314-4973-b50c-870cdfe32b19':
+        return 'Bruda';
+      case 'b67e9f75-5c94-4fd0-840a-d1875824bd3a':
+        return 'Bilevski';
+      case '07935ffe-dd00-40fe-a5a3-009e1c7ef706':
+        return 'Voja';
+      default:
+        return null;
+    }
+  }
+
   static Future<int> getBrojUplataZaVozaca({
     required String vozacImeIliUuid,
     required DateTime from,

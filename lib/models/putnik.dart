@@ -733,16 +733,14 @@ class Putnik {
     if (uuid == null) return null;
 
     switch (uuid) {
-      case '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e':
+      case 'c05c22fe-64cd-48c4-8da2-d32baa0d7573':
         return 'Bojan';
-      case '5b379394-084e-1c7d-76bf-fc193a5b6c7d':
-        return 'Svetlana';
-      case '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f':
+      case '9aedc515-4314-4973-b50c-870cdfe32b19':
         return 'Bruda';
-      case '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f':
+      case 'b67e9f75-5c94-4fd0-840a-d1875824bd3a':
         return 'Bilevski';
-      case '67ea0a22-689c-41b8-b576-5b27145e8e5e':
-        return 'Ivan';
+      case '07935ffe-dd00-40fe-a5a3-009e1c7ef706':
+        return 'Voja';
       default:
         return null;
     }
