@@ -207,7 +207,6 @@ class VozacBoja {
     'Bruda': 'igor.jovanovic.1984@icloud.com',
     'Bilevski': 'bilyboy1983@gmail.com',
     'Svetlana': 'risticsvetlana2911@yahoo.com',
-    'Ivan': 'bradvarevicivan99@gmail.com',
     'Voja': 'vojislav.jugovic1@gmail.com',
   };
 
@@ -217,7 +216,6 @@ class VozacBoja {
     'igor.jovanovic.1984@icloud.com': 'Bruda',
     'bilyboy1983@gmail.com': 'Bilevski',
     'risticsvetlana2911@yahoo.com': 'Svetlana',
-    'bradvarevicivan99@gmail.com': 'Ivan',
     'vojislav.jugovic1@gmail.com': 'Voja',
   };
 
@@ -227,7 +225,6 @@ class VozacBoja {
     'Bruda': '0641202844',
     'Bilevski': '0638466418',
     'Svetlana': '0658464160',
-    'Ivan': '0677662993',
     'Voja': '0621121231',
   };
 

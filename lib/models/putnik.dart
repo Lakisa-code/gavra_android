@@ -723,25 +723,7 @@ class Putnik {
   // ? CENTRALIZOVANO: Konvertuj UUID u ime vozaca sa fallback-om
   static String? _getVozacIme(String? uuid) {
     if (uuid == null || uuid.isEmpty) return null;
-    return VozacMappingService.getVozacImeWithFallbackSync(uuid) ?? _mapUuidToVozacHardcoded(uuid);
-  }
-
-  // ? FALLBACK MAPIRANJE UUID -> VOZAC IME
-  static String? _mapUuidToVozacHardcoded(String? uuid) {
-    if (uuid == null) return null;
-
-    switch (uuid) {
-      case 'c05c22fe-64cd-48c4-8da2-d32baa0d7573':
-        return 'Bojan';
-      case '9aedc515-4314-4973-b50c-870cdfe32b19':
-        return 'Bruda';
-      case 'b67e9f75-5c94-4fd0-840a-d1875824bd3a':
-        return 'Bilevski';
-      case '07935ffe-dd00-40fe-a5a3-009e1c7ef706':
-        return 'Voja';
-      default:
-        return null;
-    }
+    return VozacMappingService.getVozacImeWithFallbackSync(uuid);
   }
 
   // -----------------------------------------------------------------------

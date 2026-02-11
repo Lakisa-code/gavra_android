@@ -25,7 +25,7 @@ Widget _getHomeScreen() {
 
 Widget _getScreenForDriver(String driverName) {
   // Vozači koji koriste VozacScreen umesto HomeScreen
-  if (driverName == 'Ivan' || driverName == 'Voja') {
+  if (driverName == 'Voja') {
     return const VozacScreen();
   }
   return const HomeScreen();
@@ -696,8 +696,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                           return Icons.local_taxi;
                         case 'bilevski':
                           return Icons.directions_car;
-                        case 'ivan':
-                          return Icons.directions_car;
                         case 'bojan':
                           return Icons.airport_shuttle;
                         default:
@@ -772,5 +770,3 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     );
   }
 }
-
-

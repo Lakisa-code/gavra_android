@@ -36,7 +36,7 @@ import 'dugovi_screen.dart';
 import 'tranzit_screen.dart';
 import 'welcome_screen.dart';
 
-/// ?? VOZAC SCREEN - Za Ivan-a
+/// ?? VOZAC SCREEN
 /// Prikazuje putnike koristeci isti PutnikService stream kao DanasScreen
 class VozacScreen extends StatefulWidget {
   /// Opcioni parametar - ako je null, koristi trenutnog ulogovanog vozaca
@@ -174,7 +174,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
   List<String> get _sviPolasci {
     final bcList = _bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = _vsVremena.map((v) => '$v Vršac').toList();
+    final vsList = _vsVremena.map((v) => '$v Vrï¿½ac').toList();
     return [...bcList, ...vsList];
   }
 
@@ -199,9 +199,9 @@ class _VozacScreenState extends State<VozacScreen> {
     // Start GPS tracking
     RealtimeGpsService.startTracking().catchError((Object e) {});
 
-    // Subscribe to driver position updates - ažuriraj lokaciju u realnom vremenu
+    // Subscribe to driver position updates - aï¿½uriraj lokaciju u realnom vremenu
     _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {
-      // ?? Pošalji poziciju vozaca u DriverLocationService za pracenje uživu
+      // ?? Poï¿½alji poziciju vozaca u DriverLocationService za pracenje uï¿½ivu
       DriverLocationService.instance.forceLocationUpdate(knownPosition: pos);
     });
   }
@@ -285,7 +285,7 @@ class _VozacScreenState extends State<VozacScreen> {
   Future<void> _reoptimizeAfterStatusChange() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
-    // ?? BATCH DOHVATI SVEŽE PODATKE IZ BAZE - efikasnije od pojedinacnih poziva
+    // ?? BATCH DOHVATI SVEï¿½E PODATKE IZ BAZE - efikasnije od pojedinacnih poziva
     final putnikService = PutnikService();
     final ids = _optimizedRoute.where((p) => p.id != null).map((p) => p.id!).toList();
     final sveziPutnici = await putnikService.getPutniciByIds(ids);
@@ -302,7 +302,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }).toList();
 
     if (preostaliPutnici.isEmpty) {
-      // Svi putnici su pokupljeni ili otkazani - ZADRŽI ih u listi
+      // Svi putnici su pokupljeni ili otkazani - ZADRï¿½I ih u listi
 
       // ? STOP TRACKING AKO SU SVI GOTOVI
       if (DriverLocationService.instance.isTracking) {
@@ -311,7 +311,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
       if (mounted) {
         setState(() {
-          _optimizedRoute = pokupljeniIOtkazani; // ? ZADRŽI pokupljene u listi
+          _optimizedRoute = pokupljeniIOtkazani; // ? ZADRï¿½I pokupljene u listi
           _currentPassengerIndex = 0;
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -328,7 +328,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: preostaliPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrï¿½ac',
       );
 
       if (result.success && result.optimizedPutnici != null) {
@@ -339,7 +339,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _currentPassengerIndex = 0;
           });
 
-          // ?? REALTIME FIX: Ažuriraj ETA (uklanja pokupljene sa mape)
+          // ?? REALTIME FIX: Aï¿½uriraj ETA (uklanja pokupljene sa mape)
           if (DriverLocationService.instance.isTracking && result.putniciEta != null) {
             await DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
           }
@@ -349,7 +349,7 @@ class _VozacScreenState extends State<VozacScreen> {
           final sledeci = result.optimizedPutnici!.isNotEmpty ? result.optimizedPutnici!.first.ime : 'N/A';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('?? Ruta ažurirana! Sledeci: $sledeci (${preostaliPutnici.length} preostalo)'),
+              content: Text('?? Ruta aï¿½urirana! Sledeci: $sledeci (${preostaliPutnici.length} preostalo)'),
               backgroundColor: Colors.blue,
               duration: const Duration(seconds: 2),
             ),
@@ -362,18 +362,18 @@ class _VozacScreenState extends State<VozacScreen> {
   }
 
   // ?? SINHRONIZACIJA OPTIMIZOVANE RUTE SA REALTIME STREAM-om
-  // Ažurira statuse putnika u optimizovanoj listi kada se promene u bazi
+  // Aï¿½urira statuse putnika u optimizovanoj listi kada se promene u bazi
   // ? SA THROTTLING-om: Sprecava prekomerne UI rebuilde (max 2x/sec)
-  // ? AUTO-REOPTIMIZACIJA: Kada se doda ili otkaže putnik, automatski reoptimizuje rutu
+  // ? AUTO-REOPTIMIZACIJA: Kada se doda ili otkaï¿½e putnik, automatski reoptimizuje rutu
   void _syncOptimizedRouteWithStream(List<Putnik> streamPutnici) {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
-    // ?? THROTTLING: Ignoriši ako je prošlo manje od 800ms od poslednje sinhronizacije
+    // ?? THROTTLING: Ignoriï¿½i ako je proï¿½lo manje od 800ms od poslednje sinhronizacije
     // ? ALI: Sacuvaj pending podatke za sledeci sync
     final now = DateTime.now();
     if (_lastSyncTime != null && now.difference(_lastSyncTime!) < _syncThrottleDuration) {
       _pendingSyncPutnici = streamPutnici; // Sacuvaj za kasnije
-      // Zakaži odloženi sync ako nije vec zakazan
+      // Zakaï¿½i odloï¿½eni sync ako nije vec zakazan
       Future.delayed(_syncThrottleDuration, () {
         if (_pendingSyncPutnici != null && mounted) {
           final pending = _pendingSyncPutnici!;
@@ -397,9 +397,9 @@ class _VozacScreenState extends State<VozacScreen> {
     final cancelledNames = <String>[];
     final updatedRoute = <Putnik>[];
 
-    // 1?? Ažuriraj postojece putnike i detektuj obrisane/otkazane
+    // 1?? Aï¿½uriraj postojece putnike i detektuj obrisane/otkazane
     for (final optimizedPutnik in _optimizedRoute) {
-      // Proveri da li putnik još postoji u stream-u
+      // Proveri da li putnik joï¿½ postoji u stream-u
       if (!streamIds.contains(optimizedPutnik.id)) {
         // ??? Putnik obrisan iz baze
         hasChanges = true;
@@ -465,7 +465,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
     // ?? AUTO-REOPTIMIZACIJA: Ako ima novih ILI otkazanih putnika
     if ((hasNewPassengers || hasCancelledOrDeleted) && mounted) {
-      // Prikaži notifikaciju
+      // Prikaï¿½i notifikaciju
       String message;
       Color bgColor;
       if (hasNewPassengers && hasCancelledOrDeleted) {
@@ -490,10 +490,10 @@ class _VozacScreenState extends State<VozacScreen> {
       // Kombinuj postojece + nove putnike i pokreni reoptimizaciju
       final allPassengers = [...updatedRoute, ...newPassengers];
       _autoReoptimizeRoute(allPassengers);
-      return; // Ne ažuriraj state ovde, _autoReoptimizeRoute ce to uraditi
+      return; // Ne aï¿½uriraj state ovde, _autoReoptimizeRoute ce to uraditi
     }
 
-    // Samo ažuraj ako ima promena (bez novih/otkazanih putnika)
+    // Samo aï¿½uraj ako ima promena (bez novih/otkazanih putnika)
     if (hasChanges && mounted) {
       setState(() {
         _optimizedRoute = updatedRoute;
@@ -529,7 +529,7 @@ class _VozacScreenState extends State<VozacScreen> {
         return hasValidAddress && isActive;
       }).toList();
 
-      // ? Ako nema aktivnih putnika, zadrži samo pokupljene/otkazane
+      // ? Ako nema aktivnih putnika, zadrï¿½i samo pokupljene/otkazane
       if (filtriraniPutnici.isEmpty) {
         if (pokupljeniIOtkazani.isNotEmpty && mounted) {
           setState(() {
@@ -541,7 +541,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: filtriraniPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrï¿½ac',
       );
 
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
@@ -551,7 +551,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
           });
 
-          // ?? REALTIME FIX: Ažuriraj ETA bez restarta trackinga
+          // ?? REALTIME FIX: Aï¿½uriraj ETA bez restarta trackinga
           if (DriverLocationService.instance.isTracking && result.putniciEta != null) {
             await DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
           }
@@ -560,7 +560,7 @@ class _VozacScreenState extends State<VozacScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('? Ruta uspešno reoptimizovana sa novim putnikom!'),
+                content: Text('? Ruta uspeï¿½no reoptimizovana sa novim putnikom!'),
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 2),
               ),
@@ -569,11 +569,11 @@ class _VozacScreenState extends State<VozacScreen> {
         }
       }
     } catch (e) {
-      // Greška pri reoptimizaciji - zadrži postojecu rutu
+      // Greï¿½ka pri reoptimizaciji - zadrï¿½i postojecu rutu
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('?? Greška pri reoptimizaciji: $e'),
+            content: Text('?? Greï¿½ka pri reoptimizaciji: $e'),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 3),
           ),
@@ -592,7 +592,7 @@ class _VozacScreenState extends State<VozacScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Morate biti ulogovani i ovlašceni da biste koristili optimizaciju rute.'),
+            content: Text('Morate biti ulogovani i ovlaï¿½ceni da biste koristili optimizaciju rute.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -660,7 +660,7 @@ class _VozacScreenState extends State<VozacScreen> {
       if (p.jeOtkazan) return false;
       // Iskljuci vec pokupljene putnike
       if (p.jePokupljen) return false;
-      // Iskljuci odsutne putnike (bolovanje/godišnji)
+      // Iskljuci odsutne putnike (bolovanje/godiï¿½nji)
       if (p.jeOdsustvo) return false;
       // ?? Iskljuci tude putnike (dodeljeni drugom vozacu)
       if (p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver) {
@@ -687,7 +687,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: filtriraniPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrï¿½ac',
       );
 
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
@@ -745,10 +745,10 @@ class _VozacScreenState extends State<VozacScreen> {
           // ? OPTIMIZACIJA 3: Zameni blokirajuci AlertDialog sa Snackbar-om
           // Korisnik vidi notifikaciju ali NIJE BLOKIRAN da nastavi sa akcijama
           if (hasSkipped) {
-            // ?? Prikaži preskocene putnike kao SNACKBAR umesto DIALOG-a
+            // ?? Prikaï¿½i preskocene putnike kao SNACKBAR umesto DIALOG-a
             if (mounted) {
               final skippedNames = skipped.take(5).map((p) => p.ime).join(', ');
-              final moreText = skipped.length > 5 ? ' +${skipped.length - 5} još' : '';
+              final moreText = skipped.length > 5 ? ' +${skipped.length - 5} joï¿½' : '';
 
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -786,7 +786,7 @@ class _VozacScreenState extends State<VozacScreen> {
           }
         }
       } else {
-        // ? OSRM/SmartNavigationService nije uspeo - NE koristi fallback, prikaži grešku
+        // ? OSRM/SmartNavigationService nije uspeo - NE koristi fallback, prikaï¿½i greï¿½ku
         if (mounted) {
           setState(() {
             _isOptimizing = false;
@@ -794,7 +794,7 @@ class _VozacScreenState extends State<VozacScreen> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('? Optimizacija neuspešna: ${result.message}'),
+              content: Text('? Optimizacija neuspeï¿½na: ${result.message}'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 5),
             ),
@@ -810,7 +810,7 @@ class _VozacScreenState extends State<VozacScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('? Greška pri optimizaciji: $e'),
+            content: Text('? Greï¿½ka pri optimizaciji: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -867,7 +867,7 @@ class _VozacScreenState extends State<VozacScreen> {
         // ?? Filtriraj putnike po gradu i vremenu
         final sviPutnici = snapshot.data ?? [];
 
-        // ?? REALTIME SYNC: Ažuriraj statuse u optimizovanoj ruti
+        // ?? REALTIME SYNC: Aï¿½uriraj statuse u optimizovanoj ruti
         if (_isRouteOptimized && sviPutnici.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _syncOptimizedRouteWithStream(sviPutnici);
@@ -965,7 +965,7 @@ class _VozacScreenState extends State<VozacScreen> {
                 ? Colors.orange
                 : speed > 0
                     ? Colors.green
-                    : Colors.white; // ? Koristi cisto belu, pa cemo je 'utišati' sa alpha na pozadini
+                    : Colors.white; // ? Koristi cisto belu, pa cemo je 'utiï¿½ati' sa alpha na pozadini
 
         return Opacity(
           opacity: 1.0,
@@ -1100,12 +1100,12 @@ class _VozacScreenState extends State<VozacScreen> {
         );
       }
 
-      // ?? POŠALJI PUSH NOTIFIKACIJE PUTNICIMA - bez ETA
+      // ?? POï¿½ALJI PUSH NOTIFIKACIJE PUTNICIMA - bez ETA
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('? Greška pri pokretanju GPS trackinga: $e'),
+            content: Text('? Greï¿½ka pri pokretanju GPS trackinga: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1140,7 +1140,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final result = await SmartNavigationService.startMultiProviderNavigation(
         context: context,
         putnici: _optimizedRoute,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrï¿½ac',
       );
 
       if (result.success) {
@@ -1166,7 +1166,7 @@ class _VozacScreenState extends State<VozacScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('? Greška pri otvaranju navigacije: $e'),
+            content: Text('? Greï¿½ka pri otvaranju navigacije: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1223,7 +1223,7 @@ class _VozacScreenState extends State<VozacScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Morate biti ulogovani i ovlašceni da biste koristili Popis.'),
+            content: Text('Morate biti ulogovani i ovlaï¿½ceni da biste koristili Popis.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -1244,18 +1244,18 @@ class _VozacScreenState extends State<VozacScreen> {
         date: _getWorkingDateTime(), // ?? Koristi radni datum (ponedeljak ako je vikend)
       );
 
-      // 2. PRIKAŽI DIALOG
+      // 2. PRIKAï¿½I DIALOG
       if (!mounted) return;
       final bool sacuvaj = await PopisService.showPopisDialog(context, popisData);
 
-      // 3. SACUVAJ AKO JE POTVRÐEN
+      // 3. SACUVAJ AKO JE POTVRï¿½EN
       if (sacuvaj) {
         await PopisService.savePopis(popisData);
         if (mounted) {
           setState(() => _isPopisSaved = true);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('? Popis je uspešno sacuvan!'),
+              content: Text('? Popis je uspeï¿½no sacuvan!'),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 3),
             ),
@@ -1265,7 +1265,7 @@ class _VozacScreenState extends State<VozacScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('? Greška pri ucitavanju popisa: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('? Greï¿½ka pri ucitavanju popisa: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1351,7 +1351,7 @@ class _VozacScreenState extends State<VozacScreen> {
                     );
                   }
 
-                  // ?? FILTER: Prikaži ISKLJUCIVO putnike koje je admin dodelio ovom vozacu
+                  // ?? FILTER: Prikaï¿½i ISKLJUCIVO putnike koje je admin dodelio ovom vozacu
                   final sviPutnici = snapshot.data ?? [];
                   final mojiPutnici = sviPutnici.where((p) {
                     return p.dodeljenVozac == _currentDriver;
@@ -1470,13 +1470,13 @@ class _VozacScreenState extends State<VozacScreen> {
             final assignedBcTimes =
                 dodeljenaVremena.where((v) => v['grad'] == 'Bela Crkva').map((v) => v['vreme']!).toList();
             final assignedVsTimes =
-                dodeljenaVremena.where((v) => v['grad'] == 'Vršac').map((v) => v['vreme']!).toList();
+                dodeljenaVremena.where((v) => v['grad'] == 'Vrï¿½ac').map((v) => v['vreme']!).toList();
 
-            // Prikaži samo dodeljena vremena
+            // Prikaï¿½i samo dodeljena vremena
             final bcVremenaToShow = assignedBcTimes.toList()..sort();
             final vsVremenaToShow = assignedVsTimes.toList()..sort();
 
-            // ? SAKRIJ CEO BOTTOM BAR AKO NEMA VOŽNJI
+            // ? SAKRIJ CEO BOTTOM BAR AKO NEMA VOï¿½NJI
             if (bcVremenaToShow.isEmpty && vsVremenaToShow.isEmpty) {
               return const SizedBox.shrink();
             }
@@ -1697,7 +1697,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
     tranzitMap.forEach((ime, trips) {
       final imaBC = trips.any((t) => t.grad == 'Bela Crkva');
-      final imaVS = trips.any((t) => t.grad == 'Vršac');
+      final imaVS = trips.any((t) => t.grad == 'Vrï¿½ac');
       if (imaBC && imaVS) {
         tranzitUkupno++;
         if (trips.every((t) => t.jePokupljen)) {
