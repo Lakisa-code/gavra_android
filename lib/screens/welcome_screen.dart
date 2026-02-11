@@ -81,39 +81,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         _isLoadingDrivers = false;
       });
     } catch (e) {
-      // Fallback na hardkodovane vozače
+      // Nema fallback-a - ako Supabase ne radi, prikaži grešku
+      debugPrint('❌ Greška pri učitavanju vozača: $e');
       if (!mounted) return;
       setState(() {
-        _drivers = [
-          Vozac(
-            ime: 'Bruda',
-            email: 'igor.jovanovic.1984@icloud.com',
-            sifra: '111111',
-            brojTelefona: '+381641202844',
-            boja: '7C4DFF',
-          ),
-          Vozac(
-            ime: 'Bilevski',
-            email: 'bilyboy1983@gmail.com',
-            sifra: '222222',
-            brojTelefona: '+381638466418',
-            boja: 'FF9800',
-          ),
-          Vozac(
-            ime: 'Ivan',
-            email: 'bradvarevicivan99@gmail.com',
-            sifra: '333333',
-            brojTelefona: '+381677662993',
-            boja: 'FFD700',
-          ),
-          Vozac(
-            ime: 'Bojan',
-            email: 'gavriconi19@gmail.com',
-            sifra: '191919',
-            brojTelefona: '+381641162560',
-            boja: '00E5FF',
-          ),
-        ];
+        _drivers = []; // Prazna lista umesto hardkodovanih podataka
         _isLoadingDrivers = false;
       });
     }

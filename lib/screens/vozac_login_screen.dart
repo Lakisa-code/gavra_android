@@ -524,4 +524,3 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     );
   }
 }
-

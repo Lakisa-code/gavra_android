@@ -1107,16 +1107,10 @@ class PutnikService {
       vozacId = VozacMappingService.getVozacUuidSync(currentDriver);
       vozacId ??= await VozacMappingService.getVozacUuid(currentDriver);
 
-      // ??? FALLBACK: Ako mapping servis ne nade UUID za Ivana, koristi hardkodovani
-      if (vozacId == null && currentDriver == 'Ivan') {
-        vozacId = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
-      }
+      // Nema fallback-a - ako mapping ne radi, vozacId ostaje null
     } catch (e) {
-      debugPrint('? markAsPaid: Gre�ka pri VozacMapping za "$currentDriver": $e');
-      // Poku�aj fallback za Ivana cak i ako je mapping pukao
-      if (currentDriver == 'Ivan') {
-        vozacId = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
-      }
+      debugPrint('? markAsPaid: Greška pri VozacMapping za "$currentDriver": $e');
+      // Nema fallback-a za hardkodovani UUID
     }
 
     if (vozacId == null) {
