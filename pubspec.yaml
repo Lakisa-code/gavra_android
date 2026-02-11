@@ -103,7 +103,6 @@ flutter:
     - assets/agconnect-services.json # 🗺️ Huawei Map Kit API config
     - assets/logo_gavra.jpg # 🎨 Logo firme Gavra 013
     - assets/logo_transparent.png # 🎨 Logo sa transparentnom pozadinom
-    - assets/fonts/  # 🔤 Fontovi za PDF sa srpskim slovima
     - assets/weather/ # 🌤️ Vremenske ikone
     - assets/tablica_066.png # 🚐 Tablice vozila
     - assets/tablica_088.png

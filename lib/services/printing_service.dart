@@ -18,19 +18,8 @@ class PrintingService {
   static final PutnikService _putnikService = PutnikService();
 
   // ========== FONTOVI SA PODRŠKOM ZA SRPSKA SLOVA ==========
-  static pw.Font? _regularFont;
-  static pw.Font? _boldFont;
-
-  static Future<void> _loadFonts() async {
-    if (_regularFont == null) {
-      final regularData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
-      _regularFont = pw.Font.ttf(regularData);
-    }
-    if (_boldFont == null) {
-      final boldData = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
-      _boldFont = pw.Font.ttf(boldData);
-    }
-  }
+  static pw.Font get regularFont => pw.Font.helvetica();
+  static pw.Font get boldFont => pw.Font.helveticaBold();
 
   static Future<void> printPutniksList(
     String selectedDay,
@@ -126,7 +115,7 @@ class PrintingService {
         return;
       }
 
-      await _loadFonts();
+      // Fonts loaded automatically via getters
 
       final pdf = await _createPutniksPDF(
         putnici,
@@ -171,10 +160,10 @@ class PrintingService {
     final danas = DateFormat('dd.MM.yyyy').format(DateTime.now());
 
     final theme = pw.ThemeData.withFont(
-      base: _regularFont,
-      bold: _boldFont,
-      italic: _regularFont,
-      boldItalic: _boldFont,
+      base: regularFont,
+      bold: boldFont,
+      italic: regularFont,
+      boldItalic: boldFont,
     );
 
     pdf.addPage(

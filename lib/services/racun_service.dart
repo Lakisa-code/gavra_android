@@ -14,19 +14,8 @@ import '../globals.dart';
 /// Servis za generisanje i štampanje računa za fizička lica
 class RacunService {
   // ========== FONTOVI SA PODRŠKOM ZA SRPSKA SLOVA ==========
-  static pw.Font? _regularFont;
-  static pw.Font? _boldFont;
-
-  static Future<void> _loadFonts() async {
-    if (_regularFont == null) {
-      final regularData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
-      _regularFont = pw.Font.ttf(regularData);
-    }
-    if (_boldFont == null) {
-      final boldData = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
-      _boldFont = pw.Font.ttf(boldData);
-    }
-  }
+  static pw.Font get regularFont => pw.Font.helvetica();
+  static pw.Font get boldFont => pw.Font.helveticaBold();
 
   // ========== PODACI O IZDAVAOCU ==========
   static const String firmaIme = 'PR Limo Servis Gavra 013';
@@ -97,8 +86,7 @@ class RacunService {
     required BuildContext context,
   }) async {
     try {
-      // Učitaj fontove sa podrškom za srpska slova
-      await _loadFonts();
+      // Fonts loaded automatically via getters
 
       final pdf = await _kreirajRacunPDF(
         brojRacuna: brojRacuna,
@@ -152,8 +140,7 @@ class RacunService {
     }
 
     try {
-      // Učitaj fontove sa podrškom za srpska slova
-      await _loadFonts();
+      // Fonts loaded automatically via getters
 
       final pdf = pw.Document();
       final datumPrometa = DateTime.now();
@@ -223,8 +210,7 @@ class RacunService {
     }
 
     try {
-      // Učitaj fontove sa podrškom za srpska slova
-      await _loadFonts();
+      // Fonts loaded automatically via getters
 
       final pdf = pw.Document();
       final obracunskiDatum = datumPrometa ?? DateTime.now();
@@ -301,10 +287,10 @@ class RacunService {
 
     // Kreiraj temu sa fontovima koji podržavaju srpska slova
     final theme = pw.ThemeData.withFont(
-      base: _regularFont,
-      bold: _boldFont,
-      italic: _regularFont,
-      boldItalic: _boldFont,
+      base: regularFont,
+      bold: boldFont,
+      italic: regularFont,
+      boldItalic: boldFont,
     );
 
     return pw.Page(
@@ -495,10 +481,10 @@ class RacunService {
 
     // Kreiraj temu sa fontovima koji podržavaju srpska slova
     final theme = pw.ThemeData.withFont(
-      base: _regularFont,
-      bold: _boldFont,
-      italic: _regularFont,
-      boldItalic: _boldFont,
+      base: regularFont,
+      bold: boldFont,
+      italic: regularFont,
+      boldItalic: boldFont,
     );
 
     pdf.addPage(
@@ -763,10 +749,10 @@ class RacunService {
 
     // Kreiraj temu sa fontovima koji podržavaju srpska slova
     final theme = pw.ThemeData.withFont(
-      base: _regularFont,
-      bold: _boldFont,
-      italic: _regularFont,
-      boldItalic: _boldFont,
+      base: regularFont,
+      bold: boldFont,
+      italic: regularFont,
+      boldItalic: boldFont,
     );
 
     return pw.Page(
