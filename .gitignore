@@ -12,6 +12,17 @@ build/
 google-play-mcp/.env
 appstore-mcp/.env
 
+# 🔐 SECRETS - NIKADA NE COMMIT-OVATI
+*.b64
+*.p8
+*.keystore
+*.jks
+google-play-key.json
+play-store-key.json
+key.properties
+appstore-api-key.*
+AuthKey_*.p8
+
 # Android build outputs
 android/app/*.apk
 android/app/*.ap_
