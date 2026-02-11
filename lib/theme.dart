@@ -231,7 +231,7 @@ extension ThemeGradients on ThemeData {
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
-  textTheme: GoogleFonts.montserratTextTheme(), // 🇷🇸 Montserrat font sa srpskim slovima
+  textTheme: GoogleFonts.interTextTheme(), // 🇷🇸 Inter font sa srpskim slovima
   scaffoldBackgroundColor: const Color(0xFFF0F9FF),
   appBarTheme: const AppBarTheme(
     elevation: 0,

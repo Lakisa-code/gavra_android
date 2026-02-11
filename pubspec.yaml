@@ -94,18 +94,6 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
-  fonts:
-    - family: Roboto
-      fonts:
-        - asset: assets/fonts/Roboto-Regular.ttf
-        - asset: assets/fonts/Roboto-Bold.ttf
-          weight: 700
-    - family: Montserrat
-      fonts:
-        - asset: assets/fonts/montserrat/Montserrat-Regular.ttf
-        - asset: assets/fonts/montserrat/Montserrat-Bold.ttf
-          weight: 700
-
   assets:
     - .env # 🔐 Environment varijable (Supabase kredencijali)
     - assets/gavra.mp3
@@ -116,7 +104,6 @@ flutter:
     - assets/agconnect-services.json # 🗺️ Huawei Map Kit API config
     - assets/logo_gavra.jpg # 🎨 Logo firme Gavra 013
     - assets/logo_transparent.png # 🎨 Logo sa transparentnom pozadinom
-    - assets/fonts/  # 🔤 Fontovi za PDF sa srpskim slovima
     - assets/weather/ # 🌤️ Vremenske ikone
     - assets/tablica_066.png # 🚐 Tablice vozila
     - assets/tablica_088.png
