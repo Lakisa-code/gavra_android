@@ -54,7 +54,7 @@ class RealtimeNotificationService {
     }
   }
 
-  /// 🔐 Pošalji notifikaciju samo adminima (Bojan, Svetlana)
+  /// 🔐 Pošalji notifikaciju samo adminima (Bojan)
   static Future<void> sendNotificationToAdmins({
     required String title,
     required String body,
@@ -62,7 +62,7 @@ class RealtimeNotificationService {
   }) async {
     try {
       // 🔧 FIX: Dinamičko učitavanje admin vozača
-      const adminNames = ['Bojan', 'Svetlana'];
+      const adminNames = ['Bojan'];
       final vozacService = VozacService();
       final allVozaci = await vozacService.getAllVozaci();
       final adminVozaci = allVozaci.where((v) => adminNames.contains(v.ime)).map((v) => v.ime).toList();

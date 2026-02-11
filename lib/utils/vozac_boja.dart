@@ -15,24 +15,11 @@ import '../services/vozac_service.dart';
 /// 3. Cache se ažurira automatski
 class VozacBoja {
   // ═══════════════════════════════════════════════════════════════════════════
-  // FALLBACK KONSTANTE (koriste se ako baza nije dostupna)
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /// Hardkodovane boje - fallback ako baza nije dostupna
-  /// ✅ Podudaraju se sa bazom (vozaci tabela)
-  static const Map<String, Color> _fallbackBoje = {
-    'Bruda': Color(0xFF7C4DFF), // ljubičasta (#7C4DFF iz baze)
-    'Bilevski': Color(0xFFFF9800), // narandžasta (#FF9800 iz baze)
-    'Bojan': Color(0xFF00E5FF), // svetla cyan plava (#00E5FF iz baze)
-    'Voja': Color(0xFF4CAF50), // zelena (#4CAF50 iz baze)
-  };
-
-  // ═══════════════════════════════════════════════════════════════════════════
   // CACHE MEHANIZAM - za sinkronu upotrebu nakon inicijalizacije
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// Cache boja učitanih iz baze
-  static Map<String, Color> _cachedBoje = _fallbackBoje;
+  static Map<String, Color> _cachedBoje = {};
 
   /// Cache vozača učitanih iz baze
   static List<Vozac> _cachedVozaci = [];
@@ -49,17 +36,10 @@ class VozacBoja {
       final Map<String, Color> result = {};
 
       for (var vozac in vozaci) {
-        // Koristi boju iz baze ako postoji, inače fallback
+        // Koristi samo boju iz baze - nema fallback-a
         if (vozac.color != null) {
           result[vozac.ime] = vozac.color!;
-        } else if (_fallbackBoje.containsKey(vozac.ime)) {
-          result[vozac.ime] = _fallbackBoje[vozac.ime]!;
         }
-      }
-
-      // Dodaj fallback boje za vozače koji nisu u bazi
-      for (var entry in _fallbackBoje.entries) {
-        result.putIfAbsent(entry.key, () => entry.value);
       }
 
       _cachedBoje = Map.unmodifiable(result);
@@ -71,10 +51,11 @@ class VozacBoja {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [VozacBoja] Cache initialization failed: $e, using fallback');
+        debugPrint('❌ [VozacBoja] Cache initialization failed: $e - cache will remain empty');
       }
-      _cachedBoje = _fallbackBoje;
-      _isInitialized = true;
+      _cachedBoje = {};
+      _cachedVozaci = [];
+      _isInitialized = false;
     }
   }
 
@@ -82,33 +63,21 @@ class VozacBoja {
   // JAVNI API - ASYNC (direktno iz baze)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Vraća mapu svih boja (dinamičke + fallback) - uvek sveže iz baze
+  /// Vraća mapu svih boja - direktno iz baze (bez fallback-a)
   static Future<Map<String, Color>> get boje async {
-    try {
-      final vozacService = VozacService();
-      final vozaci = await vozacService.getAllVozaci();
+    final vozacService = VozacService();
+    final vozaci = await vozacService.getAllVozaci();
 
-      final Map<String, Color> result = {};
+    final Map<String, Color> result = {};
 
-      for (var vozac in vozaci) {
-        // Koristi boju iz baze ako postoji, inače fallback
-        if (vozac.color != null) {
-          result[vozac.ime] = vozac.color!;
-        } else if (_fallbackBoje.containsKey(vozac.ime)) {
-          result[vozac.ime] = _fallbackBoje[vozac.ime]!;
-        }
+    for (var vozac in vozaci) {
+      // Koristi samo boju iz baze - nema fallback-a
+      if (vozac.color != null) {
+        result[vozac.ime] = vozac.color!;
       }
-
-      // Dodaj fallback boje za vozače koji nisu u bazi
-      for (var entry in _fallbackBoje.entries) {
-        result.putIfAbsent(entry.key, () => entry.value);
-      }
-
-      return Map.unmodifiable(result);
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ [VozacBoja] Database load failed: $e, using fallback');
-      return _fallbackBoje;
     }
+
+    return Map.unmodifiable(result);
   }
 
   /// Vraća boju za vozača - baca grešku ako vozač nije validan
@@ -198,58 +167,81 @@ class VozacBoja {
   static Map<String, Color> get bojeSync => _cachedBoje;
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // EMAIL I TELEFON VALIDACIJA (ostaje hardkodovano za sada)
+  // HELPER FUNKCIJE - koriste podatke iz baze
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // DOZVOLJENI EMAIL ADRESE ZA VOZAČE - STRIKTNO!
-  static const Map<String, String> dozvoljenEmails = {
-    'Bojan': 'gavriconi19@gmail.com',
-    'Bruda': 'igor.jovanovic.1984@icloud.com',
-    'Bilevski': 'bilyboy1983@gmail.com',
-    'Svetlana': 'risticsvetlana2911@yahoo.com',
-    'Voja': 'vojislav.jugovic1@gmail.com',
-  };
-
-  // VALIDACIJA: email -> vozač mapiranje
-  static const Map<String, String> emailToVozac = {
-    'gavriconi19@gmail.com': 'Bojan',
-    'igor.jovanovic.1984@icloud.com': 'Bruda',
-    'bilyboy1983@gmail.com': 'Bilevski',
-    'risticsvetlana2911@yahoo.com': 'Svetlana',
-    'vojislav.jugovic1@gmail.com': 'Voja',
-  };
-
-  // BROJEVI TELEFONA VOZAČA
-  static const Map<String, String> telefoni = {
-    'Bojan': '0641162560',
-    'Bruda': '0641202844',
-    'Bilevski': '0638466418',
-    'Svetlana': '0658464160',
-    'Voja': '0621121231',
-  };
-
-  // HELPER FUNKCIJE ZA EMAIL VALIDACIJU
-  static String? getDozvoljenEmailForVozac(String? vozac) {
-    return vozac != null ? dozvoljenEmails[vozac] : null;
+  /// Vraća dozvoljen email za vozača (iz baze)
+  static Future<String?> getDozvoljenEmailForVozac(String? vozac) async {
+    if (vozac == null) return null;
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      final vozacObj = vozaci.firstWhere((v) => v.ime == vozac);
+      return vozacObj.email;
+    } catch (e) {
+      return null;
+    }
   }
 
-  static String? getVozacForEmail(String? email) {
-    return email != null ? emailToVozac[email] : null;
+  /// Vraća vozača za dati email (iz baze)
+  static Future<String?> getVozacForEmail(String? email) async {
+    if (email == null) return null;
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      final vozacObj = vozaci.firstWhere((v) => v.email?.toLowerCase() == email.toLowerCase());
+      return vozacObj.ime;
+    } catch (e) {
+      return null;
+    }
   }
 
-  static bool isEmailDozvoljenForVozac(String? email, String? vozac) {
+  /// Proverava da li je email dozvoljen za vozača (iz baze)
+  static Future<bool> isEmailDozvoljenForVozac(String? email, String? vozac) async {
     if (email == null || vozac == null) return false;
-    return dozvoljenEmails[vozac]?.toLowerCase() == email.toLowerCase();
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      final vozacObj = vozaci.firstWhere((v) => v.ime == vozac);
+      return vozacObj.email?.toLowerCase() == email.toLowerCase();
+    } catch (e) {
+      return false;
+    }
   }
 
-  static bool isDozvoljenEmail(String? email) {
-    return email != null && emailToVozac.containsKey(email);
+  /// Proverava da li je email dozvoljen (registrovan u bazi)
+  static Future<bool> isDozvoljenEmail(String? email) async {
+    if (email == null) return false;
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      return vozaci.any((v) => v.email?.toLowerCase() == email.toLowerCase());
+    } catch (e) {
+      return false;
+    }
   }
 
-  static List<String> get sviDozvoljenEmails => dozvoljenEmails.values.toList();
+  /// Vraća sve dozvoljene email adrese (iz baze)
+  static Future<List<String>> get sviDozvoljenEmails async {
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      return vozaci.where((v) => v.email != null).map((v) => v.email!).toList();
+    } catch (e) {
+      return [];
+    }
+  }
 
-  // HELPER ZA TELEFON
-  static String? getTelefonForVozac(String? vozac) {
-    return vozac != null ? telefoni[vozac] : null;
+  /// Vraća telefon za vozača (iz baze)
+  static Future<String?> getTelefonForVozac(String? vozac) async {
+    if (vozac == null) return null;
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+      final vozacObj = vozaci.firstWhere((v) => v.ime == vozac);
+      return vozacObj.brojTelefona;
+    } catch (e) {
+      return null;
+    }
   }
 }

@@ -5,7 +5,6 @@ class AdminSecurityService {
   // 🔐 SECURE ADMIN LIST - trebalo bi da bude iz backend-a ili encrypted config
   static const Set<String> _adminUsers = {
     'Bojan',
-    'Svetlana',
   };
 
   /// 🔍 Proveri da li je vozač admin

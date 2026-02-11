@@ -1301,8 +1301,7 @@ class _PutnikCardState extends State<PutnikCard> {
     // Prava po vozacu
     final String driver = widget.currentDriver;
     final bool isBojan = driver == 'Bojan';
-    final bool isSvetlana = driver == 'Svetlana';
-    final bool isAdmin = isBojan || isSvetlana; // Full admin prava
+    final bool isAdmin = isBojan; // Full admin prava
     final bool isBrudaOrBilevski = driver == 'Bruda' || driver == 'Bilevski';
     final bool isVozac = isBrudaOrBilevski; // Svi vozaci
 
@@ -1529,10 +1528,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         12,
                                                       ),
                                                       decoration: BoxDecoration(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .primary
-                                                            .withOpacity(0.1),
+                                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                                         borderRadius: BorderRadius.circular(8),
                                                         border: Border.all(
                                                           color: Colors.blue.withOpacity(0.3),
@@ -2371,4 +2367,3 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 }
-

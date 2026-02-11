@@ -139,7 +139,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       // Auto-login sa zapamćenim uređajem
       final email = rememberedDevice['email']!;
       // 🔄 FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
-      final driverName = VozacBoja.getVozacForEmail(email);
+      final driverName = await VozacBoja.getVozacForEmail(email);
       // Ne dozvoli auto-login ako vozač nije prepoznat
       if (driverName == null || !VozacBoja.isValidDriverSync(driverName)) {
         // Ostani na welcome/login i ne auto-login
@@ -262,7 +262,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       final rememberedName = rememberedDevice['driverName']!;
 
       // 🔄 FORSIRAJ REFRESH: Koristi VozacBoja mapiranje za ispravno ime
-      final correctName = VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
+      final correctName = await VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
 
       if (correctName == driverName) {
         // 👆 BIOMETRIJA: Ako je UKLJUČENA i dostupna, zahtevaj potvrdu pre auto-logina

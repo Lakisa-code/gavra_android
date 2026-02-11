@@ -7,7 +7,7 @@ import '../utils/vozac_boja.dart';
 
 /// 🚐 VREME VOZAC SERVICE
 /// Servis za dodeljivanje vozača celom vremenu/terminu
-/// Npr: BC 18:00 ponedeljak -> Ivan (svi putnici na tom terminu idu sa Ivanom)
+/// Npr: BC 18:00 ponedeljak -> Voja (svi putnici na tom terminu idu sa Vojom)
 class VremeVozacService {
   // Singleton pattern
   static final VremeVozacService _instance = VremeVozacService._internal();
@@ -57,7 +57,7 @@ class VremeVozacService {
   /// [grad] - 'Bela Crkva' ili 'Vršac'
   /// [vreme] - '18:00', '5:00', itd.
   /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
-  /// [vozacIme] - 'Ivan', 'Bilevski', 'Goran'
+  /// [vozacIme] - 'Voja', 'Bilevski', 'Goran'
   Future<void> setVozacZaVreme(String grad, String vreme, String dan, String vozacIme) async {
     // Normalize vreme to ensure consistent HH:MM format
     final normalizedVreme = _normalizeTime(vreme);

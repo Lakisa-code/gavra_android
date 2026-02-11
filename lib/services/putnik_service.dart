@@ -1385,7 +1385,7 @@ class PutnikService {
   /// [place] - 'bc' za Bela Crkva pravac ili 'vs' za Vr�ac pravac
   /// ?? A�URIRANO: Dodeli putnika vozacu za specifican pravac (bc/vs), dan i VREME
   /// [putnikId] - UUID putnika iz registrovani_putnici
-  /// [noviVozac] - Ime vozaca (npr. "Ivan", "Svetlana") ili null za uklanjanje
+  /// [noviVozac] - Ime vozaca (npr. "Voja", "Bilevski") ili null za uklanjanje
   /// [place] - Pravac: "bc" za Bela Crkva, "vs" za Vr�ac
   /// [vreme] - Vreme polaska (npr. "5:00", "14:00") - obavezno za specificno dodeljivanje
   /// [selectedDan] - Dan u nedelji (npr. "pon", "Ponedeljak") - opcionalno, default je danas

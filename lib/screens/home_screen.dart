@@ -2368,7 +2368,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
+                        if (_currentDriver == 'Bojan')
                           Expanded(
                             child: _HomeScreenButton(
                               label: 'ML Lab',

@@ -1851,4 +1851,3 @@ class _VozacScreenState extends State<VozacScreen> {
     return color.withOpacity(0.6);
   }
 }
-

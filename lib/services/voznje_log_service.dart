@@ -487,8 +487,7 @@ class VoznjeLogService {
         String vozacIme = vozacId ?? '';
         if (vozacId != null && vozacId.isNotEmpty) {
           // Prvo pokušaj iz mapiranja
-          vozacIme =
-              VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
+          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
         }
         if (vozacIme.isEmpty) continue;
 
