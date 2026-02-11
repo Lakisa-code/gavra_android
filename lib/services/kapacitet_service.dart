@@ -16,6 +16,13 @@ class KapacitetService {
   // 🔄 GLOBAL REALTIME LISTENER za automatsko ažuriranje
   static StreamSubscription? _globalRealtimeSubscription;
 
+  // 💾 CACHE za kapacitet (inicijalizuje se na startup)
+  static Map<String, Map<String, int>> _kapacitetCache = {
+    'BC': {},
+    'VS': {},
+  };
+  static bool _kapacitetCacheInitialized = false;
+
   /// Vremena polazaka za Belu Crkvu (prema navBarType)
   static List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
@@ -218,10 +225,48 @@ class KapacitetService {
     }
   }
 
-  /// Dohvati kapacitet za grad/vreme (vraća default)
-  /// Vraća default 8
+  /// Dohvati kapacitet za grad/vreme (vraća iz cache-a)
+  /// Vraća default 8 ako nije dostupno u cache-u
   static int getKapacitetSync(String grad, String vreme) {
-    return 8;
+    // Normalizuj vreme
+    final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
+    
+    // Normalizuj grad (BC ili VS)
+    final gradKey = GradAdresaValidator.isBelaCrkva(grad) ? 'BC' : 'VS';
+    
+    // Vrati iz cache-a ili default 8
+    return _kapacitetCache[gradKey]?[normalizedVreme] ?? 8;
+  }
+
+  /// Inicijalizuj cache pri startu
+  static Future<void> initializeKapacitetCache() async {
+    if (_kapacitetCacheInitialized) return;
+    
+    try {
+      final data = await getKapacitet();
+      _kapacitetCache = data;
+      _kapacitetCacheInitialized = true;
+    } catch (e) {
+      // Koristi default vrednosti
+      _kapacitetCache = {
+        'BC': {for (final v in svaVremenaBc) v: 8},
+        'VS': {for (final v in svaVremenaVs) v: 8},
+      };
+      _kapacitetCacheInitialized = true;
+    }
+    
+    // Pokreni realtime listener za ažuriranje cache-a
+    startGlobalRealtimeListener();
+  }
+
+  /// Ažurira cache iz baze
+  static Future<void> refreshKapacitetCache() async {
+    try {
+      final data = await getKapacitet();
+      _kapacitetCache = data;
+    } catch (e) {
+      // Zadrži stari cache ako fetch nije useo
+    }
   }
 
   /// 🚀 INICIJALIZUJ GLOBALNI REALTIME LISTENER
@@ -234,11 +279,9 @@ class KapacitetService {
 
     // Pokreni globalni listener
     _globalRealtimeSubscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
-      print('🎫 Kapacitet realtime update: ${payload.eventType}');
-      // Samo log
+      // Na svaku promenu, osveži cache
+      refreshKapacitetCache();
     });
-
-    print('🚀 Globalni kapacitet realtime listener pokrenut!');
   }
 
   /// Zaustavi globalni listener (cleanup)

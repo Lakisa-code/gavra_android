@@ -169,6 +169,7 @@ Future<void> _initAppServices() async {
   final services = [
     VozacBoja.initialize(), // 🎨 Inicijalizuj cache vozača i boja
     AppSettingsService.initialize(),
+    KapacitetService.initializeKapacitetCache(), // 🎫 Inicijalizuj cache kapaciteta
   ];
 
   for (var service in services) {
