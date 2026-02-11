@@ -146,7 +146,6 @@ class _AdminScreenState extends State<AdminScreen> {
                       ),
                     ),
                     title: Text(vozac.ime),
-                    subtitle: Text(vozac.email ?? ''),
                     onTap: () {
                       Navigator.of(dialogContext).pop();
                       Navigator.push(
