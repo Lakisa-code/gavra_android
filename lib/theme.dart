@@ -231,7 +231,58 @@ extension ThemeGradients on ThemeData {
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
-  textTheme: GoogleFonts.interTextTheme(), // 🇷🇸 Inter font sa srpskim slovima
+  fontFamily: 'sans-serif', // Sistemski font sa emoji podrškom
+  textTheme: GoogleFonts.interTextTheme().copyWith(
+    // Override sa Roboto fontom za emoji podršku
+    bodyLarge: GoogleFonts.interTextTheme().bodyLarge?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Roboto', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    bodyMedium: GoogleFonts.interTextTheme().bodyMedium?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    bodySmall: GoogleFonts.interTextTheme().bodySmall?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    headlineLarge: GoogleFonts.interTextTheme().headlineLarge?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    headlineMedium: GoogleFonts.interTextTheme().headlineMedium?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    headlineSmall: GoogleFonts.interTextTheme().headlineSmall?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    titleLarge: GoogleFonts.interTextTheme().titleLarge?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    titleMedium: GoogleFonts.interTextTheme().titleMedium?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    titleSmall: GoogleFonts.interTextTheme().titleSmall?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    labelLarge: GoogleFonts.interTextTheme().labelLarge?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    labelMedium: GoogleFonts.interTextTheme().labelMedium?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+    labelSmall: GoogleFonts.interTextTheme().labelSmall?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+  ), // 🇷🇸 Roboto sa Inter fallback + emoji podrška
   scaffoldBackgroundColor: const Color(0xFFF0F9FF),
   appBarTheme: const AppBarTheme(
     elevation: 0,
