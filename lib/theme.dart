@@ -231,12 +231,12 @@ extension ThemeGradients on ThemeData {
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
-  fontFamily: 'sans-serif', // Sistemski font sa emoji podrškom
+  // fontFamily: 'sans-serif', // Uklonjeno - koristimo samo u textTheme override-ima
   textTheme: GoogleFonts.interTextTheme().copyWith(
     // Override sa Roboto fontom za emoji podršku
     bodyLarge: GoogleFonts.interTextTheme().bodyLarge?.copyWith(
       fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Roboto', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
     ),
     bodyMedium: GoogleFonts.interTextTheme().bodyMedium?.copyWith(
       fontFamily: 'sans-serif',
