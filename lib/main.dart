@@ -19,6 +19,7 @@ import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
 import 'services/ml_service.dart'; // 🧠 ML servis za trening modela
 import 'services/ml_vehicle_autonomous_service.dart';
+import 'services/permission_service.dart'; // 🔐 Dozvole
 import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/realtime_notification_service.dart';
@@ -210,9 +211,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _initializeApp();
 
-    // Premesti ove pozive u didChangeDependencies ili koristi addPostFrameCallback
+    // 🔐 DOZVOLE - Provera samo prvi put pri app startu (PRE nego što se otvaraju drugi ekrani)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        _requestPermissionsOnce();
+
         // Setup realtime notification listeners (FCM) for foreground handling
         try {
           RealtimeNotificationService.listenForForegroundNotifications(context);
@@ -225,6 +228,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         _checkBatteryOptimization();
       }
     });
+  }
+
+  /// 🔐 Traži dozvole samo prvi put
+  Future<void> _requestPermissionsOnce() async {
+    try {
+      final permissionsChecked = await PermissionService.checkAllPermissionsGranted();
+      if (!permissionsChecked && mounted) {
+        unawaited(PermissionService.requestAllPermissionsOnFirstLaunch(context));
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [MyApp] Permission request failed: $e');
+    }
   }
 
   /// 🔋 Show battery optimization warning for Huawei/Xiaomi phones

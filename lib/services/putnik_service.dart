@@ -495,23 +495,16 @@ class PutnikService {
       const registrovaniFields = '*,'
           'polasci_po_danu';
 
-      // ? OPTIMIZOVANO: Prvo ucitaj sve aktivne, zatim filtriraj po danu u Dart kodu (sigurniji pristup)
-      final allregistrovaniResponse = await supabase
+      // 🚀 OPTIMIZOVANO: Filtriraj po radni_dani direktno u SQL-u sa like za bolje performanse
+      // Učitaj samo putnike čiji radni_dani sadrže zadati dan
+      final registrovaniResponse = await supabase
           .from('registrovani_putnici')
           .select(registrovaniFields)
           .eq('aktivan', true)
           .eq('obrisan', false)
+          .like('radni_dani', '%$danKratica%') // 🔍 Filtrira direktno u bazi
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 5));
-
-      // Filtriraj rezultate sa tacnim matchovanjem dana
-      final registrovaniResponse = <Map<String, dynamic>>[];
-      for (final row in allregistrovaniResponse) {
-        final radniDani = row['radni_dani'] as String?;
-        if (radniDani != null && radniDani.split(',').map((d) => d.trim()).contains(danKratica)) {
-          registrovaniResponse.add(Map<String, dynamic>.from(row));
-        }
-      }
 
       for (final data in registrovaniResponse) {
         // KORISTI fromRegistrovaniPutniciMultipleForDay da kreira putnike samo za selektovani dan

@@ -10,6 +10,7 @@ import 'realtime/realtime_manager.dart';
 class AdresaSupabaseService {
   static StreamSubscription? _adreseSubscription;
   static final StreamController<List<Adresa>> _adreseController = StreamController<List<Adresa>>.broadcast();
+  static List<Adresa> _cachedAdrese = []; // 🚀 Cache za brže učitavanje
 
   /// Dobija adresu po UUID-u
   static Future<Adresa?> getAdresaByUuid(String uuid) async {
@@ -58,17 +59,26 @@ class AdresaSupabaseService {
   /// 🛰️ REALTIME STREAM: Prati promene u tabeli 'adrese'
   static Stream<List<Adresa>> streamSveAdrese() {
     if (_adreseSubscription == null) {
-      _adreseSubscription = RealtimeManager.instance.subscribe('adrese').listen((payload) {
+      // Učitaj prvi put (ako nema cache)
+      if (_cachedAdrese.isEmpty) {
         _refreshAdreseStream();
+      } else {
+        // Emituj iz cache-a odmah
+        if (!_adreseController.isClosed) {
+          _adreseController.add(_cachedAdrese);
+        }
+      }
+
+      _adreseSubscription = RealtimeManager.instance.subscribe('adrese').listen((payload) {
+        _refreshAdreseStream(); // Ažuriraj samo na promenu
       });
-      // Inicijalno učitavanje
-      _refreshAdreseStream();
     }
     return _adreseController.stream;
   }
 
   static void _refreshAdreseStream() async {
     final adrese = await getSveAdrese();
+    _cachedAdrese = adrese; // 💾 Čuva se u memoriji
     if (!_adreseController.isClosed) {
       _adreseController.add(adrese);
     }

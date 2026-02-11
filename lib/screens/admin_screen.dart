@@ -964,14 +964,6 @@ class _AdminScreenState extends State<AdminScreen> {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     const Text('Učitavanje admin panela...'),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Force rebuild to retry loading
-                        if (mounted) setState(() {});
-                      },
-                      child: const Text('Osveži'),
-                    ),
                   ],
                 ),
               );

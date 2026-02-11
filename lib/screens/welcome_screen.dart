@@ -9,7 +9,6 @@ import '../models/vozac.dart';
 import '../services/auth_manager.dart';
 import '../services/biometric_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/theme_manager.dart';
 import '../services/vozac_service.dart';
@@ -126,12 +125,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       // 1. Notifikacije
       unawaited(LocalNotificationService.initialize(context));
 
-      // 2. Dozvole (ovo otvara dialog, pa mora biti lagano)
-      if (mounted) {
-        await PermissionService.requestAllPermissionsOnFirstLaunch(context);
-      }
-
-      // 3. Auto-login
+      // 2. Auto-login (dozvole su već tražene pri prvom startu aplikacije)
       if (mounted) {
         _ensureNotificationPermissions();
         _checkAutoLogin();

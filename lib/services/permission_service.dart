@@ -18,8 +18,48 @@ class PermissionService {
       return true; // Preskoči dialog u screenshot modu
     }
 
-    // Always show dialog
+    // 🔐 Proveri da li su dozvole već date - ako jesu, ne prikazuj dialog
+    // Ovo radi i nakon hot restart jer se dozvole čuvaju na sistemu
+    final areAllPermissionsGranted = await _checkIfAllPermissionsGranted();
+
+    if (areAllPermissionsGranted) {
+      return true; // Sve dozvole su već date, preskoči dialog
+    }
+
+    // Prikaži dialog samo ako nedostaju dozvole
     return await _showPermissionSetupDialog(context);
+  }
+
+  /// Proveri da li su sve dozvole već date
+  static Future<bool> checkAllPermissionsGranted() async {
+    final location = await Permission.location.status;
+    final contacts = await Permission.contacts.status;
+    final camera = await Permission.camera.status;
+    final microphone = await Permission.microphone.status;
+    final notification = await Permission.notification.status;
+
+    // Ako su sve dozvole grantovane, ne prikazuj dialog
+    return location.isGranted &&
+        contacts.isGranted &&
+        camera.isGranted &&
+        microphone.isGranted &&
+        notification.isGranted;
+  }
+
+  /// Proveri da li su sve dozvole već date
+  static Future<bool> _checkIfAllPermissionsGranted() async {
+    final location = await Permission.location.status;
+    final contacts = await Permission.contacts.status;
+    final camera = await Permission.camera.status;
+    final microphone = await Permission.microphone.status;
+    final notification = await Permission.notification.status;
+
+    // Ako su sve dozvole grantovane, ne prikazuj dialog
+    return location.isGranted &&
+        contacts.isGranted &&
+        camera.isGranted &&
+        microphone.isGranted &&
+        notification.isGranted;
   }
 
   /// 📱 DIALOG ZA POČETNO PODEŠAVANJE DOZVOLA

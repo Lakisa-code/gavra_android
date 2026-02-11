@@ -132,9 +132,36 @@ class _AdreseScreenState extends State<AdreseScreen> {
   }
 
   Future<void> _deleteAdresa(Adresa adresa) async {
+    // Printers confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Obriši adresu?'),
+        content: Text('Sigurno želite da obrišete adresu: ${adresa.naziv}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Otkaži'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Obriši', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await supabase.from('adrese').delete().eq('id', adresa.id);
+
+      // Čekaj malo da se baza ažurira prije nego što osvežavaš stream
+      await Future.delayed(const Duration(milliseconds: 300));
+
       if (mounted) {
+        // Osvežavanje će se desiti automatski kroz stream
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('🗑️ Adresa obrisana'), backgroundColor: Colors.orange),
         );
@@ -142,7 +169,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('❌ Greška: $e'), backgroundColor: Colors.red),
         );
       }
     }
