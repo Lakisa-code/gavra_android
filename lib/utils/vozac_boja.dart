@@ -208,7 +208,7 @@ class VozacBoja {
     'Bilevski': 'bilyboy1983@gmail.com',
     'Svetlana': 'risticsvetlana2911@yahoo.com',
     'Ivan': 'bradvarevicivan99@gmail.com',
-    'Voja': 'voja@gmail.com',
+    'Voja': 'vojislav.jugovic1@gmail.com',
   };
 
   // VALIDACIJA: email -> vozač mapiranje
@@ -218,7 +218,7 @@ class VozacBoja {
     'bilyboy1983@gmail.com': 'Bilevski',
     'risticsvetlana2911@yahoo.com': 'Svetlana',
     'bradvarevicivan99@gmail.com': 'Ivan',
-    'voja@gmail.com': 'Voja',
+    'vojislav.jugovic1@gmail.com': 'Voja',
   };
 
   // BROJEVI TELEFONA VOZAČA
@@ -228,7 +228,7 @@ class VozacBoja {
     'Bilevski': '0638466418',
     'Svetlana': '0658464160',
     'Ivan': '0677662993',
-    'Voja': '0600000000',
+    'Voja': '0621121231',
   };
 
   // HELPER FUNKCIJE ZA EMAIL VALIDACIJU

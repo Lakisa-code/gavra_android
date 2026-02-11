@@ -187,51 +187,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
       return decoded.map((v) => Map<String, dynamic>.from(v)).toList();
     }
 
-    // Inicijalni podaci ako SharedPreferences je prazan
-    final List<Map<String, dynamic>> initialVozaci = <Map<String, dynamic>>[
-      <String, dynamic>{
-        'ime': 'Bojan',
-        'email': 'gavriconi19@gmail.com',
-        'sifra': '191919',
-        'telefon': '0641162560',
-        'boja': 0xFF00E5FF,
-      },
-      <String, dynamic>{
-        'ime': 'Bruda',
-        'email': 'igor.jovanovic.1984@icloud.com',
-        'sifra': '111111',
-        'telefon': '0641202844',
-        'boja': 0xFF7C4DFF,
-      },
-      <String, dynamic>{
-        'ime': 'Bilevski',
-        'email': 'bilyboy1983@gmail.com',
-        'sifra': '222222',
-        'telefon': '0638466418',
-        'boja': 0xFFFF9800,
-      },
-      <String, dynamic>{
-        'ime': 'Svetlana',
-        'email': 'risticsvetlana2911@yahoo.com',
-        'sifra': '444444',
-        'telefon': '0658464160',
-        'boja': 0xFFFF1493,
-      },
-      <String, dynamic>{
-        'ime': 'Ivan',
-        'email': 'bradvarevicivan99@gmail.com',
-        'sifra': '333333',
-        'telefon': '0677662993',
-        'boja': 0xFFFFD700, // žuta (Gold)
-      },
-      <String, dynamic>{
-        'ime': 'Voja',
-        'email': 'voja@gmail.com',
-        'sifra': '555555',
-        'telefon': '0600000000',
-        'boja': 0xFF26C6DA, // teal
-      },
-    ];
+    // Inicijalni podaci ako SharedPreferences je prazan - UKLONJENO zbog sigurnosti
+    final List<Map<String, dynamic>> initialVozaci = <Map<String, dynamic>>[];
 
     // Sačuvaj inicijalne podatke za buduće korišćenje
     await prefs.setString('auth_vozaci', jsonEncode(initialVozaci));
