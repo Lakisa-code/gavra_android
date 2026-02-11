@@ -461,6 +461,9 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           selectedDan: dan,
         );
 
+        // Čekaj 300ms da se baza ažurira prije nego što osveži UI
+        await Future.delayed(const Duration(milliseconds: 300));
+
         if (mounted) {
           final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
           ScaffoldMessenger.of(context).showSnackBar(
@@ -668,8 +671,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                 duration: const Duration(seconds: 2),
               ),
             );
-            // Osveži listu putnika
-            _setupStream();
+            // Čekaj 300ms da se baza ažurira prije nego što refresh-uješ stream
+            await Future.delayed(const Duration(milliseconds: 300));
+            if (mounted) {
+              _setupStream();
+            }
           }
         } else {
           await vremeVozacService.setVozacZaVreme(
@@ -686,8 +692,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                 duration: const Duration(seconds: 2),
               ),
             );
-            // Osveži listu putnika
-            _setupStream();
+            // Čekaj 300ms da se baza ažurira prije nego što refresh-uješ stream
+            await Future.delayed(const Duration(milliseconds: 300));
+            if (mounted) {
+              _setupStream();
+            }
           }
         }
       } catch (e) {
@@ -1076,10 +1085,15 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           selectedDan: dan,
         );
         uspesno++;
+        // Čekaj između operacija da se baza ažurira
+        await Future.delayed(const Duration(milliseconds: 100));
       } catch (e) {
         greska++;
       }
     }
+
+    // Čekaj da se sve operacije kompletan prije osvežavanja streama
+    await Future.delayed(const Duration(milliseconds: 300));
 
     if (mounted) {
       setState(() {
@@ -1092,6 +1106,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           backgroundColor: VozacBoja.getSync(noviVozac),
         ),
       );
+      // Osvezi listu nakon bulk prebacivanja
+      _setupStream();
     }
   }
 
@@ -1129,10 +1145,15 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         await _putnikService.otkaziPutnika(id, 'Admin',
             selectedVreme: _selectedVreme, selectedGrad: _selectedGrad, selectedDan: _selectedDay);
         uspesno++;
+        // Čekaj između operacija da se baza ažurira
+        await Future.delayed(const Duration(milliseconds: 100));
       } catch (e) {
         greska++;
       }
     }
+
+    // Čekaj da se sve operacije kompletan prije osvežavanja streama
+    await Future.delayed(const Duration(milliseconds: 300));
 
     if (mounted) {
       setState(() {
@@ -1145,6 +1166,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           backgroundColor: Colors.red,
         ),
       );
+      // Osvezi listu nakon bulk brisanja
+      _setupStream();
     }
   }
 

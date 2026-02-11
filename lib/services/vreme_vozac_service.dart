@@ -24,6 +24,9 @@ class VremeVozacService {
   final _changesController = StreamController<void>.broadcast();
   Stream<void> get onChanges => _changesController.stream;
 
+  // Realtime subscription
+  RealtimeChannel? _realtimeChannel;
+
   /// 🔍 Dobij vozača za specifično vreme
   /// [grad] - 'Bela Crkva' ili 'Vršac'
   /// [vreme] - '18:00', '5:00', itd.
@@ -151,9 +154,61 @@ class VremeVozacService {
         final key = '$grad|$vreme|$dan';
         _cache[key] = vozacIme;
       }
+      // Pokreni realtime listener samo prvi put nakon inicijalnog učitavanja
+      if (_realtimeChannel == null) {
+        _setupRealtimeListener();
+      }
     } catch (e) {
       // print('⚠️ Greška pri učitavanju vreme_vozac cache: $e');
     }
+  }
+
+  /// 📡 Postavi realtime listener na vreme_vozac tabelu
+  void _setupRealtimeListener() {
+    _realtimeChannel = _supabase.channel('public:vreme_vozac');
+
+    _realtimeChannel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'vreme_vozac',
+          callback: (payload) async {
+            // Refresh cache kada se bilo šta promijeni u tabeli
+            print('📡 VremeVozacService: Detektovana promjena, osvežavam cache...');
+            // NE pozivaj loadAllVremeVozac() jer bi to pokrenulo listener ponovo
+            await _refreshCacheFromDatabase();
+            // Obavesti slušaoce o promjeni
+            _changesController.add(null);
+          },
+        )
+        .subscribe();
+  }
+
+  /// 🔄 Osvěži cache iz baze bez pokretanja novog listener-a
+  Future<void> _refreshCacheFromDatabase() async {
+    try {
+      final response = await _supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime');
+      _cache.clear();
+      for (final row in response) {
+        final grad = row['grad'] as String;
+        final vreme = row['vreme'] as String;
+        final dan = row['dan'] as String;
+        final vozacIme = row['vozac_ime'] as String;
+        final key = '$grad|$vreme|$dan';
+        _cache[key] = vozacIme;
+      }
+    } catch (e) {
+      // print('⚠️ Greška pri osvežavanju cache-a: $e');
+    }
+  }
+
+  /// 🛑 Zatvori realtime listener
+  void dispose() {
+    if (_realtimeChannel != null) {
+      _supabase.removeChannel(_realtimeChannel!);
+      _realtimeChannel = null;
+    }
+    _changesController.close();
   }
 
   /// 🕒 Helper: Normalize time to HH:MM format
