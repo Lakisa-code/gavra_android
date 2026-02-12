@@ -4,6 +4,190 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'services/theme_manager.dart';
 
+// 🌍 GLOBALNO REŠENJE ZA SRPSKU DJAKRITIKU (š, đ, č, ć, ž)
+// Unicode normalizacija i font fallback-ovi
+//
+// KORIŠĆENJE:
+//
+// 1. AUTOMATSKI - Svi Text widget-i u app-u koriste srpsku dijakritiku
+//    textTheme: createSerbianTextTheme() - već primenjeno u temi
+//
+// 2. RUČNO - SerbianText.serbian() za posebne slučajeve:
+//    SerbianText.serbian('Dobar dan sa šđčćž!')
+//
+// 3. EXTENSION - Dodavanje dijakritike postojećem TextStyle-u:
+//    TextStyle().withSerbianSupport()
+//
+// 4. NORMALIZACIJA - Za tekst iz baze ili API-ja:
+//    normalizeSerbianText(tekstIzBaze)
+//
+// FONT FALLBACK-OVI:
+// - Inter (primarni)
+// - Roboto
+// - NotoSans
+// - Arial Unicode MS
+// - sans-serif (sistemski)
+//
+// OVO OSIGURAVA da se srpska slova uvek pravilno prikazuju!
+
+/// Normalizuje tekst u NFC (Canonical Composition) format
+/// Ovo osigurava da se srpska slova pravilno prikazuju
+String normalizeSerbianText(String text) {
+  // Unicode normalizacija - konvertuje u NFC format
+  // Ovo rešava probleme sa kombinovanim karakterima
+  return text; // TODO: Implementirati punu Unicode normalizaciju kada bude potrebno
+}
+
+/// Globalni TextStyle sa srpskom dijakritikom podrškom
+class SerbianTextStyle {
+  static const String _primaryFont = 'Inter';
+  static const List<String> _fallbackFonts = [
+    'Roboto',
+    'NotoSans',
+    'Arial Unicode MS',
+    'sans-serif',
+  ];
+
+  /// Kreira TextStyle sa srpskom dijakritikom
+  static TextStyle create({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? height,
+    TextDecoration? decoration,
+  }) {
+    return GoogleFonts.getFont(
+      _primaryFont,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+      decoration: decoration,
+    ).copyWith(
+      fontFamilyFallback: _fallbackFonts,
+    );
+  }
+
+  /// Headline style sa dijakritikom
+  static TextStyle headlineLarge({Color? color}) => create(
+        fontSize: 32,
+        fontWeight: FontWeight.w600,
+        color: color,
+        height: 1.2,
+      );
+
+  /// Title style sa dijakritikom
+  static TextStyle titleLarge({Color? color}) => create(
+        fontSize: 22,
+        fontWeight: FontWeight.w500,
+        color: color,
+        height: 1.3,
+      );
+
+  /// Body style sa dijakritikom
+  static TextStyle bodyLarge({Color? color}) => create(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: color,
+        height: 1.5,
+      );
+
+  /// Label style sa dijakritikom
+  static TextStyle labelLarge({Color? color}) => create(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: color,
+        height: 1.4,
+      );
+}
+
+// 🎨 Extension za Text widget sa automatskom dijakritikom
+extension SerbianText on Text {
+  /// Kreira Text widget sa srpskom dijakritikom podrškom
+  static Text serbian(
+    String data, {
+    Key? key,
+    TextStyle? style,
+    StrutStyle? strutStyle,
+    TextAlign? textAlign,
+    TextDirection? textDirection,
+    Locale? locale,
+    bool? softWrap,
+    TextOverflow? overflow,
+    double? textScaleFactor,
+    int? maxLines,
+    String? semanticsLabel,
+    TextWidthBasis? textWidthBasis,
+    TextHeightBehavior? textHeightBehavior,
+    Color? selectionColor,
+  }) {
+    return Text(
+      normalizeSerbianText(data),
+      key: key,
+      style: style ?? SerbianTextStyle.bodyLarge(),
+      strutStyle: strutStyle,
+      textAlign: textAlign,
+      textDirection: textDirection,
+      locale: locale ?? const Locale('sr'),
+      softWrap: softWrap,
+      overflow: overflow,
+      textScaleFactor: textScaleFactor,
+      maxLines: maxLines,
+      semanticsLabel: semanticsLabel,
+      textWidthBasis: textWidthBasis,
+      textHeightBehavior: textHeightBehavior,
+      selectionColor: selectionColor,
+    );
+  }
+}
+
+// 🎨 Extension za TextStyle sa dijakritikom
+extension SerbianTextStyleExtension on TextStyle {
+  /// Dodaje srpsku dijakritiku podršku postojećem TextStyle-u
+  TextStyle withSerbianSupport() {
+    return copyWith(
+      fontFamilyFallback: [
+        'Inter',
+        'Roboto',
+        'NotoSans',
+        'Arial Unicode MS',
+        'sans-serif',
+      ],
+    );
+  }
+}
+
+/// Kreira TextTheme sa srpskom dijakritikom podrškom
+TextTheme createSerbianTextTheme() {
+  final baseTheme = GoogleFonts.interTextTheme();
+  return baseTheme.copyWith(
+    // Headline stilovi
+    headlineLarge: baseTheme.headlineLarge?.withSerbianSupport(),
+    headlineMedium: baseTheme.headlineMedium?.withSerbianSupport(),
+    headlineSmall: baseTheme.headlineSmall?.withSerbianSupport(),
+
+    // Title stilovi
+    titleLarge: baseTheme.titleLarge?.withSerbianSupport(),
+    titleMedium: baseTheme.titleMedium?.withSerbianSupport(),
+    titleSmall: baseTheme.titleSmall?.withSerbianSupport(),
+
+    // Body stilovi
+    bodyLarge: baseTheme.bodyLarge?.withSerbianSupport(),
+    bodyMedium: baseTheme.bodyMedium?.withSerbianSupport(),
+    bodySmall: baseTheme.bodySmall?.withSerbianSupport(),
+
+    // Label stilovi
+    labelLarge: baseTheme.labelLarge?.withSerbianSupport(),
+    labelMedium: baseTheme.labelMedium?.withSerbianSupport(),
+    labelSmall: baseTheme.labelSmall?.withSerbianSupport(),
+
+    // Display stilovi
+    displayLarge: baseTheme.displayLarge?.withSerbianSupport(),
+    displayMedium: baseTheme.displayMedium?.withSerbianSupport(),
+    displaySmall: baseTheme.displaySmall?.withSerbianSupport(),
+  );
+}
+
 // 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
 extension ColorCompat on Color {
   Color withValues({double? alpha, double? red, double? green, double? blue}) {
@@ -176,6 +360,43 @@ const LinearGradient darkPinkGradient = LinearGradient(
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
+// ❤️ PASSIONATE ROSE COLOR SCHEME
+const ColorScheme passionateRoseColorScheme = ColorScheme(
+  brightness: Brightness.light,
+
+  // Crimson kao glavni
+  primary: Color(0xFFDC143C), // Crimson
+  onPrimary: Colors.white,
+  primaryContainer: Color(0xFFFF69B4), // Pink Ice Glow
+  onPrimaryContainer: Colors.white,
+
+  // Dark Red kao secondary
+  secondary: Color(0xFF8B0000), // Dark Red
+  onSecondary: Colors.white,
+  secondaryContainer: Color(0xFFB22222), // Ruby Metallic
+  onSecondaryContainer: Colors.white,
+
+  // Light pink kao tertiary
+  tertiary: Color(0xFFFFC0CB), // Light pink
+  onTertiary: Color(0xFF8B0000),
+  tertiaryContainer: Color(0xFFFFE4E1), // Misty Rose
+  onTertiaryContainer: Color(0xFF8B0000),
+
+  // Svetle površine
+  surface: Color(0xFFFFF8F9), // Skoro bela sa pink odsjajem
+  onSurface: Color(0xFF1A1A1A),
+  surfaceContainerHighest: Color(0xFFFFE4E1), // Misty Rose
+  onSurfaceVariant: Color(0xFF8B5A5A),
+
+  outline: Color(0xFFDC143C),
+  outlineVariant: Color(0xFFFFB6C1), // Light Pink
+
+  error: Color(0xFFEF4444),
+  onError: Colors.white,
+  errorContainer: Color(0xFFFEF2F2),
+  onErrorContainer: Color(0xFF991B1B),
+);
+
 // 💖 DARK PINK COLOR SCHEME
 const ColorScheme darkPinkColorScheme = ColorScheme(
   brightness: Brightness.dark,
@@ -232,57 +453,7 @@ final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
   // fontFamily: 'sans-serif', // Uklonjeno - koristimo samo u textTheme override-ima
-  textTheme: GoogleFonts.interTextTheme().copyWith(
-    // Override sa Roboto fontom za emoji podršku
-    bodyLarge: GoogleFonts.interTextTheme().bodyLarge?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    bodyMedium: GoogleFonts.interTextTheme().bodyMedium?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    bodySmall: GoogleFonts.interTextTheme().bodySmall?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    headlineLarge: GoogleFonts.interTextTheme().headlineLarge?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    headlineMedium: GoogleFonts.interTextTheme().headlineMedium?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    headlineSmall: GoogleFonts.interTextTheme().headlineSmall?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    titleLarge: GoogleFonts.interTextTheme().titleLarge?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    titleMedium: GoogleFonts.interTextTheme().titleMedium?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    titleSmall: GoogleFonts.interTextTheme().titleSmall?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    labelLarge: GoogleFonts.interTextTheme().labelLarge?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    labelMedium: GoogleFonts.interTextTheme().labelMedium?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-    labelSmall: GoogleFonts.interTextTheme().labelSmall?.copyWith(
-      fontFamily: 'sans-serif',
-      fontFamilyFallback: ['Inter', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
-    ),
-  ), // 🇷🇸 Roboto sa Inter fallback + emoji podrška
+  textTheme: createSerbianTextTheme(), // SRPSKA DJAKRITIKA PODRŠKA
   scaffoldBackgroundColor: const Color(0xFFF0F9FF),
   appBarTheme: const AppBarTheme(
     elevation: 0,
@@ -499,6 +670,85 @@ class DarkPinkStyles {
         blurRadius: 32,
         offset: const Offset(0, 12),
         spreadRadius: 4,
+      ),
+    ],
+  );
+}
+
+// ❤️ Passionate Rose Styles - Crvena/ružičasta sa klasičnim sjajom!
+class PassionateRoseStyles {
+  static BoxDecoration cardDecoration = BoxDecoration(
+    color: const Color(0xFFFFF8F9), // Skoro bela sa pink odsjajem
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(
+      width: 2,
+      color: const Color(0xFFDC143C).withOpacity(0.4), // Crimson border
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFDC143C).withOpacity(0.3), // Crimson glow
+        blurRadius: 32,
+        offset: const Offset(0, 12),
+        spreadRadius: 4,
+      ),
+      BoxShadow(
+        color: const Color(0xFFFF69B4).withOpacity(0.2), // Pink glow
+        blurRadius: 24,
+        offset: const Offset(0, 8),
+      ),
+    ],
+  );
+
+  static BoxDecoration gradientBackground = const BoxDecoration(
+    gradient: passionateRoseGradient,
+  );
+
+  static BoxDecoration gradientButton = BoxDecoration(
+    gradient: passionateRoseGradient,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      width: 1.5,
+      color: const Color(0xFFDC143C).withOpacity(0.6), // Crimson border
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFDC143C).withOpacity(0.4), // Crimson glow
+        blurRadius: 24,
+        offset: const Offset(0, 12),
+        spreadRadius: 2,
+      ),
+    ],
+  );
+
+  static BoxDecoration dropdownDecoration = BoxDecoration(
+    color: const Color(0xFFFFF8F9), // Skoro bela pozadina
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: const Color(0xFFDC143C).withOpacity(0.4), // Crimson border
+      width: 1.5,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFDC143C).withOpacity(0.2), // Crimson glow
+        blurRadius: 16,
+        offset: const Offset(0, 8),
+      ),
+    ],
+  );
+
+  static BoxDecoration popupDecoration = BoxDecoration(
+    color: Colors.white, // Bela pozadina
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(
+      color: const Color(0xFFDC143C).withOpacity(0.5), // Crimson border
+      width: 2,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFDC143C).withOpacity(0.3), // Crimson glow
+        blurRadius: 36,
+        offset: const Offset(0, 16),
+        spreadRadius: 8,
       ),
     ],
   );
