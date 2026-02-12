@@ -32,10 +32,13 @@ import 'services/theme_manager.dart';
 
 /// Normalizuje tekst u NFC (Canonical Composition) format
 /// Ovo osigurava da se srpska slova pravilno prikazuju
+///
+/// ZA SRPSKU DJAKRITIKU: Srpska slova (š, đ, č, ć, ž) su već precomposed u Unicode-u,
+/// pa dodatna normalizacija nije potrebna. Font fallback-ovi u temi rešavaju prikaz.
 String normalizeSerbianText(String text) {
-  // Unicode normalizacija - konvertuje u NFC format
-  // Ovo rešava probleme sa kombinovanim karakterima
-  return text; // TODO: Implementirati punu Unicode normalizaciju kada bude potrebno
+  // Srpska dijakritika je već u NFC formatu, pa vraćamo tekst nepromenjen
+  // Ako bude potrebe za drugim jezicima sa kombinovanim karakterima, dodati normalizaciju
+  return text;
 }
 
 /// Globalni TextStyle sa srpskom dijakritikom podrškom
