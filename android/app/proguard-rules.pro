@@ -1,5 +1,6 @@
 # 🚀 PRODUCTION FLUTTER PROGUARD RULES
 # Gavra Android v6.0.0 - ProGuard Configuration
+# UTF-8 ENCODING: Osigurava podršku za dijakritiku (š, đ, č, ć, ž)
 
 # ===============================================
 # FLUTTER CORE PROTECTION

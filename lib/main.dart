@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 📱 Za Edge-to-Edge prikaz (Android 15+)
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_api_availability/google_api_availability.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,16 +14,13 @@ import 'globals.dart';
 import 'screens/welcome_screen.dart';
 import 'services/adresa_supabase_service.dart';
 import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
-import 'services/battery_optimization_service.dart'; // 🔋 Huawei/Xiaomi battery warning
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
 import 'services/ml_service.dart'; // 🧠 ML servis za trening modela
 import 'services/ml_vehicle_autonomous_service.dart';
-import 'services/permission_service.dart'; // 🔐 Dozvole
 import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
-import 'services/realtime_notification_service.dart';
 import 'services/seat_request_service.dart';
 import 'services/slobodna_mesta_service.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
@@ -48,29 +46,29 @@ extension ColorCompat on Color {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (kDebugMode) debugPrint('🚀 [Main] App starting...');
+  if (kDebugMode) debugPrint('[Main] App starting...');
 
-  // 🔐 KONFIGURACIJA - Inicijalizuj osnovne kredencijale (bez Supabase)
+  // KONFIGURACIJA - Inicijalizuj osnovne kredencijale (bez Supabase)
   try {
     await configService.initializeBasic();
     if (kDebugMode) {
-      debugPrint('✅ [Main] Basic config initialized');
+      debugPrint('[Main] Basic config initialized');
     }
   } catch (e) {
-    if (kDebugMode) debugPrint('❌ [Main] Basic config init failed: $e');
+    if (kDebugMode) debugPrint('[Main] Basic config init failed: $e');
     // Critical error - cannot continue without credentials
     throw Exception('Ne mogu da inicijalizujem osnovne kredencijale: $e');
   }
 
-  // 🌐 SUPABASE - Inicijalizuj sa osnovnim kredencijalima
+  // SUPABASE - Inicijalizuj sa osnovnim kredencijalima
   try {
     await Supabase.initialize(
       url: configService.getSupabaseUrl(),
       anonKey: configService.getSupabaseAnonKey(),
     );
-    if (kDebugMode) debugPrint('✅ [Main] Supabase initialized');
+    if (kDebugMode) debugPrint('[Main] Supabase initialized');
   } catch (e) {
-    if (kDebugMode) debugPrint('❌ [Main] Supabase init failed: $e');
+    if (kDebugMode) debugPrint('[Main] Supabase init failed: $e');
     // Možeš dodati fallback ili crash app ako je kritično
   }
 
@@ -91,9 +89,9 @@ void main() async {
   });
 }
 
-/// 🏗️ Pozadinske inicijalizacije koje ne smeju da blokiraju UI
+/// Pozadinske inicijalizacije koje ne smeju da blokiraju UI
 Future<void> _doStartupTasks() async {
-  if (kDebugMode) debugPrint('⚙️ [Main] Background tasks started');
+  if (kDebugMode) debugPrint('[Main] Background tasks started');
 
   // 🕯️ WAKELOCK & UI
   try {
@@ -101,15 +99,16 @@ Future<void> _doStartupTasks() async {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   } catch (_) {}
 
-  // 🌍 LOCALE
-  unawaited(initializeDateFormatting('sr_RS', null));
+  // 🌍 LOCALE - UTF-8 podrška za dijakritiku
+  unawaited(initializeDateFormatting('sr', null));
+  // Intl.defaultLocale = 'sr_RS'; // UKLONJENO - koristi se Flutter locale
 
   // 🔥 SVE OSTALO POKRENI ISTOVREMENO (Paralelno)
   unawaited(_initPushSystems());
   unawaited(_initAppServices());
 }
 
-/// 📱 Inicijalizacija Notifikacija (GMS vs HMS)
+/// Inicijalizacija Notifikacija (GMS vs HMS)
 Future<void> _initPushSystems() async {
   try {
     // Provera GMS-a sa kratkim timeoutom
@@ -117,53 +116,53 @@ Future<void> _initPushSystems() async {
         await GoogleApiAvailability.instance.checkGooglePlayServicesAvailability().timeout(const Duration(seconds: 2));
 
     if (availability == GooglePlayServicesAvailability.success) {
-      if (kDebugMode) debugPrint('📲 [Main] Detected GMS (Google Play Services)');
+      if (kDebugMode) debugPrint('[Main] Detected GMS (Google Play Services)');
       try {
         await Firebase.initializeApp().timeout(const Duration(seconds: 5));
         await FirebaseService.initialize();
         FirebaseService.setupFCMListeners();
         unawaited(FirebaseService.initializeAndRegisterToken());
-        if (kDebugMode) debugPrint('✅ [Main] FCM initialized successfully');
+        if (kDebugMode) debugPrint('[Main] FCM initialized successfully');
       } catch (e) {
-        if (kDebugMode) debugPrint('❌ [Main] FCM initialization failed: $e');
+        if (kDebugMode) debugPrint('[Main] FCM initialization failed: $e');
       }
     } else {
-      if (kDebugMode) debugPrint('📲 [Main] GMS not available, trying HMS (Huawei Mobile Services)');
+      if (kDebugMode) debugPrint('[Main] GMS not available, trying HMS (Huawei Mobile Services)');
       try {
         final hmsToken = await HuaweiPushService().initialize().timeout(const Duration(seconds: 5));
         if (hmsToken != null) {
           await HuaweiPushService().tryRegisterPendingToken();
-          if (kDebugMode) debugPrint('✅ [Main] HMS initialized successfully');
+          if (kDebugMode) debugPrint('[Main] HMS initialized successfully');
         } else {
-          if (kDebugMode) debugPrint('⚠️ [Main] HMS initialization returned null token');
+          if (kDebugMode) debugPrint('[Main] HMS initialization returned null token');
         }
       } catch (e) {
-        if (kDebugMode) debugPrint('❌ [Main] HMS initialization failed: $e');
+        if (kDebugMode) debugPrint('[Main] HMS initialization failed: $e');
       }
     }
   } catch (e) {
-    if (kDebugMode) debugPrint('⚠️ [Main] Push services initialization failed: $e');
+    if (kDebugMode) debugPrint('[Main] Push services initialization failed: $e');
     // Try HMS as last resort
     try {
-      if (kDebugMode) debugPrint('📲 [Main] Last resort: trying HMS');
+      if (kDebugMode) debugPrint('[Main] Last resort: trying HMS');
       await HuaweiPushService().initialize().timeout(const Duration(seconds: 2));
     } catch (e2) {
-      if (kDebugMode) debugPrint('❌ [Main] All push services failed: $e2');
+      if (kDebugMode) debugPrint('[Main] All push services failed: $e2');
     }
   }
 }
 
-/// ⚙️ Inicijalizacija ostalih servisa
+/// Inicijalizacija ostalih servisa
 Future<void> _initAppServices() async {
   // Sada nije potrebna provera - Supabase je već inicijalizovan u main() liniji 69
-  if (kDebugMode) debugPrint('⚙️ [Main] Starting app services...');
+  if (kDebugMode) debugPrint('[Main] Starting app services...');
 
-  // 🚗 PRVO - Inicijalizuj vozač mapiranje (MORA biti pre stream-ova!)
+  // PRVO - Inicijalizuj vozač mapiranje (MORA biti pre stream-ova!)
   try {
     await VozacMappingService.initialize();
-    if (kDebugMode) debugPrint('✅ [Main] VozacMappingService initialized');
+    if (kDebugMode) debugPrint('[Main] VozacMappingService initialized');
   } catch (e) {
-    if (kDebugMode) debugPrint('❌ [Main] VozacMappingService init failed: $e');
+    if (kDebugMode) debugPrint('[Main] VozacMappingService init failed: $e');
   }
 
   // Ostali servisi se mogu pokrenuti paralelno
@@ -211,55 +210,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _initializeApp();
 
-    // 🔐 DOZVOLE - Provera samo prvi put pri app startu (PRE nego što se otvaraju drugi ekrani)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _requestPermissionsOnce();
-
-        // Setup realtime notification listeners (FCM) for foreground handling
-        try {
-          RealtimeNotificationService.listenForForegroundNotifications(context);
-        } catch (_) {}
-
-        // 🔔 FORCE SUBSCRIBE to FCM topics on app start (for testing)
-        _forceSubscribeToTopics();
-
-        // 🔋 Check for battery optimization warning (Huawei/Xiaomi/etc)
-        _checkBatteryOptimization();
-      }
-    });
-  }
-
-  /// 🔐 Traži dozvole samo prvi put
-  Future<void> _requestPermissionsOnce() async {
-    try {
-      final permissionsChecked = await PermissionService.checkAllPermissionsGranted();
-      if (!permissionsChecked && mounted) {
-        unawaited(PermissionService.requestAllPermissionsOnFirstLaunch(context));
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ [MyApp] Permission request failed: $e');
-    }
-  }
-
-  /// 🔋 Show battery optimization warning for Huawei/Xiaomi phones
-  Future<void> _checkBatteryOptimization() async {
-    try {
-      await Future<void>.delayed(const Duration(seconds: 3)); // Wait for app to fully load
-      if (!mounted) return;
-
-      final shouldShow = await BatteryOptimizationService.shouldShowWarning();
-      if (shouldShow && mounted) {
-        await BatteryOptimizationService.showWarningDialog(context);
-      }
-    } catch (_) {
-      // Battery optimization check failed - silent
-    }
-  }
-
-  Future<void> _forceSubscribeToTopics() async {
-    // REMOVED: Force subscribe to test_driver topics - proper subscription happens in home_screen.dart
-    // when the actual driver logs in
+    // 🔐 DOZVOLE - Sada se pozivaju iz WelcomeScreen da izbegnu MaterialLocalizations grešku
   }
 
   @override
@@ -316,6 +267,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           title: 'Gavra 013',
           debugShowCheckedModeBanner: false,
           theme: themeData, // Light tema
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en', 'US'),
+            Locale('sr'),
+            Locale('sr', 'RS'),
+            Locale('sr', 'BA'),
+            Locale('sr', 'ME'),
+          ],
+          locale: const Locale('sr'), // Default locale sa dijakritikom
           // Samo jedna tema - nema dark mode
           navigatorObservers: const [],
           home: _buildHome(),
@@ -329,4 +293,3 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return const WelcomeScreen();
   }
 }
-

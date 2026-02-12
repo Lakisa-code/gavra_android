@@ -7,8 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../models/vozac.dart';
 import '../services/auth_manager.dart';
+import '../services/battery_optimization_service.dart';
 import '../services/biometric_service.dart';
 import '../services/local_notification_service.dart';
+import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/theme_manager.dart';
 import '../services/vozac_service.dart';
@@ -62,6 +64,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
       _initServicesRecursively();
+    });
+
+    // 🔐 ZAHTEV ZA DOZVOLAMA - pomeramo ovde iz main.dart da izbegnemo MaterialLocalizations grešku
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+      _requestPermissionsIfNeeded();
+    });
+
+    // 🔋 PROVERA BATERIJSKE OPTIMIZACIJE - pomeramo ovde iz main.dart
+    Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      _checkBatteryOptimization();
     });
   }
 
@@ -768,5 +782,29 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
       },
     );
+  }
+
+  /// 🔐 Zahtev za dozvolama ako su potrebne
+  Future<void> _requestPermissionsIfNeeded() async {
+    try {
+      final permissionsChecked = await PermissionService.checkAllPermissionsGranted();
+      if (!permissionsChecked && mounted) {
+        await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [WelcomeScreen] Permission request failed: $e');
+    }
+  }
+
+  /// 🔋 Show battery optimization warning for Huawei/Xiaomi phones
+  Future<void> _checkBatteryOptimization() async {
+    try {
+      final shouldShow = await BatteryOptimizationService.shouldShowWarning();
+      if (shouldShow && mounted) {
+        await BatteryOptimizationService.showWarningDialog(context);
+      }
+    } catch (_) {
+      // Battery optimization check failed - silent
+    }
   }
 }
