@@ -231,16 +231,7 @@ class Putnik {
       return 300.0;
     }
 
-    // 3. Pošiljka ili YU auto (Fiksno 500)
-    if (tipLower == 'posiljka' || imeLower.contains('yu auto')) {
-      return 500.0;
-    }
-
-    // 4. Dnevni (Fiksno 600)
-    if (tipLower == 'dnevni' || mesecnaKarta == false) {
-      return 600.0;
-    }
-
+    // 3. Više nema default cena - vraća 0.0 ako nije postavljena cena
     return 0.0;
   }
 

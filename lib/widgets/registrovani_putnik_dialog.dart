@@ -1727,31 +1727,15 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
   /// Helper method to show contact picker dialog
   void _showContactPickerDialog(BuildContext context, List<Contact> contacts, TextEditingController controller) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Izaberi kontakt'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            itemCount: contacts.length,
-            itemBuilder: (context, index) {
-              final contact = contacts[index];
-              return ListTile(
-                title: Text(contact.displayName),
-                subtitle: contact.phones.isNotEmpty ? Text(contact.phones.first.number) : null,
-                onTap: () {
-                  if (contact.phones.isNotEmpty) {
-                    String phoneNumber = contact.phones.first.number;
-                    phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-                    controller.text = phoneNumber;
-                  }
-                  Navigator.pop(dialogContext);
-                },
-              );
-            },
-          ),
-        ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ContactPickerSheet(
+        contacts: contacts,
+        onContactSelected: (phoneNumber) {
+          controller.text = phoneNumber;
+        },
       ),
     );
   }
@@ -1780,6 +1764,235 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           ],
         );
       },
+    );
+  }
+}
+
+class _ContactPickerSheet extends StatefulWidget {
+  final List<Contact> contacts;
+  final Function(String) onContactSelected;
+
+  const _ContactPickerSheet({
+    required this.contacts,
+    required this.onContactSelected,
+  });
+
+  @override
+  State<_ContactPickerSheet> createState() => _ContactPickerSheetState();
+}
+
+class _ContactPickerSheetState extends State<_ContactPickerSheet> {
+  late List<Contact> _filteredContacts;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredContacts = widget.contacts;
+  }
+
+  void _filterContacts(String query) {
+    setState(() {
+      _filteredContacts =
+          widget.contacts.where((contact) => contact.displayName.toLowerCase().contains(query.toLowerCase())).toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // 🛑 Handle for dragging
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.grey.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          // 🔎 Search Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Izaberi kontakt',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 🔦 Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterContacts,
+              decoration: InputDecoration(
+                hintText: 'Pretraži kontakte...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterContacts('');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.08),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // 👥 Contacts List
+          Expanded(
+            child: _filteredContacts.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off, size: 64, color: Colors.grey.withOpacity(0.5)),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Nema pronađenih kontakata',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    itemCount: _filteredContacts.length,
+                    itemBuilder: (context, index) {
+                      final contact = _filteredContacts[index];
+                      final name = contact.displayName;
+                      final initials = name.isNotEmpty
+                          ? name.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('').toUpperCase()
+                          : '?';
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            if (contact.phones.isNotEmpty) {
+                              String phoneNumber = contact.phones.first.number;
+                              phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                              widget.onContactSelected(phoneNumber);
+                            }
+                            Navigator.pop(context);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                // Avatar with modern styling
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: isDark
+                                          ? [Colors.blue.shade700, Colors.blue.shade900]
+                                          : [Colors.blue.shade100, Colors.blue.shade200],
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      initials,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : Colors.blue.shade800,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Name and number
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        name,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                          color: isDark ? Colors.white : Colors.black87,
+                                        ),
+                                      ),
+                                      if (contact.phones.isNotEmpty)
+                                        Text(
+                                          contact.phones.first.number,
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white54 : Colors.black45,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                // Selection indicator
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 20,
+                                  color: Colors.grey.withOpacity(0.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

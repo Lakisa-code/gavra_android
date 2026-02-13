@@ -490,6 +490,21 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
   }
 
+  /// 🔧 Helperi za sigurno parsiranje brojeva iz Supabase-a (koji mogu biti String)
+  double _toDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v) ?? 0.0;
+    return 0.0;
+  }
+
+  int _toInt(dynamic v, {int defaultValue = 1}) {
+    if (v == null) return defaultValue;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? defaultValue;
+    return defaultValue;
+  }
+
   /// 📊 Učitava statistike za profil (vožnje i otkazivanja)
   Future<void> _loadStatistike() async {
     final now = DateTime.now();
@@ -528,14 +543,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       int brojVoznjiTotal = 0;
       if (jeDnevni) {
         for (final v in voznjeResponse) {
-          brojVoznjiTotal += (v['broj_mesta'] as num?)?.toInt() ?? 1;
+          brojVoznjiTotal += _toInt(v['broj_mesta']);
         }
       } else {
         final Map<String, int> dailyMaxSeats = {};
         for (final v in voznjeResponse) {
           final d = v['datum'] as String?;
           if (d != null) {
-            final bm = (v['broj_mesta'] as num?)?.toInt() ?? 1;
+            final bm = _toInt(v['broj_mesta']);
             if (bm > (dailyMaxSeats[d] ?? 0)) {
               dailyMaxSeats[d] = bm;
             }
@@ -548,14 +563,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       int brojOtkazivanjaTotal = 0;
       if (jeDnevni) {
         for (final o in otkazivanjaResponse) {
-          brojOtkazivanjaTotal += (o['broj_mesta'] as num?)?.toInt() ?? 1;
+          brojOtkazivanjaTotal += _toInt(o['broj_mesta']);
         }
       } else {
         final Map<String, int> dailyMaxSeats = {};
         for (final o in otkazivanjaResponse) {
           final d = o['datum'] as String?;
           if (d != null) {
-            final bm = (o['broj_mesta'] as num?)?.toInt() ?? 1;
+            final bm = _toInt(o['broj_mesta']);
             if (bm > (dailyMaxSeats[d] ?? 0)) {
               dailyMaxSeats[d] = bm;
             }
@@ -584,8 +599,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             adresaBcNaziv = bcResponse['naziv'] as String?;
             // Koordinate za BC adresu
             if (grad == 'BC' && bcResponse['gps_lat'] != null && bcResponse['gps_lng'] != null) {
-              putnikLat = (bcResponse['gps_lat'] as num?)?.toDouble();
-              putnikLng = (bcResponse['gps_lng'] as num?)?.toDouble();
+              putnikLat = _toDouble(bcResponse['gps_lat']);
+              putnikLng = _toDouble(bcResponse['gps_lng']);
             }
           }
         }
@@ -596,8 +611,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             adresaVsNaziv = vsResponse['naziv'] as String?;
             // Koordinate za VS adresu
             if (grad == 'VS' && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {
-              putnikLat = (vsResponse['gps_lat'] as num?)?.toDouble();
-              putnikLng = (vsResponse['gps_lng'] as num?)?.toDouble();
+              putnikLat = _toDouble(vsResponse['gps_lat']);
+              putnikLng = _toDouble(vsResponse['gps_lng']);
             }
           }
         }
@@ -670,7 +685,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         if (jeDnevniIliPosiljka) {
           for (final voznja in sveVoznjeZaDug) {
-            final bm = (voznja['broj_mesta'] as num? ?? 1).toInt();
+            final bm = _toInt(voznja['broj_mesta']);
             ukupnoZaplacanje += bm * cenaPoVoznji;
 
             final dStr = voznja['datum'] as String?;
@@ -685,7 +700,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             if (dStr == null) {
               continue;
             }
-            final bm = (voznja['broj_mesta'] as num? ?? 1).toInt();
+            final bm = _toInt(voznja['broj_mesta']);
             if (bm > (dnevniMaxMesta[dStr] ?? 0)) {
               dnevniMaxMesta[dStr] = bm;
             }
@@ -714,17 +729,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             .filter('tip', 'in', '("uplata","uplata_mesecna","uplata_dnevna")');
 
         for (final u in uplateResponse) {
-          ukupnoUplaceno += (u['iznos'] as num? ?? 0).toDouble();
+          ukupnoUplaceno += _toDouble(u['iznos']);
         }
       } catch (e) {
         // Fallback na istoriju koja je već učitana (iako je ona možda filtrirana)
         for (final p in istorija) {
-          ukupnoUplaceno += (p['iznos'] as num? ?? 0).toDouble();
+          ukupnoUplaceno += _toDouble(p['iznos']);
         }
       }
 
       // Finalno zaduženje (Uključuje i eventualni početni dug iz profila ako postoji)
-      final pocetniDug = (_putnikData['dug'] as num? ?? 0).toDouble();
+      final pocetniDug = _toDouble(_putnikData['dug']);
       final zaduzenje = pocetniDug + (ukupnoZaplacanje - ukupnoUplaceno);
 
       setState(() {
@@ -872,7 +887,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         if (datum == null) continue;
 
         final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
-        final iznos = (p['iznos'] as num?)?.toDouble() ?? 0.0;
+        final iznos = _toDouble(p['iznos']);
 
         poMesecima[mesecKey] = (poMesecima[mesecKey] ?? 0.0) + iznos;
 
@@ -1711,28 +1726,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
                     ),
-
-                    // 🏆💀 FAME | SHAME - PRIVREMENO ISKLJUČENO
-                    // if (tip == 'ucenik')
-                    //   Padding(
-                    //     padding: const EdgeInsets.symmetric(vertical: 8),
-                    //     child: Row(
-                    //       crossAxisAlignment: CrossAxisAlignment.start,
-                    //       children: [
-                    //         // 🏆 FAME - levo
-                    //         Expanded(child: _buildMiniLeaderboard(isShame: false)),
-                    //         const SizedBox(width: 16),
-                    //         // 💀 SHAME - desno
-                    //         Expanded(child: _buildMiniLeaderboard(isShame: true)),
-                    //       ],
-                    //     ),
-                    //   ),
-
-                    // ─────────── Divider ───────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
-                    ),
                     const SizedBox(height: 8),
 
                     // Statistike - Prikazano za sve, ali dnevni/pošiljka broje svako pokupljenje
@@ -2031,27 +2024,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   /// - BC radnici: odmah provera mesta (bez čekanja)
   /// - VS svi: odmah čuvanje bez provere
   Future<void> _updatePolazak(String dan, String tipGrad, String? novoVreme) async {
-    // 📅 BLOKADA PETKOM (za učenike i radnike)
-    // Ako je danas PETAK, zabrani menjanje bilo kog dana osim današnjeg (petka),
-    // jer se petkom vrši priprema za sledeću nedelju.
-    final now = DateTime.now();
-    if (now.weekday == DateTime.friday && dan != 'pet') {
-      final tip = (_putnikData['tip'] ?? '').toString().toLowerCase();
-
-      // Samo za radnike i učenike
-      if (tip.contains('radnik') || tip.contains('ucenik')) {
-        await GavraUI.showInfoDialog(
-          context,
-          title: 'Obrada podataka',
-          message:
-              'Svakog petka vršimo sistemsku obradu podataka i održavanje, zbog čega su izmene rasporeda privremeno onemogućene.\n\n'
-              'Ovo je redovan nedeljni proces. Mogućnost zakazivanja termina za narednu nedelju biće ponovo dostupna od subote ujutru.',
-          icon: Icons.settings_system_daydream,
-        );
-        return; // 🛑 PREKINI IZVRŠAVANJE, NE MENJAJ NIŠTA
-      }
-    }
-
     debugPrint('🚀 [BC] _updatePolazak pozvan: dan=$dan, tipGrad=$tipGrad, novoVreme=$novoVreme');
 
     // 🔔 PROVERA NOTIFIKACIJA PRE ZAKAZIVANJA
@@ -2089,19 +2061,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (shouldEnable == true) {
         await _requestNotificationPermission();
         // Ako je i dalje denied nakon pokušaja, možda odustane, ali nastavljamo sa zakazivanjem
-      }
-    }
-
-    // 💰 GAVRA DUG PODSETNIK (od 27. u mesecu)
-    if (novoVreme != null && DateTime.now().day >= 27 && _ukupnoZaduzenje > 0 && _putnikData['cena_po_danu'] != null) {
-      if (mounted) {
-        GavraUI.showSnackBar(
-          context,
-          message:
-              '💰 Podsetnik: Imate neizmireno dugovanje od ${_ukupnoZaduzenje.toStringAsFixed(0)} RSD. Molimo vas da izvršite uplatu do 1. u mesecu.',
-          type: GavraNotificationType.warning,
-          duration: const Duration(seconds: 6),
-        );
       }
     }
 
@@ -2149,7 +2108,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final staroVremeNorm = RegistrovaniHelpers.normalizeTime(staroVremeStr);
         final otkazanoKey = '${tipGrad}_otkazano';
         final otkazanoVremeKey = '${tipGrad}_otkazano_vreme';
+        final otkazaoVozacKey = '${tipGrad}_otkazao_vozac';
+
         (polasci[dan] as Map<String, dynamic>)[otkazanoKey] = DateTime.now().toUtc().toIso8601String();
+        // 🆕 Zabeleži da je putnik sam otkazao
+        (polasci[dan] as Map<String, dynamic>)[otkazaoVozacKey] = 'Putnik';
+
         // 🆕 Sačuvaj staro vreme (normalizovano) da bi se moglo prikazati u crvenom
         if (staroVreme != null && staroVremeStr.isNotEmpty) {
           (polasci[dan] as Map<String, dynamic>)[otkazanoVremeKey] =
@@ -2637,6 +2601,4 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       ),
     );
   }
-
-  // 🎯 POMOĆNE METODE ZA SEAT REQUESTS
 }

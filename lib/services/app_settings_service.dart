@@ -27,16 +27,13 @@ class AppSettingsService {
     try {
       final response = await supabase
           .from('app_settings')
-          .select('nav_bar_type, dnevni_zakazivanje_aktivno')
+          .select('nav_bar_type')
           .eq('id', 'global')
           .single();
 
       final navBarType = response['nav_bar_type'] as String? ?? 'auto';
       navBarTypeNotifier.value = navBarType;
       praznicniModNotifier.value = navBarType == 'praznici';
-
-      final dnevniAktivno = response['dnevni_zakazivanje_aktivno'] as bool? ?? false;
-      dnevniZakazivanjeNotifier.value = dnevniAktivno;
     } catch (e) {
       // Ako nema reda, ostavi default vrednosti
     }
@@ -51,20 +48,6 @@ class AppSettingsService {
     // 📝 LOG U DNEVNIK
     try {
       await VoznjeLogService.logGeneric(tip: 'admin_akcija', detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
-    } catch (_) {}
-  }
-
-  /// Postavi dnevni_zakazivanje_aktivno (samo admin može)
-  static Future<void> setDnevniZakazivanjeAktivno(bool aktivno) async {
-    await supabase.from('app_settings').update(
-        {'dnevni_zakazivanje_aktivno': aktivno, 'updated_at': DateTime.now().toIso8601String()}).eq('id', 'global');
-
-    // 📝 LOG U DNEVNIK
-    try {
-      await VoznjeLogService.logGeneric(
-        tip: 'admin_akcija',
-        detalji: 'Zakazivanje za dnevne putnike: ${aktivno ? "UKLJUČENO" : "ISKLJUČENO"}',
-      );
     } catch (_) {}
   }
 

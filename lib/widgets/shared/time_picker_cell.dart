@@ -109,21 +109,6 @@ class TimePickerCell extends StatelessWidget {
     final todayOnly = DateTime(now.year, now.month, now.day);
     final dayDate = _getDateForDay();
 
-    // 1️⃣ LOGIKA ZA PLAĆANJE (Prioritet) - važi za radnike i učenike
-    if (tipPutnika == 'radnik' || tipPutnika == 'ucenik') {
-      if (datumKrajaMeseca != null) {
-        // Da li je plaćeno za tekući mesec?
-        // Plaćeno je ako je datumKrajaMeseca u tekućem mesecu ili u budućnosti
-        final lastDayOfCurrentMonth = DateTime(now.year, now.month + 1, 0);
-        final isPaidForCurrentMonth = !datumKrajaMeseca!.isBefore(lastDayOfCurrentMonth);
-
-        // Od 11. u mesecu se zaključava ako nije plaćeno za tekući mesec
-        if (now.day >= 11 && !isPaidForCurrentMonth) {
-          return true;
-        }
-      }
-    }
-
     // 🆕 POŠILJKE - Mogu se zakazivati kad god (danas i unapred), ne zavise od admin prekidača
     if (tipPutnika == 'posiljka') {
       if (dayDate != null && dayDate.isBefore(todayOnly)) return true;
@@ -207,45 +192,7 @@ class TimePickerCell extends StatelessWidget {
 
         final now = DateTime.now();
 
-        // 🛡️ PROVERA PLAĆANJA I PORUKE (User requirement)
-        if (tipPutnika == 'radnik' || tipPutnika == 'ucenik') {
-          if (datumKrajaMeseca != null) {
-            final lastDayOfCurrentMonth = DateTime(now.year, now.month + 1, 0);
-            final lastDayOfPrevMonth = DateTime(now.year, now.month, 0);
-
-            final isPaidForCurrentMonth = !datumKrajaMeseca!.isBefore(lastDayOfCurrentMonth);
-            final isPaidForPrevMonth = !datumKrajaMeseca!.isBefore(lastDayOfPrevMonth);
-
-            // 1. 27. u mesecu do kraja meseca - Podsetnik za tekući mesec
-            if (now.day >= 27 && !isPaidForCurrentMonth) {
-              final tekuciMesec = _getSerbianMonthName(now.month);
-              GavraUI.showSnackBar(
-                context,
-                message: '🔔 podsecamo vas da imate neizmirena dugovanja za $tekuciMesec',
-                type: GavraNotificationType.info,
-              );
-            }
-
-            // 2. Od 01. do 10. u mesecu - Upozorenje za prethodni mesec
-            if (now.day >= 1 && now.day <= 10 && !isPaidForPrevMonth) {
-              GavraUI.showSnackBar(
-                context,
-                message: '⚠️ podsecamo vas da rok za placanje istice 10.',
-                type: GavraNotificationType.warning,
-              );
-            }
-
-            // 3. 11. u mesecu - Zaključavanje za prethodni mesec
-            if (now.day >= 11 && !isPaidForPrevMonth) {
-              GavraUI.showSnackBar(
-                context,
-                message: '🚫 zakazaivanja su onemogucena dok ne izmirite dugovanj',
-                type: GavraNotificationType.error,
-              );
-              return; // Ključ u bravu
-            }
-          }
-        }
+        // 🛡️ PROVERA PLAĆANJA I PORUKE (User requirement) - UKLONJENO
 
         // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor
         if (isPending) {
@@ -283,13 +230,7 @@ class TimePickerCell extends StatelessWidget {
           final todayOnly = DateTime(now.year, now.month, now.day);
           final dayDate = _getDateForDay();
 
-          if (!isDnevniZakazivanjeAktivno) {
-            GavraUI.showSnackBar(
-              context,
-              message: '⛔ Zakazivanje trenutno nije omogućeno od strane administratora.',
-              type: GavraNotificationType.error,
-            );
-          } else if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
+          if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
             GavraUI.showSnackBar(
               context,
               message:
@@ -314,7 +255,7 @@ class TimePickerCell extends StatelessWidget {
         if (locked) return; // Ostali slučajevi zaključavanja (npr. prošli dan)
 
         // 🆕 PROVERA ZA DNEVNE PUTNIKE - samo danas i sutra
-        if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && isDnevniZakazivanjeAktivno) {
+        if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI')) {
           final now = DateTime.now();
           final todayOnly = DateTime(now.year, now.month, now.day);
           final tomorrowOnly = todayOnly.add(const Duration(days: 1));
@@ -433,11 +374,6 @@ class TimePickerCell extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        // 📅 PROVERA DANA - PETAK INFO DIALOG
-        // Ako je danas petak, prikaži informativni tekst na vrhu dijaloga
-        final now = DateTime.now();
-        final isFriday = now.weekday == DateTime.friday;
-
         return Dialog(
           backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -480,37 +416,6 @@ class TimePickerCell extends StatelessWidget {
                         ),
                       ],
                     ),
-                  )
-                // ⚠️ PETAK INFO BANER
-                else if (isFriday)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade700,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    ),
-                    child: const Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.white, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'ZAOŠTRAVANJE RASPOREDA',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Izmene koje sada pravite važe za OVO zakazivanje. Za sledeću nedelju raspored možete uneti tek od subote ujutru.',
-                          style: TextStyle(color: Colors.white, fontSize: 11),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
                   ),
 
                 // Title - sa ili bez paddinga zavisno od banera
@@ -518,7 +423,7 @@ class TimePickerCell extends StatelessWidget {
                   padding: EdgeInsets.only(
                     left: 16,
                     right: 16,
-                    top: (isFriday || timePassed) ? 12 : 16,
+                    top: timePassed ? 12 : 16,
                     bottom: 16,
                   ),
                   child: Text(
@@ -625,24 +530,5 @@ class TimePickerCell extends StatelessWidget {
         );
       },
     );
-  }
-
-  String _getSerbianMonthName(int month) {
-    const months = [
-      'Januar',
-      'Februar',
-      'Mart',
-      'April',
-      'Maj',
-      'Jun',
-      'Jul',
-      'Avgust',
-      'Septembar',
-      'Oktobar',
-      'Novembar',
-      'Decembar'
-    ];
-    if (month < 1 || month > 12) return '';
-    return months[month - 1];
   }
 }

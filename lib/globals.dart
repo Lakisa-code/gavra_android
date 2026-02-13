@@ -73,14 +73,6 @@ int getCurrentHour() {
   return debugSimulatedHour ?? DateTime.now().hour;
 }
 
-/// 🎫 DNEVNI ZAKAZIVANJE - admin kontrola da li dnevni putnici mogu da zakazuju
-/// false = zakazivanje isključeno (default)
-/// true = zakazivanje aktivno
-final ValueNotifier<bool> dnevniZakazivanjeNotifier = ValueNotifier<bool>(false);
-
-/// Helper za proveru da li je zakazivanje za dnevne aktivno
-bool get isDnevniZakazivanjeAktivno => dnevniZakazivanjeNotifier.value;
-
 /// 🔐 GLOBALNA INSTANCA CONFIG SERVICE
 /// Centralizovano upravljanje svim kredencijalima i konfiguracijom
 /// Koristi se u celoj aplikaciji za pristup kredencijalima

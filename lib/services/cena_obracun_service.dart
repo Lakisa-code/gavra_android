@@ -13,14 +13,7 @@ import '../models/registrovani_putnik.dart';
 class CenaObracunService {
   static SupabaseClient get _supabase => supabase;
 
-  /// Default cenovnik po tipu putnika (po danu)
-  static const double defaultCenaRadnikPoDanu = 700.0;
-  static const double defaultCenaUcenikPoDanu = 600.0;
-  static const double defaultCenaDnevniPoDanu = 600.0;
-  static const double defaultCenaPosiljkaPoDanu = 500.0; // Pošiljka je 500 RSD
-
-  /// Dobija cenu po danu za putnika (SAMO custom cena - više nema default-a)
-  /// Dobija cenu po danu za putnika (custom cena ili default)
+  /// Dobija cenu po danu za putnika (SAMO custom cena)
   static double getCenaPoDanu(RegistrovaniPutnik putnik) {
     // 1. Ako ima postavljenu custom cenu - koristi je
     if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
@@ -35,31 +28,13 @@ class CenaObracunService {
       return 300.0;
     }
 
-    // 3. Ako nema custom cene - koristi DEFAULT CENU prema tipu
-    return _getDefaultCenaPoDanu(tipLower);
+    // 3. Ako nema custom cene - više nema default cena, vraća 0.0
+    return 0.0;
   }
 
-  /// Dobija default cenu po danu za tip putnika (interna)
-  static double _getDefaultCenaPoDanu(String tip) {
-    switch (tip.toLowerCase()) {
-      case 'ucenik':
-      case 'učenik':
-        return defaultCenaUcenikPoDanu;
-      case 'dnevni':
-        return defaultCenaDnevniPoDanu;
-      case 'posiljka':
-      case 'pošiljka':
-        return defaultCenaPosiljkaPoDanu;
-      case 'radnik':
-      default:
-        return defaultCenaRadnikPoDanu;
-    }
-  }
-
-  /// Dobija default cenu po danu samo na osnovu tipa (String)
-  /// Koristi se kada nemamo RegistrovaniPutnik objekat (npr. iz Map)
+  /// Dobija default cenu po danu samo na osnovu tipa (String) - VRAĆA 0.0
   static double getDefaultCenaByTip(String tip) {
-    return _getDefaultCenaPoDanu(tip);
+    return 0.0;
   }
 
   /// Izračunaj mesečnu cenu za putnika na osnovu pokupljenja

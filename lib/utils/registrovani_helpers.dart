@@ -58,7 +58,10 @@ class RegistrovaniHelpers {
       if (raw is Map) {
         final dayData = raw[dayKratica];
         if (dayData is Map && dayData[mestaKey] != null) {
-          return (dayData[mestaKey] as num?)?.toInt() ?? 1;
+          final val = dayData[mestaKey];
+          if (val is num) return val.toInt();
+          if (val is String) return int.tryParse(val) ?? 1;
+          return 1;
         }
       }
     }
@@ -66,7 +69,9 @@ class RegistrovaniHelpers {
     // 2. Fallback: koristi globalnu kolonu broj_mesta ako postoji
     final globalBrojMesta = rawMap['broj_mesta'];
     if (globalBrojMesta != null) {
-      return (globalBrojMesta as num?)?.toInt() ?? 1;
+      if (globalBrojMesta is num) return globalBrojMesta.toInt();
+      if (globalBrojMesta is String) return int.tryParse(globalBrojMesta) ?? 1;
+      return 1;
     }
 
     return 1; // Default 1 mesto

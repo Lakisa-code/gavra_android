@@ -32,7 +32,7 @@ class RegistrovaniPutnik {
     // Tracking polja - UKLONJENO: pokupljen, placeno - sada u voznje_log
     this.pin,
     this.email, // 📧 Email za kontakt i Google Play testing
-    this.cenaPoDanu, // 🆕 Custom cena po danu (ako je NULL, koristi default: 700 radnik, 600 učenik)
+    this.cenaPoDanu, // 🆕 Custom cena po danu (NULL = 0.0, nema više defaulta)
     // 🧾 Polja za račune
     this.trebaRacun = false,
     this.firmaNaziv,
@@ -123,7 +123,7 @@ class RegistrovaniPutnik {
   /// Email za kontakt i Google Play testing
   final String? email;
 
-  /// Custom cena po danu (NULL = default 700/600)
+  /// Custom cena po danu (NULL = 0.0)
   final double? cenaPoDanu;
   // 🧾 Polja za račune
   /// Da li je potreban račun
@@ -195,7 +195,7 @@ class RegistrovaniPutnik {
       // Tracking polja - UKLONJENO: pokupljen, placeno - sada u voznje_log
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
-      cenaPoDanu: (map['cena_po_danu'] as num?)?.toDouble(), // 🆕 Custom cena po danu
+      cenaPoDanu: _parseNum(map['cena_po_danu'])?.toDouble(), // 🆕 Custom cena po danu
       // 🧾 Polja za račune
       trebaRacun: map['treba_racun'] as bool? ?? false,
       firmaNaziv: map['firma_naziv'] as String?,
@@ -203,7 +203,7 @@ class RegistrovaniPutnik {
       firmaMb: map['firma_mb'] as String?,
       firmaZiro: map['firma_ziro'] as String?,
       firmaAdresa: map['firma_adresa'] as String?,
-      brojMesta: (map['broj_mesta'] as num?)?.toInt() ?? 1, // 🆕 Čitaj broj mesta
+      brojMesta: _parseNum(map['broj_mesta'])?.toInt() ?? 1, // 🆕 Čitaj broj mesta
       // Uklonjeno: ime, prezime - koristi se putnikIme
       // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
     );
@@ -403,5 +403,13 @@ class RegistrovaniPutnik {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp * 1000 + (timestamp % 1000)).toRadixString(36);
     return 'fallback-uuid-$random';
+  }
+
+  /// 🔧 Helper za sigurno parsiranje brojeva (podržava num i String za Postgres numeric)
+  static num? _parseNum(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value;
+    if (value is String) return num.tryParse(value);
+    return null;
   }
 }

@@ -4,15 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'realtime/realtime_manager.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (seat_requests tabela)
 class SeatRequestService {
   static SupabaseClient get _supabase => supabase;
-
-  static StreamSubscription? _requestsSubscription;
-  static final StreamController<List<Map<String, dynamic>>> _requestsController =
-      StreamController<List<Map<String, dynamic>>>.broadcast();
 
   /// 📥 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
   static Future<void> insertSeatRequest({
@@ -50,30 +45,9 @@ class SeatRequestService {
     }
   }
 
-  /// 🕒 STREAM SVIH AKTIVNIH ZAHTEVA - Za admin monitoring
-  static Stream<List<Map<String, dynamic>>> streamActiveRequests() {
-    if (_requestsSubscription == null) {
-      _requestsSubscription = RealtimeManager.instance.subscribe('seat_requests').listen((payload) {
-        _refreshRequestsStream();
-      });
-      // Inicijalno učitavanje
-      _refreshRequestsStream();
-    }
-    return _requestsController.stream;
-  }
-
-  static void _refreshRequestsStream() async {
-    final requests = await getActiveRequests();
-    if (!_requestsController.isClosed) {
-      _requestsController.add(requests);
-    }
-  }
-
   /// 🧹 Čisti realtime subscription
   static void dispose() {
-    _requestsSubscription?.cancel();
-    _requestsSubscription = null;
-    _requestsController.close();
+    // No subscriptions to clean up
   }
 
   /// 📅 Helper: Računa sledeći datum za dati dan u nedelji

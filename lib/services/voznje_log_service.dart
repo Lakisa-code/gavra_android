@@ -622,75 +622,6 @@ class VoznjeLogService {
     });
   }
 
-  /// 📊 REALTIME DETALJNE STATISTIKE ZA SVE VOZAČE
-  /// Vraća Map sa kompletnim statistikama za sve vozače u periodu
-  /// Koristi realtime stream pa su ažuriranja trenutna
-  static Stream<Map<String, dynamic>> streamDetaljneStatistikePoVozacima({
-    required DateTime from,
-    required DateTime to,
-    required List<String> vozaciLista, // Lista vozača koji nas zanimaju
-  }) {
-    final fromStr = from.toIso8601String().split('T')[0];
-    final toStr = to.toIso8601String().split('T')[0];
-
-    return _supabase.from('voznje_log').stream(primaryKey: ['id']).map((records) {
-      final Map<String, dynamic> statistike = {};
-
-      // Inicijalizuj sve vozače
-      for (final vozac in vozaciLista) {
-        statistike[vozac] = {'pokupljeni': 0, 'otkazani': 0, 'duznici': 0, 'pazar': 0.0};
-      }
-
-      final Map<String, String> dnevniVoznjePoVozacu = {}; // putnik_id -> vozac_ime
-      final Set<String> naplaceniPutnici = {}; // putnici koji su placeni
-
-      for (final record in records) {
-        final datum = record['datum'] as String?;
-        if (datum == null) continue;
-        if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;
-
-        final vozacId = record['vozac_id'] as String?;
-        if (vozacId == null) continue;
-
-        String vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? '';
-        if (vozacIme.isEmpty || !statistike.containsKey(vozacIme)) continue;
-
-        final tip = record['tip'] as String?;
-        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
-        final putnikId = record['putnik_id'] as String?;
-
-        switch (tip) {
-          case 'voznja':
-            statistike[vozacIme]['pokupljeni']++;
-            if (putnikId != null) {
-              dnevniVoznjePoVozacu[putnikId] = vozacIme;
-            }
-            break;
-          case 'otkazivanje':
-            statistike[vozacIme]['otkazani']++;
-            break;
-          case 'uplata':
-          case 'uplata_dnevna':
-          case 'uplata_mesecna':
-            statistike[vozacIme]['pazar'] += iznos;
-            if (putnikId != null) {
-              naplaceniPutnici.add(putnikId);
-            }
-            break;
-        }
-      }
-
-      // Izračunaj dužnike
-      for (final entry in dnevniVoznjePoVozacu.entries) {
-        if (!naplaceniPutnici.contains(entry.key)) {
-          statistike[entry.value]['duznici']++;
-        }
-      }
-
-      return statistike;
-    });
-  }
-
   /// 🕒 STREAM POSLEDNJIH AKCIJA - Za Dnevnik vozača
   /// ✅ ISPRAVKA: Uključuje i akcije putnika (gde je vozac_id NULL) ako su povezani sa ovim vozačem
   static Stream<List<Map<String, dynamic>>> streamRecentLogs({required String vozacIme, int limit = 10}) {
@@ -719,34 +650,6 @@ class VoznjeLogService {
             final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
             return dateB.compareTo(dateA);
           });
-          return filtered.take(limit).toList();
-        });
-  }
-
-  /// 🕒 STREAM SAMO ZAHTEVA I NJIHOVIH OBRADA - Za Monitoring Zahteva
-  static Stream<List<Map<String, dynamic>>> streamRequestLogs({int limit = 50}) {
-    return _supabase
-        .from('voznje_log')
-        .stream(primaryKey: ['id'])
-        .order('created_at', ascending: false)
-        .limit(limit * 2) // Uzimamo malo više pa filtriramo
-        .map((logs) {
-          final relevantTypes = [
-            'zakazivanje_putnika',
-            'potvrda_zakazivanja',
-            'otkazivanje_putnika',
-            'otkazivanje',
-            'greska_zahteva',
-          ];
-
-          final filtered = logs.where((l) => relevantTypes.contains(l['tip'])).toList();
-
-          filtered.sort((a, b) {
-            final dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
-            final dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
-            return dateB.compareTo(dateA);
-          });
-
           return filtered.take(limit).toList();
         });
   }

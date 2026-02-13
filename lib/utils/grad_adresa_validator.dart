@@ -86,16 +86,6 @@ class GradAdresaValidator {
     final normalizedAdresa = normalizeString(adresa);
     final normalizedPutnikGrad = normalizeString(putnikGrad);
 
-    // 🚫 PRVO BLOKIRAJ EKSPLICITNO ZABRANJENE GRADOVE
-    final containsVranje = normalizedAdresa.contains('vranje');
-    final containsPancevo = normalizedAdresa.contains('pancevo');
-    final containsBeograd = normalizedAdresa.contains('beograd');
-    final containsNS = normalizedAdresa.contains('novi sad');
-
-    if (containsVranje || containsPancevo || containsBeograd || containsNS) {
-      return false; // Eksplicitno blokiraj druge gradove
-    }
-
     // AKO GRAD PRIPADA DOZVOLJENIM OPŠTINAMA, DOZVOLI BILO KOJU ADRESU
     final gradBelongs = naseljaOpstineBelaCrkva.any((naselje) => normalizedPutnikGrad.contains(naselje)) ||
         naseljaOpstineVrsac.any((naselje) => normalizedPutnikGrad.contains(naselje));
@@ -141,20 +131,6 @@ class GradAdresaValidator {
     return false; // Ako grad nije iz dozvoljenih opština, odbaci
   }
 
-  /// LISTA BLOKIRANIH GRADOVA
-  static const List<String> blockedCities = [
-    'vranje',
-    'pancevo',
-    'beograd',
-    'novi sad',
-    'nis',
-    'kragujevac',
-    'subotica',
-    'zrenjanin',
-    'novi pazar',
-    'leskovac',
-  ];
-
   /// PROVERI DA LI JE GRAD BLOKIRAN
   static bool isCityBlocked(String? grad) {
     if (grad == null || grad.trim().isEmpty) {
@@ -163,20 +139,12 @@ class GradAdresaValidator {
 
     final normalizedGrad = normalizeString(grad);
 
-    // Prvo proveri da li pripada dozvoljenim opštinama
+    // Proveri da li pripada dozvoljenim opštinama (Bela Crkva ili Vršac)
     final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedGrad.contains(naselje));
-
     final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
 
-    // Ako pripada dozvoljenim opštinama, ne blokiraj
-    if (belongsToBelaCrkva || belongsToVrsac) {
-      return false;
-    }
-
-    // Inače proveri da li je u listi blokiranih gradova
-    return blockedCities.any(
-      (blocked) => normalizedGrad.contains(blocked) || blocked.contains(normalizedGrad),
-    );
+    // Blokiraj ako NE pripada dozvoljenim opštinama
+    return !(belongsToBelaCrkva || belongsToVrsac);
   }
 
   /// NORMALIZUJ VREME - konvertuj "05:00:00" ili "5:00" u "05:00" (HH:MM format)

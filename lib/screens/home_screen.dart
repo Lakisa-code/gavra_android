@@ -42,7 +42,6 @@ import '../widgets/putnik_list.dart';
 import '../widgets/registracija_countdown_widget.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
-import 'ml_lab_screen.dart';
 import 'promena_sifre_screen.dart';
 import 'vozac_screen.dart';
 import 'welcome_screen.dart';
@@ -2393,20 +2392,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             onTap: _showAddPutnikDialog,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        if (_currentDriver == 'Bojan')
-                          Expanded(
-                            child: _HomeScreenButton(
-                              label: 'ML Lab',
-                              icon: Icons.psychology,
-                              onTap: () {
-                                AnimatedNavigation.pushSmooth(
-                                  context,
-                                  const MLLabScreen(),
-                                );
-                              },
-                            ),
-                          ),
                         const SizedBox(width: 4),
                         if (_currentDriver == 'Bruda' || _currentDriver == 'Bilevski' || _currentDriver == 'Voja')
                           Expanded(

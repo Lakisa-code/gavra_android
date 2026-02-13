@@ -79,17 +79,19 @@ class _PutnikCardState extends State<PutnikCard> {
         '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
   }
 
-  // Format za otkazivanje - prikazuje vreme ako je danas, inače datum
+  // Format za otkazivanje - prikazuje vreme ako je danas, inače datum i vreme
   String _formatOtkazivanje(DateTime vreme) {
     final danas = DateTime.now();
     final jeDanas = vreme.year == danas.year && vreme.month == danas.month && vreme.day == danas.day;
 
+    final vremeStr = '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
+
     if (jeDanas) {
       // Danas - prikaži samo vreme
-      return '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
+      return vremeStr;
     } else {
-      // Ranije - prikaži datum
-      return '${vreme.day}.${vreme.month}.${vreme.year}';
+      // Ranije - prikaži datum i vreme za veću preciznost
+      return '${vreme.day}.${vreme.month}. $vremeStr';
     }
   }
 
@@ -117,7 +119,7 @@ class _PutnikCardState extends State<PutnikCard> {
       // MESECNI PUTNIK - CUSTOM CENA umesto fiksne
       await _handleRegistrovaniPayment();
     } else if (_putnik.isDnevniTip) {
-      // DNEVNI PUTNIK - fiksna cena 600 RSD
+      // DNEVNI PUTNIK - obračun na osnovu cene iz baze
       await _handleDnevniPayment();
     } else {
       // OBICNI PUTNIK - unos custom iznosa
@@ -1911,13 +1913,15 @@ class _PutnikCardState extends State<PutnikCard> {
                       if (_putnik.jeOtkazan && _putnik.vremeOtkazivanja != null) ...[
                         if (_putnik.vremePokupljenja != null || (_putnik.placeno == true)) const SizedBox(width: 12),
                         Text(
-                          'Otkazao: ${_formatOtkazivanje(_putnik.vremeOtkazivanja!)}',
+                          '${_putnik.otkazaoVozac == 'Putnik' ? 'Putnik otkazao' : 'Otkazao'}: ${_formatOtkazivanje(_putnik.vremeOtkazivanja!)}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.getColorOrDefaultSync(
-                              _putnik.otkazaoVozac,
-                              Colors.red,
-                            ),
+                            color: _putnik.otkazaoVozac == 'Putnik'
+                                ? Colors.red.shade900 // Jača crvena za putnika
+                                : VozacBoja.getColorOrDefaultSync(
+                                    _putnik.otkazaoVozac,
+                                    Colors.red,
+                                  ),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
