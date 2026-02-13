@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../constants/day_constants.dart';
 import '../globals.dart';
 import '../helpers/gavra_ui.dart';
 import '../models/registrovani_putnik.dart';
@@ -864,7 +865,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           // DROPDOWN ZA BELA CRKVA
           DropdownButtonFormField<String>(
             key: ValueKey('bc_$_adresaBelaCrkvaId'),
-            value: _adresaBelaCrkvaId,
+            value: _adreseBelaCrkva.any((a) => a['id'] == _adresaBelaCrkvaId) ? _adresaBelaCrkvaId : null,
             decoration: InputDecoration(
               labelText: 'Adresa Bela Crkva',
               prefixIcon: const Icon(Icons.location_on),
@@ -895,7 +896,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           // DROPDOWN ZA VRŠAC
           DropdownButtonFormField<String>(
             key: ValueKey('vs_$_adresaVrsacId'),
-            value: _adresaVrsacId,
+            value: _adreseVrsac.any((a) => a['id'] == _adresaVrsacId) ? _adresaVrsacId : null,
             decoration: InputDecoration(
               labelText: 'Adresa Vršac',
               prefixIcon: const Icon(Icons.location_city),
@@ -978,31 +979,31 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           ),
           const SizedBox(height: 8),
           TimeRow(
-            dayLabel: 'Ponedeljak',
+            dayLabel: DayConstants.dayNamesInternal[0],
             bcController: _polazakBcControllers['pon']!,
             vsController: _polazakVsControllers['pon']!,
           ),
           const SizedBox(height: 8),
           TimeRow(
-            dayLabel: 'Utorak',
+            dayLabel: DayConstants.dayNamesInternal[1],
             bcController: _polazakBcControllers['uto']!,
             vsController: _polazakVsControllers['uto']!,
           ),
           const SizedBox(height: 8),
           TimeRow(
-            dayLabel: 'Sreda',
+            dayLabel: DayConstants.dayNamesInternal[2],
             bcController: _polazakBcControllers['sre']!,
             vsController: _polazakVsControllers['sre']!,
           ),
           const SizedBox(height: 8),
           TimeRow(
-            dayLabel: 'Četvrtak',
+            dayLabel: DayConstants.dayNamesInternal[3],
             bcController: _polazakBcControllers['cet']!,
             vsController: _polazakVsControllers['cet']!,
           ),
           const SizedBox(height: 8),
           TimeRow(
-            dayLabel: 'Petak',
+            dayLabel: DayConstants.dayNamesInternal[4],
             bcController: _polazakBcControllers['pet']!,
             vsController: _polazakVsControllers['pet']!,
           ),
@@ -1782,4 +1783,3 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     );
   }
 }
-

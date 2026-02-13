@@ -3,8 +3,9 @@
   package="com.gavra013.gavra_android">
 
   <!-- 🚫 Remove unused media permissions added by plugins -->
-  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
-  <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+  <!-- UKLONJENO: tools:node="remove" za READ_MEDIA_IMAGES i READ_MEDIA_VIDEO jer ih permission_handler traži -->
+  <!-- <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" /> -->
+  <!-- <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" /> -->
 
   <!-- 🗺️ GPS/Location permissions -->
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -22,10 +23,17 @@
 
   <!-- 📞 Phone/Call permissions -->
   <uses-permission android:name="android.permission.CALL_PHONE" />
-  <!-- READ_PHONE_STATE nije potreban - koristimo samo tel: URI za pozivanje -->
+  <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+  <!-- READ_PHONE_STATE potreban za Permission.phone -->
 
   <!-- 📇 Contacts permission for contact picker -->
   <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+  <!-- 📷 Camera permission -->
+  <uses-permission android:name="android.permission.CAMERA" />
+
+  <!-- 🎤 Microphone permission -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
   <!-- 🔐 BIOMETRIC AUTHENTICATION (otisak prsta) -->
   <uses-permission android:name="android.permission.USE_BIOMETRIC" />

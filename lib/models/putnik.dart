@@ -707,23 +707,29 @@ class Putnik {
       vreme: vreme, // ?? Prosledivanje vremena za specificno dodeljivanje
     );
     if (perPutnikPerVreme != null && perPutnikPerVreme.isNotEmpty) {
-      return perPutnikPerVreme;
+      return _getVozacIme(perPutnikPerVreme);
     }
 
     // 2?? SREDNJI PRIORITET: Per-vreme (iz vreme_vozac tabele)
     // Koristi sinhroni pristup keširanju - keš MORA biti ucitan pre poziva!
     final perVreme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
     if (perVreme != null && perVreme.isNotEmpty) {
-      return perVreme;
+      return _getVozacIme(perVreme);
+    }
+
+    // 3?? NAJNIŽI PRIORITET: Globalni vozac_id (iz tabele registrovani_putnici)
+    final globalVozacId = map['vozac_id'] as String?;
+    if (globalVozacId != null && globalVozacId.isNotEmpty) {
+      return _getVozacIme(globalVozacId);
     }
 
     return null;
   }
 
   // ? CENTRALIZOVANO: Konvertuj UUID u ime vozaca sa fallback-om
-  static String? _getVozacIme(String? uuid) {
-    if (uuid == null || uuid.isEmpty) return null;
-    return VozacMappingService.getVozacImeWithFallbackSync(uuid);
+  static String? _getVozacIme(String? uuidOrName) {
+    if (uuidOrName == null || uuidOrName.isEmpty) return null;
+    return VozacMappingService.getNameFromUuidOrNameSync(uuidOrName);
   }
 
   // -----------------------------------------------------------------------

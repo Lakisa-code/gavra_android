@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/route_config.dart';
+import '../constants/day_constants.dart';
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart'; // 🆕 Za border boju dodeljenog vozača
 import '../theme.dart';
@@ -195,16 +196,7 @@ class _PolazakRow extends StatelessWidget {
 
   /// 🆕 Konvertuj puno ime dana u kraticu za bazu
   String _getDanKratica(String dan) {
-    const Map<String, String> dayMap = {
-      'Ponedeljak': 'pon',
-      'Utorak': 'uto',
-      'Sreda': 'sre',
-      'Četvrtak': 'cet',
-      'Petak': 'pet',
-      'Subota': 'sub',
-      'Nedelja': 'ned',
-    };
-    return dayMap[dan] ?? dan.toLowerCase().substring(0, 3);
+    return DayConstants.dayAbbreviations[DayConstants.getIndexByName(dan)];
   }
 
   /// 🆕 Dobij boju bordera za vreme - ako je dodeljen vozač, vrati njegovu boju

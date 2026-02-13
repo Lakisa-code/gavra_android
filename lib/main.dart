@@ -1,14 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:charset/charset.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 📱 Za Edge-to-Edge prikaz (Android 15+)
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_api_availability/google_api_availability.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -46,99 +43,6 @@ extension ColorCompat on Color {
   }
 }
 
-// 🌍 CUSTOM HTTP CLIENT - za Windows-1252 decoding
-class CustomHttpClient implements http.Client {
-  final http.Client _client = http.Client();
-
-  @override
-  Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
-    final response = await _client.get(url, headers: headers);
-    String body = _decodeBody(response.bodyBytes);
-    return http.Response(body, response.statusCode, headers: response.headers, request: response.request, isRedirect: response.isRedirect);
-  }
-
-  @override
-  Future<http.Response> post(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await _client.post(url, headers: headers, body: body, encoding: encoding);
-    String decodedBody = _decodeBody(response.bodyBytes);
-    return http.Response(decodedBody, response.statusCode, headers: response.headers, request: response.request, isRedirect: response.isRedirect);
-  }
-
-  @override
-  Future<http.Response> put(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await _client.put(url, headers: headers, body: body, encoding: encoding);
-    String decodedBody = _decodeBody(response.bodyBytes);
-    return http.Response(decodedBody, response.statusCode, headers: response.headers, request: response.request, isRedirect: response.isRedirect);
-  }
-
-  @override
-  Future<http.Response> patch(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await _client.patch(url, headers: headers, body: body, encoding: encoding);
-    String decodedBody = _decodeBody(response.bodyBytes);
-    return http.Response(decodedBody, response.statusCode, headers: response.headers, request: response.request, isRedirect: response.isRedirect);
-  }
-
-  @override
-  Future<http.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    final response = await _client.delete(url, headers: headers, body: body, encoding: encoding);
-    String decodedBody = _decodeBody(response.bodyBytes);
-    return http.Response(decodedBody, response.statusCode, headers: response.headers, request: response.request, isRedirect: response.isRedirect);
-  }
-
-  @override
-  Future<http.Response> head(Uri url, {Map<String, String>? headers}) async {
-    final response = await _client.head(url, headers: headers);
-    String body = _decodeBody(response.bodyBytes);
-    return http.Response(body, response.statusCode, headers: response.headers, request: response.request, isRedirect: response.isRedirect);
-  }
-
-  String _decodeBody(List<int> bytes) {
-    try {
-      return utf8.decode(bytes, allowMalformed: false);
-    } catch (e) {
-      // Try Windows-1252 if UTF-8 fails
-      try {
-        return windows1252.decode(bytes);
-      } catch (e2) {
-        // Fallback to UTF-8 with allowMalformed
-        return utf8.decode(bytes, allowMalformed: true);
-      }
-    }
-  }
-
-  @override
-  Future<String> read(Uri url, {Map<String, String>? headers}) async {
-    final response = await get(url, headers: headers);
-    return response.body;
-  }
-
-  @override
-  Future<Uint8List> readBytes(Uri url, {Map<String, String>? headers}) async {
-    final response = await _client.readBytes(url, headers: headers);
-    return response;
-  }
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final streamedResponse = await _client.send(request);
-    final bytes = await streamedResponse.stream.toBytes();
-    String body = _decodeBody(bytes);
-    final newStream = Stream.fromIterable([utf8.encode(body)]);
-    return http.StreamedResponse(
-      newStream,
-      streamedResponse.statusCode,
-      contentLength: body.length,
-      request: streamedResponse.request,
-      headers: streamedResponse.headers,
-      isRedirect: streamedResponse.isRedirect,
-      persistentConnection: streamedResponse.persistentConnection,
-    );
-  }
-
-  @override
-  void close() => _client.close();
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -161,7 +65,6 @@ void main() async {
     await Supabase.initialize(
       url: configService.getSupabaseUrl(),
       anonKey: configService.getSupabaseAnonKey(),
-      httpClient: CustomHttpClient(),
     );
     if (kDebugMode) debugPrint('[Main] Supabase initialized');
   } catch (e) {

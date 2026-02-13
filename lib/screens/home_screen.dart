@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../config/route_config.dart';
+import '../constants/day_constants.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
@@ -72,13 +73,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   StreamSubscription<dynamic>? _realtimeSubscription;
   StreamSubscription<dynamic>? _networkStatusSubscription;
 
-  final List<String> _dani = [
-    'Ponedeljak',
-    'Utorak',
-    'Sreda',
-    'Četvrtak',
-    'Petak',
-  ];
+  final List<String> _dani = DayConstants.dayNamesInternal.sublist(0, 5); // Samo radni dani (Pon-Pet)
 
   // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get bcVremena {
@@ -153,27 +148,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _getTargetDateIsoFromSelectedDay(String fullDay) {
     final now = DateTime.now();
 
-    // Map full day names to indices
-    final dayNamesMap = {
-      'Ponedeljak': 0, 'ponedeljak': 0,
-      'Utorak': 1, 'utorak': 1,
-      'Sreda': 2, 'sreda': 2,
-      'Četvrtak': 3, 'četvrtak': 3,
-      'Petak': 4, 'petak': 4,
-      'Subota': 5, 'subota': 5,
-      'Nedelja': 6, 'nedelja': 6,
-      // Short forms too
-      'Pon': 0, 'pon': 0,
-      'Uto': 1, 'uto': 1,
-      'Sre': 2, 'sre': 2,
-      'Čet': 3, 'čet': 3,
-      'Pet': 4, 'pet': 4,
-      'Sub': 5, 'sub': 5,
-      'Ned': 6, 'ned': 6,
-    };
-
-    int? targetDayIndex = dayNamesMap[fullDay];
-    if (targetDayIndex == null) return now.toIso8601String().split('T')[0];
+    // Normalizuj dan korišćenjem DayConstants
+    final normalizedDay = DayConstants.normalize(fullDay);
+    final targetDayIndex = DayConstants.getIndexByName(normalizedDay);
 
     final currentDayIndex = now.weekday - 1;
 
@@ -255,6 +232,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       // 🔧 KONAČNO UKLONI LOADING STATE
       if (mounted) {
+        _selectClosestDeparture();
         setState(() {
           _isLoading = false;
         });
@@ -293,6 +271,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _realtimeSubscription?.cancel();
     // Koristi RealtimeManager za centralizovanu pretplatu na registrovane putnike
     _realtimeSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((_) {});
+  }
+
+  /// 🕒 Bira polazak koji je najbliži trenutnom vremenu
+  void _selectClosestDeparture() {
+    if (!mounted) return;
+
+    final now = DateTime.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    String? closestVreme;
+    String? closestGrad;
+    int minDifference = 9999;
+
+    final allDepartures = _sviPolasci;
+    if (allDepartures.isEmpty) return;
+
+    for (final polazak in allDepartures) {
+      final parts = polazak.split(' ');
+      if (parts.length < 2) continue;
+
+      final timeStr = parts[0];
+      final gradStr = parts.sublist(1).join(' ');
+
+      final timeParts = timeStr.split(':');
+      if (timeParts.length != 2) continue;
+
+      final hour = int.tryParse(timeParts[0]) ?? 0;
+      final minute = int.tryParse(timeParts[1]) ?? 0;
+      final polazakMinutes = hour * 60 + minute;
+
+      // Izračunaj apsolutnu razliku u minutima
+      final diff = (polazakMinutes - currentMinutes).abs();
+
+      if (diff < minDifference) {
+        minDifference = diff;
+        closestVreme = timeStr;
+        closestGrad = gradStr;
+      }
+    }
+
+    if (closestVreme != null && closestGrad != null) {
+      setState(() {
+        _selectedVreme = closestVreme!;
+        _selectedGrad = closestGrad!;
+      });
+    }
   }
 
   Widget _buildGlassStatRow(String label, String value) {
@@ -1048,7 +1072,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       children: [
                         const Expanded(
                           child: Text(
-                            '✨ Dodaj Putnika',
+                            'Dodaj Putnika',
                             style: TextStyle(
                               fontSize: 22,
                               color: Colors.white,
@@ -1115,7 +1139,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  '📋 Informacije o ruti',
+                                  'Informacije o ruti',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -1161,7 +1185,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  '👤 Podaci o putniku',
+                                  'Podaci o putniku',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -1180,7 +1204,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 // 🎯 DROPDOWN ZA IZBOR PUTNIKA IZ LISTE
                                 DropdownButtonFormField2<RegistrovaniPutnik>(
                                   isExpanded: true,
-                                  value: selectedPutnik,
+                                  value: aktivniPutnici
+                                      .cast<RegistrovaniPutnik?>()
+                                      .firstWhere((p) => p?.id == selectedPutnik?.id, orElse: () => null),
                                   decoration: InputDecoration(
                                     labelText: 'Izaberi putnika',
                                     hintText: 'Pretraži i izaberi...',
@@ -2382,7 +2408,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         const SizedBox(width: 4),
-                        if (_currentDriver == 'Bruda' || _currentDriver == 'Bilevski')
+                        if (_currentDriver == 'Bruda' || _currentDriver == 'Bilevski' || _currentDriver == 'Voja')
                           Expanded(
                             child: _HomeScreenButton(
                               label: 'Ja',
@@ -2811,7 +2837,7 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton> with Single
                     ? widget.boxShadow.map((shadow) {
                         return BoxShadow(
                           color: shadow.color.withOpacity(
-                            (shadow.color.a * 1.5).clamp(0.0, 1.0),
+                            (shadow.color.opacity * 1.5).clamp(0.0, 1.0),
                           ),
                           blurRadius: shadow.blurRadius * 1.2,
                           offset: shadow.offset,

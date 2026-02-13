@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../constants/day_constants.dart';
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../utils/grad_adresa_validator.dart';
@@ -128,8 +129,10 @@ class RegistrovaniPutnikService {
     try {
       debugPrint('📊 [RegistrovaniPutnik] Osvežavanje liste putnika iz baze...');
 
-      // 🔧 POJEDNOSTAVLJEN QUERY - direktno bez lanaca za pouzdanost
-      final data = await supabase.from('registrovani_putnici').select();
+      // 🔧 QUERY BEZ FOREIGN KEY LOOKUP - privremeno rešenje dok se ne doda FK u bazu
+      final data = await supabase.from('registrovani_putnici').select(
+            '*', // Bez join-a sa adresama - fetch-ovaćemo ih posebno ako treba
+          );
 
       // Filtriraj lokalno umesto preko Supabase
       final putnici = data
@@ -166,7 +169,7 @@ class RegistrovaniPutnikService {
     // Koristi centralizovani RealtimeManager
     _sharedSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
       debugPrint('🔄 [RegistrovaniPutnik] Payload primljen: ${payload.eventType}');
-      _handleRealtimeUpdate(payload);
+      unawaited(_handleRealtimeUpdate(payload));
     }, onError: (error) {
       debugPrint('❌ [RegistrovaniPutnik] Stream error: $error');
     });
@@ -174,7 +177,7 @@ class RegistrovaniPutnikService {
   }
 
   /// 🔄 Handle realtime update koristeći payload umesto full refetch
-  static void _handleRealtimeUpdate(PostgresChangePayload payload) {
+  static Future<void> _handleRealtimeUpdate(PostgresChangePayload payload) async {
     if (_lastValue == null) {
       debugPrint('⚠️ [RegistrovaniPutnik] Nema inicijalne vrednosti, preskačem update');
       return;
@@ -185,10 +188,10 @@ class RegistrovaniPutnikService {
 
     switch (payload.eventType) {
       case PostgresChangeEvent.insert:
-        _handleInsert(newRecord);
+        await _handleInsert(newRecord);
         break;
       case PostgresChangeEvent.update:
-        _handleUpdate(newRecord, oldRecord);
+        await _handleUpdate(newRecord, oldRecord);
         break;
       default:
         debugPrint('⚠️ [RegistrovaniPutnik] Nepoznat event type: ${payload.eventType}');
@@ -197,9 +200,10 @@ class RegistrovaniPutnikService {
   }
 
   /// ➕ Handle INSERT event
-  static void _handleInsert(Map<String, dynamic> newRecord) {
+  static Future<void> _handleInsert(Map<String, dynamic> newRecord) async {
     try {
-      final putnik = RegistrovaniPutnik.fromMap(newRecord);
+      final putnikId = newRecord['id'] as String?;
+      if (putnikId == null) return;
 
       // Proveri da li zadovoljava filter kriterijume (aktivan, nije obrisan, nije duplikat)
       final aktivan = newRecord['aktivan'] as bool? ?? false;
@@ -207,9 +211,18 @@ class RegistrovaniPutnikService {
       final isDuplicate = newRecord['is_duplicate'] as bool? ?? false;
 
       if (!aktivan || obrisan || isDuplicate) {
-        debugPrint('🔄 [RegistrovaniPutnik] INSERT ignorisan (ne zadovoljava filter): ${putnik.putnikIme}');
+        debugPrint('🔄 [RegistrovaniPutnik] INSERT ignorisan (ne zadovoljava filter)');
         return;
       }
+
+      // Dohvati potpune podatke BEZ JOIN-a (privremeno)
+      final fullData = await supabase
+          .from('registrovani_putnici')
+          .select('*') // Bez foreign key lookup
+          .eq('id', putnikId)
+          .single();
+
+      final putnik = RegistrovaniPutnik.fromMap(fullData);
 
       // Dodaj u listu i sortiraj
       _lastValue!.add(putnik);
@@ -223,13 +236,12 @@ class RegistrovaniPutnikService {
   }
 
   /// 🔄 Handle UPDATE event
-  static void _handleUpdate(Map<String, dynamic> newRecord, Map<String, dynamic>? oldRecord) {
+  static Future<void> _handleUpdate(Map<String, dynamic> newRecord, Map<String, dynamic>? oldRecord) async {
     try {
       final putnikId = newRecord['id'] as String?;
       if (putnikId == null) return;
 
       final index = _lastValue!.indexWhere((p) => p.id == putnikId);
-      final updatedPutnik = RegistrovaniPutnik.fromMap(newRecord);
 
       // Proveri da li sada zadovoljava filter kriterijume
       final aktivan = newRecord['aktivan'] as bool? ?? false;
@@ -238,6 +250,15 @@ class RegistrovaniPutnikService {
       final shouldBeIncluded = aktivan && !obrisan && !isDuplicate;
 
       if (shouldBeIncluded) {
+        // Dohvati potpune podatke sa JOIN-om
+        final fullData = await supabase
+            .from('registrovani_putnici')
+            .select('*') // Bez foreign key lookup
+            .eq('id', putnikId)
+            .single();
+
+        final updatedPutnik = RegistrovaniPutnik.fromMap(fullData);
+
         if (index == -1) {
           // Možda je bio neaktivan, a sada je aktivan - dodaj
           _lastValue!.add(updatedPutnik);
@@ -251,8 +272,9 @@ class RegistrovaniPutnikService {
       } else {
         // Ukloni iz liste ako postoji
         if (index != -1) {
+          final putnik = _lastValue![index];
           _lastValue!.removeAt(index);
-          debugPrint('✅ [RegistrovaniPutnik] UPDATE: Uklonjen ${updatedPutnik.putnikIme} (više ne zadovoljava filter)');
+          debugPrint('✅ [RegistrovaniPutnik] UPDATE: Uklonjen ${putnik.putnikIme} (više ne zadovoljava filter)');
         }
       }
 
@@ -430,16 +452,11 @@ class RegistrovaniPutnikService {
 
   /// Vraća puno ime dana
   String _getDanPunoIme(String kratica) {
-    const map = {
-      'pon': 'Ponedeljak',
-      'uto': 'Utorak',
-      'sre': 'Sreda',
-      'cet': 'Četvrtak',
-      'pet': 'Petak',
-      'sub': 'Subota',
-      'ned': 'Nedelja',
-    };
-    return map[kratica] ?? kratica;
+    final index = DayConstants.dayAbbreviations.indexOf(kratica.toLowerCase());
+    if (index >= 0) {
+      return DayConstants.dayNamesInternal[index];
+    }
+    return kratica;
   }
 
   /// Ažurira mesečnog putnika

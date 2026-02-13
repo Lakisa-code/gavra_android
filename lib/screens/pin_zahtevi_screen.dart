@@ -30,7 +30,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: const Text('📋 PIN Zahtevi', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text('PIN Zahtevi', style: TextStyle(fontWeight: FontWeight.bold)),
             automaticallyImplyLeading: false,
           ),
           body: Container(
@@ -402,4 +402,3 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     );
   }
 }
-

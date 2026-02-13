@@ -93,6 +93,20 @@ class VozacMappingService {
     return _vozacNameToUuid?[ime];
   }
 
+  /// 🆕 Pomoćna metoda: Ako je string UUID, vrati ime. Ako nije UUID (već je ime), vrati taj isti string.
+  static String getNameFromUuidOrNameSync(String input) {
+    if (input.isEmpty) return input;
+
+    // Proveri da li je input validan UUID format (8-4-4-4-12)
+    final uuidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', caseSensitive: false);
+    if (!uuidRegex.hasMatch(input)) {
+      return input; // Nije UUID, verovatno je vec ime
+    }
+
+    // Jeste UUID format, pokušaj konverziju
+    return getVozacImeWithFallbackSync(input) ?? input;
+  }
+
   /// Proveri da li je UUID vozača valjan sinhron
   static bool isValidVozacUuidSync(String uuid) {
     if (!_isInitialized || _vozacUuidToName == null) {

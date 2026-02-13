@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../constants/day_constants.dart';
 import '../globals.dart';
 import '../helpers/gavra_ui.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
@@ -377,15 +378,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // 🔔 Pošalji push notifikaciju (foreground/background/lock screen)
       try {
-        final dniOznake = {
-          'pon': 'Ponedeljak',
-          'uto': 'Utorak',
-          'sre': 'Sredа',
-          'cet': 'Četvrtak',
-          'pet': 'Petak',
-          'sub': 'Subota',
-          'ned': 'Nedelja'
-        };
+        final dniOznake = <String, String>{};
+        for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
+          dniOznake[DayConstants.dayAbbreviations[i]] = DayConstants.dayNamesInternal[i];
+        }
         final danNaziv = dniOznake[dan] ?? dan;
         final gradNaziv = grad.toUpperCase();
 
@@ -793,15 +789,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       final now = DateTime.now();
       final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      final daniPuniNaziv = {
-        'pon': 'Ponedeljak',
-        'uto': 'Utorak',
-        'sre': 'Sreda',
-        'cet': 'Četvrtak',
-        'pet': 'Petak',
-        'sub': 'Subota',
-        'ned': 'Nedelja',
-      };
+      final daniPuniNaziv = <String, String>{};
+      for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
+        daniPuniNaziv[DayConstants.dayAbbreviations[i]] = DayConstants.dayNamesInternal[i];
+      }
 
       // Prođi kroz narednih 7 dana
       for (int i = 0; i < 7; i++) {
@@ -1459,7 +1450,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text(
-            '👤 Moj profil',
+            'Moj profil',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           leading: IconButton(
@@ -1912,8 +1903,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     });
 
-    final dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
-    final daniLabels = {'pon': 'Ponedeljak', 'uto': 'Utorak', 'sre': 'Sreda', 'cet': 'Četvrtak', 'pet': 'Petak'};
+    final dani = DayConstants.dayAbbreviations.sublist(0, 5); // Samo radni dani
+    final daniLabels = <String, String>{};
+    for (int i = 0; i < DayConstants.dayAbbreviations.length && i < 5; i++) {
+      daniLabels[DayConstants.dayAbbreviations[i]] = DayConstants.dayNamesInternal[i];
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),

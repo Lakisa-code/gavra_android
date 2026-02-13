@@ -29,9 +29,9 @@ class ThemeRegistry {
       id: 'passionate_rose',
       name: '❤️ Passionate Rose',
       description: 'Electric Red + Ruby + Crimson + Pink Ice kombinacija',
-      colorScheme: tripleBlueFashionColorScheme, // ISTA TEMA!
+      colorScheme: passionateRoseColorScheme, // NOVA BOJA SHEMA!
       themeData: tripleBlueFashionTheme, // ISTA TEMA!
-      styles: TripleBlueFashionStyles, // ISTI STILOVI!
+      styles: PassionateRoseStyles, // NOVI STILOVI!
       gradient: passionateRoseGradient, // SAMO GRADIJENT DRUGAČIJI!
     ),
     'dark_pink': ThemeDefinition(

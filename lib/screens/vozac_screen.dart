@@ -1,31 +1,31 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart'; // ??? Za GPS poziciju
+import 'package:geolocator/geolocator.dart'; // 🛰️ Za GPS poziciju
 
 import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/auth_manager.dart';
 import '../services/daily_checkin_service.dart';
-import '../services/driver_location_service.dart'; // ?? Za ETA tracking
-import '../services/firebase_service.dart'; // ?? Za vozaca
-import '../services/kapacitet_service.dart'; // ?? Za broj mesta
-import '../services/local_notification_service.dart'; // ?? Za lokalne notifikacije
-import '../services/popis_service.dart'; // ?? Za popis dana
+import '../services/driver_location_service.dart'; // 📍 Za ETA tracking
+import '../services/firebase_service.dart'; // 👤 Za vozača
+import '../services/kapacitet_service.dart'; // 🎫 Za broj mesta
+import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
+import '../services/popis_service.dart'; // 📝 Za popis dana
 import '../services/putnik_service.dart';
-import '../services/realtime_gps_service.dart'; // ??? Za GPS tracking
-import '../services/realtime_notification_service.dart'; // ?? Za realtime notifikacije
+import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
+import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
-import '../services/vreme_vozac_service.dart'; // ?? Za dodeljena vremena vozaca
-import '../utils/grad_adresa_validator.dart'; // ??? Za validaciju gradova
-import '../utils/putnik_count_helper.dart'; // ?? Za brojanje putnika po gradu
-import '../utils/putnik_helpers.dart'; // ?? Centralizovani helperi
+import '../services/vreme_vozac_service.dart'; // 🕒 Za dodeljena vremena vozača
+import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
+import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
+import '../utils/putnik_helpers.dart'; // 🛠️ Centralizovani helperi
 import '../utils/schedule_utils.dart';
-import '../utils/text_utils.dart'; // ?? Za TextUtils.isStatusActive
-import '../utils/vozac_boja.dart'; // ?? Za validaciju vozaca
+import '../utils/text_utils.dart'; // 📝 Za TextUtils.isStatusActive
+import '../utils/vozac_boja.dart'; // 🎨 Za validaciju vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
@@ -36,8 +36,8 @@ import 'dugovi_screen.dart';
 import 'tranzit_screen.dart';
 import 'welcome_screen.dart';
 
-/// ?? VOZAC SCREEN
-/// Prikazuje putnike koristeci isti PutnikService stream kao DanasScreen
+/// 🚛 VOZAČ SCREEN
+/// Prikazuje putnike koristeći isti PutnikService stream kao DanasScreen
 class VozacScreen extends StatefulWidget {
   /// Opcioni parametar - ako je null, koristi trenutnog ulogovanog vozaca
   /// Ako je prosleden, prikazuje ekran kao da je taj vozac ulogovan (admin preview)
@@ -57,25 +57,26 @@ class _VozacScreenState extends State<VozacScreen> {
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
 
-  // ?? OPTIMIZACIJA RUTE - kopirano iz DanasScreen
+  // 📍 OPTIMIZACIJA RUTE - kopirano iz DanasScreen
   bool _isRouteOptimized = false;
   List<Putnik> _optimizedRoute = [];
   final bool _isLoading = false;
-  bool _isOptimizing = false; // ?? Loading state specifically za optimizaciju rute
+  bool _isOptimizing = false; // ⏳ Loading state specifično za optimizaciju rute
 
-  /// ?? HELPER: Vraca radni datum - vikendom vraca naredni ponedeljak
+  /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak
   String _getWorkingDateIso() => PutnikHelpers.getWorkingDateIso();
 
-  /// ?? HELPER: Vraca radni DateTime - vikendom vraca naredni ponedeljak
+  /// 📅 HELPER: Vraća radni DateTime - vikendom vraća naredni ponedeljak
   DateTime _getWorkingDateTime() => PutnikHelpers.getWorkingDateTime();
 
-  /// ?? HELPER: Dobij dodeljena vremena za trenutnog vozaca
-  List<Map<String, String>> _getDodeljenaVremena() {
+  /// 🕒 HELPER: Dobij dodeljena vremena za trenutnog vozača
+  List<Map<String, String>> _getDodeljenaVremena({List<Putnik>? sviPutnici}) {
     if (_currentDriver == null) return [];
 
     final vozaciZaDan = VremeVozacService().getVozaciZaDanSync(_isoDateToDayAbbr(_getWorkingDateIso()));
     final dodeljena = <Map<String, String>>[];
 
+    // 1. Dodaj vremena iz globalnog rasporeda (VremeVozac table)
     vozaciZaDan.forEach((key, vozac) {
       if (vozac == _currentDriver) {
         final parts = key.split('|');
@@ -88,6 +89,25 @@ class _VozacScreenState extends State<VozacScreen> {
       }
     });
 
+    // 2. Dodaj vremena iz individualnih dodela (ako imamo putnike)
+    if (sviPutnici != null) {
+      for (var p in sviPutnici) {
+        if (p.dodeljenVozac == _currentDriver) {
+          final pGrad = p.grad;
+          final pPolazak = p.polazak;
+
+          // Proveri da li vec imamo ovo vreme u listi
+          bool postoji = dodeljena.any((v) => v['grad'] == pGrad && v['vreme'] == pPolazak);
+          if (!postoji) {
+            dodeljena.add({
+              'grad': pGrad,
+              'vreme': pPolazak,
+            });
+          }
+        }
+      }
+    }
+
     // Sortiraj po vremenu
     dodeljena.sort((a, b) {
       final aTime = a['vreme']!;
@@ -98,28 +118,28 @@ class _VozacScreenState extends State<VozacScreen> {
     return dodeljena;
   }
 
-  String? _currentDriver; // ?? Trenutni vozac
+  String? _currentDriver; // 👤 Trenutni vozač
 
   // Status varijable
   String _navigationStatus = ''; // ignore: unused_field
   int _currentPassengerIndex = 0; // ignore: unused_field
   bool _isListReordered = false;
-  bool _isGpsTracking = false; // ??? GPS tracking status
-  bool _isPopisLoading = false; // ?? Loading state za POPIS dugme
-  bool _isPopisSaved = false; // ?? Da li je popis vec sacuvan danas
+  bool _isGpsTracking = false; // 🛰️ GPS tracking status
+  bool _isPopisLoading = false; // ⏳ Loading state za POPIS dugme
+  bool _isPopisSaved = false; // ✅ Da li je popis već sačuvan danas
 
-  // ?? THROTTLING ZA REALTIME SYNC - sprecava prekomerne UI rebuilde
-  // ? Povecano na 800ms da spreci race conditions, ali i dalje dovoljno brzo za UX
+  // 🕒 THROTTLING ZA REALTIME SYNC - sprečava prekomerne UI rebuilde
+  // ⚡ Povećano na 800ms da spreči race conditions, ali i dalje dovoljno brzo za UX
   DateTime? _lastSyncTime;
   static const Duration _syncThrottleDuration = Duration(milliseconds: 800);
 
-  // ?? PENDING SYNC - cuva poslednje promene ako je throttling aktivan
+  // 📝 PENDING SYNC - čuva poslednje promene ako je throttling aktivan
   List<Putnik>? _pendingSyncPutnici;
 
-  // ?? LOCK ZA KONKURENTNE REOPTIMIZACIJE
+  // 🔐 LOCK ZA KONKURENTNE REOPTIMIZACIJE
   bool _isReoptimizing = false;
 
-  // ?? DINAMICKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
+  // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get _bcVremena {
     final navType = navBarTypeNotifier.value;
     String sezona;
@@ -174,27 +194,35 @@ class _VozacScreenState extends State<VozacScreen> {
 
   List<String> get _sviPolasci {
     final bcList = _bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = _vsVremena.map((v) => '$v Vr�ac').toList();
+    final vsList = _vsVremena.map((v) => '$v Vršac').toList();
     return [...bcList, ...vsList];
   }
 
   @override
   void initState() {
     super.initState();
-    _initializeCurrentDriver();
+    _initAsync();
+  }
+
+  Future<void> _initAsync() async {
+    // 1. Prvo učitaj dodeljena vremena (vreme_vozac tabela)
+    await _loadVremeVozacData();
+
+    // 2. Inicijalizuj vozača (ovo će takođe pozvati _selectClosestDeparture)
+    await _initializeCurrentDriver();
+
+    // 3. Ostalo
     _initializeNotifications();
     _initializeGpsTracking();
     _checkIfPopisSaved();
-    _loadVremeVozacData();
   }
 
-  // ?? UCITAJ VREME VOZAC PODATKE
+  // 🕒 UCITAJ VREME VOZAC PODATKE
   Future<void> _loadVremeVozacData() async {
-    VremeVozacService().loadAllVremeVozac();
-    return; // Dodano da vrati Future<void>
+    await VremeVozacService().loadAllVremeVozac();
   }
 
-  // ??? GPS TRACKING INICIJALIZACIJA
+  // 🛰️ GPS TRACKING INICIJALIZACIJA
   void _initializeGpsTracking() {
     // Start GPS tracking
     RealtimeGpsService.startTracking().catchError((Object e) {});
@@ -240,13 +268,20 @@ class _VozacScreenState extends State<VozacScreen> {
     // ?? ADMIN PREVIEW MODE: Ako je prosleden previewAsDriver, koristi ga
     if (widget.previewAsDriver != null && widget.previewAsDriver!.isNotEmpty) {
       _currentDriver = widget.previewAsDriver;
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+        _selectClosestDeparture();
+      }
       return;
     }
 
     _currentDriver = await FirebaseService.getCurrentDriver();
 
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+      // 🕒 Nakon što je vozač inicijalizovan, izaberi najbliži polazak
+      _selectClosestDeparture();
+    }
   }
 
   // ?? IDENTICNA LOGIKA SA DANAS SCREEN - konvertuj ISO datum u kraci dan
@@ -266,6 +301,51 @@ class _VozacScreenState extends State<VozacScreen> {
       setState(() {
         _selectedGrad = grad;
         _selectedVreme = vreme;
+      });
+    }
+  }
+
+  /// 🕒 Bira polazak koji je najbliži trenutnom vremenu iz dodeljenih polazaka
+  void _selectClosestDeparture() {
+    if (!mounted || _currentDriver == null) return;
+
+    final now = DateTime.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    String? closestVreme;
+    String? closestGrad;
+    int minDifference = 9999;
+
+    // Uzmi samo dodeljena vremena za ovog vozača
+    final dodeljenaVremena = _getDodeljenaVremena();
+    if (dodeljenaVremena.isEmpty) return;
+
+    for (final v in dodeljenaVremena) {
+      final gradStr = v['grad'];
+      final timeStr = v['vreme'];
+      if (gradStr == null || timeStr == null) continue;
+
+      final timeParts = timeStr.split(':');
+      if (timeParts.length != 2) continue;
+
+      final hour = int.tryParse(timeParts[0]) ?? 0;
+      final minute = int.tryParse(timeParts[1]) ?? 0;
+      final polazakMinutes = hour * 60 + minute;
+
+      // Razlika u minutima
+      final diff = (polazakMinutes - currentMinutes).abs();
+
+      if (diff < minDifference) {
+        minDifference = diff;
+        closestVreme = timeStr;
+        closestGrad = gradStr;
+      }
+    }
+
+    if (closestVreme != null && closestGrad != null) {
+      setState(() {
+        _selectedVreme = closestVreme!;
+        _selectedGrad = closestGrad!;
       });
     }
   }
@@ -328,7 +408,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: preostaliPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vr�ac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
       );
 
       if (result.success && result.optimizedPutnici != null) {
@@ -339,7 +419,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _currentPassengerIndex = 0;
           });
 
-          // ?? REALTIME FIX: A�uriraj ETA (uklanja pokupljene sa mape)
+          // 🛠️ REALTIME FIX: Ažuriraj ETA (uklanja pokupljene sa mape)
           if (DriverLocationService.instance.isTracking && result.putniciEta != null) {
             await DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
           }
@@ -349,7 +429,7 @@ class _VozacScreenState extends State<VozacScreen> {
           final sledeci = result.optimizedPutnici!.isNotEmpty ? result.optimizedPutnici!.first.ime : 'N/A';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('?? Ruta a�urirana! Sledeci: $sledeci (${preostaliPutnici.length} preostalo)'),
+              content: Text('🔄 Ruta ažurirana! Sledeći: $sledeci (${preostaliPutnici.length} preostalo)'),
               backgroundColor: Colors.blue,
               duration: const Duration(seconds: 2),
             ),
@@ -357,19 +437,19 @@ class _VozacScreenState extends State<VozacScreen> {
         }
       }
     } catch (e) {
-      debugPrint('?? Error auto-reoptimizing route: $e');
+      debugPrint('❌ Error auto-reoptimizing route: $e');
     }
   }
 
-  // ?? SINHRONIZACIJA OPTIMIZOVANE RUTE SA REALTIME STREAM-om
-  // A�urira statuse putnika u optimizovanoj listi kada se promene u bazi
-  // ? SA THROTTLING-om: Sprecava prekomerne UI rebuilde (max 2x/sec)
-  // ? AUTO-REOPTIMIZACIJA: Kada se doda ili otka�e putnik, automatski reoptimizuje rutu
+  // 🔄 SINHRONIZACIJA OPTIMIZOVANE RUTE SA REALTIME STREAM-om
+  // Ažurira statuse putnika u optimizovanoj listi kada se promene u bazi
+  // ⏱️ SA THROTTLING-om: Sprečava prekomerne UI rebuilde (max 2x/sec)
+  // 🚀 AUTO-REOPTIMIZACIJA: Kada se doda ili otkaže putnik, automatski reoptimizuje rutu
   void _syncOptimizedRouteWithStream(List<Putnik> streamPutnici) {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
-    // ?? THROTTLING: Ignori�i ako je pro�lo manje od 800ms od poslednje sinhronizacije
-    // ? ALI: Sacuvaj pending podatke za sledeci sync
+    // ⏳ THROTTLING: Ignoriši ako je prošlo manje od 800ms od poslednje sinhronizacije
+    // 💡 ALI: Sačuvaj pending podatke za sledeći sync
     final now = DateTime.now();
     if (_lastSyncTime != null && now.difference(_lastSyncTime!) < _syncThrottleDuration) {
       _pendingSyncPutnici = streamPutnici; // Sacuvaj za kasnije
@@ -397,7 +477,7 @@ class _VozacScreenState extends State<VozacScreen> {
     final cancelledNames = <String>[];
     final updatedRoute = <Putnik>[];
 
-    // 1?? A�uriraj postojece putnike i detektuj obrisane/otkazane
+    // 1️⃣ Ažuriraj postojeće putnike i detektuj obrisane/otkazane
     for (final optimizedPutnik in _optimizedRoute) {
       // Proveri da li putnik jo� postoji u stream-u
       if (!streamIds.contains(optimizedPutnik.id)) {
@@ -469,10 +549,10 @@ class _VozacScreenState extends State<VozacScreen> {
       String message;
       Color bgColor;
       if (hasNewPassengers && hasCancelledOrDeleted) {
-        message = '?? Promene: +${newPassengerNames.join(", ")} / -${cancelledNames.join(", ")} - Reoptimizujem...';
+        message = '🔄 Promene: +${newPassengerNames.join(", ")} / -${cancelledNames.join(", ")} - Reoptimizujem...';
         bgColor = Colors.purple;
       } else if (hasNewPassengers) {
-        message = '?? Novi putnik: ${newPassengerNames.join(", ")} - Reoptimizujem rutu...';
+        message = '🔄 Novi putnik: ${newPassengerNames.join(", ")} - Reoptimizujem rutu...';
         bgColor = Colors.blue;
       } else {
         message = '? Otkazano: ${cancelledNames.join(", ")} - Reoptimizujem rutu...';
@@ -541,7 +621,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: filtriraniPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vr�ac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
       );
 
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
@@ -551,7 +631,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
           });
 
-          // ?? REALTIME FIX: A�uriraj ETA bez restarta trackinga
+          // ?? REALTIME FIX: Ažuriraj ETA bez restarta trackinga
           if (DriverLocationService.instance.isTracking && result.putniciEta != null) {
             await DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
           }
@@ -573,8 +653,8 @@ class _VozacScreenState extends State<VozacScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('?? Gre�ka pri reoptimizaciji: $e'),
-            backgroundColor: Colors.orange,
+            content: Text('❌ Greška pri reoptimizaciji: $e'),
+            backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -687,7 +767,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: filtriraniPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vr�ac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
       );
 
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
@@ -1140,7 +1220,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final result = await SmartNavigationService.startMultiProviderNavigation(
         context: context,
         putnici: _optimizedRoute,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vr�ac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
       );
 
       if (result.success) {
@@ -1465,18 +1545,18 @@ class _VozacScreenState extends State<VozacScreen> {
               return KapacitetService.getKapacitetSync(grad, vreme);
             }
 
-            // ?? FILTER VREMENA: Samo dodeljena vremena za ovog vozaca
-            final dodeljenaVremena = _getDodeljenaVremena();
+            // ?? FILTER VREMENA: Samo dodeljena vremena za ovog vozača
+            final dodeljenaVremena = _getDodeljenaVremena(sviPutnici: allPutnici);
             final assignedBcTimes =
                 dodeljenaVremena.where((v) => v['grad'] == 'Bela Crkva').map((v) => v['vreme']!).toList();
             final assignedVsTimes =
-                dodeljenaVremena.where((v) => v['grad'] == 'Vr�ac').map((v) => v['vreme']!).toList();
+                dodeljenaVremena.where((v) => v['grad'] == 'Vršac').map((v) => v['vreme']!).toList();
 
-            // Prika�i samo dodeljena vremena
+            // Prikaži samo dodeljena vremena
             final bcVremenaToShow = assignedBcTimes.toList()..sort();
             final vsVremenaToShow = assignedVsTimes.toList()..sort();
 
-            // ? SAKRIJ CEO BOTTOM BAR AKO NEMA VO�NJI
+            // 🚫 SAKRIJ CEO BOTTOM BAR AKO NEMA VOŽNJI
             if (bcVremenaToShow.isEmpty && vsVremenaToShow.isEmpty) {
               return const SizedBox.shrink();
             }
@@ -1550,14 +1630,14 @@ class _VozacScreenState extends State<VozacScreen> {
     );
   }
 
-  // ?? Digitalni datum display
+  // 🕒 Digitalni datum display
   Widget _buildDigitalDateDisplay() {
     final workingDateIso = _getWorkingDateIso();
     final parts = workingDateIso.split('-');
     final now =
         parts.length == 3 ? DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2])) : DateTime.now();
 
-    final dayNames = ['PONEDELJAK', 'UTORAK', 'SREDA', 'CETVRTAK', 'PETAK', 'SUBOTA', 'NEDELJA'];
+    final dayNames = ['PONEDELJAK', 'UTORAK', 'SREDA', 'ČETVRTAK', 'PETAK', 'SUBOTA', 'NEDELJA'];
     final dayName = dayNames[now.weekday - 1];
     final dayStr = now.day.toString().padLeft(2, '0');
     final monthStr = now.month.toString().padLeft(2, '0');
@@ -1697,7 +1777,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
     tranzitMap.forEach((ime, trips) {
       final imaBC = trips.any((t) => t.grad == 'Bela Crkva');
-      final imaVS = trips.any((t) => t.grad == 'Vr�ac');
+      final imaVS = trips.any((t) => t.grad == 'Vršac');
       if (imaBC && imaVS) {
         tranzitUkupno++;
         if (trips.every((t) => t.jePokupljen)) {
@@ -1778,7 +1858,7 @@ class _VozacScreenState extends State<VozacScreen> {
     );
   }
 
-  // ?? POPUP ZA PRIKAZ STATISTIKE
+  // 📊 POPUP ZA PRIKAZ STATISTIKE
   void _showStatPopup(BuildContext context, String label, String value, Color color) {
     showDialog(
       context: context,

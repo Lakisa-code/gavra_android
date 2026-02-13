@@ -49,6 +49,9 @@ class PutnikService {
   static final Map<String, _StreamParams> _streamParams = {};
   static final Map<String, StreamSubscription<dynamic>> _realtimeSubscriptions = {};
 
+  // ?? UNDO STACK - Stack za cuvanje poslednih akcija
+  static final List<UndoAction> undoStack = [];
+
   /// ?? Zatvori specifican stream po kljucu
   static void closeStream({String? isoDate, String? grad, String? vreme}) {
     final key = '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
@@ -147,12 +150,12 @@ class PutnikService {
         if (uklonjeniTerminiRaw is List<dynamic>) {
           uklonjeniTermini = uklonjeniTerminiRaw;
         } else if (uklonjeniTerminiRaw is String) {
-          // ??? Ako je JSON string, parsiraj ga
+          // 📦 Ako je JSON string, parsiraj ga
           try {
             final parsed = convert.jsonDecode(uklonjeniTerminiRaw);
             uklonjeniTermini = parsed is List ? List<dynamic>.from(parsed) : [];
           } catch (e) {
-            debugPrint('?? [PutnikService] Gre�ka pri parsiranju uklonjeni_termini za putnika ${m['ime']}: $e');
+            debugPrint('⚠️ [PutnikService] Greška pri parsiranju uklonjeni_termini za putnika ${m['ime']}: $e');
             uklonjeniTermini = [];
           }
         } else {
@@ -241,12 +244,12 @@ class PutnikService {
         if (uklonjeniTerminiRaw is List<dynamic>) {
           uklonjeniTermini = uklonjeniTerminiRaw;
         } else if (uklonjeniTerminiRaw is String) {
-          // ??? Ako je JSON string, parsiraj ga
+          // 📦 Ako je JSON string, parsiraj ga
           try {
             final parsed = convert.jsonDecode(uklonjeniTerminiRaw);
             uklonjeniTermini = parsed is List ? List<dynamic>.from(parsed) : [];
           } catch (e) {
-            debugPrint('?? [PutnikService] Gre�ka pri parsiranju uklonjeni_termini za putnika ${m['ime']}: $e');
+            debugPrint('⚠️ [PutnikService] Greška pri parsiranju uklonjeni_termini za putnika ${m['ime']}: $e');
             uklonjeniTermini = [];
           }
         } else {
@@ -275,7 +278,7 @@ class PutnikService {
             // Normalizuj vreme za poredenje
             final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
             final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
-            // Datum mo�e biti ISO format ili kraci format
+            // Datum može biti ISO format ili kraći format
             final utDatum = utMap['datum']?.toString().split('T')[0];
             return utDatum == todayDate && utVreme == pVreme && utMap['grad'] == p.grad;
           });
@@ -570,11 +573,11 @@ class PutnikService {
 
   // ?? UNDO POSLEDNJU AKCIJU
   Future<String?> undoLastAction() async {
-    if (_undoStack.isEmpty) {
-      return 'Nema akcija za poni�tavanje';
+    if (undoStack.isEmpty) {
+      return 'Nema akcija za poništavanje';
     }
 
-    final lastAction = _undoStack.removeLast();
+    final lastAction = undoStack.removeLast();
 
     try {
       final tabela = await _getTableForPutnik(lastAction.putnikId);
@@ -585,23 +588,23 @@ class PutnikService {
             'status': lastAction.oldData['status'],
             'aktivan': true,
           }).eq('id', lastAction.putnikId as String);
-          return 'Poni�teno brisanje putnika';
+          return 'Poništeno brisanje putnika';
 
         case 'pickup':
-          // Pokupljanje se vi�e ne poni�tava preko kolona u registrovani_putnici
-          // Samo se mo�e obrisati zapis iz voznje_log ako je potrebno
-          return 'Poni�teno pokupljanje';
+          // Pokupljanje se više ne poništava preko kolona u registrovani_putnici
+          // Samo se može obrisati zapis iz voznje_log ako je potrebno
+          return 'Poništeno pokupljanje';
 
         case 'payment':
-          // Placanje se vi�e ne poni�tava preko kolona u registrovani_putnici
+          // Plaćanje se više ne poništava preko kolona u registrovani_putnici
           // Treba obrisati zapis iz voznje_log
-          return 'Poni�teno placanje';
+          return 'Poništeno plaćanje';
 
         case 'cancel':
           await supabase.from(tabela).update({
             'status': lastAction.oldData['status'],
           }).eq('id', lastAction.putnikId as String);
-          return 'Poni�teno otkazivanje';
+          return 'Poništeno otkazivanje';
 
         default:
           return 'Akcija nije prepoznata';
@@ -614,14 +617,14 @@ class PutnikService {
   /// ?? DODAJ PUTNIKA (dnevni ili mesecni) - ??? SA VALIDACIJOM GRADOVA
   Future<void> dodajPutnika(Putnik putnik, {bool skipKapacitetCheck = false}) async {
     try {
-      // ??? SVI PUTNICI MORAJU BITI REGISTROVANI
-      // Ad-hoc putnici vi�e ne postoje - svi tipovi (radnik, ucenik, dnevni)
+      // 🎯 SVI PUTNICI MORAJU BITI REGISTROVANI
+      // Ad-hoc putnici više ne postoje - svi tipovi (radnik, učenik, dnevni)
       // moraju biti u registrovani_putnici tabeli
       if (putnik.mesecnaKarta != true) {
         throw Exception(
           'NEREGISTROVAN PUTNIK!\n\n'
           'Svi putnici moraju biti registrovani u sistemu.\n'
-          'Idite na: Meni ? Mesecni putnici da kreirate novog putnika.',
+          'Idite na: Meni → Mesečni putnici da kreirate novog putnika.',
         );
       }
 
@@ -635,10 +638,10 @@ class PutnikService {
         );
       }
 
-      // ?? VALIDACIJA GRADA
+      // 🛡️ VALIDACIJA GRADA
       if (GradAdresaValidator.isCityBlocked(putnik.grad)) {
         throw Exception(
-          'Grad "${putnik.grad}" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vr�ac.',
+          'Grad "${putnik.grad}" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.',
         );
       }
 
@@ -692,10 +695,10 @@ class PutnikService {
       if (existingPutnici.isEmpty) {
         throw Exception('PUTNIK NE POSTOJI!\n\n'
             'Putnik "${putnik.ime}" ne postoji u listi registrovanih putnika.\n'
-            'Idite na: Meni ? Mesecni putnici da kreirate novog putnika.');
+            'Idite na: Meni → Mesečni putnici da kreirate novog putnika.');
       }
 
-      // ?? A�URIRAJ polasci_po_danu za putnika sa novim polaskom
+      // 🔄 AŽURIRAJ polasci_po_danu za putnika sa novim polaskom
       final registrovaniPutnik = existingPutnici.first;
       final putnikId = registrovaniPutnik['id'] as String;
 
@@ -723,19 +726,19 @@ class PutnikService {
         polasciPoDanu[danKratica] = <String, dynamic>{'bc': null, 'vs': null};
       }
 
-      // Kopiraj postojece podatke - ne bri�i markere!
+      // Kopiraj postojece podatke - ne briši markere!
       final danPolasci = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map);
 
-      // A�uriraj samo vreme, cuvaj ostale markere
+      // Ažuriraj samo vreme, cuvaj ostale markere
       danPolasci[gradKeyLower] = polazakVreme;
-      // ?? Dodaj broj mesta ako je > 1
+      // 🆕 Dodaj broj mesta ako je > 1
       if (putnik.brojMesta > 1) {
         danPolasci['${gradKeyLower}_mesta'] = putnik.brojMesta;
       } else {
         danPolasci.remove('${gradKeyLower}_mesta');
       }
 
-      // ?? Dodaj "adresa danas" ako je prosledena (override za ovaj dan)
+      // 📍 Dodaj "adresa danas" ako je prosleđena (override za ovaj dan)
       if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
         danPolasci['${gradKeyLower}_adresa_danas_id'] = putnik.adresaId;
       }
@@ -752,11 +755,11 @@ class PutnikService {
         radniDani = radniDaniList.join(',');
       }
 
-      // A�uriraj mesecnog putnika u bazi
-      // ? UKLONJENO: updated_by izaziva foreign key gre�ku jer UUID nije u tabeli users
+      // Ažuriraj mesecnog putnika u bazi
+      // ⚠️ UKLONJENO: updated_by izaziva foreign key grešku jer UUID nije u tabeli users
       // final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodeljenVozac ?? '');
 
-      // ?? Pripremi update mapu - BEZ updated_by (foreign key constraint)
+      // 📝 Pripremi update mapu - BEZ updated_by (foreign key constraint)
       final updateData = <String, dynamic>{
         'polasci_po_danu': polasciPoDanu,
         'radni_dani': radniDani,
@@ -772,7 +775,7 @@ class PutnikService {
       // ?? NOTIFIKACIJA UKLONJENA PO NALOGU 16.01.2026.
       // Prethodno je ovde bila logika za slanje push notifikacije svim vozacima (RealtimeNotificationService.sendNotificationToAllDrivers)
 
-      // ?? Log user change for audit
+      // 📝 Log user change for audit
       await UserAuditService().logUserChange(putnikId, 'add');
     } catch (e) {
       rethrow;
@@ -798,9 +801,9 @@ class PutnikService {
     required String vreme,
     required String grad,
   }) async {
-    // ??? Provera da li je ID validan
+    // 🛡️ Provera da li je ID validan
     if (id == null || (id is String && id.isEmpty)) {
-      debugPrint('?? [PutnikService] Poku�aj uklanjanja termina za neva�eci ID: $id');
+      debugPrint('⚠️ [PutnikService] Pokušaj uklanjanja termina za nevažeći ID: $id');
       return;
     }
 
@@ -815,22 +818,22 @@ class PutnikService {
         if (uklonjeniRaw is List) {
           uklonjeni = List<dynamic>.from(uklonjeniRaw);
         } else if (uklonjeniRaw is String) {
-          // ??? Ako je JSON string, parsiraj ga
+          // 📦 Ako je JSON string, parsiraj ga
           final parsed = convert.jsonDecode(uklonjeniRaw);
           if (parsed is List) {
             uklonjeni = List<dynamic>.from(parsed);
           }
         }
       } catch (e) {
-        debugPrint('?? [PutnikService] Gre�ka pri parsiranju uklonjeni_termini za putnika $id: $e');
+        debugPrint('❌ [PutnikService] Greška pri parsiranju uklonjeni_termini za putnika $id: $e');
       }
     }
 
-    // Normalizuj vrednosti pre cuvanja za konzistentno poredenje
+    // Normalizuj vrednosti pre čuvanja za konzistentno poređenje
     final normDatum = datum.split('T')[0]; // ISO format bez vremena
     final normVreme = GradAdresaValidator.normalizeTime(vreme);
 
-    // Spreci dupliranje istog termina
+    // Spreči dupliranje istog termina
     final vecPostoji = uklonjeni.any((ut) {
       if (ut is! Map<String, dynamic>) return false;
       final utMap = ut;
@@ -853,31 +856,31 @@ class PutnikService {
     }).eq('id', id);
   }
 
-  /// ? OBRISI PUTNIKA (Soft Delete - cuva statistike)
+  /// 🗑️ OBRISI PUTNIKA (Soft Delete - čuva statistike)
   Future<void> obrisiPutnika(dynamic id) async {
     final tabela = await _getTableForPutnik(id);
     final response = await supabase.from(tabela).select().eq('id', id as String).maybeSingle();
 
-    // ?? DODAJ U UNDO STACK (sigurno mapiranje)
+    // 🔄 DODAJ U UNDO STACK (sigurno mapiranje)
     final undoResponse = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
     _addToUndoStack('delete', id, undoResponse);
 
-    // ?? NE menjaj status - constraint check_registrovani_status_valid dozvoljava samo:
-    // 'aktivan', 'neaktivan', 'pauziran', 'radi', 'bolovanje', 'godi�nji'
+    // 🛡️ NE menjaj status - constraint check_registrovani_status_valid dozvoljava samo:
+    // 'aktivan', 'neaktivan', 'pauziran', 'radi', 'bolovanje', 'godišnji'
     await supabase.from(tabela).update({
-      'obrisan': true, // ? Soft delete flag
+      'obrisan': true, // ✅ Soft delete flag
     }).eq('id', id);
 
-    // ?? Log user change for audit
+    // 📝 Log user change for audit
     await UserAuditService().logUserChange(id, 'delete');
   }
 
-  /// ? OZNACI KAO POKUPLJEN
-  /// [grad] - opcioni parametar za odredivanje koje pokupljenje (BC ili VS)
-  /// [selectedDan] - opcioni parametar za dan (npr. "Pon", "Uto") - ako nije prosleden, koristi dana�nji dan
+  /// 🚶 OZNACI KAO POKUPLJEN
+  /// [grad] - opcioni parametar za određivanje koje pokupljenje (BC ili VS)
+  /// [selectedDan] - opcioni parametar za dan (npr. "Pon", "Uto") - ako nije prosleđen, koristi današnji dan
   Future<void> oznaciPokupljen(dynamic id, String currentDriver,
       {String? grad, String? selectedDan, String? selectedVreme}) async {
-    // ?? DUPLICATE PREVENTION
+    // 🛡️ DUPLICATE PREVENTION
     final actionKey = 'pickup_$id';
     if (_isDuplicateAction(actionKey)) {
       return;
@@ -885,7 +888,7 @@ class PutnikService {
 
     if (currentDriver.isEmpty) {
       throw ArgumentError(
-        'Vozac mora biti specificiran.',
+        'Vozač mora biti specificiran.',
       );
     }
 
@@ -895,7 +898,7 @@ class PutnikService {
     if (response == null) return;
     final putnik = Putnik.fromMap(response);
 
-    // ?? DODAJ U UNDO STACK (sigurno mapiranje)
+    // 🔄 DODAJ U UNDO STACK (sigurno mapiranje)
     final undoPickup = Map<String, dynamic>.from(response);
     _addToUndoStack('pickup', id, undoPickup);
 
@@ -903,7 +906,7 @@ class PutnikService {
       final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
 
-      // ? NOVO: polasci_po_danu je sada JSONB objekat
+      // 📦 NOVO: polasci_po_danu je sada JSONB objekat
       Map<String, dynamic> polasciPoDanu = {};
       final rawPolasci = response['polasci_po_danu'];
       if (rawPolasci != null) {
@@ -915,11 +918,11 @@ class PutnikService {
       final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
       final place = jeBC ? 'bc' : 'vs';
 
-      // ? FIX: Odredi dan kratica - pronadi koji dan ima taj grad i vreme
+      // 🔍 FIX: Odredi dan kratica - pronađi koji dan ima taj grad i vreme
       const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
       String danKratica = '';
 
-      // Prvo poku�aj sa selectedDan ako je prosleden
+      // Prvo pokušaj sa selectedDan ako je prosleđen
       if (selectedDan != null && selectedDan.isNotEmpty) {
         final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
         if (daniKratice.contains(normalizedDan)) {
@@ -927,7 +930,7 @@ class PutnikService {
         }
       }
 
-      // Ako nije pronaden, pronadi iz polasci_po_danu koji dan ima taj grad i vreme
+      // Ako nije pronađen, pronađi iz polasci_po_danu koji dan ima taj grad i vreme
       final vremeZaPretragu = selectedVreme ?? putnik.polazak;
       if (danKratica.isEmpty && vremeZaPretragu.isNotEmpty) {
         for (var entry in polasciPoDanu.entries) {
@@ -943,15 +946,15 @@ class PutnikService {
         }
       }
 
-      // Ako i dalje nije pronaden, koristi danas kao fallback
+      // Ako i dalje nije pronađen, koristi danas kao fallback
       if (danKratica.isEmpty) {
         danKratica = daniKratice[now.weekday - 1];
       }
 
-      // A�uriraj dan sa pokupljenjem
+      // Ažuriraj dan sa pokupljenjem
       final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
       dayData['${place}_pokupljeno'] = now.toIso8601String();
-      dayData['${place}_pokupljeno_vozac'] = currentDriver; // Ime vozaca, ne UUID
+      dayData['${place}_pokupljeno_vozac'] = currentDriver; // Ime vozača, ne UUID
       polasciPoDanu[danKratica] = dayData;
 
       await supabase.from(tabela).update({
@@ -959,7 +962,7 @@ class PutnikService {
         'updated_at': now.toUtc().toIso8601String(),
       }).eq('id', id);
 
-      // ?? DODAJ ZAPIS U voznje_log za pracenje vo�nji
+      // 📝 DODAJ ZAPIS U voznje_log za praćenje vožnji
       final danas = now.toIso8601String().split('T')[0];
       try {
         await supabase.from('voznje_log').insert({
@@ -968,14 +971,14 @@ class PutnikService {
           'tip': 'voznja',
           'iznos': 0,
           'vozac_id': vozacUuid,
-          'broj_mesta': putnik.brojMesta, // ?? Dodaj broj mesta za tacan obracun
+          'broj_mesta': putnik.brojMesta, // 🎫 Dodaj broj mesta za tačan obračun
         });
       } catch (logError) {
         // Log insert not critical
       }
     }
 
-    // ?? A�URIRAJ STATISTIKE ako je mesecni putnik i pokupljen je
+    // 📈 AŽURIRAJ STATISTIKE ako je mesečni putnik i pokupljen je
     if (putnik.mesecnaKarta == true) {
       // Statistike se racunaju dinamicki kroz StatistikaService
       // bez potrebe za dodatnim a�uriranjem
@@ -990,10 +993,9 @@ class PutnikService {
     }
   }
 
-  /// ? OZNACI KAO PLACENO
-  /// ?? OZNACI KAO PLACENO
-  /// [grad] - parametar za odredivanje koje placanje (BC ili VS) - ISTO kao oznaciPokupljeno
-  /// [selectedVreme] - vreme polaska da bi se prona�ao pravi dan
+  /// 💰 OZNACI KAO PLACENO
+  /// [grad] - parametar za određivanje koje plaćanje (BC ili VS) - ISTO kao oznaciPokupljen
+  /// [selectedVreme] - vreme polaska da bi se pronašao pravi dan
   Future<void> oznaciPlaceno(
     dynamic id,
     double iznos,
@@ -1002,14 +1004,14 @@ class PutnikService {
     String? selectedVreme,
     String? selectedDan,
   }) async {
-    // ?? DUPLICATE PREVENTION
+    // 🛡️ DUPLICATE PREVENTION
     final actionKey = 'payment_$id';
     if (_isDuplicateAction(actionKey)) {
       return;
     }
 
     if (currentDriver.isEmpty) {
-      throw ArgumentError('Vozac mora biti specificiran.');
+      throw ArgumentError('Vozač mora biti specificiran.');
     }
 
     final tabela = await _getTableForPutnik(id);
@@ -1022,7 +1024,7 @@ class PutnikService {
 
     final now = DateTime.now();
 
-    // ? FIX: Odredi dan kratica - pronadi koji dan ima taj grad i vreme
+    // 🔍 FIX: Odredi dan kratica - pronađi koji dan ima taj grad i vreme
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     String danKratica = '';
 
@@ -1034,11 +1036,11 @@ class PutnikService {
       }
     }
 
-    // ? FIX: Izracunaj place iz grad parametra - ISTO kao oznaciPokupljeno!
+    // 🔍 FIX: Izračunaj place iz grad parametra - ISTO kao oznaciPokupljen!
     final bool jeBC = GradAdresaValidator.isBelaCrkva(grad);
     final place = jeBC ? 'bc' : 'vs';
 
-    // Prvo poku�aj sa selectedDan ako je prosleden
+    // Prvo pokušaj sa selectedDan ako je prosleđen
     if (selectedDan != null && selectedDan.isNotEmpty) {
       final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
       if (daniKratice.contains(normalizedDan)) {
@@ -1046,7 +1048,7 @@ class PutnikService {
       }
     }
 
-    // Ako nije pronaden, pronadi dan koji ima taj grad i vreme
+    // Ako nije pronađen, pronađi dan koji ima taj grad i vreme
     if (danKratica.isEmpty && selectedVreme != null && selectedVreme.isNotEmpty) {
       for (var entry in polasciPoDanu.entries) {
         final dayName = entry.key;
@@ -1060,15 +1062,15 @@ class PutnikService {
         }
       }
     }
-    // Ako nije pronaden, koristi danas kao fallback
+    // Ako nije pronađen, koristi danas kao fallback
     if (danKratica.isEmpty) {
       danKratica = daniKratice[now.weekday - 1];
     }
 
-    // A�uriraj dan sa placanjem - dozvoli VI�ESTRUKO PLACANJE
+    // Ažuriraj dan sa plaćanjem - dozvoli VIŠESTRUKO PLAĆANJE
     final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
 
-    // Kreiraj ili a�uriraj niz za placanja
+    // Kreiraj ili ažuriraj niz za plaćanja
     List<Map<String, dynamic>> placanjaLista = [];
     final oldPlacanja = dayData['${place}_placanja'];
     if (oldPlacanja is List) {
@@ -1076,17 +1078,17 @@ class PutnikService {
           List<Map<String, dynamic>>.from(oldPlacanja.map((p) => p is Map ? Map<String, dynamic>.from(p) : {}));
     }
 
-    // Dodaj novo placanje
+    // Dodaj novo plaćanje
     placanjaLista.add({
       'iznos': iznos,
       'vozac': currentDriver,
       'vreme': now.toIso8601String(),
     });
 
-    // A�uriraj aggregirane vrednosti
-    dayData['${place}_placeno'] = now.toIso8601String(); // Poslednje placanje
+    // Ažuriraj agregirane vrednosti
+    dayData['${place}_placeno'] = now.toIso8601String(); // Poslednje plaćanje
     dayData['${place}_placeno_vozac'] = currentDriver;
-    dayData['${place}_placanja'] = placanjaLista; // Niz svih placanja
+    dayData['${place}_placanja'] = placanjaLista; // Niz svih plaćanja
     dayData['${place}_placeno_iznos'] = placanjaLista.fold<double>(
       0,
       (sum, p) => sum + ((p['iznos'] as num?)?.toDouble() ?? 0),
@@ -1114,8 +1116,8 @@ class PutnikService {
     }
 
     if (vozacId == null) {
-      debugPrint('?? markAsPaid: vozacId je NULL za vozaca "$currentDriver" - uplata nece biti u statistici!');
-      throw Exception('Sistem ne mo�e da identifikuje vozaca. Poku�ajte ponovo ili restartujte aplikaciju.');
+      debugPrint('⚠️ markAsPaid: vozacId je NULL za vozaca "$currentDriver" - uplata nece biti u statistici!');
+      throw Exception('Sistem ne može da identifikuje vozača. Pokušajte ponovo ili restartujte aplikaciju.');
     }
 
     try {
@@ -1129,18 +1131,18 @@ class PutnikService {
         tipUplate: 'uplata_dnevna',
       );
       debugPrint(
-          '? markAsPaid: Uplata upisana u voznje_log - putnik: $id, vozac: $currentDriver ($vozacId), iznos: $iznos');
+          '✅ markAsPaid: Uplata upisana u voznje_log - putnik: $id, vozac: $currentDriver ($vozacId), iznos: $iznos');
 
-      // ?? Log user change for audit
+      // 📝 Log user change for audit
       await UserAuditService().logUserChange(id.toString(), 'payment');
     } catch (e) {
-      debugPrint('? markAsPaid: GRE�KA pri upisu u voznje_log: $e');
-      // Re-throw da korisnik zna da je ne�to po�lo naopako
-      throw Exception('Gre�ka pri cuvanju uplate u statistiku: $e');
+      debugPrint('❌ markAsPaid: GREŠKA pri upisu u voznje_log: $e');
+      // Re-throw da korisnik zna da je nešto pošlo naopako
+      throw Exception('Greška pri čuvanju uplate u statistiku: $e');
     }
   }
 
-  /// ? OTKAZI PUTNIKA - sada cuva otkazivanje PO POLASKU (grad) u polasci_po_danu JSON
+  /// 🛑 OTKAŽI PUTNIKA - sada čuva otkazivanje PO POLASKU (grad) u polasci_po_danu JSON
   Future<void> otkaziPutnika(
     dynamic id,
     String otkazaoVozac, {
@@ -1157,25 +1159,25 @@ class PutnikService {
       final respMap = response;
       final cancelName = (respMap['putnik_ime'] ?? respMap['ime']) ?? '';
 
-      // ?? DODAJ U UNDO STACK
+      // 🔄 DODAJ U UNDO STACK
       _addToUndoStack('cancel', idStr, respMap);
 
       if (tabela == 'registrovani_putnici') {
         final danas = DateTime.now().toIso8601String().split('T')[0];
         final vozacUuid = await VozacMappingService.getVozacUuid(otkazaoVozac);
 
-        // ?? Odredi place (bc/vs) iz selectedGrad ili iz putnikovog grada
+        // 📍 Odredi place (bc/vs) iz selectedGrad ili iz putnikovog grada
         String place = 'bc'; // default
         final gradZaOtkazivanje = selectedGrad ?? respMap['grad'] as String? ?? '';
         if (gradZaOtkazivanje.toLowerCase().contains('vr') || gradZaOtkazivanje.toLowerCase().contains('vs')) {
           place = 'vs';
         }
 
-        // ?? FIX: Koristi selectedDan umesto DateTime.now() - omogucava otkazivanje za bilo koji dan
+        // 🔍 FIX: Koristi selectedDan umesto DateTime.now() - omogućava otkazivanje za bilo koji dan
         const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
         String danKratica = '';
 
-        // Prvo poku�aj sa selectedDan ako je prosleden
+        // Prvo pokušaj sa selectedDan ako je prosleđen
         if (selectedDan != null && selectedDan.isNotEmpty) {
           final normalizedDan = selectedDan.toLowerCase().substring(0, 3);
           if (daniKratice.contains(normalizedDan)) {
@@ -1183,7 +1185,7 @@ class PutnikService {
           }
         }
 
-        // Ako nije pronaden, pronadi iz polasci_po_danu koji dan ima taj grad i vreme
+        // Ako nije pronađen, pronađi iz polasci_po_danu koji dan ima taj grad i vreme
         if (danKratica.isEmpty) {
           // ?? Ucitaj postojeci polasci_po_danu JSON prvo
           Map<String, dynamic> polasci = {};
@@ -1231,7 +1233,7 @@ class PutnikService {
           }
         }
 
-        // ?? Dodaj/a�uriraj otkazivanje za specifican dan i grad
+        // ?? Dodaj/ažuriraj otkazivanje za specifican dan i grad
         if (!polasci.containsKey(danKratica)) {
           polasci[danKratica] = <String, dynamic>{};
         }
@@ -1259,7 +1261,7 @@ class PutnikService {
         }
       }
 
-      // ?? PO�ALJI NOTIFIKACIJU ZA OTKAZIVANJE (samo za tekuci dan)
+      // 🔔 POŠALJI NOTIFIKACIJU ZA OTKAZIVANJE (samo za tekući dan)
       try {
         final now = DateTime.now();
         final dayNames = ['Pon', 'Uto', 'Sre', 'Cet', 'Pet', 'Sub', 'Ned'];
@@ -1289,14 +1291,14 @@ class PutnikService {
         // Notification error - silent
       }
 
-      // ?? Log user change for audit
+      // 📝 Log user change for audit
       await UserAuditService().logUserChange(id.toString(), 'cancel');
     } catch (e) {
       rethrow;
     }
   }
 
-  /// ?? OZNACI KAO BOLOVANJE/GODI�NJI (samo za admin)
+  /// 🏥 OZNACI KAO BOLOVANJE/GODIŠNJI (samo za admin)
   Future<void> oznaciBolovanjeGodisnji(
     dynamic id,
     String tipOdsustva,
@@ -1312,20 +1314,20 @@ class PutnikService {
     final undoOdsustvo = response;
     _addToUndoStack('odsustvo', id, undoOdsustvo);
 
-    // ?? FIX: Koristi 'godisnji' bez dijakritike jer tako zahteva DB constraint
+    // 🛡️ FIX: Koristi 'godisnji' bez dijakritike jer tako zahteva DB constraint
     String statusZaBazu = tipOdsustva.toLowerCase();
-    if (statusZaBazu == 'godi�nji') {
+    if (statusZaBazu == 'godišnji') {
       statusZaBazu = 'godisnji';
     }
 
-    // ?? LOG U DNEVNIK
+    // 📋 LOG U DNEVNIK
     await VoznjeLogService.logGeneric(
       tip: statusZaBazu == 'radi' ? 'povratak_na_posao' : 'odsustvo',
       putnikId: id.toString(),
       vozacId: currentDriver == 'self' ? null : await VozacMappingService.getVozacUuid(currentDriver),
     );
 
-    // ??? ADMIN AUDIT LOG: Zabele�i promenu statusa (odsustvo/povratak)
+    // 🛡️ ADMIN AUDIT LOG: Zabeleži promenu statusa (odsustvo/povratak)
     final currentUser = supabase.auth.currentUser;
     await AdminAuditService.logAction(
       adminName: currentUser?.email ?? 'Unknown Admin',
@@ -1348,9 +1350,9 @@ class PutnikService {
     }
   }
 
-  /// ?? PREBACI PUTNIKA DRUGOM VOZACU (ili ukloni vozaca)
-  /// A�urira `vozac_id` kolonu u registrovani_putnici tabeli
-  /// Ako je noviVozac null, uklanja vozaca sa putnika
+  /// 🚐 PREBACI PUTNIKA DRUGOM VOZAČU (ili ukloni vozača)
+  /// Ažurira `vozac_id` kolonu u registrovani_putnici tabeli
+  /// Ako je noviVozac null, uklanja vozača sa putnika
   Future<void> prebacijPutnikaVozacu(String putnikId, String? noviVozac) async {
     try {
       String? vozacUuid;
@@ -1359,49 +1361,49 @@ class PutnikService {
         if (!(VozacBoja.isValidDriverSync(noviVozac))) {
           final validDrivers = VozacBoja.validDriversSync;
           throw Exception(
-            'Nevalidan vozac: "$noviVozac". Dozvoljeni: ${validDrivers.join(", ")}',
+            'Nevalidan vozač: "$noviVozac". Dozvoljeni: ${validDrivers.join(", ")}',
           );
         }
         vozacUuid = await VozacMappingService.getVozacUuid(noviVozac);
         if (vozacUuid == null) {
-          throw Exception('Vozac "$noviVozac" nije pronaden u bazi');
+          throw Exception('Vozač "$noviVozac" nije pronađen u bazi');
         }
       }
 
-      // ?? POJEDNOSTAVLJENO: Svi putnici su sada u registrovani_putnici
+      // 🔄 POJEDNOSTAVLJENO: Svi putnici su sada u registrovani_putnici
       await supabase.from('registrovani_putnici').update({
         'vozac_id': vozacUuid, // null ako se uklanja vozac
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', putnikId);
     } catch (e) {
-      throw Exception('Gre�ka pri prebacivanju putnika: $e');
+      throw Exception('Greška pri prebacivanju putnika: $e');
     }
   }
 
-  /// ?? DODELI PUTNIKA VOZACU ZA SPECIFICAN PRAVAC (bc/vs)
-  /// Cuva bc_vozac ili vs_vozac u polasci_po_danu JSON za specifican dan
+  /// 🎯 DODELI PUTNIKA VOZAČU ZA SPECIFIČAN PRAVAC (bc/vs)
+  /// Čuva bc_vozac ili vs_vozac u polasci_po_danu JSON za specifičan dan
   /// [putnikId] - ID putnika
-  /// [noviVozac] - Ime vozaca (npr. "Bilevski") ili null za uklanjanje
-  /// [place] - 'bc' za Bela Crkva pravac ili 'vs' za Vr�ac pravac
-  /// ?? A�URIRANO: Dodeli putnika vozacu za specifican pravac (bc/vs), dan i VREME
+  /// [noviVozac] - Ime vozača (npr. "Bilevski") ili null za uklanjanje
+  /// [place] - 'bc' za Bela Crkva pravac ili 'vs' za Vršac pravac
+  /// 🔄 AŽURIRANO: Dodeli putnika vozaču za specifičan pravac (bc/vs), dan i VREME
   /// [putnikId] - UUID putnika iz registrovani_putnici
-  /// [noviVozac] - Ime vozaca (npr. "Voja", "Bilevski") ili null za uklanjanje
-  /// [place] - Pravac: "bc" za Bela Crkva, "vs" za Vr�ac
-  /// [vreme] - Vreme polaska (npr. "5:00", "14:00") - obavezno za specificno dodeljivanje
+  /// [noviVozac] - Ime vozača (npr. "Voja", "Bilevski") ili null za uklanjanje
+  /// [place] - Pravac: "bc" za Bela Crkva, "vs" za Vršac
+  /// [vreme] - Vreme polaska (npr. "5:00", "14:00") - obavezno za specifično dodeljivanje
   /// [selectedDan] - Dan u nedelji (npr. "pon", "Ponedeljak") - opcionalno, default je danas
   Future<void> dodelPutnikaVozacuZaPravac(
     String putnikId,
     String? noviVozac,
     String place, {
-    String? vreme, // ?? OBAVEZAN parametar za vreme polaska
+    String? vreme, // ⏱️ OBAVEZAN parametar za vreme polaska
     String? selectedDan,
   }) async {
     try {
-      // Validacija vozaca
+      // Validacija vozača
       if (noviVozac != null && !(VozacBoja.isValidDriverSync(noviVozac))) {
         final validDrivers = VozacBoja.validDriversSync;
         throw Exception(
-          'Nevalidan vozac: "$noviVozac". Dozvoljeni: ${validDrivers.join(", ")}',
+          'Nevalidan vozač: "$noviVozac". Dozvoljeni: ${validDrivers.join(", ")}',
         );
       }
 
@@ -1432,7 +1434,7 @@ class PutnikService {
         }
       }
 
-      // Dodaj/a�uriraj vozaca za specifican dan, pravac i vreme
+      // Dodaj/ažuriraj vozača za specifičan dan, pravac i vreme
       if (!polasci.containsKey(danKratica)) {
         polasci[danKratica] = <String, dynamic>{};
       }
@@ -1459,13 +1461,13 @@ class PutnikService {
       }
       polasci[danKratica] = dayData;
 
-      // Sacuvaj u bazu
+      // Sačuvaj u bazu
       await supabase.from('registrovani_putnici').update({
         'polasci_po_danu': polasci,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', putnikId);
     } catch (e) {
-      throw Exception('Gre�ka pri dodeljivanju vozaca za pravac: $e');
+      throw Exception('Greška pri dodeljivanju vozača za pravac: $e');
     }
   }
 }

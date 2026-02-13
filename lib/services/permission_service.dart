@@ -66,6 +66,16 @@ class PermissionService {
   static Future<bool> _showPermissionSetupDialog(BuildContext context) async {
     if (!context.mounted) return false;
 
+    // Čekaj da se MaterialLocalizations učita
+    try {
+      Localizations.of<MaterialLocalizations>(context, MaterialLocalizations);
+    } catch (_) {
+      // Ako ne postoji, čekaj malo pa pokušaj opet
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+
+    if (!context.mounted) return false;
+
     return await showDialog<bool>(
           context: context,
           barrierDismissible: false,
@@ -336,16 +346,24 @@ class PermissionService {
       final permissions = [
         Permission.phone,
         Permission.contacts,
+        Permission.camera,
+        Permission.microphone,
         Permission.notification,
       ];
       final Map<Permission, PermissionStatus> statuses = await permissions.request();
 
       final phoneStatus = statuses[Permission.phone] ?? PermissionStatus.denied;
       final contactsStatus = statuses[Permission.contacts] ?? PermissionStatus.denied;
+      final cameraStatus = statuses[Permission.camera] ?? PermissionStatus.denied;
+      final microphoneStatus = statuses[Permission.microphone] ?? PermissionStatus.denied;
+      final notificationStatus = statuses[Permission.notification] ?? PermissionStatus.denied;
 
       final allCriticalGranted = locationStatus &&
           (phoneStatus.isGranted || phoneStatus.isLimited) &&
-          (contactsStatus.isGranted || contactsStatus.isLimited);
+          (contactsStatus.isGranted || contactsStatus.isLimited) &&
+          (cameraStatus.isGranted || cameraStatus.isLimited) &&
+          (microphoneStatus.isGranted || microphoneStatus.isLimited) &&
+          (notificationStatus.isGranted || notificationStatus.isLimited);
 
       return allCriticalGranted;
     } catch (e) {
@@ -573,4 +591,3 @@ class PermissionService {
     }
   }
 }
-

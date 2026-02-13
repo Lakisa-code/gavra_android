@@ -441,7 +441,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                           ),
                         )
                       : const Text(
-                          '🚀 Prijavi se',
+                          'Prijavi se',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                 ),

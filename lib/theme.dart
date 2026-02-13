@@ -41,7 +41,7 @@ String normalizeSerbianText(String text) {
   return text;
 }
 
-/// Globalni TextStyle sa srpskom dijakritikom podrškom
+/// Globalni TextStyle sa srpskom dijakritikom
 class SerbianTextStyle {
   static const String _primaryFont = 'Inter';
   static const List<String> _fallbackFonts = [
@@ -58,7 +58,9 @@ class SerbianTextStyle {
     Color? color,
     double? height,
     TextDecoration? decoration,
+    double? letterSpacing,
   }) {
+    // 🌍 KORISTIMO GOOGLE FONTS SA latin-ext PODRŠKOM
     return GoogleFonts.getFont(
       _primaryFont,
       fontSize: fontSize,
@@ -66,6 +68,7 @@ class SerbianTextStyle {
       color: color,
       height: height,
       decoration: decoration,
+      letterSpacing: letterSpacing,
     ).copyWith(
       fontFamilyFallback: _fallbackFonts,
     );
@@ -127,7 +130,9 @@ extension SerbianText on Text {
     return Text(
       normalizeSerbianText(data),
       key: key,
-      style: style ?? SerbianTextStyle.bodyLarge(),
+      style: (style ?? SerbianTextStyle.bodyLarge()).copyWith(
+        fontFamilyFallback: SerbianTextStyle._fallbackFonts,
+      ),
       strutStyle: strutStyle,
       textAlign: textAlign,
       textDirection: textDirection,
@@ -149,13 +154,7 @@ extension SerbianTextStyleExtension on TextStyle {
   /// Dodaje srpsku dijakritiku podršku postojećem TextStyle-u
   TextStyle withSerbianSupport() {
     return copyWith(
-      fontFamilyFallback: [
-        'Inter',
-        'Roboto',
-        'NotoSans',
-        'Arial Unicode MS',
-        'sans-serif',
-      ],
+      fontFamilyFallback: SerbianTextStyle._fallbackFonts,
     );
   }
 }
@@ -455,19 +454,18 @@ extension ThemeGradients on ThemeData {
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
-  // fontFamily: 'sans-serif', // Uklonjeno - koristimo samo u textTheme override-ima
+  fontFamily: 'Inter', // Primarni font sa podrškom za latin-ext
   textTheme: createSerbianTextTheme(), // SRPSKA DJAKRITIKA PODRŠKA
   scaffoldBackgroundColor: const Color(0xFFF0F9FF),
-  appBarTheme: const AppBarTheme(
+  appBarTheme: AppBarTheme(
     elevation: 0,
-    backgroundColor: Color(0xFF021B79), // Originalna tamna Electric Blue boja
+    backgroundColor: const Color(0xFF021B79), // Originalna tamna Electric Blue boja
     foregroundColor: Colors.white,
     systemOverlayStyle: SystemUiOverlayStyle.light,
-    titleTextStyle: TextStyle(
+    titleTextStyle: SerbianTextStyle.create(
       fontSize: 20,
       fontWeight: FontWeight.w600,
       color: Colors.white,
-      letterSpacing: 0.5,
     ),
   ),
 );
@@ -678,7 +676,7 @@ class DarkPinkStyles {
   );
 }
 
-// ❤️ Passionate Rose Styles - Crvena/ružičasta sa klasičnim sjajom!
+// ❤️ PASSIONATE ROSE Styles - Crvena/ružičasta sa klasičnim sjajom!
 class PassionateRoseStyles {
   static BoxDecoration cardDecoration = BoxDecoration(
     color: const Color(0xFFFFF8F9), // Skoro bela sa pink odsjajem

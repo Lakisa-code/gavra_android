@@ -111,7 +111,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Šifra uspešno promenjena!'),
+          content: Text('Šifra uspešno promenjena!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -369,4 +369,3 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
     );
   }
 }
-

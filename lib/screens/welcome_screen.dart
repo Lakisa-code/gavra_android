@@ -21,10 +21,6 @@ import 'registrovani_putnik_login_screen.dart';
 import 'vozac_login_screen.dart';
 import 'vozac_screen.dart';
 
-Widget _getHomeScreen() {
-  return const HomeScreen();
-}
-
 Widget _getScreenForDriver(String driverName) {
   // Vozači koji koriste VozacScreen umesto HomeScreen
   if (driverName == 'Voja') {
@@ -179,12 +175,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     final activeDriver = await AuthManager.getCurrentDriver();
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
-      // Vozač je već logovan - direktno na HomeScreen bez check-in
+      // Vozač je već logovan - direktno na odgovarajući ekran
       if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute<void>(builder: (context) => _getHomeScreen()),
+        MaterialPageRoute<void>(builder: (context) => _getScreenForDriver(activeDriver)),
       );
     }
   }

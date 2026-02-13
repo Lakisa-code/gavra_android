@@ -4,30 +4,30 @@ import '../models/putnik.dart';
 
 /// Enum za stanja kartice putnika
 enum CardState {
-  odsustvo, // ?? Godi�nji/bolovanje
-  otkazano, // ?? Otkazano
-  placeno, // ?? Placeno/mesecno
-  pokupljeno, // ?? Pokupljeno neplaceno
-  tudji, // ?? Tudi putnik (dodeljen drugom vozacu)
-  nepokupljeno, // ? Nepokupljeno (default)
+  odsustvo, // ✅ Godišnji/bolovanje
+  otkazano, // ❌ Otkazano
+  placeno, // 💰 Plaćeno/mesečno
+  pokupljeno, // 🚶 Pokupljeno neplaćeno
+  tudji, // 👥 Tuđi putnik (dodeljen drugom vozaču)
+  nepokupljeno, // 🕒 Nepokupljeno (default)
 }
 
-/// ?? CARD COLOR HELPER - Centralizovana logika boja za kartice putnika
+/// 🎨 CARD COLOR HELPER - Centralizovana logika boja za kartice putnika
 ///
-/// ## Prioritet boja (od najvi�eg ka najni�em):
-/// 1. ?? �UTO - Odsustvo (godi�nji/bolovanje) - `CardState.odsustvo`
-/// 2. ?? CRVENO - Otkazani putnici - `CardState.otkazano`
-/// 3. ?? ZELENO - Pokupljeni placeni/mesecni - `CardState.placeno`
-/// 4. ?? PLAVO - Pokupljeni neplaceni - `CardState.pokupljeno`
-/// 5. ?? SIVO - Tudi putnik (dodeljen drugom vozacu) - `CardState.tudji`
-/// 6. ? BELO - Nepokupljeni (default) - `CardState.nepokupljeno`
+/// ## Prioritet boja (od najvišeg ka najnižem):
+/// 1. 🟡 ŽUTO - Odsustvo (godišnji/bolovanje) - `CardState.odsustvo`
+/// 2. 🔴 CRVENO - Otkazani putnici - `CardState.otkazano`
+/// 3. 🟢 ZELENO - Pokupljeni plaćeni/mesečni - `CardState.placeno`
+/// 4. 🔵 PLAVO - Pokupljeni neplaćeni - `CardState.pokupljeno`
+/// 5. ⚪ SIVO - Tuđi putnik (dodeljen drugom vozaču) - `CardState.tudji`
+/// 6. ⚪ BELO - Nepokupljeni (default) - `CardState.nepokupljeno`
 ///
 /// ## Cheat Sheet Boja:
 ///
 /// ### POZADINA KARTICE:
 /// | Stanje | Boja | Hex |
 /// |--------|------|-----|
-/// | Odsustvo | Svetlo �uta | #FFF59D |
+/// | Odsustvo | Svetlo žuta | #FFF59D |
 /// | Otkazano | Svetlo crvena | #FFE5E5 |
 /// | Placeno | Zelena | #388E3C |
 /// | Pokupljeno | Svetlo plava | #7FB3D3 |
@@ -60,7 +60,7 @@ enum CardState {
 /// | Pokupljeno | #7FB3D3 | 0.15 |
 /// | Nepokupljeno | Crna | 0.07 |
 ///
-/// ## Primer kori�cenja:
+/// ## Primer korišćenja:
 /// ```dart
 /// final decoration = CardColorHelper.getCardDecoration(putnik);
 /// final textColor = CardColorHelper.getTextColorWithTheme(
@@ -74,27 +74,27 @@ class CardColorHelper {
   // KONSTANTE BOJA
   // ---------------------------------------------------------------------------
 
-  // ?? ODSUSTVO (godi�nji/bolovanje) - NAJVECI PRIORITET
+  // 🟡 ODSUSTVO (godišnji/bolovanje) - NAJVEĆI PRIORITET
   static const Color odsustvoBackground = Color(0xFFFFF59D);
   static const Color odsustueBorder = Color(0xFFFFC107);
   static const Color odsustvoText = Color(0xFFF57C00); // Colors.orange[700]
 
-  // ?? OTKAZANO - DRUGI PRIORITET
+  // 🔴 OTKAZANO - DRUGI PRIORITET
   static const Color otkazanoBackground = Color(0xFFEF9A9A); // Red[200] - tamnija crvena
   static const Color otkazanoBorder = Colors.red;
   static const Color otkazanoText = Color(0xFFEF5350); // Colors.red[400]
 
-  // ?? PLACENO/MESECNO - TRECI PRIORITET
+  // 🟢 PLACENO/MESECNO - TREĆI PRIORITET
   static const Color placenoBackground = Color(0xFF388E3C);
   static const Color placenoBorder = Color(0xFF388E3C);
   static const Color placenoText = Color(0xFF388E3C);
 
-  // ?? POKUPLJENO NEPLACENO - CETVRTI PRIORITET
+  // 🔵 POKUPLJENO NEPLACENO - ČETVRTI PRIORITET
   static const Color pokupljenoBackground = Color(0xFF7FB3D3);
   static const Color pokupljenoBorder = Color(0xFF7FB3D3);
   static const Color pokupljenoText = Color(0xFF0D47A1);
 
-  // ?? TU�I PUTNIK (dodeljen drugom vozacu)
+  // ⚪ TUĐI PUTNIK (dodeljen drugom vozaču)
   static const Color tudjiBackground = Color(0xFF757575); // Grey[600]
   static const Color tudjiBorder = Color(0xFFBDBDBD); // Grey[400]
   static const Color tudjiText = Color(0xFF757575); // Grey[600]
@@ -150,7 +150,7 @@ class CardColorHelper {
       }
       return CardState.pokupljeno;
     }
-    // ?? TU�I PUTNIK: ima vozaca, vozac nije trenutni
+    // ?? TU�I PUTNIK: ima vozaca, vozac nije trenutni
     if (putnik.dodeljenVozac != null && putnik.dodeljenVozac!.isNotEmpty && putnik.dodeljenVozac != currentDriver) {
       return CardState.tudji;
     }
@@ -605,4 +605,3 @@ class CardColorHelper {
         'iznosPlacanja: ${putnik.iznosPlacanja}';
   }
 }
-
