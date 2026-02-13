@@ -51,6 +51,13 @@ jobs:
           EOF
         shell: bash
 
+      - name: Create .env file
+        run: |
+          cat > $GITHUB_WORKSPACE/.env << EOF
+          ${{ secrets.ENV_FILE_CONTENT }}
+          EOF
+        shell: bash
+
       - name: Get dependencies
         run: flutter pub get
 
