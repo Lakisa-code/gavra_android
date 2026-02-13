@@ -18,7 +18,6 @@ import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
 import 'services/ml_service.dart'; // 🧠 ML servis za trening modela
-import 'services/ml_vehicle_autonomous_service.dart';
 import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/seat_request_service.dart';
@@ -224,7 +223,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     VozilaService.dispose();
     SeatRequestService.dispose();
     VoznjeLogService.dispose();
-    MLVehicleAutonomousService.disposeRealtime();
     SlobodnaMestaService.dispose();
     AppSettingsService.dispose();
     KapacitetService.stopGlobalRealtimeListener();

@@ -20,20 +20,17 @@ import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
-import 'admin_zahtevi_screen.dart'; // 🕵️ MONITORING ZAHTEVA
 import 'adrese_screen.dart'; // 🏘️ Upravljanje adresama
 import 'auth_screen.dart'; // DODANO za auth admin
 import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozacima
 import 'dugovi_screen.dart';
 import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
-import 'ml_lab_screen.dart'; // 🔬 ML LAB
 import 'odrzavanje_screen.dart'; // 🚛 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 🔑 PIN ZAHTEVI
 import 'registrovani_putnici_screen.dart'; // DODANO za mesecne putnike
 import 'tranzit_screen.dart'; // 🛰️ SMART TRANZIT
 import 'vozac_screen.dart'; // DODANO za vozac screen
-import 'vozaci_statistika_screen_v2.dart'; // 📊 Statistika vozača
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -239,22 +236,6 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const Text('📊', style: TextStyle(fontSize: 24)),
-                  title: const Text('Statistika Vozača'),
-                  subtitle: const Text('Pazar, vožnje, dnevnice'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (context) => const VozaciStatistikaScreenV2(),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(),
-                ListTile(
                   leading: const Text('💰', style: TextStyle(fontSize: 24)),
                   title: const Text('Finansije'),
                   subtitle: const Text('Prihodi, troškovi, neto zarada'),
@@ -281,22 +262,6 @@ class _AdminScreenState extends State<AdminScreen> {
                       context,
                       MaterialPageRoute<void>(
                         builder: (context) => const OdrzavanjeScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.science, size: 24, color: Colors.blue),
-                  title: const Text('ML Lab'),
-                  subtitle: const Text('Machine Learning analiza i predviđanja'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (context) => const MLLabScreen(),
                       ),
                     );
                   },
@@ -757,14 +722,14 @@ class _AdminScreenState extends State<AdminScreen> {
                             },
                           ),
                           const SizedBox(height: 4),
-                          // CETVRTI RED - Vozac, Monitor, Mesta, Dnevni (4 dugmeta)
+                          // TRECI RED - Vozac, Monitor, Mesta (3 dugmeta)
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final screenWidth = constraints.maxWidth;
                               const spacing = 4.0; // Increased spacing safety
                               const padding = 12.0; // Increased padding safety
                               final availableWidth = screenWidth - padding;
-                              final buttonWidth = (availableWidth - (spacing * 3)) / 4;
+                              final buttonWidth = (availableWidth - (spacing * 2)) / 3;
 
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -801,45 +766,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                   ),
 
-                                  // ZAHTEVI
-                                  SizedBox(
-                                    width: buttonWidth,
-                                    child: InkWell(
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute<void>(
-                                          builder: (context) => const AdminZahteviScreen(),
-                                        ),
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        height: 28,
-                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).glassContainer,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
-                                        ),
-                                        child: const Center(
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Text(
-                                              'Zahtevi',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14,
-                                                color: Colors.white,
-                                                shadows: [
-                                                  Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
                                   // MESTA
                                   SizedBox(
                                     width: buttonWidth,
@@ -870,55 +796,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                                               color: Colors.black54)
                                                         ])))),
                                       ),
-                                    ),
-                                  ),
-
-                                  // DNEVNI TOGGLE
-                                  SizedBox(
-                                    width: buttonWidth,
-                                    child: ValueListenableBuilder<bool>(
-                                      valueListenable: dnevniZakazivanjeNotifier,
-                                      builder: (context, isAktivno, _) {
-                                        return InkWell(
-                                          onTap: () => AppSettingsService.setDnevniZakazivanjeAktivno(!isAktivno),
-                                          borderRadius: BorderRadius.circular(12),
-                                          child: Container(
-                                            height: 28,
-                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context).glassContainer,
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(
-                                                color: isAktivno ? Colors.green : Colors.red,
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                            child: Center(
-                                              child: FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    const Text('Dnevni ',
-                                                        style: TextStyle(
-                                                            fontWeight: FontWeight.w600,
-                                                            fontSize: 12,
-                                                            color: Colors.white,
-                                                            shadows: [
-                                                              Shadow(
-                                                                  offset: Offset(1, 1),
-                                                                  blurRadius: 3,
-                                                                  color: Colors.black54)
-                                                            ])),
-                                                    Icon(isAktivno ? Icons.check_circle : Icons.cancel,
-                                                        color: isAktivno ? Colors.green : Colors.red, size: 16),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
                                     ),
                                   ),
                                 ],
@@ -1316,67 +1193,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                     const Icon(Icons.arrow_forward_ios, color: Colors.orange, size: 16),
                                   ],
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                        // 📉 PROJEKTOVANO OPTEREĆENJE
-                        StreamBuilder<Map<String, dynamic>>(
-                          stream: SlobodnaMestaService.streamProjectedOccupancyStats(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) return const SizedBox.shrink();
-                            final stats = snapshot.data!;
-                            final totalReserved = stats['reservations_count'] ?? 0;
-                            final missing = stats['missing_count'] ?? 0;
-                            final totalProjected = totalReserved + missing;
-
-                            if (totalProjected == 0) return const SizedBox.shrink();
-
-                            return Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    '📉 PROJEKCIJA ZA VS -> BC (DANAS)',
-                                    style:
-                                        TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Ukupno ocekivano: $totalProjected',
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                      ),
-                                      Text(
-                                        'Rezervisano: $totalReserved',
-                                        style: const TextStyle(color: Colors.green, fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  LinearProgressIndicator(
-                                    value: totalProjected > 0 ? totalReserved / totalProjected : 0,
-                                    backgroundColor: Colors.white10,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
-                                  ),
-                                  if (missing > 0)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        '⚠️ Još $missing tranzitnih putnika treba da bukira.',
-                                        style: const TextStyle(color: Colors.orange, fontSize: 11),
-                                      ),
-                                    ),
-                                ],
                               ),
                             );
                           },
