@@ -50,13 +50,6 @@ class SeatRequestService {
       });
       debugPrint('✅ [SeatRequestService] Inserted for $grad $vreme on $dan (Datum: $datumStr)');
 
-      // 📲 POŠALJI NOTIFIKACIJU PUTNIKU (Dogovorena "fer" poruka)
-      await RealtimeNotificationService.sendNotificationToPutnik(
-        putnikId: putnikId,
-        title: 'Zahtev primljen',
-        body: 'Vaš zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
-      );
-
       // 🔔 AKO JE STATUS 'manual' (Dnevni putnici), POŠALJI NOTIFIKACIJU ADMINU
       if (status == 'manual') {
         try {

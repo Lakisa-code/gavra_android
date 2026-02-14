@@ -133,7 +133,7 @@ class TimePickerCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasTime = value != null && value!.isNotEmpty;
-    final isPending = status == 'pending';
+    final isPending = status == 'pending' || status == 'manual';
     final isApproved = status == 'approved';
     final isConfirmed = status == 'confirmed';
     final locked = isLocked;
@@ -167,8 +167,8 @@ class TimePickerCell extends StatelessWidget {
     // 🟠 PENDING - narandžasto (prioritet nad hasTime!)
     else if (isPending) {
       borderColor = Colors.orange;
-      bgColor = Colors.orange.shade50;
-      textColor = Colors.orange.shade800;
+      bgColor = Colors.orange.shade200; // Malo jača narandžasta
+      textColor = Colors.orange.shade900;
     }
     // 🟢 IMA VREMENA - zelena (osnovna stanja - putnik je zakazao vreme)
     else if (hasTime) {
@@ -253,7 +253,7 @@ class TimePickerCell extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: hasTime
+          child: (hasTime || isPending)
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
@@ -262,7 +262,7 @@ class TimePickerCell extends StatelessWidget {
                       Icon(Icons.cancel, size: 12, color: textColor),
                       const SizedBox(width: 2),
                     ] else if (isPending) ...[
-                      Icon(Icons.hourglass_empty, size: 12, color: textColor),
+                      Icon(Icons.hourglass_empty, size: 10, color: textColor),
                       const SizedBox(width: 2),
                     ] else if (isApproved) ...[
                       // ✅ Ikonica za approved status
@@ -274,14 +274,30 @@ class TimePickerCell extends StatelessWidget {
                       const SizedBox(width: 2),
                     ],
                     Flexible(
-                      child: Text(
-                        value!.split(':').take(2).join(':'),
-                        style: TextStyle(
-                          color: textColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: (isPending || locked || isCancelled) ? 12 : 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (hasTime)
+                            Text(
+                              value!.split(':').take(2).join(':'),
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: (isPending || locked || isCancelled) ? 12 : 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          if (isPending)
+                            Text(
+                              'PENDING',
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 7,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],

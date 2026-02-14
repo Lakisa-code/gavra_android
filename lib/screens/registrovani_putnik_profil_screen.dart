@@ -113,7 +113,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final hour = int.parse(parts[0]);
         final min = int.parse(parts[1]);
         final scheduled = DateTime(now.year, now.month, now.day, hour, min);
-        return now.isAfter(scheduled);
+        // Dozvoli 30 minuta tolerancije pre nego što proglasimo da je polazak prošao
+        return now.isAfter(scheduled.add(const Duration(minutes: 30)));
       }
     } catch (_) {}
     return false;
@@ -243,18 +244,50 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       _handleStatusChange(payload);
     });
 
-    // 🆕 Dodaj listener za seat_requests approvals
+    // 🆕 Dodaj listener za seat_requests (sve promene za ovog putnika)
     _seatRequestSubscription = RealtimeManager.instance.subscribe('seat_requests').where((payload) {
-      // Filtriraj samo za ovog putnika i UPDATE event
-      return payload.eventType == PostgresChangeEvent.update &&
-          payload.newRecord['putnik_id'].toString() == putnikId &&
-          payload.newRecord['status'] == 'approved';
+      // Filtriraj samo za ovog putnika
+      final record = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
+      return record['putnik_id'].toString() == putnikId;
     }).listen((payload) {
-      debugPrint('🆕 [Realtime] Seat request approved za putnika $putnikId');
-      _handleSeatRequestApproval(payload);
+      debugPrint('🆕 [Realtime] Seat request promena detektovana: ${payload.eventType}');
+      _loadActiveRequests(); // Osveži listu zahteva
+
+      // Ako je odobreno, hendluj i to (za zvučne efekte ili poruke)
+      if (payload.eventType == PostgresChangeEvent.update && payload.newRecord['status'] == 'approved') {
+        _handleSeatRequestApproval(payload);
+      }
     });
 
     debugPrint('🎯 [Realtime] Listener aktivan za putnika $putnikId');
+
+    // 🆕 Učitaj aktivne zahteve odmah pri startu
+    _loadActiveRequests();
+  }
+
+  List<Map<String, dynamic>> _activeSeatRequests = [];
+
+  /// 📥 Učitava aktivne (pending/manual) zahteve iz seat_requests tabele
+  Future<void> _loadActiveRequests() async {
+    try {
+      final putnikId = _putnikData['id']?.toString();
+      if (putnikId == null) return;
+
+      final res = await supabase
+          .from('seat_requests')
+          .select()
+          .eq('putnik_id', putnikId)
+          .inFilter('status', ['pending', 'manual']);
+
+      if (mounted) {
+        setState(() {
+          _activeSeatRequests = List<Map<String, dynamic>>.from(res);
+          debugPrint('📥 [ActiveRequests] Učitano: ${_activeSeatRequests.length} zahteva');
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ [ActiveRequests] Greška: $e');
+    }
   }
 
   /// 🔔 Hendluje promenu statusa (confirmed/null) - samo osvežava UI
@@ -264,10 +297,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final newData = payload.newRecord;
       if (newData.isEmpty) return;
 
-      // 🔄 Osvježi lokalne podatke odmah za bilo koju promenu (ime, tip, status...)
+      // 🔄 Osvježava aktivne zahteve jer je neka promena nastala
+      _loadActiveRequests();
+
+      // 🔄 Merge novih podataka sa postojećim da ne izgubimo polja koja možda fale u realtime payloadu
       if (mounted) {
         setState(() {
-          _putnikData = Map<String, dynamic>.from(newData);
+          _putnikData = {
+            ..._putnikData,
+            ...Map<String, dynamic>.from(newData),
+          };
         });
       }
 
@@ -1702,7 +1741,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
     // Parsiranje polasci_po_danu iz putnikData
     final polasciRaw = _safeMap(_putnikData['polasci_po_danu']);
-    Map<String, Map<String, String?>> polasci = {};
+
+    // 🆕 PRE-POPULATE: Osiguraj da imamo svih 7 dana inicijalizovanih
+    Map<String, Map<String, dynamic>> polasci = {};
+    for (final shortDay in DayConstants.dayAbbreviations) {
+      polasci[shortDay] = {
+        'bc': null,
+        'vs': null,
+        'bc_status': null,
+        'vs_status': null,
+      };
+    }
 
     // Helper funkcija za sigurno parsiranje vremena
     String? parseVreme(dynamic value) {
@@ -1715,21 +1764,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     polasciRaw.forEach((key, value) {
       if (value is Map) {
         final danName = key.toString();
-        final bcStatus = parseVreme(value['bc_status']);
-        final vsStatus = parseVreme(value['vs_status']);
         String? bcVreme = parseVreme(value['bc']);
         String? vsVreme = parseVreme(value['vs']);
+        final bcStatus = parseVreme(value['bc_status']);
+        final vsStatus = parseVreme(value['vs_status']);
 
         // 🆕 AUTOMATSKO OTKAZIVANJE ISTEKLIH PENDING ZAHTEVA
         final now = DateTime.now();
         if (_isDanas(danName)) {
-          // BC Pending
-          if (bcStatus == 'waiting' && bcVreme != null && _isExpired(bcVreme, now)) {
+          if (bcStatus == 'pending' && bcVreme != null && _isExpired(bcVreme, now)) {
             bcVreme = null;
             _autoCancelPending(danName, 'bc');
           }
-          // VS Pending
-          if (vsStatus == 'waiting' && vsVreme != null && _isExpired(vsVreme, now)) {
+          if (vsStatus == 'pending' && vsVreme != null && _isExpired(vsVreme, now)) {
             vsVreme = null;
             _autoCancelPending(danName, 'vs');
           }
@@ -1744,16 +1791,46 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           'vs_otkazano': parseVreme(value['vs_otkazano']),
           'bc_otkazano_vreme': parseVreme(value['bc_otkazano_vreme']),
           'vs_otkazano_vreme': parseVreme(value['vs_otkazano_vreme']),
-          'bc_placanja': value['bc_placanja'], // 🆕 Dodaj plaćanja za BC
-          'vs_placanja': value['vs_placanja'], // 🆕 Dodaj plaćanja za VS
+          'bc_placanja': value['bc_placanja'],
+          'vs_placanja': value['vs_placanja'],
         };
       }
     });
 
-    final dani = DayConstants.dayAbbreviations.sublist(0, 5); // Samo radni dani
+    // 🆕 MERGE AKTIVNIH ZAHTEVA
+    final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    for (final req in _activeSeatRequests) {
+      try {
+        final datumStr = req['datum'] as String?;
+        if (datumStr == null) continue;
+
+        final datum = DateTime.parse(datumStr);
+        final danIndex = datum.weekday - 1;
+        if (danIndex < 0 || danIndex >= daniNedelje.length) continue;
+
+        final danKratica = daniNedelje[danIndex];
+        final grad = (req['grad'] ?? '').toString().toLowerCase(); // 'bc' ili 'vs'
+        final status = req['status'] as String?;
+        final vreme = req['zeljeno_vreme'] as String?;
+
+        final existing = polasci[danKratica]!;
+        // PENDING status iz seat_requests ima prioritet nad JSON-om dok se ne odobri (confirmed)
+        if (existing['${grad}_status'] != 'confirmed' && existing['${grad}_status'] != 'approved') {
+          existing[grad] = vreme;
+          existing['${grad}_status'] = status;
+        }
+      } catch (e) {
+        debugPrint('⚠️ [MergeRequests] Greška: $e');
+      }
+    }
+
+    final dani = DayConstants.dayAbbreviations; // 🗓️ PRIKAŽI SVIH 7 DANA (uključujući vikend)
     final daniLabels = <String, String>{};
-    for (int i = 0; i < DayConstants.dayAbbreviations.length && i < 5; i++) {
-      daniLabels[DayConstants.dayAbbreviations[i]] = DayConstants.dayNamesInternal[i];
+    for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
+      // Koristi puni naziv iz DayConstants ili podrazumevani prevod
+      final short = DayConstants.dayAbbreviations[i];
+      final long = (i < DayConstants.dayNamesInternal.length) ? DayConstants.dayNamesInternal[i] : short;
+      daniLabels[short] = long;
     }
 
     return Container(
@@ -1814,7 +1891,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             final bcVreme = danPolasci?['bc'];
             final vsVreme = danPolasci?['vs'];
             final bcStatus = danPolasci?['bc_status']?.toString();
-            // Koristi 'waiting' status direktno
             final vsStatus = danPolasci?['vs_status']?.toString();
             final bcOtkazano = danPolasci?['bc_otkazano'] != null;
             final vsOtkazano = danPolasci?['vs_otkazano'] != null;
@@ -1985,6 +2061,25 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       polasci[dan] = danData;
       _putnikData['polasci_po_danu'] = polasci;
 
+      // 🆕 OPTIMISTIČNI UPDATE ZA AKTIVNE ZAHTEVE (Merge zahteve da ne nestane "pending" status)
+      if (rpcStatus != null && rpcStatus != 'null' && normalizedVreme != null) {
+        final targetDate = SeatRequestService.getNextDateForDay(DateTime.now(), dan);
+        final datumStr = targetDate.toIso8601String().split('T')[0];
+
+        final tempReq = {
+          'grad': tipGrad.toUpperCase(),
+          'datum': datumStr,
+          'status': rpcStatus,
+          'zeljeno_vreme': normalizedVreme,
+          'putnik_id': putnikId,
+        };
+
+        // Lokalno ažuriraj listu aktivnih zahteva dok ne stigne potvrda iz baze
+        _activeSeatRequests.removeWhere(
+            (r) => r['grad'].toString().toUpperCase() == tipGrad.toUpperCase() && r['datum'].toString() == datumStr);
+        _activeSeatRequests.add(tempReq);
+      }
+
       // Update radni dani string
       final Set<String> radniSet = {};
       polasci.forEach((k, v) {
@@ -2034,7 +2129,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Zahtev primljen, biće obrađen uskoro.'),
+            content: Text('Vaš zahtev je uspešno primljen i biće obrađen u najkraćem mogućem roku.'),
             duration: Duration(seconds: 3),
           ),
         );

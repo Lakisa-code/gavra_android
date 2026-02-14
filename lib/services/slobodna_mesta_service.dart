@@ -579,8 +579,8 @@ class SlobodnaMestaService {
         final vsVreme = danData['vs'] as String?;
         final vsStatus = danData['vs_status'] as String?;
 
-        // Proveri da li je zaista zauzeto mesto (status nije waiting)
-        if (vsVreme == vreme && vsStatus != 'waiting') {
+        // Proveri da li je zaista zauzeto mesto (status nije pending ili manual)
+        if (vsVreme == vreme && vsStatus != 'pending' && vsStatus != 'manual') {
           count++;
         }
       }
@@ -610,8 +610,8 @@ class SlobodnaMestaService {
         final bcVreme = danData['bc'] as String?;
         final bcStatus = danData['bc_status'] as String?;
 
-        // Proveri da li je zaista zauzeto mesto (status nije waiting)
-        if (bcVreme == vreme && bcStatus != 'waiting') {
+        // Proveri da li je zaista zauzeto mesto (status nije pending ili manual)
+        if (bcVreme == vreme && bcStatus != 'pending' && bcStatus != 'manual') {
           count++;
         }
       }

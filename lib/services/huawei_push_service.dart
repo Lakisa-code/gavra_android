@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:huawei_push/huawei_push.dart';
 
@@ -45,6 +46,27 @@ class HuaweiPushService {
     if (Platform.isIOS) {
       debugPrint('📱 [HuaweiPush] iOS detected, skipping Huawei Push');
       return null;
+    }
+
+    // 🛡️ Provera da li je HMS dostupan (zaštita od HMSSDK logova na non-Huawei uređajima)
+    try {
+      if (Platform.isAndroid) {
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        final manufacturer = androidInfo.manufacturer.toLowerCase();
+        final brand = androidInfo.brand.toLowerCase();
+
+        // Ako nije Huawei/Honor, preskačemo HMS inicijalizaciju
+        if (!manufacturer.contains('huawei') &&
+            !brand.contains('huawei') &&
+            !manufacturer.contains('honor') &&
+            !brand.contains('honor')) {
+          _initialized = true;
+          return null;
+        }
+      }
+    } catch (e) {
+      debugPrint('📱 [HuaweiPush] Error checking manufacturer: $e');
     }
 
     // 🛡️ Ako je već inicijalizovan, vrati null
