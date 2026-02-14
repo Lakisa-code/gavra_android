@@ -267,15 +267,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final newData = payload.newRecord;
       if (newData.isEmpty) return;
 
-      final polasciPoDanu = _safeMap(newData['polasci_po_danu']);
-      if (polasciPoDanu.isEmpty) return;
-
-      // Osvježi lokalne podatke
+      // 🔄 Osvježi lokalne podatke odmah za bilo koju promenu (ime, tip, status...)
       if (mounted) {
         setState(() {
           _putnikData = Map<String, dynamic>.from(newData);
         });
       }
+
+      final polasciPoDanu = _safeMap(newData['polasci_po_danu']);
+      if (polasciPoDanu.isEmpty) return;
 
       // Logovanje status promena (bez slanja notifikacija - to radi Job #3)
       for (final dan in polasciPoDanu.keys) {
@@ -2214,7 +2214,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             GavraUI.showSnackBar(
               context,
-              message: 'Vaš zahtev je primljen i biće obrađen u najkraćem mogućem roku. Poslaćemo vam obaveštenje.',
+              message: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
               type: GavraNotificationType.info,
               duration: const Duration(seconds: 5),
             );
@@ -2263,7 +2263,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             GavraUI.showSnackBar(
               context,
-              message: 'Vaš zahtev je primljen i biće obrađen u najkraćem mogućem roku. Poslaćemo vam obaveštenje.',
+              message: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
               type: GavraNotificationType.info,
               duration: const Duration(seconds: 5),
             );
@@ -2271,7 +2271,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           debugPrint('✅ [BC] RADNIK: Zahtev sačuvan sa pending statusom');
         } else if (jeBcDnevniZahtev) {
-          // 📅 BC DNEVNI - Wait 10 min then check
+          // 📅 BC DNEVNI - Manual review by admin
           (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
           (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toUtc().toIso8601String();
 
@@ -2282,13 +2282,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
-          // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
+          // 🆕 INSERT U SEAT_REQUESTS TABELU SA STATUSOM 'manual'
           await SeatRequestService.insertSeatRequest(
             putnikId: putnikId,
             dan: dan,
             vreme: seatVreme,
             grad: 'bc',
             brojMesta: _putnikData['broj_mesta'] ?? 1,
+            status: 'manual', // 👈 Dnevni uvek idu na ručnu obradu
           );
 
           // 📝 LOG U DNEVNIK
@@ -2299,7 +2300,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               vreme: seatVreme,
               grad: 'bc',
               tipPutnika: 'Dnevni',
-              status: 'Čeka potvrdu (Pending)',
+              status: 'Čeka odobrenje admina (Manual)',
             );
           } catch (_) {}
 
@@ -2311,21 +2312,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             GavraUI.showSnackBar(
               context,
-              message: 'Vaš zahtev je primljen i biće obrađen u najkraćem mogućem roku. Poslaćemo vam obaveštenje.',
+              message: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
               type: GavraNotificationType.info,
               duration: const Duration(seconds: 5),
             );
           }
 
-          debugPrint('🎯 [BC] DNEVNI: Pending zahtev sačuvan');
+          debugPrint('🎯 [BC] DNEVNI: Manual zahtev sačuvan');
         } else if (jeVsZahtev) {
-          // 🚐 VS LOGIKA - Pending 10 minuta za SVE tipove putnika
-          debugPrint('🎯 [VS] ZAHTEV - Pending status, 10 min timer');
-
-          // 🆕 PROVERA TRANZITA ZA SNACKBAR
-          final polasciMap = _safeMap(_putnikData['polasci_po_danu']);
-          final danData = polasciMap[dan];
-          final jeUTranzitu = (danData is Map && danData['bc_status'] == 'confirmed' && (jeUcenik || jeRadnik));
+          // 🎯 VS LOGIKA - Manual za Dnevne, Pending 10 minuta za ostale
+          debugPrint('🎯 [VS] ZAHTEV - Tip: ${jeDnevni ? "Dnevni (Manual)" : "Ucenik/Radnik (Auto)"}');
 
           // Postavi status na pending
           (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
@@ -2338,24 +2334,28 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               .from('registrovani_putnici')
               .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
 
-          // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
+          // 🆕 INSERT U SEAT_REQUESTS TABELU
           await SeatRequestService.insertSeatRequest(
             putnikId: putnikId,
             dan: dan,
             vreme: seatVreme,
             grad: 'vs',
             brojMesta: _putnikData['broj_mesta'] ?? 1,
+            status: jeDnevni ? 'manual' : 'pending', // 👈 Dnevni manuelno, ostali auto
           );
 
           // 📝 LOG U DNEVNIK
           try {
+            String logStatus = 'Čeka potvrdu (Pending)';
+            if (jeDnevni) logStatus = 'Čeka odobrenje admina (Manual)';
+
             await VoznjeLogService.logZahtev(
               putnikId: putnikId,
               dan: dan,
               vreme: seatVreme,
               grad: 'vs',
-              tipPutnika: jeUcenik ? 'Učenik' : 'Radnik',
-              status: jeUTranzitu ? 'Prioritetni zahtev (Tranzit)' : 'Čeka potvrdu (Pending)',
+              tipPutnika: jeDnevni ? 'Dnevni' : (jeUcenik ? 'Učenik' : 'Radnik'),
+              status: logStatus,
             );
           } catch (_) {}
 
@@ -2367,14 +2367,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           if (mounted) {
             GavraUI.showSnackBar(
               context,
-              message:
-                  'Vaš zahtev za VS je primljen i biće obrađen u najkraćem mogućem roku. Poslaćemo vam obaveštenje.',
+              message: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
               type: GavraNotificationType.info,
               duration: const Duration(seconds: 5),
             );
           }
 
-          debugPrint('🎯 [VS] Pending zahtev sačuvan');
+          debugPrint('🎯 [VS] Zahtev sačuvan (${jeDnevni ? "Manual" : "Auto"})');
         } else {
           // ✅ NORMAL FLOW SAVE
           // Čuva promene direktno u bazu (za otkazivanje ili ne-kritične promene)

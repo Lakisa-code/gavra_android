@@ -140,6 +140,27 @@ class LocalNotificationService {
         debugPrint('⚠️ Error waking screen: $e');
       }
 
+      // 🎨 Specijalna obrada za seat_request_alternatives
+      if (payload != null) {
+        try {
+          final Map<String, dynamic> data = jsonDecode(payload);
+          if (data['type'] == 'seat_request_alternatives') {
+            await showSeatRequestAlternativesNotification(
+              id: data['id']?.toString() ?? '',
+              zeljenoVreme: data['vreme']?.toString() ?? '',
+              putnikId: data['putnik_id']?.toString() ?? '',
+              grad: data['grad']?.toString() ?? 'BC',
+              alternatives: List<String>.from(data['alternatives'] ?? []),
+              body: body,
+            );
+            _processingLocks.remove(dedupeKey);
+            return;
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error parsing payload for alternatives: $e');
+        }
+      }
+
       await flutterLocalNotificationsPlugin.show(
         DateTime.now().millisecondsSinceEpoch.remainder(100000),
         title,
@@ -249,9 +270,10 @@ class LocalNotificationService {
       if (terminPre != null || terminPosle != null) {
         final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
         bodyText =
-            'Nažalost, termin u $zeljeniTermin je popunjen 😔. Ali ne brinite, imamo slobodna mesta u ovim terminima: ${altTermini.join(", ")}';
+            'Trenutno nema slobodnih mesta za $zeljeniTermin. Ali ne brinite, imamo mesta u ovim terminima: ${altTermini.join(", ")}';
       } else {
-        bodyText = 'Nažalost, termin u $zeljeniTermin je popunjen 😔. Trenutno nemamo alternativnih termina.';
+        bodyText =
+            'Trenutno nema slobodnih mesta za $zeljeniTermin. Nažalost, nemamo dostupnih polazaka u blizini tog vremena. ❌';
       }
 
       await flutterLocalNotificationsPlugin.show(
@@ -389,6 +411,12 @@ class LocalNotificationService {
     NotificationResponse response,
   ) async {
     try {
+      // 🎫 Handle Seat Request alternativa action buttons
+      if (response.actionId != null && response.actionId!.startsWith('prihvati_alt_')) {
+        await _handleSeatRequestAlternativeAction(response);
+        return;
+      }
+
       // 🎫 Handle BC alternativa action buttons
       if (response.actionId != null && response.actionId!.startsWith('prihvati_')) {
         await _handleBcAlternativaAction(response);
@@ -761,8 +789,7 @@ class LocalNotificationService {
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ Zahtev primljen',
-        body:
-            '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+        body: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
         data: {'type': 'vs_waiting_confirmed', 'termin': zeljeniTermin},
       );
     } catch (e) {
@@ -831,7 +858,7 @@ class LocalNotificationService {
       }
 
       // Kreiraj body text
-      String bodyText = 'Nažalost, termin u $zeljeniTermin je popunjen 😔.';
+      String bodyText = 'Nažalost, u terminu $zeljeniTermin trenutno nema slobodnih mesta. ❌';
 
       if (isRushHourWaiting) {
         String alternativesPart = '';
@@ -1036,8 +1063,7 @@ class LocalNotificationService {
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ Zahtev primljen',
-        body:
-            '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+        body: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
         data: {'type': 'vs_waiting_confirmed', 'termin': zeljeniTermin},
       );
     } catch (e) {
@@ -1114,12 +1140,94 @@ class LocalNotificationService {
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ Zahtev primljen',
-        body:
-            '📨 Vaš zahtev je evidentiran! Proveravamo raspoloživost mesta i javljamo vam se u najkraćem mogućem roku!',
+        body: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
         data: {'type': 'vs_waiting_confirmed', 'termin': zeljeniTermin},
       );
     } catch (e) {
       // 🔇 Ignore
+    }
+  }
+
+  /// 🎫 Prikazuje notifikaciju sa alternativnim polascima (+/- 3 sata)
+  static Future<void> showSeatRequestAlternativesNotification({
+    required String id,
+    required String zeljenoVreme,
+    required String putnikId,
+    required String grad,
+    required List<String> alternatives,
+    required String body,
+  }) async {
+    try {
+      final payload = jsonEncode({
+        'type': 'seat_request_alternatives',
+        'id': id,
+        'putnikId': putnikId,
+        'grad': grad,
+        'zeljenoVreme': zeljenoVreme,
+        'alternatives': alternatives,
+      });
+
+      final actions = <AndroidNotificationAction>[];
+
+      // Dodaj prve dve alternative kao dugmiće
+      for (int i = 0; i < alternatives.length && i < 2; i++) {
+        final alt = alternatives[i];
+        final displayTime = alt.contains(':') ? '${alt.split(':')[0]}:${alt.split(':')[1]}' : alt;
+        actions.add(AndroidNotificationAction(
+          'prihvati_alt_$alt',
+          '✅ $displayTime',
+          showsUserInterface: true,
+        ));
+      }
+
+      // Dugme za odbijanje (zatvaranje)
+      actions.add(const AndroidNotificationAction(
+        'odbij_alt',
+        '❌ Odbij',
+        cancelNotification: true,
+      ));
+
+      await flutterLocalNotificationsPlugin.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        '🕐 Termin popunjen',
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'gavra_realtime_channel',
+            'Gavra Realtime Notifikacije',
+            importance: Importance.max,
+            priority: Priority.high,
+            actions: actions,
+            fullScreenIntent: true,
+            autoCancel: true,
+          ),
+        ),
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('❌ Error showing seat request alternatives notification: $e');
+    }
+  }
+
+  static Future<void> _handleSeatRequestAlternativeAction(NotificationResponse response) async {
+    try {
+      if (response.payload == null || response.actionId == null) return;
+      final data = jsonDecode(response.payload!);
+      final putnikId = data['putnik_id']; // Ispravljeno sa putnikId (ako je u payloadu bilo putnik_id)
+      final grad = data['grad'] ?? 'BC';
+      final datum = data['datum']; // Novo - preuzimamo datum iz originalnog zahteva
+
+      final selectedTime = response.actionId!.replaceFirst('prihvati_alt_', '');
+
+      // 🚀 PRIHVATI ALTERNATIVU - Šalje se kao standardni zahtev koji čeka 10 minuta
+      await SeatRequestService.acceptAlternative(
+        putnikId: putnikId,
+        novoVreme: selectedTime,
+        grad: grad,
+        datum: datum,
+      );
+    } catch (e) {
+      debugPrint('❌ Error handling seat request alternative action: $e');
     }
   }
 }

@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/admin_audit_service.dart'; // 🕵️ ADMIN AUDIT
 import '../services/kapacitet_service.dart';
-import '../services/slobodna_mesta_service.dart'; // 🚢 SMART TRANZIT
 import '../services/theme_manager.dart';
 import '../theme.dart';
 
@@ -257,50 +256,6 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
   Widget _buildGradTab(String grad, List<String> vremena, Map<String, Map<String, int>> kapacitet) {
     return Column(
       children: [
-        // 🚢 SMART TRANZIT INFO (Samo za Vršac)
-        if (grad == 'VS')
-          StreamBuilder<List<Map<String, dynamic>>>(
-            stream: SlobodnaMestaService.streamMissingTransitPassengers(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
-              final missingCount = snapshot.data!.length;
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.swap_horizontal_circle, color: Colors.orange),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'PROJEKTOVANO OPTEREĆENJE (VS)',
-                            style: TextStyle(
-                              color: Colors.orange,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            '$missingCount putnika u VS još nije rezervisalo povratak.',
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -453,4 +408,3 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
     );
   }
 }
-

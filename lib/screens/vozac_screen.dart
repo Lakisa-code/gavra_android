@@ -33,7 +33,6 @@ import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'dugovi_screen.dart';
-import 'tranzit_screen.dart';
 import 'welcome_screen.dart';
 
 /// 🚛 VOZAČ SCREEN
@@ -1765,24 +1764,40 @@ class _VozacScreenState extends State<VozacScreen> {
       return true;
     }).toList();
 
-    final Map<String, List<Putnik>> tranzitMap = {};
+    // 🔄 NOVI JEDNOSTAVAN BROJAČ POVRATAKA
+    // Grupišemo sve polaske po putniku (ID) da vidimo ko ima BC, a ko ima i VS
+    final Map<dynamic, Set<String>> putnikSmerovi = {};
+
     for (var p in sviPutnici) {
       if (p.jeOtkazan || p.jeOdsustvo || p.obrisan) continue;
       if (p.tipPutnika == 'posiljka') continue;
-      tranzitMap.putIfAbsent(p.ime, () => []).add(p);
+
+      final id = p.id;
+      if (id == null) continue;
+
+      putnikSmerovi.putIfAbsent(id, () => <String>{});
+
+      final gradLower = p.grad.toLowerCase();
+      if (gradLower.contains('bela crkva') || gradLower == 'bc') {
+        putnikSmerovi[id]!.add('bc');
+      } else if (gradLower.contains('vršac') || gradLower.contains('vrsac') || gradLower == 'vs') {
+        putnikSmerovi[id]!.add('vs');
+      }
     }
 
-    int tranzitUkupno = 0;
-    int tranzitZavrseno = 0;
+    int ukupnoPutnika = 0;
+    int saObaSmera = 0;
 
-    tranzitMap.forEach((ime, trips) {
-      final imaBC = trips.any((t) => t.grad == 'Bela Crkva');
-      final imaVS = trips.any((t) => t.grad == 'Vršac');
-      if (imaBC && imaVS) {
-        tranzitUkupno++;
-        if (trips.every((t) => t.jePokupljen)) {
-          tranzitZavrseno++;
-        }
+    final List<String> samoJedanSmerImena = [];
+
+    putnikSmerovi.forEach((id, smerovi) {
+      ukupnoPutnika++;
+      if (smerovi.contains('bc') && smerovi.contains('vs')) {
+        saObaSmera++;
+      } else {
+        final p = sviPutnici.firstWhere((element) => element.id == id);
+        final grad = smerovi.contains('bc') ? 'BC' : 'VS';
+        samoJedanSmerImena.add('${p.ime} ($grad)');
       }
     });
 
@@ -1836,24 +1851,146 @@ class _VozacScreenState extends State<VozacScreen> {
             ),
           ),
           const SizedBox(width: 6),
+          // 🔄 KOCKA ZA POVRATAK
           Expanded(
             child: InkWell(
               onTap: () {
-                Navigator.push(
+                _showPovratakStatPopup(
                   context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => TranzitScreen(currentDriver: _currentDriver!),
-                  ),
+                  'Povratak',
+                  '$saObaSmera/$ukupnoPutnika',
+                  samoJedanSmerImena,
+                  Colors.orange,
                 );
               },
               child: _buildStatBox(
-                '',
-                '$tranzitZavrseno/$tranzitUkupno',
+                'Povratak',
+                '$saObaSmera/$ukupnoPutnika',
                 Colors.orange,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 📊 POPUP ZA PRIKAZ POVRATKA SA SPISKOM
+  void _showPovratakStatPopup(
+    BuildContext context,
+    String label,
+    String value,
+    List<String> putniciJedanSmer,
+    Color color,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withOpacity(0.4),
+                Colors.black.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: color.withOpacity(0.5), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 15,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const Divider(color: Colors.white24, height: 24),
+              const Text(
+                'Samo jedan polazak:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orangeAccent,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.4,
+                ),
+                child: putniciJedanSmer.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'Svi putnici imaju oba smera! 🎉',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: putniciJedanSmer.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.person_outline, size: 16, color: Colors.white54),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    putniciJedanSmer[index],
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: color.withOpacity(0.3),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Zatvori'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

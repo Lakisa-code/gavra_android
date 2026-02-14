@@ -17,10 +17,8 @@ import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (na
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
-import 'services/ml_service.dart'; // 🧠 ML servis za trening modela
 import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
-import 'services/seat_request_service.dart';
 import 'services/slobodna_mesta_service.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
@@ -190,9 +188,6 @@ Future<void> _initAppServices() async {
   // NOTE: RouteService.setupRealtimeListener() je sada dio RealtimeManager.initializeAll()
   // NOTE: KapacitetService.startGlobalRealtimeListener() je sada dio RealtimeManager.initializeAll()
   unawaited(WeatherAlertService.checkAndSendWeatherAlerts());
-
-  // 🧠 Treniraj ML model za ocenjivanje putnika
-  unawaited(MLService.trainPassengerScoringModel());
 }
 
 class MyApp extends StatefulWidget {
@@ -221,7 +216,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     AdresaSupabaseService.dispose();
     VozacService.dispose();
     VozilaService.dispose();
-    SeatRequestService.dispose();
     VoznjeLogService.dispose();
     SlobodnaMestaService.dispose();
     AppSettingsService.dispose();

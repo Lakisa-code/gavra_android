@@ -1,0 +1,323 @@
+import 'package:flutter/material.dart';
+
+import '../services/seat_request_service.dart';
+import '../services/theme_manager.dart';
+import '../theme.dart';
+
+class SeatRequestsScreen extends StatefulWidget {
+  const SeatRequestsScreen({super.key});
+
+  @override
+  State<SeatRequestsScreen> createState() => _SeatRequestsScreenState();
+}
+
+class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: ThemeManager().currentGradient, // 🎨 Tema gradijent pozadina
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).glassBorder,
+                  width: 1.5,
+                ),
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Zahtevi Rezervacija',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(1, 1),
+                              blurRadius: 3,
+                              color: Colors.black54,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        body: StreamBuilder<List<Map<String, dynamic>>>(
+          stream: SeatRequestService.streamManualRequests(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator(color: Colors.white));
+            }
+
+            final zahtevi = snapshot.data ?? [];
+
+            if (zahtevi.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_outline, size: 80, color: Colors.white.withOpacity(0.5)),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Nema novih zahteva na čekanju',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+              itemCount: zahtevi.length,
+              itemBuilder: (context, index) {
+                final zahtev = zahtevi[index];
+                final putnik = zahtev['registrovani_putnici'] ?? {};
+                final ime = putnik['ime_prezime'] ?? 'Nepoznat putnik';
+                final telefon = putnik['telefon'] ?? 'Nema telefona';
+                final tip = putnik['tip'] ?? 'dnevni';
+                final grad = zahtev['grad'] == 'BC' ? 'Bela Crkva' : 'Vršac';
+                final datum = zahtev['datum'] ?? '';
+                final vreme = zahtev['zeljeno_vreme'] ?? '';
+                final id = zahtev['id'].toString();
+
+                // Određivanje boje i teksta za etiketu tipa putnika
+                Color tipColor;
+                String tipLabel;
+                if (tip.toString().toLowerCase() == 'posiljka') {
+                  tipColor = Colors.orange;
+                  tipLabel = '📦 POŠILJKA';
+                } else if (tip.toString().toLowerCase() == 'manual' || tip.toString().toLowerCase() == 'dnevni') {
+                  tipColor = Colors.blue;
+                  tipLabel = '🎟️ DNEVNI';
+                } else {
+                  tipColor = Colors.grey;
+                  tipLabel = tip.toString().toUpperCase();
+                }
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).glassContainer.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Theme.of(context).glassBorder,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      ime,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: tipColor.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: tipColor.withOpacity(0.5)),
+                                      ),
+                                      child: Text(
+                                        tipLabel,
+                                        style: TextStyle(
+                                          color: tipColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                ),
+                                child: Text(
+                                  grad,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(Icons.phone, size: 16, color: Colors.white.withOpacity(0.7)),
+                              const SizedBox(width: 10),
+                              Text(
+                                telefon,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Divider(color: Colors.white24, height: 1),
+                          ),
+                          Row(
+                            children: [
+                              const Icon(Icons.calendar_month, size: 20, color: Colors.amber),
+                              const SizedBox(width: 12),
+                              Text(
+                                '$datum ($vreme)',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _isLoading ? null : () => _approveZahtev(id, zahtev),
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  label: const Text('ODOBRI',
+                                      style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.1)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green.withOpacity(0.9),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _isLoading ? null : () => _rejectZahtev(id),
+                                  icon: const Icon(Icons.cancel_outlined),
+                                  label: const Text('ODBIJ',
+                                      style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.1)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red.withOpacity(0.8),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _approveZahtev(String id, Map<String, dynamic> zahtev) async {
+    setState(() => _isLoading = true);
+    try {
+      final success = await SeatRequestService.approveRequest(id);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✅ Zahtev uspešno odobren'),
+            backgroundColor: Colors.green.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _rejectZahtev(String id) async {
+    setState(() => _isLoading = true);
+    try {
+      final success = await SeatRequestService.rejectRequest(id);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('❌ Zahtev je odbijen'),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+}

@@ -43,10 +43,6 @@ class SlobodnaMestaService {
   static SupabaseClient get _supabase => supabase;
   static final _putnikService = PutnikService();
 
-  static StreamSubscription? _missingTransitSubscription;
-  static final StreamController<List<Map<String, dynamic>>> _missingTransitController =
-      StreamController<List<Map<String, dynamic>>>.broadcast();
-
   static StreamSubscription? _projectedStatsSubscription;
   static StreamSubscription? _kapacitetStatsSubscription;
   static final StreamController<Map<String, dynamic>> _projectedStatsController =
@@ -704,85 +700,9 @@ class SlobodnaMestaService {
     }
   }
 
-  /// Dohvati listu putnika koji su jutros došli u VS a nisu rezervisali povratak
-  static Future<List<Map<String, dynamic>>> getMissingTransitPassengers() async {
-    try {
-      final now = DateTime.now();
-      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      final danDanas = dani[now.weekday - 1];
-
-      // Vikendom nema standardne tranzitne logike za radnike/učenike obično
-      if (now.weekday > 5) return [];
-
-      final response = await _supabase
-          .from('registrovani_putnici')
-          .select('id, putnik_ime, tip, polasci_po_danu, broj_mesta') // Dodat broj_mesta
-          .eq('aktivan', true)
-          .eq('obrisan', false)
-          .eq('is_duplicate', false)
-          .inFilter('tip', ['ucenik', 'radnik']);
-
-      final results = <Map<String, dynamic>>[];
-
-      for (var row in response) {
-        final polasci = _getPolasciMap(row['polasci_po_danu']);
-        if (polasci == null || polasci[danDanas] == null) continue;
-
-        final danas = polasci[danDanas] as Map<String, dynamic>;
-        final bcStatus = danas['bc_status']?.toString();
-        final vsVreme = danas['vs']?.toString();
-
-        // Uslov: confirmed BC jutros AND (nema VS vremena OR VS status nije confirmed/pending)
-        if (bcStatus == 'confirmed' && (vsVreme == null || vsVreme == '' || vsVreme == 'null')) {
-          results.add({
-            'id': row['id'],
-            'ime': row['putnik_ime'],
-            'tip': row['tip'],
-            'broj_mesta': (row['broj_mesta'] as num?)?.toInt() ?? 1,
-          });
-        }
-      }
-
-      return results;
-    } catch (e) {
-      return [];
-    }
-  }
-
-  /// Stream za missing transit passengers sa realtime osvežavanjem
-  static Stream<List<Map<String, dynamic>>> streamMissingTransitPassengers() {
-    if (_missingTransitSubscription == null) {
-      _missingTransitSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
-        _refreshMissingTransitStream();
-      });
-      // Inicijalno učitavanje
-      _refreshMissingTransitStream();
-    }
-    return _missingTransitController.stream;
-  }
-
-  static void _refreshMissingTransitStream() async {
-    final missing = await getMissingTransitPassengers();
-    if (!_missingTransitController.isClosed) {
-      _missingTransitController.add(missing);
-    }
-  }
-
-  /// Ručno okida slanje podsetnika svim tranzitnim putnicima koji nisu rezervisali povratak
-  static Future<int> triggerTransitReminders() async {
-    try {
-      final response = await _supabase.rpc('notify_missing_transit_passengers');
-      return response as int? ?? 0;
-    } catch (e) {
-      debugPrint('❌ Greška pri slanju podsetnika: $e');
-      return 0;
-    }
-  }
-
-  /// Izračunava projektovano opterećenje za grad i vreme, uključujući i one koji nisu rezervisali
+  /// Izračunava projektovano opterećenje za grad i vreme
   static Future<Map<String, dynamic>> getProjectedOccupancyStats() async {
     try {
-      final missingList = await getMissingTransitPassengers();
       final stats = await getSlobodnaMesta();
 
       // 1. Zbir već potvrđenih i pending mesta za VS polaske (povratak)
@@ -792,81 +712,21 @@ class SlobodnaMestaService {
         totalReserved += s.zauzetaMesta;
       }
 
-      // 2. Putnici koji su u VS a nemaju potvrđen povratak
-      final int missingCount = missingList.length;
-
       return {
         'reservations_count': totalReserved,
-        'missing_count': missingCount,
-        'missing_total': missingCount,
-        'missing_ucenici': missingList.where((p) => p['tip'] == 'ucenik').length,
-        'missing_radnici': missingList.where((p) => p['tip'] == 'radnik').length,
+        'missing_count': 0,
+        'missing_list': [],
       };
     } catch (e) {
       return {
         'reservations_count': 0,
         'missing_count': 0,
+        'missing_list': [],
       };
     }
   }
 
-  /// Stream za projected occupancy stats sa realtime osvežavanjem
-  static Stream<Map<String, dynamic>> streamProjectedOccupancyStats() {
-    if (_projectedStatsSubscription == null) {
-      // Listen to registrovani_putnici
-      _projectedStatsSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
-        _refreshProjectedStatsStream();
-      });
-      // Listen to kapacitet_polazaka (ako još nije pretplaćen iz drugog servisa)
-      _kapacitetStatsSubscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
-        _refreshProjectedStatsStream();
-      });
-      // Inicijalno učitavanje
-      _refreshProjectedStatsStream();
-    }
-    return _projectedStatsController.stream;
-  }
-
-  static void _refreshProjectedStatsStream() async {
-    final stats = await getProjectedOccupancyStats();
-    if (!_projectedStatsController.isClosed) {
-      _projectedStatsController.add(stats);
-    }
-  }
-
-  /// 🧹 Čisti realtime subscriptions
-  static void dispose() {
-    _missingTransitSubscription?.cancel();
-    _missingTransitSubscription = null;
-    _missingTransitController.close();
-
-    _projectedStatsSubscription?.cancel();
-    _projectedStatsSubscription = null;
-    _kapacitetStatsSubscription?.cancel();
-    _kapacitetStatsSubscription = null;
-    _projectedStatsController.close();
-
-    // Otkaži realtime subscriptions
-    RealtimeManager.instance.unsubscribe('registrovani_putnici');
-    RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
-  }
-
-  /// 🛡️ Sigurno parsira polasci_po_danu (Map ili String)
-  static Map<String, dynamic>? _getPolasciMap(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is Map) return Map<String, dynamic>.from(raw);
-    if (raw is String) {
-      try {
-        return json.decode(raw) as Map<String, dynamic>?;
-      } catch (e) {
-        debugPrint('Greška pri parsu polasci_po_danu: $e');
-        return null;
-      }
-    }
-    return null;
-  }
-
-  /// 🆕 Dohvati broj zauzetih mesta za VS za dati dan i vreme
+  /// Dohvati broj slobodnih mesta za određeni grad i vreme
   static Future<int> getOccupiedSeatsVs(String dan, String vreme) async {
     try {
       final response =
@@ -926,5 +786,33 @@ class SlobodnaMestaService {
     } catch (e) {
       return 0;
     }
+  }
+
+  /// 🧹 Čisti realtime subscriptions
+  static void dispose() {
+    _projectedStatsSubscription?.cancel();
+    _projectedStatsSubscription = null;
+    _kapacitetStatsSubscription?.cancel();
+    _kapacitetStatsSubscription = null;
+    _projectedStatsController.close();
+
+    // Otkaži realtime subscriptions
+    RealtimeManager.instance.unsubscribe('registrovani_putnici');
+    RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
+  }
+
+  /// 🛡️ Sigurno parsira polasci_po_danu (Map ili String)
+  static Map<String, dynamic>? _getPolasciMap(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String) {
+      try {
+        return json.decode(raw) as Map<String, dynamic>?;
+      } catch (e) {
+        debugPrint('Greška pri parsu polasci_po_danu: $e');
+        return null;
+      }
+    }
+    return null;
   }
 }

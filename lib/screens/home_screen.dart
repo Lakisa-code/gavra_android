@@ -25,6 +25,7 @@ import '../services/racun_service.dart';
 import '../services/realtime/realtime_manager.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart';
+import '../services/seat_request_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
@@ -43,6 +44,7 @@ import '../widgets/registracija_countdown_widget.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'promena_sifre_screen.dart';
+import 'seat_requests_screen.dart';
 import 'vozac_screen.dart';
 import 'welcome_screen.dart';
 
@@ -71,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Real-time subscription variables
   StreamSubscription<dynamic>? _realtimeSubscription;
   StreamSubscription<dynamic>? _networkStatusSubscription;
+  Timer? _dispecerTimer; // 🤖 Tajmer za digitalnog dispečera
 
   final List<String> _dani = DayConstants.dayNamesInternal.sublist(0, 5); // Samo radni dani (Pon-Pet)
 
@@ -136,6 +139,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ✅ KORISTI UTILS FUNKCIJU ZA DROPDOWN DAN
   String _getTodayName() {
+    final today = DateTime.now();
+    // 🎯 FIX: Vikendom (subota=6, nedelja=7) prikaži ponedeljak jer radni dani su samo Pon-Pet
+    if (today.weekday == DateTime.saturday || today.weekday == DateTime.sunday) {
+      return 'Ponedeljak';
+    }
     return app_date_utils.DateUtils.getTodayFullName();
   }
 
@@ -179,16 +187,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
-    final todayName = _getTodayName();
-    // Home screen only supports weekdays, default to Monday for weekends
-    _selectedDay = ['Subota', 'Nedelja'].contains(todayName) ? 'Ponedeljak' : todayName;
-
-    // 🔧 POPRAVLJENO: Inicijalizacija bez blokiranja UI
-    _initializeAsync();
+    _selectedDay = _getTodayName();
+    _initializeData();
+    _setupRealtimeMonitoring(); // 🔄 Popravljeno ime metode
+    _startDigitalDispecer(); // 🤖 Pokreni dispečera
   }
 
-  Future<void> _initializeAsync() async {
+  /// 🤖 POKREĆE DIGITALNOG DISPEČERA
+  /// Svakih 5 minuta proverava bazu i "čisti" stare zahteve
+  void _startDigitalDispecer() {
+    // 1. Odmah okini jednu proveru
+    SeatRequestService.triggerDigitalDispecer();
+
+    // 2. Postavi periodičnu proveru
+    _dispecerTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      if (mounted) {
+        SeatRequestService.triggerDigitalDispecer();
+      }
+    });
+  }
+
+  void _initializeData() async {
     try {
       await _initializeCurrentDriver();
       // 🔒 If the current driver is missing or invalid, redirect to welcome/login
@@ -2406,6 +2425,64 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               },
                             ),
                           ),
+                        if (AdminSecurityService.isAdmin(_currentDriver)) ...[
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: StreamBuilder<int>(
+                              stream: SeatRequestService.streamManualRequestCount(),
+                              builder: (context, snapshot) {
+                                final count = snapshot.data ?? 0;
+                                return Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    _HomeScreenButton(
+                                      label: 'Zahtevi',
+                                      icon: Icons.notifications_active,
+                                      onTap: () {
+                                        AnimatedNavigation.pushSmooth(
+                                          context,
+                                          const SeatRequestsScreen(),
+                                        );
+                                      },
+                                    ),
+                                    if (count > 0)
+                                      Positioned(
+                                        right: 8,
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black26,
+                                                blurRadius: 4,
+                                                offset: Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 20,
+                                            minHeight: 20,
+                                          ),
+                                          child: Text(
+                                            '$count',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                         const SizedBox(width: 4),
                         if (AdminSecurityService.isAdmin(_currentDriver))
                           Expanded(
@@ -2717,6 +2794,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       _realtimeSubscription?.cancel();
       _networkStatusSubscription?.cancel();
+      _dispecerTimer?.cancel();
     } catch (e) {
       // Silently ignore
     }

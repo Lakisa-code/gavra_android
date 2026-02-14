@@ -2,7 +2,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'realtime_notification_service.dart';
 
 /// 🏆 MODEL ZA REPUTACIJU PUTNIKA
 class PassengerStats {
@@ -32,8 +31,6 @@ class MLChampionService extends ChangeNotifier {
   final Map<String, PassengerStats> _statsMap = <String, PassengerStats>{};
   final List<ProposedMessage> _proposedMessages = [];
 
-  bool _isAutopilotEnabled = false;
-
   // 📈 STATISTIKE
   double _globalMeanScore = 0.0;
   final double _globalStdDev = 0.0;
@@ -47,7 +44,6 @@ class MLChampionService extends ChangeNotifier {
   MLChampionService._internal();
 
   List<ProposedMessage> get proposedMessages => List.unmodifiable(_proposedMessages);
-  bool get isAutopilotEnabled => _isAutopilotEnabled;
 
   double get globalMeanScore => _globalMeanScore;
   double get globalStdDev => _globalStdDev;
@@ -60,12 +56,6 @@ class MLChampionService extends ChangeNotifier {
         double cancelRate = p.cancellations / p.totalTrips;
         return cancelRate > 0.4; // Više od 40% otkazivanja je anomalija
       }).toList();
-
-  void toggleAutopilot(bool value) {
-    _isAutopilotEnabled = value;
-    if (kDebugMode) print('🏆 [ML Champion] Autopilot: ${value ? 'ON' : 'OFF'}');
-    notifyListeners();
-  }
 
   /// 🚀 POKRENI
   Future<void> start() async {
@@ -130,7 +120,7 @@ class MLChampionService extends ChangeNotifier {
         cancellations: cancels,
       );
 
-      // PROVERA ZA AUTOPILOT ILI SAVET
+      // PROVERA ZA SAVET
       if (score < 3.0 && !_isAlreadyProposed(id)) {
         _proposeAction(id, name, 'Kritično loša reputacija. Potrebna opomena.', true);
       } else if (score > 9.0 && total > 20 && !_isAlreadyProposed(id)) {
@@ -152,30 +142,6 @@ class MLChampionService extends ChangeNotifier {
       isUrgent: isUrgent,
     );
     _proposedMessages.add(message);
-
-    if (_isAutopilotEnabled) {
-      _executeAutonomousMessage(message);
-    }
-  }
-
-  Future<void> _executeAutonomousMessage(ProposedMessage msg) async {
-    // 🤖 AKCIJA
-    try {
-      await _supabase.from('admin_audit_logs').insert({
-        'action_type': 'CHAMPION_AUTOPILOT',
-        'details': 'Slanje poruke putniku ${msg.passengerName}: ${msg.reason}',
-        'metadata': {'score': _statsMap[msg.passengerId]?.score},
-      });
-
-      // 📲 Prebačeno na Supabase Push (Adminima ide obaveštenje o akciji autopilota)
-      RealtimeNotificationService.sendNotificationToAdmins(
-        title: '🤖 CHAMPION AUTOPILOT',
-        body: 'Poslata poruka: ${msg.passengerName}',
-        data: {'type': 'champion_autopilot', 'passenger_id': msg.passengerId},
-      );
-    } catch (e) {
-      if (kDebugMode) print('❌ [Autopilot] Greška: $e');
-    }
   }
 }
 

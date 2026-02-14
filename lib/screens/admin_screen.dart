@@ -11,7 +11,6 @@ import '../services/local_notification_service.dart';
 import '../services/pin_zahtev_service.dart'; // 🔑 PIN ZAHTEVI
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
-import '../services/slobodna_mesta_service.dart'; // 🎫 SMART TRANZIT
 import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
 import '../services/vozac_mapping_service.dart'; // 🗺️ VOZAC MAPIRANJE
@@ -28,9 +27,8 @@ import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'odrzavanje_screen.dart'; // 🚛 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 🔑 PIN ZAHTEVI
-import 'registrovani_putnici_screen.dart'; // DODANO za mesecne putnike
-import 'tranzit_screen.dart'; // 🛰️ SMART TRANZIT
-import 'vozac_screen.dart'; // DODANO za vozac screen
+import 'registrovani_putnici_screen.dart';
+import 'vozac_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -275,7 +273,7 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  // Mapiranje punih imena dana u skraćnice za filtriranje
+  // Mapiranje punih imena dana u skraćice za filtriranje
   String _getShortDayName(String fullDayName) {
     final dayMapping = {
       'ponedeljak': 'Pon',
@@ -1150,53 +1148,6 @@ class _AdminScreenState extends State<AdminScreen> {
                         if (_currentDriver?.toLowerCase() == 'bojan') ...[
                           // SMS test i debug funkcionalnost uklonjena - servis radi u pozadini
                         ],
-                        // 🛰️ SMART TRANZIT - EARLY WARNING
-                        StreamBuilder<List<Map<String, dynamic>>>(
-                          stream: SlobodnaMestaService.streamMissingTransitPassengers(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
-                            final missing = snapshot.data!;
-                            return InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                    builder: (context) => const TranzitScreen(currentDriver: 'admin')),
-                              ),
-                              child: Container(
-                                margin: const EdgeInsets.only(top: 8),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'TRANZIT ALARM: ${missing.length} PUTNIKA',
-                                            style: const TextStyle(
-                                                color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
-                                          ),
-                                          const Text(
-                                            'Putnici u VS su bez rezervacije povratka.',
-                                            style: TextStyle(color: Colors.white, fontSize: 13),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(Icons.arrow_forward_ios, color: Colors.orange, size: 16),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
                       ],
                     ),
                   ),

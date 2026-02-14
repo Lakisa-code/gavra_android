@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'realtime_notification_service.dart';
 import 'voznje_log_service.dart';
 
 class FuelInventory {
@@ -235,42 +234,7 @@ class MLFinanceAutonomousService extends ChangeNotifier {
   }
 
   void _executeAutopilotActions() {
-    if (_inventory.totalDebt > 1200000) {
-      _logAudit(
-          'FINANCE_CRITICAL_DEBT', 'Dug: ${_inventory.totalDebt.toStringAsFixed(0)} RSD. Slanje upozorenja adminu.');
-
-      // 📲 Prebačeno na Supabase Push (umesto lokalne notifikacije)
-      RealtimeNotificationService.sendNotificationToAdmins(
-        title: '🚨 BEBA RAČUNOVOĐA: DUG!',
-        body: 'Dug je prešao kritičnu granicu! Trenutno: ${_inventory.totalDebt.toStringAsFixed(0)} RSD.',
-        data: {'type': 'finance_alert', 'sub_type': 'debt'},
-      );
-    }
-
-    if (_inventory.litersInStock < 200) {
-      _logAudit('FINANCE_LOW_FUEL', 'Zalihe: ${_inventory.litersInStock.toStringAsFixed(0)}L. Alarm za nabavku.');
-
-      // 📲 Prebačeno na Supabase Push
-      RealtimeNotificationService.sendNotificationToAdmins(
-        title: '⛽ BEBA RAČUNOVOĐA: GORIVO!',
-        body: 'Zalihe su kritično niske (${_inventory.litersInStock.toStringAsFixed(0)}L). Naruči odmah!',
-        data: {'type': 'finance_alert', 'sub_type': 'fuel'},
-      );
-    }
-  }
-
-  Future<void> _logAudit(String action, String details) async {
-    try {
-      await _supabase.from('admin_audit_logs').insert({
-        'action_type': action,
-        'details': details,
-        'admin_name': 'system',
-        'inventory_liters': _inventory.litersInStock, // DIREKTNA KOLONA
-        'total_debt': _inventory.totalDebt, // DIREKTNA KOLONA
-      });
-    } catch (e) {
-      if (kDebugMode) print('❌ [ML Finance] Greška pri logovanju audita: $e');
-    }
+    // 🔕 UKLONJENO: Alarm za gorivo i dug su isključeni po nalogu
   }
 
   void _subscribeToTransactions() {
