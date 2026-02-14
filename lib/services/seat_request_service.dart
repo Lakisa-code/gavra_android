@@ -21,31 +21,34 @@ class SeatRequestService {
     String? fixedDate, // 📅 Opciono: Tačan datum ako nije potreban proračun sutrašnjice
   }) async {
     try {
-      // 🛡️ PROVERA: Da li već postoji aktivan zahtev (pending ili manual)?
-      // Prema logici iz VS LOGIKA.md i BC LOGIKA.md, putnik ne može slati novi dok se stari ne obradi.
+      final datum = fixedDate != null ? DateTime.parse(fixedDate) : getNextDateForDay(DateTime.now(), dan);
+      final datumStr = datum.toIso8601String().split('T')[0];
+
+      // 🛡️ PROVERA: Da li već postoji aktivan zahtev za OVAJ GRAD i DATUM (pending ili manual)?
+      // Razdvojeni BC i VS zahtevi po danima - putnik može imati jedan aktivan po smeru za svaki dan
       final activeResp = await _supabase
           .from('seat_requests')
           .select('id')
           .eq('putnik_id', putnikId)
+          .eq('grad', grad.toUpperCase())
+          .eq('datum', datumStr)
           .inFilter('status', ['pending', 'manual']).maybeSingle();
 
       if (activeResp != null) {
-        debugPrint('⚠️ [SeatRequestService] Putnik $putnikId već ima aktivan zahtev. Blokiram novi.');
+        debugPrint(
+            '⚠️ [SeatRequestService] Putnik $putnikId već ima aktivan ${grad.toUpperCase()} zahtev za $datumStr. Blokiram novi.');
         return;
       }
-
-      final datum = fixedDate != null ? DateTime.parse(fixedDate) : getNextDateForDay(DateTime.now(), dan);
 
       await _supabase.from('seat_requests').insert({
         'putnik_id': putnikId,
         'grad': grad.toUpperCase(),
-        'datum': datum.toIso8601String().split('T')[0],
+        'datum': datumStr,
         'zeljeno_vreme': vreme,
         'status': status,
         'broj_mesta': brojMesta,
       });
-      debugPrint(
-          '✅ [SeatRequestService] Inserted for $grad $vreme on $dan (Datum: ${datum.toIso8601String().split('T')[0]})');
+      debugPrint('✅ [SeatRequestService] Inserted for $grad $vreme on $dan (Datum: $datumStr)');
 
       // 📲 POŠALJI NOTIFIKACIJU PUTNIKU (Dogovorena "fer" poruka)
       await RealtimeNotificationService.sendNotificationToPutnik(

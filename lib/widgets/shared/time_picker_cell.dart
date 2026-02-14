@@ -451,27 +451,7 @@ class TimePickerCell extends StatelessWidget {
                           color: value == null || value!.isEmpty ? Colors.green : Colors.white54,
                         ),
                         onTap: () async {
-                          // Ako već postoji termin, pitaj za potvrdu
-                          if (value != null && value!.isNotEmpty) {
-                            final potvrda = await showDialog<bool>(
-                              context: dialogContext,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Potvrda otkazivanja'),
-                                content: const Text('Da li ste sigurni da želite da otkažete termin?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(ctx).pop(false),
-                                    child: const Text('Ne'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.of(ctx).pop(true),
-                                    child: const Text('Da', style: TextStyle(color: Colors.red)),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (potvrda != true) return;
-                          }
+                          // Uklonjena potvrda otkazivanja po zahtevu korisnika
                           onChanged(null);
                           if (dialogContext.mounted) {
                             Navigator.of(dialogContext).pop();

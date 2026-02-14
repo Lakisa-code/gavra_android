@@ -65,8 +65,10 @@ DECLARE
     json_key_ceka text;
     json_key_vreme text;
     trenutni_polasci jsonb;
+    current_polasci jsonb;
     dan_data jsonb;
     is_bc_student_guaranteed boolean;
+    new_radni_dani text;
 BEGIN
     -- 1. Dohvati podatke o zahtevu i putniku
     SELECT * INTO req_record FROM seat_requests s WHERE s.id = req_id;
@@ -123,11 +125,25 @@ BEGIN
         dan_data := dan_data || jsonb_build_object(json_key_status, 'rejected');
     END IF;
 
+    current_polasci := jsonb_set(COALESCE(trenutni_polasci, '{}'::jsonb), ARRAY[dan_kratica], dan_data);
+
+    -- Izračunaj radni_dani na osnovu novog stanja
+    SELECT string_agg(key, ',') INTO new_radni_dani
+    FROM (
+        SELECT key
+        FROM jsonb_each(current_polasci)
+        WHERE (value->>'bc' IS NOT NULL AND value->>'bc' != '' AND value->>'bc' != 'null')
+           OR (value->>'vs' IS NOT NULL AND value->>'vs' != '' AND value->>'vs' != 'null')
+        ORDER BY CASE key
+            WHEN 'pon' THEN 1 WHEN 'uto' THEN 2 WHEN 'sre' THEN 3 WHEN 'cet' THEN 4
+            WHEN 'pet' THEN 5 WHEN 'sub' THEN 6 WHEN 'ned' THEN 7 ELSE 8 END
+    ) sub;
+
     UPDATE registrovani_putnici 
-    SET polasci_po_danu = jsonb_set(polasci_po_danu, ARRAY[dan_kratica], dan_data),
+    SET polasci_po_danu = current_polasci,
+        radni_dani = COALESCE(new_radni_dani, ''),
         updated_at = now()
     WHERE id = putnik_record.id;
-
 END;
 $$ LANGUAGE plpgsql;
 
@@ -148,9 +164,19 @@ BEGIN
         JOIN registrovani_putnici rp ON sr.putnik_id = rp.id
         WHERE sr.status = 'pending' 
           AND (
-            -- 🟢 SLUČAJ A: Standardni zahtevi
+            -- 👷 SLCUČAJ RADNIK (BC): čeka se 5 minuta
+            (
+                lower(rp.tip) = 'radnik' 
+                AND upper(sr.grad) = 'BC' 
+                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
+            )
+            OR
+            -- 🟢 SLUČAJ OSTALI: standardnih 10 minuta (BC Učenik pre 16h, VS svi)
             (
                 NOT (
+                    lower(rp.tip) = 'radnik' AND upper(sr.grad) = 'BC'
+                )
+                AND NOT (
                     lower(rp.tip) = 'ucenik' 
                     AND upper(sr.grad) = 'BC' 
                     AND sr.datum = (CURRENT_DATE + 1)
@@ -189,5 +215,69 @@ BEGIN
     END LOOP;
 
     RETURN processed_records;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- 5. POMOĆNA FUNKCIJA: Atomski update polaska
+-- ==========================================
+CREATE OR REPLACE FUNCTION update_putnik_polazak_v2(
+    p_id UUID,
+    p_dan TEXT,
+    p_grad TEXT,
+    p_vreme TEXT,
+    p_status TEXT DEFAULT NULL,
+    p_ceka_od TEXT DEFAULT NULL,
+    p_otkazano TEXT DEFAULT NULL,
+    p_otkazano_vreme TEXT DEFAULT NULL,
+    p_otkazao_vozac TEXT DEFAULT NULL
+) RETURNS void AS $$
+DECLARE
+    current_data jsonb;
+    dan_data jsonb;
+    new_radni_dani text;
+BEGIN
+    -- Zaključaj red za ažuriranje ( Race Condition prevention )
+    SELECT polasci_po_danu INTO current_data 
+    FROM registrovani_putnici 
+    WHERE id = p_id FOR UPDATE;
+
+    -- Inicijalizuj dan ako ne postoji
+    dan_data := COALESCE(current_data->p_dan, '{"bc": null, "vs": null}'::jsonb);
+
+    -- Postavi nove vrednosti
+    dan_data := jsonb_set(dan_data, ARRAY[p_grad], to_jsonb(p_vreme));
+    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_status'], to_jsonb(p_status));
+    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_ceka_od'], to_jsonb(p_ceka_od));
+    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_otkazano'], to_jsonb(p_otkazano));
+    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_otkazano_vreme'], to_jsonb(p_otkazano_vreme));
+    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_otkazao_vozac'], to_jsonb(p_otkazao_vozac));
+
+    -- Ukloni resolved_at ako status nije confirmed/approved
+    IF p_status IS NULL OR (p_status != 'confirmed' AND p_status != 'approved') THEN
+        dan_data := dan_data - (p_grad || '_resolved_at');
+    END IF;
+
+    -- Formiraj finalni JSON
+    current_data := jsonb_set(COALESCE(current_data, '{}'::jsonb), ARRAY[p_dan], dan_data);
+
+    -- Automatski izračunaj radni_dani string
+    SELECT string_agg(key, ',') INTO new_radni_dani
+    FROM (
+        SELECT key
+        FROM jsonb_each(current_data)
+        WHERE (value->>'bc' IS NOT NULL AND value->>'bc' != '' AND value->>'bc' != 'null')
+           OR (value->>'vs' IS NOT NULL AND value->>'vs' != '' AND value->>'vs' != 'null')
+        ORDER BY CASE key
+            WHEN 'pon' THEN 1 WHEN 'uto' THEN 2 WHEN 'sre' THEN 3 WHEN 'cet' THEN 4
+            WHEN 'pet' THEN 5 WHEN 'sub' THEN 6 WHEN 'ned' THEN 7 ELSE 8 END
+    ) sub;
+
+    -- Ažuriraj bazu sa svim podacima
+    UPDATE registrovani_putnici 
+    SET polasci_po_danu = current_data,
+        radni_dani = COALESCE(new_radni_dani, ''),
+        updated_at = now()
+    WHERE id = p_id;
 END;
 $$ LANGUAGE plpgsql;

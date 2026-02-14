@@ -17,6 +17,7 @@ import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikaci
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/realtime/realtime_manager.dart';
+import '../services/realtime_notification_service.dart'; // 🔔 Push notifikacije za vozače
 import '../services/seat_request_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera slobodnih mesta
 import '../services/theme_manager.dart';
@@ -427,44 +428,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   /// 🛡️ HELPER: Merge-uje nove promene sa postojećim markerima u bazi
   /// Čuva bc_pokupljeno, bc_placeno, vs_pokupljeno, vs_placeno i ostale markere
-  Future<Map<String, dynamic>> _mergePolasciSaBazom(
-    String putnikId,
-    Map<String, dynamic> noviPolasci,
-  ) async {
-    try {
-      // Učitaj trenutno stanje iz baze
-      final response =
-          await supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnikId).maybeSingle();
-
-      if (response == null) return noviPolasci;
-
-      final postojeciPolasci = _safeMap(response['polasci_po_danu']);
-      final mergedPolasci = Map<String, dynamic>.from(postojeciPolasci);
-
-      // Merge svakog dana
-      for (final dan in noviPolasci.keys) {
-        if (!mergedPolasci.containsKey(dan)) {
-          mergedPolasci[dan] = noviPolasci[dan];
-        } else {
-          final postojeciDan = Map<String, dynamic>.from(mergedPolasci[dan] as Map);
-          final noviDan = noviPolasci[dan] as Map<String, dynamic>;
-
-          // Merge: novi podaci + čuvanje starih markera
-          for (final key in noviDan.keys) {
-            postojeciDan[key] = noviDan[key];
-          }
-
-          mergedPolasci[dan] = postojeciDan;
-        }
-      }
-
-      return mergedPolasci;
-    } catch (e) {
-      debugPrint('❌ [Merge] Greška: $e');
-      return noviPolasci;
-    }
-  }
-
   // ❌ UKLONJENO: _checkAndResolvePendingRequests() funkcija
   // Razlog: Client-side pending resolution je konflikovao sa Supabase cron jobs
   // Sva pending logika se sada obrađuje server-side putem:
@@ -1722,6 +1685,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     ),
 
                     // ─────────── Divider ───────────
+
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
@@ -2027,7 +1991,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     debugPrint('🚀 [BC] _updatePolazak pozvan: dan=$dan, tipGrad=$tipGrad, novoVreme=$novoVreme');
 
     // 🔔 PROVERA NOTIFIKACIJA PRE ZAKAZIVANJA
-    // Ako korisnik pokušava da zakaže (novoVreme != null) a notifikacije su ugašene, pitaj ga da ih upali
     if (novoVreme != null && (_notificationStatus.isDenied || _notificationStatus.isPermanentlyDenied)) {
       final shouldEnable = await showDialog<bool>(
         context: context,
@@ -2060,390 +2023,184 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       if (shouldEnable == true) {
         await _requestNotificationPermission();
-        // Ako je i dalje denied nakon pokušaja, možda odustane, ali nastavljamo sa zakazivanjem
       }
     }
 
+    final putnikId = _putnikData['id']?.toString();
+    if (putnikId == null) return;
+
+    final tipPutnika = (_putnikData['tip'] ?? '').toString().toLowerCase();
+    final jeUcenik = tipPutnika.contains('ucenik');
+    final jeRadnik = tipPutnika.contains('radnik');
+    final jeDnevni =
+        tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka') || tipPutnika.contains('pošiljka');
+
+    final String? normalizedVreme = novoVreme == null ? null : RegistrovaniHelpers.normalizeTime(novoVreme);
+    final String seatVreme =
+        (normalizedVreme != null && normalizedVreme.isNotEmpty) ? normalizedVreme : (novoVreme ?? '');
+
+    String? rpcStatus;
+    String? rpcCekaOd;
+    String? rpcOtkazano;
+    String? rpcOtkazanoVreme;
+    String? rpcOtkazaoVozac;
+
+    if (normalizedVreme == null || normalizedVreme.isEmpty) {
+      // Otkazivanje
+      final staroPolasci = _safeMap(_putnikData['polasci_po_danu']);
+      final staroDanData = _safeMap(staroPolasci[dan]);
+      final staroVreme = staroDanData[tipGrad]?.toString();
+      final staroVremeNorm = RegistrovaniHelpers.normalizeTime(staroVreme ?? '');
+
+      rpcOtkazano = DateTime.now().toUtc().toIso8601String();
+      rpcOtkazaoVozac = 'Putnik';
+      if (staroVreme != null && staroVreme.isNotEmpty) {
+        rpcOtkazanoVreme = (staroVremeNorm != null && staroVremeNorm.isNotEmpty) ? staroVremeNorm : staroVreme;
+      }
+    } else {
+      // Zakazivanje
+      final jeBcUcenikZahtev = tipGrad == 'bc' && jeUcenik;
+      final jeBcRadnikZahtev = tipGrad == 'bc' && jeRadnik;
+      final jeVsZahtev = tipGrad == 'vs'; // I VS ide u pending na 10 min da dispečer može da reaguje
+
+      if (jeBcUcenikZahtev || jeBcRadnikZahtev || jeVsZahtev) {
+        rpcStatus = 'pending';
+        rpcCekaOd = DateTime.now().toUtc().toIso8601String();
+      } else if (tipGrad == 'bc' && jeDnevni) {
+        rpcStatus = 'manual';
+        rpcCekaOd = DateTime.now().toUtc().toIso8601String();
+      }
+    }
+
+    // Sačuvaj staro stanje za slučaj greške (Deep copy)
+    final oldPolasci = jsonDecode(jsonEncode(_safeMap(_putnikData['polasci_po_danu'])));
+    final oldRadniDani = _putnikData['radni_dani']?.toString();
+
+    // --- OPTIMISTIČNI UI APDEJT ---
+    setState(() {
+      final polasci = Map<String, dynamic>.from(_safeMap(_putnikData['polasci_po_danu']));
+      final danData = Map<String, dynamic>.from(_safeMap(polasci[dan]));
+
+      danData[tipGrad] = normalizedVreme;
+      danData['${tipGrad}_status'] = rpcStatus;
+      danData['${tipGrad}_ceka_od'] = rpcCekaOd;
+      danData['${tipGrad}_otkazano'] = rpcOtkazano;
+      danData['${tipGrad}_otkazano_vreme'] = rpcOtkazanoVreme;
+      danData['${tipGrad}_otkazao_vozac'] = rpcOtkazaoVozac;
+
+      if (rpcStatus != 'confirmed' && rpcStatus != 'approved') {
+        danData.remove('${tipGrad}_resolved_at');
+      }
+
+      polasci[dan] = danData;
+      _putnikData['polasci_po_danu'] = polasci;
+
+      // Update radni dani string
+      final Set<String> radniSet = {};
+      polasci.forEach((k, v) {
+        if (v is Map) {
+          if ((v['bc'] != null && v['bc'].toString().isNotEmpty && v['bc'] != 'null') ||
+              (v['vs'] != null && v['vs'].toString().isNotEmpty && v['vs'] != 'null')) {
+            radniSet.add(k);
+          }
+        }
+      });
+      _putnikData['radni_dani'] = radniSet.join(',');
+    });
+
     try {
-      final putnikId = _putnikData['id']?.toString();
-      final tipPutnika = (_putnikData['tip'] ?? '').toString().toLowerCase();
-      final jeUcenik = tipPutnika.contains('ucenik');
-      final jeRadnik = tipPutnika.contains('radnik');
-      final jeDnevni =
-          tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka') || tipPutnika.contains('pošiljka');
-      final jeBcUcenikZahtev = tipGrad == 'bc' && jeUcenik && novoVreme != null;
-      final jeBcRadnikZahtev = tipGrad == 'bc' && jeRadnik && novoVreme != null;
-      final jeBcDnevniZahtev = tipGrad == 'bc' && jeDnevni && novoVreme != null;
-      final jeVsZahtev = tipGrad == 'vs' && novoVreme != null; // 🆕 SVA VS vremena idu u pending (10 min)
+      // 1. RPC poziv (Atomski u bazi sa proverom kapaciteta)
+      await supabase.rpc('update_putnik_polazak_v2', params: {
+        'p_id': putnikId,
+        'p_dan': dan,
+        'p_grad': tipGrad,
+        'p_vreme': normalizedVreme,
+        'p_status': rpcStatus,
+        'p_ceka_od': rpcCekaOd,
+        'p_otkazano': rpcOtkazano,
+        'p_otkazano_vreme': rpcOtkazanoVreme,
+        'p_otkazao_vozac': rpcOtkazaoVozac,
+      });
 
-      debugPrint('📋 [BC] tipPutnika=$tipPutnika, jeUcenik=$jeUcenik, jeRadnik=$jeRadnik, jeDnevni=$jeDnevni');
-      debugPrint(
-        '📋 [BC] jeBcUcenikZahtev=$jeBcUcenikZahtev, jeBcRadnikZahtev=$jeBcRadnikZahtev, jeBcDnevniZahtev=$jeBcDnevniZahtev, jeVsZahtev=$jeVsZahtev',
-      );
+      // 2. SeatRequest i pozadinski procesi (Bez await-a gde može da bi bilo brže za korisnika)
+      if (normalizedVreme != null && normalizedVreme.isNotEmpty) {
+        SeatRequestService.insertSeatRequest(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: seatVreme,
+          grad: tipGrad,
+          brojMesta: _putnikData['broj_mesta'] ?? 1,
+          status: rpcStatus ?? 'pending',
+        ).catchError((e) => debugPrint('Error inserting seat request: $e'));
 
-      // Ažuriraj lokalno - ČUVAJ SVE PODATKE (pokupljeno, placeno, otkazano, itd.)
-      final polasciRaw = _safeMap(_putnikData['polasci_po_danu']);
-      Map<String, dynamic> polasci = Map<String, dynamic>.from(polasciRaw);
+        VoznjeLogService.logZahtev(
+          putnikId: putnikId,
+          dan: dan,
+          vreme: seatVreme,
+          grad: tipGrad,
+          tipPutnika: jeDnevni ? 'Dnevni' : (jeUcenik ? 'Učenik' : 'Radnik'),
+          status: rpcStatus == 'manual' ? 'Čeka odobrenje admina (Manual)' : 'Čeka potvrdu (Pending)',
+        ).catchError((e) => debugPrint('Error logging request: $e'));
 
-      // Osiguraj da dan postoji - ČUVAJ POSTOJEĆE PODATKE!
-      if (!polasci.containsKey(dan)) {
-        polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
-      } else if (polasci[dan] is! Map) {
-        // Ako nije mapa, kreiraj novu
-        polasci[dan] = <String, dynamic>{'bc': null, 'vs': null};
-      }
-      // Ne kreiramo novu mapu ako dan već postoji - čuvamo sve postojeće markere!
-
-      // Normalize incoming time so admin and putnik use the same canonical format
-      final String? normalizedVreme = novoVreme == null ? null : RegistrovaniHelpers.normalizeTime(novoVreme);
-
-      // Prepare seatVreme (non-null) for APIs that require a String
-      final String seatVreme =
-          (normalizedVreme != null && normalizedVreme.isNotEmpty) ? normalizedVreme : (novoVreme ?? '');
-
-      // 🔴 OTKAZIVANJE - ako putnik briše vreme, zabeleži kao otkazano SA STARIM VREMENOM
-      if (normalizedVreme == null || normalizedVreme.isEmpty) {
-        final staroVreme = (polasci[dan] as Map<String, dynamic>)[tipGrad];
-        final staroVremeStr = staroVreme?.toString() ?? '';
-        final staroVremeNorm = RegistrovaniHelpers.normalizeTime(staroVremeStr);
-        final otkazanoKey = '${tipGrad}_otkazano';
-        final otkazanoVremeKey = '${tipGrad}_otkazano_vreme';
-        final otkazaoVozacKey = '${tipGrad}_otkazao_vozac';
-
-        (polasci[dan] as Map<String, dynamic>)[otkazanoKey] = DateTime.now().toUtc().toIso8601String();
-        // 🆕 Zabeleži da je putnik sam otkazao
-        (polasci[dan] as Map<String, dynamic>)[otkazaoVozacKey] = 'Putnik';
-
-        // 🆕 Sačuvaj staro vreme (normalizovano) da bi se moglo prikazati u crvenom
-        if (staroVreme != null && staroVremeStr.isNotEmpty) {
-          (polasci[dan] as Map<String, dynamic>)[otkazanoVremeKey] =
-              (staroVremeNorm != null && staroVremeNorm.isNotEmpty) ? staroVremeNorm : staroVremeStr;
-        }
-        debugPrint('🔴 [$tipGrad] Putnik otkazao za $dan (staro vreme: $staroVremeStr)');
-
-        // 📝 LOG U DNEVNIK
-        try {
-          await VoznjeLogService.logGeneric(
-            tip: 'otkazivanje_putnika',
-            putnikId: putnikId,
-            detalji: 'Otkazan termin (${tipGrad.toUpperCase()}) za $dan ($staroVremeStr)',
-          );
-        } catch (_) {}
-
-        // 🆕 AKO JE VS RUSH HOUR OTKAZIVANJE - obavesti sve koji čekaju
-        if (tipGrad == 'vs' && staroVremeNorm != null && ['13:00', '14:00', '15:30'].contains(staroVremeNorm)) {
-          debugPrint('🔔 [VS] Rush Hour otkazivanje - proveravamo ko čeka za $staroVremeNorm');
-          final notifyVreme = (staroVremeNorm.isNotEmpty) ? staroVremeNorm : staroVremeStr;
-          _notifyWaitingPassengers(notifyVreme, dan);
-        }
-      } else {
-        // Ako postavlja novo vreme, očisti otkazano
-        final otkazanoKey = '${tipGrad}_otkazano';
-        final otkazanoVremeKey = '${tipGrad}_otkazano_vreme';
-        (polasci[dan] as Map<String, dynamic>)[otkazanoKey] = null;
-        (polasci[dan] as Map<String, dynamic>)[otkazanoVremeKey] = null;
-      }
-
-      // Ažuriraj samo vreme, čuvaj ostale podatke (koristi normalizovano vreme)
-      (polasci[dan] as Map<String, dynamic>)[tipGrad] =
-          (normalizedVreme != null && normalizedVreme.isNotEmpty) ? normalizedVreme : null;
-      // Očisti "null" string ako je prisutan
-      if ((polasci[dan] as Map<String, dynamic>)[tipGrad] == 'null') {
-        (polasci[dan] as Map<String, dynamic>)[tipGrad] = null;
-      }
-
-      // Sačuvaj u bazu
-      if (putnikId != null) {
-        // Automatski ažuriraj radni_dani na osnovu polasci_po_danu
-        final Set<String> radniDaniSet = {};
-        polasci.forEach((danKey, vrednosti) {
-          if (vrednosti is Map) {
-            final bcVreme = vrednosti['bc']?.toString();
-            final vsVreme = vrednosti['vs']?.toString();
-            if ((bcVreme != null && bcVreme.isNotEmpty && bcVreme != 'null') ||
-                (vsVreme != null && vsVreme.isNotEmpty && vsVreme != 'null')) {
-              radniDaniSet.add(danKey);
-            }
-          }
-        });
-        final noviRadniDani = radniDaniSet.join(',');
-
-        if (jeBcUcenikZahtev) {
-          // ⏱️ BC UČENIK - 10 min čekanje
-          // (jeDanas i jePre16h variables uklonjene - nisu više potrebne)
-
-          // 1. Sačuvaj odmah sa statusom pending + timestamp za autonomni sistem
-          (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
-          (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toUtc().toIso8601String();
-
-          // 🛡️ Merge sa postojećim markerima u bazi
-          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
-
-          await supabase
-              .from('registrovani_putnici')
-              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
-
-          // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
-          await SeatRequestService.insertSeatRequest(
-            putnikId: putnikId,
-            dan: dan,
-            vreme: seatVreme,
-            grad: 'bc',
-            brojMesta: _putnikData['broj_mesta'] ?? 1,
-          );
-
-          // 📝 LOG U DNEVNIK
-          try {
-            await VoznjeLogService.logZahtev(
-              putnikId: putnikId,
-              dan: dan,
-              vreme: seatVreme,
-              grad: 'bc',
-              tipPutnika: 'Učenik',
-              status: 'Čeka potvrdu (Pending)',
-            );
-          } catch (_) {}
-
-          // Ažuriraj lokalni state
-          setState(() {
-            _putnikData['polasci_po_danu'] = polasci;
-            _putnikData['radni_dani'] = noviRadniDani;
-          });
-
-          // Prikaži poruku "zahtev primljen"
-          if (mounted) {
-            GavraUI.showSnackBar(
-              context,
-              message: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
-              type: GavraNotificationType.info,
-              duration: const Duration(seconds: 5),
-            );
-          }
-
-          debugPrint('✅ [BC] UČENIK: Zahtev sačuvan sa pending statusom');
-        } else if (jeBcRadnikZahtev) {
-          // 👷 BC RADNIK - sačuvaj kao pending, čekaj 5 minuta, proveri mesta
-
-          (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
-          (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toUtc().toIso8601String();
-
-          // 🛡️ Merge sa postojećim markerima u bazi
-          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
-
-          await supabase
-              .from('registrovani_putnici')
-              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
-
-          // 🆕 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
-          await SeatRequestService.insertSeatRequest(
-            putnikId: putnikId,
-            dan: dan,
-            vreme: seatVreme,
-            grad: 'bc',
-            brojMesta: _putnikData['broj_mesta'] ?? 1,
-          );
-
-          // 📝 LOG U DNEVNIK
-          try {
-            await VoznjeLogService.logZahtev(
-              putnikId: putnikId,
-              dan: dan,
-              vreme: seatVreme,
-              grad: 'bc',
-              tipPutnika: 'Radnik',
-              status: 'Čeka potvrdu (Pending)',
-            );
-          } catch (_) {}
-
-          setState(() {
-            _putnikData['polasci_po_danu'] = mergedPolasci;
-            _putnikData['radni_dani'] = noviRadniDani;
-          });
-
-          if (mounted) {
-            GavraUI.showSnackBar(
-              context,
-              message: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
-              type: GavraNotificationType.info,
-              duration: const Duration(seconds: 5),
-            );
-          }
-
-          debugPrint('✅ [BC] RADNIK: Zahtev sačuvan sa pending statusom');
-        } else if (jeBcDnevniZahtev) {
-          // 📅 BC DNEVNI - Manual review by admin
-          (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'pending';
-          (polasci[dan] as Map<String, dynamic>)['bc_ceka_od'] = DateTime.now().toUtc().toIso8601String();
-
-          // 🛡️ Merge sa postojećim markerima u bazi
-          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
-
-          await supabase
-              .from('registrovani_putnici')
-              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
-
-          // 🆕 INSERT U SEAT_REQUESTS TABELU SA STATUSOM 'manual'
-          await SeatRequestService.insertSeatRequest(
-            putnikId: putnikId,
-            dan: dan,
-            vreme: seatVreme,
-            grad: 'bc',
-            brojMesta: _putnikData['broj_mesta'] ?? 1,
-            status: 'manual', // 👈 Dnevni uvek idu na ručnu obradu
-          );
-
-          // 📝 LOG U DNEVNIK
-          try {
-            await VoznjeLogService.logZahtev(
-              putnikId: putnikId,
-              dan: dan,
-              vreme: seatVreme,
-              grad: 'bc',
-              tipPutnika: 'Dnevni',
-              status: 'Čeka odobrenje admina (Manual)',
-            );
-          } catch (_) {}
-
-          setState(() {
-            _putnikData['polasci_po_danu'] = mergedPolasci;
-            _putnikData['radni_dani'] = noviRadniDani;
-          });
-
-          if (mounted) {
-            GavraUI.showSnackBar(
-              context,
-              message: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
-              type: GavraNotificationType.info,
-              duration: const Duration(seconds: 5),
-            );
-          }
-
-          debugPrint('🎯 [BC] DNEVNI: Manual zahtev sačuvan');
-        } else if (jeVsZahtev) {
-          // 🎯 VS LOGIKA - Manual za Dnevne, Pending 10 minuta za ostale
-          debugPrint('🎯 [VS] ZAHTEV - Tip: ${jeDnevni ? "Dnevni (Manual)" : "Ucenik/Radnik (Auto)"}');
-
-          // Postavi status na pending
-          (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'pending';
-          (polasci[dan] as Map<String, dynamic>)['vs_ceka_od'] = DateTime.now().toUtc().toIso8601String();
-
-          // 🛡️ Merge sa postojećim markerima u bazi
-          final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
-
-          await supabase
-              .from('registrovani_putnici')
-              .update({'polasci_po_danu': mergedPolasci, 'radni_dani': noviRadniDani}).eq('id', putnikId);
-
-          // 🆕 INSERT U SEAT_REQUESTS TABELU
-          await SeatRequestService.insertSeatRequest(
-            putnikId: putnikId,
-            dan: dan,
-            vreme: seatVreme,
-            grad: 'vs',
-            brojMesta: _putnikData['broj_mesta'] ?? 1,
-            status: jeDnevni ? 'manual' : 'pending', // 👈 Dnevni manuelno, ostali auto
-          );
-
-          // 📝 LOG U DNEVNIK
-          try {
-            String logStatus = 'Čeka potvrdu (Pending)';
-            if (jeDnevni) logStatus = 'Čeka odobrenje admina (Manual)';
-
-            await VoznjeLogService.logZahtev(
-              putnikId: putnikId,
-              dan: dan,
-              vreme: seatVreme,
-              grad: 'vs',
-              tipPutnika: jeDnevni ? 'Dnevni' : (jeUcenik ? 'Učenik' : 'Radnik'),
-              status: logStatus,
-            );
-          } catch (_) {}
-
-          setState(() {
-            _putnikData['polasci_po_danu'] = mergedPolasci;
-            _putnikData['radni_dani'] = noviRadniDani;
-          });
-
-          if (mounted) {
-            GavraUI.showSnackBar(
-              context,
-              message: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
-              type: GavraNotificationType.info,
-              duration: const Duration(seconds: 5),
-            );
-          }
-
-          debugPrint('🎯 [VS] Zahtev sačuvan (${jeDnevni ? "Manual" : "Auto"})');
-        } else {
-          // ✅ NORMAL FLOW SAVE
-          // Čuva promene direktno u bazu (za otkazivanje ili ne-kritične promene)
-          Future<void> _saveNormalFlow(
-            String putnikId,
-            Map<String, dynamic> polasci,
-            String radniDani,
-            String tipGrad,
-            String dan,
-            String? vreme,
-          ) async {
-            try {
-              // 🛡️ Merge sa postojećim markerima u bazi
-              final mergedPolasci = await _mergePolasciSaBazom(putnikId, polasci);
-
-              await supabase.from('registrovani_putnici').update({
-                'polasci_po_danu': mergedPolasci,
-                'radni_dani': radniDani,
-              }).eq('id', putnikId);
-
-              // 📝 LOG U DNEVNIK
-              if (vreme != null) {
-                try {
-                  // Logujemo kao odmah uspešno obrađeno jer je prošlo proveru
-                  final pTip = _putnikData['tip']?.toString() ?? 'Putnik';
-                  await VoznjeLogService.logPotvrda(
-                    putnikId: putnikId,
-                    dan: dan,
-                    vreme: vreme,
-                    grad: tipGrad,
-                    tipPutnika: pTip,
-                    detalji: 'Zahtev direktno potvrđen',
-                  );
-                } catch (_) {}
-              }
-
-              if (mounted) {
-                setState(() {
-                  _putnikData['polasci_po_danu'] = mergedPolasci;
-                  _putnikData['radni_dani'] = radniDani;
-                });
-                GavraUI.showSnackBar(
-                  context,
-                  message: 'Uspešno sačuvano',
-                  type: GavraNotificationType.success,
-                );
-              }
-            } catch (e) {
-              if (mounted) {
-                GavraUI.showSnackBar(
-                  context,
-                  message: '❌ Greška pri čuvanju: $e',
-                  type: GavraNotificationType.error,
-                );
-              }
-            }
-          }
-
-          // 🟢 NORMALAN FLOW - odmah sačuvaj (otkazivanje)
-          _saveNormalFlow(putnikId, polasci, noviRadniDani, tipGrad, dan, normalizedVreme);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
         GavraUI.showSnackBar(
           context,
-          message: 'Greška: $e',
+          message: 'Zahtev primljen, biće obrađen uskoro.',
+          type: GavraNotificationType.info,
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        // Otkazivanje - pozadinska obaveštenja
+        _handleOtkazivanjeBackground(dan, tipGrad, rpcOtkazanoVreme ?? '');
+      }
+    } catch (e) {
+      debugPrint('❌ [BC] Greška u _updatePolazak: $e');
+      if (mounted) {
+        // Rollback UI na staro stanje
+        setState(() {
+          _putnikData['polasci_po_danu'] = oldPolasci;
+          _putnikData['radni_dani'] = oldRadniDani;
+        });
+
+        String errorMsg = 'Greška pri čuvanju promene.';
+        if (e.toString().contains('KAPACITET_PUN')) {
+          errorMsg = 'Žao nam je, u terminu $normalizedVreme više nema slobodnih mesta.';
+        }
+
+        GavraUI.showSnackBar(
+          context,
+          message: errorMsg,
           type: GavraNotificationType.error,
+          duration: const Duration(seconds: 4),
         );
       }
+    }
+  }
+
+  /// Pomoćna za pozadinsko slanje notifikacija kod otkazivanja
+  void _handleOtkazivanjeBackground(String dan, String tipGrad, String displayVreme) {
+    VoznjeLogService.logGeneric(
+      tip: 'otkazivanje_putnika',
+      putnikId: _putnikData['id']?.toString(),
+      detalji: 'Otkazan termin (${tipGrad.toUpperCase()}) za $dan ($displayVreme)',
+    ).catchError((_) {});
+
+    final now = DateTime.now();
+    final todayName = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'][now.weekday - 1];
+    if (dan.toLowerCase() == todayName) {
+      final putnikIme = _putnikData['putnik_ime'] ?? _putnikData['ime'] ?? 'Putnik';
+      RealtimeNotificationService.sendNotificationToAllDrivers(
+        title: 'Otkazan putnik (samostalno)',
+        body: '$putnikIme ($displayVreme)',
+        data: {
+          'type': 'otkazan_putnik',
+          'datum': now.toIso8601String(),
+          'putnik': {'id': _putnikData['id'], 'ime': putnikIme, 'grad': tipGrad.toUpperCase(), 'vreme': displayVreme},
+        },
+      ).catchError((_) {});
+    }
+
+    if (tipGrad == 'vs' && ['13:00', '14:00', '15:30'].contains(displayVreme)) {
+      _notifyWaitingPassengers(displayVreme, dan).catchError((_) {});
     }
   }
 
