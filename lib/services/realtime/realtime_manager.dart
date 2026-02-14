@@ -276,7 +276,6 @@ class RealtimeManager {
       'seat_requests', // 🎫 Zahtjevi za mjesta
       'daily_reports', // 📈 Dnevni izvještaji
       'app_settings', // ⚙️ Postavke aplikacije
-      'ml_config', // 🧠 ML konfiguracija
       'adrese', // 📍 Adrese
       'registrovani_putnici_svi', // 👥 Svi registrovani putnici
     ];

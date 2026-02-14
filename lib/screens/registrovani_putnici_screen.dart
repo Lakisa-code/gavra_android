@@ -7,7 +7,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../globals.dart';
 import '../helpers/putnik_statistike_helper.dart';
 import '../models/registrovani_putnik.dart';
-import '../services/admin_audit_service.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/permission_service.dart';
 import '../services/registrovani_putnik_service.dart';
@@ -1467,14 +1466,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
         if (success) {
           // logic simplified slightly if not needing immediate mount check
-          // ??? AUDIT LOG
-          final currentUser = supabase.auth.currentUser;
-          await AdminAuditService.logAction(
-            adminName: currentUser?.email ?? 'Unknown Admin',
-            actionType: 'delete_passenger',
-            details: 'Obrisan putnik: ${putnik.putnikIme}',
-            metadata: {'putnik_id': putnik.id, 'ime': putnik.putnikIme},
-          );
         }
 
         if (success && mounted) {
@@ -2542,4 +2533,3 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return prefs.getString('ime_vozaca') ?? 'Gavra';
   }
 }
-

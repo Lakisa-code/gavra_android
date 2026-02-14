@@ -9,13 +9,11 @@ import '../models/putnik.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_boja.dart';
-import 'admin_audit_service.dart';
 import 'driver_location_service.dart';
 import 'realtime/realtime_manager.dart';
 import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
 import 'slobodna_mesta_service.dart';
-import 'user_audit_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
 
@@ -774,9 +772,6 @@ class PutnikService {
 
       // ?? NOTIFIKACIJA UKLONJENA PO NALOGU 16.01.2026.
       // Prethodno je ovde bila logika za slanje push notifikacije svim vozacima (RealtimeNotificationService.sendNotificationToAllDrivers)
-
-      // 📝 Log user change for audit
-      await UserAuditService().logUserChange(putnikId, 'add');
     } catch (e) {
       rethrow;
     }
@@ -870,9 +865,6 @@ class PutnikService {
     await supabase.from(tabela).update({
       'obrisan': true, // ✅ Soft delete flag
     }).eq('id', id);
-
-    // 📝 Log user change for audit
-    await UserAuditService().logUserChange(id, 'delete');
   }
 
   /// 🚶 OZNACI KAO POKUPLJEN
@@ -1132,9 +1124,6 @@ class PutnikService {
       );
       debugPrint(
           '✅ markAsPaid: Uplata upisana u voznje_log - putnik: $id, vozac: $currentDriver ($vozacId), iznos: $iznos');
-
-      // 📝 Log user change for audit
-      await UserAuditService().logUserChange(id.toString(), 'payment');
     } catch (e) {
       debugPrint('❌ markAsPaid: GREŠKA pri upisu u voznje_log: $e');
       // Re-throw da korisnik zna da je nešto pošlo naopako
@@ -1290,9 +1279,6 @@ class PutnikService {
       } catch (_) {
         // Notification error - silent
       }
-
-      // 📝 Log user change for audit
-      await UserAuditService().logUserChange(id.toString(), 'cancel');
     } catch (e) {
       rethrow;
     }
@@ -1329,16 +1315,6 @@ class PutnikService {
 
     // 🛡️ ADMIN AUDIT LOG: Zabeleži promenu statusa (odsustvo/povratak)
     final currentUser = supabase.auth.currentUser;
-    await AdminAuditService.logAction(
-      adminName: currentUser?.email ?? 'Unknown Admin',
-      actionType: 'change_status',
-      details: 'Putnik $id promenjen status u $statusZaBazu',
-      metadata: {
-        'putnik_id': id,
-        'new_status': statusZaBazu,
-        'old_status': undoOdsustvo['status'],
-      },
-    );
 
     try {
       await supabase.from(tabela).update({

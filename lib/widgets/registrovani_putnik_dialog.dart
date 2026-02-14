@@ -1,11 +1,11 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:gavra_android/helpers/gavra_ui.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../constants/day_constants.dart';
 import '../globals.dart';
-import '../helpers/gavra_ui.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/admin_security_service.dart';
 import '../services/adresa_supabase_service.dart';
@@ -1643,7 +1643,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       if (mounted) {
         GavraUI.showSnackBar(
           context,
-          message: '✅ Putnik uspešno sačuvan!',
+          message: GavraMessages.putnikSacuvan,
           type: GavraNotificationType.success,
         );
         Navigator.of(context).pop();

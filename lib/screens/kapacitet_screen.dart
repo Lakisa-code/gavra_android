@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../services/admin_audit_service.dart'; // 🕵️ ADMIN AUDIT
 import '../services/kapacitet_service.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
@@ -220,20 +218,6 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
       final success = await KapacitetService.setKapacitet(grad, vreme, result);
       if (!mounted) return;
       if (success) {
-        try {
-          // 🕵️ AUDIT LOG - koristi Supabase auth umesto Firebase
-          final adminEmail = Supabase.instance.client.auth.currentUser?.email ?? 'Unknown Admin';
-          await AdminAuditService.logCapacityChange(
-            adminName: adminEmail,
-            datum: 'Standardni raspored',
-            vreme: '$grad $vreme',
-            oldCap: trenutni,
-            newCap: result,
-          );
-        } catch (e) {
-          // Ignore log errors
-        }
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

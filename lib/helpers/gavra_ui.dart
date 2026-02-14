@@ -132,4 +132,23 @@ class GavraUI {
   }
 }
 
+/// 📝 CENTRALIZOVANE PORUKE SISTEMA
+class GavraMessages {
+  // 📥 Zahtevi
+  static const String zahtevPrimljen = 'Vaš zahtev je primljen, biće obrađen u najkraćem mogućem roku.';
+  static const String zahtevUObradi = '⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.';
+
+  // 📝 Statusi
+  static const String zahtevOdobren = '✅ Vaš zahtev je odobren! Vreme je zaključano.';
+
+  // 🚫 Ograničenja
+  static const String dnevniPutniciInfo =
+      'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌';
+
+  // ⚙️ Opšte
+  static const String greska = '❌ Došlo je do greške. Molimo pokušajte ponovo.';
+  static const String uspeh = '✅ Akcija je uspešno izvršena.';
+  static const String putnikSacuvan = '✅ Putnik uspešno sačuvan!';
+}
+
 enum GavraNotificationType { success, info, warning, error }

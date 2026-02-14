@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:gavra_android/helpers/gavra_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -54,7 +55,7 @@ class SeatRequestService {
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: 'Zahtev primljen',
-        body: 'Zahtev je primljen, biće obrađen u najkraćem mogućem roku.',
+        body: GavraMessages.zahtevPrimljen,
       );
 
       // 🔔 AKO JE STATUS 'manual' (Dnevni putnici), POŠALJI NOTIFIKACIJU ADMINU

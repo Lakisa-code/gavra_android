@@ -20,7 +20,7 @@ class TimePickerCell extends StatelessWidget {
   final ValueChanged<String?> onChanged;
   final double? width;
   final double? height;
-  final String? status; // 🆕 pending, confirmed, waiting, null
+  final String? status; // 🆕 pending, confirmed, null
   final String? dayName; // 🆕 Dan u nedelji (pon, uto, sre...) za zaključavanje prošlih dana
   final bool isCancelled; // 🆕 Da li je otkazan (crveno)
   final String? tipPutnika; // 🆕 Tip putnika: radnik, ucenik, dnevni
@@ -109,9 +109,8 @@ class TimePickerCell extends StatelessWidget {
     final todayOnly = DateTime(now.year, now.month, now.day);
     final dayDate = _getDateForDay();
 
-    // 🆕 POŠILJKE - Mogu se zakazivati kad god (danas i unapred), ne zavise od admin prekidača
+    // 🆕 POŠILJKE - Mogu se zakazivati uvek, ne zauzimaju mesto i ne podležu blokadama
     if (tipPutnika == 'posiljka') {
-      if (dayDate != null && dayDate.isBefore(todayOnly)) return true;
       return false;
     }
 
@@ -136,7 +135,6 @@ class TimePickerCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasTime = value != null && value!.isNotEmpty;
     final isPending = status == 'pending';
-    final isWaiting = status == 'waiting';
     final isApproved = status == 'approved';
     final isConfirmed = status == 'confirmed';
     final locked = isLocked;
@@ -173,12 +171,6 @@ class TimePickerCell extends StatelessWidget {
       bgColor = Colors.orange.shade50;
       textColor = Colors.orange.shade800;
     }
-    // 🔵 WAITING - plavo
-    else if (isWaiting) {
-      borderColor = Colors.blue;
-      bgColor = Colors.blue.shade50;
-      textColor = Colors.blue.shade800;
-    }
     // 🟢 IMA VREMENA - zelena (osnovna stanja - putnik je zakazao vreme)
     else if (hasTime) {
       borderColor = Colors.green;
@@ -198,7 +190,7 @@ class TimePickerCell extends StatelessWidget {
         if (isPending) {
           GavraUI.showSnackBar(
             context,
-            message: '⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.',
+            message: GavraMessages.zahtevUObradi,
             type: GavraNotificationType.warning,
           );
           return;
@@ -208,18 +200,8 @@ class TimePickerCell extends StatelessWidget {
         if (isApproved) {
           GavraUI.showSnackBar(
             context,
-            message: '✅ Vaš zahtev je odobrljen! Vreme je zaključano.',
+            message: GavraMessages.zahtevOdobren,
             type: GavraNotificationType.success,
-          );
-          return;
-        }
-
-        // 🚫 BLOKADA ZA WAITING STATUS - čeka se oslobađanje mesta
-        if (isWaiting) {
-          GavraUI.showSnackBar(
-            context,
-            message: '⏳ Vaš zahtev je na listi čekanja. Javićemo vam se kada se oslobodi mesto.',
-            type: GavraNotificationType.info,
           );
           return;
         }
@@ -233,22 +215,11 @@ class TimePickerCell extends StatelessWidget {
           if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
             GavraUI.showSnackBar(
               context,
-              message:
-                  'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌',
+              message: GavraMessages.dnevniPutniciInfo,
               type: GavraNotificationType.warning,
               duration: const Duration(seconds: 4),
             );
           }
-          return;
-        }
-
-        // 🆕 PORUKA ZA POŠILJKE AKO JE ZAKLJUČANO (PROŠLOST)
-        if (tipPutnika == 'posiljka' && isLocked) {
-          GavraUI.showSnackBar(
-            context,
-            message: '⌛ Pošiljka se može zakazati samo za današnji polazak ili unapred.',
-            type: GavraNotificationType.warning,
-          );
           return;
         }
 
@@ -263,8 +234,7 @@ class TimePickerCell extends StatelessWidget {
           if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly) && !dayDate.isAtSameMomentAs(tomorrowOnly)) {
             GavraUI.showSnackBar(
               context,
-              message:
-                  'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌',
+              message: GavraMessages.dnevniPutniciInfo,
               type: GavraNotificationType.warning,
               duration: const Duration(seconds: 4),
             );
@@ -282,7 +252,7 @@ class TimePickerCell extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: borderColor,
-            width: (isPending || isWaiting || isCancelled) ? 2 : 1,
+            width: (isPending || isCancelled) ? 2 : 1,
           ),
         ),
         child: Center(
@@ -296,9 +266,6 @@ class TimePickerCell extends StatelessWidget {
                       const SizedBox(width: 2),
                     ] else if (isPending) ...[
                       Icon(Icons.hourglass_empty, size: 12, color: textColor),
-                      const SizedBox(width: 2),
-                    ] else if (isWaiting) ...[
-                      Icon(Icons.schedule, size: 12, color: textColor),
                       const SizedBox(width: 2),
                     ] else if (isApproved) ...[
                       // ✅ Ikonica za approved status
@@ -315,7 +282,7 @@ class TimePickerCell extends StatelessWidget {
                         style: TextStyle(
                           color: textColor,
                           fontWeight: FontWeight.bold,
-                          fontSize: (isPending || isWaiting || locked || isCancelled) ? 12 : 14,
+                          fontSize: (isPending || locked || isCancelled) ? 12 : 14,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

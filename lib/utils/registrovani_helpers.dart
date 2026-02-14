@@ -223,7 +223,7 @@ class RegistrovaniHelpers {
   }
 
   /// 🆕 HELPER: Čitaj status polaska iz polasci_po_danu JSON-a
-  /// Vraća 'pending', 'confirmed', 'waiting', ili null ako status ne postoji
+  /// Vraća 'pending', 'confirmed', ili null ako status ne postoji
   static String? getStatusForDayAndPlace(
     Map<String, dynamic> rawMap,
     String dayKratica,

@@ -1123,106 +1123,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     );
   }
 
-  // 🏆💀 MINI LEADERBOARD - Fame ili Shame - PRIVREMENO ISKLJUČENO
-  /*
-  Widget _buildMiniLeaderboard({required bool isShame}) {
-    return FutureBuilder<LeaderboardData?>(
-      future: LeaderboardService.getLeaderboard(tipPutnika: _putnikData['tip'] as String? ?? 'radnik'),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == null) {
-          return const SizedBox.shrink();
-        }
-
-        final data = snapshot.data!;
-        final entries = isShame ? data.wallOfShame : data.wallOfFame;
-        final title = isShame ? '💀 Shame' : '🏆 Fame';
-        final titleColor = isShame ? Colors.redAccent : Colors.greenAccent;
-
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isShame
-                  ? [Colors.red.shade900.withOpacity(0.15), Colors.orange.shade900.withOpacity(0.1)]
-                  : [Colors.green.shade900.withOpacity(0.15), Colors.teal.shade900.withOpacity(0.1)],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: (isShame ? Colors.red : Colors.green).withOpacity(0.15),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: titleColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 6),
-              if (entries.isEmpty)
-                Text(
-                  'Nema podataka',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 10,
-                    fontStyle: FontStyle.italic,
-                  ),
-                )
-              else
-                ...entries.take(3).toList().asMap().entries.map((e) {
-                  final rank = e.key + 1;
-                  final entry = e.value;
-                  String displayName = entry.ime;
-                  if (displayName.length > 10) {
-                    final parts = displayName.split(' ');
-                    if (parts.length >= 2) {
-                      displayName = '${parts[0]} ${parts[1][0]}.';
-                    } else {
-                      displayName = '${displayName.substring(0, 8)}..';
-                    }
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: Row(
-                      children: [
-                        Text(
-                          '$rank.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 10,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            displayName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(entry.icon, style: const TextStyle(fontSize: 12)),
-                      ],
-                    ),
-                  );
-                }),
-            ],
-          ),
-        );
-      },
-    );
-  }
-  */
-
   // 🌤️ DIJALOG ZA DETALJNU VREMENSKU PROGNOZU
   void _showWeatherDialog(String grad, WeatherData? data) {
     final gradPun = grad == 'BC' ? 'Bela Crkva' : 'Vršac';
@@ -2198,10 +2098,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         },
       ).catchError((_) {});
     }
-
-    if (tipGrad == 'vs' && ['13:00', '14:00', '15:30'].contains(displayVreme)) {
-      _notifyWaitingPassengers(displayVreme, dan).catchError((_) {});
-    }
   }
 
   /// 🔍 Pronalazi alternativne termine detaljno (vraća pre i posle)
@@ -2254,59 +2150,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       return sati * 60 + minuti;
     } catch (e) {
       return 0;
-    }
-  }
-
-  /// 🔔 Obaveštava sve putnike koji čekaju za VS Rush Hour termin da se oslobodilo mesto
-  Future<void> _notifyWaitingPassengers(String vreme, String dan) async {
-    try {
-      // Dohvati sve koji čekaju za ovaj termin
-      final waitingIds = await SlobodnaMestaService.dohvatiCekaMestoZaVsTermin(vreme, dan);
-
-      if (waitingIds.isEmpty) {
-        debugPrint('📭 [VS] Nema nikoga na listi čekanja za $vreme');
-        return;
-      }
-
-      debugPrint('📬 [VS] ${waitingIds.length} putnika čeka za $vreme - šaljem obaveštenje');
-
-      // Pronađi alternative za ovaj termin
-      final danas = DateTime.now().toIso8601String().split('T')[0];
-      final alternative = await _pronadjiAlternativneTermineDetaljno(vreme, danas, 'VS');
-
-      // Za svakog putnika na listi čekanja, pošalji notifikaciju
-      for (final waitingPutnikId in waitingIds) {
-        // Dohvati podatke putnika
-        final putnikData = await supabase
-            .from('registrovani_putnici')
-            .select('polasci_po_danu, radni_dani')
-            .eq('id', waitingPutnikId)
-            .maybeSingle();
-
-        if (putnikData == null) continue;
-
-        final polasci = _safeMap(putnikData['polasci_po_danu']);
-        final radniDani = putnikData['radni_dani'] as String? ?? '';
-
-        // Pošalji notifikaciju sa ponudom
-        await LocalNotificationService.showVsAlternativeNotification(
-          zeljeniTermin: vreme,
-          putnikId: waitingPutnikId,
-          dan: dan,
-          polasci: polasci,
-          radniDani: radniDani,
-          terminPre: alternative['pre'],
-          terminPosle: alternative['posle'],
-          isRushHourWaiting: true,
-        );
-
-        // Mali delay između notifikacija
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-
-      debugPrint('✅ [VS] Obavešteno ${waitingIds.length} putnika o oslobođenom mestu');
-    } catch (e) {
-      debugPrint('❌ [VS] Greška pri obaveštavanju: $e');
     }
   }
 
