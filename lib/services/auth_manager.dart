@@ -9,6 +9,7 @@ import '../models/vozac.dart';
 import '../screens/welcome_screen.dart';
 import '../utils/vozac_boja.dart';
 import 'firebase_service.dart';
+import 'huawei_push_service.dart';
 import 'push_token_service.dart';
 
 /// 🔐 CENTRALIZOVANI AUTH MANAGER
@@ -106,11 +107,9 @@ class AuthManager {
       // 2. Pokušaj HMS token (Huawei uređaji)
       // Koristi direktno dobijanje tokena
       try {
-        // We can't get token
-        // Let the logic fall back to other methods
-        final hmsToken = null; // HuaweiPushService().getCurrentToken() - would need to implement
+        final hmsToken = await HuaweiPushService().getHMSToken();
         if (hmsToken != null && hmsToken.isNotEmpty) {
-          debugPrint('🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 30)}...');
+          debugPrint('🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
           final success = await PushTokenService.registerToken(
             token: hmsToken,
             provider: 'huawei',
@@ -164,8 +163,7 @@ class AuthManager {
       // Ako nema FCM, probaj HMS (Huawei)
       if (token == null || token.isEmpty) {
         try {
-          // Skip HMS token for now
-          token = null; // Would need HuaweiPushService().getCurrentToken()
+          token = await HuaweiPushService().getHMSToken();
         } catch (e) {
           debugPrint('⚠️ Error getting HMS token: $e');
         }

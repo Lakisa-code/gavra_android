@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import '../models/putnik.dart';
 import 'grad_adresa_validator.dart';
 import 'putnik_helpers.dart';
@@ -46,12 +44,6 @@ class PutnikCountHelper {
       final jeBelaCrkva = GradAdresaValidator.isBelaCrkva(p.grad);
       final jeVrsac = GradAdresaValidator.isVrsac(p.grad);
 
-      // Debug logging za 18:00
-      if (normVreme == '18:00') {
-        debugPrint(
-            '🐛 [CountHelper] Processing passenger for 18:00: ${p.ime}, grad: ${p.grad}, polazak: ${p.polazak}, brojMesta: ${p.brojMesta}, jeBelaCrkva: $jeBelaCrkva, jeVrsac: $jeVrsac');
-      }
-
       // 🎓 BC LOGIKA (DISPLAY OVERRIDE):
       // Za prikaz na Nav Bar-u BROJIMO SVE PUTNIKE (uključujući đake u BC)
       // jer vozač mora da vidi koliko ljudi fizički ima u vozilu.
@@ -72,20 +64,10 @@ class PutnikCountHelper {
   int getCount(String grad, String vreme) {
     final normVreme = GradAdresaValidator.normalizeTime(vreme);
     if (GradAdresaValidator.isBelaCrkva(grad)) {
-      final count = brojPutnikaBC[normVreme] ?? 0;
-      // Debug logging za 18:00
-      if (normVreme == '18:00') {
-        debugPrint('🐛 [CountHelper] BC 18:00 - Count: $count, All BC counts: $brojPutnikaBC');
-      }
-      return count;
+      return brojPutnikaBC[normVreme] ?? 0;
     }
     if (GradAdresaValidator.isVrsac(grad)) {
-      final count = brojPutnikaVS[normVreme] ?? 0;
-      // Debug logging za 18:00
-      if (normVreme == '18:00') {
-        debugPrint('🐛 [CountHelper] VS 18:00 - Count: $count, All VS counts: $brojPutnikaVS');
-      }
-      return count;
+      return brojPutnikaVS[normVreme] ?? 0;
     }
     return 0;
   }

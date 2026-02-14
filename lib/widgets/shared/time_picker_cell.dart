@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../config/route_config.dart';
 import '../../globals.dart';
-import '../../helpers/gavra_ui.dart';
 import '../../services/theme_manager.dart';
 import '../../utils/schedule_utils.dart';
 
@@ -188,20 +187,16 @@ class TimePickerCell extends StatelessWidget {
 
         // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor
         if (isPending) {
-          GavraUI.showSnackBar(
-            context,
-            message: GavraMessages.zahtevUObradi,
-            type: GavraNotificationType.warning,
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.')),
           );
           return;
         }
 
         // ✅ BLOKADA ZA APPROVED STATUS - već je odobreno
         if (isApproved) {
-          GavraUI.showSnackBar(
-            context,
-            message: GavraMessages.zahtevOdobren,
-            type: GavraNotificationType.success,
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('✅ Vaš zahtev je odobren! Vreme je zaključano.')),
           );
           return;
         }
@@ -213,11 +208,12 @@ class TimePickerCell extends StatelessWidget {
           final dayDate = _getDateForDay();
 
           if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
-            GavraUI.showSnackBar(
-              context,
-              message: GavraMessages.dnevniPutniciInfo,
-              type: GavraNotificationType.warning,
-              duration: const Duration(seconds: 4),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌'),
+                duration: Duration(seconds: 4),
+              ),
             );
           }
           return;
@@ -232,11 +228,12 @@ class TimePickerCell extends StatelessWidget {
           final tomorrowOnly = todayOnly.add(const Duration(days: 1));
           final dayDate = _getDateForDay();
           if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly) && !dayDate.isAtSameMomentAs(tomorrowOnly)) {
-            GavraUI.showSnackBar(
-              context,
-              message: GavraMessages.dnevniPutniciInfo,
-              type: GavraNotificationType.warning,
-              duration: const Duration(seconds: 4),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌'),
+                duration: Duration(seconds: 4),
+              ),
             );
             return;
           }

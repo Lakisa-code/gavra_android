@@ -1,7 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:gavra_android/helpers/gavra_ui.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../constants/day_constants.dart';
@@ -1598,10 +1597,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   Future<void> _savePutnik() async {
     final validationError = _validateForm();
     if (validationError != null) {
-      GavraUI.showSnackBar(
-        context,
-        message: validationError,
-        type: GavraNotificationType.error,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationError)),
       );
       return;
     }
@@ -1613,10 +1610,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final duplicateError = await _checkDuplicatePhone();
       if (duplicateError != null) {
         if (mounted) {
-          GavraUI.showSnackBar(
-            context,
-            message: duplicateError,
-            type: GavraNotificationType.error,
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(duplicateError)),
           );
         }
         setState(() => _isLoading = false);
@@ -1641,10 +1636,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       }
 
       if (mounted) {
-        GavraUI.showSnackBar(
-          context,
-          message: GavraMessages.putnikSacuvan,
-          type: GavraNotificationType.success,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Putnik uspešno sačuvan!')),
         );
         Navigator.of(context).pop();
         if (widget.onSaved != null) widget.onSaved!();
@@ -1668,14 +1661,12 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       }
 
       if (mounted) {
-        String errorMsg = e.toString();
+        var errorMsg = e.toString();
         if (errorMsg.contains('Exception:')) {
           errorMsg = errorMsg.split('Exception:').last.trim();
         }
-        GavraUI.showSnackBar(
-          context,
-          message: 'Greška: $errorMsg',
-          type: GavraNotificationType.error,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $errorMsg')),
         );
       }
     } finally {

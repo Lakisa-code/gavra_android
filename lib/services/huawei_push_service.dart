@@ -23,10 +23,20 @@ class HuaweiPushService {
   StreamSubscription<String?>? _tokenSub;
   StreamSubscription<RemoteMessage>? _messageSub;
   bool _messageListenerRegistered = false;
+  String? _currentToken;
 
   // 🛡️ ZAŠTITA OD VIŠESTRUKOG POZIVANJA
   bool _initialized = false;
   bool _initializing = false;
+
+  /// Dohvati trenutni HMS token ako postoji
+  Future<String?> getHMSToken() async {
+    if (_currentToken != null && _currentToken!.isNotEmpty) {
+      return _currentToken;
+    }
+    // Ako nemamo token, pokušaj ponovo inicijalizaciju (koja vraća token ako ga dobije brzo)
+    return await initialize();
+  }
 
   /// Initialize and request token. This method is safe to call even when
   /// HMS is not available on the device — it will simply return null.
@@ -64,6 +74,7 @@ class HuaweiPushService {
       _tokenSub?.cancel();
       _tokenSub = Push.getTokenStream.listen((String? newToken) async {
         if (newToken != null && newToken.isNotEmpty) {
+          _currentToken = newToken;
           await _registerTokenWithServer(newToken);
         }
       });
@@ -125,6 +136,7 @@ class HuaweiPushService {
         final firstValue = await Push.getTokenStream.first.timeout(const Duration(seconds: 5));
         if (firstValue.isNotEmpty) {
           debugPrint('📱 [HuaweiPush] Token received on stream: ${firstValue.substring(0, 10)}...');
+          _currentToken = firstValue;
           await _registerTokenWithServer(firstValue);
           _initialized = true;
           _initializing = false;

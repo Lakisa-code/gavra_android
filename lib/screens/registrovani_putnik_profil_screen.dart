@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/route_config.dart';
 import '../constants/day_constants.dart';
 import '../globals.dart';
-import '../helpers/gavra_ui.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../models/registrovani_putnik.dart';
 import '../services/cena_obracun_service.dart';
@@ -170,10 +169,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         setState(() {
           _putnikData['polasci_po_danu'] = polasci;
         });
-        GavraUI.showSnackBar(
-          context,
-          message: '⏳ Zahtev za $staroVreme ($dan) ostaje na čekanju za potvrdu.',
-          type: GavraNotificationType.info,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('⏳ Zahtev za $staroVreme ($dan) ostaje na čekanju za potvrdu.')),
         );
       }
     } catch (e) {
@@ -369,10 +366,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         setState(() {
           _putnikData['polasci_po_danu'] = polasci;
         });
-        GavraUI.showSnackBar(
-          context,
-          message: '✅ Vaš zahtev za $vreme ($dan ${grad.toUpperCase()}) je odobren!',
-          type: GavraNotificationType.success,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ Vaš zahtev za $vreme ($dan ${grad.toUpperCase()}) je odobren!')),
         );
       }
 
@@ -1053,18 +1048,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 ? 'Postavljeni ste na godišnji odmor'
                 : 'Postavljeni ste na bolovanje';
 
-        GavraUI.showSnackBar(
-          context,
-          message: poruka,
-          type: noviStatus == 'radi' ? GavraNotificationType.success : GavraNotificationType.warning,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(poruka)),
         );
       }
     } catch (e) {
       if (mounted) {
-        GavraUI.showSnackBar(
-          context,
-          message: 'Greška: $e',
-          type: GavraNotificationType.error,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e')),
         );
       }
     }
@@ -2041,11 +2032,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           status: rpcStatus == 'manual' ? 'Čeka odobrenje admina (Manual)' : 'Čeka potvrdu (Pending)',
         ).catchError((e) => debugPrint('Error logging request: $e'));
 
-        GavraUI.showSnackBar(
-          context,
-          message: 'Zahtev primljen, biće obrađen uskoro.',
-          type: GavraNotificationType.info,
-          duration: const Duration(seconds: 3),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Zahtev primljen, biće obrađen uskoro.'),
+            duration: Duration(seconds: 3),
+          ),
         );
       } else {
         // Otkazivanje - pozadinska obaveštenja
@@ -2065,11 +2056,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           errorMsg = 'Žao nam je, u terminu $normalizedVreme više nema slobodnih mesta.';
         }
 
-        GavraUI.showSnackBar(
-          context,
-          message: errorMsg,
-          type: GavraNotificationType.error,
-          duration: const Duration(seconds: 4),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     }
