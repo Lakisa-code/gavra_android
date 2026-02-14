@@ -267,22 +267,26 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   List<Map<String, dynamic>> _activeSeatRequests = [];
 
-  /// 📥 Učitava aktivne (pending/manual) zahteve iz seat_requests tabele
+  /// 📥 Učitava aktivne (pending/manual/approved) zahteve iz seat_requests tabele
   Future<void> _loadActiveRequests() async {
     try {
       final putnikId = _putnikData['id']?.toString();
       if (putnikId == null) return;
 
+      // 📅 Učitaj zahteve od danas pa na dalje (pending, manual, ali i approved koji možda nisu sinhronizovani)
+      final today = DateTime.now().toIso8601String().split('T')[0];
+
       final res = await supabase
           .from('seat_requests')
           .select()
           .eq('putnik_id', putnikId)
-          .inFilter('status', ['pending', 'manual']);
+          .inFilter('status', ['pending', 'manual', 'approved'])
+          .gte('datum', today);
 
       if (mounted) {
         setState(() {
           _activeSeatRequests = List<Map<String, dynamic>>.from(res);
-          debugPrint('📥 [ActiveRequests] Učitano: ${_activeSeatRequests.length} zahteva');
+          debugPrint('📥 [ActiveRequests] Učitano: ${_activeSeatRequests.length} zahteva (uključujući approved)');
         });
       }
     } catch (e) {
