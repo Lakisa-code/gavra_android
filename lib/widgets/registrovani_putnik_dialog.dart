@@ -186,6 +186,37 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         _polazakVsControllers[dan]!.text = putnik.getPolazakVrsacZaDan(dan) ?? '';
       }
 
+      // 🆕 SINHRONIZACIJA SA SEAT_REQUESTS (da Admin vidi šta je putnik tražio)
+      try {
+        final today = DateTime.now().toIso8601String().split('T')[0];
+        final requests = await supabase
+            .from('seat_requests')
+            .select()
+            .eq('putnik_id', putnik.id)
+            .inFilter('status', ['pending', 'manual', 'approved']).gte('datum', today);
+
+        if (requests.isNotEmpty) {
+          final daniMap = {1: 'pon', 2: 'uto', 3: 'sre', 4: 'cet', 5: 'pet'};
+          for (var req in requests) {
+            final datum = DateTime.parse(req['datum']);
+            final danKratica = daniMap[datum.weekday];
+            if (danKratica != null) {
+              final grad = req['grad'].toString().toLowerCase(); // 'bc' ili 'vs'
+              final vreme = req['zeljeno_vreme']?.toString() ?? '';
+
+              // Popuni samo ako je polje bilo prazno (da ne pregazimo već potvrđene u profilu, mada bi trebalo da su isti)
+              if (grad == 'bc' && _polazakBcControllers[danKratica]!.text.isEmpty) {
+                _polazakBcControllers[danKratica]!.text = vreme.split(':').take(2).join(':');
+              } else if (grad == 'vs' && _polazakVsControllers[danKratica]!.text.isEmpty) {
+                _polazakVsControllers[danKratica]!.text = vreme.split(':').take(2).join(':');
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [DialogSync] Greška pri sinhronizaciji zahteva: $e');
+      }
+
       // Load working days
       _setRadniDaniFromString(putnik.radniDani);
 

@@ -1828,11 +1828,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     }
 
-    final dani = DayConstants.dayAbbreviations; // 🗓️ PRIKAŽI SVIH 7 DANA (uključujući vikend)
+    final dani = DayConstants.dayAbbreviations.sublist(0, 5); // 🗓️ PRIKAŽI 5 DANA (Pon-Pet), bez vikenda
     final daniLabels = <String, String>{};
-    for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
-      // Koristi puni naziv iz DayConstants ili podrazumevani prevod
-      final short = DayConstants.dayAbbreviations[i];
+    for (int i = 0; i < dani.length; i++) {
+      final short = dani[i];
       final long = (i < DayConstants.dayNamesInternal.length) ? DayConstants.dayNamesInternal[i] : short;
       daniLabels[short] = long;
     }
