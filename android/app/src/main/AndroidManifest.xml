@@ -7,10 +7,15 @@
   <!-- <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" /> -->
   <!-- <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" /> -->
 
-  <!-- 🗺️ GPS/Location permissions -->
+  <!-- 🛰️ GPS/Location permissions -->
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-  <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> -->  <!-- 📱 Other required permissions -->
+  <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> -->
+
+  <!-- 🔋 Huawei specific permissions -->
+  <uses-permission android:name="com.huawei.permission.external_app_settings.USE_COMPONENT" />
+
+  <!-- 📱 Other required permissions -->
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.VIBRATE" />

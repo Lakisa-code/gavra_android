@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -152,7 +154,7 @@ class FirebaseService {
               message.data['message'] as String? ??
               'Nova notifikacija';
           LocalNotificationService.showRealtimeNotification(
-              title: title, body: body, payload: message.data.isNotEmpty ? message.data.toString() : null);
+              title: title, body: body, payload: message.data.isNotEmpty ? jsonEncode(message.data) : null);
         } catch (_) {}
       },
       onError: (error) {

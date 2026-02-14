@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
@@ -30,7 +32,7 @@ Future<void> backgroundNotificationHandler(Map<String, dynamic> payload) async {
     await LocalNotificationService.showNotificationFromBackground(
       title: title,
       body: body,
-      payload: rawData?.toString(),
+      payload: rawData != null ? jsonEncode(rawData) : null,
     );
   } catch (e) {
     debugPrint('⚠️ Error handling background notification: $e');

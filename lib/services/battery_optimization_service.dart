@@ -114,7 +114,7 @@ class BatteryOptimizationService {
   }
 
   static Future<void> _openHuaweiBatterySettings() async {
-    // Try Huawei App Launch (power management) first
+    // 1. Try Huawei App Launch (power management) - Most common for older EMUI
     try {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
@@ -124,10 +124,23 @@ class BatteryOptimizationService {
       await intent.launch();
       return;
     } catch (e) {
-      debugPrint('⚠️ Error launching Huawei startup manager: $e');
+      debugPrint('ℹ️ Huawei startup manager failed (expected on some versions): $e');
     }
 
-    // Try alternative Huawei activity
+    // 2. Try Power Intensity (newer EMUI)
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: 'com.huawei.systemmanager',
+        componentName: 'com.huawei.systemmanager.power.ui.PowerIntensityActivity',
+      );
+      await intent.launch();
+      return;
+    } catch (e) {
+      debugPrint('ℹ️ Huawei power intensity failed: $e');
+    }
+
+    // 3. Try Protect Activity (Legacy)
     try {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
@@ -137,7 +150,7 @@ class BatteryOptimizationService {
       await intent.launch();
       return;
     } catch (e) {
-      debugPrint('⚠️ Error launching Huawei protect activity: $e');
+      debugPrint('ℹ️ Huawei protect activity failed: $e');
     }
 
     // Fallback to general battery settings
@@ -410,4 +423,3 @@ class BatteryOptimizationService {
     );
   }
 }
-

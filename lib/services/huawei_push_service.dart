@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -177,7 +178,7 @@ class HuaweiPushService {
           await LocalNotificationService.showRealtimeNotification(
             title: title,
             body: body,
-            payload: data.toString(),
+            payload: jsonEncode(data),
           );
         } catch (e) {
           if (kDebugMode) {

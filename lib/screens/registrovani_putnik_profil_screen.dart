@@ -19,7 +19,6 @@ import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/realtime/realtime_manager.dart';
 import '../services/realtime_notification_service.dart'; // 🔔 Push notifikacije za vozače
 import '../services/seat_request_service.dart';
-import '../services/slobodna_mesta_service.dart'; // 🎫 Provera slobodnih mesta
 import '../services/theme_manager.dart';
 import '../services/voznje_log_service.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
@@ -2097,59 +2096,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           'putnik': {'id': _putnikData['id'], 'ime': putnikIme, 'grad': tipGrad.toUpperCase(), 'vreme': displayVreme},
         },
       ).catchError((_) {});
-    }
-  }
-
-  /// 🔍 Pronalazi alternativne termine detaljno (vraća pre i posle)
-  Future<Map<String, String?>> _pronadjiAlternativneTermineDetaljno(
-    String zeljeniTermin, [
-    String? datum,
-    String grad = 'BC',
-  ]) async {
-    try {
-      final slobodna = await SlobodnaMestaService.getSlobodnaMesta(datum: datum);
-      final termini = slobodna[grad] ?? [];
-
-      final zeljenoMinuta = _vremeUMinute(zeljeniTermin);
-
-      String? prviPre;
-      String? prviPosle;
-      int najblizePre = -99999;
-      int najblizePosle = 99999;
-
-      for (final termin in termini) {
-        if (termin.jePuno) continue;
-
-        final terminMinuta = _vremeUMinute(termin.vreme);
-
-        if (terminMinuta < zeljenoMinuta) {
-          if (terminMinuta > najblizePre) {
-            najblizePre = terminMinuta;
-            prviPre = termin.vreme;
-          }
-        } else if (terminMinuta > zeljenoMinuta) {
-          if (terminMinuta < najblizePosle) {
-            najblizePosle = terminMinuta;
-            prviPosle = termin.vreme;
-          }
-        }
-      }
-
-      return {'pre': prviPre, 'posle': prviPosle};
-    } catch (e) {
-      return {'pre': null, 'posle': null};
-    }
-  }
-
-  /// ⏰ Konvertuje vreme "HH:MM" u minute od ponoći
-  int _vremeUMinute(String vreme) {
-    try {
-      final delovi = vreme.split(':');
-      final sati = int.parse(delovi[0]);
-      final minuti = delovi.length > 1 ? int.parse(delovi[1]) : 0;
-      return sati * 60 + minuti;
-    } catch (e) {
-      return 0;
     }
   }
 
