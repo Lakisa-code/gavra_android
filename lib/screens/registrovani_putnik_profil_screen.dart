@@ -267,26 +267,22 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   List<Map<String, dynamic>> _activeSeatRequests = [];
 
-  /// 📥 Učitava aktivne (pending/manual/approved) zahteve iz seat_requests tabele
+  /// 📥 Učitava aktivne (pending/manual) zahteve iz seat_requests tabele
   Future<void> _loadActiveRequests() async {
     try {
       final putnikId = _putnikData['id']?.toString();
       if (putnikId == null) return;
 
-      // 📅 Učitaj zahteve od danas pa na dalje (pending, manual, ali i approved koji možda nisu sinhronizovani)
-      final today = DateTime.now().toIso8601String().split('T')[0];
-
       final res = await supabase
           .from('seat_requests')
           .select()
           .eq('putnik_id', putnikId)
-          .inFilter('status', ['pending', 'manual', 'approved'])
-          .gte('datum', today);
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
       if (mounted) {
         setState(() {
           _activeSeatRequests = List<Map<String, dynamic>>.from(res);
-          debugPrint('📥 [ActiveRequests] Učitano: ${_activeSeatRequests.length} zahteva (uključujući approved)');
+          debugPrint('📥 [ActiveRequests] Učitano: ${_activeSeatRequests.length} zahteva');
         });
       }
     } catch (e) {
@@ -1828,10 +1824,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     }
 
-    final dani = DayConstants.dayAbbreviations.sublist(0, 5); // 🗓️ PRIKAŽI 5 DANA (Pon-Pet), bez vikenda
+    final dani = DayConstants.dayAbbreviations; // 🗓️ PRIKAŽI SVIH 7 DANA (uključujući vikend)
     final daniLabels = <String, String>{};
-    for (int i = 0; i < dani.length; i++) {
-      final short = dani[i];
+    for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
+      // Koristi puni naziv iz DayConstants ili podrazumevani prevod
+      final short = DayConstants.dayAbbreviations[i];
       final long = (i < DayConstants.dayNamesInternal.length) ? DayConstants.dayNamesInternal[i] : short;
       daniLabels[short] = long;
     }

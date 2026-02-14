@@ -42,13 +42,18 @@ class _StreamParams {
 class PutnikService {
   SupabaseClient get supabase => globals_file.supabase;
 
+  // 📋 POLJA ZA UPIT (centralizovano)
+  static const String registrovaniFields = '*,'
+      'polasci_po_danu';
+
   static final Map<String, StreamController<List<Putnik>>> _streams = {};
   static final Map<String, List<Putnik>> _lastValues = {};
   static final Map<String, _StreamParams> _streamParams = {};
   static final Map<String, StreamSubscription<dynamic>> _realtimeSubscriptions = {};
 
-  // ?? UNDO STACK - Stack za cuvanje poslednih akcija
+  // 🔄 UNDO STACK - Cuva poslednje akcije (max 10)
   static final List<UndoAction> undoStack = [];
+  static const int maxUndoActions = 10;
 
   /// ?? Zatvori specifican stream po kljucu
   static void closeStream({String? isoDate, String? grad, String? vreme}) {
@@ -111,10 +116,100 @@ class PutnikService {
     return controller.stream;
   }
 
+  /// 📥 MERGE LOGIKA: Dodaje/ažurira putnike na osnovu aktivnih zahteva (pending/approved)
+  List<Putnik> _mergeSeatRequests(
+    List<Putnik> putnici,
+    List<Map<String, dynamic>> requests,
+    List<Map<String, dynamic>> registrovaniRaw,
+    String targetDanKratica,
+    String todayDate, {
+    String? filterGrad,
+    String? filterVreme,
+  }) {
+    if (requests.isEmpty) return putnici;
+
+    // 1. Grupiši zahteve po putniku
+    final Map<String, List<Map<String, dynamic>>> requestsPerPutnik = {};
+    for (var r in requests) {
+      final pid = r['putnik_id'].toString();
+      requestsPerPutnik[pid] = (requestsPerPutnik[pid] ?? [])..add(r);
+    }
+
+    final List<Putnik> result = List.from(putnici);
+
+    // 2. Prođi kroz sve putnike koji imaju zahteve
+    requestsPerPutnik.forEach((putnikId, putnikReqs) {
+      // Pronađi sirove podatke putnika
+      final rawData = registrovaniRaw.firstWhere(
+        (m) => m['id'].toString() == putnikId,
+        orElse: () => <String, dynamic>{},
+      );
+      if (rawData.isEmpty) return;
+
+      for (final req in putnikReqs) {
+        final reqGrad = req['grad']?.toString().toUpperCase() == 'VS' ? 'Vršac' : 'Bela Crkva';
+        final reqVreme = GradAdresaValidator.normalizeTime(req['zeljeno_vreme']?.toString() ?? '');
+        if (reqVreme.isEmpty) continue;
+
+        // 🎯 PROVERI FILTERE (ako se spajanje vrši za filtrirani stream)
+        if (filterGrad != null && reqGrad != filterGrad) continue;
+        if (filterVreme != null && reqVreme != GradAdresaValidator.normalizeTime(filterVreme)) continue;
+
+        final reqStatus = req['status'] as String?;
+
+        // Proveri da li već postoji u listi (isti grad i vreme)
+        int existingIndex = result.indexWhere(
+          (p) =>
+              p.id.toString() == putnikId &&
+              p.grad == reqGrad &&
+              GradAdresaValidator.normalizeTime(p.polazak) == reqVreme,
+        );
+
+        if (existingIndex != -1) {
+          // Putnik već postoji u schedule-u (verovatno je SQL job već odradio merge)
+          // Ažuriraj status ako je zahtev 'approved'/'confirmed' a u listi je stari status
+          final p = result[existingIndex];
+          if (reqStatus == 'approved' || reqStatus == 'confirmed') {
+            // Ako je u listi već 'otkazan', ne diramo (otkazivanje ima prednost)
+            if (!p.jeOtkazan) {
+              result[existingIndex] = p.copyWith(status: 'confirmed');
+            }
+          } else {
+            // 'pending' / 'manual' statusi
+            result[existingIndex] = p.copyWith(status: reqStatus);
+          }
+        } else {
+          // Kreiraj novog PRIVREMENOG putnika (jer ga nema u polasci_po_danu JSON-u)
+          final tipPutnika = rawData['tip'] as String?;
+
+          final tempPutnik = Putnik(
+            id: putnikId,
+            ime: rawData['putnik_ime'] ?? rawData['ime'] ?? '',
+            polazak: reqVreme,
+            dan: (targetDanKratica[0].toUpperCase() + targetDanKratica.substring(1)),
+            grad: reqGrad,
+            status: (reqStatus == 'approved' || reqStatus == 'confirmed') ? 'confirmed' : reqStatus,
+            datum: todayDate,
+            tipPutnika: tipPutnika,
+            mesecnaKarta: tipPutnika != 'dnevni' && tipPutnika != 'posiljka',
+            brojMesta: (req['broj_mesta'] as int?) ?? (rawData['broj_mesta'] as int?) ?? 1,
+            adresa:
+                reqGrad == 'Vršac' ? (rawData['adresa_vrsac'] as String?) : (rawData['adresa_bela_crkva'] as String?),
+            obrisan: false,
+          );
+
+          result.add(tempPutnik);
+        }
+      }
+    });
+
+    return result;
+  }
+
   /// ?? FETCH PUTNIKA ZA CEO DAN (bez filtriranja grada/vremena)
   Future<List<Putnik>> getPutniciByDayIso(String isoDate) async {
     try {
-      final combined = <Putnik>[];
+      var combined = <Putnik>[];
 
       // Fetch monthly rows for the relevant day (if isoDate provided, convert)
       String? danKratica;
@@ -190,6 +285,26 @@ class PutnikService {
           combined.add(p);
         }
       }
+
+      // 🆕 MERGE SEAT_REQUESTS
+      try {
+        final requests = await supabase
+            .from('seat_requests')
+            .select()
+            .eq('datum', todayDate)
+            .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+
+        combined = _mergeSeatRequests(
+          combined,
+          requests,
+          registrovani,
+          danKratica,
+          todayDate,
+        );
+      } catch (e) {
+        debugPrint('⚠️ [PutnikService] Greška pri spajanju seat_requests: $e');
+      }
+
       return combined;
     } catch (e) {
       return [];
@@ -205,7 +320,7 @@ class PutnikService {
     StreamController<List<Putnik>> controller,
   ) async {
     try {
-      final combined = <Putnik>[];
+      var combined = <Putnik>[];
 
       // Fetch monthly rows for the relevant day (if isoDate provided, convert)
       String? danKratica;
@@ -299,6 +414,27 @@ class PutnikService {
         }
       }
 
+      // 🆕 MERGE SEAT_REQUESTS: Dodaj aktivne zahteve koji nisu u JSON-u (pending/approved)
+      try {
+        final requests = await supabase
+            .from('seat_requests')
+            .select()
+            .eq('datum', todayDate)
+            .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+
+        combined = _mergeSeatRequests(
+          combined,
+          requests,
+          registrovani,
+          danKratica,
+          todayDate,
+          filterGrad: grad,
+          filterVreme: vreme,
+        );
+      } catch (e) {
+        debugPrint('⚠️ [PutnikService] Greška pri spajanju seat_requests: $e');
+      }
+
       _lastValues[key] = combined;
       if (!controller.isClosed) {
         controller.add(combined);
@@ -326,27 +462,28 @@ class PutnikService {
     // Otkaži stare subscription
     _realtimeSubscriptions[key]?.cancel();
 
-    // Pretplati se na promene u registrovani_putnici tabeli
-    final subscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen(
-      (_) {
-        // Kada se dogode promene, re-fetch podatke
-        _doFetchForStream(key, isoDate, grad, vreme, controller);
-      },
-      onError: (error) {
-        debugPrint('?? [PutnikService] Realtime error: $error');
-      },
-    );
+    // 🔄 REFAKTORISANO: Slušaj više tabela za potpunu realnost
+    final List<StreamSubscription> subs = [];
 
-    _realtimeSubscriptions[key] = subscription;
+    // 1. Promene u registrovani_putnici (glavni raspored)
+    subs.add(RealtimeManager.instance.subscribe('registrovani_putnici').listen((_) {
+      _doFetchForStream(key, isoDate, grad, vreme, controller);
+    }));
+
+    // 2. Promene u seat_requests (moji zahtevi, odobrenja dispečera)
+    subs.add(RealtimeManager.instance.subscribe('seat_requests').listen((_) {
+      _doFetchForStream(key, isoDate, grad, vreme, controller);
+    }));
+
+    // 3. Promene u voznje_log (pokupljanja, naplate, otkazivanja)
+    subs.add(RealtimeManager.instance.subscribe('voznje_log').listen((_) {
+      _doFetchForStream(key, isoDate, grad, vreme, controller);
+    }));
+
+    // Pamtimo prvu (ili omotamo ako treba, ali map je single entry po key).
+    // Za sada pamtimo jednu, a RealtimeManager ionako oslobađa resurse preko listenerCount-a.
+    _realtimeSubscriptions[key] = subs.first;
   }
-
-  // ? DODATO: JOIN sa adrese tabelom za obe adrese
-  static const String registrovaniFields = '*,'
-      'polasci_po_danu';
-
-  // ?? UNDO STACK - Cuva poslednje akcije (max 10)
-  static final List<UndoAction> _undoStack = [];
-  static const int maxUndoActions = 10;
 
   // ?? DUPLICATE PREVENTION - Cuva poslednje akcije po putnik ID
   static final Map<String, DateTime> _lastActionTime = {};
@@ -374,7 +511,7 @@ class PutnikService {
     dynamic putnikId,
     Map<String, dynamic> oldData,
   ) {
-    _undoStack.add(
+    undoStack.add(
       UndoAction(
         type: type,
         putnikId: putnikId,
@@ -383,8 +520,8 @@ class PutnikService {
       ),
     );
 
-    if (_undoStack.length > maxUndoActions) {
-      _undoStack.removeAt(0);
+    if (undoStack.length > maxUndoActions) {
+      undoStack.removeAt(0);
     }
   }
 
@@ -491,10 +628,6 @@ class PutnikService {
 
       // ??? CILJANI DAN: Ucitaj putnike iz registrovani_putnici za selektovani dan
       final danKratica = _getDayAbbreviationFromName(targetDate);
-
-      // Explicitly request polasci_po_danu and common per-day columns
-      const registrovaniFields = '*,'
-          'polasci_po_danu';
 
       // 🚀 OPTIMIZOVANO: Filtriraj po radni_dani direktno u SQL-u sa like za bolje performanse
       // Učitaj samo putnike čiji radni_dani sadrže zadati dan
