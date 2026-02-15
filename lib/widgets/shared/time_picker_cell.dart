@@ -134,6 +134,7 @@ class TimePickerCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasTime = value != null && value!.isNotEmpty;
     final isPending = status == 'pending' || status == 'manual';
+    final isRejected = status == 'rejected';
     final isApproved = status == 'approved';
     final isConfirmed = status == 'confirmed';
     final locked = isLocked;
@@ -151,6 +152,12 @@ class TimePickerCell extends StatelessWidget {
       borderColor = Colors.red;
       bgColor = Colors.red.shade50;
       textColor = Colors.red.shade800;
+    }
+    // ❌ ODBIJENO - narandžasto/crvena ivica (da se razlikuje od otkazanog)
+    else if (isRejected) {
+      borderColor = Colors.orange.shade800;
+      bgColor = Colors.red.shade50;
+      textColor = Colors.red.shade900;
     }
     // ⬜ PROŠLI DAN (nije otkazan) - sivo
     else if (locked) {
@@ -189,6 +196,17 @@ class TimePickerCell extends StatelessWidget {
         if (isPending) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.')),
+          );
+          return;
+        }
+
+        // ❌ BLOKADA ZA REJECTED STATUS - objasni korisniku
+        if (isRejected) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Ovaj termin je popunjen. Izaberite neko drugo slobodno vreme.'),
+              backgroundColor: Colors.redAccent,
+            ),
           );
           return;
         }
@@ -253,13 +271,17 @@ class TimePickerCell extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: (hasTime || isPending)
+          child: (hasTime || isPending || isRejected)
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isCancelled) ...[
                       Icon(Icons.cancel, size: 12, color: textColor),
+                      const SizedBox(width: 2),
+                    ] else if (isRejected) ...[
+                      // ❌ Ikonica za odbijen status
+                      Icon(Icons.error_outline, size: 14, color: textColor),
                       const SizedBox(width: 2),
                     ] else if (isPending) ...[
                       Icon(Icons.hourglass_empty, size: 14, color: textColor),
