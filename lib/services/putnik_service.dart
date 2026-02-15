@@ -44,8 +44,8 @@ class PutnikService {
 
   // 📋 POLJA ZA UPIT (centralizovano)
   static const String registrovaniFields = '*, '
-      'adresa_bc:adresa_bela_crkva_id(naziv), '
-      'adresa_vs:adresa_vrsac_id(naziv)';
+      'adresa_bc:adrese!adresa_bela_crkva_id(naziv), '
+      'adresa_vs:adrese!adresa_vrsac_id(naziv)';
 
   static final Map<String, StreamController<List<Putnik>>> _streams = {};
   static final Map<String, List<Putnik>> _lastValues = {};

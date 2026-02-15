@@ -1702,8 +1702,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                             ],
                           ],
                         ),
-                        const SizedBox(height: 16),
-                      ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // 📊 Detaljne statistike - dugme za dijalog
                     _buildDetaljneStatistikeDugme(),
