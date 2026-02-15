@@ -11,6 +11,7 @@ class TimeRow extends StatelessWidget {
   final String? bcStatus;
   final String? vsStatus;
   final bool isAdmin;
+  final String? dayName; // 🆕 pon, uto, sre...
 
   const TimeRow({
     super.key,
@@ -20,6 +21,7 @@ class TimeRow extends StatelessWidget {
     this.bcStatus,
     this.vsStatus,
     this.isAdmin = false,
+    this.dayName,
   });
 
   @override
@@ -48,7 +50,9 @@ class TimeRow extends StatelessWidget {
                 value: currentValue,
                 isBC: true,
                 status: bcStatus,
+                isCancelled: bcStatus == 'otkazano',
                 isAdmin: isAdmin,
+                dayName: dayName,
                 onChanged: (newValue) {
                   bcController.text = newValue ?? '';
                 },
@@ -67,7 +71,9 @@ class TimeRow extends StatelessWidget {
                 value: currentValue,
                 isBC: false,
                 status: vsStatus,
+                isCancelled: vsStatus == 'otkazano',
                 isAdmin: isAdmin,
+                dayName: dayName,
                 onChanged: (newValue) {
                   vsController.text = newValue ?? '';
                 },

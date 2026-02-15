@@ -315,7 +315,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           .from('seat_requests')
           .select()
           .eq('putnik_id', putnikId)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano']);
 
       if (mounted) {
         setState(() {
@@ -1921,8 +1921,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final vreme = req['zeljeno_vreme'] as String?;
 
         final existing = polasci[danKratica]!;
-        // PENDING status iz seat_requests ima prioritet nad JSON-om dok se ne odobri (confirmed)
-        if (existing['${grad}_status'] != 'confirmed' && existing['${grad}_status'] != 'approved') {
+        // PENDING/OTKAZANO status iz seat_requests ima prioritet nad JSON-om
+        // Ako je status otkazano, uvek ima prioritet
+        if (status == 'otkazano') {
+          existing['${grad}_status'] = 'otkazano';
+          existing['${grad}_otkazano'] = true; // For isCancelled logic
+          // Set cancellation time to the requested time so it shows in red box
+          existing['${grad}_otkazano_vreme'] = vreme;
+        } else if (existing['${grad}_status'] != 'confirmed' && existing['${grad}_status'] != 'approved') {
           existing[grad] = vreme;
           existing['${grad}_status'] = status;
         }

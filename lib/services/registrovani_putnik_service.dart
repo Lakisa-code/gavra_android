@@ -71,6 +71,27 @@ class RegistrovaniPutnikService {
     return RegistrovaniPutnik.fromMap(response);
   }
 
+  /// Dohvata sve zahteve za sedište (seat_requests) za putnika u narednih 7 dana
+  Future<List<Map<String, dynamic>>> getWeeklySeatRequests(String putnikId) async {
+    final now = DateTime.now();
+    final todayStr = DateTime(now.year, now.month, now.day).toIso8601String().split('T')[0];
+    final nextWeekStr = now.add(const Duration(days: 7)).toIso8601String().split('T')[0];
+
+    try {
+      final response = await _supabase
+          .from('seat_requests')
+          .select()
+          .eq('putnik_id', putnikId)
+          .gte('datum', todayStr)
+          .lte('datum', nextWeekStr);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('⚠️ [RegistrovaniPutnikService] Greška pri dohvatanju nedeljnih zahteva: $e');
+      return [];
+    }
+  }
+
   /// Dohvata mesečnog putnika po imenu (legacy compatibility)
   static Future<RegistrovaniPutnik?> getRegistrovaniPutnikByIme(String ime) async {
     try {

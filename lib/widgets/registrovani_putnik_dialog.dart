@@ -77,6 +77,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   // Original polasci_po_danu to preserve status/notes when updating
   Map<String, dynamic>? _originalPolasciPoDanu;
 
+  // 🆕 Weekly seat_requests (overrides)
+  List<Map<String, dynamic>> _weeklyOverrides = [];
+
   // Form data
   String _tip = 'radnik';
   Map<String, bool> _radniDani = {
@@ -186,6 +189,19 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         _polazakVsControllers[dan]!.text = putnik.getPolazakVrsacZaDan(dan) ?? '';
       }
 
+      // 🆕 UCITAJ OVERRIDE-ove (seat_requests)
+      try {
+        final service = RegistrovaniPutnikService();
+        final overrides = await service.getWeeklySeatRequests(putnik.id);
+        if (mounted) {
+          setState(() {
+            _weeklyOverrides = overrides;
+          });
+        }
+      } catch (e) {
+        debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška pri učitavanju override-ova: $e');
+      }
+
       // Load working days
       _setRadniDaniFromString(putnik.radniDani);
 
@@ -277,7 +293,42 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   /// 🕐 Helper da izvučemo status vaskrsa/bc za određeni dan
+  /// Prioritet imaju seat_requests (override), pa onda šablon (originalPolasciPoDanu)
   String? _getStatusForDay(String day, bool isBC) {
+    // 1. Proveri da li postoji override (seat_request) za taj dan u tekućoj nedelji
+    try {
+      final now = DateTime.now();
+      final todayWeekday = now.weekday; // 1=Pon...7=Ned
+      final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final targetWeekday = dayNames.indexOf(day.toLowerCase()) + 1;
+
+      if (targetWeekday > 0) {
+        // Izračunaj datum za taj dan (u okviru 7 dana od danas)
+        int diff = targetWeekday - todayWeekday;
+        if (diff < 0) diff += 7; // Ako je npr. danas Sreda (3), a tražimo Pon (1), diff = -2 + 7 = 5 dana unapred
+
+        final targetDate = DateTime(now.year, now.month, now.day).add(Duration(days: diff));
+        final dateStr = targetDate.toIso8601String().split('T')[0];
+
+        // Nađi zahtev za taj datum i taj smer
+        final region = isBC ? 'Bela Crkva' : 'Vršac';
+        final override = _weeklyOverrides.firstWhere(
+          (req) => req['datum'] == dateStr && req['grad'] == region,
+          orElse: () => {},
+        );
+
+        if (override.isNotEmpty) {
+          final status = override['status']?.toString();
+          // Ako je status 'otkazano', to je specifičan status koji TimePickerCell treba da zna
+          if (status == 'otkazano') return 'otkazano';
+          return status;
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška u _getStatusForDay: $e');
+    }
+
+    // 2. Ako nema override-a, vrati iz originalnog šablona
     if (_originalPolasciPoDanu == null) return null;
     final dayData = _originalPolasciPoDanu![day];
     if (dayData == null) return null;
@@ -992,6 +1043,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             vsController: _polazakVsControllers['pon']!,
             bcStatus: _getStatusForDay('pon', true),
             vsStatus: _getStatusForDay('pon', false),
+            dayName: 'pon',
             isAdmin: true,
           ),
           const SizedBox(height: 8),
@@ -1001,6 +1053,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             vsController: _polazakVsControllers['uto']!,
             bcStatus: _getStatusForDay('uto', true),
             vsStatus: _getStatusForDay('uto', false),
+            dayName: 'uto',
             isAdmin: true,
           ),
           const SizedBox(height: 8),
@@ -1010,6 +1063,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             vsController: _polazakVsControllers['sre']!,
             bcStatus: _getStatusForDay('sre', true),
             vsStatus: _getStatusForDay('sre', false),
+            dayName: 'sre',
             isAdmin: true,
           ),
           const SizedBox(height: 8),
@@ -1019,6 +1073,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             vsController: _polazakVsControllers['cet']!,
             bcStatus: _getStatusForDay('cet', true),
             vsStatus: _getStatusForDay('cet', false),
+            dayName: 'cet',
             isAdmin: true,
           ),
           const SizedBox(height: 8),
@@ -1028,6 +1083,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             vsController: _polazakVsControllers['pet']!,
             bcStatus: _getStatusForDay('pet', true),
             vsStatus: _getStatusForDay('pet', false),
+            dayName: 'pet',
             isAdmin: true,
           ),
         ],
