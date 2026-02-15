@@ -1828,11 +1828,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     }
 
-    final dani = DayConstants.dayAbbreviations; // 🗓️ PRIKAŽI SVIH 7 DANA (uključujući vikend)
+    final dani = DayConstants.dayAbbreviations.where((d) => d != 'sub' && d != 'ned').toList(); // 🗓️ Samo radni dani
     final daniLabels = <String, String>{};
     for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
       // Koristi puni naziv iz DayConstants ili podrazumevani prevod
       final short = DayConstants.dayAbbreviations[i];
+      if (short == 'sub' || short == 'ned') continue; // Preskoči vikend u labelama
       final long = (i < DayConstants.dayNamesInternal.length) ? DayConstants.dayNamesInternal[i] : short;
       daniLabels[short] = long;
     }
@@ -2148,6 +2149,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         setState(() {
           _putnikData['polasci_po_danu'] = oldPolasci;
           _putnikData['radni_dani'] = oldRadniDani;
+
+          // 🆕 ROLLBACK ZA AKTIVNE ZAHTEVE
+          final targetDate = SeatRequestService.getNextDateForDay(DateTime.now(), dan);
+          final datumStr = targetDate.toIso8601String().split('T')[0];
+          _activeSeatRequests.removeWhere(
+              (r) => r['grad'].toString().toUpperCase() == tipGrad.toUpperCase() && r['datum'].toString() == datumStr);
         });
 
         String errorMsg = 'Greška pri čuvanju promene.';

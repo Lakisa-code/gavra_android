@@ -262,7 +262,7 @@ class TimePickerCell extends StatelessWidget {
                       Icon(Icons.cancel, size: 12, color: textColor),
                       const SizedBox(width: 2),
                     ] else if (isPending) ...[
-                      Icon(Icons.hourglass_empty, size: 10, color: textColor),
+                      Icon(Icons.hourglass_empty, size: 14, color: textColor),
                       const SizedBox(width: 2),
                     ] else if (isApproved) ...[
                       // ✅ Ikonica za approved status
@@ -287,16 +287,7 @@ class TimePickerCell extends StatelessWidget {
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
-                          if (isPending)
-                            Text(
-                              'PENDING',
-                              style: TextStyle(
-                                color: textColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 7,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
+                          // "PENDING" text removed by user request
                         ],
                       ),
                     ),

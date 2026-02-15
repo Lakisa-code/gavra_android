@@ -43,9 +43,14 @@ BEGIN
     SELECT COALESCE(SUM(rp.broj_mesta), 0) INTO zauzeto_val
     FROM registrovani_putnici rp
     WHERE rp.obrisan = false AND rp.aktivan = true
-      AND rp.polasci_po_danu->dan_kratica->>grad_key = target_vreme::text
-      AND rp.polasci_po_danu->dan_kratica->>status_key IN ('confirmed', 'approved', 'pending')
-      AND rp.polasci_po_danu->dan_kratica->>(grad_key || '_otkazano') IS NULL;
+      AND (
+        rp.polasci_po_danu->dan_kratica->>grad_key = target_vreme::text
+        OR
+        rp.polasci_po_danu->dan_kratica->>grad_key = to_char(target_vreme, 'HH24:MI')
+      )
+      -- Računaj sve, osim ako su eksplicitno obeleženi kao odbijeni ili otkazani
+      AND (rp.polasci_po_danu->dan_kratica->>status_key IS NULL OR rp.polasci_po_danu->dan_kratica->>status_key != 'rejected')
+      AND (rp.polasci_po_danu->dan_kratica->>(grad_key || '_otkazano') IS NULL);
 
     RETURN max_mesta_val - zauzeto_val;
 END;
