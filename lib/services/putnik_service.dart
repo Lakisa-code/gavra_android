@@ -43,8 +43,9 @@ class PutnikService {
   SupabaseClient get supabase => globals_file.supabase;
 
   // 📋 POLJA ZA UPIT (centralizovano)
-  static const String registrovaniFields = '*,'
-      'polasci_po_danu';
+  static const String registrovaniFields = '*, '
+      'adresa_bc:adresa_bela_crkva_id(naziv), '
+      'adresa_vs:adresa_vrsac_id(naziv)';
 
   static final Map<String, StreamController<List<Putnik>>> _streams = {};
   static final Map<String, List<Putnik>> _lastValues = {};
@@ -182,6 +183,12 @@ class PutnikService {
           // Kreiraj novog PRIVREMENOG putnika (jer ga nema u polasci_po_danu JSON-u)
           final tipPutnika = rawData['tip'] as String?;
 
+          // Izvuci adresu iz JOIN-a
+          final adresaBcJoin = rawData['adresa_bc'] as Map<String, dynamic>?;
+          final adresaVsJoin = rawData['adresa_vs'] as Map<String, dynamic>?;
+          final finalAdresaBc = adresaBcJoin?['naziv'] as String? ?? rawData['adresa_bela_crkva_naziv'] as String?;
+          final finalAdresaVs = adresaVsJoin?['naziv'] as String? ?? rawData['adresa_vrsac_naziv'] as String?;
+
           final tempPutnik = Putnik(
             id: putnikId,
             ime: rawData['putnik_ime'] ?? rawData['ime'] ?? '',
@@ -193,8 +200,11 @@ class PutnikService {
             tipPutnika: tipPutnika,
             mesecnaKarta: tipPutnika != 'dnevni' && tipPutnika != 'posiljka',
             brojMesta: (req['broj_mesta'] as int?) ?? (rawData['broj_mesta'] as int?) ?? 1,
-            adresa:
-                reqGrad == 'Vršac' ? (rawData['adresa_vrsac'] as String?) : (rawData['adresa_bela_crkva'] as String?),
+            adresa: reqGrad == 'Vršac' ? finalAdresaVs : finalAdresaBc,
+            adresaId: reqGrad == 'Vršac' ? rawData['adresa_vrsac_id'] : rawData['adresa_bela_crkva_id'],
+            brojTelefona: rawData['broj_telefona'] as String?,
+            statusVreme: rawData['updated_at'] as String?,
+            vremeDodavanja: rawData['created_at'] != null ? DateTime.parse(rawData['created_at']) : null,
             obrisan: false,
           );
 

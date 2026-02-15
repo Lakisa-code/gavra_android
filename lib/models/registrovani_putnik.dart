@@ -190,8 +190,11 @@ class RegistrovaniPutnik {
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
       vozacId: map['vozac_id'] as String?,
       // Computed fields za UI display (dolaze iz JOIN-a)
-      adresa: map['adresa'] as String?,
-      grad: map['grad'] as String?,
+      adresa: map['adresa'] as String? ??
+          (map['adresa_bc'] is Map ? (map['adresa_bc'] as Map)['naziv'] as String? : null) ??
+          (map['adresa_vs'] is Map ? (map['adresa_vs'] as Map)['naziv'] as String? : null),
+      grad: map['grad'] as String? ??
+          (map['adresa_bc'] is Map ? 'Bela Crkva' : (map['adresa_vs'] is Map ? 'Vršac' : null)),
       // Tracking polja - UKLONJENO: pokupljen, placeno - sada u voznje_log
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email

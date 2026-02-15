@@ -447,7 +447,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final putnikId = _putnikData['id'];
       if (putnikId == null) return;
 
-      final response = await supabase.from('registrovani_putnici').select().eq('id', putnikId).single();
+      final response = await supabase
+          .from('registrovani_putnici')
+          .select(PutnikService.registrovaniFields)
+          .eq('id', putnikId)
+          .single();
 
       if (mounted) {
         setState(() {
@@ -1698,9 +1702,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                             ],
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                        const SizedBox(height: 16),
+                      ],
 
                     // 📊 Detaljne statistike - dugme za dijalog
                     _buildDetaljneStatistikeDugme(),
