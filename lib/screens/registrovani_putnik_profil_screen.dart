@@ -253,9 +253,13 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       debugPrint('🆕 [Realtime] Seat request promena detektovana: ${payload.eventType}');
       _loadActiveRequests(); // Osveži listu zahteva
 
-      // Ako je odobreno, hendluj i to (za zvučne efekte ili poruke)
-      if (payload.eventType == PostgresChangeEvent.update && payload.newRecord['status'] == 'approved') {
-        _handleSeatRequestApproval(payload);
+      // Ako je odobreno ili odbijeno, hendluj i to (za zvučne efekte ili poruke)
+      if (payload.eventType == PostgresChangeEvent.update) {
+        if (payload.newRecord['status'] == 'approved') {
+          _handleSeatRequestApproval(payload);
+        } else if (payload.newRecord['status'] == 'rejected') {
+          _handleSeatRequestRejection(payload);
+        }
       }
     });
 
@@ -347,7 +351,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     try {
       final newRecord = payload.newRecord;
       final putnikId = newRecord['putnik_id'].toString();
-      final grad = newRecord['grad'].toString().toLowerCase(); // 'bc' ili 'vs'
+      final grad = newRecord['grad'].toString().toUpperCase();
       final datum = newRecord['datum'].toString();
       final vreme = newRecord['zeljeno_vreme'].toString();
 
@@ -420,7 +424,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final gradNaziv = grad.toUpperCase();
 
         await LocalNotificationService.showRealtimeNotification(
-          title: '✅ Zahtev Odobren!',
+          title: '✅ Mesto osigurano!',
           body: 'Vaš zahtev za $vreme ($danNaziv $gradNaziv) je odobren. Slobodno mesto je dostupno!',
           payload: jsonEncode({
             'notification_id': 'seat_request_approval_$putnikId',
@@ -438,6 +442,71 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       debugPrint('✅ [SeatRequestApproval] Registrovani putnici ažuriran');
     } catch (e) {
       debugPrint('❌ [SeatRequestApproval] Greška: $e');
+    }
+  }
+
+  /// 🆕 Hendluje rejection seat request-a - prikazuje alternative ako postoje
+  Future<void> _handleSeatRequestRejection(PostgresChangePayload payload) async {
+    try {
+      final newRecord = payload.newRecord;
+      final putnikId = newRecord['putnik_id'].toString();
+      final grad = newRecord['grad'].toString().toUpperCase();
+      final datum = newRecord['datum'].toString();
+      final vreme = newRecord['zeljeno_vreme'].toString();
+      final alternatives = List<String>.from(newRecord['alternatives'] ?? []);
+
+      // 🛡️ PROVERA: Odbaci stare notifikacije (starije od 2 minuta)
+      final processedAt = newRecord['processed_at'];
+      if (processedAt != null) {
+        final processedTime = DateTime.parse(processedAt.toString());
+        final now = DateTime.now();
+        if (now.difference(processedTime).inMinutes > 2) {
+          debugPrint(
+              '⏭️ [SeatRequestRejection] Odbačena stara notifikacija (processed ${now.difference(processedTime).inMinutes} min ago)');
+          return;
+        }
+      }
+
+      // 🔔 Pošalji push notifikaciju (foreground/background/lock screen)
+      try {
+        String bodyText;
+        String notificationType;
+
+        if (alternatives.isNotEmpty) {
+          notificationType = 'seat_request_alternatives';
+          final formattedAlts = alternatives.map((a) {
+            if (a.contains(':')) {
+              final parts = a.split(':');
+              if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
+            }
+            return a;
+          }).join(', ');
+          bodyText =
+              'Termin u $vreme je pun ❌, ali imamo mesta u: $formattedAlts. Da li Vam odgovara neki od ovih termina?';
+        } else {
+          notificationType = 'seat_request_rejected';
+          bodyText = 'Nažalost, u terminu $vreme više nema slobodnih mesta. Molimo Vas da odaberete drugi polazak. ❌';
+        }
+
+        await LocalNotificationService.showRealtimeNotification(
+          title: '❌ Termin popunjen',
+          body: bodyText,
+          payload: jsonEncode({
+            'notification_id': 'seat_request_rejection_$putnikId',
+            'type': notificationType,
+            'id': newRecord['id'],
+            'putnik_id': putnikId,
+            'grad': newRecord['grad'],
+            'vreme': vreme,
+            'datum': datum,
+            'alternatives': alternatives,
+          }),
+        );
+      } catch (e) {
+        debugPrint('⚠️ [SeatRequestRejection] Greška pri slanju notifikacije: $e');
+      }
+    } catch (e) {
+      debugPrint('❌ [SeatRequestRejection] Greška: $e');
     }
   }
 

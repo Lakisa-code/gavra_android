@@ -1447,7 +1447,10 @@ class _VozacScreenState extends State<VozacScreen> {
                         GradAdresaValidator.normalizeTime(p.polazak) ==
                             GradAdresaValidator.normalizeTime(_selectedVreme);
 
-                    return gradMatch && vremeMatch;
+                    // 🛡️ Predlog 3: Sakrij putnike na čekanju (pending)
+                    final isPending = p.status?.toLowerCase() == 'pending';
+
+                    return gradMatch && vremeMatch && !isPending;
                   }).toList();
 
                   // ?? FIX: Uvek koristi `filteredByGradVreme` kao izvor istine (iz streama)

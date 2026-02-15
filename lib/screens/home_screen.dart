@@ -2115,7 +2115,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 odgovarajuciDan &&
                 odgovarajuciGrad &&
                 odgovarajuceVreme &&
-                normalizedStatus != 'obrisan';
+                normalizedStatus != 'obrisan' &&
+                normalizedStatus != 'pending';
             return prikazi;
           });
           final sviPutnici = filtered.toList();

@@ -193,7 +193,12 @@ class SeatRequestService {
               putnikId: putnikId,
               title: '✅ Mesto osigurano!',
               body: '✅ Mesto osigurano! Vaša rezervacija za $vreme je potvrđena. Želimo vam ugodnu vožnju! 🚌',
-              data: {'type': 'seat_request_approved', 'vreme': vreme, 'id': id},
+              data: {
+                'notification_id': 'seat_request_approval_$putnikId', // 🎯 FIX: Deduplikacija
+                'type': 'seat_request_approved',
+                'vreme': vreme,
+                'id': id
+              },
             );
           } else if (status == 'rejected') {
             final List<dynamic>? alternatives = item['alternatives'];
@@ -219,12 +224,13 @@ class SeatRequestService {
               title: '❌ Termin popunjen',
               body: body,
               data: {
+                'notification_id': 'seat_request_rejection_$putnikId', // 🎯 FIX: Deduplikacija
                 'type': type,
                 'vreme': vreme,
                 'id': id,
                 'putnik_id': putnikId,
                 'grad': grad,
-                datum: datum, // Prosleđujemo datum za eventualno klikanje alternativa
+                'datum': datum,
                 'alternatives': alternatives,
               },
             );
@@ -238,21 +244,78 @@ class SeatRequestService {
     }
   }
 
-  /// 🎫 Prihvata alternativni termin - šalje ga na standardnu proveru (čeka 10 min)
+  /// 🎫 Prihvata alternativni termin - ODMAH ODOBRAVA (nije fer da čeka ponovnu obradu)
   static Future<bool> acceptAlternative({
+    String? requestId, // 🆔 ID originalnog zahteva
     required String putnikId,
     required String novoVreme,
     required String grad,
     required String datum, // Fiksni datum originalnog zahteva
   }) async {
     try {
-      await insertSeatRequest(
-        putnikId: putnikId,
-        vreme: novoVreme,
-        dan: '', // Dan se ignoriše jer koristimo fixedDate
-        fixedDate: datum,
-        grad: grad,
-      );
+      final gradUpper = grad.toUpperCase();
+      final nowStr = DateTime.now().toUtc().toIso8601String();
+
+      // 1. 🚀 Ažuriraj ili insertuj SEAT REQUEST sa statusom 'approved' (ODMAH!)
+      if (requestId != null && requestId.isNotEmpty) {
+        await _supabase.from('seat_requests').update({
+          'zeljeno_vreme': novoVreme,
+          'status': 'approved',
+          'processed_at': nowStr,
+        }).eq('id', requestId);
+        debugPrint('✅ [SeatRequestService] Request $requestId ažuriran na APPROVED ($novoVreme)');
+      } else {
+        await _supabase.from('seat_requests').insert({
+          'putnik_id': putnikId,
+          'grad': gradUpper,
+          'datum': datum,
+          'zeljeno_vreme': novoVreme,
+          'status': 'approved',
+          'processed_at': nowStr,
+        });
+        debugPrint('✅ [SeatRequestService] Novi APPROVED zahtev insertovan ($novoVreme)');
+      }
+
+      // 2. 📅 Ažuriraj REGISTROVANI_PUTNICI (JSON polasci_po_danu) direktno
+      // Ovo osigurava da putnik VIDI promenu odmah u kalendaru/profilu
+      try {
+        final date = DateTime.parse(datum);
+        const daniMap = {
+          DateTime.monday: 'pon',
+          DateTime.tuesday: 'uto',
+          DateTime.wednesday: 'sre',
+          DateTime.thursday: 'cet',
+          DateTime.friday: 'pet',
+          DateTime.saturday: 'sub',
+          DateTime.sunday: 'ned'
+        };
+        final dan = daniMap[date.weekday] ?? 'pon';
+
+        final resp =
+            await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnikId).maybeSingle();
+
+        if (resp != null && resp['polasci_po_danu'] != null) {
+          final polasci = Map<String, dynamic>.from(resp['polasci_po_danu'] as Map);
+          if (polasci[dan] != null) {
+            final danData = Map<String, dynamic>.from(polasci[dan] as Map);
+
+            // Koristi lowercase za ključeve jer RegistrovaniHelpers tako očekuje
+            final g = grad.toLowerCase();
+            danData[g] = novoVreme;
+            danData['${g}_status'] = 'confirmed';
+            danData.remove('${g}_napomena');
+            danData.remove('${g}_ceka_od');
+            danData.remove('${g}_otkazano_vreme');
+
+            polasci[dan] = danData;
+            await _supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
+            debugPrint('✅ [SeatRequestService] Kalendar putnika ažuriran za $dan $g -> $novoVreme');
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [SeatRequestService] Greška pri ažuriranju kalendara (JSON): $e');
+      }
+
       return true;
     } catch (e) {
       debugPrint('❌ [SeatRequestService] Error accepting alternative: $e');

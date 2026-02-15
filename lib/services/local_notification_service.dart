@@ -150,6 +150,7 @@ class LocalNotificationService {
               zeljenoVreme: data['vreme']?.toString() ?? '',
               putnikId: data['putnik_id']?.toString() ?? '',
               grad: data['grad']?.toString() ?? 'BC',
+              datum: data['datum']?.toString() ?? '',
               alternatives: List<String>.from(data['alternatives'] ?? []),
               body: body,
             );
@@ -315,16 +316,32 @@ class LocalNotificationService {
     String dedupeKey = ''; // 🔑 Premesteno izvan try-catch za finally blok
 
     try {
-      try {
-        if (payload != null && payload.isNotEmpty) {
-          final Map<String, dynamic> parsed = jsonDecode(payload);
-          if (parsed['notification_id'] != null) {
-            dedupeKey = parsed['notification_id'].toString();
+      if (payload != null && payload.isNotEmpty) {
+        try {
+          final Map<String, dynamic> data = jsonDecode(payload);
+
+          // 🎨 SPECIJALNA OBRADA ZA ALTERNATIVE U POZADINI
+          if (data['type'] == 'seat_request_alternatives') {
+            await showSeatRequestAlternativesNotification(
+              id: data['id']?.toString() ?? '',
+              zeljenoVreme: data['vreme']?.toString() ?? '',
+              putnikId: data['putnik_id']?.toString() ?? '',
+              grad: data['grad']?.toString() ?? 'BC',
+              datum: data['datum']?.toString() ?? '',
+              alternatives: List<String>.from(data['alternatives'] ?? []),
+              body: body,
+            );
+            return; // Već je prikazana specijalna notifikacija
           }
+
+          if (data['notification_id'] != null) {
+            dedupeKey = data['notification_id'].toString();
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error parsing background payload: $e');
         }
-      } catch (e) {
-        // 🔇 Ignore
       }
+
       if (dedupeKey.isEmpty) dedupeKey = '$title|$body|${payload ?? ''}';
 
       // 🔒 MUTEX LOCK - Sprečava race condition kada foreground i background handleri rade istovremeno
@@ -444,10 +461,12 @@ class LocalNotificationService {
         try {
           final Map<String, dynamic> payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
 
-          notificationType = payloadData['type'] as String?;
-
-          // 🎫 BC/VS alternativa - samo otvori profil bez navigacije
-          if (notificationType == 'bc_alternativa' || notificationType == 'vs_alternativa') {
+          // 🎫 BC/VS alternativa ili Seat Request - otvori profil
+          if (notificationType == 'bc_alternativa' ||
+              notificationType == 'vs_alternativa' ||
+              notificationType == 'seat_request_alternatives' ||
+              notificationType == 'seat_request_approval' ||
+              notificationType == 'seat_request_rejected') {
             await NotificationNavigationService.navigateToPassengerProfile();
             return;
           }
@@ -801,6 +820,7 @@ class LocalNotificationService {
     required String zeljenoVreme,
     required String putnikId,
     required String grad,
+    required String datum,
     required List<String> alternatives,
     required String body,
   }) async {
@@ -808,9 +828,10 @@ class LocalNotificationService {
       final payload = jsonEncode({
         'type': 'seat_request_alternatives',
         'id': id,
-        'putnikId': putnikId,
+        'putnik_id': putnikId,
         'grad': grad,
         'zeljenoVreme': zeljenoVreme,
+        'datum': datum,
         'alternatives': alternatives,
       });
 
@@ -860,14 +881,16 @@ class LocalNotificationService {
     try {
       if (response.payload == null || response.actionId == null) return;
       final data = jsonDecode(response.payload!);
-      final putnikId = data['putnik_id']; // Ispravljeno sa putnikId (ako je u payloadu bilo putnik_id)
+      final requestId = data['id']?.toString(); // 🆔 ID originalnog zahteva koji je odbijen
+      final putnikId = data['putnik_id'];
       final grad = data['grad'] ?? 'BC';
-      final datum = data['datum']; // Novo - preuzimamo datum iz originalnog zahteva
+      final datum = data['datum'];
 
       final selectedTime = response.actionId!.replaceFirst('prihvati_alt_', '');
 
-      // 🚀 PRIHVATI ALTERNATIVU - Šalje se kao standardni zahtev koji čeka 10 minuta
+      // 🚀 PRIHVATI ALTERNATIVU - Sada je ODMAH ODOBRENO bez ponovnog čekanja
       await SeatRequestService.acceptAlternative(
+        requestId: requestId,
         putnikId: putnikId,
         novoVreme: selectedTime,
         grad: grad,

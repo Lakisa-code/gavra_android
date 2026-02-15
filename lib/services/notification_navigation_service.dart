@@ -1,15 +1,48 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../globals.dart';
 import '../screens/home_screen.dart';
 import '../screens/pin_zahtevi_screen.dart';
+import '../screens/registrovani_putnik_profil_screen.dart';
+import 'putnik_service.dart';
 
 class NotificationNavigationService {
-  /// 🚐 Navigiraj na putnikov profil ekran (za "transport_started" notifikaciju)
+  /// 🚐 Navigiraj na putnikov profil ekran (za "transport_started" ili seat request notifikacije)
   static Future<void> navigateToPassengerProfile() async {
-    // Do nothing
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final putnikId = prefs.getString('registrovani_putnik_id');
+
+      if (putnikId == null) {
+        debugPrint('⚠️ [NavService] Nemam putnik_id u SharedPreferences-u');
+        return;
+      }
+
+      // Učitaj sveže podatke putnika
+      final response = await supabase
+          .from('registrovani_putnici')
+          .select(PutnikService.registrovaniFields)
+          .eq('id', putnikId)
+          .single();
+
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => RegistrovaniPutnikProfilScreen(
+              putnikData: response,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ [NavService] Greška pri navigaciji na profil: $e');
+    }
   }
 
   /// 🔐 Navigiraj na PIN zahtevi ekran (za admina)

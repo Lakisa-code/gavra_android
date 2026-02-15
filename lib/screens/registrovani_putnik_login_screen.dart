@@ -436,9 +436,17 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('registrovani_putnik_telefon', telefon);
       await prefs.setString('registrovani_putnik_pin', pin);
+      
+      // 🎯 FIX: Sačuvaj ID i Ime za Firebase/Push token osvežavanje
+      final putnikId = response['id'];
+      final putnikIme = response['putnik_ime'] ?? response['ime_prezime'] ?? 'Putnik';
+      
+      if (putnikId != null) {
+        await prefs.setString('registrovani_putnik_id', putnikId.toString());
+        await prefs.setString('registrovani_putnik_ime', putnikIme.toString());
+      }
 
       // 📱 Registruj push token za notifikacije
-      final putnikId = response['id'];
       if (putnikId != null) {
         await PutnikPushService.registerPutnikToken(putnikId);
         // 📝 LOG PRIJAVE

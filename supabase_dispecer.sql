@@ -66,6 +66,7 @@ DECLARE
     ima_mesta boolean;
     slobodno_mesta integer;
     novi_status text;
+    v_alternatives jsonb := '[]'::jsonb;
     json_key_status text;
     json_key_ceka text;
     json_key_vreme text;
@@ -103,16 +104,41 @@ BEGIN
         ima_mesta := (slobodno_mesta >= req_record.broj_mesta);
     END IF;
 
-    -- 4. ODREĐIVANJE NOVOG STATUSA
+    -- 4. ODREĐIVANJE NOVOG STATUSA I LOGIČNIH ALTERNATIVA
     IF ima_mesta THEN
         novi_status := 'approved';
     ELSE
-        novi_status := 'rejected'; 
+        novi_status := 'rejected';
+        
+        -- Pronađi PRVI slobodan termin pre i PRVI slobodan termin posle (bez obzira na razliku u vremenu)
+        SELECT jsonb_agg(to_char(vreme, 'HH24:MI')) INTO v_alternatives
+        FROM (
+            -- Prvi dostupni pre željenog vremena
+            (SELECT vreme 
+             FROM kapacitet_polazaka 
+             WHERE grad = UPPER(req_record.grad) 
+               AND aktivan = true 
+               AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.datum) >= req_record.broj_mesta
+               AND vreme < req_record.zeljeno_vreme
+             ORDER BY vreme DESC
+             LIMIT 1)
+            UNION ALL
+            -- Prvi dostupni posle željenog vremena
+            (SELECT vreme 
+             FROM kapacitet_polazaka 
+             WHERE grad = UPPER(req_record.grad) 
+               AND aktivan = true 
+               AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.datum) >= req_record.broj_mesta
+               AND vreme > req_record.zeljeno_vreme
+             ORDER BY vreme ASC
+             LIMIT 1)
+        ) sub;
     END IF;
 
     -- 5. AŽURIRAJ SEAT_REQUESTS
     UPDATE seat_requests 
     SET status = novi_status, 
+        alternatives = v_alternatives,
         processed_at = now(),
         updated_at = now()
     WHERE id = req_id;

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_manager.dart';
 import 'firebase_background_handler.dart';
@@ -105,25 +106,43 @@ class FirebaseService {
   /// Koristi unificirani PushTokenService
   static Future<void> _registerTokenWithServer(String token) async {
     String? driverName;
+    String? putnikId;
+    String? putnikIme;
+    
     try {
       driverName = await AuthManager.getCurrentDriver();
+      
+      // Ako nije vozač, proveri da li je putnik
+      if (driverName == null || driverName.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        // Ovi ključevi se koriste u RegistrovaniPutnikProfilScreen za auto-login i identifikaciju
+        // Moramo naći putnikId - obično se dobija iz baze pri prijavi, ali ga možemo keširati
+        putnikId = prefs.getString('registrovani_putnik_id'); 
+        putnikIme = prefs.getString('registrovani_putnik_ime');
+      }
     } catch (e) {
-      debugPrint('⚠️ Error getting current driver for FCM: $e');
-      driverName = null;
+      debugPrint('⚠️ Error getting current user for FCM: $e');
     }
 
-    // Registruj samo ako je vozač ulogovan
-    if (driverName == null || driverName.isEmpty) {
-      debugPrint('⚠️ [FirebaseService] Vozač nije ulogovan - preskačem FCM registraciju');
-      return;
+    // Registruj ako imamo bilo koga
+    if (driverName != null && driverName.isNotEmpty) {
+      await PushTokenService.registerToken(
+        token: token,
+        provider: 'fcm',
+        userType: 'vozac',
+        userId: driverName,
+      );
+    } else if (putnikId != null && putnikId.isNotEmpty) {
+      await PushTokenService.registerToken(
+        token: token,
+        provider: 'fcm',
+        userType: 'putnik',
+        userId: putnikIme,
+        putnikId: putnikId,
+      );
+    } else {
+      debugPrint('⚠️ [FirebaseService] Korisnik nije ulogovan - FCM token nije registrovan na serveru');
     }
-
-    await PushTokenService.registerToken(
-      token: token,
-      provider: 'fcm',
-      userType: 'vozac',
-      userId: driverName,
-    );
   }
 
   /// Pokušaj registrovati pending token
