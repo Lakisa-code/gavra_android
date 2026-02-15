@@ -135,6 +135,40 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     return target == DateTime.now().weekday;
   }
 
+  /// 🛡️ Proverava da li je termin uklonjen od strane admina
+  bool _proveriUklonjen(String danKratica, String grad, String? vreme) {
+    if (vreme == null || vreme.isEmpty) return false;
+    if (!_isDanas(danKratica)) return false; // Za sada proveravamo samo za danas
+
+    final uklonjeniRaw = _putnikData['uklonjeni_termini'];
+    List<dynamic> uklonjeni = [];
+    if (uklonjeniRaw is List) {
+      uklonjeni = uklonjeniRaw;
+    } else if (uklonjeniRaw is String) {
+      try {
+        final decoded = json.decode(uklonjeniRaw);
+        if (decoded is List) uklonjeni = decoded;
+      } catch (_) {}
+    }
+
+    if (uklonjeni.isEmpty) return false;
+
+    final danasStr = DateTime.now().toIso8601String().split('T')[0];
+    final normVreme = RegistrovaniHelpers.normalizeTime(vreme);
+
+    return uklonjeni.any((ut) {
+      if (ut is! Map) return false;
+      final utDatum = ut['datum']?.toString().split('T')[0];
+      final utVreme = RegistrovaniHelpers.normalizeTime(ut['vreme']?.toString());
+      final utGrad = ut['grad']?.toString().toLowerCase();
+
+      final jeIstiGrad = (grad.toLowerCase() == 'bc' && (utGrad == 'bc' || utGrad == 'bela crkva')) ||
+          (grad.toLowerCase() == 'vs' && (utGrad == 'vs' || utGrad == 'vrsac'));
+
+      return utDatum == danasStr && utVreme == normVreme && jeIstiGrad;
+    });
+  }
+
   /// 🔴 Automatski postavlja pending zahtev na "pending" status ako je istekao
   /// ✅ ISPRAVLJENO: Ne briše vreme - čuva ga i postavi napomenu "Čeka potvrdu"
   Future<void> _autoCancelPending(String dan, String grad) async {
@@ -1966,8 +2000,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             final vsVreme = danPolasci?['vs'];
             final bcStatus = danPolasci?['bc_status']?.toString();
             final vsStatus = danPolasci?['vs_status']?.toString();
-            final bcOtkazano = danPolasci?['bc_otkazano'] != null;
-            final vsOtkazano = danPolasci?['vs_otkazano'] != null;
+
+            // 🔍 Proveri da li je admin uklonio termin
+            final bcUklonjen = _proveriUklonjen(dan, 'bc', bcVreme);
+            final vsUklonjen = _proveriUklonjen(dan, 'vs', vsVreme);
+
+            final bcOtkazano = (danPolasci?['bc_otkazano'] != null) || bcUklonjen;
+            final vsOtkazano = (danPolasci?['vs_otkazano'] != null) || vsUklonjen;
+
             // 🆕 Otkazano vreme - prikazuje se u crvenom
             final bcOtkazanoVreme = danPolasci?['bc_otkazano_vreme'];
             final vsOtkazanoVreme = danPolasci?['vs_otkazano_vreme'];

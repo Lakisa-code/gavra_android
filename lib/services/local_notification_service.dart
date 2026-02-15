@@ -52,7 +52,7 @@ class LocalNotificationService {
     }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@drawable/ic_notification');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
@@ -145,13 +145,27 @@ class LocalNotificationService {
         try {
           final Map<String, dynamic> data = jsonDecode(payload);
           if (data['type'] == 'seat_request_alternatives') {
+            // 🛡️ PARSIRANJE ALTERNATIVA: Može biti List<String> ili String "[...]"
+            List<String> parsedAlts = [];
+            final rawAlts = data['alternatives'];
+            if (rawAlts is List) {
+              parsedAlts = rawAlts.map((e) => e.toString()).toList();
+            } else if (rawAlts is String && rawAlts.startsWith('[') && rawAlts.endsWith(']')) {
+              try {
+                final cleaned = rawAlts.substring(1, rawAlts.length - 1);
+                parsedAlts = cleaned.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+              } catch (e) {
+                debugPrint('⚠️ Error parsing stringified alternatives: $e');
+              }
+            }
+
             await showSeatRequestAlternativesNotification(
               id: data['id']?.toString() ?? '',
               zeljenoVreme: data['vreme']?.toString() ?? '',
               putnikId: data['putnik_id']?.toString() ?? '',
               grad: data['grad']?.toString() ?? 'BC',
               datum: data['datum']?.toString() ?? '',
-              alternatives: List<String>.from(data['alternatives'] ?? []),
+              alternatives: parsedAlts,
               body: body,
             );
             _processingLocks.remove(dedupeKey);
@@ -322,13 +336,27 @@ class LocalNotificationService {
 
           // 🎨 SPECIJALNA OBRADA ZA ALTERNATIVE U POZADINI
           if (data['type'] == 'seat_request_alternatives') {
+            // 🛡️ PARSIRANJE ALTERNATIVA: Može biti List<String> ili String "[...]"
+            List<String> parsedAlts = [];
+            final rawAlts = data['alternatives'];
+            if (rawAlts is List) {
+              parsedAlts = rawAlts.map((e) => e.toString()).toList();
+            } else if (rawAlts is String && rawAlts.startsWith('[') && rawAlts.endsWith(']')) {
+              try {
+                final cleaned = rawAlts.substring(1, rawAlts.length - 1);
+                parsedAlts = cleaned.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+              } catch (e) {
+                debugPrint('⚠️ Error parsing stringified alternatives: $e');
+              }
+            }
+
             await showSeatRequestAlternativesNotification(
               id: data['id']?.toString() ?? '',
               zeljenoVreme: data['vreme']?.toString() ?? '',
               putnikId: data['putnik_id']?.toString() ?? '',
               grad: data['grad']?.toString() ?? 'BC',
               datum: data['datum']?.toString() ?? '',
-              alternatives: List<String>.from(data['alternatives'] ?? []),
+              alternatives: parsedAlts,
               body: body,
             );
             return; // Već je prikazana specijalna notifikacija
@@ -863,11 +891,17 @@ class LocalNotificationService {
           android: AndroidNotificationDetails(
             'gavra_realtime_channel',
             'Gavra Realtime Notifikacije',
+            channelDescription: 'Kanal za realtime notifikacije sa alternativama',
             importance: Importance.max,
             priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+            vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
             actions: actions,
             fullScreenIntent: true,
             autoCancel: true,
+            category: AndroidNotificationCategory.message,
+            visibility: NotificationVisibility.public,
           ),
         ),
         payload: payload,

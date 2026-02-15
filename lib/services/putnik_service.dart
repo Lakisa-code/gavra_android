@@ -147,10 +147,37 @@ class PutnikService {
       );
       if (rawData.isEmpty) return;
 
+      // 🔍 Proveri uklonjene termine putnika
+      final List<dynamic> uklonjeni = [];
+      final rawUklonjeni = rawData['uklonjeni_termini'];
+      if (rawUklonjeni is List) {
+        uklonjeni.addAll(rawUklonjeni);
+      } else if (rawUklonjeni is String) {
+        try {
+          final parsed = convert.jsonDecode(rawUklonjeni);
+          if (parsed is List) uklonjeni.addAll(parsed);
+        } catch (_) {}
+      }
+
       for (final req in putnikReqs) {
         final reqGrad = req['grad']?.toString().toUpperCase() == 'VS' ? 'Vršac' : 'Bela Crkva';
         final reqVreme = GradAdresaValidator.normalizeTime(req['zeljeno_vreme']?.toString() ?? '');
         if (reqVreme.isEmpty) continue;
+
+        // 🛡️ NOVO: Preskoči ako je termin izričito uklonjen
+        final jeUklonjen = uklonjeni.any((ut) {
+          if (ut is! Map) return false;
+          final utVreme = GradAdresaValidator.normalizeTime(ut['vreme']?.toString());
+          final utDatum = ut['datum']?.toString().split('T')[0];
+
+          final utGrad = ut['grad']?.toString();
+          final isBcUt = GradAdresaValidator.isBelaCrkva(utGrad);
+          final isBcP = GradAdresaValidator.isBelaCrkva(reqGrad);
+          final gradMatch = isBcUt == isBcP;
+
+          return utDatum == todayDate && utVreme == reqVreme && gradMatch;
+        });
+        if (jeUklonjen) continue;
 
         // 🎯 PROVERI FILTERE (ako se spajanje vrši za filtrirani stream)
         if (filterGrad != null && reqGrad != filterGrad) continue;
@@ -277,7 +304,13 @@ class PutnikService {
             final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
             final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
             final utDatum = utMap['datum']?.toString().split('T')[0];
-            return utDatum == todayDate && utVreme == pVreme && utMap['grad'] == p.grad;
+
+            final utGrad = utMap['grad']?.toString();
+            final isBcUt = GradAdresaValidator.isBelaCrkva(utGrad);
+            final isBcP = GradAdresaValidator.isBelaCrkva(p.grad);
+            final gradMatch = isBcUt == isBcP;
+
+            return utDatum == todayDate && utVreme == pVreme && gradMatch;
           });
           if (jeUklonjen) continue;
 
@@ -403,7 +436,13 @@ class PutnikService {
             final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
             // Datum može biti ISO format ili kraći format
             final utDatum = utMap['datum']?.toString().split('T')[0];
-            return utDatum == todayDate && utVreme == pVreme && utMap['grad'] == p.grad;
+
+            final utGrad = utMap['grad']?.toString();
+            final isBcUt = GradAdresaValidator.isBelaCrkva(utGrad);
+            final isBcP = GradAdresaValidator.isBelaCrkva(p.grad);
+            final gradMatch = isBcUt == isBcP;
+
+            return utDatum == todayDate && utVreme == pVreme && gradMatch;
           });
           if (jeUklonjen) {
             continue;
@@ -985,13 +1024,26 @@ class PutnikService {
     uklonjeni.add({
       'datum': normDatum,
       'vreme': normVreme,
-      'grad': grad,
+      'grad': GradAdresaValidator.isBelaCrkva(grad) ? 'bc' : 'vs',
     });
 
     await supabase.from(tabela).update({
       'uklonjeni_termini': uklonjeni,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', id);
+
+    // 🆕 DODATAK: Obriši i seat_requests za ovaj termin da se putnik ne vrati kroz merge
+    try {
+      final isoDate = normDatum.contains('T') ? normDatum : '${normDatum}T00:00:00.000Z';
+      await supabase
+          .from('seat_requests')
+          .delete()
+          .eq('putnik_id', id)
+          .eq('datum', isoDate)
+          .eq('zeljeno_vreme', normVreme.length == 5 ? '$normVreme:00' : normVreme);
+    } catch (e) {
+      debugPrint('⚠️ [PutnikService] Greška pri brisanju seat_requests tokom uklanjanja termina: $e');
+    }
   }
 
   /// 🗑️ OBRISI PUTNIKA (Soft Delete - čuva statistike)

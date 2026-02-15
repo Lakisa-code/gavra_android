@@ -8,36 +8,36 @@ class TimeRow extends StatelessWidget {
   final String dayLabel;
   final TextEditingController bcController;
   final TextEditingController vsController;
+  final String? bcStatus;
+  final String? vsStatus;
+  final bool isAdmin;
 
   const TimeRow({
     super.key,
     required this.dayLabel,
     required this.bcController,
     required this.vsController,
+    this.bcStatus,
+    this.vsStatus,
+    this.isAdmin = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          flex: 3,
+        SizedBox(
+          width: 80,
           child: Text(
             dayLabel,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              shadows: [
-                Shadow(
-                  offset: Offset(1, 1),
-                  blurRadius: 3,
-                  color: Colors.black54,
-                ),
-              ],
             ),
           ),
         ),
+        const SizedBox(width: 4),
         Expanded(
           flex: 2,
           child: ValueListenableBuilder<TextEditingValue>(
@@ -47,6 +47,8 @@ class TimeRow extends StatelessWidget {
               return TimePickerCell(
                 value: currentValue,
                 isBC: true,
+                status: bcStatus,
+                isAdmin: isAdmin,
                 onChanged: (newValue) {
                   bcController.text = newValue ?? '';
                 },
@@ -64,6 +66,8 @@ class TimeRow extends StatelessWidget {
               return TimePickerCell(
                 value: currentValue,
                 isBC: false,
+                status: vsStatus,
+                isAdmin: isAdmin,
                 onChanged: (newValue) {
                   vsController.text = newValue ?? '';
                 },

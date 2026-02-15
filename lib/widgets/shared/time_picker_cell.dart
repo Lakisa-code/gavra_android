@@ -25,6 +25,7 @@ class TimePickerCell extends StatelessWidget {
   final String? tipPutnika; // 🆕 Tip putnika: radnik, ucenik, dnevni
   final String? tipPrikazivanja; // 🆕 Režim prikaza: standard, DNEVNI
   final DateTime? datumKrajaMeseca; // 🆕 Datum do kog je plaćeno
+  final bool isAdmin; // 🆕 Da li je admin (može da menja sve)
 
   const TimePickerCell({
     super.key,
@@ -39,6 +40,7 @@ class TimePickerCell extends StatelessWidget {
     this.tipPutnika,
     this.tipPrikazivanja,
     this.datumKrajaMeseca,
+    this.isAdmin = false,
   });
 
   /// Vraća DateTime za određeni dan u tekućoj nedelji
@@ -186,14 +188,14 @@ class TimePickerCell extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        if (isCancelled) return; // Otkazano - nema akcije
+        if (isCancelled && !isAdmin) return; // Otkazano - nema akcije (osim za admina)
 
         final now = DateTime.now();
 
         // 🛡️ PROVERA PLAĆANJA I PORUKE (User requirement) - UKLONJENO
 
         // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor
-        if (isPending) {
+        if (isPending && !isAdmin) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.')),
           );
@@ -201,7 +203,7 @@ class TimePickerCell extends StatelessWidget {
         }
 
         // ❌ BLOKADA ZA REJECTED STATUS - objasni korisniku
-        if (isRejected) {
+        if (isRejected && !isAdmin) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('❌ Ovaj termin je popunjen. Izaberite neko drugo slobodno vreme.'),
@@ -212,7 +214,7 @@ class TimePickerCell extends StatelessWidget {
         }
 
         // ✅ BLOKADA ZA APPROVED STATUS - već je odobreno
-        if (isApproved) {
+        if (isApproved && !isAdmin) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('✅ Vaš zahtev je odobren! Vreme je zaključano.')),
           );
@@ -220,7 +222,7 @@ class TimePickerCell extends StatelessWidget {
         }
 
         // 🆕 EKSPLICITNA PORUKA DNEVNIM PUTNICIMA AKO JE ZAKLJUČANO
-        if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && isLocked) {
+        if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && isLocked && !isAdmin) {
           final now = DateTime.now();
           final todayOnly = DateTime(now.year, now.month, now.day);
           final dayDate = _getDateForDay();
@@ -237,10 +239,10 @@ class TimePickerCell extends StatelessWidget {
           return;
         }
 
-        if (locked) return; // Ostali slučajevi zaključavanja (npr. prošli dan)
+        if (locked && !isAdmin) return; // Ostali slučajevi zaključavanja (npr. prošli dan)
 
         // 🆕 PROVERA ZA DNEVNE PUTNIKE - samo danas i sutra
-        if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI')) {
+        if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && !isAdmin) {
           final now = DateTime.now();
           final todayOnly = DateTime(now.year, now.month, now.day);
           final tomorrowOnly = todayOnly.add(const Duration(days: 1));

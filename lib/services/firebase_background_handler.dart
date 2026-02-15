@@ -27,12 +27,13 @@ Future<void> backgroundNotificationHandler(Map<String, dynamic> payload) async {
   try {
     final title = payload['title'] as String? ?? 'Gavra Notification';
     final body = payload['body'] as String? ?? (payload['message'] as String?) ?? 'Nova notifikacija';
-    final rawData = payload['data'];
 
+    // 🛡️ FIX: Umesto samo payload['data'], prosleđujemo ceo payload.
+    // FCM postavlja sve podatke direktno u message.data, tako da je payload već 'data' mapa.
     await LocalNotificationService.showNotificationFromBackground(
       title: title,
       body: body,
-      payload: rawData != null ? jsonEncode(rawData) : null,
+      payload: jsonEncode(payload),
     );
   } catch (e) {
     debugPrint('⚠️ Error handling background notification: $e');

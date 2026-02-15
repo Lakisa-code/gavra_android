@@ -276,6 +276,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     }
   }
 
+  /// 🕐 Helper da izvučemo status vaskrsa/bc za određeni dan
+  String? _getStatusForDay(String day, bool isBC) {
+    if (_originalPolasciPoDanu == null) return null;
+    final dayData = _originalPolasciPoDanu![day];
+    if (dayData == null) return null;
+    return isBC ? dayData['bc_status'] : dayData['vs_status'];
+  }
+
   @override
   void dispose() {
     try {
@@ -934,7 +942,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         children: [
           Row(
             children: [
-              const Expanded(flex: 3, child: SizedBox()), // Placeholder for day label
+              const SizedBox(width: 80), // Placeholder for day label
+              const SizedBox(width: 4),
               Expanded(
                 flex: 2,
                 child: Text(
@@ -981,30 +990,45 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             dayLabel: DayConstants.dayNamesInternal[0],
             bcController: _polazakBcControllers['pon']!,
             vsController: _polazakVsControllers['pon']!,
+            bcStatus: _getStatusForDay('pon', true),
+            vsStatus: _getStatusForDay('pon', false),
+            isAdmin: true,
           ),
           const SizedBox(height: 8),
           TimeRow(
             dayLabel: DayConstants.dayNamesInternal[1],
             bcController: _polazakBcControllers['uto']!,
             vsController: _polazakVsControllers['uto']!,
+            bcStatus: _getStatusForDay('uto', true),
+            vsStatus: _getStatusForDay('uto', false),
+            isAdmin: true,
           ),
           const SizedBox(height: 8),
           TimeRow(
             dayLabel: DayConstants.dayNamesInternal[2],
             bcController: _polazakBcControllers['sre']!,
             vsController: _polazakVsControllers['sre']!,
+            bcStatus: _getStatusForDay('sre', true),
+            vsStatus: _getStatusForDay('sre', false),
+            isAdmin: true,
           ),
           const SizedBox(height: 8),
           TimeRow(
             dayLabel: DayConstants.dayNamesInternal[3],
             bcController: _polazakBcControllers['cet']!,
             vsController: _polazakVsControllers['cet']!,
+            bcStatus: _getStatusForDay('cet', true),
+            vsStatus: _getStatusForDay('cet', false),
+            isAdmin: true,
           ),
           const SizedBox(height: 8),
           TimeRow(
             dayLabel: DayConstants.dayNamesInternal[4],
             bcController: _polazakBcControllers['pet']!,
             vsController: _polazakVsControllers['pet']!,
+            bcStatus: _getStatusForDay('pet', true),
+            vsStatus: _getStatusForDay('pet', false),
+            isAdmin: true,
           ),
         ],
       ),
@@ -1186,19 +1210,21 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 16,
-              shadows: [
-                Shadow(
-                  offset: Offset(1, 1),
-                  blurRadius: 3,
-                  color: Colors.black54,
-                ),
-              ],
+          Center(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 16,
+                shadows: [
+                  Shadow(
+                    offset: Offset(1, 1),
+                    blurRadius: 3,
+                    color: Colors.black,
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
