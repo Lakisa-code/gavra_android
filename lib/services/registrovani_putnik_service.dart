@@ -580,7 +580,64 @@ class RegistrovaniPutnikService {
           *
         ''').single();
 
+    // 🆕 SINHRONIZACIJA SA SEAT_REQUESTS (Single Source of Truth)
+    // Ako admin menja vremena u šablonu, moramo ažurirati i aktivne zahteve za tu nedelju
+    if (updates.containsKey('polasci_po_danu')) {
+      try {
+        await _syncSeatRequestsWithTemplate(id, Map<String, dynamic>.from(updates['polasci_po_danu']));
+      } catch (e) {
+        debugPrint('⚠️ [RegistrovaniPutnikService] Greška pri sinhronizaciji seat_requests: $e');
+      }
+    }
+
     return RegistrovaniPutnik.fromMap(response);
+  }
+
+  /// 🔄 Sinhronizuje aktivne seat_requests sa novim stanjem šablona
+  /// Ovo osigurava da Adminove promene u dijalogu odmah vidi i putnik
+  Future<void> _syncSeatRequestsWithTemplate(String putnikId, Map<String, dynamic> noviPolasci) async {
+    final now = DateTime.now();
+    final todayStr = DateTime(now.year, now.month, now.day).toIso8601String().split('T')[0];
+    final nextWeekStr = now.add(const Duration(days: 7)).toIso8601String().split('T')[0];
+
+    // 1. Dohvati sve aktivne zahteve za narednih 7 dana
+    final requests = await _supabase
+        .from('seat_requests')
+        .select()
+        .eq('putnik_id', putnikId)
+        .gte('datum', todayStr)
+        .lte('datum', nextWeekStr);
+
+    for (final req in requests) {
+      final datumStr = req['datum'] as String;
+      final grad = (req['grad'] ?? '').toString().toLowerCase(); // 'bc' ili 'vs'
+      final region = (grad == 'bc' || grad == 'bela crkva') ? 'bc' : 'vs';
+      
+      final datum = DateTime.parse(datumStr);
+      final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final dan = daniNedelje[datum.weekday - 1];
+
+      final noviPodaciZaDan = noviPolasci[dan];
+      if (noviPodaciZaDan != null && noviPodaciZaDan is Map) {
+        final novoVremeStr = noviPodaciZaDan[region]?.toString();
+        
+        if (novoVremeStr != null && novoVremeStr.isNotEmpty) {
+          // Ažuriraj vreme u seat_requests da se poklapa sa onim što je Admin postavio
+          // I postavi status na 'confirmed' (ili 'approved')
+          await _supabase.from('seat_requests').update({
+            'zeljeno_vreme': '$novoVremeStr:00',
+            'status': 'confirmed',
+            'processed_at': DateTime.now().toUtc().toIso8601String(),
+          }).eq('id', req['id']);
+        } else if (novoVremeStr == null || novoVremeStr.isEmpty) {
+          // Ako je Admin obrisao vreme u dijalogu, obriši i seat_request ili ga otkaži
+          await _supabase.from('seat_requests').update({
+            'status': 'otkazano',
+            'processed_at': DateTime.now().toUtc().toIso8601String(),
+          }).eq('id', req['id']);
+        }
+      }
+    }
   }
 
   /// Toggle aktivnost mesečnog putnika

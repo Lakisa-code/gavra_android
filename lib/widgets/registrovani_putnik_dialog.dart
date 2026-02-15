@@ -196,6 +196,19 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         if (mounted) {
           setState(() {
             _weeklyOverrides = overrides;
+
+            // 🆕 SINHRONIZACIJA KONTROLERA: Prikaži ono što putnik vidi (override)
+            for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+              final bcOver = _getOverrideForDay(dan, true);
+              if (bcOver != null && bcOver['zeljeno_vreme'] != null) {
+                _polazakBcControllers[dan]!.text = bcOver['zeljeno_vreme'].toString().substring(0, 5);
+              }
+
+              final vsOver = _getOverrideForDay(dan, false);
+              if (vsOver != null && vsOver['zeljeno_vreme'] != null) {
+                _polazakVsControllers[dan]!.text = vsOver['zeljeno_vreme'].toString().substring(0, 5);
+              }
+            }
           });
         }
       } catch (e) {
@@ -295,37 +308,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   /// 🕐 Helper da izvučemo status vaskrsa/bc za određeni dan
   /// Prioritet imaju seat_requests (override), pa onda šablon (originalPolasciPoDanu)
   String? _getStatusForDay(String day, bool isBC) {
-    // 1. Proveri da li postoji override (seat_request) za taj dan u tekućoj nedelji
-    try {
-      final now = DateTime.now();
-      final todayWeekday = now.weekday; // 1=Pon...7=Ned
-      final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      final targetWeekday = dayNames.indexOf(day.toLowerCase()) + 1;
-
-      if (targetWeekday > 0) {
-        // Izračunaj datum za taj dan (u okviru 7 dana od danas)
-        int diff = targetWeekday - todayWeekday;
-        if (diff < 0) diff += 7; // Ako je npr. danas Sreda (3), a tražimo Pon (1), diff = -2 + 7 = 5 dana unapred
-
-        final targetDate = DateTime(now.year, now.month, now.day).add(Duration(days: diff));
-        final dateStr = targetDate.toIso8601String().split('T')[0];
-
-        // Nađi zahtev za taj datum i taj smer
-        final region = isBC ? 'Bela Crkva' : 'Vršac';
-        final override = _weeklyOverrides.firstWhere(
-          (req) => req['datum'] == dateStr && req['grad'] == region,
-          orElse: () => {},
-        );
-
-        if (override.isNotEmpty) {
-          final status = override['status']?.toString();
-          // Ako je status 'otkazano', to je specifičan status koji TimePickerCell treba da zna
-          if (status == 'otkazano') return 'otkazano';
-          return status;
-        }
-      }
-    } catch (e) {
-      debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška u _getStatusForDay: $e');
+    final override = _getOverrideForDay(day, isBC);
+    if (override != null) {
+      final status = override['status']?.toString();
+      if (status == 'otkazano') return 'otkazano';
+      return status;
     }
 
     // 2. Ako nema override-a, vrati iz originalnog šablona
@@ -333,6 +320,48 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     final dayData = _originalPolasciPoDanu![day];
     if (dayData == null) return null;
     return isBC ? dayData['bc_status'] : dayData['vs_status'];
+  }
+
+  /// 🕐 Helper da izvučemo VREME za određeni dan (prikaz u dijalogu)
+  String? _getTimeForDay(String day, bool isBC) {
+    final override = _getOverrideForDay(day, isBC);
+    if (override != null) {
+      // Ako postoji override, vrati vreme iz njega (zeljeno_vreme)
+      return override['zeljeno_vreme']?.toString().substring(0, 5);
+    }
+    
+    // Inače vrati iz kontrolera (koji je inicijalizovan iz šablona)
+    final controller = isBC ? _polazakBcControllers[day] : _polazakVsControllers[day];
+    return controller?.text;
+  }
+
+  /// Privatni helper za dobijanje override-a za dan i smer
+  Map<String, dynamic>? _getOverrideForDay(String day, bool isBC) {
+    try {
+      final now = DateTime.now();
+      final todayWeekday = now.weekday;
+      final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final targetWeekday = dayNames.indexOf(day.toLowerCase()) + 1;
+
+      if (targetWeekday > 0) {
+        int diff = targetWeekday - todayWeekday;
+        if (diff < 0) diff += 7;
+
+        final targetDate = DateTime(now.year, now.month, now.day).add(Duration(days: diff));
+        final dateStr = targetDate.toIso8601String().split('T')[0];
+
+        final region = isBC ? 'Bela Crkva' : 'Vršac';
+        final override = _weeklyOverrides.firstWhere(
+          (req) => req['datum'] == dateStr && (req['grad'] == region || (isBC && req['grad'] == 'BC') || (!isBC && req['grad'] == 'VS')),
+          orElse: () => {},
+        );
+
+        return override.isNotEmpty ? override : null;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška u _getOverrideForDay: $e');
+    }
+    return null;
   }
 
   @override
@@ -349,7 +378,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       _brojMestaController.dispose();
       _cenaPoDanuController.dispose();
       _emailController.dispose();
-      // 🧾 Dispose račun kontrolera
       _firmaNazivController.dispose();
       _firmaPibController.dispose();
       _firmaMbController.dispose();
