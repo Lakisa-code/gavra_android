@@ -971,81 +971,6 @@ class PutnikService {
     });
   }
 
-  /// ? UKLONI IZ TERMINA - samo nestane sa liste, bez otkazivanja/statistike
-  Future<void> ukloniIzTermina(
-    dynamic id, {
-    required String datum,
-    required String vreme,
-    required String grad,
-  }) async {
-    // 🛡️ Provera da li je ID validan
-    if (id == null || (id is String && id.isEmpty)) {
-      debugPrint('⚠️ [PutnikService] Pokušaj uklanjanja termina za nevažeći ID: $id');
-      return;
-    }
-
-    final tabela = await _getTableForPutnik(id);
-
-    final response = await supabase.from(tabela).select('uklonjeni_termini').eq('id', id as String).single();
-
-    List<dynamic> uklonjeni = [];
-    if (response['uklonjeni_termini'] != null) {
-      final uklonjeniRaw = response['uklonjeni_termini'];
-      try {
-        if (uklonjeniRaw is List) {
-          uklonjeni = List<dynamic>.from(uklonjeniRaw);
-        } else if (uklonjeniRaw is String) {
-          // 📦 Ako je JSON string, parsiraj ga
-          final parsed = convert.jsonDecode(uklonjeniRaw);
-          if (parsed is List) {
-            uklonjeni = List<dynamic>.from(parsed);
-          }
-        }
-      } catch (e) {
-        debugPrint('❌ [PutnikService] Greška pri parsiranju uklonjeni_termini za putnika $id: $e');
-      }
-    }
-
-    // Normalizuj vrednosti pre čuvanja za konzistentno poređenje
-    final normDatum = datum.split('T')[0]; // ISO format bez vremena
-    final normVreme = GradAdresaValidator.normalizeTime(vreme);
-
-    // Spreči dupliranje istog termina
-    final vecPostoji = uklonjeni.any((ut) {
-      if (ut is! Map<String, dynamic>) return false;
-      final utMap = ut;
-      final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
-      final utDatum = utMap['datum']?.toString().split('T')[0];
-      return utDatum == normDatum && utVreme == normVreme && utMap['grad'] == grad;
-    });
-
-    if (vecPostoji) return;
-
-    uklonjeni.add({
-      'datum': normDatum,
-      'vreme': normVreme,
-      'grad': GradAdresaValidator.isBelaCrkva(grad) ? 'bc' : 'vs',
-    });
-
-    await supabase.from(tabela).update({
-      'uklonjeni_termini': uklonjeni,
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', id);
-
-    // 🆕 DODATAK: Obriši i seat_requests za ovaj termin da se putnik ne vrati kroz merge
-    try {
-      final isoDate = normDatum.contains('T') ? normDatum : '${normDatum}T00:00:00.000Z';
-      await supabase
-          .from('seat_requests')
-          .delete()
-          .eq('putnik_id', id)
-          .eq('datum', isoDate)
-          .eq('zeljeno_vreme', normVreme.length == 5 ? '$normVreme:00' : normVreme);
-    } catch (e) {
-      debugPrint('⚠️ [PutnikService] Greška pri brisanju seat_requests tokom uklanjanja termina: $e');
-    }
-  }
-
   /// 🗑️ OBRISI PUTNIKA (Soft Delete - čuva statistike)
   Future<void> obrisiPutnika(dynamic id) async {
     final tabela = await _getTableForPutnik(id);
@@ -1431,6 +1356,25 @@ class PutnikService {
           'polasci_po_danu': polasci,
           'updated_at': now.toUtc().toIso8601String(),
         }).eq('id', id.toString());
+
+        // 🆕 SINHRONIZACIJA: Otkazi i seat_requests u bazi za ovaj termin
+        try {
+          final dbGrad = place.toUpperCase(); // 'BC' ili 'VS'
+          final String pureDate = (selectedDan != null && selectedDan.contains('-'))
+              ? selectedDan
+              : DateTime.now().toIso8601String().split('T')[0];
+
+          await supabase
+              .from('seat_requests')
+              .update({'status': 'otkazano', 'updated_at': now.toUtc().toIso8601String()})
+              .eq('putnik_id', id.toString())
+              .eq('datum', pureDate)
+              .eq('grad', dbGrad);
+
+          debugPrint('✅ [PutnikService] Sinhronizovano otkazivanje u seat_requests za $id na dan $pureDate');
+        } catch (e) {
+          debugPrint('⚠️ [PutnikService] Greška pri sinhronizaciji otkazivanja u seat_requests: $e');
+        }
 
         try {
           await supabase.from('voznje_log').insert({

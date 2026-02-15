@@ -15,7 +15,6 @@ import '../services/registrovani_putnik_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart';
-import '../utils/smart_colors.dart';
 import '../utils/vozac_boja.dart';
 
 /// Widget za prikaz putnik kartice sa podrškom za mesecne i dnevne putnike
@@ -2132,16 +2131,6 @@ class _PutnikCardState extends State<PutnikCard> {
                         _handleOtkazivanje();
                       },
                     ),
-                  // Ukloni iz termina
-                  ListTile(
-                    leading: const Icon(Icons.remove_circle_outline, color: Colors.orange),
-                    title: const Text('Ukloni iz termina'),
-                    subtitle: const Text('Samo za ovaj datum i vreme'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _handleBrisanje();
-                    },
-                  ),
                   // Godišnji/Bolovanje
                   if (_putnik.mesecnaKarta == true && !_putnik.jeOtkazan && !_putnik.jeOdsustvo)
                     ListTile(
@@ -2282,62 +2271,6 @@ class _PutnikCardState extends State<PutnikCard> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-          );
-        }
-      }
-    }
-  }
-
-  // UKLONI IZ TERMINA - samo nestane sa liste, bez otkazivanja
-  Future<void> _handleBrisanje() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Ukloni iz termina'),
-        content: Text('Ukloniti ${_putnik.ime} sa liste?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Ne'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Da'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        // ??? Provera da li je ID validan
-        if (_putnik.id == null || _putnik.id!.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('?? Greška: Putnik nema ID-a')),
-          );
-          return;
-        }
-
-        await PutnikService().ukloniIzTermina(
-          _putnik.id!,
-          datum: _putnik.datum ?? DateTime.now().toIso8601String().split('T')[0],
-          vreme: _putnik.polazak,
-          grad: _putnik.grad,
-        );
-
-        if (widget.onChanged != null) {
-          widget.onChanged!();
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SmartSnackBar.success('${_putnik.ime} uklonjen/a iz termina', context),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SmartSnackBar.error('Greška: $e', context),
           );
         }
       }
