@@ -534,4 +534,8 @@ class TimePickerCell extends StatelessWidget {
               ],
             ),
           ),
-        
+        );
+      },
+    );
+  }
+}

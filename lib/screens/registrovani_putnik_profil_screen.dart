@@ -16,7 +16,6 @@ import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikaci
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/realtime/realtime_manager.dart';
-import '../services/realtime_notification_service.dart'; // 🔔 Push notifikacije za vozače
 import '../services/seat_request_service.dart';
 import '../services/theme_manager.dart';
 import '../services/voznje_log_service.dart';
@@ -2281,30 +2280,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           ),
         );
       }
-    }
-  }
-
-  /// Pomoćna za pozadinsko slanje notifikacija kod otkazivanja
-  void _handleOtkazivanjeBackground(String dan, String tipGrad, String displayVreme) {
-    VoznjeLogService.logGeneric(
-      tip: 'otkazivanje_putnika',
-      putnikId: _putnikData['id']?.toString(),
-      detalji: 'Otkazan termin (${tipGrad.toUpperCase()}) za $dan ($displayVreme)',
-    ).catchError((_) {});
-
-    final now = DateTime.now();
-    final todayName = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'][now.weekday - 1];
-    if (dan.toLowerCase() == todayName) {
-      final putnikIme = _putnikData['putnik_ime'] ?? _putnikData['ime'] ?? 'Putnik';
-      RealtimeNotificationService.sendNotificationToAllDrivers(
-        title: 'Otkazan putnik (samostalno)',
-        body: '$putnikIme ($displayVreme)',
-        data: {
-          'type': 'otkazan_putnik',
-          'datum': now.toIso8601String(),
-          'putnik': {'id': _putnikData['id'], 'ime': putnikIme, 'grad': tipGrad.toUpperCase(), 'vreme': displayVreme},
-        },
-      ).catchError((_) {});
     }
   }
 
