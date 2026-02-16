@@ -424,13 +424,21 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (polasci[dan] == null) return;
 
       final danData = Map<String, dynamic>.from(polasci[dan] as Map);
+      final gradKey = grad.toLowerCase();
+
+      // 🛡️ PROVERA: Ako je već potvrđeno i vreme se slaže, preskoči notifikaciju
+      // Ovo sprečava duplo okidanje nakon Hot Restarta
+      if (danData['${gradKey}_status'] == 'confirmed' && danData[gradKey] == vreme) {
+        debugPrint('⏭️ [SeatRequestApproval] Već obrađeno, preskačem duplu notifikaciju.');
+        return;
+      }
 
       // Ažuriraj status na confirmed i vreme
-      danData[grad] = vreme;
-      danData['${grad}_status'] = 'confirmed';
-      danData.remove('${grad}_napomena'); // Ukloni pending napomenu
-      danData.remove('${grad}_ceka_od'); // Ukloni pending timestamp
-      danData.remove('${grad}_otkazano_vreme'); // Ukloni otkazano vreme
+      danData[gradKey] = vreme;
+      danData['${gradKey}_status'] = 'confirmed';
+      danData.remove('${gradKey}_napomena'); // Ukloni pending napomenu
+      danData.remove('${gradKey}_ceka_od'); // Ukloni pending timestamp
+      danData.remove('${gradKey}_otkazano_vreme'); // Ukloni otkazano vreme
 
       polasci[dan] = danData;
 
