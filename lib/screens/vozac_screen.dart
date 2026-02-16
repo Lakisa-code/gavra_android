@@ -7,12 +7,10 @@ import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/auth_manager.dart';
-import '../services/daily_checkin_service.dart';
 import '../services/driver_location_service.dart'; // 📍 Za ETA tracking
 import '../services/firebase_service.dart'; // 👤 Za vozača
 import '../services/kapacitet_service.dart'; // 🎫 Za broj mesta
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
-import '../services/popis_service.dart'; // 📝 Za popis dana
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
@@ -52,6 +50,7 @@ class _VozacScreenState extends State<VozacScreen> {
   final PutnikService _putnikService = PutnikService();
 
   StreamSubscription<Position>? _driverPositionSubscription;
+  StreamSubscription<Map<String, dynamic>>? _notificationSubscription; // ⚡ ZA AUTOMATSKI POPIS
 
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
@@ -64,9 +63,6 @@ class _VozacScreenState extends State<VozacScreen> {
 
   /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak
   String _getWorkingDateIso() => PutnikHelpers.getWorkingDateIso();
-
-  /// 📅 HELPER: Vraća radni DateTime - vikendom vraća naredni ponedeljak
-  DateTime _getWorkingDateTime() => PutnikHelpers.getWorkingDateTime();
 
   /// 🕒 HELPER: Dobij dodeljena vremena za trenutnog vozača
   List<Map<String, String>> _getDodeljenaVremena({List<Putnik>? sviPutnici}) {
@@ -124,8 +120,6 @@ class _VozacScreenState extends State<VozacScreen> {
   int _currentPassengerIndex = 0; // ignore: unused_field
   bool _isListReordered = false;
   bool _isGpsTracking = false; // 🛰️ GPS tracking status
-  bool _isPopisLoading = false; // ⏳ Loading state za POPIS dugme
-  bool _isPopisSaved = false; // ✅ Da li je popis već sačuvan danas
 
   // 🕒 THROTTLING ZA REALTIME SYNC - sprečava prekomerne UI rebuilde
   // ⚡ Povećano na 800ms da spreči race conditions, ali i dalje dovoljno brzo za UX
@@ -213,7 +207,6 @@ class _VozacScreenState extends State<VozacScreen> {
     // 3. Ostalo
     _initializeNotifications();
     _initializeGpsTracking();
-    _checkIfPopisSaved();
   }
 
   // 🕒 UCITAJ VREME VOZAC PODATKE
@@ -226,26 +219,17 @@ class _VozacScreenState extends State<VozacScreen> {
     // Start GPS tracking
     RealtimeGpsService.startTracking().catchError((Object e) {});
 
-    // Subscribe to driver position updates - a�uriraj lokaciju u realnom vremenu
+    // Subscribe to driver position updates - auriraj lokaciju u realnom vremenu
     _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {
-      // ?? Po�alji poziciju vozaca u DriverLocationService za pracenje u�ivu
+      // ?? Poalji poziciju vozaca u DriverLocationService za pracenje uivu
       DriverLocationService.instance.forceLocationUpdate(knownPosition: pos);
     });
-  }
-
-  // ?? PROVERA DA LI JE POPIS SACUVAN
-  Future<void> _checkIfPopisSaved() async {
-    if (_currentDriver == null) return;
-    final workingDate = _getWorkingDateTime();
-    final isSaved = await DailyCheckInService.isPopisSavedToday(_currentDriver!, date: workingDate);
-    if (mounted) {
-      setState(() => _isPopisSaved = isSaved);
-    }
   }
 
   @override
   void dispose() {
     _driverPositionSubscription?.cancel();
+    _notificationSubscription?.cancel(); // ⚡ CLEANUP
     super.dispose();
   }
 
@@ -253,8 +237,17 @@ class _VozacScreenState extends State<VozacScreen> {
   void _initializeNotifications() {
     // Inicijalizuj heads-up i zvuk notifikacije
     LocalNotificationService.initialize(context);
-    // 🔕 UKLONJENO: listener se sada registruje globalno u main.dart
-    // RealtimeNotificationService.listenForForegroundNotifications(context);
+    
+    // ⚡ LISTEN ZA IN-APP DOGAĐAJE (Automatski Popis)
+    _notificationSubscription?.cancel();
+    _notificationSubscription = RealtimeNotificationService.notificationStream.listen((data) {
+      if (data['type'] == 'automated_popis' && mounted) {
+        final stats = data['stats'];
+        if (stats != null) {
+          _showAutomatedPopisPopup(Map<String, dynamic>.from(stats));
+        }
+      }
+    });
 
     // Inicijalizuj realtime notifikacije za vozaca
     FirebaseService.getCurrentDriver().then((driver) {
@@ -1254,105 +1247,6 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  // ?? POPIS DUGME - IDENTICNO KAO DANAS SCREEN
-  Widget _buildPopisButton() {
-    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriverSync(_currentDriver);
-    final bool canPress = isDriverValid && !_isPopisLoading;
-    final baseColor = _isPopisSaved ? Colors.green : Colors.white;
-
-    return InkWell(
-      onTap: canPress ? () => _showPopisDana() : null,
-      borderRadius: BorderRadius.circular(8),
-      child: Opacity(
-        opacity: 1.0,
-        child: Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: baseColor.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _getBorderColor(baseColor)),
-          ),
-          child: Center(
-            child: _isPopisLoading
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'POPIS',
-                      style: TextStyle(
-                        color: baseColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ?? POPIS DANA - KORISTI CENTRALIZOVANI POPIS SERVICE
-  Future<void> _showPopisDana() async {
-    if (_currentDriver == null || _currentDriver!.isEmpty || !VozacBoja.isValidDriverSync(_currentDriver)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Morate biti ulogovani i ovla�ceni da biste koristili Popis.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
-    final vozac = _currentDriver!;
-
-    // Pokreni loading indikator
-    if (mounted) setState(() => _isPopisLoading = true);
-
-    try {
-      // 1. UCITAJ PODATKE PREKO POPIS SERVICE
-      final popisData = await PopisService.loadPopisData(
-        vozac: vozac,
-        selectedGrad: _selectedGrad,
-        selectedVreme: _selectedVreme,
-        date: _getWorkingDateTime(), // ?? Koristi radni datum (ponedeljak ako je vikend)
-      );
-
-      // 2. PRIKA�I DIALOG
-      if (!mounted) return;
-      final bool sacuvaj = await PopisService.showPopisDialog(context, popisData);
-
-      // 3. SACUVAJ AKO JE POTVR�EN
-      if (sacuvaj) {
-        await PopisService.savePopis(popisData);
-        if (mounted) {
-          setState(() => _isPopisSaved = true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('? Popis je uspe�no sacuvan!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('? Gre�ka pri ucitavanju popisa: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isPopisLoading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // ?? KORISTI RADNI DATUM (Vikendom prebacuje na ponedeljak)
@@ -1390,13 +1284,11 @@ class _VozacScreenState extends State<VozacScreen> {
                       // ?? RUTA DUGME
                       Expanded(child: _buildOptimizeButton()),
                       const SizedBox(width: 4),
-                      // ??? NAV DUGME
+                      // 🗺️ NAV DUGME
                       Expanded(child: _buildMapsButton()),
                       const SizedBox(width: 4),
-                      // ?? POPIS DUGME
-                      Expanded(child: _buildPopisButton()),
-                      const SizedBox(width: 4),
-                      // ? BRZINOMER
+
+                      // 🏎️ BRZINOMER
                       Expanded(child: _buildSpeedometerButton()),
                       const SizedBox(width: 4),
                       // Logout
@@ -1879,6 +1771,124 @@ class _VozacScreenState extends State<VozacScreen> {
     );
   }
 
+  // 📊 POPUP ZA AUTOMATIZOVANI POPIS (21:00)
+  void _showAutomatedPopisPopup(Map<String, dynamic> stats) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Mora da klikne Zatvori
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1A237E).withOpacity(0.9), // Tamno plava
+                Colors.black.withOpacity(0.95),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.blueAccent.withOpacity(0.5), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blueAccent.withOpacity(0.2),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.analytics_outlined, color: Colors.blueAccent, size: 48),
+              const SizedBox(height: 12),
+              const Text(
+                'DNEVNI POPIS',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const Text(
+                'Automatski izveštaj (21:00h)',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 20),
+              _buildPopisItem('Dodati putnici', '${stats['dodati_putnici'] ?? 0}', Colors.greenAccent),
+              _buildPopisItem('Otkazani putnici', '${stats['otkazani_putnici'] ?? 0}', Colors.redAccent),
+              _buildPopisItem('Pokupljeni putnici', '${stats['pokupljeni_putnici'] ?? 0}', Colors.blueAccent),
+              _buildPopisItem('Pošiljke', '${stats['broj_posiljki'] ?? 0}', Colors.orangeAccent),
+              const Divider(color: Colors.white12, height: 24),
+              _buildPopisItem('Naplaćeni dnevni', '${stats['naplaceni_dnevni'] ?? 0} RSD', Colors.white),
+              _buildPopisItem('Naplaćeni mesečni', '${stats['naplaceni_mesecni'] ?? 0} RSD', Colors.white),
+              _buildPopisItem('Broj dužnika', '${stats['broj_duznika'] ?? 0}', stats['broj_duznika'] != 0 ? Colors.red : Colors.white70),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.greenAccent.withOpacity(0.4)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'UKUPNO:',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    Text(
+                      '${stats['ukupan_pazar'] ?? 0} RSD',
+                      style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w900, fontSize: 20),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.1),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: Colors.white24),
+                    ),
+                  ),
+                  child: const Text('ZATVORI', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Widget _buildPopisItem(String label, String value, Color color) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            Text(
+              value,
+              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   // 📊 POPUP ZA PRIKAZ POVRATKA SA SPISKOM
   void _showPovratakStatPopup(
     BuildContext context,
@@ -1995,8 +2005,7 @@ class _VozacScreenState extends State<VozacScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   // 📊 POPUP ZA PRIKAZ STATISTIKE
@@ -2059,8 +2068,7 @@ class _VozacScreenState extends State<VozacScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   // Helper za border boju kao u danas_screen

@@ -108,16 +108,16 @@ class FirebaseService {
     String? driverName;
     String? putnikId;
     String? putnikIme;
-    
+
     try {
       driverName = await AuthManager.getCurrentDriver();
-      
+
       // Ako nije vozač, proveri da li je putnik
       if (driverName == null || driverName.isEmpty) {
         final prefs = await SharedPreferences.getInstance();
         // Ovi ključevi se koriste u RegistrovaniPutnikProfilScreen za auto-login i identifikaciju
         // Moramo naći putnikId - obično se dobija iz baze pri prijavi, ali ga možemo keširati
-        putnikId = prefs.getString('registrovani_putnik_id'); 
+        putnikId = prefs.getString('registrovani_putnik_id');
         putnikIme = prefs.getString('registrovani_putnik_ime');
       }
     } catch (e) {
@@ -164,6 +164,9 @@ class FirebaseService {
 
     FirebaseMessaging.onMessage.listen(
       (RemoteMessage message) {
+        // Emituj dogadjaj unutar aplikacije
+        RealtimeNotificationService.onForegroundNotification(message.data);
+
         // Show a local notification when app is foreground
         try {
           // Prvo pokušaj notification payload, pa data payload

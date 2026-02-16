@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -9,6 +10,17 @@ import 'notification_navigation_service.dart';
 import 'vozac_service.dart';
 
 class RealtimeNotificationService {
+  // ⚡ STREAM ZA IN-APP NOTIFIKACIJE
+  static final StreamController<Map<String, dynamic>> _notificationStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  static Stream<Map<String, dynamic>> get notificationStream => _notificationStreamController.stream;
+
+  /// 📲 Poziva se kada stigne notifikacija dok je aplikacija u foreground-u
+  static void onForegroundNotification(Map<String, dynamic> data) {
+    _notificationStreamController.add(data);
+  }
+
   /// 📱 Pošalji push notifikaciju na specifične tokene
   static Future<bool> sendPushNotification({
     required String title,
@@ -168,6 +180,9 @@ class RealtimeNotificationService {
   static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
     if (messageData == null) return;
     try {
+      // Emituj dogadjaj i za tap ako smo u foreground-u/background-u
+      onForegroundNotification(messageData);
+      
       await _handleNotificationTap(messageData);
     } catch (e) {
       debugPrint('🔴 [RealtimeNotification.handleInitialMessage] Error: $e');

@@ -9,6 +9,7 @@ import 'package:huawei_push/huawei_push.dart';
 import 'auth_manager.dart';
 import 'local_notification_service.dart';
 import 'push_token_service.dart';
+import 'realtime_notification_service.dart'; // <--- Dodato ovde
 
 /// Lightweight wrapper around the `huawei_push` plugin.
 ///
@@ -199,14 +200,22 @@ class HuaweiPushService {
       _messageSub?.cancel();
       _messageSub = Push.onMessageReceivedStream.listen((RemoteMessage message) async {
         try {
-          if (kDebugMode) {
-            debugPrint('📱 [HuaweiPush] Primljena poruka: ${message.data}');
+          // Emituj dogadjaj unutar aplikacije
+          Map<String, dynamic> data = {};
+          if (message.data != null) {
+            try {
+              data = jsonDecode(message.data!);
+            } catch (_) {
+              // Ako nije JSON, možda je direktno mapa u nekoj verziji plugina
+              // ali huawei_push obično šalje string
+            }
           }
 
-          // Izvuci title i body iz poruke
-          final data = message.dataOfMap ?? {};
-          final title = (data['title'] ?? 'Gavra Notification').toString();
-          final body = (data['body'] ?? data['message'] ?? 'Nova notifikacija').toString();
+          RealtimeNotificationService.onForegroundNotification(data);
+
+          // Get notification details
+          final title = message.notification?.title ?? data['title'] ?? 'Gavra Notification';
+          final body = message.notification?.body ?? data['body'] ?? data['message'] ?? 'Nova notifikacija';
 
           // Prikaži lokalnu notifikaciju
           await LocalNotificationService.showRealtimeNotification(
