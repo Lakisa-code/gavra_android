@@ -213,13 +213,8 @@ class TimePickerCell extends StatelessWidget {
           return;
         }
 
-        // ✅ BLOKADA ZA APPROVED STATUS - već je odobreno
-        if (isApproved && !isAdmin) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ Vaš zahtev je odobren! Vreme je zaključano.')),
-          );
-          return;
-        }
+        // 🆕 UKLONJENA BLOKADA ZA APPROVED STATUS - dozvoljavamo otkazivanje
+        // Putnik sada može da klikne na odobren termin i izabere "Bez polaska"
 
         // 🆕 EKSPLICITNA PORUKA DNEVNIM PUTNICIMA AKO JE ZAKLJUČANO
         if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && isLocked && !isAdmin) {
