@@ -408,54 +408,58 @@ class RegistrovaniPutnikService {
         continue;
       }
 
-      // Proveri BC polazak - PAŽNJA: null.toString() = "null", ne prazan string!
-      final bcValue = danData['bc'];
-      final bcVreme = (bcValue != null && bcValue.toString().isNotEmpty && bcValue.toString() != 'null')
-          ? bcValue.toString()
-          : null;
-
+      // Proveri BC polazak
+      final bcVreme = _getVremeFromDanData(danData, 'bc');
       if (bcVreme != null) {
-        // Izračunaj datum za ovaj dan u narednih 7 dana
-        final targetDate = _getNextDateForDay(danas, danKratica);
-        final datumStr = targetDate.toIso8601String().split('T')[0];
-
-        final normalizedVreme = GradAdresaValidator.normalizeTime(bcVreme);
-        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('BC', normalizedVreme,
-            datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta, excludeId: excludeId);
-        if (!imaMesta) {
-          final danPunoIme = _getDanPunoIme(danKratica);
-          throw Exception(
-            'NEMA SLOBODNIH MESTA!\n\n'
-            'Termin: $danPunoIme u $bcVreme (Bela Crkva)\n'
-            'Kapacitet je popunjen.\n\n'
-            'Izaberite drugi termin ili kontaktirajte admina.',
-          );
-        }
+        await _checkKapacitet(danKratica, 'BC', bcVreme, danas, tipPutnika, brojMesta, excludeId);
       }
 
-      // Proveri VS polazak - PAŽNJA: null.toString() = "null", ne prazan string!
-      final vsValue = danData['vs'];
-      final vsVreme = (vsValue != null && vsValue.toString().isNotEmpty && vsValue.toString() != 'null')
-          ? vsValue.toString()
-          : null;
+      // Proveri BC2 (Zimski) polazak
+      final bc2Vreme = _getVremeFromDanData(danData, 'bc2');
+      if (bc2Vreme != null) {
+        await _checkKapacitet(danKratica, 'BC', bc2Vreme, danas, tipPutnika, brojMesta, excludeId, labels: '(Zimski)');
+      }
 
+      // Proveri VS polazak
+      final vsVreme = _getVremeFromDanData(danData, 'vs');
       if (vsVreme != null) {
-        final targetDate = _getNextDateForDay(danas, danKratica);
-        final datumStr = targetDate.toIso8601String().split('T')[0];
-
-        final normalizedVreme = GradAdresaValidator.normalizeTime(vsVreme);
-        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta('VS', normalizedVreme,
-            datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta, excludeId: excludeId);
-        if (!imaMesta) {
-          final danPunoIme = _getDanPunoIme(danKratica);
-          throw Exception(
-            'NEMA SLOBODNIH MESTA!\n\n'
-            'Termin: $danPunoIme u $vsVreme (Vršac)\n'
-            'Kapacitet je popunjen.\n\n'
-            'Izaberite drugi termin ili kontaktirajte admina.',
-          );
-        }
+        await _checkKapacitet(danKratica, 'VS', vsVreme, danas, tipPutnika, brojMesta, excludeId);
       }
+
+      // Proveri VS2 (Zimski) polazak
+      final vs2Vreme = _getVremeFromDanData(danData, 'vs2');
+      if (vs2Vreme != null) {
+        await _checkKapacitet(danKratica, 'VS', vs2Vreme, danas, tipPutnika, brojMesta, excludeId, labels: '(Zimski)');
+      }
+    }
+  }
+
+  String? _getVremeFromDanData(Map<dynamic, dynamic> danData, String key) {
+    final value = danData[key];
+    if (value != null && value.toString().isNotEmpty && value.toString() != 'null') {
+      return value.toString();
+    }
+    return null;
+  }
+
+  Future<void> _checkKapacitet(String danKratica, String grad, String vreme, DateTime danas, String? tipPutnika,
+      int brojMesta, String? excludeId,
+      {String labels = ''}) async {
+    final targetDate = _getNextDateForDay(danas, danKratica);
+    final datumStr = targetDate.toIso8601String().split('T')[0];
+    final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
+
+    final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(grad, normalizedVreme,
+        datum: datumStr, tipPutnika: tipPutnika, brojMesta: brojMesta, excludeId: excludeId);
+
+    if (!imaMesta) {
+      final danPunoIme = _getDanPunoIme(danKratica);
+      throw Exception(
+        'NEMA SLOBODNIH MESTA!\n\n'
+        'Termin: $danPunoIme u $vreme $labels ($grad)\n'
+        'Kapacitet je popunjen.\n\n'
+        'Izaberite drugi termin ili kontaktirajte admina.',
+      );
     }
   }
 
@@ -513,40 +517,53 @@ class RegistrovaniPutnikService {
           // Merge novi polasci sa postojećim markerima
           final mergedPolasci = <String, dynamic>{};
 
-          // Kopiraj sve dane iz novih podataka
-          noviPolasci.forEach((dan, noviPodaci) {
-            if (noviPodaci is Map) {
-              mergedPolasci[dan] = Map<String, dynamic>.from(noviPodaci);
+          // 1. Prvo kopiraj SVE što je trenutno u bazi (da ne bismo izgubili npr. subotu/nedelju)
+          trenutniPolasci.forEach((dan, stariPodaci) {
+            if (stariPodaci is Map) {
+              mergedPolasci[dan] = Map<String, dynamic>.from(stariPodaci);
             } else {
-              mergedPolasci[dan] = noviPodaci;
+              mergedPolasci[dan] = stariPodaci;
             }
           });
 
-          // Sačuvaj postojeće markere (pokupljeno, placeno, vozac) iz baze
-          trenutniPolasci.forEach((dan, stariPodaci) {
-            if (stariPodaci is Map && mergedPolasci.containsKey(dan)) {
-              final danPolasci = mergedPolasci[dan] as Map<String, dynamic>;
-              final stariDanPolasci = stariPodaci as Map<String, dynamic>;
+          // 2. Preklopi sa novim podacima iz dijaloga
+          noviPolasci.forEach((dan, noviPodaci) {
+            if (noviPodaci is Map) {
+              final postojeciPodaciZaDan = mergedPolasci[dan] is Map
+                  ? Map<String, dynamic>.from(mergedPolasci[dan] as Map)
+                  : <String, dynamic>{};
 
-              // Čuvaj vozačeve markere
-              if (stariDanPolasci.containsKey('bc_pokupljeno')) {
-                danPolasci['bc_pokupljeno'] = stariDanPolasci['bc_pokupljeno'];
+              final Map<String, dynamic> noviPodaciMap = Map<String, dynamic>.from(noviPodaci);
+
+              // Ažuriraj samo polaske, zadrži markere ako su postojali
+              postojeciPodaciZaDan['bc'] = noviPodaciMap['bc'];
+              postojeciPodaciZaDan['vs'] = noviPodaciMap['vs'];
+              postojeciPodaciZaDan['bc2'] = noviPodaciMap['bc2'];
+              postojeciPodaciZaDan['vs2'] = noviPodaciMap['vs2'];
+
+              // Ako je polazak obrisan (null), obriši i markere vezane za taj polazak
+              if (noviPodaciMap['bc'] == null) {
+                postojeciPodaciZaDan.remove('bc_pokupljeno');
+                postojeciPodaciZaDan.remove('bc_pokupljeno_vozac');
+                postojeciPodaciZaDan.remove('bc_status');
               }
-              if (stariDanPolasci.containsKey('bc_placeno')) {
-                danPolasci['bc_placeno'] = stariDanPolasci['bc_placeno'];
+              if (noviPodaciMap['bc2'] == null) {
+                postojeciPodaciZaDan.remove('bc2_pokupljeno');
+                postojeciPodaciZaDan.remove('bc2_status');
               }
-              if (stariDanPolasci.containsKey('vs_pokupljeno')) {
-                danPolasci['vs_pokupljeno'] = stariDanPolasci['vs_pokupljeno'];
+              if (noviPodaciMap['vs'] == null) {
+                postojeciPodaciZaDan.remove('vs_pokupljeno');
+                postojeciPodaciZaDan.remove('vs_pokupljeno_vozac');
+                postojeciPodaciZaDan.remove('vs_status');
               }
-              if (stariDanPolasci.containsKey('vs_placeno')) {
-                danPolasci['vs_placeno'] = stariDanPolasci['vs_placeno'];
+              if (noviPodaciMap['vs2'] == null) {
+                postojeciPodaciZaDan.remove('vs2_pokupljeno');
+                postojeciPodaciZaDan.remove('vs2_status');
               }
-              if (stariDanPolasci.containsKey('bc_pokupljeno_vozac')) {
-                danPolasci['bc_pokupljeno_vozac'] = stariDanPolasci['bc_pokupljeno_vozac'];
-              }
-              if (stariDanPolasci.containsKey('vs_pokupljeno_vozac')) {
-                danPolasci['vs_pokupljeno_vozac'] = stariDanPolasci['vs_pokupljeno_vozac'];
-              }
+
+              mergedPolasci[dan] = postojeciPodaciZaDan;
+            } else {
+              mergedPolasci[dan] = noviPodaci;
             }
           });
 
@@ -594,25 +611,27 @@ class RegistrovaniPutnikService {
   }
 
   /// 🔄 Sinhronizuje aktivne seat_requests sa novim stanjem šablona
-  /// Ovo osigurava da Adminove promene u dijalogu odmah vidi i putnik
+  /// Ovo osigurava da Adminove promene u dijalogu odmah vidi i putnik.
+  /// 🆕 PROŠIRENO: Ažurira sve buduće zahteve, ne samo za narednih 7 dana.
   Future<void> _syncSeatRequestsWithTemplate(String putnikId, Map<String, dynamic> noviPolasci) async {
     final now = DateTime.now();
+    // Počni od danas (da ne menjamo istoriju)
     final todayStr = DateTime(now.year, now.month, now.day).toIso8601String().split('T')[0];
-    final nextWeekStr = now.add(const Duration(days: 7)).toIso8601String().split('T')[0];
 
-    // 1. Dohvati sve aktivne zahteve za narednih 7 dana
+    // 1. Dohvati SVE buduće aktivne zahteve (ne samo sledećih 7 dana)
+    // Ovo rešava problem kada admin testira za buduće mesece (npr. februar 2026)
     final requests = await _supabase
         .from('seat_requests')
         .select()
         .eq('putnik_id', putnikId)
         .gte('datum', todayStr)
-        .lte('datum', nextWeekStr);
+        .filter('status', 'in', '("pending", "manual", "approved", "confirmed", "rejected")');
 
     for (final req in requests) {
       final datumStr = req['datum'] as String;
       final grad = (req['grad'] ?? '').toString().toLowerCase(); // 'bc' ili 'vs'
       final region = (grad == 'bc' || grad == 'bela crkva') ? 'bc' : 'vs';
-      
+
       final datum = DateTime.parse(datumStr);
       final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
       final dan = daniNedelje[datum.weekday - 1];
@@ -620,17 +639,17 @@ class RegistrovaniPutnikService {
       final noviPodaciZaDan = noviPolasci[dan];
       if (noviPodaciZaDan != null && noviPodaciZaDan is Map) {
         final novoVremeStr = noviPodaciZaDan[region]?.toString();
-        
-        if (novoVremeStr != null && novoVremeStr.isNotEmpty) {
+
+        if (novoVremeStr != null && novoVremeStr.isNotEmpty && novoVremeStr != 'null') {
           // Ažuriraj vreme u seat_requests da se poklapa sa onim što je Admin postavio
-          // I postavi status na 'confirmed' (ili 'approved')
+          // I postavi status na 'confirmed'
           await _supabase.from('seat_requests').update({
             'zeljeno_vreme': '$novoVremeStr:00',
             'status': 'confirmed',
             'processed_at': DateTime.now().toUtc().toIso8601String(),
           }).eq('id', req['id']);
-        } else if (novoVremeStr == null || novoVremeStr.isEmpty) {
-          // Ako je Admin obrisao vreme u dijalogu, obriši i seat_request ili ga otkaži
+        } else {
+          // Ako je Admin obrisao vreme u dijalogu (null ili empty), otkaži seat_request
           await _supabase.from('seat_requests').update({
             'status': 'otkazano',
             'processed_at': DateTime.now().toUtc().toIso8601String(),

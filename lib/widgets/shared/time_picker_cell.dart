@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/route_config.dart';
 import '../../globals.dart';
+import '../../services/route_service.dart';
 import '../../services/theme_manager.dart';
 import '../../utils/schedule_utils.dart';
 
@@ -187,7 +188,7 @@ class TimePickerCell extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (isCancelled && !isAdmin) return; // Otkazano - nema akcije (osim za admina)
 
         final now = DateTime.now();
@@ -259,7 +260,7 @@ class TimePickerCell extends StatelessWidget {
           }
         }
 
-        _showTimePickerDialog(context);
+        await _showTimePickerDialog(context);
       },
       child: Container(
         width: width,
@@ -327,7 +328,7 @@ class TimePickerCell extends StatelessWidget {
     );
   }
 
-  void _showTimePickerDialog(BuildContext context) {
+  Future<void> _showTimePickerDialog(BuildContext context) async {
     final timePassed = _isTimePassed();
 
     // Koristi navBarTypeNotifier za određivanje vremena (prati aktivan bottom nav bar)
@@ -354,16 +355,35 @@ class TimePickerCell extends StatelessWidget {
     // Učitaj vremena iz RouteService
     final gradCode = isBC ? 'bc' : 'vs';
 
-    // Koristi fallback iz RouteConfig
-    switch (sezona) {
-      case 'praznici':
-        vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
-        break;
-      case 'zimski':
-        vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
-        break;
-      default:
-        vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
+    // Učitaj vremena iz RouteService za sve korisnike (admin i putnici)
+    try {
+      vremena = await RouteService.getVremenaPolazaka(grad: gradCode, sezona: sezona);
+      if (vremena.isEmpty) {
+        // Fallback na statičku listu ako nema u bazi
+        switch (sezona) {
+          case 'praznici':
+            vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
+            break;
+          case 'zimski':
+            vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+            break;
+          default:
+            vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [TimePickerCell] Greška pri učitavanju rasporeda iz baze: $e');
+      // Fallback na statičku listu
+      switch (sezona) {
+        case 'praznici':
+          vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
+          break;
+        case 'zimski':
+          vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+          break;
+        default:
+          vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
+      }
     }
 
     showDialog(
@@ -381,8 +401,8 @@ class TimePickerCell extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ⚠️ VREME PROŠLO INFO BANER
-                if (timePassed)
+                // ⚠️ VREME PROŠLO INFO BANER - samo ako nije admin
+                if (timePassed && !isAdmin)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -447,15 +467,27 @@ class TimePickerCell extends StatelessWidget {
                         ),
                         onTap: () async {
                           // Uklonjena potvrda otkazivanja po zahtevu korisnika
-                          onChanged(null);
+                          // Proveri da li je vreme već prazno da izbegneš nepotrebni callback
+                          if (value != null && value!.isNotEmpty) {
+                            onChanged(null);
+                            // Dodaj feedback korisniku
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Vreme polaska je obrisano.')),
+                            );
+                          } else {
+                            // Već je prazno, samo zatvori
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Vreme polaska je već prazno.')),
+                            );
+                          }
                           if (dialogContext.mounted) {
                             Navigator.of(dialogContext).pop();
                           }
                         },
                       ),
                       const Divider(color: Colors.white24),
-                      // Time options - BLOKIRANO AKO JE VREME PROŠLO
-                      if (!timePassed)
+                      // Time options - BLOKIRANO AKO JE VREME PROŠLO (osim za admina)
+                      if (!timePassed || isAdmin)
                         ...vremena.map((vreme) {
                           final isSelected = value == vreme;
                           return ListTile(
@@ -502,8 +534,4 @@ class TimePickerCell extends StatelessWidget {
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-}
+        

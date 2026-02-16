@@ -45,6 +45,18 @@ final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('auto');
 /// Helper za dobijanje trenutnog tipa nav bara
 String get currentNavBarType => navBarTypeNotifier.value;
 
+/// ❄️ ZIMSKI MOD - Proverava da li je zimski red vožnje aktivan za određeni datum
+bool isWinterDate(DateTime date) {
+  if (navBarTypeNotifier.value == 'zimski') return true;
+  if (navBarTypeNotifier.value == 'letnji') return false;
+
+  // Automatski: Zimski od Oktobra do kraja Marta
+  return date.month >= 10 || date.month <= 3;
+}
+
+/// ❄️ ZIMSKI MOD - Proverava da li je zimski red vožnje aktivan SADA
+bool get isWinter => isWinterDate(DateTime.now());
+
 /// 🎄 PRAZNIČNI MOD - specijalni red vožnje (DEPRECATED - koristi navBarTypeNotifier)
 /// Kada je true, koristi se BottomNavBarPraznici sa smanjenim brojem polazaka
 /// BC: 5:00, 6:00, 12:00, 13:00, 15:00

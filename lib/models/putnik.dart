@@ -1,5 +1,6 @@
 ﻿import 'dart:convert';
 
+import '../globals.dart' as globals_file;
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
@@ -367,9 +368,20 @@ class Putnik {
       return putnici; // Putnik ne radi za targetDan
     }
 
+    // Odredi da li je zimski mod za ovaj konkretan datum (ako je prosleđen)
+    bool isWinter = globals_file.isWinter;
+    if (isoDate != null) {
+      try {
+        final date = DateTime.parse(isoDate);
+        isWinter = globals_file.isWinterDate(date);
+      } catch (_) {
+        // Zadržava default vrednost
+      }
+    }
+
     // Citaj vremena za targetDan koristeci helpers koji kombinuju JSON i stare kolone
-    final polazakBC = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'bc');
-    final polazakVS = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'vs');
+    final polazakBC = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'bc', isWinter: isWinter);
+    final polazakVS = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'vs', isWinter: isWinter);
 
     // ? NOVO: Citaj vremena pokupljenja iz polasci_po_danu JSON (samo DANAS)
     final vremePokupljenjaBC = RegistrovaniHelpers.getVremePokupljenjaForDayAndPlace(map, normalizedTarget, 'bc');

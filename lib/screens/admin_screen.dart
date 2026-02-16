@@ -459,13 +459,10 @@ class _AdminScreenState extends State<AdminScreen> {
                                               dropdownColor: Theme.of(context).colorScheme.primary,
                                               style: const TextStyle(color: Colors.white, fontSize: 11),
                                               selectedItemBuilder: (context) {
-                                                return ['auto', 'zimski', 'letnji', 'praznici'].map((t) {
+                                                return ['zimski', 'letnji', 'praznici'].map((t) {
                                                   String label;
                                                   bool useEmoji = false;
                                                   switch (t) {
-                                                    case 'auto':
-                                                      label = 'Auto';
-                                                      break;
                                                     case 'zimski':
                                                       label = '❄️';
                                                       useEmoji = true;
@@ -491,7 +488,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                                 }).toList();
                                               },
                                               items: const [
-                                                DropdownMenuItem(value: 'auto', child: Center(child: Text('Auto'))),
                                                 DropdownMenuItem(value: 'zimski', child: Center(child: Text('Zimski'))),
                                                 DropdownMenuItem(value: 'letnji', child: Center(child: Text('Letnji'))),
                                                 DropdownMenuItem(

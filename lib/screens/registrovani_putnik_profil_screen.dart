@@ -2002,8 +2002,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           ...dani.map((dan) {
             final danPolasci = polasci[dan];
-            final bcVreme = danPolasci?['bc'];
-            final vsVreme = danPolasci?['vs'];
+
+            // ?? Winter-aware selection
+            final bcVreme = isWinter ? (danPolasci?['bc2'] ?? danPolasci?['bc']) : danPolasci?['bc'];
+            final vsVreme = isWinter ? (danPolasci?['vs2'] ?? danPolasci?['vs']) : danPolasci?['vs'];
+
             final bcStatus = danPolasci?['bc_status']?.toString();
             final vsStatus = danPolasci?['vs_status']?.toString();
 
@@ -2041,7 +2044,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         isCancelled: bcOtkazano,
                         tipPutnika: tip.toString(), // 🆕 Za proveru dnevnog zakazivanja
                         tipPrikazivanja: tipPrikazivanja, // 🆕 Režim prikaza
-                        onChanged: (newValue) => _updatePolazak(dan, 'bc', newValue),
+                        onChanged: (newValue) => _updatePolazak(dan, isWinter ? 'bc2' : 'bc', newValue),
                       ),
                     ),
                   ),
@@ -2056,7 +2059,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         isCancelled: vsOtkazano,
                         tipPutnika: tip.toString(), // 🆕 Za proveru dnevnog zakazivanja
                         tipPrikazivanja: tipPrikazivanja, // 🆕 Režim prikaza
-                        onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
+                        onChanged: (newValue) => _updatePolazak(dan, isWinter ? 'vs2' : 'vs', newValue),
                       ),
                     ),
                   ),
@@ -2131,28 +2134,19 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     String? rpcOtkazanoVreme;
     String? rpcOtkazaoVozac;
 
-    if (normalizedVreme == null || normalizedVreme.isEmpty) {
-      // Otkazivanje
-      final staroPolasci = _safeMap(_putnikData['polasci_po_danu']);
-      final staroDanData = _safeMap(staroPolasci[dan]);
-      final staroVreme = staroDanData[tipGrad]?.toString();
-      final staroVremeNorm = RegistrovaniHelpers.normalizeTime(staroVreme ?? '');
-
-      rpcOtkazano = DateTime.now().toUtc().toIso8601String();
-      rpcOtkazaoVozac = 'Putnik';
-      if (staroVreme != null && staroVreme.isNotEmpty) {
-        rpcOtkazanoVreme = (staroVremeNorm != null && staroVremeNorm.isNotEmpty) ? staroVremeNorm : staroVreme;
-      }
-    } else {
+    // Uklonjena logika za otkazivanje - sada samo postavi vreme na null bez statusa
+    // if (normalizedVreme == null || normalizedVreme.isEmpty) {
+    //   // Otkazivanje - UKLONJENO
+    // } else {
+    if (normalizedVreme != null && normalizedVreme.isNotEmpty) {
       // Zakazivanje
-      final jeBcUcenikZahtev = tipGrad == 'bc' && jeUcenik;
-      final jeBcRadnikZahtev = tipGrad == 'bc' && jeRadnik;
-      final jeVsZahtev = tipGrad == 'vs'; // I VS ide u pending na 10 min da dispečer može da reaguje
+      final jeBcZahtev = (tipGrad == 'bc' || tipGrad == 'bc2') && (jeUcenik || jeRadnik);
+      final jeVsZahtev = (tipGrad == 'vs' || tipGrad == 'vs2'); // I VS ide u pending na 10 min
 
-      if (jeBcUcenikZahtev || jeBcRadnikZahtev || jeVsZahtev) {
+      if (jeBcZahtev || jeVsZahtev) {
         rpcStatus = 'pending';
         rpcCekaOd = DateTime.now().toUtc().toIso8601String();
-      } else if (tipGrad == 'bc' && jeDnevni) {
+      } else if ((tipGrad == 'bc' || tipGrad == 'bc2') && jeDnevni) {
         rpcStatus = 'manual';
         rpcCekaOd = DateTime.now().toUtc().toIso8601String();
       }
@@ -2205,7 +2199,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       polasci.forEach((k, v) {
         if (v is Map) {
           if ((v['bc'] != null && v['bc'].toString().isNotEmpty && v['bc'] != 'null') ||
-              (v['vs'] != null && v['vs'].toString().isNotEmpty && v['vs'] != 'null')) {
+              (v['vs'] != null && v['vs'].toString().isNotEmpty && v['vs'] != 'null') ||
+              (v['bc2'] != null && v['bc2'].toString().isNotEmpty && v['bc2'] != 'null') ||
+              (v['vs2'] != null && v['vs2'].toString().isNotEmpty && v['vs2'] != 'null')) {
             radniSet.add(k);
           }
         }
@@ -2229,11 +2225,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // 2. SeatRequest i pozadinski procesi (Bez await-a gde može da bi bilo brže za korisnika)
       if (normalizedVreme != null && normalizedVreme.isNotEmpty) {
+        // ?? Clean tipGrad for external services (bc2 -> BC, vs2 -> VS)
+        final displayGrad = tipGrad.replaceAll('2', '').toUpperCase();
+
         SeatRequestService.insertSeatRequest(
           putnikId: putnikId,
           dan: dan,
           vreme: seatVreme,
-          grad: tipGrad,
+          grad: displayGrad,
           brojMesta: _putnikData['broj_mesta'] ?? 1,
           status: rpcStatus ?? 'pending',
         ).catchError((e) => debugPrint('Error inserting seat request: $e'));
@@ -2242,7 +2241,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           putnikId: putnikId,
           dan: dan,
           vreme: seatVreme,
-          grad: tipGrad,
+          grad: displayGrad,
           tipPutnika: jeDnevni ? 'Dnevni' : (jeUcenik ? 'Učenik' : 'Radnik'),
           status: rpcStatus == 'manual' ? 'Čeka odobrenje admina (Manual)' : 'Čeka potvrdu (Pending)',
         ).catchError((e) => debugPrint('Error logging request: $e'));
@@ -2253,10 +2252,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             duration: Duration(seconds: 3),
           ),
         );
-      } else {
-        // Otkazivanje - pozadinska obaveštenja
-        _handleOtkazivanjeBackground(dan, tipGrad, rpcOtkazanoVreme ?? '');
       }
+      // Uklonjeno otkazivanje - sada samo postavi vreme na null bez dodatnih akcija
     } catch (e) {
       debugPrint('❌ [BC] Greška u _updatePolazak: $e');
       if (mounted) {

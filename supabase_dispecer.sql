@@ -30,6 +30,10 @@ DECLARE
 BEGIN
     dan_kratica := get_dan_kratica(target_datum);
     grad_key := lower(target_grad);
+    -- Odredi sezonski ključ (bc2/vs2) ako je datum u zimskom periodu (Oktobar-Mart)
+    IF EXTRACT(MONTH FROM target_datum) >= 10 OR EXTRACT(MONTH FROM target_datum) <= 3 THEN
+        grad_key := grad_key || '2';
+    END IF;
     status_key := grad_key || '_status';
 
     -- 1. Dohvati max mesta iz kapaciteta
@@ -40,13 +44,18 @@ BEGIN
     IF max_mesta_val IS NULL THEN max_mesta_val := 8; END IF;
 
     -- 2. Prebroj putnike koji već ZAUZIMAJU mesto kod dispečera
+    -- Podržava i zimski red vožnje (bc2/vs2) sa fallback-om na letnji (bc/vs)
     SELECT COALESCE(SUM(rp.broj_mesta), 0) INTO zauzeto_val
     FROM registrovani_putnici rp
     WHERE rp.obrisan = false AND rp.aktivan = true
       AND (
-        rp.polasci_po_danu->dan_kratica->>grad_key = target_vreme::text
-        OR
-        rp.polasci_po_danu->dan_kratica->>grad_key = to_char(target_vreme, 'HH24:MI')
+        (
+            -- Proveri zimski ključ ako postoji, inače letnji
+            COALESCE(
+                rp.polasci_po_danu->dan_kratica->>grad_key, -- npr 'bc2'
+                CASE WHEN grad_key LIKE '%2' THEN rp.polasci_po_danu->dan_kratica->>lower(target_grad) ELSE NULL END -- fallback na 'bc'
+            ) IN (target_vreme::text, to_char(target_vreme, 'HH24:MI'))
+        )
       )
       -- Računaj sve, osim ako su eksplicitno obeleženi kao odbijeni ili otkazani
       AND (rp.polasci_po_danu->dan_kratica->>status_key IS NULL OR rp.polasci_po_danu->dan_kratica->>status_key != 'rejected')
@@ -292,13 +301,15 @@ BEGIN
     -- Formiraj finalni JSON
     current_data := jsonb_set(COALESCE(current_data, '{}'::jsonb), ARRAY[p_dan], dan_data);
 
-    -- Automatski izračunaj radni_dani string
+    -- Automatski izračunaj radni_dani string (podržava i zimski red vožnje bc2/vs2)
     SELECT string_agg(key, ',') INTO new_radni_dani
     FROM (
         SELECT key
         FROM jsonb_each(current_data)
         WHERE (value->>'bc' IS NOT NULL AND value->>'bc' != '' AND value->>'bc' != 'null')
            OR (value->>'vs' IS NOT NULL AND value->>'vs' != '' AND value->>'vs' != 'null')
+           OR (value->>'bc2' IS NOT NULL AND value->>'bc2' != '' AND value->>'bc2' != 'null')
+           OR (value->>'vs2' IS NOT NULL AND value->>'vs2' != '' AND value->>'vs2' != 'null')
         ORDER BY CASE key
             WHEN 'pon' THEN 1 WHEN 'uto' THEN 2 WHEN 'sre' THEN 3 WHEN 'cet' THEN 4
             WHEN 'pet' THEN 5 WHEN 'sub' THEN 6 WHEN 'ned' THEN 7 ELSE 8 END

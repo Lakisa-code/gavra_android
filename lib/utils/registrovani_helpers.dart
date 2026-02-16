@@ -32,9 +32,13 @@ class RegistrovaniHelpers {
       if (val is Map) {
         final bc = val['bc'] ?? val['bela_crkva'] ?? val['polazak_bc'] ?? val['bc_time'];
         final vs = val['vs'] ?? val['vrsac'] ?? val['polazak_vs'] ?? val['vs_time'];
+        final bc2 = val['bc2'];
+        final vs2 = val['vs2'];
         out[dayKey] = {
           'bc': normalizeTime(bc?.toString()),
           'vs': normalizeTime(vs?.toString()),
+          'bc2': normalizeTime(bc2?.toString()),
+          'vs2': normalizeTime(vs2?.toString()),
         };
       } else if (val is String) {
         out[dayKey] = {'bc': normalizeTime(val), 'vs': null};
@@ -82,11 +86,16 @@ class RegistrovaniHelpers {
   static String? getPolazakForDay(
     Map<String, dynamic> rawMap,
     String dayKratica,
-    String place,
-  ) {
+    String place, {
+    bool isWinter = false,
+  }) {
     final parsed = parsePolasciPoDanu(rawMap['polasci_po_danu']);
     final pday = parsed[dayKratica];
     if (pday != null) {
+      if (isWinter) {
+        final rawWinter = pday['${place}2'];
+        if (rawWinter != null && rawWinter.isNotEmpty) return normalizeTime(rawWinter);
+      }
       final raw = pday[place];
       if (raw != null) return normalizeTime(raw);
     }

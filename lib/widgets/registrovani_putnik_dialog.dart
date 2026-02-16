@@ -91,6 +91,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   };
 
   bool _isLoading = false;
+  bool _isWinterMode = isWinter; // 🆕 Lokalni state za admina u dialogu
 
   @override
   void initState() {
@@ -183,10 +184,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       _firmaZiroController.text = putnik.firmaZiro ?? '';
       _firmaAdresaController.text = putnik.firmaAdresa ?? '';
 
-      // Load times for each day
+      // Load times for each day — winter aware
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-        _polazakBcControllers[dan]!.text = putnik.getPolazakBelaCrkvaZaDan(dan) ?? '';
-        _polazakVsControllers[dan]!.text = putnik.getPolazakVrsacZaDan(dan) ?? '';
+        final danRaw = _originalPolasciPoDanu?[dan] ?? {};
+        final bcVal = _isWinterMode ? danRaw['bc2'] : danRaw['bc'];
+        final vsVal = _isWinterMode ? danRaw['vs2'] : danRaw['vs'];
+        _polazakBcControllers[dan]!.text = (bcVal?.toString()) ?? '';
+        _polazakVsControllers[dan]!.text = (vsVal?.toString()) ?? '';
       }
 
       // 🆕 UCITAJ OVERRIDE-ove (seat_requests)
@@ -322,19 +326,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     return isBC ? dayData['bc_status'] : dayData['vs_status'];
   }
 
-  /// 🕐 Helper da izvučemo VREME za određeni dan (prikaz u dijalogu)
-  String? _getTimeForDay(String day, bool isBC) {
-    final override = _getOverrideForDay(day, isBC);
-    if (override != null) {
-      // Ako postoji override, vrati vreme iz njega (zeljeno_vreme)
-      return override['zeljeno_vreme']?.toString().substring(0, 5);
-    }
-    
-    // Inače vrati iz kontrolera (koji je inicijalizovan iz šablona)
-    final controller = isBC ? _polazakBcControllers[day] : _polazakVsControllers[day];
-    return controller?.text;
-  }
-
   /// Privatni helper za dobijanje override-a za dan i smer
   Map<String, dynamic>? _getOverrideForDay(String day, bool isBC) {
     try {
@@ -352,7 +343,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
         final region = isBC ? 'Bela Crkva' : 'Vršac';
         final override = _weeklyOverrides.firstWhere(
-          (req) => req['datum'] == dateStr && (req['grad'] == region || (isBC && req['grad'] == 'BC') || (!isBC && req['grad'] == 'VS')),
+          (req) =>
+              req['datum'] == dateStr &&
+              (req['grad'] == region || (isBC && req['grad'] == 'BC') || (!isBC && req['grad'] == 'VS')),
           orElse: () => {},
         );
 
@@ -524,6 +517,58 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           _buildContactSection(),
           const SizedBox(height: 20),
           _buildAddressSection(),
+          const SizedBox(height: 20),
+          // 🆕 ZIMSKI/LETNJI REŽIM TOGGLE
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _isWinterMode ? Colors.blue.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _isWinterMode ? Colors.blue.withOpacity(0.4) : Colors.orange.withOpacity(0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _isWinterMode ? Icons.ac_unit : Icons.wb_sunny,
+                  color: _isWinterMode ? Colors.blue : Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isWinterMode ? 'Zimski režim' : 'Letnji režim',
+                        style: TextStyle(
+                          color: _isWinterMode ? Colors.blue[300] : Colors.orange[300],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        'Menjate termine za ${(_isWinterMode ? 'zimu' : 'leto').toLowerCase()}',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _isWinterMode,
+                  onChanged: _onSeasonToggle,
+                  activeColor: Colors.blue,
+                  activeTrackColor: Colors.blue.withOpacity(0.3),
+                  inactiveThumbColor: Colors.orange,
+                  inactiveTrackColor: Colors.orange.withOpacity(0.3),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
           _buildTimesSection(),
         ],
@@ -1545,12 +1590,31 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   String _getRadniDaniString() {
     List<String> aktivniDani = [];
 
+    // Rezultat treba da sadrži dane koji imaju bilo koji polazak (letnji ili zimski)
     for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
       final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
       final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
 
-      // Ako je uneto bilo koje vreme za ovaj dan, dan je aktivan
-      if (bcRaw.isNotEmpty || vsRaw.isNotEmpty) {
+      bool imaTermin = bcRaw.isNotEmpty || vsRaw.isNotEmpty;
+
+      // Proveri i originalne termine (za drugu sezonu koja trenutno nije u kontrolerima)
+      if (!imaTermin && _originalPolasciPoDanu != null) {
+        final danRaw = _originalPolasciPoDanu![dan];
+        if (danRaw is Map) {
+          final bc = danRaw['bc'];
+          final vs = danRaw['vs'];
+          final bc2 = danRaw['bc2'];
+          final vs2 = danRaw['vs2'];
+          if ((bc != null && bc.toString().isNotEmpty && bc.toString() != 'null') ||
+              (vs != null && vs.toString().isNotEmpty && vs.toString() != 'null') ||
+              (bc2 != null && bc2.toString().isNotEmpty && bc2.toString() != 'null') ||
+              (vs2 != null && vs2.toString().isNotEmpty && vs2.toString() != 'null')) {
+            imaTermin = true;
+          }
+        }
+      }
+
+      if (imaTermin) {
         aktivniDani.add(dan);
       }
     }
@@ -1580,8 +1644,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final danData = Map<String, dynamic>.from(result[dan] as Map);
 
       // Update times, preserve other data
-      danData['bc'] = bc;
-      danData['vs'] = vs;
+      if (_isWinterMode) {
+        danData['bc2'] = bc;
+        danData['vs2'] = vs;
+      } else {
+        danData['bc'] = bc;
+        danData['vs'] = vs;
+      }
 
       result[dan] = danData;
     }
@@ -1866,6 +1935,52 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         );
       },
     );
+  }
+
+  void _onSeasonToggle(bool value) {
+    if (_isWinterMode == value) return;
+
+    // 1. Prvo sačuvaj trenutne promene iz kontrolera u _originalPolasciPoDanu
+    // da ne bismo izgubili ono što je admin do sada kucao
+    _originalPolasciPoDanu ??= {};
+
+    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+      final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
+      final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
+
+      if (_originalPolasciPoDanu![dan] == null || _originalPolasciPoDanu![dan] is! Map) {
+        _originalPolasciPoDanu![dan] = {};
+      }
+
+      final danData = Map<String, dynamic>.from(_originalPolasciPoDanu![dan]);
+      if (_isWinterMode) {
+        danData['bc2'] = bcRaw.isNotEmpty ? bcRaw : null;
+        danData['vs2'] = vsRaw.isNotEmpty ? vsRaw : null;
+      } else {
+        danData['bc'] = bcRaw.isNotEmpty ? bcRaw : null;
+        danData['vs'] = vsRaw.isNotEmpty ? vsRaw : null;
+      }
+      _originalPolasciPoDanu![dan] = danData;
+    }
+
+    // 2. Promeni mod
+    setState(() {
+      _isWinterMode = value;
+    });
+
+    // 3. Osveži kontrolere novim podacima
+    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+      final danData = _originalPolasciPoDanu![dan];
+      if (danData is Map) {
+        final bc = danData[_isWinterMode ? 'bc2' : 'bc'];
+        final vs = danData[_isWinterMode ? 'vs2' : 'vs'];
+        _polazakBcControllers[dan]?.text = bc != null ? bc.toString() : '';
+        _polazakVsControllers[dan]?.text = vs != null ? vs.toString() : '';
+      } else {
+        _polazakBcControllers[dan]?.text = '';
+        _polazakVsControllers[dan]?.text = '';
+      }
+    }
   }
 }
 
