@@ -925,8 +925,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         String? polazak;
         String? grad;
         if (polasciZaDan is Map) {
-          final bc = polasciZaDan['bc'] as String?;
-          final vs = polasciZaDan['vs'] as String?;
+          // ❄️ Zimski režim Aware
+          final isWinterDay = isWinterDate(checkDate);
+
+          // Provera ključeva
+          final String bcKey = isWinterDay ? (polasciZaDan.containsKey('bc2') ? 'bc2' : 'bc') : 'bc';
+          final String vsKey = isWinterDay ? (polasciZaDan.containsKey('vs2') ? 'vs2' : 'vs') : 'vs';
+
+          final bc = polasciZaDan[bcKey] as String?;
+          final vs = polasciZaDan[vsKey] as String?;
+
           if (bc != null && bc.isNotEmpty && bc != '00:00:00') {
             polazak = bc.replaceAll(':00', '').replaceFirst(RegExp('^0'), '');
             grad = 'BC';
@@ -1854,8 +1862,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       polasci[shortDay] = {
         'bc': null,
         'vs': null,
+        'bc2': null,
+        'vs2': null,
         'bc_status': null,
         'vs_status': null,
+        'bc2_status': null,
+        'vs2_status': null,
       };
     }
 
@@ -1872,12 +1884,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final danName = key.toString();
         String? bcVreme = parseVreme(value['bc']);
         String? vsVreme = parseVreme(value['vs']);
+        String? bc2Vreme = parseVreme(value['bc2']);
+        String? vs2Vreme = parseVreme(value['vs2']);
+
         final bcStatus = parseVreme(value['bc_status']);
         final vsStatus = parseVreme(value['vs_status']);
+        final bc2Status = parseVreme(value['bc2_status']);
+        final vs2Status = parseVreme(value['vs2_status']);
 
         // 🆕 AUTOMATSKO OTKAZIVANJE ISTEKLIH PENDING ZAHTEVA
         final now = DateTime.now();
         if (_isDanas(danName)) {
+          // Za letnji režim
           if (bcStatus == 'pending' && bcVreme != null && _isExpired(bcVreme, now)) {
             bcVreme = null;
             _autoCancelPending(danName, 'bc');
@@ -1886,13 +1904,26 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             vsVreme = null;
             _autoCancelPending(danName, 'vs');
           }
+          // Za zimski režim
+          if (bc2Status == 'pending' && bc2Vreme != null && _isExpired(bc2Vreme, now)) {
+            bc2Vreme = null;
+            _autoCancelPending(danName, 'bc2');
+          }
+          if (vs2Status == 'pending' && vs2Vreme != null && _isExpired(vs2Vreme, now)) {
+            vs2Vreme = null;
+            _autoCancelPending(danName, 'vs2');
+          }
         }
 
         polasci[danName] = {
           'bc': bcVreme,
           'vs': vsVreme,
+          'bc2': bc2Vreme,
+          'vs2': vs2Vreme,
           'bc_status': bcStatus,
           'vs_status': vsStatus,
+          'bc2_status': bc2Status,
+          'vs2_status': vs2Status,
           'bc_otkazano': parseVreme(value['bc_otkazano']),
           'vs_otkazano': parseVreme(value['vs_otkazano']),
           'bc_otkazano_vreme': parseVreme(value['bc_otkazano_vreme']),
@@ -1920,16 +1951,27 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final vreme = req['zeljeno_vreme'] as String?;
 
         final existing = polasci[danKratica]!;
+
         // PENDING/OTKAZANO status iz seat_requests ima prioritet nad JSON-om
-        // Ako je status otkazano, uvek ima prioritet
+        // Važno: Seat Request je za specifičan datum, pa ga mergujemo u polja
+        // zavisno od trenutnog režima (zimski/letnji) kako bi UI odmah prikazao promenu.
+        final String gK = isWinter ? '${grad}2' : grad;
+        final String sK = isWinter ? '${grad}2_status' : '${grad}_status';
+
         if (status == 'otkazano') {
-          existing['${grad}_status'] = 'otkazano';
+          existing[sK] = 'otkazano';
           existing['${grad}_otkazano'] = true; // For isCancelled logic
           // Set cancellation time to the requested time so it shows in red box
           existing['${grad}_otkazano_vreme'] = vreme;
-        } else if (existing['${grad}_status'] != 'confirmed' && existing['${grad}_status'] != 'approved') {
-          existing[grad] = vreme;
-          existing['${grad}_status'] = status;
+        } else if (existing[sK] != 'confirmed' && existing[sK] != 'approved') {
+          existing[gK] = vreme;
+          existing[sK] = status;
+
+          // Za svaki slučaj ažuriramo i "letnji" ključ da bi ostali delovi aplikacije videli promenu
+          if (isWinter) {
+            existing[grad] = vreme;
+            existing['${grad}_status'] = status;
+          }
         }
       } catch (e) {
         debugPrint('⚠️ [MergeRequests] Greška: $e');
@@ -2000,25 +2042,41 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           // Grid za svaki dan
 
           ...dani.map((dan) {
-            final danPolasci = polasci[dan];
+            final danPolasci = polasci[dan]!;
 
             // ?? Winter-aware selection
-            final bcVreme = isWinter ? (danPolasci?['bc2'] ?? danPolasci?['bc']) : danPolasci?['bc'];
-            final vsVreme = isWinter ? (danPolasci?['vs2'] ?? danPolasci?['vs']) : danPolasci?['vs'];
+            // Proveravamo originalni JSONB za postojanje ključeva 'bc2'/'vs2' da znamo da li da radimo fallback
+            final danRaw = polasciRaw[dan] is Map ? polasciRaw[dan] as Map : {};
+            final bool hasWinterBc = danRaw.containsKey('bc2');
+            final bool hasWinterVs = danRaw.containsKey('vs2');
 
-            final bcStatus = danPolasci?['bc_status']?.toString();
-            final vsStatus = danPolasci?['vs_status']?.toString();
+            final String? bcVreme;
+            final String? vsVreme;
+            if (isWinter) {
+              bcVreme = hasWinterBc ? danPolasci['bc2']?.toString() : danPolasci['bc']?.toString();
+              vsVreme = hasWinterVs ? danPolasci['vs2']?.toString() : danPolasci['vs']?.toString();
+            } else {
+              bcVreme = danPolasci['bc']?.toString();
+              vsVreme = danPolasci['vs']?.toString();
+            }
+
+            final bcStatus = isWinter
+                ? (danPolasci['bc2_status']?.toString() ?? danPolasci['bc_status']?.toString())
+                : danPolasci['bc_status']?.toString();
+            final vsStatus = isWinter
+                ? (danPolasci['vs2_status']?.toString() ?? danPolasci['vs_status']?.toString())
+                : danPolasci['vs_status']?.toString();
 
             // 🔍 Proveri da li je admin uklonio termin
             final bcUklonjen = _proveriUklonjen(dan, 'bc', bcVreme);
             final vsUklonjen = _proveriUklonjen(dan, 'vs', vsVreme);
 
-            final bcOtkazano = (danPolasci?['bc_otkazano'] != null) || bcUklonjen;
-            final vsOtkazano = (danPolasci?['vs_otkazano'] != null) || vsUklonjen;
+            final bcOtkazano = (danPolasci['bc_otkazano'] != null) || bcUklonjen;
+            final vsOtkazano = (danPolasci['vs_otkazano'] != null) || vsUklonjen;
 
             // 🆕 Otkazano vreme - prikazuje se u crvenom
-            final bcOtkazanoVreme = danPolasci?['bc_otkazano_vreme'];
-            final vsOtkazanoVreme = danPolasci?['vs_otkazano_vreme'];
+            final bcOtkazanoVreme = danPolasci['bc_otkazano_vreme'];
+            final vsOtkazanoVreme = danPolasci['vs_otkazano_vreme'];
             // Ako je otkazano, prikaži staro vreme; inače prikaži trenutno vreme
             final bcDisplayVreme = bcOtkazano ? bcOtkazanoVreme : bcVreme;
             final vsDisplayVreme = vsOtkazano ? vsOtkazanoVreme : vsVreme;

@@ -323,6 +323,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     if (_originalPolasciPoDanu == null) return null;
     final dayData = _originalPolasciPoDanu![day];
     if (dayData == null) return null;
+
+    if (_isWinterMode) {
+      // U zimskom režimu prioritet ima bc2_status, ali ako ga nema fallback na bc_status
+      // (jer mnogi nemaju setovan bc2 pa koriste letnji i u zimi)
+      return isBC ? (dayData['bc2_status'] ?? dayData['bc_status']) : (dayData['vs2_status'] ?? dayData['vs_status']);
+    }
+
     return isBC ? dayData['bc_status'] : dayData['vs_status'];
   }
 

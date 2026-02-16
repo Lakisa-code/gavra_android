@@ -638,7 +638,14 @@ class RegistrovaniPutnikService {
 
       final noviPodaciZaDan = noviPolasci[dan];
       if (noviPodaciZaDan != null && noviPodaciZaDan is Map) {
-        final novoVremeStr = noviPodaciZaDan[region]?.toString();
+        // ❄️ Zimski režim Aware
+        final isWinterDay = isWinterDate(datum);
+        final String regionalKey = (grad == 'bc' || grad == 'bela crkva') ? 'bc' : 'vs';
+        final String effectiveKey = isWinterDay
+            ? (noviPodaciZaDan.containsKey('${regionalKey}2') ? '${regionalKey}2' : regionalKey)
+            : regionalKey;
+
+        final novoVremeStr = noviPodaciZaDan[effectiveKey]?.toString();
 
         if (novoVremeStr != null && novoVremeStr.isNotEmpty && novoVremeStr != 'null') {
           // Ažuriraj vreme u seat_requests da se poklapa sa onim što je Admin postavio

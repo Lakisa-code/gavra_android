@@ -1,11 +1,9 @@
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/route_config.dart';
 
-/// 🚐 Servis za učitavanje satnih redoslijeda iz baze
-/// Dinamički učitava vremena polazaka iz `voznje_po_sezoni` tabele
+/// 🚐 Servis za dobavljanje satnih redoslijeda
+/// Koristi fiksne redoslijede iz RouteConfig-a na osnovu aktivnog režima (zimski/letnji/praznici)
 class RouteService {
   static final RouteService _instance = RouteService._internal();
-  static final SupabaseClient _supabase = Supabase.instance.client;
 
   RouteService._internal();
 
@@ -13,29 +11,28 @@ class RouteService {
     return _instance;
   }
 
-  /// 🚐 Dobija vremena polazaka za grad i sezonu (sa cachingom)
+  /// 🚐 Dobija vremena polazaka za grad i sezonu direktno iz konfiguracije
+  static List<String> getVremenaPolazakaSync({
+    required String grad,
+    required String sezona,
+  }) {
+    final isBc = grad.toLowerCase().contains('bc') || grad.toLowerCase().contains('bela');
+
+    if (sezona == 'praznici') {
+      return isBc ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
+    } else if (sezona == 'zimski') {
+      return isBc ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+    } else {
+      // letnji ili default
+      return isBc ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
+    }
+  }
+
+  /// 🚐 Kompatibilnost sa postojećim async pozivima (vraća odmah bez baze)
   static Future<List<String>> getVremenaPolazaka({
     required String grad,
     required String sezona,
   }) async {
-    try {
-      final response = await _supabase
-          .from('voznje_po_sezoni')
-          .select('vremena')
-          .eq('sezona', sezona)
-          .eq('grad', grad)
-          .eq('aktivan', true)
-          .limit(1)
-          .single();
-
-      final vremena = List<String>.from(response['vremena'] ?? []);
-
-      debugPrint('📡 [RouteService] Učitan redoslijed ($sezona/$grad): $vremena');
-      return vremena;
-    } catch (e) {
-      debugPrint('❌ [RouteService] Greška pri učitavanju ($sezona/$grad): $e');
-      // Fallback na prazne satne redoslijede
-      return [];
-    }
+    return getVremenaPolazakaSync(grad: grad, sezona: sezona);
   }
 }

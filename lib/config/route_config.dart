@@ -4,9 +4,6 @@ import 'package:gavra_android/services/route_service.dart';
 ///
 /// Vremena polazaka za različite rute i sezone.
 /// Koristi se u kapacitet servisu i navigacionim bar-ovima.
-/// 
-/// NAPOMENA: Redoslijedi se sada učitavaju iz `voznje_po_sezoni` tabele
-/// putem RouteService-a za dinamičku konfiguraciju bez redeploya aplikacije.
 
 class RouteConfig {
   // 🏙️ BELA CRKVA - Zimski raspored (oktobar-mart) - FALLBACK
@@ -107,7 +104,7 @@ class RouteConfig {
   }) async {
     final isBc = grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc');
     final isVs = grad.toLowerCase().contains('vrs') || grad.toLowerCase().contains('vrš');
-    
+
     final sezona = letnji ? 'letnji' : 'zimski';
     final gradCode = isBc ? 'bc' : 'vs';
 
@@ -117,7 +114,7 @@ class RouteConfig {
         grad: gradCode,
         sezona: sezona,
       );
-      
+
       if (vremena.isNotEmpty) {
         return vremena;
       }
@@ -141,4 +138,3 @@ class RouteConfig {
     return Duration(seconds: 1 << (attempt - 1));
   }
 }
-

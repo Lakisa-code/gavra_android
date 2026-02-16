@@ -272,7 +272,6 @@ class RealtimeManager {
       'voznje_log', // 📊 Log vožnji
       'vozila', // 🚗 Vozila
       'vozaci', // 👨 Vozači
-      'voznje_po_sezoni', // 📅 Redosljed polazaka
       'seat_requests', // 🎫 Zahtjevi za mjesta
       'daily_reports', // 📈 Dnevni izvještaji
       'app_settings', // ⚙️ Postavke aplikacije

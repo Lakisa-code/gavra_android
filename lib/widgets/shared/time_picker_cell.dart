@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../config/route_config.dart';
 import '../../globals.dart';
 import '../../services/route_service.dart';
 import '../../services/theme_manager.dart';
@@ -356,35 +355,8 @@ class TimePickerCell extends StatelessWidget {
     final gradCode = isBC ? 'bc' : 'vs';
 
     // Učitaj vremena iz RouteService za sve korisnike (admin i putnici)
-    try {
-      vremena = await RouteService.getVremenaPolazaka(grad: gradCode, sezona: sezona);
-      if (vremena.isEmpty) {
-        // Fallback na statičku listu ako nema u bazi
-        switch (sezona) {
-          case 'praznici':
-            vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
-            break;
-          case 'zimski':
-            vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
-            break;
-          default:
-            vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
-        }
-      }
-    } catch (e) {
-      debugPrint('⚠️ [TimePickerCell] Greška pri učitavanju rasporeda iz baze: $e');
-      // Fallback na statičku listu
-      switch (sezona) {
-        case 'praznici':
-          vremena = isBC ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
-          break;
-        case 'zimski':
-          vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
-          break;
-        default:
-          vremena = isBC ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
-      }
-    }
+    // RouteService sada automatski vraća ispravna vremena iz RouteConfig-a
+    vremena = await RouteService.getVremenaPolazaka(grad: gradCode, sezona: sezona);
 
     showDialog(
       context: context,
