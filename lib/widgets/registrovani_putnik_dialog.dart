@@ -91,7 +91,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   };
 
   bool _isLoading = false;
-  bool _isWinterMode = isWinter; // 🆕 Lokalni state za admina u dialogu
+  // Brisanje lokalnog _isWinterMode i korišćenje globalnog isWinter
+  bool get _isWinterMode => isWinter;
 
   @override
   void initState() {
@@ -524,58 +525,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           _buildContactSection(),
           const SizedBox(height: 20),
           _buildAddressSection(),
-          const SizedBox(height: 20),
-          // 🆕 ZIMSKI/LETNJI REŽIM TOGGLE
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: _isWinterMode ? Colors.blue.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _isWinterMode ? Colors.blue.withOpacity(0.4) : Colors.orange.withOpacity(0.4),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _isWinterMode ? Icons.ac_unit : Icons.wb_sunny,
-                  color: _isWinterMode ? Colors.blue : Colors.orange,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _isWinterMode ? 'Zimski režim' : 'Letnji režim',
-                        style: TextStyle(
-                          color: _isWinterMode ? Colors.blue[300] : Colors.orange[300],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        'Menjate termine za ${(_isWinterMode ? 'zimu' : 'leto').toLowerCase()}',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: _isWinterMode,
-                  onChanged: _onSeasonToggle,
-                  activeColor: Colors.blue,
-                  activeTrackColor: Colors.blue.withOpacity(0.3),
-                  inactiveThumbColor: Colors.orange,
-                  inactiveTrackColor: Colors.orange.withOpacity(0.3),
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 20),
           _buildTimesSection(),
         ],
@@ -1942,52 +1891,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         );
       },
     );
-  }
-
-  void _onSeasonToggle(bool value) {
-    if (_isWinterMode == value) return;
-
-    // 1. Prvo sačuvaj trenutne promene iz kontrolera u _originalPolasciPoDanu
-    // da ne bismo izgubili ono što je admin do sada kucao
-    _originalPolasciPoDanu ??= {};
-
-    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-      final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
-      final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
-
-      if (_originalPolasciPoDanu![dan] == null || _originalPolasciPoDanu![dan] is! Map) {
-        _originalPolasciPoDanu![dan] = {};
-      }
-
-      final danData = Map<String, dynamic>.from(_originalPolasciPoDanu![dan]);
-      if (_isWinterMode) {
-        danData['bc2'] = bcRaw.isNotEmpty ? bcRaw : null;
-        danData['vs2'] = vsRaw.isNotEmpty ? vsRaw : null;
-      } else {
-        danData['bc'] = bcRaw.isNotEmpty ? bcRaw : null;
-        danData['vs'] = vsRaw.isNotEmpty ? vsRaw : null;
-      }
-      _originalPolasciPoDanu![dan] = danData;
-    }
-
-    // 2. Promeni mod
-    setState(() {
-      _isWinterMode = value;
-    });
-
-    // 3. Osveži kontrolere novim podacima
-    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-      final danData = _originalPolasciPoDanu![dan];
-      if (danData is Map) {
-        final bc = danData[_isWinterMode ? 'bc2' : 'bc'];
-        final vs = danData[_isWinterMode ? 'vs2' : 'vs'];
-        _polazakBcControllers[dan]?.text = bc != null ? bc.toString() : '';
-        _polazakVsControllers[dan]?.text = vs != null ? vs.toString() : '';
-      } else {
-        _polazakBcControllers[dan]?.text = '';
-        _polazakVsControllers[dan]?.text = '';
-      }
-    }
   }
 }
 
