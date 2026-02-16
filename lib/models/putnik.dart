@@ -126,6 +126,7 @@ class Putnik {
     final jePokupljenDanas = vremePokupljenja != null;
 
     final vremePlacanja = RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, danKratica, place);
+    final iznosPlacanja = RegistrovaniHelpers.getIznosPlacanjaForDayAndPlace(map, danKratica, place);
     final isDnevni = tipPutnika == 'dnevni' || tipPutnika == 'posiljka';
 
     return Putnik(
@@ -134,7 +135,7 @@ class Putnik {
       polazak: RegistrovaniHelpers.normalizeTime(polazakRaw?.toString()) ?? '6:00',
       pokupljen: jePokupljenDanas, // ? FIX: Koristi stvarno pokupljenje iz JSON-a
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : null,
-      mesecnaKarta: tipPutnika != 'dnevni' && tipPutnika != 'posiljka', // ?? FIX: false za dnevni i posiljku
+      mesecnaKarta: !isDnevni, // ?? FIX: false za dnevni i posiljku
       dan: map['radni_dani'] as String? ?? 'Pon',
       status: status, // ? Koristi provereni status
       statusVreme: map['updated_at'] as String?,
@@ -142,10 +143,11 @@ class Putnik {
       vremePokupljenja: vremePokupljenja,
       // ? NOVO: Citaj vremePlacanja iz polasci_po_danu (samo DANAS)
       vremePlacanja: vremePlacanja,
-      placeno: isDnevni ? (vremePlacanja != null) : RegistrovaniHelpers.priceIsPaid(map),
-      cena: isDnevni
-          ? (vremePlacanja != null ? _parseDouble(map['cena_po_danu'] ?? map['cena']) : 0.0)
-          : _parseDouble(map['cena_po_danu'] ?? map['cena']),
+      placeno: (iznosPlacanja ?? 0) > 0 || (isDnevni ? (vremePlacanja != null) : RegistrovaniHelpers.priceIsPaid(map)),
+      cena: iznosPlacanja ??
+          (isDnevni
+              ? (vremePlacanja != null ? _parseDouble(map['cena_po_danu'] ?? map['cena']) : 0.0)
+              : _parseDouble(map['cena_po_danu'] ?? map['cena'])),
       // ? NOVO: Citaj naplatioVozac iz polasci_po_danu (samo DANAS)
       naplatioVozac: RegistrovaniHelpers.getNaplatioVozacForDayAndPlace(map, danKratica, place) ??
           _getVozacIme(map['vozac_id'] as String?),
@@ -206,12 +208,14 @@ class Putnik {
   final bool otkazanZaPolazak; // ?? Da li je otkazan za ovaj specificni polazak (grad)
 
   // ?? Helper getter za proveru da li je dnevni tip
-  bool get isDnevniTip => tipPutnika == 'dnevni' || mesecnaKarta == false;
+  bool get isDnevniTip => tipPutnika?.toLowerCase() == 'dnevni' || mesecnaKarta == false;
 
   // ?? Helper getter za proveru da li je radnik ili ucenik (prikazuje MESECNA badge)
   // Fallback: ako tipPutnika nije poznat, koristi mesecnaKarta kao indikator
   bool get isMesecniTip =>
-      tipPutnika == 'radnik' || tipPutnika == 'ucenik' || (tipPutnika == null && mesecnaKarta == true);
+      tipPutnika?.toLowerCase() == 'radnik' ||
+      tipPutnika?.toLowerCase() == 'ucenik' ||
+      (tipPutnika == null && mesecnaKarta == true);
 
   // Getter-i za kompatibilnost
   String get destinacija => grad;
@@ -465,7 +469,7 @@ class Putnik {
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaBC, // ? NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaBC, // ? FIX: Citaj iz JSON-a za BC
-          placeno: (iznosPlacanjaBC ?? 0) > 0, // ? FIX: placeno ako ima iznos
+          placeno: (iznosPlacanjaBC ?? 0) > 0 || vremePlacanjaBC != null, // ? FIX: placeno ako ima iznos ili vreme
           cena: cenaBC, // 🔧 FIX: Koristi cenu po mjestu, ne ukupan iznos
           // ? NOVO: Citaj naplatioVozac iz polasci_po_danu
           naplatioVozac: naplatioVozacBC ?? _getVozacIme(map['vozac_id'] as String?),
@@ -527,7 +531,7 @@ class Putnik {
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaVS, // ? NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaVS, // ? FIX: Citaj iz JSON-a za VS
-          placeno: (iznosPlacanjaVS ?? 0) > 0, // ? FIX: placeno ako ima iznos
+          placeno: (iznosPlacanjaVS ?? 0) > 0 || vremePlacanjaVS != null, // ? FIX: placeno ako ima iznos ili vreme
           cena: cenaVS, // 🔧 FIX: Koristi cenu po mjestu, ne ukupan iznos
           // ? NOVO: Citaj naplatioVozac iz polasci_po_danu
           naplatioVozac: naplatioVozacVS ?? _getVozacIme(map['vozac_id'] as String?),
