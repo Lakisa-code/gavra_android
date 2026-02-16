@@ -463,6 +463,17 @@ class RegistrovaniHelpers {
     final dayData = decoded[dayKratica];
     if (dayData == null || dayData is! Map) return null;
 
+    // 🔧 FIX: Prvo proveri listu placanja (za dnevne)
+    final placanja = dayData['${place}_placanja'];
+    if (placanja is List && placanja.isNotEmpty) {
+      final last = placanja.last;
+      if (last is Map && last['vreme'] != null) {
+        try {
+          return DateTime.parse(last['vreme'].toString()).toLocal();
+        } catch (_) {}
+      }
+    }
+
     // Ključ je npr. 'bc_placeno' ili 'vs_placeno'
     final placenoTimestamp = dayData['${place}_placeno'] as String?;
 
@@ -503,6 +514,15 @@ class RegistrovaniHelpers {
     final dayData = decoded[dayKratica];
     if (dayData == null || dayData is! Map) return null;
 
+    // 🔧 FIX: Prvo proveri listu placanja (za dnevne)
+    final placanja = dayData['${place}_placanja'];
+    if (placanja is List && placanja.isNotEmpty) {
+      final last = placanja.last;
+      if (last is Map && last['vozac'] != null) {
+        return last['vozac'].toString();
+      }
+    }
+
     // Ključ je npr. 'bc_placeno_vozac' ili 'vs_placeno_vozac'
     return dayData['${place}_placeno_vozac'] as String?;
   }
@@ -532,7 +552,20 @@ class RegistrovaniHelpers {
     if (dayData == null || dayData is! Map) return null;
 
     // Ključ je npr. 'bc_placeno_iznos' ili 'vs_placeno_iznos'
-    // 🔧 FIX: Nemoj koristiti fallback logiku! Ako nema plaćanja za ovaj grad, vrati null
+    // 🔧 FIX: Prvo proveri listu placanja (nova logika za dnevne)
+    final placanja = dayData['${place}_placanja'];
+    if (placanja is List && placanja.isNotEmpty) {
+      double total = 0;
+      for (final p in placanja) {
+        if (p is Map) {
+          final val = p['iznos'];
+          if (val is num) total += val.toDouble();
+        }
+      }
+      if (total > 0) return total;
+    }
+
+    // Fallback na stari kljuc
     var iznos = dayData['${place}_placeno_iznos'];
 
     if (iznos == null) return null;

@@ -232,7 +232,11 @@ class Putnik {
       return 300.0;
     }
 
-    // 3. Više nema default cena - vraća 0.0 ako nije postavljena cena
+    // 3. Default cena za dnevne putnike (Fiksno 600 RSD)
+    if (isDnevniTip) {
+      return 600.0;
+    }
+
     return 0.0;
   }
 
