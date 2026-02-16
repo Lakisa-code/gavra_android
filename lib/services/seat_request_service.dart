@@ -24,21 +24,15 @@ class SeatRequestService {
       final datum = fixedDate != null ? DateTime.parse(fixedDate) : getNextDateForDay(DateTime.now(), dan);
       final datumStr = datum.toIso8601String().split('T')[0];
 
-      // 🛡️ PROVERA: Da li već postoji aktivan zahtev za OVAJ GRAD i DATUM (pending ili manual)?
-      // Razdvojeni BC i VS zahtevi po danima - putnik može imati jedan aktivan po smeru za svaki dan
-      final activeResp = await _supabase
+      // 🛡️ PROVERA: Da li već postoji aktivan zahtev za OVAJ GRAD i DATUM?
+      // Ako postoji bilo šta (pending, manual, approved), otkaži to jer šaljemo NOVU verziju
+      await _supabase
           .from('seat_requests')
-          .select('id')
+          .update({'status': 'otkazano'})
           .eq('putnik_id', putnikId)
           .eq('grad', grad.toUpperCase())
           .eq('datum', datumStr)
-          .inFilter('status', ['pending', 'manual']).maybeSingle();
-
-      if (activeResp != null) {
-        debugPrint(
-            '⚠️ [SeatRequestService] Putnik $putnikId već ima aktivan ${grad.toUpperCase()} zahtev za $datumStr. Blokiram novi.');
-        return;
-      }
+          .inFilter('status', ['pending', 'manual', 'approved']);
 
       await _supabase.from('seat_requests').insert({
         'putnik_id': putnikId,

@@ -391,11 +391,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // 🛡️ PROVERA: Odbaci stare notifikacije (starije od 2 minuta)
       final processedAt = newRecord['processed_at'];
       if (processedAt != null) {
-        final processedTime = DateTime.parse(processedAt.toString());
-        final now = DateTime.now();
-        if (now.difference(processedTime).inMinutes > 2) {
+        final processedTime = DateTime.parse(processedAt.toString()).toUtc();
+        final nowUtc = DateTime.now().toUtc();
+        if (nowUtc.difference(processedTime).inMinutes.abs() > 2) {
           debugPrint(
-              '⏭️ [SeatRequestApproval] Odbačena stara notifikacija (processed ${now.difference(processedTime).inMinutes} min ago)');
+              '⏭️ [SeatRequestApproval] Odbačena stara notifikacija (razlika: ${nowUtc.difference(processedTime).inMinutes} min)');
           return;
         }
       }
@@ -499,11 +499,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // 🛡️ PROVERA: Odbaci stare notifikacije (starije od 2 minuta)
       final processedAt = newRecord['processed_at'];
       if (processedAt != null) {
-        final processedTime = DateTime.parse(processedAt.toString());
-        final now = DateTime.now();
-        if (now.difference(processedTime).inMinutes > 2) {
+        final processedTime = DateTime.parse(processedAt.toString()).toUtc();
+        final nowUtc = DateTime.now().toUtc();
+        if (nowUtc.difference(processedTime).inMinutes.abs() > 2) {
           debugPrint(
-              '⏭️ [SeatRequestRejection] Odbačena stara notifikacija (processed ${now.difference(processedTime).inMinutes} min ago)');
+              '⏭️ [SeatRequestRejection] Odbačena stara notifikacija (razlika: ${nowUtc.difference(processedTime).inMinutes} min)');
           return;
         }
       }
