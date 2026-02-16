@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; // 🛰️ Za GPS poziciju
@@ -237,14 +238,24 @@ class _VozacScreenState extends State<VozacScreen> {
   void _initializeNotifications() {
     // Inicijalizuj heads-up i zvuk notifikacije
     LocalNotificationService.initialize(context);
-    
+
     // ⚡ LISTEN ZA IN-APP DOGAĐAJE (Automatski Popis)
     _notificationSubscription?.cancel();
     _notificationSubscription = RealtimeNotificationService.notificationStream.listen((data) {
       if (data['type'] == 'automated_popis' && mounted) {
-        final stats = data['stats'];
+        var stats = data['stats'];
         if (stats != null) {
-          _showAutomatedPopisPopup(Map<String, dynamic>.from(stats));
+          if (stats is String) {
+            try {
+              stats = jsonDecode(stats);
+            } catch (e) {
+              debugPrint('Greška pri dekodiranju statistike: $e');
+              return;
+            }
+          }
+          if (stats is Map) {
+            _showAutomatedPopisPopup(Map<String, dynamic>.from(stats));
+          }
         }
       }
     });
@@ -1826,7 +1837,8 @@ class _VozacScreenState extends State<VozacScreen> {
               const Divider(color: Colors.white12, height: 24),
               _buildPopisItem('Naplaćeni dnevni', '${stats['naplaceni_dnevni'] ?? 0} RSD', Colors.white),
               _buildPopisItem('Naplaćeni mesečni', '${stats['naplaceni_mesecni'] ?? 0} RSD', Colors.white),
-              _buildPopisItem('Broj dužnika', '${stats['broj_duznika'] ?? 0}', stats['broj_duznika'] != 0 ? Colors.red : Colors.white70),
+              _buildPopisItem('Broj dužnika', '${stats['broj_duznika'] ?? 0}',
+                  stats['broj_duznika'] != 0 ? Colors.red : Colors.white70),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1869,24 +1881,24 @@ class _VozacScreenState extends State<VozacScreen> {
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    Widget _buildPopisItem(String label, String value, Color color) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-            Text(
-              value,
-              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-          ],
-        ),
-      );
-    }
+  Widget _buildPopisItem(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+          Text(
+            value,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+        ],
+      ),
+    );
   }
 
   // 📊 POPUP ZA PRIKAZ POVRATKA SA SPISKOM
@@ -2005,7 +2017,8 @@ class _VozacScreenState extends State<VozacScreen> {
             ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   // 📊 POPUP ZA PRIKAZ STATISTIKE
@@ -2068,7 +2081,8 @@ class _VozacScreenState extends State<VozacScreen> {
             ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   // Helper za border boju kao u danas_screen

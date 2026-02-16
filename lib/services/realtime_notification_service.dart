@@ -182,7 +182,7 @@ class RealtimeNotificationService {
     try {
       // Emituj dogadjaj i za tap ako smo u foreground-u/background-u
       onForegroundNotification(messageData);
-      
+
       await _handleNotificationTap(messageData);
     } catch (e) {
       debugPrint('🔴 [RealtimeNotification.handleInitialMessage] Error: $e');
