@@ -16,7 +16,7 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+serve(async (req: any) => {
     // 🏁 Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
@@ -28,8 +28,8 @@ serve(async (req) => {
 
         // 🔐 DOBAVLJANJE TAJNI IZ BAZE (Umesto Dashboard-a)
         const supabaseClient = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            (Deno as any).env.get('SUPABASE_URL') ?? '',
+            (Deno as any).env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
         const { data: secretsData } = await supabaseClient
@@ -81,7 +81,7 @@ serve(async (req) => {
  * 🟢 GOOGLE FCM V1 IMPLEMENTACIJA
  */
 async function sendToFCM(tokens: string[], title: string, body: string, data?: any, secrets?: any) {
-    const serviceAccount = JSON.parse(secrets?.FIREBASE_SERVICE_ACCOUNT || Deno.env.get('FIREBASE_SERVICE_ACCOUNT') || '{}')
+    const serviceAccount = JSON.parse(secrets?.FIREBASE_SERVICE_ACCOUNT || (Deno as any).env.get('FIREBASE_SERVICE_ACCOUNT') || '{}')
 
     if (!serviceAccount.project_id) {
         return { success: false, error: 'FCM Config Missing (FIREBASE_SERVICE_ACCOUNT)' }
@@ -124,9 +124,9 @@ async function sendToFCM(tokens: string[], title: string, body: string, data?: a
  * 🔴 HUAWEI HMS IMPLEMENTACIJA
  */
 async function sendToHMS(tokens: string[], title: string, body: string, data?: any, secrets?: any) {
-    const clientId = secrets?.HUAWEI_CLIENT_ID || Deno.env.get('HUAWEI_CLIENT_ID')
-    const clientSecret = secrets?.HUAWEI_CLIENT_SECRET || Deno.env.get('HUAWEI_CLIENT_SECRET')
-    const appId = secrets?.HUAWEI_APP_ID || Deno.env.get('HUAWEI_APP_ID')
+    const clientId = secrets?.HUAWEI_CLIENT_ID || (Deno as any).env.get('HUAWEI_CLIENT_ID')
+    const clientSecret = secrets?.HUAWEI_CLIENT_SECRET || (Deno as any).env.get('HUAWEI_CLIENT_SECRET')
+    const appId = secrets?.HUAWEI_APP_ID || (Deno as any).env.get('HUAWEI_APP_ID')
 
     if (!clientId || !clientSecret) {
         return { success: false, error: 'HMS Config Missing' }

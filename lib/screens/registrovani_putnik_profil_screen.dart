@@ -460,30 +460,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         );
       }
 
-      // 🔔 Pošalji push notifikaciju (foreground/background/lock screen)
-      try {
-        final dniOznake = <String, String>{};
-        for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
-          dniOznake[DayConstants.dayAbbreviations[i]] = DayConstants.dayNamesInternal[i];
-        }
-        final danNaziv = dniOznake[dan] ?? dan;
-        final gradNaziv = grad.toUpperCase();
-
-        await LocalNotificationService.showRealtimeNotification(
-          title: '✅ Mesto osigurano!',
-          body: 'Vaš zahtev za $vreme ($danNaziv $gradNaziv) je odobren. Slobodno mesto je dostupno!',
-          payload: jsonEncode({
-            'notification_id': 'seat_request_approval_$putnikId',
-            'type': 'seat_request_approval',
-            'putnik_id': putnikId,
-            'dan': dan,
-            'grad': grad,
-            'vreme': vreme,
-          }),
-        );
-      } catch (e) {
-        debugPrint('⚠️ [SeatRequestApproval] Greška pri slanju notifikacije: $e');
-      }
+      // 🔕 LOKALNA NOTIFIKACIJA UKLONJENA: Sada se šalje isključivo preko serverskog Push sistema.
+      // FirebaseService/HuaweiPushService će primiti Push i prikazati ga, nema potrebe za dupliranjem ovde.
 
       debugPrint('✅ [SeatRequestApproval] Registrovani putnici ažuriran');
     } catch (e) {
@@ -513,44 +491,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         }
       }
 
-      // 🔔 Pošalji push notifikaciju (foreground/background/lock screen)
-      try {
-        String bodyText;
-        String notificationType;
-
-        if (alternatives.isNotEmpty) {
-          notificationType = 'seat_request_alternatives';
-          final formattedAlts = alternatives.map((a) {
-            if (a.contains(':')) {
-              final parts = a.split(':');
-              if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
-            }
-            return a;
-          }).join(', ');
-          bodyText =
-              'Termin u $vreme je pun ❌, ali imamo mesta u: $formattedAlts. Da li Vam odgovara neki od ovih termina?';
-        } else {
-          notificationType = 'seat_request_rejected';
-          bodyText = 'Nažalost, u terminu $vreme više nema slobodnih mesta. Molimo Vas da odaberete drugi polazak. ❌';
-        }
-
-        await LocalNotificationService.showRealtimeNotification(
-          title: '❌ Termin popunjen',
-          body: bodyText,
-          payload: jsonEncode({
-            'notification_id': 'seat_request_rejection_$putnikId',
-            'type': notificationType,
-            'id': newRecord['id'],
-            'putnik_id': putnikId,
-            'grad': newRecord['grad'],
-            'vreme': vreme,
-            'datum': datum,
-            'alternatives': alternatives,
-          }),
-        );
-      } catch (e) {
-        debugPrint('⚠️ [SeatRequestRejection] Greška pri slanju notifikacije: $e');
-      }
+      // 🔕 LOKALNA NOTIFIKACIJA UKLONJENA: Sada se šalje isključivo preko serverskog Push sistema.
+      // Razlog: No-Duplication pravilo. Trigger u bazi već šalje FCM/HMS Push za ovo.
     } catch (e) {
       debugPrint('❌ [SeatRequestRejection] Greška: $e');
     }

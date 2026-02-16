@@ -230,7 +230,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // Inicijalizuj lokalne notifikacije za heads-up i zvuk
       if (mounted) {
         LocalNotificationService.initialize(context);
-        RealtimeNotificationService.listenForForegroundNotifications(context);
+        // 🔕 UKLONJENO: listener se sada registruje globalno u main.dart
+        // RealtimeNotificationService.listenForForegroundNotifications(context);
       }
 
       // 🔄 Auto-update removed per request

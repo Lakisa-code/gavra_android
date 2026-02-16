@@ -253,7 +253,8 @@ class _VozacScreenState extends State<VozacScreen> {
   void _initializeNotifications() {
     // Inicijalizuj heads-up i zvuk notifikacije
     LocalNotificationService.initialize(context);
-    RealtimeNotificationService.listenForForegroundNotifications(context);
+    // 🔕 UKLONJENO: listener se sada registruje globalno u main.dart
+    // RealtimeNotificationService.listenForForegroundNotifications(context);
 
     // Inicijalizuj realtime notifikacije za vozaca
     FirebaseService.getCurrentDriver().then((driver) {

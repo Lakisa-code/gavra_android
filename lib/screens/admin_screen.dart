@@ -67,7 +67,8 @@ class _AdminScreenState extends State<AdminScreen> {
     // Inicijalizuj heads-up i zvuk notifikacije
     try {
       LocalNotificationService.initialize(context);
-      RealtimeNotificationService.listenForForegroundNotifications(context);
+      // 🔕 UKLONJENO: listener se sada registruje globalno u main.dart
+      // RealtimeNotificationService.listenForForegroundNotifications(context);
     } catch (e) {
       // Error handling - logging removed for production
     }

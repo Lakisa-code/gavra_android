@@ -100,11 +100,7 @@ class RealtimeNotificationService {
       final response = await supabase.from('push_tokens').select('token, provider').eq('putnik_id', putnikId);
 
       if ((response as List).isEmpty) {
-        await LocalNotificationService.showRealtimeNotification(
-          title: title,
-          body: body,
-          payload: jsonEncode(data ?? {}),
-        );
+        debugPrint('⚠️ [RealtimeNotification] Nema tokena za putnika $putnikId');
         return false;
       }
 
@@ -123,15 +119,6 @@ class RealtimeNotificationService {
       );
     } catch (e) {
       debugPrint('🔴 [RealtimeNotification.sendNotificationToPutnik] Error: $e');
-      try {
-        await LocalNotificationService.showRealtimeNotification(
-          title: title,
-          body: body,
-          payload: jsonEncode(data ?? {}),
-        );
-      } catch (fallbackError) {
-        debugPrint('🔴 [RealtimeNotification.sendNotificationToPutnik.fallback] Error: $fallbackError');
-      }
       return false;
     }
   }
@@ -177,26 +164,8 @@ class RealtimeNotificationService {
       );
     } catch (e) {
       debugPrint('🔴 [RealtimeNotification.sendNotificationToAllDrivers] Error: $e');
-      try {
-        final currentDriver = await AuthManager.getCurrentDriver();
-        final shouldShowLocal = excludeSender == null ||
-            currentDriver == null ||
-            currentDriver.toLowerCase() != excludeSender.toLowerCase();
-
-        if (shouldShowLocal) {
-          await LocalNotificationService.showRealtimeNotification(
-            title: title,
-            body: body,
-            payload: jsonEncode(data ?? {}),
-          );
-        }
-      } catch (fallbackError) {
-        debugPrint('🔴 [RealtimeNotification.sendNotificationToAllDrivers.fallback] Error: $fallbackError');
-      }
     }
-  }
-
-  static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
+  }  static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
     if (messageData == null) return;
     try {
       await _handleNotificationTap(messageData);
@@ -211,36 +180,12 @@ class RealtimeNotificationService {
 
   static bool _foregroundListenerRegistered = false;
 
+  /// ⚠️ DEPRECATED: Notifikacije se sada inicijalizuju globalno u FirebaseService/HuaweiPushService.
+  /// Ova metoda ne radi ništa kako bi se sprečili dupli listeneri.
   static void listenForForegroundNotifications(BuildContext context) {
     if (_foregroundListenerRegistered) return;
     _foregroundListenerRegistered = true;
-
-    if (Firebase.apps.isEmpty) return;
-
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      try {
-        final data = message.data;
-        final title = message.notification?.title ?? data['title'] as String? ?? 'Gavra Notification';
-        final body =
-            message.notification?.body ?? data['body'] as String? ?? data['message'] as String? ?? 'Nova poruka';
-
-        LocalNotificationService.showRealtimeNotification(
-          title: title,
-          body: body,
-          payload: data.isNotEmpty ? jsonEncode(data) : 'firebase_foreground',
-        );
-      } catch (e) {
-        debugPrint('🔴 [RealtimeNotification.listenForForegroundNotifications.onMessage] Error: $e');
-      }
-    });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      try {
-        _handleNotificationTap(message.data);
-      } catch (e) {
-        debugPrint('🔴 [RealtimeNotification.listenForForegroundNotifications.onMessageOpenedApp] Error: $e');
-      }
-    });
+    debugPrint('ℹ️ [RealtimeNotification] Globalni listener je već postavljen u main.dart, preskačem lokalni.');
   }
 
   static Future<void> subscribeToDriverTopics(String? driverId) async {
