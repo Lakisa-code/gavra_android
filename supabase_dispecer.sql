@@ -93,9 +93,15 @@ BEGIN
     IF NOT FOUND THEN RETURN; END IF;
 
     dan_kratica := get_dan_kratica(req_record.datum);
-    json_key_status := lower(req_record.grad) || '_status';
-    json_key_ceka := lower(req_record.grad) || '_ceka_od';
     json_key_vreme := lower(req_record.grad);
+    
+    -- ❄️ ZIMSKI RED VOŽNJE PROVERA (Oktobar - Mart)
+    IF EXTRACT(MONTH FROM req_record.datum) >= 10 OR EXTRACT(MONTH FROM req_record.datum) <= 3 THEN
+        json_key_vreme := json_key_vreme || '2';
+    END IF;
+
+    json_key_status := json_key_vreme || '_status';
+    json_key_ceka := json_key_vreme || '_ceka_od';
 
     -- 2. BC LOGIKA ZA UČENIKE (Garantovano mesto do 16h za sutra)
     is_bc_student_guaranteed := (
@@ -282,16 +288,21 @@ BEGIN
     FROM registrovani_putnici 
     WHERE id = p_id FOR UPDATE;
 
+    -- Inicijalizuj polasci_po_danu ako je null
+    current_data := COALESCE(current_data, '{}'::jsonb);
+
     -- Inicijalizuj dan ako ne postoji
     dan_data := COALESCE(current_data->p_dan, '{"bc": null, "vs": null}'::jsonb);
 
-    -- Postavi nove vrednosti
-    dan_data := jsonb_set(dan_data, ARRAY[p_grad], to_jsonb(p_vreme));
-    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_status'], to_jsonb(p_status));
-    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_ceka_od'], to_jsonb(p_ceka_od));
-    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_otkazano'], to_jsonb(p_otkazano));
-    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_otkazano_vreme'], to_jsonb(p_otkazano_vreme));
-    dan_data := jsonb_set(dan_data, ARRAY[p_grad || '_otkazao_vozac'], to_jsonb(p_otkazao_vozac));
+    -- Sigurno postavljanje vrednosti (koristeći || i jsonb_build_object koji ne puca na null)
+    dan_data := dan_data || jsonb_build_object(
+        p_grad, p_vreme,
+        p_grad || '_status', p_status,
+        p_grad || '_ceka_od', p_ceka_od,
+        p_grad || '_otkazano', p_otkazano,
+        p_grad || '_otkazano_vreme', p_otkazano_vreme,
+        p_grad || '_otkazao_vozac', p_otkazao_vozac
+    );
 
     -- Ukloni resolved_at ako status nije confirmed/approved
     IF p_status IS NULL OR (p_status != 'confirmed' AND p_status != 'approved') THEN
@@ -299,7 +310,7 @@ BEGIN
     END IF;
 
     -- Formiraj finalni JSON
-    current_data := jsonb_set(COALESCE(current_data, '{}'::jsonb), ARRAY[p_dan], dan_data);
+    current_data := jsonb_set(current_data, ARRAY[p_dan], dan_data);
 
     -- Automatski izračunaj radni_dani string (podržava i zimski red vožnje bc2/vs2)
     SELECT string_agg(key, ',') INTO new_radni_dani

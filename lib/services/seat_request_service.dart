@@ -28,7 +28,7 @@ class SeatRequestService {
       // Ako postoji bilo šta (pending, manual, approved), otkaži to jer šaljemo NOVU verziju
       await _supabase
           .from('seat_requests')
-          .update({'status': 'otkazano'})
+          .update({'status': 'cancelled'})
           .eq('putnik_id', putnikId)
           .eq('grad', grad.toUpperCase())
           .eq('datum', datumStr)

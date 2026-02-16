@@ -424,7 +424,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (polasci[dan] == null) return;
 
       final danData = Map<String, dynamic>.from(polasci[dan] as Map);
-      final gradKey = grad.toLowerCase();
+      
+      // ❄️ Zimski ključevi check
+      String gradKey = grad.toLowerCase();
+      if (isWinterDate(date)) {
+        gradKey = "${gradKey}2";
+      }
 
       // 🛡️ PROVERA: Ako je već potvrđeno i vreme se slaže, preskoči notifikaciju
       // Ovo sprečava duplo okidanje nakon Hot Restarta
@@ -1966,12 +1971,14 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final String gK = isWinter ? '${grad}2' : grad;
         final String sK = isWinter ? '${grad}2_status' : '${grad}_status';
 
-        if (status == 'otkazano') {
+        if (status == 'otkazano' || status == 'cancelled') {
           existing[sK] = 'otkazano';
           existing['${grad}_otkazano'] = true; // For isCancelled logic
           // Set cancellation time to the requested time so it shows in red box
           existing['${grad}_otkazano_vreme'] = vreme;
-        } else if (existing[sK] != 'confirmed' && existing[sK] != 'approved') {
+        } else {
+          // PENDING/MANUAL ili APPROVED status iz seat_requests ima prioritet nad JSON-om iz registrovani_putnici
+          // Ovo omogućava korisniku da vidi promenu (narandžasto) čak i ako je prethodno već imao odobren termin
           existing[gK] = vreme;
           existing[sK] = status;
 
@@ -2052,17 +2059,17 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           ...dani.map((dan) {
             final danPolasci = polasci[dan]!;
 
-            // ?? Winter-aware selection
-            // Proveravamo originalni JSONB za postojanje ključeva 'bc2'/'vs2' da znamo da li da radimo fallback
-            final danRaw = polasciRaw[dan] is Map ? polasciRaw[dan] as Map : {};
-            final bool hasWinterBc = danRaw.containsKey('bc2');
-            final bool hasWinterVs = danRaw.containsKey('vs2');
-
             final String? bcVreme;
             final String? vsVreme;
             if (isWinter) {
-              bcVreme = hasWinterBc ? danPolasci['bc2']?.toString() : danPolasci['bc']?.toString();
-              vsVreme = hasWinterVs ? danPolasci['vs2']?.toString() : danPolasci['vs']?.toString();
+              // Prednost zimskom ključu ('bc2'), ako ne postoji fallback na letnji ('bc')
+              bcVreme = (danPolasci['bc2'] != null && danPolasci['bc2'].toString().isNotEmpty && danPolasci['bc2'] != 'null') 
+                  ? danPolasci['bc2']?.toString() 
+                  : danPolasci['bc']?.toString();
+                  
+              vsVreme = (danPolasci['vs2'] != null && danPolasci['vs2'].toString().isNotEmpty && danPolasci['vs2'] != 'null') 
+                  ? danPolasci['vs2']?.toString() 
+                  : danPolasci['vs']?.toString();
             } else {
               bcVreme = danPolasci['bc']?.toString();
               vsVreme = danPolasci['vs']?.toString();
