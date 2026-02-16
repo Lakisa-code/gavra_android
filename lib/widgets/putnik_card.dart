@@ -3,15 +3,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/putnik.dart';
-import '../services/adresa_supabase_service.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/haptic_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/registrovani_putnik_service.dart';
+import '../services/unified_geocoding_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart';
@@ -789,13 +790,12 @@ class _PutnikCardState extends State<PutnikCard> {
     required bool isRegistrovani,
     String? mesec,
   }) async {
-    // ?? GLOBALNI LOCK - ako BILO KOJA kartica procesira, ignori�i
+    // 🔒 GLOBALNI LOCK - ako BILO KOJA kartica procesira, ignoriši
     if (_globalProcessingLock) return;
-    // ?? ZA�TITA OD DUPLOG KLIKA - ako vec procesiramo, ignori�i
+    // 🔒 ZAŠTITA OD DUPLOG KLIKA - ako već procesiramo, ignoriši
     if (_isProcessing) return;
 
     try {
-      // ?? POSTAVI OBA LOCK-A
       _globalProcessingLock = true;
       if (mounted) {
         setState(() {
@@ -803,16 +803,15 @@ class _PutnikCardState extends State<PutnikCard> {
         });
       }
 
-      // ?? SACEKAJ 1.5 SEKUNDE - za�tita od slucajnog klika (isto kao kod pokupljanja)
-      await Future<void>.delayed(const Duration(milliseconds: 1500));
+      // ⏱️ KRATKA PAUZA - samo da se UI osveži
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Ako je korisnik oti�ao sa ekrana tokom cekanja, prekini
       if (!mounted) {
         _globalProcessingLock = false;
         return;
       }
 
-      // Pozovi odgovarajuci service za placanje
+      // Pozovi odgovarajući service za plaćanje
       if (isRegistrovani && mesec != null) {
         // Validacija da putnik ime nije prazno
         if (_putnik.ime.trim().isEmpty) {
@@ -850,7 +849,6 @@ class _PutnikCardState extends State<PutnikCard> {
         );
       }
 
-      // ✅ Prikaži success poruku
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -868,318 +866,15 @@ class _PutnikCardState extends State<PutnikCard> {
           ),
         );
       }
-    }
-  }
-
-  // 🏥 Prikaži picker za odsustvo (godišnji/bolovanje)
-  Future<void> _pokaziOdsustvoPicker() async {
-    final String? odabraniStatus = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.beach_access, color: Colors.orange[700]),
-            const SizedBox(width: 8),
-            const Text('Odsustvo putnika'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Izaberite tip odsustva za ${_putnik.ime}:',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            // Godi�nji odmor dugme
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(ctx).pop('godisnji'),
-                icon: const Icon(Icons.beach_access),
-                label: const Text('Godi�nji odmor'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Bolovanje dugme
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(ctx).pop('bolovanje'),
-                icon: const Icon(Icons.sick),
-                label: const Text('Bolovanje'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.warningPrimary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Odustani'),
-          ),
-        ],
-      ),
-    );
-
-    if (odabraniStatus != null) {
-      await _postaviOdsustvo(odabraniStatus);
-    }
-  }
-
-  // Postavi odsustvo za putnika
-  Future<void> _postaviOdsustvo(String status) async {
-    try {
-      // DEBUG: Proveri ID pre poziva
-      final putnikId = _putnik.id;
-      if (putnikId == null || putnikId.isEmpty) {
-        throw Exception('Putnik nema validan ID (id=$putnikId)');
-      }
-
-      // Pozovi service za postavljanje statusa
-      await PutnikService().oznaciBolovanjeGodisnji(
-        putnikId,
-        status,
-        widget.currentDriver,
-      );
-
+    } finally {
+      // ✅ OBAVEZNO OSLOBODI LOCK
+      _globalProcessingLock = false;
       if (mounted) {
-        if (mounted) setState(() {});
-        final String statusLabel = status == 'godisnji' ? 'godišnji odmor' : 'bolovanje';
-        final String emoji = status == 'godisnji' ? '🌴' : '🤒';
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$emoji ${_putnik.ime} je postavljen na $statusLabel'),
-            backgroundColor: status == 'godisnji' ? Colors.blue : Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-
-        // FORSIRAJ REFRESH LISTE
-        if (widget.onChanged != null) {
-          widget.onChanged!();
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri postavljanju odsustva: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        setState(() {
+          _isProcessing = false;
+        });
       }
     }
-  }
-
-  // Dobija koordinate za destinaciju - UNIFIKOVANO za sve putnike
-  Future<String?> _getKoordinateZaAdresu(String? grad, String? adresa, String? adresaId) async {
-    // PRIORITET 1: Ako imamo adresaId (UUID), direktno dohvati adresu sa koordinatama
-    if (adresaId != null && adresaId.isNotEmpty) {
-      try {
-        final adresaObj = await AdresaSupabaseService.getAdresaByUuid(adresaId);
-        if (adresaObj != null && adresaObj.hasValidCoordinates) {
-          // Adresa ima koordinate - koristi ih direktno!
-          return '${adresaObj.latitude},${adresaObj.longitude}';
-        }
-
-        // Ako nema koordinate, pokušaj pronaći po nazivu
-        if (adresaObj != null && adresaObj.naziv.isNotEmpty) {
-          final koordinate = await AdresaSupabaseService.findAdresaByNazivAndGrad(
-            adresaObj.naziv,
-            adresaObj.grad ?? grad ?? '',
-          );
-          if (koordinate?.hasValidCoordinates == true) {
-            return '${koordinate!.latitude},${koordinate.longitude}';
-          }
-        }
-      } catch (e) {
-        // Nastavi sa fallback opcijama
-      }
-    }
-
-    // PRIORITET 2: Ako imamo naziv adrese, traži u tabeli adrese
-    if (adresa != null && adresa.isNotEmpty && adresa != 'Adresa nije definisana') {
-      try {
-        final koordinate = await AdresaSupabaseService.findAdresaByNazivAndGrad(adresa, grad ?? '');
-        if (koordinate != null && koordinate.hasValidCoordinates) {
-          return '${koordinate.latitude},${koordinate.longitude}';
-        }
-      } catch (e) {
-        // Nastavi sa fallback opcijama
-      }
-    }
-
-    // PRIORITET 3: Fallback na transport logiku (centar destinacije)
-    // TRANSPORT LOGIKA: Navigiraj do centra destinacije
-    // Svi iz Bela Crkva opštine -> Vršac centar
-    // Svi iz Vršac opštine -> Bela Crkva centar
-    const Map<String, String> destinacije = {
-      'Bela Crkva': '45.1373,21.3056', // Vršac centar (destinacija za BC putnike)
-      'Vršac': '44.9013,21.3425', // Bela Crkva centar (destinacija za VS putnike)
-    };
-
-    // FALLBACK: Ako grad nije postavljen, koristi default Vršac centar
-    // jer vozite između ova 2 grada
-    String gradZaKoordinat = grad ?? 'Vršac';
-
-    // Vrati koordinate destinacije na osnovu grada putnika
-    return destinacije[gradZaKoordinat] ?? destinacije['Vršac'];
-  }
-
-  // Otvara navigaciju sa poboljšanim error handling-om (preferirano OpenStreetMap - besplatno)
-  Future<void> _otvoriNavigaciju(String koordinate) async {
-    try {
-      // INSTANT GPS - koristi novi PermissionService (bez dialoga)
-      bool gpsReady = await PermissionService.ensureGpsForNavigation();
-      if (!gpsReady) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.gps_off, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('GPS nije dostupan - navigacija otkazana'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.warningPrimary,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
-      }
-
-      final coords = koordinate.split(',');
-      if (coords.length != 2) {
-        throw Exception('Neispravne koordinate: $koordinate');
-      }
-
-      final lat = coords[0].trim();
-      final lng = coords[1].trim();
-
-      // Validuj da su koordinate brojevi
-      final latNum = double.tryParse(lat);
-      final lngNum = double.tryParse(lng);
-      if (latNum == null || lngNum == null) {
-        throw Exception('Koordinate nisu validni brojevi: $lat, $lng');
-      }
-
-      // HERE WEGO - JEDINA NAVIGACIONA APLIKACIJA
-      final navigacijeUrls = [
-        // HERE WeGo - podržava sve uređaje (GMS i HMS)
-        'here-route://mylocation/$lat,$lng',
-      ];
-
-      bool uspesno = false;
-      String poslednjaNGreska = '';
-
-      // POKUŠAJ REDOM SVE OPCIJE
-      for (int i = 0; i < navigacijeUrls.length; i++) {
-        try {
-          final url = navigacijeUrls[i];
-          final uri = Uri.parse(url);
-
-          final canLaunch = await canLaunchUrl(uri);
-          if (canLaunch) {
-            final success = await launchUrl(
-              uri,
-              mode: LaunchMode.externalApplication,
-            );
-
-            if (success) {
-              uspesno = true;
-              // 🚀 Pokaži potvrdu da je navigacija pokrenuta sa GPS-om
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Row(
-                      children: [
-                        Icon(Icons.navigation, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text('Navigacija pokrenuta sa GPS-om'),
-                      ],
-                    ),
-                    backgroundColor: Theme.of(context).colorScheme.successPrimary,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-              break;
-            }
-          }
-        } catch (e) {
-          poslednjaNGreska = e.toString();
-          continue;
-        }
-      }
-
-      if (!uspesno) {
-        throw Exception(
-          'Nijedna navigacijska aplikacija nije dostupna. Poslednja greška: $poslednjaNGreska',
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Problem sa navigacijom'),
-                Text('Greška: ${e.toString()}'),
-                const Text('Potrebno je instalirati HERE WeGo:'),
-                const Text('✅ Besplatan'),
-                const Text('✅ Podržava offline mape'),
-                const Text('✅ Radi na svim uređajima'),
-              ],
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'POKU�AJ PONOVO',
-              textColor: Colors.white,
-              onPressed: () => _otvoriNavigaciju(koordinate),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _longPressTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startLongPressTimer() {
-    _longPressTimer?.cancel();
-    _isLongPressActive = true;
-
-    // ⏱️ 1.5 sekundi long press - POKUPLJENJE PUTNIKA
-    _longPressTimer = Timer(const Duration(milliseconds: 1500), () {
-      if (_isLongPressActive && mounted && !_putnik.jeOtkazan && _putnik.vremePokupljenja == null) {
-        _handlePickup();
-      }
-    });
-  }
-
-  void _cancelLongPressTimer() {
-    _longPressTimer?.cancel();
-    _isLongPressActive = false;
   }
 
   // 🚶 Metoda za pokupljenje putnika
@@ -1193,7 +888,6 @@ class _PutnikCardState extends State<PutnikCard> {
       // 📳 Haptic feedback
       HapticService.mediumImpact();
 
-      // Oznaci putnika kao pokupljenog
       await PutnikService().oznaciPokupljen(
         _putnik.id!,
         widget.currentDriver,
@@ -1203,20 +897,13 @@ class _PutnikCardState extends State<PutnikCard> {
       );
 
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-        _globalProcessingLock = false;
-
         // 📳 JACA VIBRACIJA
         await HapticService.putnikPokupljen();
 
-        // Pozovi callback za refresh parent widget-a
         if (widget.onChanged != null) {
           widget.onChanged!();
         }
 
-        // Prikaži success poruku
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Pokupljen: ${_putnik.ime}'),
@@ -1227,17 +914,20 @@ class _PutnikCardState extends State<PutnikCard> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-        _globalProcessingLock = false;
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Greška pri pokupljenju: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
+      }
+    } finally {
+      // ✅ OBAVEZNO OSLOBODI LOCK
+      _globalProcessingLock = false;
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
       }
     }
   }
@@ -2275,5 +1965,127 @@ class _PutnikCardState extends State<PutnikCard> {
         }
       }
     }
+  }
+
+  // 📍 POMOĆNA METODA: Dobij koordinate za adresu (sa keširanjem i validacijom)
+  Future<Position?> _getKoordinateZaAdresu(String? grad, String? adresa, String? adresaId) async {
+    if (adresa == null || adresa.isEmpty || adresa == 'Adresa nije definisana') return null;
+
+    try {
+      // Koristi UnifiedGeocodingService koji ima savršenu logiku (Baza -> API)
+      final result = await UnifiedGeocodingService.getCoordinatesForPutnici(
+        [_putnik],
+        saveToDatabase: true, // Automatski sačuvaj u bazu ako nađeš preko API-ja
+      );
+
+      if (result.isNotEmpty && result.containsKey(_putnik)) {
+        return result[_putnik];
+      }
+    } catch (e) {
+      debugPrint('Greška pri dobijanju koordinata: $e');
+    }
+    return null;
+  }
+
+  // 🚀 OTKRIJ NAVIGACIJU (Google Maps / Waze / Apple Maps)
+  Future<void> _otvoriNavigaciju(Position position) async {
+    final lat = position.latitude;
+    final lng = position.longitude;
+
+    // Google Maps URL (najpouzdaniji za sve platforme)
+    final googleMapsUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+
+    // Apple Maps URL (fallback za iOS)
+    final appleMapsUrl = Uri.parse('http://maps.apple.com/?daddr=$lat,$lng');
+
+    try {
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(appleMapsUrl)) {
+        await launchUrl(appleMapsUrl, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Ne mogu da otvorim aplikaciju za navigaciju';
+      }
+    } catch (e) {
+      debugPrint('Greška pri otvaranju navigacije: $e');
+    }
+  }
+
+  // 🏥 PICKER ZA ODSUSTVO (Bolovanje / Godišnji)
+  void _pokaziOdsustvoPicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.medical_services, color: Colors.red),
+              title: const Text('Bolovanje'),
+              onTap: () {
+                Navigator.pop(context);
+                _postaviOdsustvo('bolovanje');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.beach_access, color: Colors.blue),
+              title: const Text('Godišnji odmor'),
+              onTap: () {
+                Navigator.pop(context);
+                _postaviOdsustvo('godisnji');
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 📝 POSTAVI ODSUSTVO U BAZU
+  Future<void> _postaviOdsustvo(String tip) async {
+    try {
+      await PutnikService().oznaciBolovanjeGodisnji(
+        _putnik.id!,
+        tip,
+        widget.currentDriver,
+      );
+
+      if (mounted) {
+        if (widget.onChanged != null) widget.onChanged!();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Postavljeno: ${tip == 'bolovanje' ? 'Bolovanje' : 'Godišnji'}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _startLongPressTimer() {
+    _longPressTimer?.cancel();
+    _isLongPressActive = true;
+
+    // 📳 POČETNA VIBRACIJA - da vozač zna da je započeto čekanje
+    HapticService.selectionClick();
+
+    // ⏱️ 1.5 sekundi long press - POKUPLJENJE PUTNIKA
+    _longPressTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (_isLongPressActive && mounted && !_putnik.jeOtkazan && !_putnik.jePokupljen) {
+        _handlePickup();
+      }
+    });
+  }
+
+  void _cancelLongPressTimer() {
+    _longPressTimer?.cancel();
+    _isLongPressActive = false;
   }
 }
