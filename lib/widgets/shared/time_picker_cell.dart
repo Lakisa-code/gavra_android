@@ -188,16 +188,17 @@ class TimePickerCell extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-        if (isCancelled && !isAdmin) return; // Otkazano - nema akcije (osim za admina)
+        // Omogućavamo otkazanim terminima da se ponovo aktiviraju ukoliko vreme nije prošlo
+        if (isCancelled && _isTimePassed() && !isAdmin) return;
 
         final now = DateTime.now();
 
         // 🛡️ PROVERA PLAĆANJA I PORUKE (User requirement) - UKLONJENO
 
-        // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor
+        // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor (sprečavanje spama)
         if (isPending && !isAdmin) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.')),
+            const SnackBar(content: Text('⏳ Vaš zahtev je već u obradi. Molimo sačekajte odgovor.')),
           );
           return;
         }

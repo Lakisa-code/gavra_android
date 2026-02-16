@@ -40,11 +40,11 @@ Widget menja boju na osnovu statusa rezervacije:
 Prilikom klika na ćeliju, sistem šalje povratne informacije:
 
 1. **Čekanje (`isPending`)**: 
-   - `⏳ Vaš zahtev je u obradi. Molimo sačekajte odgovor.`
+   - **BLOKIRANO**: `⏳ Vaš zahtev je već u obradi. Molimo sačekajte odgovor.` (Sprečavanje spama).
 2. **Odbijeno (`isRejected`)**: 
    - `❌ Ovaj termin je popunjen. Izaberite neko drugo slobodno vreme.`
 3. **Odobreno (`isApproved`)**: 
-   - **NEMA BLOKADE**: Korisnik može da otkaže termin čak i ako je odobren (opcija "Bez polaska").
+   - **DOZVOLJENO**: Korisnik može da klikne na odobren termin kako bi ga otkazao ili izabrao novo vreme. Ako izabere novo vreme, proces se ponavlja (status ponovo ide u *pending* i čeka se odobrenje).
 4. **Dnevni Putnici (Blokada)**: 
    - `Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌`
 5. **Brisanje termina**:
