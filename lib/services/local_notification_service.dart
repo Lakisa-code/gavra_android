@@ -435,6 +435,7 @@ class LocalNotificationService {
         title,
         body,
         platformChannelSpecifics,
+        payload: payload,
       );
 
       // 🔓 Oslobodi lock nakon uspešnog slanja
@@ -489,18 +490,21 @@ class LocalNotificationService {
         try {
           final Map<String, dynamic> payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
 
+          // 🛠️ FIX: Assign notificationType from payload
+          notificationType = payloadData['type'] as String?;
+
           // 🎫 BC/VS alternativa ili Seat Request - otvori profil
           if (notificationType == 'bc_alternativa' ||
               notificationType == 'vs_alternativa' ||
               notificationType == 'seat_request_alternatives' ||
-              notificationType == 'seat_request_approval' ||
+              notificationType == 'seat_request_approved' ||
               notificationType == 'seat_request_rejected') {
             await NotificationNavigationService.navigateToPassengerProfile();
             return;
           }
 
-          // 🔐 PIN zahtev - otvori PIN zahtevi ekran
-          if (notificationType == 'pin_zahtev') {
+          // 🔐 PIN zahtev ili Manual Seat Request - otvori PIN zahtevi ekran (Admin/Vozac screen)
+          if (notificationType == 'pin_zahtev' || notificationType == 'seat_request_manual') {
             await NotificationNavigationService.navigateToPinZahtevi();
             return;
           }

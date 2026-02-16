@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'realtime_notification_service.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (seat_requests tabela)
 class SeatRequestService {
@@ -44,22 +43,8 @@ class SeatRequestService {
       });
       debugPrint('✅ [SeatRequestService] Inserted for $grad $vreme on $dan (Datum: $datumStr)');
 
-      // 🔔 AKO JE STATUS 'manual' (Dnevni putnici), POŠALJI NOTIFIKACIJU ADMINU
-      if (status == 'manual') {
-        try {
-          final putnikData =
-              await _supabase.from('registrovani_putnici').select('putnik_ime').eq('id', putnikId).single();
-          final imePutnika = putnikData['putnik_ime'] ?? 'Putnik';
-
-          await RealtimeNotificationService.sendNotificationToAdmins(
-            title: '🆕 Novi zahtev (Dnevni putnik)',
-            body: '$imePutnika želi $grad u $vreme ($dan)',
-            data: {'type': 'new_manual_request', 'putnik_id': putnikId},
-          );
-        } catch (e) {
-          debugPrint('⚠️ [SeatRequestService] Greška pri slanju notifikacije adminu: $e');
-        }
-      }
+      // 🔔 NOTIFIKACIJA: Sada se šalje AUTOMATSKI iz baze (SQL Trigger)
+      // Ne moramo više ručno pozivati RealtimeNotificationService.sendNotificationToAdmins ovde.
     } catch (e) {
       debugPrint('❌ [SeatRequestService] Error inserting seat request: $e');
     }
@@ -93,24 +78,11 @@ class SeatRequestService {
   /// Odobrava zahtev
   static Future<bool> approveRequest(String id) async {
     try {
-      // 1. Dohvati podatke o zahtevu pre nego što ga ažuriramo
-      final zahtevResp = await _supabase.from('seat_requests').select().eq('id', id).single();
-      final putnikId = zahtevResp['putnik_id'];
-      final vreme = zahtevResp['zeljeno_vreme'];
-
-      // 2. Ažuriraj status
+      // Ažuriraj status - SQL trigger će automatski poslati notifikaciju putniku
       await _supabase.from('seat_requests').update({
         'status': 'approved',
         'processed_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
-
-      // 3. Pošalji notifikaciju putniku
-      await RealtimeNotificationService.sendNotificationToPutnik(
-        putnikId: putnikId,
-        title: '✅ Mesto osigurano!',
-        body: '✅ Mesto osigurano! Vaša rezervacija za $vreme je potvrđena. Želimo vam ugodnu vožnju! 🚌',
-        data: {'type': 'seat_request_approved', 'vreme': vreme, 'id': id},
-      );
 
       return true;
     } catch (e) {
@@ -122,24 +94,11 @@ class SeatRequestService {
   /// Odbija zahtev
   static Future<bool> rejectRequest(String id) async {
     try {
-      // 1. Dohvati podatke o zahtevu
-      final zahtevResp = await _supabase.from('seat_requests').select().eq('id', id).single();
-      final putnikId = zahtevResp['putnik_id'];
-      final vreme = zahtevResp['zeljeno_vreme'];
-
-      // 2. Ažuriraj status
+      // Ažuriraj status - SQL trigger će automatski poslati notifikaciju putniku
       await _supabase.from('seat_requests').update({
         'status': 'rejected',
         'processed_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
-
-      // 3. Pošalji notifikaciju putniku
-      await RealtimeNotificationService.sendNotificationToPutnik(
-        putnikId: putnikId,
-        title: '❌ Termin popunjen',
-        body: 'Nažalost, u terminu $vreme više nema slobodnih mesta. Molimo Vas da odaberete drugi polazak. ❌',
-        data: {'type': 'seat_request_rejected', 'vreme': vreme},
-      );
 
       return true;
     } catch (e) {
@@ -171,69 +130,12 @@ class SeatRequestService {
 
       if (response.isNotEmpty) {
         debugPrint('🤖 [Digitalni Dispečer] Obrađeno zahteva: ${response.length}');
-
-        // 📲 Pošalji notifikacije za svako automatsko odobrenje/odbijanje
-        for (var item in response) {
-          final id = item['id'];
-          final putnikId = item['putnik_id'];
-          final vreme = item['zeljeno_vreme'];
-          final status = item['status'];
-          final grad = item['grad'];
-          final datum = item['datum']; // Novo iz SQL-a
-          final imePutnika = item['ime_putnika'] ?? 'Putnik';
-
-          if (status == 'approved') {
-            await RealtimeNotificationService.sendNotificationToPutnik(
-              putnikId: putnikId,
-              title: '✅ Mesto osigurano!',
-              body: '✅ Mesto osigurano! Vaša rezervacija za $vreme je potvrđena. Želimo vam ugodnu vožnju! 🚌',
-              data: {
-                'notification_id': 'seat_request_approval_$putnikId', // 🎯 FIX: Deduplikacija
-                'type': 'seat_request_approved',
-                'vreme': vreme,
-                'id': id
-              },
-            );
-          } else if (status == 'rejected') {
-            final List<dynamic>? alternatives = item['alternatives'];
-            String body =
-                'Nažalost, u terminu $vreme više nema slobodnih mesta. Molimo Vas da odaberete drugi polazak. ❌';
-            String type = 'seat_request_rejected';
-
-            if (alternatives != null && alternatives.isNotEmpty) {
-              type = 'seat_request_alternatives';
-              final formattedAlts = alternatives.map((a) {
-                if (a.toString().contains(':')) {
-                  final parts = a.toString().split(':');
-                  if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
-                }
-                return a.toString();
-              }).join(', ');
-              body =
-                  'Termin u $vreme je pun ❌, ali imamo mesta u: $formattedAlts. Da li Vam odgovara neki od ovih termina?';
-            }
-
-            await RealtimeNotificationService.sendNotificationToPutnik(
-              putnikId: putnikId,
-              title: '❌ Termin popunjen',
-              body: body,
-              data: {
-                'notification_id': 'seat_request_rejection_$putnikId', // 🎯 FIX: Deduplikacija
-                'type': type,
-                'vreme': vreme,
-                'id': id,
-                'putnik_id': putnikId,
-                'grad': grad,
-                'datum': datum,
-                'alternatives': alternatives,
-              },
-            );
-          }
-        }
+        // 🔔 NOTIFIKACIJE: Se šalju AUTOMATSKI iz baze putem Triggera
       }
+
       return response.length;
     } catch (e) {
-      debugPrint('❌ [Digitalni Dispečer] Greška pri pozivanju: $e');
+      debugPrint('❌ [SeatRequestService] Error triggering digital dispecer: $e');
       return 0;
     }
   }

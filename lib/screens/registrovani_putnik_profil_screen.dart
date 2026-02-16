@@ -424,7 +424,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (polasci[dan] == null) return;
 
       final danData = Map<String, dynamic>.from(polasci[dan] as Map);
-      
+
       // ❄️ Zimski ključevi check
       String gradKey = grad.toLowerCase();
       if (isWinterDate(date)) {
@@ -2063,13 +2063,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             final String? vsVreme;
             if (isWinter) {
               // Prednost zimskom ključu ('bc2'), ako ne postoji fallback na letnji ('bc')
-              bcVreme = (danPolasci['bc2'] != null && danPolasci['bc2'].toString().isNotEmpty && danPolasci['bc2'] != 'null') 
-                  ? danPolasci['bc2']?.toString() 
-                  : danPolasci['bc']?.toString();
-                  
-              vsVreme = (danPolasci['vs2'] != null && danPolasci['vs2'].toString().isNotEmpty && danPolasci['vs2'] != 'null') 
-                  ? danPolasci['vs2']?.toString() 
-                  : danPolasci['vs']?.toString();
+              bcVreme =
+                  (danPolasci['bc2'] != null && danPolasci['bc2'].toString().isNotEmpty && danPolasci['bc2'] != 'null')
+                      ? danPolasci['bc2']?.toString()
+                      : danPolasci['bc']?.toString();
+
+              vsVreme =
+                  (danPolasci['vs2'] != null && danPolasci['vs2'].toString().isNotEmpty && danPolasci['vs2'] != 'null')
+                      ? danPolasci['vs2']?.toString()
+                      : danPolasci['vs']?.toString();
             } else {
               bcVreme = danPolasci['bc']?.toString();
               vsVreme = danPolasci['vs']?.toString();

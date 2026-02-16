@@ -277,12 +277,15 @@ class RealtimeNotificationService {
     try {
       final notificationType = messageData['type'] ?? 'unknown';
 
-      if (notificationType == 'transport_started') {
+      if (notificationType == 'transport_started' ||
+          notificationType == 'seat_request_approved' ||
+          notificationType == 'seat_request_rejected' ||
+          notificationType == 'seat_request_alternatives') {
         await NotificationNavigationService.navigateToPassengerProfile();
         return;
       }
 
-      if (notificationType == 'pin_zahtev') {
+      if (notificationType == 'pin_zahtev' || notificationType == 'seat_request_manual') {
         await NotificationNavigationService.navigateToPinZahtevi();
         return;
       }
