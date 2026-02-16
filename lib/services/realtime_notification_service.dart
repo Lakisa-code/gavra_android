@@ -5,8 +5,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import '../globals.dart';
-import 'auth_manager.dart';
-import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
 import 'vozac_service.dart';
 
@@ -165,7 +163,9 @@ class RealtimeNotificationService {
     } catch (e) {
       debugPrint('🔴 [RealtimeNotification.sendNotificationToAllDrivers] Error: $e');
     }
-  }  static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
+  }
+
+  static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
     if (messageData == null) return;
     try {
       await _handleNotificationTap(messageData);

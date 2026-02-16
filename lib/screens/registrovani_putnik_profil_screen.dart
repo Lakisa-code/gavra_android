@@ -12,7 +12,6 @@ import '../globals.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../models/registrovani_putnik.dart';
 import '../services/cena_obracun_service.dart';
-import '../services/local_notification_service.dart'; // 🔔 Lokalne notifikacije
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/realtime/realtime_manager.dart';

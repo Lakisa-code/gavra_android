@@ -202,22 +202,23 @@ DECLARE
     current_req_data jsonb;
 BEGIN
     -- Pronađi sve koji čekaju obradu:
-    -- 1. Standardni: čekaju više od 10 minuta
-    -- 2. Učenik (BC za sutra, posle 16h): čekaju do 20:00h
+    -- 1. Radnik (BC): čekaju 2 minuta (brže nego pre)
+    -- 2. Ostali: čekaju 5 minuta (brže nego pre)
+    -- 3. Učenik (BC za sutra, posle 16h): čekaju do 20:00h
     FOR v_req IN 
         SELECT sr.id 
         FROM seat_requests sr
         JOIN registrovani_putnici rp ON sr.putnik_id = rp.id
         WHERE sr.status = 'pending' 
           AND (
-            -- 👷 SLCUČAJ RADNIK (BC): čeka se 5 minuta
+            -- 👷 SLCUČAJ RADNIK (BC): čeka se 2 minuta
             (
                 lower(rp.tip) = 'radnik' 
                 AND upper(sr.grad) = 'BC' 
-                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
+                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 2)
             )
             OR
-            -- 🟢 SLUČAJ OSTALI: standardnih 10 minuta (BC Učenik pre 16h, VS svi)
+            -- 🟢 SLUČAJ OSTALI: standardnih 5 minuta
             (
                 NOT (
                     lower(rp.tip) = 'radnik' AND upper(sr.grad) = 'BC'
@@ -228,7 +229,7 @@ BEGIN
                     AND sr.datum = (CURRENT_DATE + 1)
                     AND EXTRACT(HOUR FROM sr.created_at) >= 16
                 )
-                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 10)
+                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
             )
             OR
             -- 🟡 SLUČAJ B: Učenik (BC, sutra, posle 16h) -> Obrađuje se u 20h ili kasnije
@@ -294,7 +295,7 @@ BEGIN
     -- Inicijalizuj dan ako ne postoji
     dan_data := COALESCE(current_data->p_dan, '{"bc": null, "vs": null}'::jsonb);
 
-    -- Sigurno postavljanje vrednosti (koristeći || i jsonb_build_object koji ne puca na null)
+    -- Sigurno postavljanje vrednosti (koristiteći || i jsonb_build_object koji ne puca na null)
     dan_data := dan_data || jsonb_build_object(
         p_grad, p_vreme,
         p_grad || '_status', p_status,
@@ -332,5 +333,74 @@ BEGIN
         radni_dani = COALESCE(new_radni_dani, ''),
         updated_at = now()
     WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- 6. TRIGGERI ZA NOTIFIKACIJE I SINHRONIZACIJU
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION notify_seat_request_update()
+RETURNS trigger AS $$
+DECLARE
+    payload jsonb;
+    tokens jsonb;
+    notif_title text;
+    notif_body text;
+    putnik_ime text;
+    grad_display text;
+BEGIN
+    IF (OLD.status = NEW.status) THEN RETURN NEW; END IF;
+
+    SELECT rp.putnik_ime INTO putnik_ime FROM registrovani_putnici rp WHERE rp.id = NEW.putnik_id;
+    grad_display := CASE WHEN NEW.grad = 'BC' THEN 'Bečej' WHEN NEW.grad = 'VS' THEN 'Vršac' ELSE NEW.grad END;
+
+    IF NEW.status = 'approved' THEN
+        notif_title := '✅ Mesto osigurano!';
+        notif_body := putnik_ime || ', tvoj polazak u ' || NEW.zeljeno_vreme || ' (' || grad_display || ') je potvrđen! 🚌';
+    ELSIF NEW.status = 'rejected' THEN
+        IF NEW.alternatives IS NOT NULL AND jsonb_array_length(NEW.alternatives) > 0 THEN
+            notif_title := '🕐 Izaberite termin';
+            notif_body := 'Trenutno nema mesta za ' || NEW.zeljeno_vreme || ', ali imamo slobodnih mesta u drugim terminima.';
+        ELSE
+            notif_title := '❌ Termin popunjen';
+            notif_body := 'Izvinjavamo se, ali termin u ' || NEW.zeljeno_vreme || ' je pun.';
+        END IF;
+    ELSIF NEW.status = 'manual' THEN
+        notif_title := '🆕 Novi zahtev (Dnevni)';
+        notif_body := putnik_ime || ' želi ' || grad_display || ' u ' || NEW.zeljeno_vreme;
+    ELSE
+        RETURN NEW;
+    END IF;
+
+    IF NEW.status = 'manual' THEN
+        SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
+        INTO tokens FROM push_tokens WHERE user_id = 'Bojan';
+    ELSE
+        SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
+        INTO tokens FROM push_tokens WHERE putnik_id = NEW.putnik_id;
+    END IF;
+
+    IF tokens IS NULL OR jsonb_array_length(tokens) = 0 THEN RETURN NEW; END IF;
+
+    payload := jsonb_build_object(
+        'tokens', tokens,
+        'title', notif_title,
+        'body', notif_body,
+        'data', jsonb_build_object(
+            'type', 'seat_request_' || NEW.status,
+            'id', NEW.id,
+            'grad', NEW.grad,
+            'vreme', NEW.zeljeno_vreme
+        )
+    );
+
+    PERFORM net.http_post(
+        url := (SELECT value FROM server_secrets WHERE key = 'EDGE_FUNCTION_URL' LIMIT 1) || '/send-push-notification',
+        headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || (SELECT value FROM server_secrets WHERE key = 'SUPABASE_SERVICE_ROLE_KEY' LIMIT 1)),
+        body := payload
+    );
+
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

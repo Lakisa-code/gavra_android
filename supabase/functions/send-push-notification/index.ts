@@ -145,7 +145,10 @@ async function sendToHMS(tokens: string[], title: string, body: string, data?: a
                     notification: {
                         title,
                         body,
-                        click_action: { type: 1, intent: "#Intent;com.gavra013.gavra_android;end" }
+                        click_action: { type: 1, intent: "#Intent;com.gavra013.gavra_android;end" },
+                        sound: "default",
+                        default_sound: true,
+                        importance: "HIGH",
                     }
                 },
                 token: tokens

@@ -386,6 +386,22 @@ class PutnikService {
     if (putnik.brojMesta > 1) dayData['${place}_mesta'] = putnik.brojMesta;
     polasci[dan] = dayData;
     await supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', res['id']);
+
+    // 📝 LOGOVANJE: Vozač dodao putnika
+    try {
+      if (putnik.dodeljenVozac != null) {
+        final vozacId = await VozacMappingService.getVozacUuid(putnik.dodeljenVozac!);
+        await VoznjeLogService.logGeneric(
+          tip: 'zakazivanje_putnika',
+          putnikId: res['id'].toString(),
+          vozacId: vozacId,
+          detalji: 'Vozač dodao putnika: ${putnik.dan} u ${putnik.polazak} (${putnik.grad})',
+          meta: {'dan': putnik.dan, 'grad': putnik.grad, 'vreme': putnik.polazak},
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ Greška pri logovanju dodavanja putnika: $e');
+    }
   }
 
   Future<void> obrisiPutnika(dynamic id) async {
