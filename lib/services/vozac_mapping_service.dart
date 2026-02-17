@@ -94,8 +94,8 @@ class VozacMappingService {
   }
 
   /// 🆕 Pomoćna metoda: Ako je string UUID, vrati ime. Ako nije UUID (već je ime), vrati taj isti string.
-  static String getNameFromUuidOrNameSync(String input) {
-    if (input.isEmpty) return input;
+  static String? getNameFromUuidOrNameSync(String? input) {
+    if (input == null || input.isEmpty) return input;
 
     // Proveri da li je input validan UUID format (8-4-4-4-12)
     final uuidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', caseSensitive: false);

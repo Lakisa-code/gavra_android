@@ -77,7 +77,7 @@ class SeatRequestService {
     try {
       await _supabase.from('seat_requests').update({
         'status': 'approved',
-        'processed_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
 
       return true;
@@ -92,7 +92,7 @@ class SeatRequestService {
     try {
       await _supabase.from('seat_requests').update({
         'status': 'rejected',
-        'processed_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
 
       return true;

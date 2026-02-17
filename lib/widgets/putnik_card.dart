@@ -1563,16 +1563,13 @@ class _PutnikCardState extends State<PutnikCard> {
                 ],
               ),
               // Red 2: Pokupljen / Placeno / Otkazano / Odsustvo info
-              if (_putnik.vremePokupljenja != null ||
-                  _putnik.jeOtkazan ||
-                  _putnik.jeOdsustvo ||
-                  (_putnik.placeno == true))
+              if (_putnik.jePokupljen || _putnik.jeOtkazan || _putnik.jeOdsustvo || (_putnik.placeno == true))
                 Padding(
                   padding: const EdgeInsets.only(top: 2.0),
                   child: Row(
                     children: [
                       // Pokupljen info
-                      if (_putnik.vremePokupljenja != null)
+                      if (_putnik.jePokupljen && _putnik.vremePokupljenja != null)
                         Text(
                           'Pokupljen: ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
                           style: TextStyle(

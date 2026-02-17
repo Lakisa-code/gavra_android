@@ -11,20 +11,6 @@ import 'realtime/realtime_manager.dart';
 import 'seat_request_service.dart';
 import 'vozac_mapping_service.dart';
 
-// ?? UNDO STACK - Stack za cuvanje poslednih akcija
-class UndoAction {
-  UndoAction({
-    required this.type,
-    required this.putnikId,
-    required this.oldData,
-    required this.timestamp,
-  });
-  final String type;
-  final dynamic putnikId;
-  final Map<String, dynamic> oldData;
-  final DateTime timestamp;
-}
-
 class _StreamParams {
   _StreamParams({this.isoDate, this.grad, this.vreme});
   final String? isoDate;
@@ -44,18 +30,17 @@ class PutnikService {
   static final Map<String, _StreamParams> _streamParams = {};
   static final Map<String, StreamSubscription<dynamic>> _realtimeSubscriptions = {};
 
-  static final List<UndoAction> undoStack = [];
-  static const int maxUndoActions = 10;
-
   static void closeStream({String? isoDate, String? grad, String? vreme}) {
     final key = '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
     final controller = _streams[key];
     if (controller != null && !controller.isClosed) controller.close();
     _realtimeSubscriptions[key]?.cancel();
+    _realtimeSubscriptions['$key:log']?.cancel(); // Nova pretplata na logove
     _streams.remove(key);
     _lastValues.remove(key);
     _streamParams.remove(key);
     _realtimeSubscriptions.remove(key);
+    _realtimeSubscriptions.remove('$key:log');
   }
 
   String _streamKey({String? isoDate, String? grad, String? vreme}) => '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
@@ -106,7 +91,15 @@ class PutnikService {
           .eq('datum', todayDate)
           .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
-      return (reqs as List).map((r) => Putnik.fromSeatRequest(r as Map<String, dynamic>)).toList();
+      // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
+      final logs = await supabase.from('voznje_log').select('putnik_id').eq('datum', todayDate).eq('tip', 'voznja');
+      final pickedUpIds = (logs as List).map((l) => l['putnik_id'].toString()).toSet();
+
+      return (reqs as List).map((r) {
+        final data = r as Map<String, dynamic>;
+        data['pokupljen_iz_loga'] = pickedUpIds.contains(data['putnik_id']?.toString());
+        return Putnik.fromSeatRequest(data);
+      }).toList();
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error fetching by day: $e');
       return [];
@@ -133,7 +126,16 @@ class PutnikService {
       }
 
       final reqs = await query;
-      final results = (reqs as List).map((r) => Putnik.fromSeatRequest(r as Map<String, dynamic>)).toList();
+
+      // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
+      final logs = await supabase.from('voznje_log').select('putnik_id').eq('datum', todayDate).eq('tip', 'voznja');
+      final pickedUpIds = (logs as List).map((l) => l['putnik_id'].toString()).toSet();
+
+      final results = (reqs as List).map((r) {
+        final data = r as Map<String, dynamic>;
+        data['pokupljen_iz_loga'] = pickedUpIds.contains(data['putnik_id']?.toString());
+        return Putnik.fromSeatRequest(data);
+      }).toList();
 
       _lastValues[key] = results;
       if (!controller.isClosed) controller.add(results);
@@ -147,10 +149,17 @@ class PutnikService {
   void _setupRealtimeRefresh(
       String key, String? isoDate, String? grad, String? vreme, StreamController<List<Putnik>> controller) {
     _realtimeSubscriptions[key]?.cancel();
+    _realtimeSubscriptions['$key:log']?.cancel();
 
     // Refresh when seat_requests change for the target date
     _realtimeSubscriptions[key] = RealtimeManager.instance.subscribe('seat_requests').listen((payload) {
       debugPrint('🔄 [PutnikService] Realtime UPDATE (seat_requests): ${payload.eventType}');
+      _doFetchForStream(key, isoDate, grad, vreme, controller);
+    });
+
+    // Refresh when voznje_log change (pokupljanja, naplate)
+    _realtimeSubscriptions['$key:log'] = RealtimeManager.instance.subscribe('voznje_log').listen((payload) {
+      debugPrint('🔄 [PutnikService] Realtime UPDATE (voznje_log): ${payload.eventType}');
       _doFetchForStream(key, isoDate, grad, vreme, controller);
     });
   }
@@ -233,30 +242,6 @@ class PutnikService {
     }
   }
 
-  Future<String?> undoLastAction() async {
-    if (undoStack.isEmpty) return 'Nema akcija za poništavanje';
-    final last = undoStack.removeLast();
-    try {
-      switch (last.type) {
-        case 'delete':
-          await supabase
-              .from('registrovani_putnici')
-              .update({'aktivan': true, 'obrisan': false}).eq('id', last.putnikId);
-          return 'Poništeno brisanje';
-        case 'pickup':
-        case 'payment':
-          return 'Poništeno (vidi voznje_log)';
-        case 'cancel':
-          // Otkazivanje se poništava vraćanjem statusa u voznje_log ili clear markera u polasci_po_danu (komplikovano)
-          return 'Poništeno otkazivanje';
-        default:
-          return 'Nepoznato';
-      }
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> dodajPutnika(Putnik putnik, {bool skipKapacitetCheck = false}) async {
     final res = await supabase
         .from('registrovani_putnici')
@@ -285,27 +270,17 @@ class PutnikService {
 
   Future<void> oznaciPokupljen(dynamic id, bool value, {String? grad, String? vreme, String? driver}) async {
     if (_isDuplicateAction('pickup_$id')) return;
+    if (!value) return; // 🚫 "Undo" funkcija uklonjena - ne dozvoljavamo poništavanje pokupljenja
 
     final danasStr = DateTime.now().toIso8601String().split('T')[0];
-    final gradKey = (grad?.toLowerCase().contains('vr') ?? false) ? 'VS' : 'BC';
 
-    // Ažuriraj seat_requests - postavi status confirmed ako je bio pending, i upiši ko ga je pokupio
+    // Ažuriraj seat_requests - postavi status confirmed/approved
     String? vozacId;
     if (driver != null) {
       vozacId = await VozacMappingService.getVozacUuid(driver);
     }
 
-    await supabase
-        .from('seat_requests')
-        .update({
-          'status': 'confirmed',
-          'processed_at': DateTime.now().toIso8601String(),
-          'vozac_id': vozacId,
-        })
-        .eq('putnik_id', id)
-        .eq('datum', danasStr)
-        .eq('grad', gradKey);
-
+    // ✅ OZNAČI KAO POKUPLJEN (Samo u voznje_log, po zahtevu korisnika)
     await supabase
         .from('voznje_log')
         .insert({'putnik_id': id.toString(), 'datum': danasStr, 'tip': 'voznja', 'vozac_id': vozacId});
@@ -348,7 +323,6 @@ class PutnikService {
     String? driver, {
     String? grad,
     String? vreme,
-    bool undo = false,
     String? selectedDan,
     String? selectedVreme,
     String? selectedGrad,
@@ -363,28 +337,15 @@ class PutnikService {
     final gradKey =
         (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'VS' : 'BC';
 
-    if (undo) {
-      // Ponisti otkazivanje - vrati status na pending
-      await supabase
-          .from('seat_requests')
-          .update({
-            'status': 'pending',
-            'processed_at': null,
-          })
-          .eq('putnik_id', id)
-          .eq('datum', dateStr)
-          .eq('grad', gradKey);
-    } else {
-      await supabase
-          .from('seat_requests')
-          .update({
-            'status': 'otkazano',
-            'processed_at': DateTime.now().toIso8601String(),
-          })
-          .eq('putnik_id', id)
-          .eq('datum', dateStr)
-          .eq('grad', gradKey);
-    }
+    await supabase
+        .from('seat_requests')
+        .update({
+          'status': 'otkazano',
+          'processed_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('putnik_id', id)
+        .eq('datum', dateStr)
+        .eq('grad', gradKey);
   }
 
   Future<void> oznaciPlaceno(
@@ -407,7 +368,7 @@ class PutnikService {
     // Ažuriraj seat_requests: postavi status confirmed i processed_at
     await supabase.from('seat_requests').update({
       'status': 'confirmed',
-      'processed_at': DateTime.now().toIso8601String(),
+      'processed_at': DateTime.now().toUtc().toIso8601String(),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
       'vozac_id': vozacId,
     }).match({

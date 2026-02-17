@@ -120,11 +120,12 @@ class PutnikList extends StatelessWidget {
       return true;
     }
 
-    // Helper za deduplikaciju po id (ako nema id, koristi ime+dan+polazak)
+    // Helper za deduplikaciju po id + grad + polazak (za slucaj vise polazaka istog putnika)
     List<Putnik> deduplicatePutnici(List<Putnik> putnici) {
       final seen = <dynamic, bool>{};
       return putnici.where((p) {
-        final key = p.id ?? '${p.ime}_${p.dan}_${p.polazak}';
+        // Ključ mora biti unikatan za grad i vreme polaska
+        final key = '${p.id}_${p.grad}_${p.polazak}';
         if (seen.containsKey(key)) {
           return false;
         } else {

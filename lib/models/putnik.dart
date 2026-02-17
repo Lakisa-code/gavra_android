@@ -175,8 +175,6 @@ class Putnik {
     );
   }
 
-  // Helper metoda za citanje polaska za odredeni dan iz novih kolona
-
   final dynamic id; // UUID iz registrovani_putnici
   final String ime;
   final String polazak;
@@ -190,6 +188,7 @@ class Putnik {
   final DateTime? vremePlacanja; // ? DateTime
   final bool? placeno;
   final double? cena; // ? STANDARDIZOVANO: cena umesto iznosPlacanja
+  double? get iznosPlacanja => cena; // BACKWARD COMPATIBILITY
   final String? naplatioVozac;
   final String? pokupioVozac; // NOVO - vozac koji je pokupljanje izvršio
   final String? dodeljenVozac;
@@ -207,6 +206,63 @@ class Putnik {
   final String? tipPutnika; // ?? Tip putnika: radnik, ucenik, dnevni
   final bool otkazanZaPolazak; // ?? Da li je otkazan za ovaj polazak
   final String? vozacId; // 🆕 UUID vozača iz seat_requests
+
+  factory Putnik.fromSeatRequest(Map<String, dynamic> req, {Map<String, dynamic>? profile}) {
+    // Ako je profil join-ovan u samom requestu (Supabase .select('*, registrovani_putnici(...)'))
+    final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
+
+    final datumStr = req['datum']?.toString() ?? '';
+    final grad = (req['grad']?.toString().toLowerCase() == 'vs' || req['grad']?.toString().toLowerCase() == 'vršac')
+        ? 'Vršac'
+        : 'Bela Crkva';
+    final zeljenoVremeStr = req['zeljeno_vreme']?.toString() ?? '';
+
+    // Provera da li je pokupljen (iz voznje_log ili statusa)
+    final bool isPickedUp = req['pokupljen_iz_loga'] == true ||
+        req['status']?.toString().toLowerCase() == 'confirmed' ||
+        req['status']?.toString().toLowerCase() == 'pokupljen';
+
+    // Format: "HH:mm:ss" -> "HH:mm"
+    final vreme = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : '05:00';
+
+    final tip = p['tip'] as String?;
+    final isDnevni = tip == 'dnevni' || tip == 'posiljka';
+
+    return Putnik(
+      id: p['id'] ?? req['putnik_id'],
+      ime: p['putnik_ime'] ?? p['ime'] ?? '',
+      polazak: vreme,
+      dan: _getDayNameFromIso(datumStr),
+      grad: grad,
+      status: req['status'],
+      pokupljen: isPickedUp, // ✅ Redizajnirano: Gleda status ili voznje_log flag
+      datum: datumStr,
+      tipPutnika: tip,
+      mesecnaKarta: !isDnevni,
+      brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
+      adresa: grad == 'Vršac'
+          ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
+          : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv']),
+      adresaId: grad == 'Vršac' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id'],
+      brojTelefona: p['broj_telefona'],
+      statusVreme: p['updated_at'],
+      vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
+      vremePokupljenja: req['processed_at'] != null ? DateTime.parse(req['processed_at']).toLocal() : null,
+      pokupioVozac: VozacMappingService.getNameFromUuidOrNameSync(req['vozac_id']),
+      obrisan: false,
+      vozacId: req['vozac_id'],
+      dodeljenVozac: VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']),
+    );
+  }
+
+  static String _getDayNameFromIso(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate);
+      return ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'][dt.weekday - 1];
+    } catch (_) {
+      return '';
+    }
+  }
 
   // ?? Helper getter za proveru da li je dnevni tip
   bool get isDnevniTip => tipPutnika?.toLowerCase() == 'dnevni' || mesecnaKarta == false;
@@ -249,7 +305,11 @@ class Putnik {
   // ?? IZMENJENO: jeOtkazan sada proverava otkazanZaPolazak (po gradu) umesto globalnog statusa
   // Dodata provera za status 'otkazano' za kompatibilnost
   bool get jeOtkazan =>
-      obrisan || otkazanZaPolazak || status?.toLowerCase() == 'otkazano' || status?.toLowerCase() == 'otkazan';
+      obrisan ||
+      otkazanZaPolazak ||
+      status?.toLowerCase() == 'otkazano' ||
+      status?.toLowerCase() == 'otkazan' ||
+      status?.toLowerCase() == 'cancelled';
 
   bool get jeBolovanje => status != null && status!.toLowerCase() == 'bolovanje';
 
@@ -257,81 +317,28 @@ class Putnik {
 
   bool get jeOdsustvo => jeBolovanje || jeGodisnji;
 
-  // ? FIX: jePokupljen mora proveriti da li je pokupljeno DANAS, ne samo da postoji timestamp
   bool get jePokupljen {
-    // Ako je pokupljen flag eksplicitno postavljen (iz _createPutniciForDay)
+    // 1. Ako je eksplicitno prosleđen flag (legacy/manual ili iz voznje_log)
     if (pokupljen == true) return true;
 
-    // Fallback: proveri vremePokupljenja ali SAMO ako je DANAS
-    if (vremePokupljenja != null) {
-      final danas = DateTime.now();
-      final pokupljenDatum = vremePokupljenja!.toLocal();
-      return pokupljenDatum.year == danas.year &&
-          pokupljenDatum.month == danas.month &&
-          pokupljenDatum.day == danas.day;
+    // 2. Za seat_requests (relacioni model): pokupljen je ako je status 'confirmed'
+    // NAPOMENA: Sada se više ne setuje 'confirmed' u seat_requests, već se gleda voznje_log
+    // Ostaje radi kompatibilnosti sa starim podacima
+    if (status?.toLowerCase() == 'confirmed' || status?.toLowerCase() == 'pokupljen') {
+      return true;
     }
 
-    // Status pokupljen za dnevne putnike
-    return status == 'pokupljen';
+    return false;
   }
 
-  bool get jePlacen => (cena ?? 0) > 0;
+  // ? NOVI GETTER: Da li je putnik uopšte dodeljen nekom vozaču (za listu PutnikList)
+  bool get jeDodeljenVozacu => dodeljenVozac != null && dodeljenVozac!.isNotEmpty;
 
-  // ? KOMPATIBILNOST: getter za stari iznosPlacanja naziv
-  double? get iznosPlacanja => cena;
+  // ? FIX: Citaj UUID vozača iz seat_requests (nova arhitektura)
+  String? get vozacUuid => vozacId ?? (dodeljenVozac != null && dodeljenVozac!.isNotEmpty ? dodeljenVozac : null);
 
-  PutnikStatus? get statusEnum => PutnikStatusExtension.fromString(status);
-
-  // 🆕 FACTORY: Kreira Putnik objekat iz seat_request zapisa (SA JOIN-om na registrovani_putnici)
-  factory Putnik.fromSeatRequest(Map<String, dynamic> req, {Map<String, dynamic>? profile}) {
-    // Ako je profil join-ovan u samom requestu (Supabase .select('*, registrovani_putnici(...)'))
-    final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
-
-    final datumStr = req['datum']?.toString() ?? '';
-    final grad = (req['grad']?.toString().toLowerCase() == 'vs' || req['grad']?.toString().toLowerCase() == 'vršac')
-        ? 'Vršac'
-        : 'Bela Crkva';
-    final zeljenoVremeStr = req['zeljeno_vreme']?.toString() ?? '';
-    // Format: "HH:mm:ss" -> "HH:mm"
-    final vreme = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : '05:00';
-
-    final tip = p['tip'] as String?;
-    final isDnevni = tip == 'dnevni' || tip == 'posiljka';
-
-    return Putnik(
-      id: p['id'] ?? req['putnik_id'],
-      ime: p['putnik_ime'] ?? p['ime'] ?? '',
-      polazak: vreme,
-      dan: _getDayNameFromIso(datumStr),
-      grad: grad,
-      status: req['status'],
-      datum: datumStr,
-      tipPutnika: tip,
-      mesecnaKarta: !isDnevni,
-      brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
-      adresa: grad == 'Vršac'
-          ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
-          : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv']),
-      adresaId: grad == 'Vršac' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id'],
-      brojTelefona: p['broj_telefona'],
-      statusVreme: p['updated_at'],
-      vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
-      vremePokupljenja: req['processed_at'] != null ? DateTime.parse(req['processed_at']).toLocal() : null,
-      pokupioVozac: VozacMappingService.getNameFromUuidOrNameSync(req['vozac_id']),
-      obrisan: false,
-      vozacId: req['vozac_id'],
-      dodeljenVozac: VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']),
-    );
-  }
-
-  static String _getDayNameFromIso(String isoDate) {
-    try {
-      final dt = DateTime.parse(isoDate);
-      return ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'][dt.weekday - 1];
-    } catch (_) {
-      return '';
-    }
-  }
+  // ? FIX: Citaj ime vozača iz seat_requests ili registrovani_putnici
+  String? get vozacIme => naplatioVozac ?? _getVozacIme(vozacId);
 
   // NOVA METODA: Kreira VIŠE putnik objekata za mesecne putnike sa više polazaka
   static List<Putnik> fromRegistrovaniPutniciMultiple(Map<String, dynamic> map) {
