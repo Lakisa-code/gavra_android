@@ -76,9 +76,9 @@ class PutnikService {
 
   Stream<List<Putnik>> streamPutnici() {
     // 🆕 REDIREKCIJA NA IZVOR ISTINE (seat_requests)
-    // Ovo osigurava da Admin i Vozač vide potpuno isto kao i početni ekran
-    final isoDate = DateTime.now().toIso8601String();
-    return streamKombinovaniPutniciFiltered(isoDate: isoDate);
+    // Koristi samo datum (YYYY-MM-DD) za ključ, ne puni ISO sa vremenom
+    final todayDate = DateTime.now().toIso8601String().split('T')[0];
+    return streamKombinovaniPutniciFiltered(isoDate: todayDate);
   }
 
   // UKLONJENO: _mergeSeatRequests - kolona polasci_po_danu više ne postoji
@@ -91,7 +91,16 @@ class PutnikService {
           .from('seat_requests')
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .eq('datum', todayDate)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
+          .inFilter('status', [
+            'pending',
+            'manual',
+            'approved',
+            'confirmed',
+            'otkazano',
+            'cancelled',
+            'bez_polaska',
+            'hidden'
+          ]);
 
       // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
       final logs = await supabase.from('voznje_log').select('putnik_id').eq('datum', todayDate).eq('tip', 'voznja');
@@ -120,7 +129,16 @@ class PutnikService {
           .from('seat_requests')
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .eq('datum', todayDate)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
+          .inFilter('status', [
+            'pending',
+            'manual',
+            'approved',
+            'confirmed',
+            'otkazano',
+            'cancelled',
+            'bez_polaska',
+            'hidden'
+          ]);
 
       if (grad != null) {
         query = query.ilike('grad', grad.toLowerCase() == 'vrsac' || grad.toLowerCase() == 'vršac' ? 'vs' : 'bc');
@@ -217,7 +235,16 @@ class PutnikService {
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .inFilter('putnik_id', ids.map((id) => id.toString()).toList())
           .eq('datum', danasStr)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
+          .inFilter('status', [
+            'pending',
+            'manual',
+            'approved',
+            'confirmed',
+            'otkazano',
+            'cancelled',
+            'bez_polaska',
+            'hidden'
+          ]);
 
       return (res as List)
           .map((row) => Putnik.fromSeatRequest(row))
@@ -364,7 +391,7 @@ class PutnikService {
     final dateStr = selectedDan != null
         ? app_date_utils.DateUtils.getIsoDateForDay(selectedDan)
         : DateTime.now().toIso8601String().split('T')[0];
-    final gradKey = (grad?.toLowerCase().contains('vr') ?? false || grad?.toLowerCase() == 'vs') ? 'VS' : 'BC';
+    final gradKey = (grad?.toLowerCase().contains('vr') ?? false || grad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
 
     final normalizedTime = GradAdresaValidator.normalizeTime(vreme);
 
@@ -430,7 +457,7 @@ class PutnikService {
         ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
         : DateTime.now().toIso8601String().split('T')[0];
     final gradKey =
-        (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'VS' : 'BC';
+        (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
 
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
     debugPrint('🛑 [PutnikService] otkaziPutnika: dateStr=$dateStr, gradKey=$gradKey, time=$normalizedTime');
@@ -483,7 +510,7 @@ class PutnikService {
   }) async {
     final danasStr = DateTime.now().toIso8601String().split('T')[0];
     final dateStr = selectedDan != null ? app_date_utils.DateUtils.getIsoDateForDay(selectedDan) : danasStr;
-    final gradKey = (grad?.toLowerCase().contains('vr') ?? false || grad?.toLowerCase() == 'vs') ? 'VS' : 'BC';
+    final gradKey = (grad?.toLowerCase().contains('vr') ?? false || grad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
 
     String? vozacId;
     if (driver != null) {
@@ -529,7 +556,7 @@ class PutnikService {
     final dateStr = app_date_utils.DateUtils.getIsoDateForDay(selectedDan ?? 'Ponedeljak');
 
     // 3. Update seat_requests
-    final gradKey = (pravac?.toLowerCase().contains('vr') ?? false || pravac?.toLowerCase() == 'vs') ? 'VS' : 'BC';
+    final gradKey = (pravac?.toLowerCase().contains('vr') ?? false || pravac?.toLowerCase() == 'vs') ? 'vs' : 'bc';
 
     await supabase.from('seat_requests').update({
       'vozac_id': vozacUuid,
