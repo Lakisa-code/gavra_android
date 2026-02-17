@@ -91,16 +91,8 @@ class PutnikService {
           .from('seat_requests')
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .eq('datum', todayDate)
-          .inFilter('status', [
-            'pending',
-            'manual',
-            'approved',
-            'confirmed',
-            'otkazano',
-            'cancelled',
-            'bez_polaska',
-            'hidden'
-          ]);
+          .inFilter('status',
+              ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden']);
 
       // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
       final logs = await supabase.from('voznje_log').select('putnik_id').eq('datum', todayDate).eq('tip', 'voznja');
@@ -129,16 +121,8 @@ class PutnikService {
           .from('seat_requests')
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .eq('datum', todayDate)
-          .inFilter('status', [
-            'pending',
-            'manual',
-            'approved',
-            'confirmed',
-            'otkazano',
-            'cancelled',
-            'bez_polaska',
-            'hidden'
-          ]);
+          .inFilter('status',
+              ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden']);
 
       if (grad != null) {
         query = query.ilike('grad', grad.toLowerCase() == 'vrsac' || grad.toLowerCase() == 'vršac' ? 'vs' : 'bc');
@@ -235,16 +219,8 @@ class PutnikService {
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .inFilter('putnik_id', ids.map((id) => id.toString()).toList())
           .eq('datum', danasStr)
-          .inFilter('status', [
-            'pending',
-            'manual',
-            'approved',
-            'confirmed',
-            'otkazano',
-            'cancelled',
-            'bez_polaska',
-            'hidden'
-          ]);
+          .inFilter('status',
+              ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden']);
 
       return (res as List)
           .map((row) => Putnik.fromSeatRequest(row))
