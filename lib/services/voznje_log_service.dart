@@ -207,12 +207,7 @@ class VoznjeLogService {
     String? vreme,
   }) async {
     try {
-      var query = _supabase
-          .from('voznje_log')
-          .select('id')
-          .eq('putnik_id', putnikId)
-          .eq('datum', datum)
-          .eq('tip', tip);
+      var query = _supabase.from('voznje_log').select('id').eq('putnik_id', putnikId).eq('datum', datum).eq('tip', tip);
 
       if (grad != null) {
         query = query.eq('meta->>grad', grad.toLowerCase());

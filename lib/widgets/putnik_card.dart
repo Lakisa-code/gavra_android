@@ -1924,7 +1924,6 @@ class _PutnikCardState extends State<PutnikCard> {
         // Ukloni polazak za ovaj termin - to će sakriti putnika iz liste (status: bez_polaska)
         await PutnikService().ukloniPolazak(
           _putnik.id!,
-          widget.currentDriver,
           grad: _putnik.grad,
           vreme: _putnik.polazak,
           selectedDan: _putnik.dan,

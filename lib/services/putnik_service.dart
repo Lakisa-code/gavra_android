@@ -415,11 +415,15 @@ class PutnikService {
     // 1. PRIORITET: Match po requestId
     if (requestId != null && requestId.isNotEmpty) {
       try {
-        final res = await supabase.from('seat_requests').update({
-          'status': 'bez_polaska',
-          'processed_at': DateTime.now().toUtc().toIso8601String(),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('id', requestId).select();
+        final res = await supabase
+            .from('seat_requests')
+            .update({
+              'status': 'bez_polaska',
+              'processed_at': DateTime.now().toUtc().toIso8601String(),
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', requestId)
+            .select();
 
         if (res.isNotEmpty) {
           debugPrint('🗑️ [PutnikService] ukloniPolazak SUCCESS (by requestId)');
@@ -439,10 +443,12 @@ class PutnikService {
         (finalDan != null
             ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
             : DateTime.now().toIso8601String().split('T')[0]);
-    final gradKey = (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
+    final gradKey =
+        (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
 
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
-    debugPrint('🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, gradKey=$gradKey, time=$normalizedTime');
+    debugPrint(
+        '🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, gradKey=$gradKey, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {
@@ -520,11 +526,15 @@ class PutnikService {
     // 1. PRIORITET: Match po requestId
     if (requestId != null && requestId.isNotEmpty) {
       try {
-        final res = await supabase.from('seat_requests').update({
-          'status': status,
-          'processed_at': DateTime.now().toUtc().toIso8601String(),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('id', requestId).select();
+        final res = await supabase
+            .from('seat_requests')
+            .update({
+              'status': status,
+              'processed_at': DateTime.now().toUtc().toIso8601String(),
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', requestId)
+            .select();
 
         if (res.isNotEmpty) {
           debugPrint('🛑 [PutnikService] otkaziPutnika SUCCESS (by requestId)');
@@ -543,7 +553,8 @@ class PutnikService {
         (finalDan != null
             ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
             : DateTime.now().toIso8601String().split('T')[0]);
-    final gradKey = (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
+    final gradKey =
+        (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
 
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
     debugPrint('🛑 [PutnikService] otkaziPutnika (fallback): dateStr=$dateStr, gradKey=$gradKey, time=$normalizedTime');
