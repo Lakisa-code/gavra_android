@@ -481,7 +481,11 @@ class _VozacScreenState extends State<VozacScreen> {
             : GradAdresaValidator.isGradMatch(streamPutnik.grad, streamPutnik.adresa, _selectedGrad);
 
         // Putnik pripada ovom prevozu i aktivan je
-        if (normStreamTime == normFilterTime && gradMatch && !streamPutnik.jeOtkazan && !streamPutnik.jeBezPolaska && !streamPutnik.obrisan) {
+        if (normStreamTime == normFilterTime &&
+            gradMatch &&
+            !streamPutnik.jeOtkazan &&
+            !streamPutnik.jeBezPolaska &&
+            !streamPutnik.obrisan) {
           hasNewPassengers = true;
           hasChanges = true;
           updatedRoute.add(streamPutnik);
