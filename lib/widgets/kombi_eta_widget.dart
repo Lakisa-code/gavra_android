@@ -282,31 +282,32 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     }
   }
 
-  /// 🆕 Učitaj vreme pokupljenja DIREKTNO iz baze (seat_requests)
+  /// 🆕 Učitaj vreme pokupljenja DIREKTNO iz baze (voznje_log)
   Future<void> _loadPokupljenjeIzBaze() async {
     if (widget.putnikId == null) return;
 
     try {
       final now = DateTime.now();
       final todayDate = now.toIso8601String().split('T')[0];
-      final place = _normalizeGrad(widget.grad).toUpperCase(); // 'BC' ili 'VS'
 
       final response = await supabase
-          .from('seat_requests')
-          .select('pokupljen_u')
+          .from('voznje_log')
+          .select('created_at')
           .eq('putnik_id', widget.putnikId!)
           .eq('datum', todayDate)
-          .eq('grad', place)
+          .eq('tip', 'voznja')
+          .order('created_at', ascending: false)
+          .limit(1)
           .maybeSingle();
 
       if (!mounted || response == null) return;
 
-      final pokupljenU = response['pokupljen_u'] as String?;
-      if (pokupljenU != null && pokupljenU.isNotEmpty) {
-        final parsedTime = DateTime.tryParse(pokupljenU);
+      final createdAt = response['created_at'] as String?;
+      if (createdAt != null && createdAt.isNotEmpty) {
+        final parsedTime = DateTime.tryParse(createdAt);
         if (parsedTime != null) {
           setState(() {
-            _vremePokupljenja = parsedTime;
+            _vremePokupljenja = parsedTime.toLocal();
             _jePokupljenIzBaze = true;
           });
         }

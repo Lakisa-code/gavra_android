@@ -1819,6 +1819,17 @@ class _PutnikCardState extends State<PutnikCard> {
                         _handleOtkazivanje();
                       },
                     ),
+                  // Bez polaska
+                  if (!_putnik.jeOtkazan && _putnik.polazak.isNotEmpty)
+                    ListTile(
+                      leading: const Icon(Icons.schedule, color: Colors.blue),
+                      title: const Text('Bez polaska'),
+                      subtitle: const Text('Ukloni vreme polaska'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _handleBezPolaska();
+                      },
+                    ),
                   // Godišnji/Bolovanje
                   if (_putnik.mesecnaKarta == true && !_putnik.jeOtkazan && !_putnik.jeOdsustvo)
                     ListTile(
@@ -1953,6 +1964,107 @@ class _PutnikCardState extends State<PutnikCard> {
         // Pozovi parent callback da se lista ponovo sortira
         if (widget.onChanged != null) {
           widget.onChanged!();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  // ?? BEZ POLASKA - Postavi polazak na null (kao "Bez polaska" opcija)
+  Future<void> _handleBezPolaska() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 2,
+          ),
+        ),
+        title: Text(
+          'Bez polaska',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Da li ste sigurni da želite da uklonite vreme polaska za ovog putnika?',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        actions: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.grey.shade400,
+                  Colors.grey.shade600,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text(
+                'Ne',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: TripleBlueFashionStyles.gradientButton,
+            child: TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text(
+                'Da',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        // Kreiraj kopiju putnika sa polazak = null
+        final updatedPutnik = _putnik.copyWith(polazak: null);
+
+        // Sačuvaj u bazu
+        await PutnikService().savePutnikToCorrectTable(updatedPutnik);
+
+        // Ažuriraj lokalni _putnik
+        if (mounted) {
+          setState(() {
+            _putnik = updatedPutnik;
+          });
+        }
+
+        // Pozovi parent callback da se lista ponovo sortira
+        if (widget.onChanged != null) {
+          widget.onChanged!();
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Vreme polaska je uklonjeno')),
+          );
         }
       } catch (e) {
         if (mounted) {

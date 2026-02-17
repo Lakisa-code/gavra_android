@@ -281,9 +281,21 @@ class PutnikService {
     }
 
     // ✅ OZNAČI KAO POKUPLJEN (Samo u voznje_log, po zahtevu korisnika)
-    await supabase
+    // Proveri da li već postoji unos za ovog putnika danas
+    final existing = await supabase
         .from('voznje_log')
-        .insert({'putnik_id': id.toString(), 'datum': danasStr, 'tip': 'voznja', 'vozac_id': vozacId});
+        .select('id')
+        .eq('putnik_id', id.toString())
+        .eq('datum', danasStr)
+        .eq('tip', 'voznja')
+        .maybeSingle();
+
+    if (existing == null) {
+      // Nema postojećeg unosa, upiši novi
+      await supabase
+          .from('voznje_log')
+          .insert({'putnik_id': id.toString(), 'datum': danasStr, 'tip': 'voznja', 'vozac_id': vozacId});
+    }
   }
 
   /// 🏖️ POSTAVLJA PUTNIKA NA BOLOVANJE ILI GODIŠNJI
