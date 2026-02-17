@@ -347,12 +347,12 @@ class _VozacScreenState extends State<VozacScreen> {
     // ?? UJEDNACENO SA DANAS_SCREEN: Razdvoji pokupljene/otkazane/tude od preostalih
     final pokupljeniIOtkazani = sveziPutnici.where((p) {
       final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
-      return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || jeTudji;
+      return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || p.jeBezPolaska || jeTudji;
     }).toList();
 
     final preostaliPutnici = sveziPutnici.where((p) {
       final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
-      return !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !jeTudji;
+      return !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !p.jeBezPolaska && !jeTudji;
     }).toList();
 
     if (preostaliPutnici.isEmpty) {
@@ -453,13 +453,15 @@ class _VozacScreenState extends State<VozacScreen> {
       // Detektuj promenu statusa za reoptimizaciju (pomeranje na kraj)
       if (streamPutnik.jePokupljen != optimizedPutnik.jePokupljen ||
           streamPutnik.jeOtkazan != optimizedPutnik.jeOtkazan ||
+          streamPutnik.jeBezPolaska != optimizedPutnik.jeBezPolaska ||
           streamPutnik.jeOdsustvo != optimizedPutnik.jeOdsustvo ||
           streamPutnik.status != optimizedPutnik.status) {
         hasChanges = true;
 
         // Ako je putnik upravo pokupljen, otkazan ili vraćen - potrebna reoptimizacija redosleda
         if (streamPutnik.jePokupljen != optimizedPutnik.jePokupljen ||
-            streamPutnik.jeOtkazan != optimizedPutnik.jeOtkazan) {
+            streamPutnik.jeOtkazan != optimizedPutnik.jeOtkazan ||
+            streamPutnik.jeBezPolaska != optimizedPutnik.jeBezPolaska) {
           hasStatusChanges = true;
         }
       }
@@ -479,7 +481,7 @@ class _VozacScreenState extends State<VozacScreen> {
             : GradAdresaValidator.isGradMatch(streamPutnik.grad, streamPutnik.adresa, _selectedGrad);
 
         // Putnik pripada ovom prevozu i aktivan je
-        if (normStreamTime == normFilterTime && gradMatch && !streamPutnik.jeOtkazan && !streamPutnik.obrisan) {
+        if (normStreamTime == normFilterTime && gradMatch && !streamPutnik.jeOtkazan && !streamPutnik.jeBezPolaska && !streamPutnik.obrisan) {
           hasNewPassengers = true;
           hasChanges = true;
           updatedRoute.add(streamPutnik);
@@ -529,7 +531,7 @@ class _VozacScreenState extends State<VozacScreen> {
       // ?? Razdvoji pokupljene/otkazane/tude od aktivnih putnika
       final pokupljeniIOtkazani = allPassengers.where((p) {
         final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
-        return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || jeTudji;
+        return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || p.jeBezPolaska || jeTudji;
       }).toList();
 
       // Filtriraj samo AKTIVNE putnike sa validnim adresama za optimizaciju
@@ -538,7 +540,7 @@ class _VozacScreenState extends State<VozacScreen> {
             (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
         // ?? Iskljuci pokupljene, otkazane i tude putnike
         final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
-        final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !jeTudji;
+        final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !p.jeBezPolaska && !jeTudji;
         return hasValidAddress && isActive;
       }).toList();
 
@@ -670,7 +672,7 @@ class _VozacScreenState extends State<VozacScreen> {
     // Filter putnika sa validnim adresama i aktivnim statusom
     final filtriraniPutnici = putnici.where((p) {
       // Iskljuci otkazane putnike
-      if (p.jeOtkazan) return false;
+      if (p.jeOtkazan || p.jeBezPolaska) return false;
       // Iskljuci vec pokupljene putnike
       if (p.jePokupljen) return false;
       // Iskljuci odsutne putnike (bolovanje/godi�nji)
@@ -1565,7 +1567,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final nijeMesecni = !putnik.isMesecniTip;
       if (!nijeMesecni) return false;
       final nijePlatio = putnik.vremePlacanja == null;
-      final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
+      final nijeOtkazan = !putnik.jeOtkazan && !putnik.jeBezPolaska;
       final pokupljen = putnik.jePokupljen;
       return nijePlatio && nijeOtkazan && pokupljen;
     }).toList();
@@ -1583,7 +1585,7 @@ class _VozacScreenState extends State<VozacScreen> {
     final Map<dynamic, Set<String>> putnikSmerovi = {};
 
     for (var p in sviPutnici) {
-      if (p.jeOtkazan || p.jeOdsustvo || p.obrisan) continue;
+      if (p.jeOtkazan || p.jeBezPolaska || p.jeOdsustvo || p.obrisan) continue;
       if (p.tipPutnika == 'posiljka') continue;
 
       final id = p.id;

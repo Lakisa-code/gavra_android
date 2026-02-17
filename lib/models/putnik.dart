@@ -320,8 +320,9 @@ class Putnik {
           otkazanZaPolazak ||
           status?.toLowerCase() == 'otkazano' ||
           status?.toLowerCase() == 'otkazan' ||
-          status?.toLowerCase() == 'cancelled' ||
-          status?.toLowerCase() == 'bez_polaska');
+          status?.toLowerCase() == 'cancelled');
+
+  bool get jeBezPolaska => status?.toLowerCase() == 'bez_polaska';
 
   bool get jeBolovanje => status != null && status!.toLowerCase() == 'bolovanje';
 

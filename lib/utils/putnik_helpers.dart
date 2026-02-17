@@ -19,7 +19,8 @@ class PutnikHelpers {
   /// Koristi za: brojčanike na tabovima, slobodna mesta, optimizaciju rute
   static bool shouldCountInSeats(Putnik p) {
     // Ne računaj ako je otkazan (uključuje obrisan flag i otkazanZaPolazak)
-    if (p.jeOtkazan) return false;
+    // Takođe ne računaj ako je uklonjen polazak (bez_polaska)
+    if (p.jeOtkazan || p.jeBezPolaska) return false;
 
     // Ne računaj ako je na čekanju (pending) - "Predlog 3"
     // Pending putnici se obrađuju u SeatRequestsScreen i ne zauzimaju mesto dok ne budu odobreni
