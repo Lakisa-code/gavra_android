@@ -228,13 +228,23 @@ class Putnik {
     final tip = p['tip'] as String?;
     final isDnevni = tip == 'dnevni' || tip == 'posiljka';
 
+    // Status: Prioritet ima status iz profila ako je na bolovanju/godišnjem,
+    // inače koristimo status iz seat_request (approved, confirmed, cancelled...)
+    final profileStatus = p['status']?.toString().toLowerCase();
+    String? finalStatus = req['status']?.toString();
+
+    if (profileStatus == 'bolovanje' || profileStatus == 'godisnji' || profileStatus == 'godišnji') {
+      // Ako je globalno na odsustvu, to je primarni status za prikaz
+      finalStatus = profileStatus;
+    }
+
     return Putnik(
       id: p['id'] ?? req['putnik_id'],
       ime: p['putnik_ime'] ?? p['ime'] ?? '',
       polazak: vreme,
       dan: _getDayNameFromIso(datumStr),
       grad: grad,
-      status: req['status'],
+      status: finalStatus,
       pokupljen: isPickedUp, // ✅ Redizajnirano: Gleda status ili voznje_log flag
       datum: datumStr,
       tipPutnika: tip,
@@ -305,11 +315,12 @@ class Putnik {
   // ?? IZMENJENO: jeOtkazan sada proverava otkazanZaPolazak (po gradu) umesto globalnog statusa
   // Dodata provera za status 'otkazano' za kompatibilnost
   bool get jeOtkazan =>
-      obrisan ||
-      otkazanZaPolazak ||
-      status?.toLowerCase() == 'otkazano' ||
-      status?.toLowerCase() == 'otkazan' ||
-      status?.toLowerCase() == 'cancelled';
+      !jeOdsustvo &&
+      (obrisan ||
+          otkazanZaPolazak ||
+          status?.toLowerCase() == 'otkazano' ||
+          status?.toLowerCase() == 'otkazan' ||
+          status?.toLowerCase() == 'cancelled');
 
   bool get jeBolovanje => status != null && status!.toLowerCase() == 'bolovanje';
 
@@ -524,7 +535,9 @@ class Putnik {
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: mesecnaKarta, // ?? FIX: koristi izracunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status: bcOtkazan ? 'otkazan' : (bcStatus ?? status), // ?? Prioritet: bcStatus iz JSON > globalni status
+          status: (status == 'bolovanje' || status == 'godisnji')
+              ? status
+              : (bcOtkazan ? 'otkazan' : (bcStatus ?? status)),
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaBC, // ? NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaBC, // ? FIX: Citaj iz JSON-a za BC
@@ -586,7 +599,9 @@ class Putnik {
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: mesecnaKarta, // ?? FIX: koristi izracunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status: vsOtkazan ? 'otkazan' : (vsStatus ?? status), // ?? Prioritet: vsStatus iz JSON > globalni status
+          status: (status == 'bolovanje' || status == 'godisnji')
+              ? status
+              : (vsOtkazan ? 'otkazan' : (vsStatus ?? status)),
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaVS, // ? NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaVS, // ? FIX: Citaj iz JSON-a za VS
