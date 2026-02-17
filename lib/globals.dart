@@ -36,26 +36,23 @@ bool get isSupabaseReady {
 }
 
 /// 🚌 NAV BAR TYPE - tip bottom navigation bara
-/// 'auto' = automatski (zimski/letnji po datumu)
-/// 'zimski' = forsiran zimski
-/// 'letnji' = forsiran letnji
-/// 'praznici' = praznični
-final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('auto');
+/// 'zimski' = zimski raspored
+/// 'letnji' = letnji raspored
+/// 'praznici' = praznični raspored
+final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('letnji');
 
 /// Helper za dobijanje trenutnog tipa nav bara
 String get currentNavBarType => navBarTypeNotifier.value;
 
-/// ❄️ ZIMSKI MOD - Proverava da li je zimski red vožnje aktivan za određeni datum
+/// ❄️ ZIMSKI MOD - Proverava da li je zimski red vožnje aktivan
+/// ⚠️ AUTO REŽIM JE UKLONJEN - Koristi se isključivo vrednost iz baze (Supabase)
 bool isWinterDate(DateTime date) {
-  if (navBarTypeNotifier.value == 'zimski') return true;
-  if (navBarTypeNotifier.value == 'letnji') return false;
-
-  // Automatski: Zimski od Oktobra do kraja Marta
-  return date.month >= 10 || date.month <= 3;
+  // Primarni izvor istine je navBarTypeNotifier (koji se puni iz app_settings tabele)
+  return navBarTypeNotifier.value == 'zimski';
 }
 
 /// ❄️ ZIMSKI MOD - Proverava da li je zimski red vožnje aktivan SADA
-bool get isWinter => isWinterDate(DateTime.now());
+bool get isWinter => navBarTypeNotifier.value == 'zimski';
 
 /// 🎄 PRAZNIČNI MOD - specijalni red vožnje (DEPRECATED - koristi navBarTypeNotifier)
 /// Kada je true, koristi se BottomNavBarPraznici sa smanjenim brojem polazaka

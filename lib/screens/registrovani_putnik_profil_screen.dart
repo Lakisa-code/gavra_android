@@ -92,6 +92,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     WidgetsBinding.instance.addObserver(this); // 🕵️ Prati lifecycle aplikacije
     _checkNotificationPermission(); // 🔍 Proveri dozvolu za notifikacije
 
+    // 🔔 Listen for season changes (auto/zimski/letnji)
+    navBarTypeNotifier.addListener(_onSeasonChanged);
+
     _putnikData = Map<String, dynamic>.from(widget.putnikData);
     _refreshPutnikData(); // 🔄 Učitaj sveže podatke iz baze
     _loadStatistike();
@@ -101,6 +104,16 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     _cleanupOldSeatRequests(); // 🧹 Očisti stare seat_requests iz baze
     WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
     _setupRealtimeListener(); // 🎯 Sluša promene statusa u realtime
+    _loadActiveRequests();
+  }
+
+  /// ❄️ Reaguje na promenu sezone
+  void _onSeasonChanged() {
+    if (mounted) {
+      setState(() {
+        debugPrint('❄️ [Season] Sezona promenjena na: ${navBarTypeNotifier.value}. Osvežavam UI profil ekrana.');
+      });
+    }
   }
 
   /// 🔄 Proverava da li je vreme isteklo (za automatsko otkazivanje)
@@ -213,7 +226,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // 🛑 Zatvori lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
+    navBarTypeNotifier.removeListener(_onSeasonChanged);
     _statusSubscription?.cancel(); // 🛑 Zatvori Realtime listener
     _seatRequestSubscription?.cancel(); // 🛑 Zatvori Seat Request listener
     RealtimeManager.instance.unsubscribe('registrovani_putnici');
@@ -1934,6 +1948,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       }
     }
 
+    // 📅 Generisanje redova za raspored
     final dani = DayConstants.dayAbbreviations.where((d) => d != 'sub' && d != 'ned').toList(); // 🗓️ Samo radni dani
     final daniLabels = <String, String>{};
     for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
@@ -2003,27 +2018,30 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             final String? bcVreme;
             final String? vsVreme;
             if (isWinter) {
-              // Prednost zimskom ključu ('bc2'), ako ne postoji fallback na letnji ('bc')
               bcVreme =
                   (danPolasci['bc2'] != null && danPolasci['bc2'].toString().isNotEmpty && danPolasci['bc2'] != 'null')
                       ? danPolasci['bc2']?.toString()
-                      : danPolasci['bc']?.toString();
+                      : null;
 
               vsVreme =
                   (danPolasci['vs2'] != null && danPolasci['vs2'].toString().isNotEmpty && danPolasci['vs2'] != 'null')
                       ? danPolasci['vs2']?.toString()
-                      : danPolasci['vs']?.toString();
+                      : null;
             } else {
               bcVreme = danPolasci['bc']?.toString();
               vsVreme = danPolasci['vs']?.toString();
             }
 
-            final bcStatus = isWinter
-                ? (danPolasci['bc2_status']?.toString() ?? danPolasci['bc_status']?.toString())
-                : danPolasci['bc_status']?.toString();
-            final vsStatus = isWinter
-                ? (danPolasci['vs2_status']?.toString() ?? danPolasci['vs_status']?.toString())
-                : danPolasci['vs_status']?.toString();
+            final String? bcStatus;
+            final String? vsStatus;
+
+            if (isWinter) {
+              bcStatus = danPolasci['bc2_status']?.toString();
+              vsStatus = danPolasci['vs2_status']?.toString();
+            } else {
+              bcStatus = danPolasci['bc_status']?.toString();
+              vsStatus = danPolasci['vs_status']?.toString();
+            }
 
             // 🔍 Proveri da li je admin uklonio termin
             final bcUklonjen = _proveriUklonjen(dan, 'bc', bcVreme);

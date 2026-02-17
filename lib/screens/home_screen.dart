@@ -33,7 +33,6 @@ import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
-import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
@@ -80,54 +79,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
-    String sezona;
-
-    switch (navType) {
-      case 'praznici':
-        sezona = 'praznici';
-        break;
-      case 'zimski':
-        sezona = 'zimski';
-        break;
-      case 'letnji':
-        sezona = 'letnji';
-        break;
-      default: // 'auto'
-        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
+    if (navType == 'praznici') {
+      return RouteConfig.bcVremenaPraznici;
+    } else if (navType == 'zimski') {
+      return RouteConfig.bcVremenaZimski;
+    } else {
+      return RouteConfig.bcVremenaLetnji;
     }
-
-    // Koristi RouteConfig
-    return (sezona == 'praznici'
-        ? RouteConfig.bcVremenaPraznici
-        : sezona == 'zimski'
-            ? RouteConfig.bcVremenaZimski
-            : RouteConfig.bcVremenaLetnji);
   }
 
   List<String> get vsVremena {
     final navType = navBarTypeNotifier.value;
-    String sezona;
-
-    switch (navType) {
-      case 'praznici':
-        sezona = 'praznici';
-        break;
-      case 'zimski':
-        sezona = 'zimski';
-        break;
-      case 'letnji':
-        sezona = 'letnji';
-        break;
-      default: // 'auto'
-        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
+    if (navType == 'praznici') {
+      return RouteConfig.vsVremenaPraznici;
+    } else if (navType == 'zimski') {
+      return RouteConfig.vsVremenaZimski;
+    } else {
+      return RouteConfig.vsVremenaLetnji;
     }
-
-    // Koristi RouteConfig
-    return (sezona == 'praznici'
-        ? RouteConfig.vsVremenaPraznici
-        : sezona == 'zimski'
-            ? RouteConfig.vsVremenaZimski
-            : RouteConfig.vsVremenaLetnji);
   }
 
   // 📝 DINAMIČKA LISTA POLAZAKA za BottomNavBar
@@ -2757,7 +2726,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
         );
-      case 'letnji':
+      default: // 'letnji' ili nepoznato
         return BottomNavBarLetnji(
           sviPolasci: _sviPolasci,
           selectedGrad: _selectedGrad,
@@ -2767,26 +2736,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
         );
-      default: // 'auto'
-        return isZimski(DateTime.now())
-            ? BottomNavBarZimski(
-                sviPolasci: _sviPolasci,
-                selectedGrad: _selectedGrad,
-                selectedVreme: _selectedVreme,
-                getPutnikCount: getPutnikCount,
-                getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                onPolazakChanged: onChanged,
-                selectedDan: _selectedDay,
-              )
-            : BottomNavBarLetnji(
-                sviPolasci: _sviPolasci,
-                selectedGrad: _selectedGrad,
-                selectedVreme: _selectedVreme,
-                getPutnikCount: getPutnikCount,
-                getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                onPolazakChanged: onChanged,
-                selectedDan: _selectedDay,
-              );
     }
   }
 

@@ -87,7 +87,8 @@ class RegistrovaniHelpers {
     final polasci = parsePolasciPoDanu(rawMap['polasci_po_danu']);
     final dayData = polasci[dayKratica.toLowerCase()];
     if (dayData != null) {
-      return dayData[place.toLowerCase()];
+      final key = isWinter ? '${place.toLowerCase()}2' : place.toLowerCase();
+      return dayData[key];
     }
 
     // Fallback logic for legacy columns

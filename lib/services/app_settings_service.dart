@@ -25,13 +25,9 @@ class AppSettingsService {
   /// Učitaj sva podešavanja iz baze
   static Future<void> _loadSettings() async {
     try {
-      final response = await supabase
-          .from('app_settings')
-          .select('nav_bar_type')
-          .eq('id', 'global')
-          .single();
+      final response = await supabase.from('app_settings').select('nav_bar_type').eq('id', 'global').single();
 
-      final navBarType = response['nav_bar_type'] as String? ?? 'auto';
+      final navBarType = response['nav_bar_type'] as String? ?? 'letnji';
       navBarTypeNotifier.value = navBarType;
       praznicniModNotifier.value = navBarType == 'praznici';
     } catch (e) {

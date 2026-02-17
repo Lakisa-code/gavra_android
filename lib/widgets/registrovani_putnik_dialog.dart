@@ -188,10 +188,20 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       // Load times for each day — winter aware
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
         final danRaw = _originalPolasciPoDanu?[dan] ?? {};
-        final bcVal = _isWinterMode ? danRaw['bc2'] : danRaw['bc'];
-        final vsVal = _isWinterMode ? danRaw['vs2'] : danRaw['vs'];
-        _polazakBcControllers[dan]!.text = (bcVal?.toString()) ?? '';
-        _polazakVsControllers[dan]!.text = (vsVal?.toString()) ?? '';
+
+        String? bcVal;
+        String? vsVal;
+
+        if (_isWinterMode) {
+          bcVal = (danRaw['bc2'] != null && danRaw['bc2'] != 'null') ? danRaw['bc2']?.toString() : null;
+          vsVal = (danRaw['vs2'] != null && danRaw['vs2'] != 'null') ? danRaw['vs2']?.toString() : null;
+        } else {
+          bcVal = (danRaw['bc'] != null && danRaw['bc'] != 'null') ? danRaw['bc']?.toString() : null;
+          vsVal = (danRaw['vs'] != null && danRaw['vs'] != 'null') ? danRaw['vs']?.toString() : null;
+        }
+
+        _polazakBcControllers[dan]?.text = bcVal ?? '';
+        _polazakVsControllers[dan]?.text = vsVal ?? '';
       }
 
       // 🆕 UCITAJ OVERRIDE-ove (seat_requests)
@@ -326,9 +336,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     if (dayData == null) return null;
 
     if (_isWinterMode) {
-      // U zimskom režimu prioritet ima bc2_status, ali ako ga nema fallback na bc_status
-      // (jer mnogi nemaju setovan bc2 pa koriste letnji i u zimi)
-      return isBC ? (dayData['bc2_status'] ?? dayData['bc_status']) : (dayData['vs2_status'] ?? dayData['vs_status']);
+      return isBC ? dayData['bc2_status'] : dayData['vs2_status'];
     }
 
     return isBC ? dayData['bc_status'] : dayData['vs_status'];

@@ -22,7 +22,6 @@ import '../services/vreme_vozac_service.dart'; // 🕒 Za dodeljena vremena voza
 import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/putnik_helpers.dart'; // 🛠️ Centralizovani helperi
-import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart'; // 📝 Za TextUtils.isStatusActive
 import '../utils/vozac_boja.dart'; // 🎨 Za validaciju vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
@@ -136,54 +135,24 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🕐 DINAMIČKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get _bcVremena {
     final navType = navBarTypeNotifier.value;
-    String sezona;
-
-    switch (navType) {
-      case 'praznici':
-        sezona = 'praznici';
-        break;
-      case 'zimski':
-        sezona = 'zimski';
-        break;
-      case 'letnji':
-        sezona = 'letnji';
-        break;
-      default: // 'auto'
-        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
+    if (navType == 'praznici') {
+      return RouteConfig.bcVremenaPraznici;
+    } else if (navType == 'zimski') {
+      return RouteConfig.bcVremenaZimski;
+    } else {
+      return RouteConfig.bcVremenaLetnji;
     }
-
-    // Use RouteConfig for schedule times
-    return (sezona == 'praznici'
-        ? RouteConfig.bcVremenaPraznici
-        : sezona == 'zimski'
-            ? RouteConfig.bcVremenaZimski
-            : RouteConfig.bcVremenaLetnji);
   }
 
   List<String> get _vsVremena {
     final navType = navBarTypeNotifier.value;
-    String sezona;
-
-    switch (navType) {
-      case 'praznici':
-        sezona = 'praznici';
-        break;
-      case 'zimski':
-        sezona = 'zimski';
-        break;
-      case 'letnji':
-        sezona = 'letnji';
-        break;
-      default: // 'auto'
-        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
+    if (navType == 'praznici') {
+      return RouteConfig.vsVremenaPraznici;
+    } else if (navType == 'zimski') {
+      return RouteConfig.vsVremenaZimski;
+    } else {
+      return RouteConfig.vsVremenaLetnji;
     }
-
-    // Use RouteConfig for schedule times
-    return (sezona == 'praznici'
-        ? RouteConfig.vsVremenaPraznici
-        : sezona == 'zimski'
-            ? RouteConfig.vsVremenaZimski
-            : RouteConfig.vsVremenaLetnji);
   }
 
   List<String> get _sviPolasci {
@@ -372,7 +341,8 @@ class _VozacScreenState extends State<VozacScreen> {
     // ?? BATCH DOHVATI SVE�E PODATKE IZ BAZE - efikasnije od pojedinacnih poziva
     final putnikService = PutnikService();
     final ids = _optimizedRoute.where((p) => p.id != null).map((p) => p.id!).toList();
-    final sveziPutnici = await putnikService.getPutniciByIds(ids);
+    final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
+    final sveziPutnici = await putnikService.getPutniciByIds(ids, targetDan: targetDan);
 
     // ?? UJEDNACENO SA DANAS_SCREEN: Razdvoji pokupljene/otkazane/tude od preostalih
     final pokupljeniIOtkazani = sveziPutnici.where((p) {
@@ -1490,7 +1460,7 @@ class _VozacScreenState extends State<VozacScreen> {
                     bcVremena: bcVremenaToShow,
                     vsVremena: vsVremenaToShow,
                   );
-                case 'letnji':
+                default: // 'letnji' ili nepoznato
                   return BottomNavBarLetnji(
                     sviPolasci: _sviPolasci,
                     selectedGrad: _selectedGrad,
@@ -1501,28 +1471,6 @@ class _VozacScreenState extends State<VozacScreen> {
                     bcVremena: bcVremenaToShow,
                     vsVremena: vsVremenaToShow,
                   );
-                default: // 'auto'
-                  return isZimski(DateTime.now())
-                      ? BottomNavBarZimski(
-                          sviPolasci: _sviPolasci,
-                          selectedGrad: _selectedGrad,
-                          selectedVreme: _selectedVreme,
-                          getPutnikCount: getPutnikCount,
-                          getKapacitet: getKapacitet,
-                          onPolazakChanged: _onPolazakChanged,
-                          bcVremena: bcVremenaToShow,
-                          vsVremena: vsVremenaToShow,
-                        )
-                      : BottomNavBarLetnji(
-                          sviPolasci: _sviPolasci,
-                          selectedGrad: _selectedGrad,
-                          selectedVreme: _selectedVreme,
-                          getPutnikCount: getPutnikCount,
-                          getKapacitet: getKapacitet,
-                          onPolazakChanged: _onPolazakChanged,
-                          bcVremena: bcVremenaToShow,
-                          vsVremena: vsVremenaToShow,
-                        );
               }
             }
 

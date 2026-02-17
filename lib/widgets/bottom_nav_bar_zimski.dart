@@ -5,7 +5,6 @@ import '../constants/day_constants.dart';
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart'; // 🆕 Za border boju dodeljenog vozača
 import '../theme.dart';
-import '../utils/schedule_utils.dart';
 import '../utils/vozac_boja.dart'; // 🆕 Za border boju dodeljenog vozača
 
 class BottomNavBarZimski extends StatefulWidget {
@@ -62,10 +61,9 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
   void _scrollToSelected() {
     const double itemWidth = 60.0; // width + margin
 
-    // Automatska provera sezone
-    final jeZimski = isZimski(DateTime.now());
-    final bcVremena = widget.bcVremena ?? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji);
-    final vsVremena = widget.vsVremena ?? (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);
+    // Koristi prosleđena vremena ili fallback na Zimski raspored
+    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaZimski;
+    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaZimski;
 
     if (widget.selectedGrad == 'Bela Crkva') {
       final index = bcVremena.indexOf(widget.selectedVreme);
@@ -99,10 +97,9 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
 
   @override
   Widget build(BuildContext context) {
-    // Automatska provera sezone
-    final jeZimski = isZimski(DateTime.now());
-    final bcVremena = widget.bcVremena ?? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji);
-    final vsVremena = widget.vsVremena ?? (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);
+    // Koristi prosleđena vremena ili fallback na Zimski raspored
+    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaZimski;
+    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaZimski;
     final currentThemeId = ThemeManager().currentThemeId;
 
     return Container(

@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/route_config.dart';
 import '../globals.dart';
 import '../utils/grad_adresa_validator.dart';
-import '../utils/schedule_utils.dart';
 import 'realtime/realtime_manager.dart';
 
 /// 🎫 Servis za upravljanje kapacitetom polazaka
@@ -26,30 +25,24 @@ class KapacitetService {
   /// Vremena polazaka za Belu Crkvu (prema navBarType)
   static List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
-    switch (navType) {
-      case 'praznici':
-        return RouteConfig.bcVremenaPraznici;
-      case 'zimski':
-        return RouteConfig.bcVremenaZimski;
-      case 'letnji':
-        return RouteConfig.bcVremenaLetnji;
-      default: // 'auto'
-        return isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+    if (navType == 'praznici') {
+      return RouteConfig.bcVremenaPraznici;
+    } else if (navType == 'zimski') {
+      return RouteConfig.bcVremenaZimski;
+    } else {
+      return RouteConfig.bcVremenaLetnji;
     }
   }
 
   /// Vremena polazaka za Vršac (prema navBarType)
   static List<String> get vsVremena {
     final navType = navBarTypeNotifier.value;
-    switch (navType) {
-      case 'praznici':
-        return RouteConfig.vsVremenaPraznici;
-      case 'zimski':
-        return RouteConfig.vsVremenaZimski;
-      case 'letnji':
-        return RouteConfig.vsVremenaLetnji;
-      default: // 'auto'
-        return isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+    if (navType == 'praznici') {
+      return RouteConfig.vsVremenaPraznici;
+    } else if (navType == 'zimski') {
+      return RouteConfig.vsVremenaZimski;
+    } else {
+      return RouteConfig.vsVremenaLetnji;
     }
   }
 

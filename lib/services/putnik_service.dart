@@ -302,14 +302,18 @@ class PutnikService {
     }
   }
 
-  Future<List<Putnik>> getPutniciByIds(List<dynamic> ids) async {
+  Future<List<Putnik>> getPutniciByIds(List<dynamic> ids, {String? targetDan}) async {
     if (ids.isEmpty) return [];
     try {
       final res = await supabase
           .from('registrovani_putnici')
           .select(registrovaniFields)
           .inFilter('id', ids.map((id) => id.toString()).toList());
-      return res.map((row) => Putnik.fromRegistrovaniPutnici(row)).toList();
+
+      final dan = targetDan?.toLowerCase().substring(0, 3) ??
+          ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'][DateTime.now().weekday - 1];
+
+      return res.expand((row) => Putnik.fromRegistrovaniPutniciMultipleForDay(row, dan)).toList();
     } catch (_) {
       return [];
     }

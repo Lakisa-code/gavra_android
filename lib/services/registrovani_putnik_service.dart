@@ -641,9 +641,7 @@ class RegistrovaniPutnikService {
         // ❄️ Zimski režim Aware
         final isWinterDay = isWinterDate(datum);
         final String regionalKey = (grad == 'bc' || grad == 'bela crkva') ? 'bc' : 'vs';
-        final String effectiveKey = isWinterDay
-            ? (noviPodaciZaDan.containsKey('${regionalKey}2') ? '${regionalKey}2' : regionalKey)
-            : regionalKey;
+        final String effectiveKey = isWinterDay ? '${regionalKey}2' : regionalKey;
 
         final novoVremeStr = noviPodaciZaDan[effectiveKey]?.toString();
 

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../globals.dart';
 import '../../services/route_service.dart';
 import '../../services/theme_manager.dart';
-import '../../utils/schedule_utils.dart';
 
 /// UNIVERZALNI TIME PICKER CELL WIDGET
 /// Koristi se za prikaz i izbor vremena polaska (BC ili VS)
@@ -330,21 +329,14 @@ class TimePickerCell extends StatelessWidget {
     final navType = navBarTypeNotifier.value;
     List<String> vremena;
 
-    // Mapiramo sezonu iz navType
+    // Mapiramo sezonu iz navType (AUTO je uklonjen)
     String sezona;
-    switch (navType) {
-      case 'praznici':
-        sezona = 'praznici';
-        break;
-      case 'zimski':
-        sezona = 'zimski';
-        break;
-      case 'letnji':
-        sezona = 'letnji';
-        break;
-      default: // 'auto'
-        final jeZimski = isZimski(DateTime.now());
-        sezona = jeZimski ? 'zimski' : 'letnji';
+    if (navType == 'praznici') {
+      sezona = 'praznici';
+    } else if (navType == 'zimski') {
+      sezona = 'zimski';
+    } else {
+      sezona = 'letnji'; // Default fallback je letnji
     }
 
     // Učitaj vremena iz RouteService

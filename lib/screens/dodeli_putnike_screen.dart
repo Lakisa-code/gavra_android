@@ -14,7 +14,6 @@ import '../services/vreme_vozac_service.dart'; // ?? Per-vreme dodeljivanje
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_count_helper.dart';
-import '../utils/schedule_utils.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
@@ -60,57 +59,27 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     'Petak',
   ];
 
-  // ?? DINAMICKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
+  // 🕐 DINAMICKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
-    String sezona;
-
-    switch (navType) {
-      case 'praznici':
-        sezona = 'praznici';
-        break;
-      case 'zimski':
-        sezona = 'zimski';
-        break;
-      case 'letnji':
-        sezona = 'letnji';
-        break;
-      default: // 'auto'
-        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
+    if (navType == 'praznici') {
+      return RouteConfig.bcVremenaPraznici;
+    } else if (navType == 'zimski') {
+      return RouteConfig.bcVremenaZimski;
+    } else {
+      return RouteConfig.bcVremenaLetnji;
     }
-
-    // Koristi RouteConfig
-    return (sezona == 'praznici'
-        ? RouteConfig.bcVremenaPraznici
-        : sezona == 'zimski'
-            ? RouteConfig.bcVremenaZimski
-            : RouteConfig.bcVremenaLetnji);
   }
 
   List<String> get vsVremena {
     final navType = navBarTypeNotifier.value;
-    String sezona;
-
-    switch (navType) {
-      case 'praznici':
-        sezona = 'praznici';
-        break;
-      case 'zimski':
-        sezona = 'zimski';
-        break;
-      case 'letnji':
-        sezona = 'letnji';
-        break;
-      default: // 'auto'
-        sezona = isZimski(DateTime.now()) ? 'zimski' : 'letnji';
+    if (navType == 'praznici') {
+      return RouteConfig.vsVremenaPraznici;
+    } else if (navType == 'zimski') {
+      return RouteConfig.vsVremenaZimski;
+    } else {
+      return RouteConfig.vsVremenaLetnji;
     }
-
-    // Koristi RouteConfig
-    return (sezona == 'praznici'
-        ? RouteConfig.vsVremenaPraznici
-        : sezona == 'zimski'
-            ? RouteConfig.vsVremenaZimski
-            : RouteConfig.vsVremenaLetnji);
   }
 
   // ?? Svi polasci za BottomNavBar
@@ -1196,7 +1165,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           onPolazakChanged: _onPolazakChanged,
           selectedDan: _selectedDay,
         );
-      case 'letnji':
+      default: // 'letnji' ili nepoznato
         return BottomNavBarLetnji(
           sviPolasci: _sviPolasci,
           selectedGrad: _selectedGrad,
@@ -1206,26 +1175,6 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           onPolazakChanged: _onPolazakChanged,
           selectedDan: _selectedDay,
         );
-      default: // 'auto'
-        return isZimski(now)
-            ? BottomNavBarZimski(
-                sviPolasci: _sviPolasci,
-                selectedGrad: _selectedGrad,
-                selectedVreme: _selectedVreme,
-                getPutnikCount: _getPutnikCount,
-                getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                onPolazakChanged: _onPolazakChanged,
-                selectedDan: _selectedDay,
-              )
-            : BottomNavBarLetnji(
-                sviPolasci: _sviPolasci,
-                selectedGrad: _selectedGrad,
-                selectedVreme: _selectedVreme,
-                getPutnikCount: _getPutnikCount,
-                getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
-                onPolazakChanged: _onPolazakChanged,
-                selectedDan: _selectedDay,
-              );
     }
   }
 }
