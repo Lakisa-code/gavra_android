@@ -1925,6 +1925,7 @@ class _PutnikCardState extends State<PutnikCard> {
           _putnik.id!,
           widget.currentDriver,
           grad: _putnik.grad,
+          vreme: _putnik.polazak,
           selectedDan: _putnik.dan,
         );
 
