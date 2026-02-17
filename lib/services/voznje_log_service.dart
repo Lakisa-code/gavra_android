@@ -160,20 +160,35 @@ class VoznjeLogService {
     }
   }
 
-  /// 🔍 DETALJI O POKUPLJENIM PUTNICIMA (SSOT) - Vraća Map: putnik_id -> {vozac_id, created_at}
+  /// 🔍 DETALJI O POKUPLJENIM PUTNICIMA (SSOT) - Vraća Map: putnik_id -> {vozac_id, created_at, meta}
   static Future<Map<String, Map<String, dynamic>>> getPickedUpLogData({required String datumStr}) async {
     try {
       final response = await _supabase
           .from('voznje_log')
-          .select('putnik_id, vozac_id, created_at')
+          .select('putnik_id, vozac_id, created_at, meta')
           .eq('datum', datumStr)
           .eq('tip', 'voznja');
 
       final Map<String, Map<String, dynamic>> res = {};
       for (var l in (response as List)) {
-        res[l['putnik_id'].toString()] = {
+        final pid = l['putnik_id'].toString();
+        final meta = l['meta'] as Map<String, dynamic>?;
+        final grad = meta?['grad']?.toString().toLowerCase();
+        final vreme = meta?['vreme']?.toString();
+
+        // Kreiramo kompozitni ključ za precizno mapiranje (putnik + grad + vreme)
+        // Ako nema meta podataka (stari logovi), koristimo samo putnik_id
+        String key = pid;
+        if (grad != null && vreme != null) {
+          // Normalizujemo vreme na HH:mm format za lakše poređenje
+          final normVreme = vreme.length > 5 ? vreme.substring(0, 5) : vreme;
+          key = "$pid|$grad|$normVreme";
+        }
+
+        res[key] = {
           'vozac_id': l['vozac_id'],
           'created_at': l['created_at'],
+          'meta': meta,
         };
       }
       return res;
@@ -188,15 +203,27 @@ class VoznjeLogService {
     required String putnikId,
     required String datum,
     required String tip,
+    String? grad,
+    String? vreme,
   }) async {
     try {
-      return await _supabase
+      var query = _supabase
           .from('voznje_log')
           .select('id')
           .eq('putnik_id', putnikId)
           .eq('datum', datum)
-          .eq('tip', tip)
-          .maybeSingle();
+          .eq('tip', tip);
+
+      if (grad != null) {
+        query = query.eq('meta->>grad', grad.toLowerCase());
+      }
+      if (vreme != null) {
+        // Normalizacija vremena za pretragu
+        final normVreme = vreme.length > 5 ? vreme.substring(0, 5) : vreme;
+        query = query.eq('meta->>vreme', normVreme);
+      }
+
+      return await query.maybeSingle();
     } catch (e) {
       return null;
     }
@@ -752,10 +779,20 @@ class VoznjeLogService {
     String? tipPlacanja,
     String? status,
     String? datum, // NOVO: Mogućnost prosleđivanja specifičnog datuma
+    String? grad,
+    String? vreme,
   }) async {
     try {
       final now = DateTime.now();
       final datumStr = datum ?? now.toIso8601String().split('T')[0];
+
+      // Priprema meta podataka
+      final Map<String, dynamic> finalMeta = Map.from(meta ?? {});
+      if (grad != null) finalMeta['grad'] = grad.toLowerCase();
+      if (vreme != null) {
+        finalMeta['vreme'] = vreme.length > 5 ? vreme.substring(0, 5) : vreme;
+      }
+
       await _supabase.from('voznje_log').insert({
         'tip': tip,
         'putnik_id': putnikId,
@@ -764,7 +801,7 @@ class VoznjeLogService {
         'broj_mesta': brojMesta,
         'datum': datumStr,
         'detalji': detalji,
-        'meta': meta,
+        'meta': finalMeta.isEmpty ? null : finalMeta,
         'placeni_mesec': now.month,
         'placena_godina': now.year,
         'sati_pre_polaska': satiPrePolaska,

@@ -1928,6 +1928,8 @@ class _PutnikCardState extends State<PutnikCard> {
           grad: _putnik.grad,
           vreme: _putnik.polazak,
           selectedDan: _putnik.dan,
+          datum: _putnik.datum,
+          requestId: _putnik.requestId,
         );
 
         if (mounted) {
@@ -2030,6 +2032,8 @@ class _PutnikCardState extends State<PutnikCard> {
           grad: _putnik.grad,
           vreme: _putnik.polazak,
           selectedDan: _putnik.dan,
+          datum: _putnik.datum,
+          requestId: _putnik.requestId,
           status: 'otkazano',
         );
 

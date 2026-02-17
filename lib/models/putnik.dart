@@ -77,6 +77,7 @@ class Putnik {
     this.otkazanZaPolazak =
         false, // ?? Da li je otkazan za ovaj specificni polazak (grad)
     this.vozacId, // 🆕 UUID vozača iz seat_requests
+    this.requestId, // 🆕 ID konkretnog seat_request zapisa
   });
 
   factory Putnik.fromMap(Map<String, dynamic> map) {
@@ -160,6 +161,7 @@ class Putnik {
   final String? tipPutnika; // ?? Tip putnika: radnik, ucenik, dnevni
   final bool otkazanZaPolazak; // ?? Da li je otkazan za ovaj polazak
   final String? vozacId; // 🆕 UUID vozača iz seat_requests
+  final String? requestId; // 🆕 ID konkretnog seat_request-a
 
   factory Putnik.fromSeatRequest(Map<String, dynamic> req,
       {Map<String, dynamic>? profile}) {
@@ -229,6 +231,7 @@ class Putnik {
       vozacId: req['vozac_id'],
       dodeljenVozac:
           VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']),
+      requestId: req['id']?.toString(), // ✅ DODATO: ID seat_request-a
     );
   }
 
@@ -329,7 +332,7 @@ class Putnik {
   bool get jeDodeljenVozacu =>
       dodeljenVozac != null && dodeljenVozac!.isNotEmpty;
 
-  // ? FIX: Citaj UUID vozača iz seat_requests (nova arhitektura)
+  // ? FIX: Citaj UUID vozaža iz seat_requests (nova arhitektura)
   String? get vozacUuid =>
       vozacId ??
       (dodeljenVozac != null && dodeljenVozac!.isNotEmpty
@@ -853,6 +856,7 @@ class Putnik {
     String? tipPutnika,
     bool? otkazanZaPolazak,
     String? vozacId,
+    String? requestId,
   }) {
     return Putnik(
       id: id ?? this.id,
@@ -885,6 +889,7 @@ class Putnik {
       tipPutnika: tipPutnika ?? this.tipPutnika,
       otkazanZaPolazak: otkazanZaPolazak ?? this.otkazanZaPolazak,
       vozacId: vozacId ?? this.vozacId,
+      requestId: requestId ?? this.requestId,
     );
   }
 

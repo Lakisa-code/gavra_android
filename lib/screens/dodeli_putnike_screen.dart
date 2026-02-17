@@ -1172,12 +1172,13 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     int uspesno = 0;
     int greska = 0;
 
+    final targetDate = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
     for (final id in _selectedPutnici.toList()) {
       try {
         await _putnikService.otkaziPutnika(id, 'Admin',
+            datum: targetDate,
             selectedVreme: _selectedVreme,
-            selectedGrad: _selectedGrad,
-            selectedDan: _selectedDay);
+            selectedGrad: _selectedGrad);
         uspesno++;
         // Cekaj izmedu operacija da se baza a�urira
         await Future.delayed(const Duration(milliseconds: 100));
