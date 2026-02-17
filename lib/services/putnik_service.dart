@@ -36,11 +36,13 @@ class PutnikService {
     if (controller != null && !controller.isClosed) controller.close();
     _realtimeSubscriptions[key]?.cancel();
     _realtimeSubscriptions['$key:log']?.cancel(); // Nova pretplata na logove
+    _realtimeSubscriptions['$key:registrovani']?.cancel(); // Nova pretplata na registrovane
     _streams.remove(key);
     _lastValues.remove(key);
     _streamParams.remove(key);
     _realtimeSubscriptions.remove(key);
     _realtimeSubscriptions.remove('$key:log');
+    _realtimeSubscriptions.remove('$key:registrovani');
   }
 
   String _streamKey({String? isoDate, String? grad, String? vreme}) => '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
@@ -150,6 +152,7 @@ class PutnikService {
       String key, String? isoDate, String? grad, String? vreme, StreamController<List<Putnik>> controller) {
     _realtimeSubscriptions[key]?.cancel();
     _realtimeSubscriptions['$key:log']?.cancel();
+    _realtimeSubscriptions['$key:registrovani']?.cancel();
 
     // Refresh when seat_requests change for the target date
     _realtimeSubscriptions[key] = RealtimeManager.instance.subscribe('seat_requests').listen((payload) {
@@ -160,6 +163,12 @@ class PutnikService {
     // Refresh when voznje_log change (pokupljanja, naplate)
     _realtimeSubscriptions['$key:log'] = RealtimeManager.instance.subscribe('voznje_log').listen((payload) {
       debugPrint('🔄 [PutnikService] Realtime UPDATE (voznje_log): ${payload.eventType}');
+      _doFetchForStream(key, isoDate, grad, vreme, controller);
+    });
+
+    // Refresh when registrovani_putnici change (polazak updates, etc.)
+    _realtimeSubscriptions['$key:registrovani'] = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+      debugPrint('🔄 [PutnikService] Realtime UPDATE (registrovani_putnici): ${payload.eventType}');
       _doFetchForStream(key, isoDate, grad, vreme, controller);
     });
   }
