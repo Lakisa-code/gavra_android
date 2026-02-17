@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/haptic_service.dart';
@@ -1851,130 +1852,6 @@ class _PutnikCardState extends State<PutnikCard> {
     );
   }
 
-  // ?? OTKAZIVANJE - izdvojeno u funkciju
-  Future<void> _handleOtkazivanje() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.outline,
-            width: 2,
-          ),
-        ),
-        title: Text(
-          'Otkazivanje putnika',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Da li ste sigurni da �elite da oznacite ovog putnika kao otkazanog?',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        actions: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.grey.shade400,
-                  Colors.grey.shade600,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text(
-                'Ne',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: TripleBlueFashionStyles.gradientButton,
-            child: TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text(
-                'Da',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await PutnikService().otkaziPutnika(
-          _putnik.id!,
-          widget.currentDriver, // 🆕 Dodato vozač kao pozicioni
-          grad: _putnik.grad,
-          vreme: _putnik.polazak,
-        );
-
-        // A�uriraj lokalni _putnik sa novim statusom
-        if (mounted) {
-          setState(() {
-            _putnik = Putnik(
-              id: _putnik.id,
-              ime: _putnik.ime,
-              polazak: _putnik.polazak,
-              pokupljen: _putnik.pokupljen,
-              vremeDodavanja: _putnik.vremeDodavanja,
-              mesecnaKarta: _putnik.mesecnaKarta,
-              dan: _putnik.dan,
-              status: _putnik.status,
-              statusVreme: _putnik.statusVreme,
-              vremePokupljenja: _putnik.vremePokupljenja,
-              vremePlacanja: _putnik.vremePlacanja,
-              placeno: _putnik.placeno,
-              cena: _putnik.cena,
-              naplatioVozac: _putnik.naplatioVozac,
-              pokupioVozac: _putnik.pokupioVozac,
-              dodeljenVozac: _putnik.dodeljenVozac,
-              vozac: _putnik.vozac,
-              grad: _putnik.grad,
-              otkazaoVozac: widget.currentDriver,
-              vremeOtkazivanja: DateTime.now(),
-              adresa: _putnik.adresa,
-              adresaId: _putnik.adresaId,
-              obrisan: _putnik.obrisan,
-              brojTelefona: _putnik.brojTelefona,
-              brojMesta: _putnik.brojMesta,
-              tipPutnika: _putnik.tipPutnika,
-              otkazanZaPolazak: true,
-            );
-          });
-        }
-
-        // Pozovi parent callback da se lista ponovo sortira
-        if (widget.onChanged != null) {
-          widget.onChanged!();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-          );
-        }
-      }
-    }
-  }
-
   // ?? BEZ POLASKA - Postavi polazak na null (kao "Bez polaska" opcija)
   Future<void> _handleBezPolaska() async {
     final confirm = await showDialog<bool>(
@@ -2043,33 +1920,147 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (confirm == true) {
       try {
-        // Kreiraj kopiju putnika sa polazak = null
-        final updatedPutnik = _putnik.copyWith(polazak: null);
-
-        // Sačuvaj u bazu
-        await PutnikService().savePutnikToCorrectTable(updatedPutnik);
-
-        // Ažuriraj lokalni _putnik
-        if (mounted) {
-          setState(() {
-            _putnik = updatedPutnik;
-          });
-        }
-
-        // Pozovi parent callback da se lista ponovo sortira
-        if (widget.onChanged != null) {
-          widget.onChanged!();
-        }
+        // Ukloni polazak za ovaj termin - to će sakriti putnika iz liste (status: bez_polaska)
+        await PutnikService().ukloniPolazak(
+          _putnik.id!,
+          widget.currentDriver,
+          grad: _putnik.grad,
+          selectedDan: _putnik.dan,
+        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vreme polaska je uklonjeno')),
+            const SnackBar(
+              content: Text('Vreme polaska je uklonjeno za danas.'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+          // Osvježi lokalno stanje
+          setState(() {
+            _putnik = _putnik.copyWith(status: 'bez_polaska');
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Greška: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // ?? OTKAZIVANJE - izdvojeno u funkciju
+  Future<void> _handleOtkazivanje() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 2,
+          ),
+        ),
+        title: Text(
+          'Otkazivanje putnika',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Da li ste sigurni da �elite da oznacite ovog putnika kao otkazanog?',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        actions: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.grey.shade400,
+                  Colors.grey.shade600,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text(
+                'Ne',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: TripleBlueFashionStyles.gradientButton,
+            child: TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text(
+                'Da',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        // Otkaži seat_request za ovaj termin - postavi status 'otkazano' i upiši u voznje_log
+        await PutnikService().otkaziPutnika(
+          _putnik.id!,
+          widget.currentDriver,
+          grad: _putnik.grad,
+          vreme: _putnik.polazak,
+          selectedDan: _putnik.dan,
+          status: 'otkazano',
+        );
+
+        // Dodaj u voznje_log kao otkazivanje (za statistike)
+        final vozacId = await VozacMappingService.getVozacUuid(widget.currentDriver);
+
+        await supabase.from('voznje_log').insert({
+          'putnik_id': _putnik.id!.toString(),
+          'datum': _putnik.datum ?? DateTime.now().toIso8601String().split('T')[0],
+          'tip': 'otkazivanje',
+          'iznos': 0,
+          'vozac_id': vozacId,
+        });
+
+        // Ažuriraj lokalni _putnik sa novim statusom
+        if (mounted) {
+          setState(() {
+            _putnik = _putnik.copyWith(status: 'otkazano');
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Putnik označen kao otkazan.'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text('Greška: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
           );
         }
       }

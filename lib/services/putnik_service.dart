@@ -91,7 +91,7 @@ class PutnikService {
           .from('seat_requests')
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .eq('datum', todayDate)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
 
       // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
       final logs = await supabase.from('voznje_log').select('putnik_id').eq('datum', todayDate).eq('tip', 'voznja');
@@ -117,7 +117,7 @@ class PutnikService {
           .from('seat_requests')
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .eq('datum', todayDate)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
 
       if (grad != null) {
         query = query.ilike('grad', grad.toLowerCase() == 'vrsac' || grad.toLowerCase() == 'vršac' ? 'vs' : 'bc');
@@ -211,7 +211,7 @@ class PutnikService {
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .inFilter('putnik_id', ids.map((id) => id.toString()).toList())
           .eq('datum', danasStr)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
 
       return (res as List).map((row) => Putnik.fromSeatRequest(row)).toList();
     } catch (e) {
@@ -229,7 +229,7 @@ class PutnikService {
           .from('seat_requests')
           .select('*, registrovani_putnici!inner($registrovaniFields)')
           .eq('datum', danasStr)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
 
       return (res as List).map((row) => Putnik.fromSeatRequest(row)).toList();
     } catch (e) {
@@ -340,6 +340,46 @@ class PutnikService {
 
   String nowToString() => DateTime.now().toUtc().toIso8601String();
 
+  Future<void> ukloniPolazak(
+    dynamic id,
+    String? driver, {
+    String? grad,
+    String? vreme,
+    String? selectedDan,
+  }) async {
+    debugPrint('🗑️ [PutnikService] ukloniPolazak: id=$id, grad=$grad, dan=$selectedDan');
+
+    final dateStr = selectedDan != null
+        ? app_date_utils.DateUtils.getIsoDateForDay(selectedDan)
+        : DateTime.now().toIso8601String().split('T')[0];
+    final gradKey = (grad?.toLowerCase().contains('vr') ?? false || grad?.toLowerCase() == 'vs') ? 'VS' : 'BC';
+
+    try {
+      // 1. Mark as bez_polaska in seat_requests
+      final res = await supabase
+          .from('seat_requests')
+          .update({
+            'status': 'bez_polaska',
+            'processed_at': DateTime.now().toUtc().toIso8601String(),
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('putnik_id', id.toString())
+          .eq('datum', dateStr)
+          .eq('grad', gradKey)
+          .select();
+
+      debugPrint('🗑️ [PutnikService] ukloniPolazak (seat_requests): updated ${res.length} rows');
+
+      // 2. Also clear from template in registrovani_putnici (Optional but user wants them separated)
+      // Note: Since you pointed out that radni_dani columns might be gone, we might just update the metadata
+      await supabase.from('registrovani_putnici').update({
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', id.toString());
+    } catch (e) {
+      debugPrint('❌ [PutnikService] ukloniPolazak ERROR: $e');
+    }
+  }
+
   Future<void> otkaziPutnika(
     dynamic id,
     String? driver, {
@@ -348,7 +388,10 @@ class PutnikService {
     String? selectedDan,
     String? selectedVreme,
     String? selectedGrad,
+    String status = 'otkazano', // Change default to otkazano
   }) async {
+    debugPrint('🛑 [PutnikService] otkaziPutnika called: id=$id, status=$status');
+
     final finalDan = selectedDan;
     final finalVreme = selectedVreme ?? vreme;
     final finalGrad = selectedGrad ?? grad;
@@ -359,16 +402,45 @@ class PutnikService {
     final gradKey =
         (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'VS' : 'BC';
 
-    await supabase
-        .from('seat_requests')
-        .update({
-          'status': 'otkazano',
-          'processed_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('putnik_id', id)
-        .eq('datum', dateStr)
-        .eq('grad', gradKey)
-        .eq('zeljeno_vreme', '${GradAdresaValidator.normalizeTime(finalVreme)}:00');
+    final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
+    debugPrint('🛑 [PutnikService] otkaziPutnika: dateStr=$dateStr, gradKey=$gradKey, time=$normalizedTime');
+
+    try {
+      // Robust matching: find by id, datum, grad. Filter by time if possible.
+      var query = supabase.from('seat_requests').update({
+        'status': status,
+        'processed_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).match({
+        'putnik_id': id.toString(),
+        'datum': dateStr,
+        'grad': gradKey,
+      });
+
+      if (normalizedTime.isNotEmpty) {
+        // Try specific time first
+        final withTime = await query.eq('zeljeno_vreme', '$normalizedTime:00').select();
+        if (withTime.isNotEmpty) {
+          debugPrint('🛑 [PutnikService] otkaziPutnika SUCCESS (exact time): ${withTime.length} rows');
+          return;
+        }
+      }
+
+      // Fallback: update any request for that day/grad if exact time failed or was empty
+      final withoutTime = await supabase.from('seat_requests').update({
+        'status': status,
+        'processed_at': DateTime.now().toUtc().toIso8601String(),
+      }).match({
+        'putnik_id': id.toString(),
+        'datum': dateStr,
+        'grad': gradKey,
+      }).select();
+
+      debugPrint('🛑 [PutnikService] otkaziPutnika SUCCESS (fallback): ${withoutTime.length} rows');
+    } catch (e) {
+      debugPrint('❌ [PutnikService] otkaziPutnika ERROR: $e');
+      rethrow;
+    }
   }
 
   Future<void> oznaciPlaceno(

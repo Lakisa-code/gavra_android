@@ -192,7 +192,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           .select()
           .eq('putnik_id', putnikId)
           .gte('datum', DateTime.now().subtract(const Duration(days: 1)).toIso8601String())
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano']);
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
 
       if (mounted) {
         setState(() {
@@ -212,18 +212,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       await _refreshPutnikData();
       await _loadActiveRequests();
 
-      // Check if any seat request in payload newRecord was approved/rejected
-      final newData = payload.newRecord;
-      if (newData.isNotEmpty && newData['status'] != null) {
-        final status = newData['status'].toString();
-        if (status == 'approved' || status == 'confirmed') {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('✅ Vaš zahtev za sedište je odobren!')),
-            );
-          }
-        }
-      }
+      // ⚠️ FIX: Uklonjen snackbar odavde jer se aktivirao na svaku promenu profila
+      // ako je globalni status putnika bio 'approved'
     } catch (e) {
       debugPrint('❌ [Realtime] Greška pri obradi: $e');
     }
