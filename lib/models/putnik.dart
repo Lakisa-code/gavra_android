@@ -535,9 +535,8 @@ class Putnik {
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: mesecnaKarta, // ?? FIX: koristi izracunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status: (status == 'bolovanje' || status == 'godisnji')
-              ? status
-              : (bcOtkazan ? 'otkazan' : (bcStatus ?? status)),
+          status:
+              (status == 'bolovanje' || status == 'godisnji') ? status : (bcOtkazan ? 'otkazan' : (bcStatus ?? status)),
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaBC, // ? NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaBC, // ? FIX: Citaj iz JSON-a za BC
@@ -599,9 +598,8 @@ class Putnik {
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: mesecnaKarta, // ?? FIX: koristi izracunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status: (status == 'bolovanje' || status == 'godisnji')
-              ? status
-              : (vsOtkazan ? 'otkazan' : (vsStatus ?? status)),
+          status:
+              (status == 'bolovanje' || status == 'godisnji') ? status : (vsOtkazan ? 'otkazan' : (vsStatus ?? status)),
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenjaVS, // ? NOVO: Iz polasci_po_danu
           vremePlacanja: vremePlacanjaVS, // ? FIX: Citaj iz JSON-a za VS
