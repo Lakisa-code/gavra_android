@@ -167,7 +167,8 @@ class PutnikService {
     });
 
     // Refresh when registrovani_putnici change (polazak updates, etc.)
-    _realtimeSubscriptions['$key:registrovani'] = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+    _realtimeSubscriptions['$key:registrovani'] =
+        RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
       debugPrint('🔄 [PutnikService] Realtime UPDATE (registrovani_putnici): ${payload.eventType}');
       _doFetchForStream(key, isoDate, grad, vreme, controller);
     });
@@ -366,7 +367,8 @@ class PutnikService {
         })
         .eq('putnik_id', id)
         .eq('datum', dateStr)
-        .eq('grad', gradKey);
+        .eq('grad', gradKey)
+        .eq('zeljeno_vreme', '${GradAdresaValidator.normalizeTime(finalVreme)}:00');
   }
 
   Future<void> oznaciPlaceno(
