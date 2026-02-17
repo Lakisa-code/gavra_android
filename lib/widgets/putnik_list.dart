@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
 import '../utils/putnik_helpers.dart';
@@ -64,7 +64,9 @@ class PutnikList extends StatelessWidget {
     }
 
     // 🔘 SIVI - Tuđi putnici (dodeljen DRUGOM vozaču) - NEPOKUPLJENI
-    final bool isTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != currentDriver;
+    final bool isTudji = p.dodeljenVozac != null &&
+        p.dodeljenVozac!.isNotEmpty &&
+        p.dodeljenVozac != currentDriver;
     if (isTudji) {
       return 3; // sivi - tuđi putnici
     }
@@ -154,8 +156,10 @@ class PutnikList extends StatelessWidget {
           // SORTIRANJE: Ako ima sivih: Moji → Nedodeljeni → Sivi → ostali
           // Ako nema sivih: Svi beli alfabetski → ostali
           filteredPutnici.sort((a, b) {
-            final aSortKey = _putnikSortKey(a, currentDriver, imaSivih: imaSivih);
-            final bSortKey = _putnikSortKey(b, currentDriver, imaSivih: imaSivih);
+            final aSortKey =
+                _putnikSortKey(a, currentDriver, imaSivih: imaSivih);
+            final bSortKey =
+                _putnikSortKey(b, currentDriver, imaSivih: imaSivih);
 
             final cmp = aSortKey.compareTo(bSortKey);
             if (cmp != 0) return cmp;
@@ -248,7 +252,15 @@ class PutnikList extends StatelessWidget {
         }
 
         // Spoji sve grupe: MOJI → NEDODELJENI → SIVI (tuđi) → PLAVI → ZELENI → CRVENI → ŽUTI
-        final prikaz = [...moji, ...nedodeljeni, ...sivi, ...plavi, ...zeleni, ...crveni, ...zuti];
+        final prikaz = [
+          ...moji,
+          ...nedodeljeni,
+          ...sivi,
+          ...plavi,
+          ...zeleni,
+          ...crveni,
+          ...zuti
+        ];
 
         if (prikaz.isEmpty) {
           return const Center(child: Text('Nema putnika za prikaz.'));

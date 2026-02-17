@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import '../models/seat_request.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (seat_requests tabela)
 class SeatRequestService {
@@ -17,6 +18,7 @@ class SeatRequestService {
     required String grad,
     int brojMesta = 1,
     String status = 'pending',
+    int priority = 1,
     String? fixedDate, // 📅 Opciono: Tačan datum ako nije potreban proračun sutrašnjice
   }) async {
     try {
@@ -40,6 +42,7 @@ class SeatRequestService {
         'zeljeno_vreme': vreme,
         'status': status,
         'broj_mesta': brojMesta,
+        'priority': priority,
       });
       debugPrint('✅ [SeatRequestService] Inserted for $grad $vreme on $dan (Datum: $datumStr)');
     } catch (e) {
@@ -48,22 +51,25 @@ class SeatRequestService {
   }
 
   /// Dohvata aktivne zahteve
-  static Future<List<Map<String, dynamic>>> getActiveRequests() async {
+  static Future<List<SeatRequest>> getActiveRequests() async {
     try {
       final response = await _supabase.from('seat_requests').select().order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
+      return (response as List).map((json) => SeatRequest.fromJson(json)).toList();
     } catch (e) {
+      debugPrint('❌ [SeatRequestService] Error getting active requests: $e');
       return [];
     }
   }
 
   /// Dohvata aktivne zahteve sa statusom 'manual' za admina
+  /// Vraća listu mapa jer sadrži podatke iz join-a (registrovani_putnici)
   static Future<List<Map<String, dynamic>>> getManualRequests() async {
     try {
       final response = await _supabase
           .from('seat_requests')
           .select('*, registrovani_putnici(putnik_ime, broj_telefona)')
-          .eq('status', 'manual');
+          .eq('status', 'manual')
+          .order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -78,6 +84,7 @@ class SeatRequestService {
       await _supabase.from('seat_requests').update({
         'status': 'approved',
         'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'processed_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
 
       return true;
@@ -93,6 +100,7 @@ class SeatRequestService {
       await _supabase.from('seat_requests').update({
         'status': 'rejected',
         'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'processed_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
 
       return true;
@@ -103,28 +111,35 @@ class SeatRequestService {
   }
 
   /// Stream za manual zahteve (realtime)
-  static Stream<List<Map<String, dynamic>>> streamManualRequests() {
+  static Stream<List<SeatRequest>> streamManualRequests() {
     return _supabase
         .from('seat_requests')
         .stream(primaryKey: ['id'])
         .eq('status', 'manual')
         .order('created_at', ascending: false)
-        .map((data) => List<Map<String, dynamic>>.from(data));
+        .map((data) => data.map((json) => SeatRequest.fromJson(json)).toList());
   }
 
   /// 🔢 Stream za broj manual zahteva (za bedž na Home ekranu)
   static Stream<int> streamManualRequestCount() {
-    return streamManualRequests().map((list) => list.length);
+    return _supabase.from('seat_requests').stream(primaryKey: ['id']).eq('status', 'manual').map((list) => list.length);
   }
 
   /// 🤖 POKREĆE DIGITALNOG DISPEČERA U BAZI
   static Future<int> triggerDigitalDispecer() async {
     try {
-      final List<dynamic> response = await _supabase.rpc('dispecer_cron_obrada');
-      return response.length;
+      // Poziva funkciju koja obrađuje sve 'pending' zahteve
+      final response = await _supabase.rpc('obradi_sve_pending_zahteve');
+      return (response as List).length;
     } catch (e) {
-      debugPrint('❌ [SeatRequestService] Error triggering digital dispecer: $e');
-      return 0;
+      // Alternativni poziv ako prva funkcija ne postoji (legacy fallback)
+      try {
+        final response = await _supabase.rpc('dispecer_cron_obrada');
+        return (response as List).length;
+      } catch (e2) {
+        debugPrint('❌ [SeatRequestService] Error triggering digital dispecer: $e / $e2');
+        return 0;
+      }
     }
   }
 

@@ -87,7 +87,8 @@ class CenaObracunService {
       if (records.isEmpty) return 0;
 
       final jeDnevni = tip.toLowerCase() == 'dnevni';
-      final jePosiljka = tip.toLowerCase() == 'posiljka' || tip.toLowerCase() == 'pošiljka';
+      final jePosiljka =
+          tip.toLowerCase() == 'posiljka' || tip.toLowerCase() == 'pošiljka';
 
       // Ako je DNEVNI ili POSILJKA, brojimo SVAKO POKUPLJENJE (ali uzimamo u obzir broj mesta!)
       if (jeDnevni || jePosiljka) {
@@ -212,7 +213,8 @@ class CenaObracunService {
       'putnikIme': putnik.putnikIme,
       'tip': putnik.tip,
       'cenaPoDanu': cenaPoUnit,
-      'brojDanaSaPokupljenjima': brojJedinica, // Zadržavamo ključ zbog UI kompatibilnosti
+      'brojDanaSaPokupljenjima':
+          brojJedinica, // Zadržavamo ključ zbog UI kompatibilnosti
       'izracunataCena': izracunataCena,
       'customCenaPoDanu': putnik.cenaPoDanu,
       'imaCustomCenu': imaCustomCenu,

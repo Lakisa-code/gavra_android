@@ -50,7 +50,8 @@ class AuthManager {
 
       // Fallback: Ako VozacBoja nema podatke, probaj direktno iz baze
       if (vozacId == null) {
-        debugPrint('🔄 [AuthManager] VozacBoja nema podatke, koristim direktno iz baze...');
+        debugPrint(
+            '🔄 [AuthManager] VozacBoja nema podatke, koristim direktno iz baze...');
 
         // Direktno iz baze
         try {
@@ -60,12 +61,14 @@ class AuthManager {
             debugPrint('🔄 [AuthManager] Vozac_id dobijen direktno: $vozacId');
           }
         } catch (e) {
-          debugPrint('⚠️ [AuthManager] VozacBoja inicijalizacija neuspešna: $e');
+          debugPrint(
+              '⚠️ [AuthManager] VozacBoja inicijalizacija neuspešna: $e');
         }
 
         // Ako i dalje nema podataka, probaj direktno iz baze
         if (vozacId == null) {
-          debugPrint('🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
+          debugPrint(
+              '🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
           try {
             final response = await supabase
                 .from('vozaci')
@@ -86,14 +89,16 @@ class AuthManager {
 
       // Registruj tokene samo ako je vozač uspešno identifikovan
       if (vozacId == null || vozacId.isEmpty || driverName.isEmpty) {
-        debugPrint('⚠️ [AuthManager] Vozač nije ulogovan ili identifikovan - preskačem registraciju tokena');
+        debugPrint(
+            '⚠️ [AuthManager] Vozač nije ulogovan ili identifikovan - preskačem registraciju tokena');
         return;
       }
 
       // 1. Pokušaj FCM token (Google/Samsung uređaji)
       final fcmToken = await FirebaseService.getFCMToken();
       if (fcmToken != null && fcmToken.isNotEmpty) {
-        debugPrint('🔄 [AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
+        debugPrint(
+            '🔄 [AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
         final success = await PushTokenService.registerToken(
           token: fcmToken,
           provider: 'fcm',
@@ -101,7 +106,8 @@ class AuthManager {
           userId: driverName,
           vozacId: vozacId,
         );
-        debugPrint('🔄 [AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
+        debugPrint(
+            '🔄 [AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
       }
 
       // 2. Pokušaj HMS token (Huawei uređaji)
@@ -109,7 +115,8 @@ class AuthManager {
       try {
         final hmsToken = await HuaweiPushService().getHMSToken();
         if (hmsToken != null && hmsToken.isNotEmpty) {
-          debugPrint('🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
+          debugPrint(
+              '🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
           final success = await PushTokenService.registerToken(
             token: hmsToken,
             provider: 'huawei',
@@ -117,9 +124,11 @@ class AuthManager {
             userId: driverName,
             vozacId: vozacId,
           );
-          debugPrint('🔄 [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
+          debugPrint(
+              '🔄 [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
         } else {
-          debugPrint('🔄 [AuthManager] HMS token nije dostupan (token je null/prazan)');
+          debugPrint(
+              '🔄 [AuthManager] HMS token nije dostupan (token je null/prazan)');
         }
       } catch (e) {
         // HMS nije dostupan na ovom uređaju - OK
@@ -309,7 +318,8 @@ class AuthManager {
       final deviceInfo = DeviceInfoPlugin();
       if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
-        deviceId = '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
+        deviceId =
+            '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         deviceId = '${iosInfo.identifierForVendor}_${iosInfo.model}';

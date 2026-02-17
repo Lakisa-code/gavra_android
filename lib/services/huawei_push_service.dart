@@ -138,7 +138,8 @@ class HuaweiPushService {
           debugPrint('📱 [HuaweiPush] Failed to request token: $e');
           // If we get error 907135000, HMS is not available
           if (e.toString().contains('907135000')) {
-            debugPrint('📱 [HuaweiPush] HMS Core not available (error 907135000), skipping Huawei Push');
+            debugPrint(
+                '📱 [HuaweiPush] HMS Core not available (error 907135000), skipping Huawei Push');
             _initialized = true;
             _initializing = false;
             return null;
@@ -152,13 +153,16 @@ class HuaweiPushService {
       // non-null stream value so that initialization can report a token when
       // one is available immediately after startup.
       try {
-        debugPrint('📱 [HuaweiPush] Waiting for token on stream (5s timeout)...');
+        debugPrint(
+            '📱 [HuaweiPush] Waiting for token on stream (5s timeout)...');
         // Wait longer for the token to appear on the stream, as the SDK may
         // emit the token with a delay while contacting Huawei servers.
         // 🛡️ SMANJEN TIMEOUT sa 15 na 5 sekundi
-        final firstValue = await Push.getTokenStream.first.timeout(const Duration(seconds: 5));
+        final firstValue =
+            await Push.getTokenStream.first.timeout(const Duration(seconds: 5));
         if (firstValue.isNotEmpty) {
-          debugPrint('📱 [HuaweiPush] Token received on stream: ${firstValue.substring(0, 10)}...');
+          debugPrint(
+              '📱 [HuaweiPush] Token received on stream: ${firstValue.substring(0, 10)}...');
           _currentToken = firstValue;
           await _registerTokenWithServer(firstValue);
           _initialized = true;
@@ -170,8 +174,10 @@ class HuaweiPushService {
       } catch (e) {
         debugPrint('📱 [HuaweiPush] No token received on stream within 5s: $e');
         // If HMS is not available, don't keep trying
-        if (e.toString().contains('907135000') || e.toString().contains('HMS')) {
-          debugPrint('📱 [HuaweiPush] HMS not available, marking as initialized (null token)');
+        if (e.toString().contains('907135000') ||
+            e.toString().contains('HMS')) {
+          debugPrint(
+              '📱 [HuaweiPush] HMS not available, marking as initialized (null token)');
           _initialized = true;
           _initializing = false;
           return null;
@@ -198,7 +204,8 @@ class HuaweiPushService {
     try {
       // Listen for data messages (foreground + background when app is running)
       _messageSub?.cancel();
-      _messageSub = Push.onMessageReceivedStream.listen((RemoteMessage message) async {
+      _messageSub =
+          Push.onMessageReceivedStream.listen((RemoteMessage message) async {
         try {
           // Emituj dogadjaj unutar aplikacije
           Map<String, dynamic> data = {};
@@ -214,8 +221,13 @@ class HuaweiPushService {
           RealtimeNotificationService.onForegroundNotification(data);
 
           // Get notification details
-          final title = message.notification?.title ?? data['title'] ?? 'Gavra Notification';
-          final body = message.notification?.body ?? data['body'] ?? data['message'] ?? 'Nova notifikacija';
+          final title = message.notification?.title ??
+              data['title'] ??
+              'Gavra Notification';
+          final body = message.notification?.body ??
+              data['body'] ??
+              data['message'] ??
+              'Nova notifikacija';
 
           // Prikaži lokalnu notifikaciju
           await LocalNotificationService.showRealtimeNotification(
@@ -252,7 +264,8 @@ class HuaweiPushService {
 
     // Registruj samo ako je vozač ulogovan
     if (driverName == null || driverName.isEmpty) {
-      debugPrint('⚠️ [HuaweiPushService] Vozač nije ulogovan - preskačem HMS registraciju');
+      debugPrint(
+          '⚠️ [HuaweiPushService] Vozač nije ulogovan - preskačem HMS registraciju');
       return;
     }
 

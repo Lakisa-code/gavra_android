@@ -143,7 +143,9 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
   // Da li treba tamni okvir (za bele ikonice)
   Color _getVoziloBorderColor(String registarskiBroj, bool isSelected, Color color) {
     if (isSelected) return color == Colors.white ? Colors.black : color;
-    if (color == Colors.white) return Colors.grey.shade600; // Tamni okvir za belo
+    if (color == Colors.white) {
+      return Colors.grey.shade600; // Tamni okvir za belo
+    }
     return Colors.grey.shade300;
   }
 
@@ -1015,4 +1017,3 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     );
   }
 }
-

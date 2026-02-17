@@ -47,7 +47,9 @@ class _PinDialogState extends State<PinDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await supabase.from('registrovani_putnici').update({'pin': newPin}).eq('id', widget.putnikId);
+      await supabase
+          .from('registrovani_putnici')
+          .update({'pin': newPin}).eq('id', widget.putnikId);
 
       setState(() {
         _pin = newPin;
@@ -190,7 +192,8 @@ class _PinDialogState extends State<PinDialog> {
                           const SizedBox(width: 4),
                           Text(
                             'Kopiraj',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style:
+                                TextStyle(color: Colors.white54, fontSize: 12),
                           ),
                         ],
                       ),
@@ -232,7 +235,9 @@ class _PinDialogState extends State<PinDialog> {
                 // Pošalji SMS
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: (_pin == null || widget.brojTelefona == null) ? null : _sendSms,
+                    onPressed: (_pin == null || widget.brojTelefona == null)
+                        ? null
+                        : _sendSms,
                     icon: const Icon(Icons.sms, size: 18),
                     label: const Text('Pošalji'),
                     style: ElevatedButton.styleFrom(
@@ -246,7 +251,8 @@ class _PinDialogState extends State<PinDialog> {
             ),
 
             // Info o telefonu
-            if (widget.brojTelefona == null || widget.brojTelefona!.isEmpty) ...[
+            if (widget.brojTelefona == null ||
+                widget.brojTelefona!.isEmpty) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(8),

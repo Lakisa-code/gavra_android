@@ -10,6 +10,7 @@ import '../utils/grad_adresa_validator.dart';
 import 'realtime/realtime_manager.dart';
 import 'seat_request_service.dart';
 import 'vozac_mapping_service.dart';
+import 'voznje_log_service.dart';
 
 class _StreamParams {
   _StreamParams({this.isoDate, this.grad, this.vreme});
@@ -95,15 +96,11 @@ class PutnikService {
               ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden']);
 
       // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
-      final logs = await supabase.from('voznje_log').select('putnik_id').eq('datum', todayDate).eq('tip', 'voznja');
-      final pickedUpIds = (logs as List).map((l) => l['putnik_id'].toString()).toSet();
+      final logData = await VoznjeLogService.getPickedUpLogData(datumStr: todayDate);
+      _enrichWithLogData(reqs as List, logData);
 
       return (reqs as List)
-          .map((r) {
-            final data = r as Map<String, dynamic>;
-            data['pokupljen_iz_loga'] = pickedUpIds.contains(data['putnik_id']?.toString());
-            return Putnik.fromSeatRequest(data);
-          })
+          .map((r) => Putnik.fromSeatRequest(r as Map<String, dynamic>))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden')
           .toList();
     } catch (e) {
@@ -135,15 +132,11 @@ class PutnikService {
       final reqs = await query;
 
       // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
-      final logs = await supabase.from('voznje_log').select('putnik_id').eq('datum', todayDate).eq('tip', 'voznja');
-      final pickedUpIds = (logs as List).map((l) => l['putnik_id'].toString()).toSet();
+      final logData = await VoznjeLogService.getPickedUpLogData(datumStr: todayDate);
+      _enrichWithLogData(reqs as List, logData);
 
       final results = (reqs as List)
-          .map((r) {
-            final data = r as Map<String, dynamic>;
-            data['pokupljen_iz_loga'] = pickedUpIds.contains(data['putnik_id']?.toString());
-            return Putnik.fromSeatRequest(data);
-          })
+          .map((r) => Putnik.fromSeatRequest(r as Map<String, dynamic>))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden')
           .toList();
 
@@ -193,6 +186,25 @@ class PutnikService {
   }
 
   Future<Putnik?> getPutnikByName(String ime, {String? grad}) async {
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
+
+    // 🆕 SSOT: Prvo proveri u seat_requests za danas
+    final seatReq = await supabase
+        .from('seat_requests')
+        .select('*, registrovani_putnici!inner($registrovaniFields)')
+        .eq('registrovani_putnici.putnik_ime', ime)
+        .eq('datum', todayStr)
+        .maybeSingle();
+
+    if (seatReq != null) {
+      final todayDate = DateTime.now().toIso8601String().split('T')[0];
+      final logData = await VoznjeLogService.getPickedUpLogData(datumStr: todayDate);
+      final data = Map<String, dynamic>.from(seatReq as Map);
+      _enrichWithLogData([data], logData);
+      return Putnik.fromSeatRequest(data);
+    }
+
+    // Fallback na profil ako nema današnjeg zahteva
     final res =
         await supabase.from('registrovani_putnici').select(registrovaniFields).eq('putnik_ime', ime).maybeSingle();
     if (res == null) return null;
@@ -201,6 +213,23 @@ class PutnikService {
 
   Future<Putnik?> getPutnikFromAnyTable(dynamic id) async {
     try {
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+
+      // 🆕 SSOT: Prvo proveri u seat_requests za danas
+      final seatReq = await supabase
+          .from('seat_requests')
+          .select('*, registrovani_putnici!inner($registrovaniFields)')
+          .eq('putnik_id', id)
+          .eq('datum', todayStr)
+          .maybeSingle();
+
+      if (seatReq != null) {
+        final logData = await VoznjeLogService.getPickedUpLogData(datumStr: todayStr);
+        final data = Map<String, dynamic>.from(seatReq);
+        _enrichWithLogData([data], logData);
+        return Putnik.fromSeatRequest(data);
+      }
+
       final res = await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', id).limit(1);
       return res.isNotEmpty ? Putnik.fromRegistrovaniPutnici(res.first) : null;
     } catch (_) {
@@ -222,8 +251,12 @@ class PutnikService {
           .inFilter('status',
               ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden']);
 
+      // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
+      final logData = await VoznjeLogService.getPickedUpLogData(datumStr: danasStr);
+      _enrichWithLogData(res as List, logData);
+
       return (res as List)
-          .map((row) => Putnik.fromSeatRequest(row))
+          .map((row) => Putnik.fromSeatRequest(row as Map<String, dynamic>))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden')
           .toList();
     } catch (e) {
@@ -243,8 +276,12 @@ class PutnikService {
           .eq('datum', danasStr)
           .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
 
+      // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
+      final logDataAll = await VoznjeLogService.getPickedUpLogData(datumStr: danasStr);
+      _enrichWithLogData(res as List, logDataAll);
+
       return (res as List)
-          .map((row) => Putnik.fromSeatRequest(row))
+          .map((row) => Putnik.fromSeatRequest(row as Map<String, dynamic>))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden')
           .toList();
     } catch (e) {
@@ -293,11 +330,14 @@ class PutnikService {
     await supabase.from('registrovani_putnici').update({'obrisan': true}).eq('id', id);
   }
 
-  Future<void> oznaciPokupljen(dynamic id, bool value, {String? grad, String? vreme, String? driver}) async {
+  Future<void> oznaciPokupljen(dynamic id, bool value,
+      {String? grad, String? vreme, String? driver, String? datum}) async {
     if (_isDuplicateAction('pickup_$id')) return;
-    if (!value) return; // 🚫 "Undo" funkcija uklonjena - ne dozvoljavamo poništavanje pokupljenja
+    if (!value) {
+      return; // 🚫 "Undo" funkcija uklonjena - ne dozvoljavamo poništavanje pokupljenja
+    }
 
-    final danasStr = DateTime.now().toIso8601String().split('T')[0];
+    final targetDatum = datum ?? DateTime.now().toIso8601String().split('T')[0];
 
     // Ažuriraj seat_requests - postavi status confirmed/approved
     String? vozacId;
@@ -306,20 +346,21 @@ class PutnikService {
     }
 
     // ✅ OZNAČI KAO POKUPLJEN (Samo u voznje_log, po zahtevu korisnika)
-    // Proveri da li već postoji unos za ovog putnika danas
-    final existing = await supabase
-        .from('voznje_log')
-        .select('id')
-        .eq('putnik_id', id.toString())
-        .eq('datum', danasStr)
-        .eq('tip', 'voznja')
-        .maybeSingle();
+    // Proveri da li već postoji unos za ovog putnika za ovaj datum
+    final existing = await VoznjeLogService.getLogEntry(
+      putnikId: id.toString(),
+      datum: targetDatum,
+      tip: 'voznja',
+    );
 
     if (existing == null) {
-      // Nema postojećeg unosa, upiši novi
-      await supabase
-          .from('voznje_log')
-          .insert({'putnik_id': id.toString(), 'datum': danasStr, 'tip': 'voznja', 'vozac_id': vozacId});
+      // Nema postojećeg unosa, upiši novi preko servisa
+      await VoznjeLogService.logGeneric(
+        tip: 'voznja',
+        putnikId: id.toString(),
+        vozacId: vozacId,
+        datum: targetDatum,
+      );
     }
   }
 
@@ -505,14 +546,13 @@ class PutnikService {
       'grad': gradKey,
     });
 
-    // Dodaj u voznje_log
-    await supabase.from('voznje_log').insert({
-      'putnik_id': id.toString(),
-      'datum': dateStr,
-      'tip': 'placanje',
-      'iznos': iznos,
-      'vozac_id': vozacId,
-    });
+    // Dodaj u voznje_log preko servisa
+    await VoznjeLogService.dodajUplatu(
+      putnikId: id.toString(),
+      datum: DateTime.parse(dateStr),
+      iznos: iznos.toDouble(),
+      vozacId: vozacId,
+    );
   }
 
   Future<void> dodelPutnikaVozacuZaPravac(
@@ -547,9 +587,30 @@ class PutnikService {
 
   Future<void> prebacijPutnikaVozacu(String id, String? vozac) async {
     String? vozacUuid;
-    if (vozac != null) vozacUuid = await VozacMappingService.getVozacUuid(vozac);
+    if (vozac != null) {
+      vozacUuid = await VozacMappingService.getVozacUuid(vozac);
+    }
     await supabase
         .from('registrovani_putnici')
         .update({'vozac_id': vozacUuid, 'updated_at': DateTime.now().toUtc().toIso8601String()}).eq('id', id);
+  }
+
+  /// 🔄 POMOĆNA METODA: Obogaćuje podatke iz seat_requests informacijama iz voznje_log
+  void _enrichWithLogData(List<dynamic> reqs, Map<String, Map<String, dynamic>> logData) {
+    for (var r in reqs) {
+      final data = r as Map<String, dynamic>;
+      final putnikId = data['putnik_id']?.toString();
+      if (putnikId != null && logData.containsKey(putnikId)) {
+        data['pokupljen_iz_loga'] = true;
+        // Ako vozač nije definisan u seat_request, uzmi ga iz loga (onaj koji je STVARNO pokupio)
+        if (data['vozac_id'] == null) {
+          data['vozac_id'] = logData[putnikId]?['vozac_id'];
+        }
+        // Vreme pokupljenja iz loga ima prioritet za prikaz statusa
+        data['processed_at'] = logData[putnikId]?['created_at'] ?? data['processed_at'];
+      } else {
+        data['pokupljen_iz_loga'] = false;
+      }
+    }
   }
 }

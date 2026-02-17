@@ -66,7 +66,9 @@ class _RegistracijaData {
     if (danaDoIsteka == null) return Colors.grey;
     if (danaDoIsteka! < 0) return Colors.red.shade900; // Istekla - tamno crvena
     if (danaDoIsteka! <= 2) return Colors.red; // 0-2 dana - crvena
-    if (danaDoIsteka! <= 5) return Colors.deepOrange; // 3-5 dana - tamno narandžasta
+    if (danaDoIsteka! <= 5) {
+      return Colors.deepOrange; // 3-5 dana - tamno narandžasta
+    }
     if (danaDoIsteka! <= 8) return Colors.orange; // 6-8 dana - narandžasta
     if (danaDoIsteka! <= 11) return Colors.amber; // 9-11 dana - žuta
     return Colors.lime; // 12-14 dana - limeta
@@ -321,4 +323,3 @@ class _RegistracijaCountdownWidgetState extends State<RegistracijaCountdownWidge
     );
   }
 }
-

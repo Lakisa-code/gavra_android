@@ -118,7 +118,9 @@ class CalendarConfig {
     final sortedPraznici = drzavniPraznici.keys.map((k) => DateTime.parse(k)).where((d) => d.isAfter(from)).toList()
       ..sort();
 
-    if (sortedPraznici.isEmpty) return 999; // Nema praznika u bliskoj budućnosti
+    if (sortedPraznici.isEmpty) {
+      return 999; // Nema praznika u bliskoj budućnosti
+    }
 
     return sortedPraznici.first.difference(from).inDays;
   }

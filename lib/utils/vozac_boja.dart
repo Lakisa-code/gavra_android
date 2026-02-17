@@ -18,8 +18,11 @@ class VozacBoja {
   // CACHE MEHANIZAM - za sinkronu upotrebu nakon inicijalizacije
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Cache boja učitanih iz baze
+  /// Cache boja učitanih iz baze (po imenu)
   static Map<String, Color> _cachedBoje = {};
+
+  /// Cache boja učitanih iz baze (po UUID)
+  static Map<String, Color> _cachedBojeUuid = {}; // NOVO
 
   /// Cache vozača učitanih iz baze
   static List<Vozac> _cachedVozaci = [];
@@ -33,16 +36,19 @@ class VozacBoja {
       final vozacService = VozacService();
       final vozaci = await vozacService.getAllVozaci();
 
-      final Map<String, Color> result = {};
+      final Map<String, Color> resultIme = {};
+      final Map<String, Color> resultUuid = {}; // NOVO
 
       for (var vozac in vozaci) {
         // Koristi samo boju iz baze - nema fallback-a
         if (vozac.color != null) {
-          result[vozac.ime] = vozac.color!;
+          resultIme[vozac.ime] = vozac.color!;
+          resultUuid[vozac.id] = vozac.color!; // NOVO
         }
       }
 
-      _cachedBoje = Map.unmodifiable(result);
+      _cachedBoje = Map.unmodifiable(resultIme);
+      _cachedBojeUuid = Map.unmodifiable(resultUuid); // NOVO
       _cachedVozaci = vozaci;
       _isInitialized = true;
 
@@ -155,9 +161,21 @@ class VozacBoja {
   }
 
   /// Vraća boju vozača ili default boju ako vozač nije registrovan (SYNC verzija)
-  static Color getColorOrDefaultSync(String? ime, Color defaultColor) {
-    if (ime == null || ime.isEmpty) return defaultColor;
-    return _cachedBoje[ime] ?? defaultColor;
+  /// Prihvata i IME i UUID vozača.
+  static Color getColorOrDefaultSync(String? identifikator, Color defaultColor) {
+    if (identifikator == null || identifikator.isEmpty) return defaultColor;
+
+    // Prvo probaj po imenu
+    if (_cachedBoje.containsKey(identifikator)) {
+      return _cachedBoje[identifikator]!;
+    }
+
+    // Onda probaj po UUID
+    if (_cachedBojeUuid.containsKey(identifikator)) {
+      return _cachedBojeUuid[identifikator]!;
+    }
+
+    return defaultColor;
   }
 
   /// Lista svih validnih vozača (SYNC verzija)

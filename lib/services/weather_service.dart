@@ -34,11 +34,15 @@ class WeatherData {
 
   /// Da li se očekuje kiša danas
   bool get willRain =>
-      (precipitationSum ?? 0) > 0.5 || (dailyWeatherCode != null && dailyWeatherCode! >= 51 && dailyWeatherCode! <= 82);
+      (precipitationSum ?? 0) > 0.5 ||
+      (dailyWeatherCode != null &&
+          dailyWeatherCode! >= 51 &&
+          dailyWeatherCode! <= 82);
 
   /// Da li se očekuje sneg danas
   bool get willSnow => (dailyWeatherCode != null &&
-      ((dailyWeatherCode! >= 71 && dailyWeatherCode! <= 77) || (dailyWeatherCode! >= 85 && dailyWeatherCode! <= 86)));
+      ((dailyWeatherCode! >= 71 && dailyWeatherCode! <= 77) ||
+          (dailyWeatherCode! >= 85 && dailyWeatherCode! <= 86)));
 
   /// Konvertuj weather code u ikonu (sa dan/noć podrškom)
   /// Za maglu vraća 'FOG_ASSET' da bi UI mogao da prikaže sliku
@@ -131,41 +135,52 @@ class WeatherService {
 
         if (data['daily'] != null) {
           final daily = data['daily'];
-          if (daily['temperature_2m_min'] != null && (daily['temperature_2m_min'] as List).isNotEmpty) {
+          if (daily['temperature_2m_min'] != null &&
+              (daily['temperature_2m_min'] as List).isNotEmpty) {
             tempMin = (daily['temperature_2m_min'][0] as num?)?.toDouble();
           }
-          if (daily['temperature_2m_max'] != null && (daily['temperature_2m_max'] as List).isNotEmpty) {
+          if (daily['temperature_2m_max'] != null &&
+              (daily['temperature_2m_max'] as List).isNotEmpty) {
             tempMax = (daily['temperature_2m_max'][0] as num?)?.toDouble();
           }
-          if (daily['precipitation_sum'] != null && (daily['precipitation_sum'] as List).isNotEmpty) {
+          if (daily['precipitation_sum'] != null &&
+              (daily['precipitation_sum'] as List).isNotEmpty) {
             precipSum = (daily['precipitation_sum'][0] as num?)?.toDouble();
           }
           if (daily['precipitation_probability_max'] != null &&
               (daily['precipitation_probability_max'] as List).isNotEmpty) {
-            precipProb = (daily['precipitation_probability_max'][0] as num?)?.toInt();
+            precipProb =
+                (daily['precipitation_probability_max'][0] as num?)?.toInt();
           }
-          if (daily['weather_code'] != null && (daily['weather_code'] as List).isNotEmpty) {
+          if (daily['weather_code'] != null &&
+              (daily['weather_code'] as List).isNotEmpty) {
             dailyCode = (daily['weather_code'][0] as num?)?.toInt();
           }
         }
 
         // Nađi prvi sat sa padavinama (kiša: 51-82, sneg: 71-77, 85-86)
-        if (data['hourly'] != null && data['hourly']['weather_code'] != null && data['hourly']['time'] != null) {
+        if (data['hourly'] != null &&
+            data['hourly']['weather_code'] != null &&
+            data['hourly']['time'] != null) {
           final hourlyTimes = data['hourly']['time'] as List;
           final hourlyCodes = data['hourly']['weather_code'] as List;
           final now = DateTime.now();
 
-          for (int i = 0; i < hourlyCodes.length && i < hourlyTimes.length; i++) {
+          for (int i = 0;
+              i < hourlyCodes.length && i < hourlyTimes.length;
+              i++) {
             final hourCode = (hourlyCodes[i] as num?)?.toInt() ?? 0;
             // Proveri da li je padavina (kiša ili sneg)
-            final isPrecip = (hourCode >= 51 && hourCode <= 82) || (hourCode >= 85 && hourCode <= 86);
+            final isPrecip = (hourCode >= 51 && hourCode <= 82) ||
+                (hourCode >= 85 && hourCode <= 86);
             if (isPrecip) {
               // Parsiraj vreme i proveri da li je u budućnosti
               try {
                 final timeStr = hourlyTimes[i] as String;
                 final hourTime = DateTime.parse(timeStr);
                 if (hourTime.isAfter(now.subtract(const Duration(hours: 1)))) {
-                  precipStartTime = '${hourTime.hour.toString().padLeft(2, '0')}:00';
+                  precipStartTime =
+                      '${hourTime.hour.toString().padLeft(2, '0')}:00';
                   break;
                 }
               } catch (e) {

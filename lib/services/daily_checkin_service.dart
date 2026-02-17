@@ -16,8 +16,9 @@ class DailyCheckInService {
 
     try {
       // 👤 Normalizuj ime vozača koristeći mapping
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = await VozacMappingService.getVozacIme(
+              await VozacMappingService.getVozacUuid(vozac) ?? '') ??
+          vozac;
 
       final response = await supabase
           .from('daily_reports')
@@ -29,7 +30,8 @@ class DailyCheckInService {
 
       return response != null;
     } catch (e) {
-      debugPrint('⚠️ [DailyCheckIn] Check-in status check failed/timed out: $e');
+      debugPrint(
+          '⚠️ [DailyCheckIn] Check-in status check failed/timed out: $e');
       // Ako nismo sigurni, vraćamo false da bi dozvolili unos, ali UI će hendlovati
     }
 
@@ -45,8 +47,9 @@ class DailyCheckInService {
     final today = date ?? DateTime.now();
 
     // 👤 Normalizuj ime vozača koristeći mapping
-    final zvanicnoIme =
-        await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+    final zvanicnoIme = await VozacMappingService.getVozacIme(
+            await VozacMappingService.getVozacUuid(vozac) ?? '') ??
+        vozac;
 
     // 🌐 DIREKTNO U BAZU - upsert će ažurirati ako već postoji za danas
     try {
@@ -63,8 +66,9 @@ class DailyCheckInService {
   static Future<bool> isPopisSavedToday(String vozac, {DateTime? date}) async {
     try {
       // 👤 Normalizuj ime
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = await VozacMappingService.getVozacIme(
+              await VozacMappingService.getVozacUuid(vozac) ?? '') ??
+          vozac;
 
       final targetDate = date ?? DateTime.now();
       final today = targetDate.toIso8601String().split('T')[0];
@@ -135,8 +139,9 @@ class DailyCheckInService {
   ) async {
     try {
       // 👤 Normalizuj ime vozača
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = await VozacMappingService.getVozacIme(
+              await VozacMappingService.getVozacUuid(vozac) ?? '') ??
+          vozac;
 
       await _savePopisToSupabase(zvanicnoIme, popisPodaci, datum);
     } catch (e) {
@@ -148,8 +153,9 @@ class DailyCheckInService {
   static Future<Map<String, dynamic>?> getLastDailyReport(String vozac) async {
     try {
       // 👤 Normalizuj ime
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = await VozacMappingService.getVozacIme(
+              await VozacMappingService.getVozacUuid(vozac) ?? '') ??
+          vozac;
 
       final data = await supabase
           .from('daily_reports')
@@ -172,15 +178,21 @@ class DailyCheckInService {
   }
 
   /// 📊 NOVI: Dohvati popis za specifičan datum - DIREKTNO IZ BAZE
-  static Future<Map<String, dynamic>?> getDailyReportForDate(String vozac, DateTime datum) async {
+  static Future<Map<String, dynamic>?> getDailyReportForDate(
+      String vozac, DateTime datum) async {
     try {
       // 👤 Normalizuj ime
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = await VozacMappingService.getVozacIme(
+              await VozacMappingService.getVozacUuid(vozac) ?? '') ??
+          vozac;
 
       final datumStr = datum.toIso8601String().split('T')[0];
-      final data =
-          await supabase.from('daily_reports').select().eq('vozac', zvanicnoIme).eq('datum', datumStr).maybeSingle();
+      final data = await supabase
+          .from('daily_reports')
+          .select()
+          .eq('vozac', zvanicnoIme)
+          .eq('datum', datumStr)
+          .maybeSingle();
 
       if (data != null) {
         return {
@@ -222,8 +234,10 @@ class DailyCheckInService {
       }
 
       // 1. OSNOVNI PODACI ZA CILJANI DATUM
-      final dayStart = DateTime(targetDate.year, targetDate.month, targetDate.day);
-      final dayEnd = DateTime(targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
+      final dayStart =
+          DateTime(targetDate.year, targetDate.month, targetDate.day);
+      final dayEnd = DateTime(
+          targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
 
       // 2. ✅ DIREKTNE STATISTIKE IZ VOZNJE_LOG - tačni podaci
       final stats = await VoznjeLogService.getStatistikePoVozacu(
@@ -242,7 +256,8 @@ class DailyCheckInService {
       // 4. KILOMETRAŽA
       double kilometraza;
       try {
-        kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
+        kilometraza = await StatistikaService.instance
+            .getKilometrazu(vozac, dayStart, dayEnd);
       } catch (e) {
         kilometraza = 0.0;
       }
@@ -322,8 +337,12 @@ class DailyCheckInService {
   static Future<bool> isCheckedIn(String vozac) async {
     try {
       final today = DateTime.now().toIso8601String().split('T')[0];
-      final response =
-          await supabase.from('daily_reports').select('id').eq('vozac', vozac).eq('datum', today).maybeSingle();
+      final response = await supabase
+          .from('daily_reports')
+          .select('id')
+          .eq('vozac', vozac)
+          .eq('datum', today)
+          .maybeSingle();
       return response != null;
     } catch (e) {
       return false;
@@ -354,8 +373,9 @@ class DailyCheckInService {
   static Future<double> getLastKm(String vozac) async {
     try {
       // 👤 Normalizuj ime
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = await VozacMappingService.getVozacIme(
+              await VozacMappingService.getVozacUuid(vozac) ?? '') ??
+          vozac;
 
       final data = await supabase
           .from('daily_reports')

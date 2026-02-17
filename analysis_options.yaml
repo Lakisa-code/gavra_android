@@ -22,6 +22,7 @@ analyzer:
     undefined_method: error
     
     # Stilistiku i info-e sklanjamo skroz da te ne bi nervirali brojevi
+    curly_braces_in_flow_control_structures: ignore
     prefer_const_constructors: ignore
     prefer_const_declarations: ignore
     prefer_final_locals: ignore

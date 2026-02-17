@@ -79,7 +79,8 @@ class GeocodingService {
       try {
         final query = '$adresa, $grad, Serbia';
         final encodedQuery = Uri.encodeComponent(query);
-        final url = '$_baseUrl?q=$encodedQuery&format=json&limit=1&countrycodes=rs';
+        final url =
+            '$_baseUrl?q=$encodedQuery&format=json&limit=1&countrycodes=rs';
 
         final response = await http.get(
           Uri.parse(url),
@@ -89,7 +90,8 @@ class GeocodingService {
         ).timeout(timeout);
 
         if (response.statusCode == 200) {
-          final List<dynamic> results = json.decode(response.body) as List<dynamic>;
+          final List<dynamic> results =
+              json.decode(response.body) as List<dynamic>;
 
           if (results.isNotEmpty) {
             final result = results[0];
@@ -129,7 +131,9 @@ class GeocodingService {
       // Photon zahteva User-Agent da ne bi vraćao 403
       final headers = {'User-Agent': 'GavraAndroid/1.0'};
 
-      final response = await http.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 5));
+      final response = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -138,7 +142,8 @@ class GeocodingService {
         if (features != null && features.isNotEmpty) {
           final feature = features[0];
           final geometry = feature['geometry'];
-          final coordinates = geometry['coordinates'] as List<dynamic>; // [lon, lat]
+          final coordinates =
+              geometry['coordinates'] as List<dynamic>; // [lon, lat]
 
           final lon = coordinates[0];
           final lat = coordinates[1];
@@ -166,7 +171,8 @@ class GeocodingService {
       'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva',
     ];
     return !allowedCities.any(
-      (allowed) => normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
+      (allowed) =>
+          normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
     );
   }
 }

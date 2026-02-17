@@ -34,11 +34,13 @@ class HereWeGoNavigationService {
         if (shouldInstall) {
           await _openStore();
         }
-        return HereWeGoNavResult.error('⚠️ Molimo instalirajte HERE WeGo aplikaciju pre nastavka.');
+        return HereWeGoNavResult.error(
+            '⚠️ Molimo instalirajte HERE WeGo aplikaciju pre nastavka.');
       }
 
       // FILTRIRAJ PUTNIKE SA VALIDNIM KOORDINATAMA
-      final validPutnici = putnici.where((p) => coordinates.containsKey(p)).toList();
+      final validPutnici =
+          putnici.where((p) => coordinates.containsKey(p)).toList();
 
       if (validPutnici.isEmpty) {
         return HereWeGoNavResult.error('Nema putnika sa validnim koordinatama');
@@ -97,7 +99,8 @@ class HereWeGoNavigationService {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Za rad sa putnicima koristimo ISKLJUČIVO HERE WeGo navigaciju.'),
+                Text(
+                    'Za rad sa putnicima koristimo ISKLJUČIVO HERE WeGo navigaciju.'),
                 SizedBox(height: 12),
                 Text('Aplikacija trenutno nije nađena na vašem telefonu.'),
                 SizedBox(height: 12),
@@ -172,7 +175,8 @@ class HereWeGoNavigationService {
     required Map<Putnik, Position> coordinates,
     Position? endDestination,
   }) async {
-    final validPutnici = putnici.where((p) => coordinates.containsKey(p)).toList();
+    final validPutnici =
+        putnici.where((p) => coordinates.containsKey(p)).toList();
 
     if (validPutnici.isEmpty) {
       return HereWeGoNavResult.error('Nema putnika sa validnim koordinatama');
@@ -185,7 +189,10 @@ class HereWeGoNavigationService {
       waypoints = validPutnici.map((p) => coordinates[p]!).toList();
       dest = endDestination;
     } else {
-      waypoints = validPutnici.take(validPutnici.length - 1).map((p) => coordinates[p]!).toList();
+      waypoints = validPutnici
+          .take(validPutnici.length - 1)
+          .map((p) => coordinates[p]!)
+          .toList();
       dest = coordinates[validPutnici.last]!;
     }
 
@@ -194,7 +201,8 @@ class HereWeGoNavigationService {
 
     try {
       if (await canLaunchUrl(uri)) {
-        final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        final success =
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
         if (success) {
           return HereWeGoNavResult.success(
             message: '🗺️ HERE WeGo: ${putnici.length} putnika',
@@ -218,7 +226,9 @@ class HereWeGoNavigationService {
   }) async {
     final segments = <List<Putnik>>[];
     for (var i = 0; i < putnici.length; i += maxWaypoints) {
-      final end = (i + maxWaypoints > putnici.length) ? putnici.length : i + maxWaypoints;
+      final end = (i + maxWaypoints > putnici.length)
+          ? putnici.length
+          : i + maxWaypoints;
       segments.add(putnici.sublist(i, end));
     }
 
@@ -243,7 +253,8 @@ class HereWeGoNavigationService {
         return HereWeGoNavResult.partial(
           message: 'Greška pri segmentu ${currentSegment + 1}',
           launchedPutnici: launchedPutnici,
-          remainingPutnici: segments.skip(currentSegment).expand((s) => s).toList(),
+          remainingPutnici:
+              segments.skip(currentSegment).expand((s) => s).toList(),
         );
       }
 
@@ -251,7 +262,9 @@ class HereWeGoNavigationService {
       currentSegment++;
 
       if (currentSegment < segments.length) {
-        final remainingCount = segments.skip(currentSegment).fold<int>(0, (sum, s) => sum + s.length);
+        final remainingCount = segments
+            .skip(currentSegment)
+            .fold<int>(0, (sum, s) => sum + s.length);
 
         if (!context.mounted) break;
 
@@ -265,8 +278,12 @@ class HereWeGoNavigationService {
               'Nastaviti sa sledećim segmentom?',
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Završi')),
-              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Nastavi')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Završi')),
+              ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Nastavi')),
             ],
           ),
         );
@@ -275,7 +292,8 @@ class HereWeGoNavigationService {
           return HereWeGoNavResult.partial(
             message: 'Navigacija završena posle segmenta $currentSegment',
             launchedPutnici: launchedPutnici,
-            remainingPutnici: segments.skip(currentSegment).expand((s) => s).toList(),
+            remainingPutnici:
+                segments.skip(currentSegment).expand((s) => s).toList(),
           );
         }
       }
@@ -334,7 +352,8 @@ class HereWeGoNavResult {
         isPartial: true,
       );
 
-  factory HereWeGoNavResult.error(String message) => HereWeGoNavResult._(success: false, message: message);
+  factory HereWeGoNavResult.error(String message) =>
+      HereWeGoNavResult._(success: false, message: message);
 
   final bool success;
   final String message;
@@ -349,7 +368,8 @@ class HereWeGoNavResult {
 
 /// 📊 Status navigacije na uređaju
 class NavigationStatus {
-  const NavigationStatus({required this.isHuaweiDevice, required this.isHereWeGoInstalled});
+  const NavigationStatus(
+      {required this.isHuaweiDevice, required this.isHereWeGoInstalled});
 
   final bool isHuaweiDevice;
   final bool isHereWeGoInstalled;
@@ -357,5 +377,6 @@ class NavigationStatus {
   bool get hasNavigationApp => isHereWeGoInstalled;
 
   @override
-  String toString() => 'NavigationStatus(isHuawei: $isHuaweiDevice, hereWeGo: $isHereWeGoInstalled)';
+  String toString() =>
+      'NavigationStatus(isHuawei: $isHuaweiDevice, hereWeGo: $isHereWeGoInstalled)';
 }

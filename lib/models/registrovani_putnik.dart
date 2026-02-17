@@ -1,4 +1,4 @@
-﻿import '../services/adresa_supabase_service.dart';
+import '../services/adresa_supabase_service.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
 class RegistrovaniPutnik {
@@ -161,28 +161,42 @@ class RegistrovaniPutnik {
       datumKrajaMeseca: map['datum_kraja_meseca'] != null
           ? DateTime.parse(map['datum_kraja_meseca'] as String)
           : DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : DateTime.now(),
-      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String).toLocal() : DateTime.now(),
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String).toLocal()
+          : DateTime.now(),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'] as String).toLocal()
+          : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
-      status: (map['status'] == 'aktivan' || map['status'] == null) ? 'radi' : map['status'] as String,
+      status: (map['status'] == 'aktivan' || map['status'] == null)
+          ? 'radi'
+          : map['status'] as String,
       obrisan: map['obrisan'] as bool? ?? false,
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
       vozacId: map['vozac_id'] as String?,
       adresa: map['adresa'] as String? ??
-          (map['adresa_bc'] is Map ? (map['adresa_bc'] as Map)['naziv'] as String? : null) ??
-          (map['adresa_vs'] is Map ? (map['adresa_vs'] as Map)['naziv'] as String? : null),
+          (map['adresa_bc'] is Map
+              ? (map['adresa_bc'] as Map)['naziv'] as String?
+              : null) ??
+          (map['adresa_vs'] is Map
+              ? (map['adresa_vs'] as Map)['naziv'] as String?
+              : null),
       grad: map['grad'] as String? ??
-          (map['adresa_bc'] is Map ? 'Bela Crkva' : (map['adresa_vs'] is Map ? 'Vršac' : null)),
+          (map['adresa_bc'] is Map
+              ? 'Bela Crkva'
+              : (map['adresa_vs'] is Map ? 'Vršac' : null)),
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
-      cenaPoDanu: _parseNum(map['cena_po_danu'])?.toDouble(), // 🆕 Custom cena po danu
+      cenaPoDanu:
+          _parseNum(map['cena_po_danu'])?.toDouble(), // 🆕 Custom cena po danu
       trebaRacun: map['treba_racun'] as bool? ?? false,
       firmaNaziv: map['firma_naziv'] as String?,
       firmaPib: map['firma_pib'] as String?,
       firmaMb: map['firma_mb'] as String?,
       firmaZiro: map['firma_ziro'] as String?,
       firmaAdresa: map['firma_adresa'] as String?,
-      brojMesta: _parseNum(map['broj_mesta'])?.toInt() ?? 1, // 🆕 Čitaj broj mesta
+      brojMesta:
+          _parseNum(map['broj_mesta'])?.toInt() ?? 1, // 🆕 Čitaj broj mesta
     );
   }
 
@@ -200,7 +214,8 @@ class RegistrovaniPutnik {
       'adresa_bela_crkva_id': adresaBelaCrkvaId,
       'adresa_vrsac_id': adresaVrsacId,
       'radni_dani': radniDani,
-      'datum_pocetka_meseca': datumPocetkaMeseca.toIso8601String().split('T')[0],
+      'datum_pocetka_meseca':
+          datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),

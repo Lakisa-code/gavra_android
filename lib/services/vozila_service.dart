@@ -11,12 +11,14 @@ class VozilaService {
   static SupabaseClient get _supabase => supabase;
 
   static StreamSubscription? _vozilaSubscription;
-  static final StreamController<List<Vozilo>> _vozilaController = StreamController<List<Vozilo>>.broadcast();
+  static final StreamController<List<Vozilo>> _vozilaController =
+      StreamController<List<Vozilo>>.broadcast();
 
   /// Dohvati sva vozila
   static Future<List<Vozilo>> getVozila() async {
     try {
-      final response = await _supabase.from('vozila').select().order('registarski_broj');
+      final response =
+          await _supabase.from('vozila').select().order('registarski_broj');
       return (response as List).map((row) => Vozilo.fromJson(row)).toList();
     } catch (e) {
       return [];
@@ -26,7 +28,8 @@ class VozilaService {
   /// Stream vozila sa realtime osvežavanjem
   static Stream<List<Vozilo>> streamVozila() {
     if (_vozilaSubscription == null) {
-      _vozilaSubscription = RealtimeManager.instance.subscribe('vozila').listen((payload) {
+      _vozilaSubscription =
+          RealtimeManager.instance.subscribe('vozila').listen((payload) {
         _refreshVozilaStream();
       });
       // Inicijalno učitavanje
@@ -52,7 +55,8 @@ class VozilaService {
   /// Dohvati jedno vozilo
   static Future<Vozilo?> getVozilo(String id) async {
     try {
-      final response = await _supabase.from('vozila').select().eq('id', id).single();
+      final response =
+          await _supabase.from('vozila').select().eq('id', id).single();
       return Vozilo.fromJson(response);
     } catch (e) {
       return null;
@@ -60,7 +64,8 @@ class VozilaService {
   }
 
   /// Ažuriraj kolsku knjigu vozila
-  static Future<bool> updateKolskaKnjiga(String id, Map<String, dynamic> podaci) async {
+  static Future<bool> updateKolskaKnjiga(
+      String id, Map<String, dynamic> podaci) async {
     try {
       await _supabase.from('vozila').update(podaci).eq('id', id);
       return true;
@@ -70,7 +75,8 @@ class VozilaService {
   }
 
   /// Dohvati vozila kojima ističe registracija (u narednih X dana)
-  static Future<List<Vozilo>> getVozilaIstekRegistracije({int dana = 30}) async {
+  static Future<List<Vozilo>> getVozilaIstekRegistracije(
+      {int dana = 30}) async {
     try {
       final now = DateTime.now();
       final zaXDana = now.add(Duration(days: dana));
@@ -91,7 +97,9 @@ class VozilaService {
   /// Ažuriraj broj mesta vozila
   static Future<bool> updateBrojMesta(String id, int brojMesta) async {
     try {
-      await _supabase.from('vozila').update({'broj_mesta': brojMesta}).eq('id', id);
+      await _supabase
+          .from('vozila')
+          .update({'broj_mesta': brojMesta}).eq('id', id);
       return true;
     } catch (e) {
       return false;
@@ -127,16 +135,20 @@ class VozilaService {
   }
 
   /// Dohvati istoriju servisa za vozilo
-  static Future<List<IstorijaSevisa>> getIstorijuServisa(String voziloId, {String? tip}) async {
+  static Future<List<IstorijaSevisa>> getIstorijuServisa(String voziloId,
+      {String? tip}) async {
     try {
-      var query = _supabase.from('vozila_istorija').select().eq('vozilo_id', voziloId);
+      var query =
+          _supabase.from('vozila_istorija').select().eq('vozilo_id', voziloId);
 
       if (tip != null) {
         query = query.eq('tip', tip);
       }
 
       final response = await query.order('datum', ascending: false);
-      return (response as List).map((row) => IstorijaSevisa.fromJson(row)).toList();
+      return (response as List)
+          .map((row) => IstorijaSevisa.fromJson(row))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -182,7 +194,9 @@ class IstorijaSevisa {
       id: json['id']?.toString() ?? '',
       voziloId: json['vozilo_id']?.toString() ?? '',
       tip: json['tip'] as String? ?? '',
-      datum: json['datum'] != null ? DateTime.tryParse(json['datum'].toString()) : null,
+      datum: json['datum'] != null
+          ? DateTime.tryParse(json['datum'].toString())
+          : null,
       km: json['km'] as int?,
       opis: json['opis'] as String?,
       cena: json['cena'] != null ? (json['cena'] as num).toDouble() : null,

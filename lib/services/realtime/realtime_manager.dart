@@ -66,7 +66,9 @@ class RealtimeManager {
   Stream<PostgresChangePayload> subscribe(String table) {
     // 🛡️ Provera pre pretplate
     if (!isSupabaseReady) {
-      if (kDebugMode) debugPrint('❌ [RealtimeManager] Cannot subscribe to $table: Supabase not ready');
+      if (kDebugMode) {
+        debugPrint('❌ [RealtimeManager] Cannot subscribe to $table: Supabase not ready');
+      }
       return const Stream.empty();
     }
 

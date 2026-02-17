@@ -82,7 +82,8 @@ class PopisService {
     // 3. KILOMETRAŽA
     late double kilometraza;
     try {
-      kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
+      kilometraza = await StatistikaService.instance
+          .getKilometrazu(vozac, dayStart, dayEnd);
     } catch (e) {
       kilometraza = 0.0;
     }
@@ -109,12 +110,14 @@ class PopisService {
 
   /// Sačuvaj popis u bazu
   static Future<void> savePopis(PopisData data) async {
-    await DailyCheckInService.saveDailyReport(data.vozac, data.datum, data.toMap());
+    await DailyCheckInService.saveDailyReport(
+        data.vozac, data.datum, data.toMap());
     await DailyCheckInService.saveCheckIn(data.vozac, date: data.datum);
   }
 
   /// Prikaži popis dialog i vrati true ako korisnik želi da sačuva
-  static Future<bool> showPopisDialog(BuildContext context, PopisData data, {bool isAutomatic = false}) async {
+  static Future<bool> showPopisDialog(BuildContext context, PopisData data,
+      {bool isAutomatic = false}) async {
     final vozacColor = VozacBoja.getSync(data.vozac);
 
     final result = await showDialog<bool>(
@@ -123,13 +126,17 @@ class PopisService {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(isAutomatic ? Icons.auto_awesome : Icons.person, color: vozacColor, size: 20),
+            Icon(isAutomatic ? Icons.auto_awesome : Icons.person,
+                color: vozacColor, size: 20),
             const SizedBox(width: 6),
             Text(
               isAutomatic
                   ? 'AUTOMATSKI POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}'
                   : 'POPIS - ${data.datum.day}.${data.datum.month}.${data.datum.year}',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800]),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -155,32 +162,53 @@ class PopisService {
                       const SizedBox(width: 8),
                       Text(
                         data.vozac,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800]),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
 
                   // DETALJNE STATISTIKE
-                  _buildStatRow('Pokupljeni', data.pokupljeniPutnici, Icons.check_circle, Colors.teal),
-                  _buildStatRow('Otkazani', data.otkazaniPutnici, Icons.cancel, Colors.red),
-                  _buildStatRow('Dugovi', data.dugoviPutnici, Icons.warning, Colors.orange),
+                  _buildStatRow('Pokupljeni', data.pokupljeniPutnici,
+                      Icons.check_circle, Colors.teal),
+                  _buildStatRow('Otkazani', data.otkazaniPutnici, Icons.cancel,
+                      Colors.red),
+                  _buildStatRow('Dugovi', data.dugoviPutnici, Icons.warning,
+                      Colors.orange),
 
-                  if (data.naplaceniDnevni > 0 || data.naplaceniMesecni > 0) ...[
+                  if (data.naplaceniDnevni > 0 ||
+                      data.naplaceniMesecni > 0) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         if (data.naplaceniDnevni > 0)
-                          Expanded(child: _buildSmallStat('Dnevne: ${data.naplaceniDnevni}', Colors.blueGrey)),
+                          Expanded(
+                              child: _buildSmallStat(
+                                  'Dnevne: ${data.naplaceniDnevni}',
+                                  Colors.blueGrey)),
                         if (data.naplaceniMesecni > 0)
-                          Expanded(child: _buildSmallStat('Mesečne: ${data.naplaceniMesecni}', Colors.purple)),
+                          Expanded(
+                              child: _buildSmallStat(
+                                  'Mesečne: ${data.naplaceniMesecni}',
+                                  Colors.purple)),
                       ],
                     ),
                   ],
 
-                  _buildStatRow('Kilometraža', '${data.kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
+                  _buildStatRow(
+                      'Kilometraža',
+                      '${data.kilometraza.toStringAsFixed(1)} km',
+                      Icons.route,
+                      Colors.teal),
 
-                  Divider(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24)),
+                  Divider(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.24)),
 
                   // UKUPAN PAZAR
                   _buildStatRow(
@@ -201,7 +229,8 @@ class PopisService {
                     ),
                     child: const Text(
                       '📋 Ovaj popis će biti sačuvan i prikazan pri sledećem check-in-u.',
-                      style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                      style:
+                          TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
                     ),
                   ),
                 ],
@@ -210,7 +239,10 @@ class PopisService {
           ),
         ),
         actions: [
-          if (!isAutomatic) TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Otkaži')),
+          if (!isAutomatic)
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Otkaži')),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(context, true),
             icon: Icon(isAutomatic ? Icons.check : Icons.save),
@@ -228,7 +260,8 @@ class PopisService {
   }
 
   /// Helper za kreiranje reda statistike
-  static Widget _buildStatRow(String label, dynamic value, IconData icon, Color color) {
+  static Widget _buildStatRow(
+      String label, dynamic value, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -239,7 +272,8 @@ class PopisService {
           const Spacer(),
           Text(
             value.toString(),
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.bold, color: color),
           ),
         ],
       ),
@@ -259,9 +293,9 @@ class PopisService {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+        style:
+            TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }
 }
-

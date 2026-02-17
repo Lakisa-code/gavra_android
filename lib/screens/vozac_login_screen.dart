@@ -79,7 +79,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Nema sačuvanih kredencijala. Prijavi se prvo ručno.'),
+            content:
+                Text('❌ Nema sačuvanih kredencijala. Prijavi se prvo ručno.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -206,7 +207,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
       // Pronađi vozača po imenu
       final vozac = vozaci.firstWhere(
-        (v) => v['ime'].toString().toLowerCase() == widget.vozacIme.toLowerCase(),
+        (v) =>
+            v['ime'].toString().toLowerCase() == widget.vozacIme.toLowerCase(),
         orElse: () => <String, dynamic>{},
       );
 
@@ -330,7 +332,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                 // Header
                 Icon(
                   Icons.login,
-                  color: isDark ? currentTheme.colorScheme.primary : Colors.amber,
+                  color:
+                      isDark ? currentTheme.colorScheme.primary : Colors.amber,
                   size: 60,
                 ),
                 const SizedBox(height: 16),
@@ -359,7 +362,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                   controller: _emailController,
                   style: const TextStyle(color: Colors.white),
                   keyboardType: TextInputType.emailAddress,
-                  decoration: _inputDecoration('Email adresa', Icons.email, isDark, currentTheme),
+                  decoration: _inputDecoration(
+                      'Email adresa', Icons.email, isDark, currentTheme),
                   validator: (v) {
                     if (v?.isEmpty == true) {
                       return 'Unesite email';
@@ -377,7 +381,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                   controller: _telefonController,
                   style: const TextStyle(color: Colors.white),
                   keyboardType: TextInputType.phone,
-                  decoration: _inputDecoration('Broj telefona', Icons.phone, isDark, currentTheme),
+                  decoration: _inputDecoration(
+                      'Broj telefona', Icons.phone, isDark, currentTheme),
                   validator: (v) {
                     if (v?.isEmpty == true) return 'Unesite telefon';
                     return null;
@@ -393,13 +398,19 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                   decoration: InputDecoration(
                     labelText: 'Šifra',
                     labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                    prefixIcon: Icon(Icons.lock, color: isDark ? currentTheme.colorScheme.primary : Colors.amber),
+                    prefixIcon: Icon(Icons.lock,
+                        color: isDark
+                            ? currentTheme.colorScheme.primary
+                            : Colors.amber),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _sifraVisible ? Icons.visibility_off : Icons.visibility,
-                        color: isDark ? currentTheme.colorScheme.primary : Colors.amber,
+                        color: isDark
+                            ? currentTheme.colorScheme.primary
+                            : Colors.amber,
                       ),
-                      onPressed: () => setState(() => _sifraVisible = !_sifraVisible),
+                      onPressed: () =>
+                          setState(() => _sifraVisible = !_sifraVisible),
                     ),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.1),
@@ -410,11 +421,17 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: (isDark ? currentTheme.colorScheme.primary : Colors.amber).withOpacity(0.3)),
+                          color: (isDark
+                                  ? currentTheme.colorScheme.primary
+                                  : Colors.amber)
+                              .withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: isDark ? currentTheme.colorScheme.primary : Colors.amber),
+                      borderSide: BorderSide(
+                          color: isDark
+                              ? currentTheme.colorScheme.primary
+                              : Colors.amber),
                     ),
                   ),
                 ),
@@ -424,7 +441,9 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? currentTheme.colorScheme.primary : Colors.amber,
+                    backgroundColor: isDark
+                        ? currentTheme.colorScheme.primary
+                        : Colors.amber,
                     foregroundColor: isDark ? Colors.white : Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -442,7 +461,8 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                         )
                       : const Text(
                           'Prijavi se',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                 ),
 
@@ -451,14 +471,19 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: _isLoading ? null : _loginWithBiometric,
-                    icon: Text(_biometricIcon, style: const TextStyle(fontSize: 24)),
+                    icon: Text(_biometricIcon,
+                        style: const TextStyle(fontSize: 24)),
                     label: const Text(
                       'Prijava otiskom prsta',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: isDark ? currentTheme.colorScheme.primary : Colors.amber),
+                      side: BorderSide(
+                          color: isDark
+                              ? currentTheme.colorScheme.primary
+                              : Colors.amber),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -478,12 +503,15 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, color: Colors.white54, size: 20),
+                      const Icon(Icons.info_outline,
+                          color: Colors.white54, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Unesi iste podatke koje je admin postavio za tebe.',
-                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12),
                         ),
                       ),
                     ],
@@ -497,8 +525,10 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon, bool isDark, dynamic currentTheme) {
-    final accentColor = isDark ? currentTheme.colorScheme.primary as Color : Colors.amber;
+  InputDecoration _inputDecoration(
+      String label, IconData icon, bool isDark, dynamic currentTheme) {
+    final accentColor =
+        isDark ? currentTheme.colorScheme.primary as Color : Colors.amber;
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),

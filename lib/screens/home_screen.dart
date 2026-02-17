@@ -2124,7 +2124,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             try {
               return countHelper.getCount(grad, vreme);
             } catch (e) {
-              if (kDebugMode) debugPrint('⚠️ [Home] Error in getPutnikCount: $e');
+              if (kDebugMode) {
+                debugPrint('⚠️ [Home] Error in getPutnikCount: $e');
+              }
               return 0;
             }
           }

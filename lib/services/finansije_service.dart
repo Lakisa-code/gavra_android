@@ -25,7 +25,9 @@ class FinansijeService {
       for (final row in response) {
         final iznos = row['iznos'];
         if (iznos != null) {
-          ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+          ukupno += (iznos is num)
+              ? iznos.toDouble()
+              : double.tryParse(iznos.toString()) ?? 0;
         }
       }
       return ukupno;
@@ -53,7 +55,10 @@ class FinansijeService {
   /// Dohvati sve aktivne troškove za određeni mesec/godinu
   static Future<List<Trosak>> getTroskovi({int? mesec, int? godina}) async {
     try {
-      var query = _supabase.from('finansije_troskovi').select('*, vozaci(ime)').eq('aktivan', true);
+      var query = _supabase
+          .from('finansije_troskovi')
+          .select('*, vozaci(ime)')
+          .eq('aktivan', true);
 
       if (mesec != null) {
         query = query.eq('mesec', mesec);
@@ -88,14 +93,19 @@ class FinansijeService {
   /// Dohvati ukupne troškove za celu godinu
   static Future<double> getUkupniTroskoviZaGodinu(int godina) async {
     try {
-      final response =
-          await _supabase.from('finansije_troskovi').select('iznos').eq('aktivan', true).eq('godina', godina);
+      final response = await _supabase
+          .from('finansije_troskovi')
+          .select('iznos')
+          .eq('aktivan', true)
+          .eq('godina', godina);
 
       double ukupno = 0;
       for (final row in response) {
         final iznos = row['iznos'];
         if (iznos != null) {
-          ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+          ukupno += (iznos is num)
+              ? iznos.toDouble()
+              : double.tryParse(iznos.toString()) ?? 0;
         }
       }
       return ukupno;
@@ -105,7 +115,8 @@ class FinansijeService {
   }
 
   /// Dohvati ukupne troškove kreirane u zadatom periodu (po created_at ili mesec/godina)
-  static Future<double> getUkupniTroskoviZaPeriod(DateTime from, DateTime to) async {
+  static Future<double> getUkupniTroskoviZaPeriod(
+      DateTime from, DateTime to) async {
     try {
       // PROVERA: Ako period pokriva tačno jedan ceo mesec, koristi getUkupniTroskoviZaMesec
       // Ovo omogućava bolju preciznost za unose koji nisu u voznje_log već u finansije_troskovi (fix Zadatak 1)
@@ -127,7 +138,9 @@ class FinansijeService {
       for (final row in response) {
         final iznos = row['iznos'];
         if (iznos != null) {
-          ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+          ukupno += (iznos is num)
+              ? iznos.toDouble()
+              : double.tryParse(iznos.toString()) ?? 0;
         }
       }
       return ukupno;
@@ -138,7 +151,8 @@ class FinansijeService {
   }
 
   /// Dohvati troškove po tipu za mesec/godinu
-  static Future<Map<String, double>> getTroskoviPoTipu({int? mesec, int? godina}) async {
+  static Future<Map<String, double>> getTroskoviPoTipu(
+      {int? mesec, int? godina}) async {
     final troskovi = await getTroskovi(mesec: mesec, godina: godina);
     final Map<String, double> poTipu = {
       'plata': 0,
@@ -163,9 +177,10 @@ class FinansijeService {
   /// Ažuriraj trošak
   static Future<bool> updateTrosak(String id, double noviIznos) async {
     try {
-      await _supabase
-          .from('finansije_troskovi')
-          .update({'iznos': noviIznos, 'updated_at': DateTime.now().toIso8601String()}).eq('id', id);
+      await _supabase.from('finansije_troskovi').update({
+        'iznos': noviIznos,
+        'updated_at': DateTime.now().toIso8601String()
+      }).eq('id', id);
       return true;
     } catch (e) {
       return false;
@@ -173,7 +188,8 @@ class FinansijeService {
   }
 
   /// Dodaj novi trošak za određeni mesec/godinu
-  static Future<bool> addTrosak(String naziv, String tip, double iznos, {int? mesec, int? godina}) async {
+  static Future<bool> addTrosak(String naziv, String tip, double iznos,
+      {int? mesec, int? godina}) async {
     try {
       final now = DateTime.now();
       debugPrint(
@@ -199,7 +215,9 @@ class FinansijeService {
   /// Obriši trošak (soft delete)
   static Future<bool> deleteTrosak(String id) async {
     try {
-      await _supabase.from('finansije_troskovi').update({'aktivan': false}).eq('id', id);
+      await _supabase
+          .from('finansije_troskovi')
+          .update({'aktivan': false}).eq('id', id);
       return true;
     } catch (e) {
       return false;
@@ -210,7 +228,10 @@ class FinansijeService {
   static Future<double> getPotrazivanja() async {
     try {
       // 1. Dohvati sve aktivne putnike
-      final response = await _supabase.from('registrovani_putnici').select('*').eq('aktivan', true);
+      final response = await _supabase
+          .from('registrovani_putnici')
+          .select('*')
+          .eq('aktivan', true);
 
       double ukupno = 0;
       for (final row in response) {
@@ -218,11 +239,13 @@ class FinansijeService {
         if (polasciPoDanu == null) continue;
 
         final String tip = (row['tip'] ?? 'Radnik').toString().toLowerCase();
-        final bool jeMesecni = tip == 'radnik' || tip == 'ucenik' || tip == 'učenik';
+        final bool jeMesecni =
+            tip == 'radnik' || tip == 'ucenik' || tip == 'učenik';
 
         Map<String, dynamic> polasci;
         if (polasciPoDanu is String) {
-          polasci = Map<String, dynamic>.from(const JsonDecoder().convert(polasciPoDanu));
+          polasci = Map<String, dynamic>.from(
+              const JsonDecoder().convert(polasciPoDanu));
         } else {
           polasci = Map<String, dynamic>.from(polasciPoDanu);
         }
@@ -238,13 +261,19 @@ class FinansijeService {
               mesta.forEach((mesto, podaci) {
                 if (podaci is Map) {
                   final bool jePokupljen = podaci['pokupljen'] == true;
-                  final bool jePlacen = podaci['placen'] == true || podaci['placeno'] == true;
+                  final bool jePlacen =
+                      podaci['placen'] == true || podaci['placeno'] == true;
 
                   if (jePokupljen && !jePlacen) {
                     imaDugZaOvajDan = true;
                     // Uzimamo iznos iz polaska ili iz putnika
-                    final iznos = podaci['iznos'] ?? podaci['cena'] ?? row['cena_po_danu'] ?? 0;
-                    cenaDug = (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+                    final iznos = podaci['iznos'] ??
+                        podaci['cena'] ??
+                        row['cena_po_danu'] ??
+                        0;
+                    cenaDug = (iznos is num)
+                        ? iznos.toDouble()
+                        : double.tryParse(iznos.toString()) ?? 0;
                   }
                 }
               });
@@ -257,11 +286,17 @@ class FinansijeService {
               mesta.forEach((mesto, podaci) {
                 if (podaci is Map) {
                   final bool jePokupljen = podaci['pokupljen'] == true;
-                  final bool jePlacen = podaci['placen'] == true || podaci['placeno'] == true;
+                  final bool jePlacen =
+                      podaci['placen'] == true || podaci['placeno'] == true;
 
                   if (jePokupljen && !jePlacen) {
-                    final iznos = podaci['iznos'] ?? podaci['cena'] ?? row['cena_po_danu'] ?? 0;
-                    ukupno += (iznos is num) ? iznos.toDouble() : double.tryParse(iznos.toString()) ?? 0;
+                    final iznos = podaci['iznos'] ??
+                        podaci['cena'] ??
+                        row['cena_po_danu'] ??
+                        0;
+                    ukupno += (iznos is num)
+                        ? iznos.toDouble()
+                        : double.tryParse(iznos.toString()) ?? 0;
                   }
                 }
               });
@@ -287,9 +322,14 @@ class FinansijeService {
       final m = data['mesec'];
       final g = data['godina'];
       final p = data['prosla'];
-      final tPoTipuRaw = Map<String, dynamic>.from(data['troskovi_po_tipu'] ?? {});
+      final tPoTipuRaw =
+          Map<String, dynamic>.from(data['troskovi_po_tipu'] ?? {});
       final Map<String, double> troskoviPoTipu = tPoTipuRaw.map(
-        (key, value) => MapEntry(key, (value is num) ? value.toDouble() : double.tryParse(value.toString()) ?? 0),
+        (key, value) => MapEntry(
+            key,
+            (value is num)
+                ? value.toDouble()
+                : double.tryParse(value.toString()) ?? 0),
       );
 
       // Potraživanja (frontend calculation for accuracy)
@@ -365,9 +405,11 @@ class FinansijeService {
   }
 
   /// Dohvati izveštaj za specifičan period (Custom Range)
-  static Future<Map<String, dynamic>> getIzvestajZaPeriod(DateTime from, DateTime to) async {
+  static Future<Map<String, dynamic>> getIzvestajZaPeriod(
+      DateTime from, DateTime to) async {
     try {
-      final response = await _supabase.rpc('get_custom_finance_report', params: {
+      final response =
+          await _supabase.rpc('get_custom_finance_report', params: {
         'p_from': from.toIso8601String().split('T')[0],
         'p_to': to.toIso8601String().split('T')[0],
       });
@@ -384,7 +426,8 @@ class FinansijeService {
 
     // Listen na promene u voznje_log i finansije_troskovi
     final voznjeStream = supabase.from('voznje_log').stream(primaryKey: ['id']);
-    final troskoviStream = supabase.from('finansije_troskovi').stream(primaryKey: ['id']);
+    final troskoviStream =
+        supabase.from('finansije_troskovi').stream(primaryKey: ['id']);
 
     // Svaki put kada se bilo koja tabela promeni, osveži ceo izveštaj
     // (Ovo je malo "skuplje", ali admin panelu je bitna tačnost)

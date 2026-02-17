@@ -94,7 +94,8 @@ class SmartNavigationService {
       final Map<Putnik, Position> coordinates = osrmResult.coordinates ?? {};
 
       // Nađi preskočene putnike (nemaju koordinate)
-      final skipped = putnici.where((p) => !coordinates.containsKey(p)).toList();
+      final skipped =
+          putnici.where((p) => !coordinates.containsKey(p)).toList();
 
       // 3. VRATI OPTIMIZOVANU RUTU
       return NavigationResult.success(
@@ -102,7 +103,8 @@ class SmartNavigationService {
         optimizedPutnici: optimizedRoute,
         totalDistance: osrmResult.totalDistanceKm != null
             ? osrmResult.totalDistanceKm! * 1000 // km -> m
-            : await _calculateTotalDistance(currentPosition, optimizedRoute, coordinates),
+            : await _calculateTotalDistance(
+                currentPosition, optimizedRoute, coordinates),
         skippedPutnici: skipped.isNotEmpty ? skipped : null,
         putniciEta: osrmResult.putniciEta,
       );
@@ -128,7 +130,8 @@ class SmartNavigationService {
   }) async {
     try {
       // 1. DOBIJ KOORDINATE
-      final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(putnici);
+      final coordinates =
+          await UnifiedGeocodingService.getCoordinatesForPutnici(putnici);
 
       if (coordinates.isEmpty) {
         return NavigationResult.error('❌ Nijedan putnik nema validnu adresu');

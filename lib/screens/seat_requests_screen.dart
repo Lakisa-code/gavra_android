@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/seat_request.dart';
 import '../services/seat_request_service.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
@@ -70,7 +71,7 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
             ),
           ),
         ),
-        body: StreamBuilder<List<Map<String, dynamic>>>(
+        body: StreamBuilder<List<SeatRequest>>(
           stream: SeatRequestService.streamManualRequests(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
@@ -104,14 +105,15 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
               itemCount: zahtevi.length,
               itemBuilder: (context, index) {
                 final zahtev = zahtevi[index];
-                final putnik = zahtev['registrovani_putnici'] ?? {};
-                final ime = putnik['ime_prezime'] ?? 'Nepoznat putnik';
-                final telefon = putnik['telefon'] ?? 'Nema telefona';
-                final tip = putnik['tip'] ?? 'dnevni';
-                final grad = zahtev['grad'] == 'BC' ? 'Bela Crkva' : 'Vršac';
-                final datum = zahtev['datum'] ?? '';
-                final vreme = zahtev['zeljeno_vreme'] ?? '';
-                final id = zahtev['id'].toString();
+                final ime = zahtev.putnikIme ?? 'Nepoznat putnik';
+                final telefon = zahtev.brojTelefona ?? 'Nema telefona';
+                final tip = zahtev.tipPutnika ?? 'dnevni';
+                final grad = zahtev.grad == 'BC' ? 'Bela Crkva' : 'Vršac';
+                final datum = zahtev.datum != null
+                    ? "${zahtev.datum!.year}-${zahtev.datum!.month.toString().padLeft(2, '0')}-${zahtev.datum!.day.toString().padLeft(2, '0')}"
+                    : '';
+                final vreme = zahtev.zeljenoVreme ?? '';
+                final id = zahtev.id;
 
                 // Određivanje boje i teksta za etiketu tipa putnika
                 Color tipColor;
@@ -158,30 +160,83 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      ime,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            ime,
+                                            style: const TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                        if (zahtev.priority > 1)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.amber.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.star, color: Colors.amber, size: 14),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  'PRIORITET',
+                                                  style: TextStyle(
+                                                    color: Colors.amber,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: tipColor.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: tipColor.withOpacity(0.5)),
-                                      ),
-                                      child: Text(
-                                        tipLabel,
-                                        style: TextStyle(
-                                          color: tipColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: tipColor.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: tipColor.withOpacity(0.5)),
+                                          ),
+                                          child: Text(
+                                            tipLabel,
+                                            style: TextStyle(
+                                              color: tipColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 10,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        if (zahtev.brojMesta > 1) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.purple.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: Colors.purple.withOpacity(0.5)),
+                                            ),
+                                            child: Text(
+                                              '👥 ${zahtev.brojMesta} MESTA',
+                                              style: const TextStyle(
+                                                color: Colors.purpleAccent,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -218,6 +273,25 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
                               ),
                             ],
                           ),
+                          if (zahtev.alternatives != null && zahtev.alternatives!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(Icons.alt_route, size: 16, color: Colors.cyan.withOpacity(0.7)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Alternative: ${zahtev.alternatives!.join(", ")}',
+                                    style: TextStyle(
+                                      color: Colors.cyan.shade200,
+                                      fontSize: 14,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
                             child: Divider(color: Colors.white24, height: 1),
@@ -285,7 +359,7 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
     );
   }
 
-  Future<void> _approveZahtev(String id, Map<String, dynamic> zahtev) async {
+  Future<void> _approveZahtev(String id, SeatRequest zahtev) async {
     setState(() => _isLoading = true);
     try {
       final success = await SeatRequestService.approveRequest(id);

@@ -35,13 +35,17 @@ class PushTokenService {
   }) async {
     try {
       if (token.isEmpty) {
-        if (kDebugMode) debugPrint('⚠️ [PushToken] Prazan token, preskačem registraciju');
+        if (kDebugMode) {
+          debugPrint('⚠️ [PushToken] Prazan token, preskačem registraciju');
+        }
         return false;
       }
 
       // ⏳ Proveri da li je Supabase spreman - ako nije, preskači
       if (!_isSupabaseReady) {
-        if (kDebugMode) debugPrint('⏳ [PushToken] Supabase nije spreman, preskačem registraciju');
+        if (kDebugMode) {
+          debugPrint('⏳ [PushToken] Supabase nije spreman, preskačem registraciju');
+        }
         return false;
       }
 
@@ -89,7 +93,9 @@ class PushTokenService {
 
       return true;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri registraciji (pokušaj ${retryCount + 1}): $e');
+      if (kDebugMode) {
+        debugPrint('❌ [PushToken] Greška pri registraciji (pokušaj ${retryCount + 1}): $e');
+      }
 
       // 🔄 RETRY LOGIKA za 503/Timeout greške
       final errorStr = e.toString().toLowerCase();
@@ -178,7 +184,9 @@ class PushTokenService {
 
       return true;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri brisanju tokena: $e');
+      if (kDebugMode) {
+        debugPrint('❌ [PushToken] Greška pri brisanju tokena: $e');
+      }
       return false;
     }
   }
@@ -203,7 +211,9 @@ class PushTokenService {
           .where((t) => t['token']!.isNotEmpty)
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri dohvatanju tokena: $e');
+      if (kDebugMode) {
+        debugPrint('❌ [PushToken] Greška pri dohvatanju tokena: $e');
+      }
       return [];
     }
   }
@@ -230,7 +240,9 @@ class PushTokenService {
           .where((t) => t['token']!.isNotEmpty)
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri dohvatanju tokena putnika: $e');
+      if (kDebugMode) {
+        debugPrint('❌ [PushToken] Greška pri dohvatanju tokena putnika: $e');
+      }
       return [];
     }
   }
@@ -258,7 +270,9 @@ class PushTokenService {
           .where((t) => t['token']!.isNotEmpty)
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PushToken] Greška pri dohvatanju vozačkih tokena: $e');
+      if (kDebugMode) {
+        debugPrint('❌ [PushToken] Greška pri dohvatanju vozačkih tokena: $e');
+      }
       return [];
     }
   }

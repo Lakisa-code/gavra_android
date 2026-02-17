@@ -21,7 +21,9 @@ class WeatherAlertService {
     try {
       // Proveri da li je već poslato danas
       if (await _isAlertAlreadySentToday()) {
-        if (kDebugMode) debugPrint('ℹ️ [WeatherAlert] Upozorenje već poslato danas');
+        if (kDebugMode) {
+          debugPrint('ℹ️ [WeatherAlert] Upozorenje već poslato danas');
+        }
         return;
       }
 
@@ -45,7 +47,9 @@ class WeatherAlertService {
       }
 
       if (alerts.isEmpty) {
-        if (kDebugMode) debugPrint('✅ [WeatherAlert] Nema opasnih vremenskih uslova');
+        if (kDebugMode) {
+          debugPrint('✅ [WeatherAlert] Nema opasnih vremenskih uslova');
+        }
         return;
       }
 
@@ -55,7 +59,9 @@ class WeatherAlertService {
       // Označi da je poslato
       await _markAlertSent(alerts.join(', '));
 
-      if (kDebugMode) debugPrint('⚠️ [WeatherAlert] Poslato upozorenje: ${alerts.join(', ')}');
+      if (kDebugMode) {
+        debugPrint('⚠️ [WeatherAlert] Poslato upozorenje: ${alerts.join(', ')}');
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ [WeatherAlert] Greška: $e');
     }
@@ -109,7 +115,9 @@ class WeatherAlertService {
       return response != null;
     } catch (e) {
       // Ako tabela ne postoji, vrati false
-      if (kDebugMode) debugPrint('⚠️ [WeatherAlert] Greška pri proveri loga: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ [WeatherAlert] Greška pri proveri loga: $e');
+      }
       return false;
     }
   }

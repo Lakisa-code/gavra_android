@@ -47,7 +47,8 @@ class AnimatedNavigation {
     );
   }
 
-  static Future<T?> pushReplacementSmooth<T extends Object?, TO extends Object?>(
+  static Future<T?>
+      pushReplacementSmooth<T extends Object?, TO extends Object?>(
     BuildContext context,
     Widget page,
   ) {

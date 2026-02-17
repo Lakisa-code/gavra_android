@@ -260,13 +260,25 @@ BEGIN
 
     IF existing_id IS NOT NULL THEN
         UPDATE seat_requests 
-        SET zeljeno_vreme = COALESCE(p_vreme, zeljeno_vreme),
+        SET zeljeno_vreme = CASE 
+                WHEN p_vreme IS NULL OR p_vreme = '' OR p_vreme = 'null' THEN zeljeno_vreme 
+                ELSE p_vreme::time 
+            END,
             status = final_status,
             updated_at = now()
         WHERE id = existing_id;
     ELSE
         INSERT INTO seat_requests (putnik_id, grad, zeljeno_vreme, datum, status, broj_mesta, created_at, updated_at)
-        VALUES (p_id, grad_clean, p_vreme, target_date, final_status, p_broj_mesta, now(), now());
+        VALUES (
+            p_id, 
+            grad_clean, 
+            CASE WHEN p_vreme IS NULL OR p_vreme = '' OR p_vreme = 'null' THEN NULL ELSE p_vreme::time END, 
+            target_date, 
+            final_status, 
+            p_broj_mesta, 
+            now(), 
+            now()
+        );
     END IF;
 
     -- 6. Ažuriraj radni_dani putnika (da bi se videlo u profilu)

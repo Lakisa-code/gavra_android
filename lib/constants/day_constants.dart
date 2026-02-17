@@ -82,13 +82,17 @@ class DayConstants {
 
   /// Dobij puni INTERNAL naziv po indexu
   static String getNameByIndex(int index) {
-    if (index < 0 || index >= dayNamesInternal.length) return dayNamesInternal[0];
+    if (index < 0 || index >= dayNamesInternal.length) {
+      return dayNamesInternal[0];
+    }
     return dayNamesInternal[index];
   }
 
   /// Dobij kraticu po indexu
   static String getAbbreviationByIndex(int index) {
-    if (index < 0 || index >= dayAbbreviations.length) return dayAbbreviations[0];
+    if (index < 0 || index >= dayAbbreviations.length) {
+      return dayAbbreviations[0];
+    }
     return dayAbbreviations[index];
   }
 

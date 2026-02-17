@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/haptic_service.dart';
@@ -15,6 +14,7 @@ import '../services/putnik_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/unified_geocoding_service.dart';
 import '../services/vozac_mapping_service.dart';
+import '../services/voznje_log_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart';
 import '../utils/vozac_boja.dart';
@@ -896,6 +896,7 @@ class _PutnikCardState extends State<PutnikCard> {
         grad: _putnik.grad,
         vreme: _putnik.polazak,
         driver: widget.currentDriver, // 🆕 Prosledi vozača
+        datum: _putnik.datum, // 🆕 Prosledi originalni datum vožnje
       );
 
       if (mounted) {
@@ -1579,7 +1580,7 @@ class _PutnikCardState extends State<PutnikCard> {
                               _putnik.pokupioVozac ?? _putnik.vozac,
                               Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.bold, // Promenjeno sa w500
                           ),
                         ),
                       // Placeno info
@@ -2032,16 +2033,13 @@ class _PutnikCardState extends State<PutnikCard> {
           status: 'otkazano',
         );
 
-        // Dodaj u voznje_log kao otkazivanje (za statistike)
+        // Dodaj u voznje_log kao otkazivanje preko servisa
         final vozacId = await VozacMappingService.getVozacUuid(widget.currentDriver);
-
-        await supabase.from('voznje_log').insert({
-          'putnik_id': _putnik.id!.toString(),
-          'datum': _putnik.datum ?? DateTime.now().toIso8601String().split('T')[0],
-          'tip': 'otkazivanje',
-          'iznos': 0,
-          'vozac_id': vozacId,
-        });
+        await VoznjeLogService.logGeneric(
+          tip: 'otkazivanje',
+          putnikId: _putnik.id!.toString(),
+          vozacId: vozacId,
+        );
 
         // Ažuriraj lokalni _putnik sa novim statusom
         if (mounted) {

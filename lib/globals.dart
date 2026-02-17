@@ -39,7 +39,8 @@ bool get isSupabaseReady {
 /// 'zimski' = zimski raspored
 /// 'letnji' = letnji raspored
 /// 'praznici' = praznični raspored
-final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('letnji');
+final ValueNotifier<String> navBarTypeNotifier =
+    ValueNotifier<String>('letnji');
 
 /// Helper za dobijanje trenutnog tipa nav bara
 String get currentNavBarType => navBarTypeNotifier.value;

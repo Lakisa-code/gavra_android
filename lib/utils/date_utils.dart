@@ -15,7 +15,8 @@ class DateUtils {
   /// Podržava sve varijante: sa/bez dijakritika, uppercase/lowercase
   static String getDayAbbreviation(String fullDayName) {
     final normalized = DayConstants.normalize(fullDayName).toLowerCase();
-    return DayConstants.dayAbbreviations[DayConstants.getIndexByName(normalized)];
+    return DayConstants
+        .dayAbbreviations[DayConstants.getIndexByName(normalized)];
   }
 
   /// CENTRALNA FUNKCIJA: Konvertuj pun naziv dana u weekday broj (1=Pon, 2=Uto, ...)

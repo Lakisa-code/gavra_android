@@ -58,7 +58,8 @@ class VremeVozacService {
   /// [vreme] - '18:00', '5:00', itd.
   /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
   /// [vozacIme] - 'Voja', 'Bilevski', 'Goran'
-  Future<void> setVozacZaVreme(String grad, String vreme, String dan, String vozacIme) async {
+  Future<void> setVozacZaVreme(
+      String grad, String vreme, String dan, String vozacIme) async {
     // Normalize vreme to ensure consistent HH:MM format
     final normalizedVreme = _normalizeTime(vreme);
     if (normalizedVreme == null) {
@@ -68,7 +69,8 @@ class VremeVozacService {
     // Validacija
     if (!(VozacBoja.isValidDriverSync(vozacIme))) {
       final validDrivers = VozacBoja.validDriversSync;
-      throw Exception('Nevalidan vozač: "$vozacIme". Dozvoljeni: ${validDrivers.join(", ")}');
+      throw Exception(
+          'Nevalidan vozač: "$vozacIme". Dozvoljeni: ${validDrivers.join(", ")}');
     }
 
     try {
@@ -100,7 +102,12 @@ class VremeVozacService {
     }
 
     try {
-      await supabase.from('vreme_vozac').delete().eq('grad', grad).eq('vreme', normalizedVreme).eq('dan', dan);
+      await supabase
+          .from('vreme_vozac')
+          .delete()
+          .eq('grad', grad)
+          .eq('vreme', normalizedVreme)
+          .eq('dan', dan);
 
       // Ažuriraj cache
       final key = '$grad|$normalizedVreme|$dan';
@@ -144,7 +151,9 @@ class VremeVozacService {
   /// 🔄 Učitaj sve vreme-vozač mapiranja (SYNC verzija)
   Future<void> loadAllVremeVozac() async {
     try {
-      final response = await _supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime');
+      final response = await _supabase
+          .from('vreme_vozac')
+          .select('grad, vreme, dan, vozac_ime');
       _cache.clear();
       for (final row in response) {
         final grad = row['grad'] as String;
@@ -174,7 +183,8 @@ class VremeVozacService {
           table: 'vreme_vozac',
           callback: (payload) async {
             // Refresh cache kada se bilo šta promijeni u tabeli
-            print('📡 VremeVozacService: Detektovana promjena, osvežavam cache...');
+            print(
+                '📡 VremeVozacService: Detektovana promjena, osvežavam cache...');
             // NE pozivaj loadAllVremeVozac() jer bi to pokrenulo listener ponovo
             await _refreshCacheFromDatabase();
             // Obavesti slušaoce o promjeni
@@ -187,7 +197,9 @@ class VremeVozacService {
   /// 🔄 Osvěži cache iz baze bez pokretanja novog listener-a
   Future<void> _refreshCacheFromDatabase() async {
     try {
-      final response = await _supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime');
+      final response = await _supabase
+          .from('vreme_vozac')
+          .select('grad, vreme, dan, vozac_ime');
       _cache.clear();
       for (final row in response) {
         final grad = row['grad'] as String;
@@ -218,7 +230,12 @@ class VremeVozacService {
     if (parts.length >= 2) {
       final hour = int.tryParse(parts[0]);
       final minute = int.tryParse(parts[1]);
-      if (hour != null && minute != null && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      if (hour != null &&
+          minute != null &&
+          hour >= 0 &&
+          hour <= 23 &&
+          minute >= 0 &&
+          minute <= 59) {
         return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
       }
     }

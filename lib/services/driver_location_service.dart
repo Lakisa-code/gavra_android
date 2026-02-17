@@ -11,7 +11,8 @@ import 'permission_service.dart';
 /// Servis za slanje GPS lokacije vozača u realtime
 /// Putnici mogu pratiti lokaciju kombija dok čekaju
 class DriverLocationService {
-  static final DriverLocationService _instance = DriverLocationService._internal();
+  static final DriverLocationService _instance =
+      DriverLocationService._internal();
   factory DriverLocationService() => _instance;
   DriverLocationService._internal();
 
@@ -41,7 +42,8 @@ class DriverLocationService {
   String? get currentVozacId => _currentVozacId;
 
   /// Broj preostalih putnika za pokupiti (ETA >= 0)
-  int get remainingPassengers => _currentPutniciEta?.values.where((v) => v >= 0).length ?? 0;
+  int get remainingPassengers =>
+      _currentPutniciEta?.values.where((v) => v >= 0).length ?? 0;
 
   /// Pokreni praćenje lokacije za vozača
   Future<bool> startTracking({
@@ -76,17 +78,21 @@ class DriverLocationService {
     _currentVremePolaska = vremePolaska;
     _currentSmer = smer;
     _currentPutniciEta = putniciEta != null ? Map.from(putniciEta) : null;
-    _putniciCoordinates = putniciCoordinates != null ? Map.from(putniciCoordinates) : null;
-    _putniciRedosled = putniciRedosled != null ? List.from(putniciRedosled) : null;
+    _putniciCoordinates =
+        putniciCoordinates != null ? Map.from(putniciCoordinates) : null;
+    _putniciRedosled =
+        putniciRedosled != null ? List.from(putniciRedosled) : null;
     _onAllPassengersPickedUp = onAllPassengersPickedUp;
     _isTracking = true;
 
     await _sendCurrentLocation();
 
-    _locationTimer = Timer.periodic(_updateInterval, (_) => _sendCurrentLocation());
+    _locationTimer =
+        Timer.periodic(_updateInterval, (_) => _sendCurrentLocation());
 
     if (_putniciCoordinates != null && _putniciRedosled != null) {
-      _etaTimer = Timer.periodic(_etaUpdateInterval, (_) => _refreshRealtimeEta());
+      _etaTimer =
+          Timer.periodic(_etaUpdateInterval, (_) => _refreshRealtimeEta());
     }
 
     return true;
@@ -147,7 +153,9 @@ class DriverLocationService {
 
     final aktivniPutnici = _putniciRedosled!
         .where((ime) =>
-            _currentPutniciEta != null && _currentPutniciEta!.containsKey(ime) && _currentPutniciEta![ime]! >= 0)
+            _currentPutniciEta != null &&
+            _currentPutniciEta!.containsKey(ime) &&
+            _currentPutniciEta![ime]! >= 0)
         .toList();
 
     if (aktivniPutnici.isEmpty) return;
@@ -176,7 +184,8 @@ class DriverLocationService {
     // 🔄 Odmah pošalji ažurirani status u Supabase
     await _sendCurrentLocation();
 
-    final aktivniPutnici = _currentPutniciEta!.values.where((v) => v >= 0).length;
+    final aktivniPutnici =
+        _currentPutniciEta!.values.where((v) => v >= 0).length;
     if (aktivniPutnici == 0) {
       _onAllPassengersPickedUp?.call();
       stopTracking();

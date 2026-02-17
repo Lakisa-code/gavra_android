@@ -36,7 +36,9 @@ class StatistikaService {
     final danPocetak = DateTime(now.year, now.month, now.day);
     final danKraj = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    return VoznjeLogService.streamBrojUplataPoVozacima(from: danPocetak, to: danKraj).map((brojUplata) {
+    return VoznjeLogService.streamBrojUplataPoVozacima(
+            from: danPocetak, to: danKraj)
+        .map((brojUplata) {
       return brojUplata[vozac] ?? 0;
     });
   }
@@ -78,7 +80,8 @@ class StatistikaService {
   }
 
   /// Dohvati kilometražu za vozača
-  Future<double> getKilometrazu(String vozac, DateTime from, DateTime to) async {
+  Future<double> getKilometrazu(
+      String vozac, DateTime from, DateTime to) async {
     try {
       final fromStr = from.toIso8601String().split('T')[0];
       final toStr = to.toIso8601String().split('T')[0];

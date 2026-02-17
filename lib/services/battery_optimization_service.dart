@@ -90,13 +90,15 @@ class BatteryOptimizationService {
 
     try {
       // Try manufacturer-specific intents first
-      if (manufacturer?.contains('huawei') == true || manufacturer?.contains('honor') == true) {
+      if (manufacturer?.contains('huawei') == true ||
+          manufacturer?.contains('honor') == true) {
         await _openHuaweiBatterySettings();
       } else if (manufacturer?.contains('xiaomi') == true ||
           manufacturer?.contains('redmi') == true ||
           manufacturer?.contains('poco') == true) {
         await _openXiaomiBatterySettings();
-      } else if (manufacturer?.contains('oppo') == true || manufacturer?.contains('realme') == true) {
+      } else if (manufacturer?.contains('oppo') == true ||
+          manufacturer?.contains('realme') == true) {
         await _openOppoBatterySettings();
       } else if (manufacturer?.contains('vivo') == true) {
         await _openVivoBatterySettings();
@@ -119,12 +121,14 @@ class BatteryOptimizationService {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
         package: 'com.huawei.systemmanager',
-        componentName: 'com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity',
+        componentName:
+            'com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity',
       );
       await intent.launch();
       return;
     } catch (e) {
-      debugPrint('ℹ️ Huawei startup manager failed (expected on some versions): $e');
+      debugPrint(
+          'ℹ️ Huawei startup manager failed (expected on some versions): $e');
     }
 
     // 2. Try Power Intensity (newer EMUI)
@@ -132,7 +136,8 @@ class BatteryOptimizationService {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
         package: 'com.huawei.systemmanager',
-        componentName: 'com.huawei.systemmanager.power.ui.PowerIntensityActivity',
+        componentName:
+            'com.huawei.systemmanager.power.ui.PowerIntensityActivity',
       );
       await intent.launch();
       return;
@@ -145,7 +150,8 @@ class BatteryOptimizationService {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
         package: 'com.huawei.systemmanager',
-        componentName: 'com.huawei.systemmanager.optimize.process.ProtectActivity',
+        componentName:
+            'com.huawei.systemmanager.optimize.process.ProtectActivity',
       );
       await intent.launch();
       return;
@@ -175,7 +181,8 @@ class BatteryOptimizationService {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
         package: 'com.miui.securitycenter',
-        componentName: 'com.miui.permcenter.autostart.AutoStartManagementActivity',
+        componentName:
+            'com.miui.permcenter.autostart.AutoStartManagementActivity',
       );
       await intent.launch();
       return;
@@ -191,7 +198,8 @@ class BatteryOptimizationService {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
         package: 'com.coloros.safecenter',
-        componentName: 'com.coloros.safecenter.startupapp.StartupAppListActivity',
+        componentName:
+            'com.coloros.safecenter.startupapp.StartupAppListActivity',
       );
       await intent.launch();
       return;
@@ -207,7 +215,8 @@ class BatteryOptimizationService {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
         package: 'com.vivo.permissionmanager',
-        componentName: 'com.vivo.permissionmanager.activity.BgStartUpManagerActivity',
+        componentName:
+            'com.vivo.permissionmanager.activity.BgStartUpManagerActivity',
       );
       await intent.launch();
       return;
@@ -223,7 +232,8 @@ class BatteryOptimizationService {
       const intent = AndroidIntent(
         action: 'android.intent.action.MAIN',
         package: 'com.oneplus.security',
-        componentName: 'com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity',
+        componentName:
+            'com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity',
       );
       await intent.launch();
       return;
@@ -281,7 +291,8 @@ class BatteryOptimizationService {
   /// Prvo pokušava sistemski popup, ako korisnik odbije - prikazuje uputstva
   static Future<void> showWarningDialog(BuildContext context) async {
     final manufacturer = await getManufacturer() ?? 'your phone';
-    final manufacturerName = manufacturer[0].toUpperCase() + manufacturer.substring(1);
+    final manufacturerName =
+        manufacturer[0].toUpperCase() + manufacturer.substring(1);
 
     // 🔋 Prvo pokušaj sistemski popup (jednostavnije za korisnika)
     // Na Huawei/Xiaomi ovo možda neće biti dovoljno, ali vredi pokušati
@@ -340,7 +351,8 @@ class BatteryOptimizationService {
                   Expanded(
                     child: Text(
                       'Ovo omogućava da vam ekran zasvetli kad stigne poruka.',
-                      style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                      style:
+                          TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
                     ),
                   ),
                 ],

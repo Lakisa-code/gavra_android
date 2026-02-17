@@ -102,8 +102,10 @@ class RouteConfig {
     required String grad,
     required bool letnji,
   }) async {
-    final isBc = grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc');
-    final isVs = grad.toLowerCase().contains('vrs') || grad.toLowerCase().contains('vrš');
+    final isBc = grad.toLowerCase().contains('bela') ||
+        grad.toLowerCase().contains('bc');
+    final isVs = grad.toLowerCase().contains('vrs') ||
+        grad.toLowerCase().contains('vrš');
 
     final sezona = letnji ? 'letnji' : 'zimski';
     final gradCode = isBc ? 'bc' : 'vs';

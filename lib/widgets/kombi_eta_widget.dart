@@ -43,13 +43,15 @@ enum _WidgetFaza {
 
 class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   StreamSubscription? _subscription;
-  StreamSubscription? _putnikSubscription; // 🆕 Za praćenje promena u registrovani_putnici
+  StreamSubscription?
+      _putnikSubscription; // 🆕 Za praćenje promena u registrovani_putnici
   int? _etaMinutes;
   bool _isLoading = true;
   bool _isActive = false; // Vozač je aktivan (šalje lokaciju)
   bool _vozacStartovaoRutu = false; // 🆕 Vozač pritisnuo "Ruta" dugme
   String? _vozacIme;
-  DateTime? _vremePokupljenja; // 🆕 ČITA SE IZ BAZE - tačno vreme kada je vozač pritisnuo
+  DateTime?
+      _vremePokupljenja; // 🆕 ČITA SE IZ BAZE - tačno vreme kada je vozač pritisnuo
   bool _jePokupljenIzBaze = false; // 🆕 Flag iz baze
   bool _imaDozvole = false; // 🆕 Da li putnik ima GPS i notifikacije dozvole
 
@@ -172,7 +174,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
             final putnikLower = widget.putnikIme.toLowerCase();
             for (final entry in putniciEta.entries) {
               final keyLower = entry.key.toLowerCase();
-              if (keyLower.contains(putnikLower) || putnikLower.contains(keyLower)) {
+              if (keyLower.contains(putnikLower) ||
+                  putnikLower.contains(keyLower)) {
                 eta = entry.value as int?;
                 break;
               }
@@ -213,7 +216,9 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     final lower = grad.toLowerCase();
     if (lower.contains('bela') || lower == 'bc') {
       return 'BC';
-    } else if (lower.contains('vršac') || lower.contains('vrsac') || lower == 'vs') {
+    } else if (lower.contains('vršac') ||
+        lower.contains('vrsac') ||
+        lower == 'vs') {
       return 'VS';
     }
     return grad.toUpperCase();
@@ -223,7 +228,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   Future<void> _requestPermissions() async {
     try {
       final permission = await Geolocator.requestPermission();
-      final hasGps = permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+      final hasGps = permission == LocationPermission.always ||
+          permission == LocationPermission.whileInUse;
 
       setState(() {
         _imaDozvole = hasGps;
@@ -243,8 +249,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     try {
       // Proveri GPS dozvolu
       final locationPermission = await Geolocator.checkPermission();
-      final hasGps =
-          locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse;
+      final hasGps = locationPermission == LocationPermission.always ||
+          locationPermission == LocationPermission.whileInUse;
 
       // Za notifikacije, pretpostavljamo da su potrebne ali ne blokira UI
       // (user može da ih omogući kasnije kroz sistemske podešavanja)
@@ -271,12 +277,14 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     );
     // 🆕 Prati promene u registrovani_putnici tabeli (kada vozač pokupi putnika)
     if (widget.putnikId != null) {
-      _putnikSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen(
+      _putnikSubscription =
+          RealtimeManager.instance.subscribe('registrovani_putnici').listen(
         (payload) {
           _loadPokupljenjeIzBaze();
         },
         onError: (error) {
-          debugPrint('🔴 [KombiEtaWidget] registrovani_putnici stream error: $error');
+          debugPrint(
+              '🔴 [KombiEtaWidget] registrovani_putnici stream error: $error');
         },
       );
     }
@@ -329,16 +337,21 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   _WidgetFaza _getCurrentFaza() {
     // 🆕 PRIORITET 1: Ako je pokupljen IZ BAZE (vozač pritisnuo long press) - to je ISTINA!
     if (_jePokupljenIzBaze && _vremePokupljenja != null) {
-      final minutesSincePokupljenje = DateTime.now().difference(_vremePokupljenja!).inMinutes;
+      final minutesSincePokupljenje =
+          DateTime.now().difference(_vremePokupljenja!).inMinutes;
       if (minutesSincePokupljenje <= 60) {
-        return _WidgetFaza.pokupljen; // Faza 3: Prikazuj "Pokupljeni ste" 60 min
+        return _WidgetFaza
+            .pokupljen; // Faza 3: Prikazuj "Pokupljeni ste" 60 min
       } else {
         return _WidgetFaza.sledecaVoznja; // Faza 4: Prikazuj sledeću vožnju
       }
     }
 
     // Faza 2: Vozač startovao rutu i ima ETA (praćenje uživo)
-    if (_isActive && _vozacStartovaoRutu && _etaMinutes != null && _etaMinutes! >= 0) {
+    if (_isActive &&
+        _vozacStartovaoRutu &&
+        _etaMinutes != null &&
+        _etaMinutes! >= 0) {
       return _WidgetFaza.pracenje;
     }
 
@@ -392,9 +405,11 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         // Faza 0: Info widget (nema aktivnog vozača)
         title = '📍 GPS PRAĆENJE UŽIVO';
         if (_imaDozvole) {
-          message = 'Ovde će biti prikazano vreme dolaska prevoza kada vozač krene';
+          message =
+              'Ovde će biti prikazano vreme dolaska prevoza kada vozač krene';
         } else {
-          message = 'Odobravanjem GPS i notifikacija ovde će vam biti prikazano vreme dolaska prevoza do vas';
+          message =
+              'Odobravanjem GPS i notifikacija ovde će vam biti prikazano vreme dolaska prevoza do vas';
         }
         baseColor = _imaDozvole ? Colors.white : Colors.orange.shade600;
         icon = _imaDozvole ? Icons.my_location : Icons.gps_not_fixed;
@@ -456,8 +471,12 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
             message,
             style: TextStyle(
               color: Colors.white,
-              fontSize: faza == _WidgetFaza.pracenje ? 28 : (faza == _WidgetFaza.potrebneDozvole ? 14 : 18),
-              fontWeight: faza == _WidgetFaza.potrebneDozvole ? FontWeight.w500 : FontWeight.bold,
+              fontSize: faza == _WidgetFaza.pracenje
+                  ? 28
+                  : (faza == _WidgetFaza.potrebneDozvole ? 14 : 18),
+              fontWeight: faza == _WidgetFaza.potrebneDozvole
+                  ? FontWeight.w500
+                  : FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
@@ -492,7 +511,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
                     },
                     borderRadius: BorderRadius.circular(24),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

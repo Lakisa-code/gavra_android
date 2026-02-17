@@ -12,7 +12,8 @@ class KapacitetScreen extends StatefulWidget {
   State<KapacitetScreen> createState() => _KapacitetScreenState();
 }
 
-class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProviderStateMixin {
+class _KapacitetScreenState extends State<KapacitetScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -170,7 +171,8 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                             ),
                             child: const Text(
                               'Otkaži',
-                              style: TextStyle(color: Colors.grey, fontSize: 16),
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 16),
                             ),
                           ),
                         ),
@@ -199,7 +201,8 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                             ),
                             child: const Text(
                               'Sačuvaj',
-                              style: TextStyle(fontSize: 16, color: Colors.white),
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.white),
                             ),
                           ),
                         ),
@@ -237,7 +240,8 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
     }
   }
 
-  Widget _buildGradTab(String grad, List<String> vremena, Map<String, Map<String, int>> kapacitet) {
+  Widget _buildGradTab(String grad, List<String> vremena,
+      Map<String, Map<String, int>> kapacitet) {
     return Column(
       children: [
         Expanded(
@@ -273,7 +277,9 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                       IconButton(
                         onPressed: maxMesta > 1
                             ? () async {
-                                final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta - 1);
+                                final success =
+                                    await KapacitetService.setKapacitet(
+                                        grad, vreme, maxMesta - 1);
                                 if (!mounted) return;
                                 if (!success) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -285,7 +291,8 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                                 }
                               }
                             : null,
-                        icon: const Icon(Icons.remove_circle, color: Colors.red, size: 32),
+                        icon: const Icon(Icons.remove_circle,
+                            color: Colors.red, size: 32),
                       ),
                       // Prikaz broja
                       Container(
@@ -310,7 +317,9 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                       IconButton(
                         onPressed: maxMesta < 20
                             ? () async {
-                                final success = await KapacitetService.setKapacitet(grad, vreme, maxMesta + 1);
+                                final success =
+                                    await KapacitetService.setKapacitet(
+                                        grad, vreme, maxMesta + 1);
                                 if (!mounted) return;
                                 if (!success) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -322,7 +331,8 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
                                 }
                               }
                             : null,
-                        icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
+                        icon: const Icon(Icons.add_circle,
+                            color: Colors.green, size: 32),
                       ),
                     ],
                   ),
@@ -373,7 +383,8 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
         body: StreamBuilder<Map<String, Map<String, int>>>(
           stream: KapacitetService.streamKapacitet(),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
 

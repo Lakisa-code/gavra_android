@@ -6,6 +6,7 @@ class VozacMappingService {
 
   static Map<String, String>? _vozacNameToUuid;
   static Map<String, String>? _vozacUuidToName;
+  static Map<String, String>? _vozacUuidToColor; // NOVO: UUID -> Hex boja
   static bool _isInitialized = false;
 
   // Expose status
@@ -20,6 +21,7 @@ class VozacMappingService {
     } catch (e) {
       _vozacNameToUuid = {};
       _vozacUuidToName = {};
+      _vozacUuidToColor = {};
       _isInitialized = true;
     }
   }
@@ -36,18 +38,31 @@ class VozacMappingService {
 
       _vozacNameToUuid = {};
       _vozacUuidToName = {};
+      _vozacUuidToColor = {}; // NOVO
 
       for (var vozac in vozaci) {
         _vozacNameToUuid![vozac.ime] = vozac.id;
         _vozacUuidToName![vozac.id] = vozac.ime;
+
+        if (vozac.boja != null && vozac.boja!.isNotEmpty) {
+          _vozacUuidToColor![vozac.id] = vozac.boja!;
+        }
 
         _vozacNameToUuid![vozac.punoIme] = vozac.id;
       }
     } catch (e) {
       _vozacNameToUuid = {};
       _vozacUuidToName = {};
+      _vozacUuidToColor = {}; // NOVO
       rethrow;
     }
+  }
+
+  /// Dobij boju vozača sinhron na osnovu UUID-a
+  static String? getVozacColorSync(String? uuid) {
+    if (uuid == null || uuid.isEmpty) return null;
+    if (!_isInitialized || _vozacUuidToColor == null) return null;
+    return _vozacUuidToColor?[uuid];
   }
 
   /// Dobij UUID vozača na osnovu imena

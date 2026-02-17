@@ -27,13 +27,17 @@ class ConfigService {
 
     // Ako nisu u .env, pokušaj iz environment varijabli (--dart-define)
     if (_supabaseUrl.isEmpty) {
-      _supabaseUrl = const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+      _supabaseUrl =
+          const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
     }
     if (_supabaseAnonKey.isEmpty) {
-      _supabaseAnonKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+      _supabaseAnonKey =
+          const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
     }
     if (_supabaseServiceRoleKey.isEmpty) {
-      _supabaseServiceRoleKey = const String.fromEnvironment('SUPABASE_SERVICE_ROLE_KEY', defaultValue: '');
+      _supabaseServiceRoleKey = const String.fromEnvironment(
+          'SUPABASE_SERVICE_ROLE_KEY',
+          defaultValue: '');
     }
 
     if (_supabaseUrl.isEmpty || _supabaseAnonKey.isEmpty) {
@@ -55,10 +59,14 @@ class ConfigService {
   void _loadKeystoreFromEnv() {
     // Učitaj iz .env fajla
     _storePassword = dotenv.env['KEYSTORE_PASSWORD'] ??
-        const String.fromEnvironment('KEYSTORE_PASSWORD', defaultValue: 'GavraRelease2024');
-    _keyPassword =
-        dotenv.env['KEY_PASSWORD'] ?? const String.fromEnvironment('KEY_PASSWORD', defaultValue: 'GavraRelease2024');
-    _keyAlias = dotenv.env['KEY_ALIAS'] ?? const String.fromEnvironment('KEY_ALIAS', defaultValue: 'gavra-release-key');
+        const String.fromEnvironment('KEYSTORE_PASSWORD',
+            defaultValue: 'GavraRelease2024');
+    _keyPassword = dotenv.env['KEY_PASSWORD'] ??
+        const String.fromEnvironment('KEY_PASSWORD',
+            defaultValue: 'GavraRelease2024');
+    _keyAlias = dotenv.env['KEY_ALIAS'] ??
+        const String.fromEnvironment('KEY_ALIAS',
+            defaultValue: 'gavra-release-key');
   }
 
   String getSupabaseUrl() => _supabaseUrl;

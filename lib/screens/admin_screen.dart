@@ -495,7 +495,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                                     value: 'praznici', child: Center(child: Text('Praznici'))),
                                               ],
                                               onChanged: (value) {
-                                                if (value != null) AppSettingsService.setNavBarType(value);
+                                                if (value != null) {
+                                                  AppSettingsService.setNavBarType(value);
+                                                }
                                               },
                                             ),
                                           ),
@@ -542,7 +544,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                                             fontSize: 14, fontWeight: FontWeight.w600))));
                                           }).toList(),
                                           onChanged: (value) {
-                                            if (value != null && mounted) setState(() => _selectedDan = value);
+                                            if (value != null && mounted) {
+                                              setState(() => _selectedDan = value);
+                                            }
                                           },
                                         ),
                                       ),
@@ -859,7 +863,9 @@ class _AdminScreenState extends State<AdminScreen> {
             // 💰 DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesecni tip) koji nisu platili
             final filteredDuznici = filteredPutnici.where((putnik) {
               final nijeMesecni = !putnik.isMesecniTip;
-              if (!nijeMesecni) return false; // ✅ FIX: Plava kartica = nije mesecni tip
+              if (!nijeMesecni) {
+                return false; // ✅ FIX: Plava kartica = nije mesecni tip
+              }
 
               final nijePlatio = putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
               final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';

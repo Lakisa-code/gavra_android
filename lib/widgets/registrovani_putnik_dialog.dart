@@ -24,7 +24,8 @@ import '../widgets/shared/time_row.dart';
 /// - existingPutnik: null za dodavanje, postojeći objekat za editovanje
 /// - onSaved: callback koji se poziva posle uspešnog čuvanja
 class RegistrovaniPutnikDialog extends StatefulWidget {
-  final RegistrovaniPutnik? existingPutnik; // null = dodavanje, !null = editovanje
+  final RegistrovaniPutnik?
+      existingPutnik; // null = dodavanje, !null = editovanje
   final VoidCallback? onSaved;
 
   const RegistrovaniPutnikDialog({
@@ -37,20 +38,26 @@ class RegistrovaniPutnikDialog extends StatefulWidget {
   bool get isEditing => existingPutnik != null;
 
   @override
-  State<RegistrovaniPutnikDialog> createState() => _RegistrovaniPutnikDialogState();
+  State<RegistrovaniPutnikDialog> createState() =>
+      _RegistrovaniPutnikDialogState();
 }
 
 class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
-  final RegistrovaniPutnikService _registrovaniPutnikService = RegistrovaniPutnikService();
+  final RegistrovaniPutnikService _registrovaniPutnikService =
+      RegistrovaniPutnikService();
 
   // Form controllers
   final TextEditingController _imeController = TextEditingController();
   final TextEditingController _tipSkoleController = TextEditingController();
   final TextEditingController _brojTelefonaController = TextEditingController();
-  final TextEditingController _brojTelefona2Controller = TextEditingController();
-  final TextEditingController _brojTelefonaOcaController = TextEditingController();
-  final TextEditingController _brojTelefonaMajkeController = TextEditingController();
-  final TextEditingController _adresaBelaCrkvaController = TextEditingController();
+  final TextEditingController _brojTelefona2Controller =
+      TextEditingController();
+  final TextEditingController _brojTelefonaOcaController =
+      TextEditingController();
+  final TextEditingController _brojTelefonaMajkeController =
+      TextEditingController();
+  final TextEditingController _adresaBelaCrkvaController =
+      TextEditingController();
   final TextEditingController _adresaVrsacController = TextEditingController();
   final TextEditingController _brojMestaController = TextEditingController();
   final TextEditingController _cenaPoDanuController = TextEditingController();
@@ -105,15 +112,22 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   /// Učitaj odobrene adrese iz baze
   Future<void> _loadAdreseFromDatabase() async {
     try {
-      final adreseBC = await AdresaSupabaseService.getAdreseZaGrad('Bela Crkva');
+      final adreseBC =
+          await AdresaSupabaseService.getAdreseZaGrad('Bela Crkva');
       final adreseVS = await AdresaSupabaseService.getAdreseZaGrad('Vršac');
 
       if (mounted) {
         setState(() {
-          _adreseBelaCrkva = adreseBC.map((a) => {'id': a.id, 'naziv': a.naziv}).toList()
-            ..sort((a, b) => _serbianCompare(a['naziv'] ?? '', b['naziv'] ?? ''));
-          _adreseVrsac = adreseVS.map((a) => {'id': a.id, 'naziv': a.naziv}).toList()
-            ..sort((a, b) => _serbianCompare(a['naziv'] ?? '', b['naziv'] ?? ''));
+          _adreseBelaCrkva = adreseBC
+              .map((a) => {'id': a.id, 'naziv': a.naziv})
+              .toList()
+            ..sort(
+                (a, b) => _serbianCompare(a['naziv'] ?? '', b['naziv'] ?? ''));
+          _adreseVrsac = adreseVS
+              .map((a) => {'id': a.id, 'naziv': a.naziv})
+              .toList()
+            ..sort(
+                (a, b) => _serbianCompare(a['naziv'] ?? '', b['naziv'] ?? ''));
         });
       }
     } catch (e) {
@@ -189,18 +203,35 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
               final bcOver = _getOverrideForDay(dan, true);
               if (bcOver != null && bcOver['zeljeno_vreme'] != null) {
-                _polazakBcControllers[dan]!.text = bcOver['zeljeno_vreme'].toString().substring(0, 5);
+                final status = bcOver['status']?.toString().toLowerCase();
+                if (status == 'bez_polaska' ||
+                    status == 'hidden' ||
+                    status == 'cancelled') {
+                  _polazakBcControllers[dan]!.clear();
+                } else {
+                  _polazakBcControllers[dan]!.text =
+                      bcOver['zeljeno_vreme'].toString().substring(0, 5);
+                }
               }
 
               final vsOver = _getOverrideForDay(dan, false);
               if (vsOver != null && vsOver['zeljeno_vreme'] != null) {
-                _polazakVsControllers[dan]!.text = vsOver['zeljeno_vreme'].toString().substring(0, 5);
+                final status = vsOver['status']?.toString().toLowerCase();
+                if (status == 'bez_polaska' ||
+                    status == 'hidden' ||
+                    status == 'cancelled') {
+                  _polazakVsControllers[dan]!.clear();
+                } else {
+                  _polazakVsControllers[dan]!.text =
+                      vsOver['zeljeno_vreme'].toString().substring(0, 5);
+                }
               }
             }
           });
         }
       } catch (e) {
-        debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška pri učitavanju override-ova: $e');
+        debugPrint(
+            '⚠️ [RegistrovaniPutnikDialog] Greška pri učitavanju override-ova: $e');
       }
 
       // Load working days
@@ -242,7 +273,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     // Try batch fetch for both ids
     try {
       final idsToFetch = <String>[];
-      if (putnik.adresaBelaCrkvaId != null && putnik.adresaBelaCrkvaId!.isNotEmpty) {
+      if (putnik.adresaBelaCrkvaId != null &&
+          putnik.adresaBelaCrkvaId!.isNotEmpty) {
         idsToFetch.add(putnik.adresaBelaCrkvaId!);
       }
       if (putnik.adresaVrsacId != null && putnik.adresaVrsacId!.isNotEmpty) {
@@ -250,16 +282,19 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       }
 
       if (idsToFetch.isNotEmpty) {
-        final fetched = await AdresaSupabaseService.getAdreseByUuids(idsToFetch);
+        final fetched =
+            await AdresaSupabaseService.getAdreseByUuids(idsToFetch);
 
         final bcNaziv = putnik.adresaBelaCrkvaId != null
             ? fetched[putnik.adresaBelaCrkvaId!]?.naziv ??
-                await AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaBelaCrkvaId)
+                await AdresaSupabaseService.getNazivAdreseByUuid(
+                    putnik.adresaBelaCrkvaId)
             : null;
 
         final vsNaziv = putnik.adresaVrsacId != null
             ? fetched[putnik.adresaVrsacId!]?.naziv ??
-                await AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaVrsacId)
+                await AdresaSupabaseService.getNazivAdreseByUuid(
+                    putnik.adresaVrsacId)
             : null;
 
         if (mounted) {
@@ -327,21 +362,25 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         int diff = targetWeekday - todayWeekday;
         if (diff < 0) diff += 7;
 
-        final targetDate = DateTime(now.year, now.month, now.day).add(Duration(days: diff));
+        final targetDate =
+            DateTime(now.year, now.month, now.day).add(Duration(days: diff));
         final dateStr = targetDate.toIso8601String().split('T')[0];
 
         final region = isBC ? 'Bela Crkva' : 'Vršac';
         final override = _weeklyOverrides.firstWhere(
           (req) =>
               req['datum'] == dateStr &&
-              (req['grad'] == region || (isBC && req['grad'] == 'BC') || (!isBC && req['grad'] == 'VS')),
+              (req['grad'] == region ||
+                  (isBC && req['grad'] == 'BC') ||
+                  (!isBC && req['grad'] == 'VS')),
           orElse: () => {},
         );
 
         return override.isNotEmpty ? override : null;
       }
     } catch (e) {
-      debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška u _getOverrideForDay: $e');
+      debugPrint(
+          '⚠️ [RegistrovaniPutnikDialog] Greška u _getOverrideForDay: $e');
     }
     return null;
   }
@@ -394,12 +433,15 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         left: 16,
         right: 16,
         top: 24,
-        bottom: keyboardHeight > 0 ? 8 : 24, // Manji padding kad je tastatura otvorena
+        bottom: keyboardHeight > 0
+            ? 8
+            : 24, // Manji padding kad je tastatura otvorena
       ),
       child: Container(
         constraints: BoxConstraints(
           maxHeight: keyboardHeight > 0
-              ? availableHeight * 0.95 // Kad je tastatura - koristi skoro svu dostupnu visinu
+              ? availableHeight *
+                  0.95 // Kad je tastatura - koristi skoro svu dostupnu visinu
               : screenHeight * 0.85, // Kad nema tastature - standardno
           maxWidth: MediaQuery.of(context).size.width * 0.9,
         ),
@@ -496,7 +538,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   Widget _buildContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      dragStartBehavior: DragStartBehavior.down, // Omogući long press na child widgetima
+      dragStartBehavior:
+          DragStartBehavior.down, // Omogući long press na child widgetima
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,10 +800,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _trebaRacun ? Colors.green.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
+                    color: _trebaRacun
+                        ? Colors.green.withOpacity(0.15)
+                        : Colors.grey.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _trebaRacun ? Colors.green.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
+                      color: _trebaRacun
+                          ? Colors.green.withOpacity(0.5)
+                          : Colors.grey.withOpacity(0.3),
                     ),
                   ),
                   child: Column(
@@ -777,7 +824,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                             child: Text(
                               'Treba račun na kraju meseca',
                               style: TextStyle(
-                                color: _trebaRacun ? Colors.green : Colors.white70,
+                                color:
+                                    _trebaRacun ? Colors.green : Colors.white70,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -785,7 +833,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                           ),
                           Switch(
                             value: _trebaRacun,
-                            thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                            thumbColor: WidgetStateProperty.resolveWith<Color?>(
+                                (states) {
                               if (states.contains(WidgetState.selected)) {
                                 return Colors.green;
                               }
@@ -802,7 +851,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                           ),
                         ],
                       ),
-                      if (_trebaRacun && _firmaNazivController.text.isNotEmpty) ...[
+                      if (_trebaRacun &&
+                          _firmaNazivController.text.isNotEmpty) ...[
                         const Divider(color: Colors.white24),
                         Row(
                           children: [
@@ -816,7 +866,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.white70, size: 18),
+                              icon: const Icon(Icons.edit,
+                                  color: Colors.white70, size: 18),
                               onPressed: _showFirmaDialog,
                               tooltip: 'Uredi podatke firme',
                             ),
@@ -909,9 +960,12 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () {
-              if (_firmaNazivController.text.trim().isEmpty || _firmaPibController.text.trim().isEmpty) {
+              if (_firmaNazivController.text.trim().isEmpty ||
+                  _firmaPibController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Unesite naziv firme i PIB'), backgroundColor: Colors.orange),
+                  const SnackBar(
+                      content: Text('Unesite naziv firme i PIB'),
+                      backgroundColor: Colors.orange),
                 );
                 return;
               }
@@ -933,7 +987,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           // DROPDOWN ZA BELA CRKVA
           DropdownButtonFormField<String>(
             key: ValueKey('bc_$_adresaBelaCrkvaId'),
-            value: _adreseBelaCrkva.any((a) => a['id'] == _adresaBelaCrkvaId) ? _adresaBelaCrkvaId : null,
+            value: _adreseBelaCrkva.any((a) => a['id'] == _adresaBelaCrkvaId)
+                ? _adresaBelaCrkvaId
+                : null,
             decoration: InputDecoration(
               labelText: 'Adresa Bela Crkva',
               prefixIcon: const Icon(Icons.location_on),
@@ -945,7 +1001,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             ),
             style: const TextStyle(color: Colors.black),
             isExpanded: true,
-            hint: const Text('Izaberi adresu...', style: TextStyle(color: Colors.grey)),
+            hint: const Text('Izaberi adresu...',
+                style: TextStyle(color: Colors.grey)),
             items: [
               ..._adreseBelaCrkva.map((adresa) => DropdownMenuItem<String>(
                     value: adresa['id'],
@@ -955,8 +1012,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             onChanged: (value) {
               setState(() {
                 _adresaBelaCrkvaId = value;
-                _adresaBelaCrkvaController.text =
-                    _adreseBelaCrkva.firstWhere((a) => a['id'] == value, orElse: () => {'naziv': ''})['naziv'] ?? '';
+                _adresaBelaCrkvaController.text = _adreseBelaCrkva.firstWhere(
+                        (a) => a['id'] == value,
+                        orElse: () => {'naziv': ''})['naziv'] ??
+                    '';
               });
             },
           ),
@@ -964,7 +1023,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           // DROPDOWN ZA VRŠAC
           DropdownButtonFormField<String>(
             key: ValueKey('vs_$_adresaVrsacId'),
-            value: _adreseVrsac.any((a) => a['id'] == _adresaVrsacId) ? _adresaVrsacId : null,
+            value: _adreseVrsac.any((a) => a['id'] == _adresaVrsacId)
+                ? _adresaVrsacId
+                : null,
             decoration: InputDecoration(
               labelText: 'Adresa Vršac',
               prefixIcon: const Icon(Icons.location_city),
@@ -976,7 +1037,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             ),
             style: const TextStyle(color: Colors.black),
             isExpanded: true,
-            hint: const Text('Izaberi adresu...', style: TextStyle(color: Colors.grey)),
+            hint: const Text('Izaberi adresu...',
+                style: TextStyle(color: Colors.grey)),
             items: [
               ..._adreseVrsac.map((adresa) => DropdownMenuItem<String>(
                     value: adresa['id'],
@@ -986,8 +1048,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             onChanged: (value) {
               setState(() {
                 _adresaVrsacId = value;
-                _adresaVrsacController.text =
-                    _adreseVrsac.firstWhere((a) => a['id'] == value, orElse: () => {'naziv': ''})['naziv'] ?? '';
+                _adresaVrsacController.text = _adreseVrsac.firstWhere(
+                        (a) => a['id'] == value,
+                        orElse: () => {'naziv': ''})['naziv'] ??
+                    '';
               });
             },
           ),
@@ -1328,7 +1392,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.blue, width: 2),
         ),
-        prefixIcon: icon != null ? Icon(icon, color: Colors.blue, size: 20) : null,
+        prefixIcon:
+            icon != null ? Icon(icon, color: Colors.blue, size: 20) : null,
         fillColor: Colors.white.withOpacity(0.9),
         filled: true,
       ),
@@ -1383,7 +1448,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 final status = await Permission.contacts.status;
                 if (status.isGranted || status.isLimited) {
                   // Permission already granted, get contacts
-                  final contacts = await FlutterContacts.getContacts(withProperties: true);
+                  final contacts =
+                      await FlutterContacts.getContacts(withProperties: true);
                   if (contacts.isEmpty) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1409,7 +1475,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                   final permission = await FlutterContacts.requestPermission();
                   if (permission) {
                     // Get all contacts
-                    final contacts = await FlutterContacts.getContacts(withProperties: true);
+                    final contacts =
+                        await FlutterContacts.getContacts(withProperties: true);
 
                     if (contacts.isEmpty) {
                       if (mounted) {
@@ -1431,7 +1498,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Dozvola za pristup kontaktima je odbijena'),
+                          content:
+                              Text('Dozvola za pristup kontaktima je odbijena'),
                           backgroundColor: Colors.orange,
                         ),
                       );
@@ -1542,10 +1610,18 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           final vs = danRaw['vs'];
           final bc2 = danRaw['bc2'];
           final vs2 = danRaw['vs2'];
-          if ((bc != null && bc.toString().isNotEmpty && bc.toString() != 'null') ||
-              (vs != null && vs.toString().isNotEmpty && vs.toString() != 'null') ||
-              (bc2 != null && bc2.toString().isNotEmpty && bc2.toString() != 'null') ||
-              (vs2 != null && vs2.toString().isNotEmpty && vs2.toString() != 'null')) {
+          if ((bc != null &&
+                  bc.toString().isNotEmpty &&
+                  bc.toString() != 'null') ||
+              (vs != null &&
+                  vs.toString().isNotEmpty &&
+                  vs.toString() != 'null') ||
+              (bc2 != null &&
+                  bc2.toString().isNotEmpty &&
+                  bc2.toString() != 'null') ||
+              (vs2 != null &&
+                  vs2.toString().isNotEmpty &&
+                  vs2.toString() != 'null')) {
             imaTermin = true;
           }
         }
@@ -1636,8 +1712,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     final normalized = _normalizePhoneNumber(telefon);
 
     try {
-      final response =
-          await supabase.from('registrovani_putnici').select('id, putnik_ime, broj_telefona').eq('obrisan', false);
+      final response = await supabase
+          .from('registrovani_putnici')
+          .select('id, putnik_ime, broj_telefona')
+          .eq('obrisan', false);
 
       for (final row in response as List) {
         final existingPhone = row['broj_telefona'] as String?;
@@ -1708,8 +1786,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         final bcVal = _polazakBcControllers[dan]?.text.trim() ?? '';
         final vsVal = _polazakVsControllers[dan]?.text.trim() ?? '';
 
-        final bc = bcVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(bcVal) : null;
-        final vs = vsVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(vsVal) : null;
+        final bc =
+            bcVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(bcVal) : null;
+        final vs =
+            vsVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(vsVal) : null;
 
         final dayMap = <String, dynamic>{};
         if (_isWinterMode) {
@@ -1783,23 +1863,35 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   Map<String, dynamic> _preparePutnikData() {
     final now = DateTime.now();
     // Default datumi ako nedostaju
-    final pocetak = widget.existingPutnik?.datumPocetkaMeseca ?? DateTime(now.year, now.month);
-    final kraj = widget.existingPutnik?.datumKrajaMeseca ?? DateTime(now.year, now.month + 1, 0);
+    final pocetak = widget.existingPutnik?.datumPocetkaMeseca ??
+        DateTime(now.year, now.month);
+    final kraj = widget.existingPutnik?.datumKrajaMeseca ??
+        DateTime(now.year, now.month + 1, 0);
 
     return {
       'id': widget.existingPutnik?.id, // Može biti null za novi insert
       'putnik_ime': _imeController.text.trim(),
       'tip': _tip,
       'broj_mesta': int.tryParse(_brojMestaController.text) ?? 1,
-      'tip_skole': _tipSkoleController.text.isEmpty ? null : _tipSkoleController.text.trim(),
-      'broj_telefona': _brojTelefonaController.text.isEmpty ? null : _brojTelefonaController.text.trim(),
-      'broj_telefona_2': _brojTelefona2Controller.text.isEmpty ? null : _brojTelefona2Controller.text.trim(),
-      'broj_telefona_oca': _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
-      'broj_telefona_majke':
-          _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
+      'tip_skole': _tipSkoleController.text.isEmpty
+          ? null
+          : _tipSkoleController.text.trim(),
+      'broj_telefona': _brojTelefonaController.text.isEmpty
+          ? null
+          : _brojTelefonaController.text.trim(),
+      'broj_telefona_2': _brojTelefona2Controller.text.isEmpty
+          ? null
+          : _brojTelefona2Controller.text.trim(),
+      'broj_telefona_oca': _brojTelefonaOcaController.text.isEmpty
+          ? null
+          : _brojTelefonaOcaController.text.trim(),
+      'broj_telefona_majke': _brojTelefonaMajkeController.text.isEmpty
+          ? null
+          : _brojTelefonaMajkeController.text.trim(),
       // UKLONJENO: polasci_po_danu - kolona je obrisana
       'radni_dani': _getRadniDaniString(),
-      'status': (widget.existingPutnik?.status == 'aktivan' || widget.existingPutnik?.status == null)
+      'status': (widget.existingPutnik?.status == 'aktivan' ||
+              widget.existingPutnik?.status == null)
           ? 'radi'
           : widget.existingPutnik!.status,
       // Datumi
@@ -1809,21 +1901,35 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'adresa_bela_crkva_id': _adresaBelaCrkvaId,
       'adresa_vrsac_id': _adresaVrsacId,
       // Cena po danu (custom ili null za default)
-      'cena_po_danu': _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
+      'cena_po_danu': _cenaPoDanuController.text.isEmpty
+          ? null
+          : double.tryParse(_cenaPoDanuController.text),
       // Email
-      'email': _emailController.text.isEmpty ? null : _emailController.text.trim(),
+      'email':
+          _emailController.text.isEmpty ? null : _emailController.text.trim(),
       // Polja za račun
       'treba_racun': _trebaRacun,
-      'firma_naziv': _firmaNazivController.text.isEmpty ? null : _firmaNazivController.text.trim(),
-      'firma_pib': _firmaPibController.text.isEmpty ? null : _firmaPibController.text.trim(),
-      'firma_mb': _firmaMbController.text.isEmpty ? null : _firmaMbController.text.trim(),
-      'firma_ziro': _firmaZiroController.text.isEmpty ? null : _firmaZiroController.text.trim(),
-      'firma_adresa': _firmaAdresaController.text.isEmpty ? null : _firmaAdresaController.text.trim(),
+      'firma_naziv': _firmaNazivController.text.isEmpty
+          ? null
+          : _firmaNazivController.text.trim(),
+      'firma_pib': _firmaPibController.text.isEmpty
+          ? null
+          : _firmaPibController.text.trim(),
+      'firma_mb': _firmaMbController.text.isEmpty
+          ? null
+          : _firmaMbController.text.trim(),
+      'firma_ziro': _firmaZiroController.text.isEmpty
+          ? null
+          : _firmaZiroController.text.trim(),
+      'firma_adresa': _firmaAdresaController.text.isEmpty
+          ? null
+          : _firmaAdresaController.text.trim(),
     };
   }
 
   /// Helper method to show contact picker dialog
-  void _showContactPickerDialog(BuildContext context, List<Contact> contacts, TextEditingController controller) {
+  void _showContactPickerDialog(BuildContext context, List<Contact> contacts,
+      TextEditingController controller) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1844,7 +1950,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Dozvola za kontakte'),
-          content: const Text('Dozvola za pristup kontaktima je trajno odbijena. '
+          content: const Text(
+              'Dozvola za pristup kontaktima je trajno odbijena. '
               'Da biste mogli da birate kontakte, omogućite dozvolu u podešavanjima aplikacije.'),
           actions: [
             TextButton(
@@ -1890,8 +1997,10 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
 
   void _filterContacts(String query) {
     setState(() {
-      _filteredContacts =
-          widget.contacts.where((contact) => contact.displayName.toLowerCase().contains(query.toLowerCase())).toList();
+      _filteredContacts = widget.contacts
+          .where((contact) =>
+              contact.displayName.toLowerCase().contains(query.toLowerCase()))
+          .toList();
     });
   }
 
@@ -1946,7 +2055,9 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                   icon: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                      color: isDark
+                          ? Colors.white10
+                          : Colors.black.withOpacity(0.05),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.close, size: 20),
@@ -1974,7 +2085,9 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                       )
                     : null,
                 filled: true,
-                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.08),
+                fillColor: isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.grey.withOpacity(0.08),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -1991,23 +2104,32 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 64, color: Colors.grey.withOpacity(0.5)),
+                        Icon(Icons.search_off,
+                            size: 64, color: Colors.grey.withOpacity(0.5)),
                         const SizedBox(height: 16),
                         Text(
                           'Nema pronađenih kontakata',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                          style: TextStyle(
+                              color: Colors.grey.shade600, fontSize: 16),
                         ),
                       ],
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                     itemCount: _filteredContacts.length,
                     itemBuilder: (context, index) {
                       final contact = _filteredContacts[index];
                       final name = contact.displayName;
                       final initials = name.isNotEmpty
-                          ? name.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('').toUpperCase()
+                          ? name
+                              .trim()
+                              .split(' ')
+                              .map((e) => e.isNotEmpty ? e[0] : '')
+                              .take(2)
+                              .join('')
+                              .toUpperCase()
                           : '?';
 
                       return Padding(
@@ -2017,7 +2139,8 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                           onTap: () {
                             if (contact.phones.isNotEmpty) {
                               String phoneNumber = contact.phones.first.number;
-                              phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                              phoneNumber = phoneNumber.replaceAll(
+                                  RegExp(r'[\s\-\(\)]'), '');
                               widget.onContactSelected(phoneNumber);
                             }
                             Navigator.pop(context);
@@ -2033,8 +2156,14 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: isDark
-                                          ? [Colors.blue.shade700, Colors.blue.shade900]
-                                          : [Colors.blue.shade100, Colors.blue.shade200],
+                                          ? [
+                                              Colors.blue.shade700,
+                                              Colors.blue.shade900
+                                            ]
+                                          : [
+                                              Colors.blue.shade100,
+                                              Colors.blue.shade200
+                                            ],
                                     ),
                                     shape: BoxShape.circle,
                                   ),
@@ -2042,7 +2171,9 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                                     child: Text(
                                       initials,
                                       style: TextStyle(
-                                        color: isDark ? Colors.white : Colors.blue.shade800,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.blue.shade800,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -2053,21 +2184,26 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                                 // Name and number
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         name,
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 16,
-                                          color: isDark ? Colors.white : Colors.black87,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                         ),
                                       ),
                                       if (contact.phones.isNotEmpty)
                                         Text(
                                           contact.phones.first.number,
                                           style: TextStyle(
-                                            color: isDark ? Colors.white54 : Colors.black45,
+                                            color: isDark
+                                                ? Colors.white54
+                                                : Colors.black45,
                                             fontSize: 13,
                                           ),
                                         ),

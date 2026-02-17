@@ -70,7 +70,8 @@ class HapticService {
       final hasVibrator = await Vibration.hasVibrator();
       if (hasVibrator == true) {
         // Dva kratka pulsa - "bip-bip" efekat
-        await Vibration.vibrate(pattern: [0, 150, 100, 150], intensities: [0, 255, 0, 255]);
+        await Vibration.vibrate(
+            pattern: [0, 150, 100, 150], intensities: [0, 255, 0, 255]);
       } else {
         // Fallback na haptic feedback
         HapticFeedback.heavyImpact();

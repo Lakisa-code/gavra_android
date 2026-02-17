@@ -45,7 +45,8 @@ class TimeRow extends StatelessWidget {
           child: ValueListenableBuilder<TextEditingValue>(
             valueListenable: bcController,
             builder: (context, value, _) {
-              final currentValue = value.text.trim().isEmpty ? null : value.text.trim();
+              final currentValue =
+                  value.text.trim().isEmpty ? null : value.text.trim();
               return TimePickerCell(
                 value: currentValue,
                 isBC: true,
@@ -66,7 +67,8 @@ class TimeRow extends StatelessWidget {
           child: ValueListenableBuilder<TextEditingValue>(
             valueListenable: vsController,
             builder: (context, value, _) {
-              final currentValue = value.text.trim().isEmpty ? null : value.text.trim();
+              final currentValue =
+                  value.text.trim().isEmpty ? null : value.text.trim();
               return TimePickerCell(
                 value: currentValue,
                 isBC: false,

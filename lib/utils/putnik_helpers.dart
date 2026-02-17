@@ -67,7 +67,8 @@ class PutnikHelpers {
   ///
   /// Uzima u obzir brojMesta svakog putnika i filtrira neaktivne
   static int countTotalSeats(List<Putnik> putnici) {
-    return filterForSeatCounting(putnici).fold(0, (sum, p) => sum + p.brojMesta);
+    return filterForSeatCounting(putnici)
+        .fold(0, (sum, p) => sum + p.brojMesta);
   }
 
   /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak

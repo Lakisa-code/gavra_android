@@ -23,7 +23,8 @@ class OsrmService {
     }
 
     try {
-      final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(
+      final coordinates =
+          await UnifiedGeocodingService.getCoordinatesForPutnici(
         putnici,
         onProgress: onGeocodingProgress,
       );
@@ -52,15 +53,18 @@ class OsrmService {
       // 🎯 Dodaj krajnju destinaciju ako je zadata (Vršac ili Bela Crkva)
       final hasEndDestination = endDestination != null;
       if (hasEndDestination) {
-        coordsList.add('${endDestination.longitude},${endDestination.latitude}');
+        coordsList
+            .add('${endDestination.longitude},${endDestination.latitude}');
       }
 
       final coordsString = coordsList.join(';');
 
-      final osrmResponse = await _callOsrmWithRetry(coordsString, hasEndDestination: hasEndDestination);
+      final osrmResponse = await _callOsrmWithRetry(coordsString,
+          hasEndDestination: hasEndDestination);
 
       if (osrmResponse == null) {
-        return OsrmResult.error('OSRM server nije dostupan. Proverite internet konekciju.');
+        return OsrmResult.error(
+            'OSRM server nije dostupan. Proverite internet konekciju.');
       }
 
       final parseResult = _parseOsrmResponse(
@@ -111,7 +115,9 @@ class OsrmService {
         if (response.statusCode == 200) {
           final data = json.decode(response.body) as Map<String, dynamic>;
 
-          if (data['code'] == 'Ok' && data['trips'] != null && (data['trips'] as List).isNotEmpty) {
+          if (data['code'] == 'Ok' &&
+              data['trips'] != null &&
+              (data['trips'] as List).isNotEmpty) {
             return data;
           }
         }
@@ -145,7 +151,8 @@ class OsrmService {
 
       if (waypoints == null || waypoints.isEmpty) return null;
 
-      final waypointsToProcess = hasEndDestination ? waypoints.length - 1 : waypoints.length;
+      final waypointsToProcess =
+          hasEndDestination ? waypoints.length - 1 : waypoints.length;
 
       // 🎯 ISPRAVLJEN ALGORITAM:
       // waypoint_index govori: "ova tačka (iz originalne liste) treba biti na poziciji waypoint_index u optimizovanoj ruti"
@@ -156,16 +163,19 @@ class OsrmService {
       for (int i = 1; i < waypointsToProcess; i++) {
         final wp = waypoints[i] as Map<String, dynamic>;
         final waypointIndex = wp['waypoint_index'] as int;
-        final putnikIndex = i - 1; // waypoints[1] = putnici[0], waypoints[2] = putnici[1], itd.
+        final putnikIndex =
+            i - 1; // waypoints[1] = putnici[0], waypoints[2] = putnici[1], itd.
         if (putnikIndex >= 0 && putnikIndex < putniciWithCoords.length) {
-          putniciWithWaypointIndex.add(MapEntry(putniciWithCoords[putnikIndex], waypointIndex));
+          putniciWithWaypointIndex
+              .add(MapEntry(putniciWithCoords[putnikIndex], waypointIndex));
         }
       }
 
       // Sortiraj po waypoint_index da dobijemo optimalan redosled
       putniciWithWaypointIndex.sort((a, b) => a.value.compareTo(b.value));
 
-      final orderedPutnici = putniciWithWaypointIndex.map((e) => e.key).toList();
+      final orderedPutnici =
+          putniciWithWaypointIndex.map((e) => e.key).toList();
 
       // 🆕 Izračunaj ETA za svakog putnika iz legs
       final putniciEta = <String, int>{};

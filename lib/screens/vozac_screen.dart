@@ -421,7 +421,9 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🚀 AUTO-REOPTIMIZACIJA: Kada se doda ili otkaže putnik, automatski reoptimizuje rutu
   void _syncOptimizedRouteWithStream(List<Putnik> streamPutnici) {
     // 🛡️ Filter durations and state check
-    if (DateTime.now().difference(_lastSyncTime!) < _syncThrottleDuration) return;
+    if (DateTime.now().difference(_lastSyncTime!) < _syncThrottleDuration) {
+      return;
+    }
     _lastSyncTime = DateTime.now();
 
     final streamIds = streamPutnici.map((p) => p.id).toSet();
@@ -1068,7 +1070,9 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // ?? POKRENI GPS TRACKING (ruta je vec optimizovana)
   Future<void> _startGpsTracking() async {
-    if (!_isRouteOptimized || _optimizedRoute.isEmpty || _currentDriver == null) return;
+    if (!_isRouteOptimized || _optimizedRoute.isEmpty || _currentDriver == null) {
+      return;
+    }
 
     try {
       final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';

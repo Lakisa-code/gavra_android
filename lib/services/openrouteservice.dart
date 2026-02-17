@@ -11,7 +11,8 @@ import 'package:http/http.dart' as http;
 class OpenRouteService {
   OpenRouteService._();
 
-  static const String _baseUrl = 'https://api.openrouteservice.org/v2/directions/driving-car';
+  static const String _baseUrl =
+      'https://api.openrouteservice.org/v2/directions/driving-car';
 
   // API key - hardkodiran jer je besplatan i nema sigurnosni rizik
   // Ako treba promeniti, promeni ovde

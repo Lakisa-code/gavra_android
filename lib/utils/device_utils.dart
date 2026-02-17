@@ -26,7 +26,8 @@ class DeviceUtils {
       final androidInfo = await _deviceInfo.androidInfo;
       _deviceManufacturer = androidInfo.manufacturer.toLowerCase();
 
-      _isHuaweiDevice = _deviceManufacturer!.contains('huawei') || _deviceManufacturer!.contains('honor');
+      _isHuaweiDevice = _deviceManufacturer!.contains('huawei') ||
+          _deviceManufacturer!.contains('honor');
 
       return _isHuaweiDevice!;
     } catch (e) {

@@ -16,7 +16,8 @@ class AppSettingsService {
     await _loadSettings();
 
     // Slušaj promene u realtime
-    _subscription = RealtimeManager.instance.subscribe('app_settings').listen((payload) {
+    _subscription =
+        RealtimeManager.instance.subscribe('app_settings').listen((payload) {
       // Na svaku promenu, ponovo učitaj podešavanja
       _loadSettings();
     });
@@ -25,7 +26,11 @@ class AppSettingsService {
   /// Učitaj sva podešavanja iz baze
   static Future<void> _loadSettings() async {
     try {
-      final response = await supabase.from('app_settings').select('nav_bar_type').eq('id', 'global').single();
+      final response = await supabase
+          .from('app_settings')
+          .select('nav_bar_type')
+          .eq('id', 'global')
+          .single();
 
       final navBarType = response['nav_bar_type'] as String? ?? 'letnji';
       navBarTypeNotifier.value = navBarType;
@@ -37,13 +42,16 @@ class AppSettingsService {
 
   /// Postavi nav_bar_type (samo admin može)
   static Future<void> setNavBarType(String type) async {
-    await supabase
-        .from('app_settings')
-        .update({'nav_bar_type': type, 'updated_at': DateTime.now().toIso8601String()}).eq('id', 'global');
+    await supabase.from('app_settings').update({
+      'nav_bar_type': type,
+      'updated_at': DateTime.now().toIso8601String()
+    }).eq('id', 'global');
 
     // 📝 LOG U DNEVNIK
     try {
-      await VoznjeLogService.logGeneric(tip: 'admin_akcija', detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
+      await VoznjeLogService.logGeneric(
+          tip: 'admin_akcija',
+          detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
     } catch (_) {}
   }
 

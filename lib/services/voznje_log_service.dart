@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import '../models/voznje_log.dart';
 import 'realtime/realtime_manager.dart';
 import 'vozac_mapping_service.dart';
 
@@ -147,6 +148,60 @@ class VoznjeLogService {
     return rezultat;
   }
 
+  /// 🔍 PROVERA POKUPLJENIH PUTNIKA - Vraća Set putnik_id koji su za dati datum imali 'voznja' log
+  static Future<Set<String>> getPickedUpIds({required String datumStr}) async {
+    try {
+      final response = await _supabase.from('voznje_log').select('putnik_id').eq('datum', datumStr).eq('tip', 'voznja');
+
+      return (response as List).map((l) => l['putnik_id'].toString()).toSet();
+    } catch (e) {
+      debugPrint('❌ Greška pri dobijanju pokupljenih putnika: $e');
+      return {};
+    }
+  }
+
+  /// 🔍 DETALJI O POKUPLJENIM PUTNICIMA (SSOT) - Vraća Map: putnik_id -> {vozac_id, created_at}
+  static Future<Map<String, Map<String, dynamic>>> getPickedUpLogData({required String datumStr}) async {
+    try {
+      final response = await _supabase
+          .from('voznje_log')
+          .select('putnik_id, vozac_id, created_at')
+          .eq('datum', datumStr)
+          .eq('tip', 'voznja');
+
+      final Map<String, Map<String, dynamic>> res = {};
+      for (var l in (response as List)) {
+        res[l['putnik_id'].toString()] = {
+          'vozac_id': l['vozac_id'],
+          'created_at': l['created_at'],
+        };
+      }
+      return res;
+    } catch (e) {
+      debugPrint('❌ [VoznjeLogService] Greška pri dohvatu detalja pokupljenosti: $e');
+      return {};
+    }
+  }
+
+  /// 📊 DOHVATA POJEDINAČNI LOG ZA PROVERU
+  static Future<Map<String, dynamic>?> getLogEntry({
+    required String putnikId,
+    required String datum,
+    required String tip,
+  }) async {
+    try {
+      return await _supabase
+          .from('voznje_log')
+          .select('id')
+          .eq('putnik_id', putnikId)
+          .eq('datum', datum)
+          .eq('tip', tip)
+          .maybeSingle();
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// 📊 STREAM STATISTIKA ZA POPIS - Realtime verzija
   static Stream<Map<String, dynamic>> streamStatistikePoVozacu({required String vozacIme, required DateTime datum}) {
     final datumStr = datum.toIso8601String().split('T')[0];
@@ -163,14 +218,13 @@ class VoznjeLogService {
       double pazar = 0.0;
 
       for (final record in records) {
+        final log = VoznjeLog.fromJson(record);
+
         // Filtriraj po vozaču i datumu
-        if (record['vozac_id'] != vozacUuid) continue;
-        if (record['datum'] != datumStr) continue;
+        if (log.vozacId != vozacUuid) continue;
+        if (log.datum?.toIso8601String().split('T')[0] != datumStr) continue;
 
-        final tip = record['tip'] as String?;
-        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
-
-        switch (tip) {
+        switch (log.tip) {
           case 'voznja':
             voznje++;
             break;
@@ -180,8 +234,9 @@ class VoznjeLogService {
           case 'uplata':
           case 'uplata_dnevna':
           case 'uplata_mesecna':
+          case 'placanje': // Podrška za stare logove iz PutnikService-a
             uplate++;
-            pazar += iznos;
+            pazar += log.iznos;
             break;
         }
       }
@@ -203,11 +258,13 @@ class VoznjeLogService {
       // Grupiši po putnik_id samo za ovog vozača i datum
       final Map<String, Set<String>> putnikTipovi = {};
       for (final record in records) {
-        if (record['vozac_id'] != vozacUuid) continue;
-        if (record['datum'] != datumStr) continue;
+        final log = VoznjeLog.fromJson(record);
 
-        final putnikId = record['putnik_id'] as String?;
-        final tip = record['tip'] as String?;
+        if (log.vozacId != vozacUuid) continue;
+        if (log.datum?.toIso8601String().split('T')[0] != datumStr) continue;
+
+        final putnikId = log.putnikId;
+        final tip = log.tip;
         if (putnikId == null || tip == null) continue;
 
         putnikTipovi.putIfAbsent(putnikId, () => {});
@@ -219,12 +276,9 @@ class VoznjeLogService {
       for (final entry in putnikTipovi.entries) {
         final tipovi = entry.value;
         final imaVoznju = tipovi.contains('voznja');
-        final imaUplatu = tipovi.any((t) => t.contains('uplata'));
+        final imaUplatu = tipovi.any((t) => t.contains('uplata') || t == 'placanje');
 
         if (imaVoznju && !imaUplatu) {
-          // Ovde bi idealno trebali proveriti i tip='dnevni' u registrovani_putnici,
-          // ali to je teško uraditi sinhrono u stream map-u.
-          // Za potrebe realtime brojača na ekranu, voznja bez uplate je dovoljna indikacija.
           brojDuznika++;
         }
       }
@@ -349,7 +403,9 @@ class VoznjeLogService {
     String? vozacId,
     int? placeniMesec,
     int? placenaGodina,
-    String tipUplate = 'uplata', // Default na 'uplata' za backward compatibility
+    String tipUplate = 'uplata',
+    String? tipPlacanja,
+    String? status,
   }) async {
     await _supabase.from('voznje_log').insert({
       'putnik_id': putnikId,
@@ -359,6 +415,8 @@ class VoznjeLogService {
       'vozac_id': vozacId,
       'placeni_mesec': placeniMesec ?? datum.month,
       'placena_godina': placenaGodina ?? datum.year,
+      'tip_placanja': tipPlacanja,
+      'status': status,
     });
   }
 
@@ -470,16 +528,19 @@ class VoznjeLogService {
       double ukupno = 0;
 
       for (final record in records) {
+        final log = VoznjeLog.fromJson(record);
+
         // Filtriraj po tipu i datumu
-        final tip = record['tip'] as String?;
-        if (tip == null || (tip != 'uplata' && tip != 'uplata_mesecna' && tip != 'uplata_dnevna')) continue;
+        if (log.tip != 'uplata' && log.tip != 'uplata_mesecna' && log.tip != 'uplata_dnevna' && log.tip != 'placanje') {
+          continue;
+        }
 
-        final datum = record['datum'] as String?;
-        if (datum == null) continue;
-        if (datum.compareTo(fromStr) < 0 || datum.compareTo(toStr) > 0) continue;
+        final logDatumStr = log.datum?.toIso8601String().split('T')[0];
+        if (logDatumStr == null) continue;
+        if (logDatumStr.compareTo(fromStr) < 0 || logDatumStr.compareTo(toStr) > 0) continue;
 
-        final vozacId = record['vozac_id'] as String?;
-        final iznos = (record['iznos'] as num?)?.toDouble() ?? 0;
+        final vozacId = log.vozacId;
+        final iznos = log.iznos;
 
         if (iznos <= 0) continue;
 
@@ -624,7 +685,7 @@ class VoznjeLogService {
 
   /// 🕒 STREAM POSLEDNJIH AKCIJA - Za Dnevnik vozača
   /// ✅ ISPRAVKA: Uključuje i akcije putnika (gde je vozac_id NULL) ako su povezani sa ovim vozačem
-  static Stream<List<Map<String, dynamic>>> streamRecentLogs({required String vozacIme, int limit = 10}) {
+  static Stream<List<VoznjeLog>> streamRecentLogs({required String vozacIme, int limit = 10}) {
     final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
     if (vozacUuid == null || vozacUuid.isEmpty) {
       return Stream.value([]);
@@ -638,16 +699,19 @@ class VoznjeLogService {
         .order('created_at', ascending: false)
         .limit(limit * 5) // Uzimamo malo više pa ćemo filtrirati lokalno
         .map((List<Map<String, dynamic>> logs) {
-          final List<Map<String, dynamic>> filtered = logs.where((log) {
-            if (log['vozac_id'] == vozacUuid) return true;
-            if (log['vozac_id'] == null) return true;
-            return false;
-          }).toList();
+          final List<VoznjeLog> filtered = logs
+              .where((log) {
+                if (log['vozac_id'] == vozacUuid) return true;
+                if (log['vozac_id'] == null) return true;
+                return false;
+              })
+              .map((json) => VoznjeLog.fromJson(json))
+              .toList();
 
           // Sortiraj po vremenu (created_at) silazno
           filtered.sort((a, b) {
-            final DateTime dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
-            final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
+            final DateTime dateA = a.createdAt ?? DateTime.now();
+            final DateTime dateB = b.createdAt ?? DateTime.now();
             return dateB.compareTo(dateA);
           });
           return filtered.take(limit).toList();
@@ -656,7 +720,7 @@ class VoznjeLogService {
 
   /// 🕒 GLOBALNI STREAM SVIH AKCIJA - Za Gavra Lab Admin Dnevnik
   /// ✅ ISPRAVKA: Dodat server-side order i limit za stream
-  static Stream<List<Map<String, dynamic>>> streamAllRecentLogs({int limit = 50}) {
+  static Stream<List<VoznjeLog>> streamAllRecentLogs({int limit = 50}) {
     return _supabase
         .from('voznje_log')
         .stream(primaryKey: ['id'])
@@ -665,10 +729,10 @@ class VoznjeLogService {
         .map((List<Map<String, dynamic>> logs) {
           // Sortiranje je već urađeno na serveru, ali Supabase stream ponekad emituje
           // nesortirane podatke pri update-u, pa je sigurnije zadržati i lokalni sort.
-          final List<Map<String, dynamic>> sorted = List.from(logs);
+          final List<VoznjeLog> sorted = logs.map((json) => VoznjeLog.fromJson(json)).toList();
           sorted.sort((a, b) {
-            final DateTime dateA = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.now();
-            final DateTime dateB = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.now();
+            final DateTime dateA = a.createdAt ?? DateTime.now();
+            final DateTime dateB = b.createdAt ?? DateTime.now();
             return dateB.compareTo(dateA);
           });
           return sorted;
@@ -684,9 +748,14 @@ class VoznjeLogService {
     int brojMesta = 1,
     String? detalji,
     Map<String, dynamic>? meta,
+    int? satiPrePolaska,
+    String? tipPlacanja,
+    String? status,
+    String? datum, // NOVO: Mogućnost prosleđivanja specifičnog datuma
   }) async {
     try {
-      final datumStr = DateTime.now().toIso8601String().split('T')[0];
+      final now = DateTime.now();
+      final datumStr = datum ?? now.toIso8601String().split('T')[0];
       await _supabase.from('voznje_log').insert({
         'tip': tip,
         'putnik_id': putnikId,
@@ -695,9 +764,12 @@ class VoznjeLogService {
         'broj_mesta': brojMesta,
         'datum': datumStr,
         'detalji': detalji,
-        'meta': meta, // 🆕 Dodato meta polje za dodatne podatke (npr. grad, vreme)
-        'placeni_mesec': DateTime.now().month,
-        'placena_godina': DateTime.now().year,
+        'meta': meta,
+        'placeni_mesec': now.month,
+        'placena_godina': now.year,
+        'sati_pre_polaska': satiPrePolaska,
+        'tip_placanja': tipPlacanja,
+        'status': status,
       });
     } catch (e) {
       debugPrint('❌ Greška pri logovanju akcije ($tip): $e');
@@ -717,6 +789,7 @@ class VoznjeLogService {
       tip: 'zakazivanje_putnika',
       putnikId: putnikId,
       detalji: '$status ($tipPutnika): $dan u $vreme ($grad)',
+      status: status,
       meta: {'dan': dan.toLowerCase(), 'grad': grad.toLowerCase(), 'vreme': vreme},
     );
   }

@@ -80,7 +80,8 @@ class CardColorHelper {
   static const Color odsustvoText = Color(0xFFF57C00); // Colors.orange[700]
 
   // 🔴 OTKAZANO - DRUGI PRIORITET
-  static const Color otkazanoBackground = Color(0xFFEF9A9A); // Red[200] - tamnija crvena
+  static const Color otkazanoBackground =
+      Color(0xFFEF9A9A); // Red[200] - tamnija crvena
   static const Color otkazanoBorder = Colors.red;
   static const Color otkazanoText = Color(0xFFEF5350); // Colors.red[400]
 
@@ -151,7 +152,9 @@ class CardColorHelper {
       return CardState.pokupljeno;
     }
     // ?? TU�I PUTNIK: ima vozaca, vozac nije trenutni
-    if (putnik.dodeljenVozac != null && putnik.dodeljenVozac!.isNotEmpty && putnik.dodeljenVozac != currentDriver) {
+    if (putnik.dodeljenVozac != null &&
+        putnik.dodeljenVozac!.isNotEmpty &&
+        putnik.dodeljenVozac != currentDriver) {
       return CardState.tudji;
     }
     return CardState.nepokupljeno;
@@ -403,7 +406,8 @@ class CardColorHelper {
   }
 
   /// Vraca kompletnu BoxDecoration za karticu SA proverom vozaca (za sivu boju)
-  static BoxDecoration getCardDecorationWithDriver(Putnik putnik, String currentDriver) {
+  static BoxDecoration getCardDecorationWithDriver(
+      Putnik putnik, String currentDriver) {
     final state = getCardStateWithDriver(putnik, currentDriver);
     final gradient = _getGradientForState(state);
 
@@ -437,7 +441,8 @@ class CardColorHelper {
   }
 
   /// Vraca sekundarnu boju teksta SA proverom vozaca
-  static Color getSecondaryTextColorWithDriver(Putnik putnik, String currentDriver) {
+  static Color getSecondaryTextColorWithDriver(
+      Putnik putnik, String currentDriver) {
     final state = getCardStateWithDriver(putnik, currentDriver);
     return _getSecondaryTextForState(state);
   }

@@ -788,7 +788,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         await PermissionService.requestAllPermissionsOnFirstLaunch(context);
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ [WelcomeScreen] Permission request failed: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ [WelcomeScreen] Permission request failed: $e');
+      }
     }
   }
 

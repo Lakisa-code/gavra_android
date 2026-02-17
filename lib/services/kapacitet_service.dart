@@ -48,11 +48,19 @@ class KapacitetService {
 
   /// Sva moguća vremena (zimska + letnja + praznična) - za kapacitet tabelu
   static List<String> get svaVremenaBc {
-    return {...RouteConfig.bcVremenaZimski, ...RouteConfig.bcVremenaLetnji, ...RouteConfig.bcVremenaPraznici}.toList();
+    return {
+      ...RouteConfig.bcVremenaZimski,
+      ...RouteConfig.bcVremenaLetnji,
+      ...RouteConfig.bcVremenaPraznici
+    }.toList();
   }
 
   static List<String> get svaVremenaVs {
-    return {...RouteConfig.vsVremenaZimski, ...RouteConfig.vsVremenaLetnji, ...RouteConfig.vsVremenaPraznici}.toList();
+    return {
+      ...RouteConfig.vsVremenaZimski,
+      ...RouteConfig.vsVremenaLetnji,
+      ...RouteConfig.vsVremenaPraznici
+    }.toList();
   }
 
   /// Dohvati vremena za grad (sezonski)
@@ -79,7 +87,10 @@ class KapacitetService {
   /// Vraća: {'BC': {'5:00': 8, '6:00': 8, ...}, 'VS': {'6:00': 8, ...}}
   static Future<Map<String, Map<String, int>>> getKapacitet() async {
     try {
-      final response = await _supabase.from('kapacitet_polazaka').select('grad, vreme, max_mesta').eq('aktivan', true);
+      final response = await _supabase
+          .from('kapacitet_polazaka')
+          .select('grad, vreme, max_mesta')
+          .eq('aktivan', true);
 
       final result = <String, Map<String, int>>{
         'BC': {},
@@ -120,7 +131,8 @@ class KapacitetService {
 
   /// Stream kapaciteta (realtime ažuriranje) - koristi RealtimeManager
   static Stream<Map<String, Map<String, int>>> streamKapacitet() {
-    final controller = StreamController<Map<String, Map<String, int>>>.broadcast();
+    final controller =
+        StreamController<Map<String, Map<String, int>>>.broadcast();
     StreamSubscription? subscription;
 
     // Učitaj inicijalne podatke
@@ -131,7 +143,9 @@ class KapacitetService {
     });
 
     // Koristi centralizovani RealtimeManager
-    subscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
+    subscription = RealtimeManager.instance
+        .subscribe('kapacitet_polazaka')
+        .listen((payload) {
       // Na bilo koju promenu, ponovo učitaj sve
       getKapacitet().then((data) {
         if (!controller.isClosed) {
@@ -149,7 +163,8 @@ class KapacitetService {
   }
 
   /// Admin: Promeni kapacitet za određeni polazak
-  static Future<bool> setKapacitet(String grad, String vreme, int maxMesta, {String? napomena}) async {
+  static Future<bool> setKapacitet(String grad, String vreme, int maxMesta,
+      {String? napomena}) async {
     try {
       // Prvo probaj update ako postoji zapis
       final updateResult = await _supabase
@@ -183,7 +198,11 @@ class KapacitetService {
   /// Admin: Deaktiviraj polazak (ne briše, samo sakriva)
   static Future<bool> deaktivirajPolazak(String grad, String vreme) async {
     try {
-      await _supabase.from('kapacitet_polazaka').update({'aktivan': false}).eq('grad', grad).eq('vreme', vreme);
+      await _supabase
+          .from('kapacitet_polazaka')
+          .update({'aktivan': false})
+          .eq('grad', grad)
+          .eq('vreme', vreme);
 
       return true;
     } catch (e) {
@@ -194,7 +213,11 @@ class KapacitetService {
   /// Admin: Aktiviraj polazak
   static Future<bool> aktivirajPolazak(String grad, String vreme) async {
     try {
-      await _supabase.from('kapacitet_polazaka').update({'aktivan': true}).eq('grad', grad).eq('vreme', vreme);
+      await _supabase
+          .from('kapacitet_polazaka')
+          .update({'aktivan': true})
+          .eq('grad', grad)
+          .eq('vreme', vreme);
 
       return true;
     } catch (e) {
@@ -271,7 +294,9 @@ class KapacitetService {
     }
 
     // Pokreni globalni listener
-    _globalRealtimeSubscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
+    _globalRealtimeSubscription = RealtimeManager.instance
+        .subscribe('kapacitet_polazaka')
+        .listen((payload) {
       // Na svaku promenu, osveži cache
       refreshKapacitetCache();
     });

@@ -114,7 +114,8 @@ class BiometricService {
       return 'otisak prsta';
     } else if (types.contains(BiometricType.iris)) {
       return 'iris';
-    } else if (types.contains(BiometricType.strong) || types.contains(BiometricType.weak)) {
+    } else if (types.contains(BiometricType.strong) ||
+        types.contains(BiometricType.weak)) {
       return 'biometriju';
     }
     return 'biometriju';

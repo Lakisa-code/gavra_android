@@ -234,7 +234,9 @@ class TimePickerCell extends StatelessWidget {
           return;
         }
 
-        if (locked && !isAdmin) return; // Ostali slučajevi zaključavanja (npr. prošli dan)
+        if (locked && !isAdmin) {
+          return; // Ostali slučajevi zaključavanja (npr. prošli dan)
+        }
 
         // 🆕 PROVERA ZA DNEVNE PUTNIKE - samo danas i sutra
         if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && !isAdmin) {

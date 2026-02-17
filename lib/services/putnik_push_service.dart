@@ -15,7 +15,9 @@ class PutnikPushService {
   /// Koristi unificirani PushTokenService
   static Future<bool> registerPutnikToken(dynamic putnikId) async {
     try {
-      if (kDebugMode) debugPrint('📱 [PutnikPush] Registrujem token za putnika: $putnikId');
+      if (kDebugMode) {
+        debugPrint('📱 [PutnikPush] Registrujem token za putnika: $putnikId');
+      }
 
       String? token;
       String? provider;
@@ -24,19 +26,27 @@ class PutnikPushService {
       token = await FirebaseService.getFCMToken();
       if (token != null && token.isNotEmpty) {
         provider = 'fcm';
-        if (kDebugMode) debugPrint('✅ [PutnikPush] FCM token dobijen: ${token.substring(0, 20)}...');
+        if (kDebugMode) {
+          debugPrint('✅ [PutnikPush] FCM token dobijen: ${token.substring(0, 20)}...');
+        }
       } else {
-        if (kDebugMode) debugPrint('⚠️ [PutnikPush] FCM token nije dostupan, pokušavam HMS...');
+        if (kDebugMode) {
+          debugPrint('⚠️ [PutnikPush] FCM token nije dostupan, pokušavam HMS...');
+        }
         // Fallback na HMS (Huawei uređaji)
         token = await HuaweiPushService().initialize();
         if (token != null && token.isNotEmpty) {
           provider = 'huawei';
-          if (kDebugMode) debugPrint('✅ [PutnikPush] HMS token dobijen: ${token.substring(0, 20)}...');
+          if (kDebugMode) {
+            debugPrint('✅ [PutnikPush] HMS token dobijen: ${token.substring(0, 20)}...');
+          }
         }
       }
 
       if (token == null || provider == null) {
-        if (kDebugMode) debugPrint('❌ [PutnikPush] Nijedan push provider nije dostupan!');
+        if (kDebugMode) {
+          debugPrint('❌ [PutnikPush] Nijedan push provider nije dostupan!');
+        }
         return false;
       }
 

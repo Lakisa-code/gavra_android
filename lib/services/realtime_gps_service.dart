@@ -30,7 +30,8 @@ class RealtimeGpsService {
       final androidSettings = AndroidSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 100, // Ili svakih 100 metara ako brže
-        intervalDuration: const Duration(seconds: 30), // Update svakih 30 sekundi
+        intervalDuration:
+            const Duration(seconds: 30), // Update svakih 30 sekundi
       );
 
       // Pokreni tracking

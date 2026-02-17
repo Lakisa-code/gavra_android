@@ -55,7 +55,8 @@ class UnifiedGeocodingService {
   }) async {
     final Map<Putnik, Position> coordinates = {};
 
-    final putniciSaAdresama = putnici.where((p) => _hasValidAddress(p)).toList();
+    final putniciSaAdresama =
+        putnici.where((p) => _hasValidAddress(p)).toList();
 
     if (putniciSaAdresama.isEmpty) {
       return coordinates;
@@ -169,7 +170,8 @@ class UnifiedGeocodingService {
     if (putnik.adresa == null || putnik.adresa!.trim().isEmpty) {
       return false;
     }
-    if (putnik.adresa!.toLowerCase().trim() == putnik.grad.toLowerCase().trim()) {
+    if (putnik.adresa!.toLowerCase().trim() ==
+        putnik.grad.toLowerCase().trim()) {
       return false;
     }
     return true;
@@ -249,7 +251,9 @@ class UnifiedGeocodingService {
     const maxConcurrent = 5; // Max istovremenih geocoding poziva
     final List<GeocodingResult> allResults = [];
 
-    for (int batchStart = 0; batchStart < tasks.length; batchStart += maxConcurrent) {
+    for (int batchStart = 0;
+        batchStart < tasks.length;
+        batchStart += maxConcurrent) {
       final batchEnd = (batchStart + maxConcurrent).clamp(0, tasks.length);
       final batch = tasks.sublist(batchStart, batchEnd);
 
@@ -261,7 +265,8 @@ class UnifiedGeocodingService {
       allResults.addAll(batchResults);
 
       // Dodaj delay između batch-eva, ali samo ako ima nominatim poziva
-      final hasNominatimInBatch = batchResults.any((r) => r.source == 'nominatim');
+      final hasNominatimInBatch =
+          batchResults.any((r) => r.source == 'nominatim');
       if (hasNominatimInBatch && batchEnd < tasks.length) {
         await Future.delayed(delay);
       }

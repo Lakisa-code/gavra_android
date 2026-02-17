@@ -1687,7 +1687,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                         stream: RegistrovaniPutnikService.streamPoslednjePlacanje(putnik.id),
                                         builder: (context, snapshot) {
                                           final placanje = snapshot.data;
-                                          if (placanje == null) return const SizedBox.shrink();
+                                          if (placanje == null) {
+                                            return const SizedBox.shrink();
+                                          }
                                           final vozacIme = placanje['vozac_ime'] as String?;
                                           final datum = placanje['datum'] as String?;
                                           return Column(

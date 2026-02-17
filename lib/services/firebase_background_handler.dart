@@ -26,7 +26,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> backgroundNotificationHandler(Map<String, dynamic> payload) async {
   try {
     final title = payload['title'] as String? ?? 'Gavra Notification';
-    final body = payload['body'] as String? ?? (payload['message'] as String?) ?? 'Nova notifikacija';
+    final body = payload['body'] as String? ??
+        (payload['message'] as String?) ??
+        'Nova notifikacija';
 
     // 🛡️ FIX: Umesto samo payload['data'], prosleđujemo ceo payload.
     // FCM postavlja sve podatke direktno u message.data, tako da je payload već 'data' mapa.
