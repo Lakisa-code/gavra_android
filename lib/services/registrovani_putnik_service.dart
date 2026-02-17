@@ -346,10 +346,10 @@ class RegistrovaniPutnikService {
 
   /// Kreira novog mesečnog putnika
   /// Baca grešku ako već postoji putnik sa istim brojem telefona
-  /// Baca grešku ako je kapacitet popunjen za bilo koji termin (osim ako je skipKapacitetCheck=true)
   Future<RegistrovaniPutnik> createRegistrovaniPutnik(
     RegistrovaniPutnik putnik, {
     bool skipKapacitetCheck = false,
+    Map<String, dynamic>? initialSchedule, // 🆕 Opcioni početni raspored
   }) async {
     // 🔍 PROVERA DUPLIKATA - pre insert-a proveri da li već postoji
     final telefon = putnik.brojTelefona;
@@ -361,26 +361,24 @@ class RegistrovaniPutnikService {
       }
     }
 
-    // 🚫 PROVERA KAPACITETA - Da li ima slobodnih mesta za sve termine?
-    // Preskači ako admin uređuje (skipKapacitetCheck=true)
-    final putnikMap = putnik.toMap();
-    if (!skipKapacitetCheck) {
-      final rawPolasci = putnikMap['polasci_po_danu'];
-      Map<String, dynamic>? polasci;
-      if (rawPolasci is Map) {
-        polasci = Map<String, dynamic>.from(rawPolasci);
-      }
-
-      if (polasci != null) {
-        await _validateKapacitetForRawPolasci(polasci, brojMesta: putnik.brojMesta, tipPutnika: putnik.tip);
-      }
+    // 🚫 PROVERA KAPACITETA - Koristimo initialSchedule ako je prosleđen
+    if (!skipKapacitetCheck && initialSchedule != null) {
+      await _validateKapacitetForRawPolasci(initialSchedule, brojMesta: putnik.brojMesta, tipPutnika: putnik.tip);
     }
 
+    final putnikMap = putnik.toMap();
     final response = await _supabase.from('registrovani_putnici').insert(putnikMap).select('''
           *
         ''').single();
 
-    return RegistrovaniPutnik.fromMap(response);
+    final noviPutnik = RegistrovaniPutnik.fromMap(response);
+
+    // Ako imamo raspored, odmah sinhronizuj sa seat_requests
+    if (initialSchedule != null) {
+      await _syncSeatRequestsWithTemplate(noviPutnik.id, initialSchedule);
+    }
+
+    return noviPutnik;
   }
 
   /// 🚫 Validira da ima slobodnih mesta za sve termine putnika
@@ -490,105 +488,25 @@ class RegistrovaniPutnikService {
     String id,
     Map<String, dynamic> updates, {
     bool skipKapacitetCheck = false,
+    Map<String, dynamic>? newWeeklySchedule, // 🆕 NOVO: Zamena za polasci_po_danu
   }) async {
     updates['updated_at'] = DateTime.now().toUtc().toIso8601String();
 
-    // 🛡️ MERGE SA POSTOJEĆIM MARKERIMA U BAZI (bc_pokupljeno, bc_placeno, itd.)
-    if (updates.containsKey('polasci_po_danu')) {
-      final noviPolasci = updates['polasci_po_danu'];
-      if (noviPolasci != null && noviPolasci is Map) {
-        // Čitaj trenutno stanje iz baze
-        final trenutnoStanje =
-            await _supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', id).limit(1).maybeSingle();
+    // ČISTIMO UPDATES: Ne smemo slati polasci_po_danu jer je kolona obrisana
+    updates.remove('polasci_po_danu');
 
-        if (trenutnoStanje == null) {
-          debugPrint('🔴 [RegistrovaniPutnikService] Passenger not found: $id');
-          throw Exception('Putnik sa ID-om $id nije pronađen');
-        }
+    // 🚫 PROVERA KAPACITETA - ako se menjaju termini (preko novog rasporeda)
+    if (!skipKapacitetCheck && newWeeklySchedule != null) {
+      // Dohvati broj_mesta i tip za proveru kapaciteta
+      final currentData =
+          await _supabase.from('registrovani_putnici').select('broj_mesta, tip').eq('id', id).limit(1).maybeSingle();
 
-        final rawPolasciDB = trenutnoStanje['polasci_po_danu'];
-        Map<String, dynamic>? trenutniPolasci;
-
-        if (rawPolasciDB is Map) {
-          trenutniPolasci = Map<String, dynamic>.from(rawPolasciDB);
-        }
-
-        if (trenutniPolasci != null) {
-          // Merge novi polasci sa postojećim markerima
-          final mergedPolasci = <String, dynamic>{};
-
-          // 1. Prvo kopiraj SVE što je trenutno u bazi (da ne bismo izgubili npr. subotu/nedelju)
-          trenutniPolasci.forEach((dan, stariPodaci) {
-            if (stariPodaci is Map) {
-              mergedPolasci[dan] = Map<String, dynamic>.from(stariPodaci);
-            } else {
-              mergedPolasci[dan] = stariPodaci;
-            }
-          });
-
-          // 2. Preklopi sa novim podacima iz dijaloga
-          noviPolasci.forEach((dan, noviPodaci) {
-            if (noviPodaci is Map) {
-              final postojeciPodaciZaDan = mergedPolasci[dan] is Map
-                  ? Map<String, dynamic>.from(mergedPolasci[dan] as Map)
-                  : <String, dynamic>{};
-
-              final Map<String, dynamic> noviPodaciMap = Map<String, dynamic>.from(noviPodaci);
-
-              // Ažuriraj samo polaske, zadrži markere ako su postojali
-              postojeciPodaciZaDan['bc'] = noviPodaciMap['bc'];
-              postojeciPodaciZaDan['vs'] = noviPodaciMap['vs'];
-              postojeciPodaciZaDan['bc2'] = noviPodaciMap['bc2'];
-              postojeciPodaciZaDan['vs2'] = noviPodaciMap['vs2'];
-
-              // Ako je polazak obrisan (null), obriši i markere vezane za taj polazak
-              if (noviPodaciMap['bc'] == null) {
-                postojeciPodaciZaDan.remove('bc_pokupljeno');
-                postojeciPodaciZaDan.remove('bc_pokupljeno_vozac');
-                postojeciPodaciZaDan.remove('bc_status');
-              }
-              if (noviPodaciMap['bc2'] == null) {
-                postojeciPodaciZaDan.remove('bc2_pokupljeno');
-                postojeciPodaciZaDan.remove('bc2_status');
-              }
-              if (noviPodaciMap['vs'] == null) {
-                postojeciPodaciZaDan.remove('vs_pokupljeno');
-                postojeciPodaciZaDan.remove('vs_pokupljeno_vozac');
-                postojeciPodaciZaDan.remove('vs_status');
-              }
-              if (noviPodaciMap['vs2'] == null) {
-                postojeciPodaciZaDan.remove('vs2_pokupljeno');
-                postojeciPodaciZaDan.remove('vs2_status');
-              }
-
-              mergedPolasci[dan] = postojeciPodaciZaDan;
-            } else {
-              mergedPolasci[dan] = noviPodaci;
-            }
-          });
-
-          updates['polasci_po_danu'] = mergedPolasci;
-        }
-      }
-    }
-
-    // 🚫 PROVERA KAPACITETA - ako se menjaju termini
-    if (!skipKapacitetCheck && updates.containsKey('polasci_po_danu')) {
-      final polasciPoDanu = updates['polasci_po_danu'];
-      if (polasciPoDanu != null && polasciPoDanu is Map) {
-        // Dohvati broj_mesta i tip za proveru kapaciteta
-        final currentData =
-            await _supabase.from('registrovani_putnici').select('broj_mesta, tip').eq('id', id).limit(1).maybeSingle();
-
-        if (currentData == null) {
-          debugPrint('🔴 [RegistrovaniPutnikService] Passenger not found for capacity check: $id');
-          throw Exception('Putnik sa ID-om $id nije pronađen za proveru kapaciteta');
-        }
+      if (currentData != null) {
         final bm = updates['broj_mesta'] ?? currentData['broj_mesta'] ?? 1;
         final t = updates['tip'] ?? currentData['tip'];
 
-        // Direktno koristi raw polasci_po_danu map za validaciju
-        await _validateKapacitetForRawPolasci(Map<String, dynamic>.from(polasciPoDanu),
+        // Validacija kapaciteta koristeći novi raspored
+        await _validateKapacitetForRawPolasci(Map<String, dynamic>.from(newWeeklySchedule),
             brojMesta: bm is num ? bm.toInt() : 1, tipPutnika: t?.toString().toLowerCase(), excludeId: id);
       }
     }
@@ -598,10 +516,10 @@ class RegistrovaniPutnikService {
         ''').single();
 
     // 🆕 SINHRONIZACIJA SA SEAT_REQUESTS (Single Source of Truth)
-    // Ako admin menja vremena u šablonu, moramo ažurirati i aktivne zahteve za tu nedelju
-    if (updates.containsKey('polasci_po_danu')) {
+    // Adminove promene u rasporedu se odmah pišu u seat_requests za tekuću nedelju
+    if (newWeeklySchedule != null) {
       try {
-        await _syncSeatRequestsWithTemplate(id, Map<String, dynamic>.from(updates['polasci_po_danu']));
+        await _syncSeatRequestsWithTemplate(id, newWeeklySchedule);
       } catch (e) {
         debugPrint('⚠️ [RegistrovaniPutnikService] Greška pri sinhronizaciji seat_requests: $e');
       }
@@ -610,16 +528,13 @@ class RegistrovaniPutnikService {
     return RegistrovaniPutnik.fromMap(response);
   }
 
-  /// 🔄 Sinhronizuje aktivne seat_requests sa novim stanjem šablona
-  /// Ovo osigurava da Adminove promene u dijalogu odmah vidi i putnik.
-  /// 🆕 PROŠIRENO: Ažurira sve buduće zahteve, ne samo za narednih 7 dana.
+  /// 🔄 Sinhronizuje aktivne seat_requests sa novim rasporedom
   Future<void> _syncSeatRequestsWithTemplate(String putnikId, Map<String, dynamic> noviPolasci) async {
     final now = DateTime.now();
     // Počni od danas (da ne menjamo istoriju)
     final todayStr = DateTime(now.year, now.month, now.day).toIso8601String().split('T')[0];
 
-    // 1. Dohvati SVE buduće aktivne zahteve (ne samo sledećih 7 dana)
-    // Ovo rešava problem kada admin testira za buduće mesece (npr. februar 2026)
+    // 1. Dohvati SVE buduće aktivne zahteve
     final requests = await _supabase
         .from('seat_requests')
         .select()
@@ -630,7 +545,6 @@ class RegistrovaniPutnikService {
     for (final req in requests) {
       final datumStr = req['datum'] as String;
       final grad = (req['grad'] ?? '').toString().toLowerCase(); // 'bc' ili 'vs'
-      final region = (grad == 'bc' || grad == 'bela crkva') ? 'bc' : 'vs';
 
       final datum = DateTime.parse(datumStr);
       final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
@@ -646,15 +560,14 @@ class RegistrovaniPutnikService {
         final novoVremeStr = noviPodaciZaDan[effectiveKey]?.toString();
 
         if (novoVremeStr != null && novoVremeStr.isNotEmpty && novoVremeStr != 'null') {
-          // Ažuriraj vreme u seat_requests da se poklapa sa onim što je Admin postavio
-          // I postavi status na 'confirmed'
+          // Ažuriraj vreme i setuj confirmed (Admin je to postavio)
           await _supabase.from('seat_requests').update({
             'zeljeno_vreme': '$novoVremeStr:00',
             'status': 'confirmed',
             'processed_at': DateTime.now().toUtc().toIso8601String(),
           }).eq('id', req['id']);
         } else {
-          // Ako je Admin obrisao vreme u dijalogu (null ili empty), otkaži seat_request
+          // Ako je u rasporedu prazno, otkaži zahtev
           await _supabase.from('seat_requests').update({
             'status': 'otkazano',
             'processed_at': DateTime.now().toUtc().toIso8601String(),
@@ -692,8 +605,10 @@ class RegistrovaniPutnikService {
   Future<RegistrovaniPutnik> dodajMesecnogPutnika(
     RegistrovaniPutnik putnik, {
     bool skipKapacitetCheck = false,
+    Map<String, dynamic>? initialSchedule,
   }) async {
-    return await createRegistrovaniPutnik(putnik, skipKapacitetCheck: skipKapacitetCheck);
+    return await createRegistrovaniPutnik(putnik,
+        skipKapacitetCheck: skipKapacitetCheck, initialSchedule: initialSchedule);
   }
 
   /// Ažurira plaćanje za mesec (vozacId je UUID)
@@ -742,52 +657,6 @@ class RegistrovaniPutnikService {
         placenaGodina: pocetakMeseca.year,
         tipUplate: 'uplata_mesecna',
       );
-
-      final now = DateTime.now();
-
-      // ✅ Dohvati polasci_po_danu da bismo dodali plaćanje po danu
-      final currentData = await _supabase
-          .from('registrovani_putnici')
-          .select('polasci_po_danu')
-          .eq('id', putnikId)
-          .limit(1)
-          .maybeSingle();
-
-      if (currentData == null) {
-        debugPrint('🔴 [RegistrovaniPutnikService] Passenger not found for logging: $putnikId');
-        return false;
-      }
-
-      // Odredi dan
-      const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      final danKratica = daniKratice[now.weekday - 1];
-
-      // Parsiraj postojeći polasci_po_danu
-      Map<String, dynamic> polasciPoDanu = {};
-      final rawPolasci = currentData['polasci_po_danu'];
-      if (rawPolasci != null) {
-        if (rawPolasci is Map) {
-          polasciPoDanu = Map<String, dynamic>.from(rawPolasci);
-        }
-      }
-
-      // Ažuriraj dan sa plaćanjem - jednostavno polje placeno_vozac (važi za ceo mesec)
-      final dayData = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map? ?? {});
-      dayData['placeno'] = now.toIso8601String();
-      dayData['placeno_vozac'] = vozacIme; // Jedno polje za vozača
-      dayData['placeno_iznos'] = iznos;
-      polasciPoDanu[danKratica] = dayData;
-
-      // ✅ FIX: NE MENJAJ vozac_id pri plaćanju!
-      // Naplata i dodeljivanje putnika vozaču su dve RAZLIČITE stvari.
-      // vozac_id se menja SAMO kroz DodeliPutnike ekran.
-
-      // 💰 PLAĆANJE: Direktan UPDATE bez provere kapaciteta
-      // Plaćanje ne menja termine, samo dodaje informaciju o uplati u polasci_po_danu JSON
-      await _supabase.from('registrovani_putnici').update({
-        'polasci_po_danu': polasciPoDanu,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', putnikId);
 
       return true;
     } catch (e) {

@@ -149,15 +149,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     if (widget.isEditing) {
       final putnik = widget.existingPutnik!;
 
-      // Fetch raw polasci_po_danu to preserve status/notes
-      try {
-        final response =
-            await supabase.from('registrovani_putnici').select('polasci_po_danu').eq('id', putnik.id).single();
-        _originalPolasciPoDanu = response['polasci_po_danu'];
-      } catch (e) {
-        debugPrint('Error fetching original polasci_po_danu: $e');
-        _originalPolasciPoDanu = null;
-      }
+      // UKLONJENO: Fetch raw polasci_po_danu - kolona je obrisana
 
       // Load basic info
       _imeController.text = putnik.putnikIme;
@@ -185,26 +177,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       _firmaZiroController.text = putnik.firmaZiro ?? '';
       _firmaAdresaController.text = putnik.firmaAdresa ?? '';
 
-      // Load times for each day — winter aware
-      for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-        final danRaw = _originalPolasciPoDanu?[dan] ?? {};
-
-        String? bcVal;
-        String? vsVal;
-
-        if (_isWinterMode) {
-          bcVal = (danRaw['bc2'] != null && danRaw['bc2'] != 'null') ? danRaw['bc2']?.toString() : null;
-          vsVal = (danRaw['vs2'] != null && danRaw['vs2'] != 'null') ? danRaw['vs2']?.toString() : null;
-        } else {
-          bcVal = (danRaw['bc'] != null && danRaw['bc'] != 'null') ? danRaw['bc']?.toString() : null;
-          vsVal = (danRaw['vs'] != null && danRaw['vs'] != 'null') ? danRaw['vs']?.toString() : null;
-        }
-
-        _polazakBcControllers[dan]?.text = bcVal ?? '';
-        _polazakVsControllers[dan]?.text = vsVal ?? '';
-      }
-
-      // 🆕 UCITAJ OVERRIDE-ove (seat_requests)
+      // 🆕 UCITAJ OVERRIDE-ove (seat_requests) - ovo je sada primarni izvor vremena
       try {
         final service = RegistrovaniPutnikService();
         final overrides = await service.getWeeklySeatRequests(putnik.id);
@@ -212,7 +185,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           setState(() {
             _weeklyOverrides = overrides;
 
-            // 🆕 SINHRONIZACIJA KONTROLERA: Prikaži ono što putnik vidi (override)
+            // SINHRONIZACIJA KONTROLERA: Prikaži ono što je u seat_requests za tekuću nedelju
             for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
               final bcOver = _getOverrideForDay(dan, true);
               if (bcOver != null && bcOver['zeljeno_vreme'] != null) {
@@ -1588,40 +1561,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
   /// Vraća polasci_po_danu u formatu koji baza očekuje: {dan: {bc: time, vs: time}}
   /// Za editovanje, čuva postojeće status/note podatke
-  Map<String, dynamic> _getPolasciPoDanuMap() {
-    // Start with existing data to preserve status/notes
-    final Map<String, dynamic> result =
-        _originalPolasciPoDanu != null ? Map<String, dynamic>.from(_originalPolasciPoDanu!) : {};
-
-    // Update times from form
-    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-      final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
-      final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
-
-      final bc = bcRaw.isNotEmpty ? RegistrovaniHelpers.normalizeTime(bcRaw) : null;
-      final vs = vsRaw.isNotEmpty ? RegistrovaniHelpers.normalizeTime(vsRaw) : null;
-
-      // Ensure day exists
-      if (result[dan] == null || result[dan] is! Map) {
-        result[dan] = {};
-      }
-      final danData = Map<String, dynamic>.from(result[dan] as Map);
-
-      // Update times, preserve other data
-      if (_isWinterMode) {
-        danData['bc2'] = bc;
-        danData['vs2'] = vs;
-      } else {
-        danData['bc'] = bc;
-        danData['vs'] = vs;
-      }
-
-      result[dan] = danData;
-    }
-
-    return result;
-  }
-
   String? _validateForm() {
     final ime = _imeController.text.trim();
     if (ime.isEmpty) {
@@ -1762,6 +1701,27 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       }
 
       final putnikData = _preparePutnikData();
+
+      // 🆕 PRIPREMA NOVOG RASPOREDA (za seat_requests)
+      final Map<String, dynamic> weeklySchedule = {};
+      for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+        final bcVal = _polazakBcControllers[dan]?.text.trim() ?? '';
+        final vsVal = _polazakVsControllers[dan]?.text.trim() ?? '';
+
+        final bc = bcVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(bcVal) : null;
+        final vs = vsVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(vsVal) : null;
+
+        final dayMap = <String, dynamic>{};
+        if (_isWinterMode) {
+          dayMap['bc2'] = bc;
+          dayMap['vs2'] = vs;
+        } else {
+          dayMap['bc'] = bc;
+          dayMap['vs'] = vs;
+        }
+        weeklySchedule[dan] = dayMap;
+      }
+
       final currentDriver = await AuthManager.getCurrentDriver();
       final skipCheck = AdminSecurityService.isAdmin(currentDriver);
 
@@ -1770,11 +1730,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           widget.existingPutnik!.id,
           putnikData,
           skipKapacitetCheck: skipCheck,
+          newWeeklySchedule: weeklySchedule, // 🆕 PROSLEĐUJEMO RASPORED
         );
       } else {
+        // Za novog putnika, kreiramo ga ODMAH sa rasporedom
         await _registrovaniPutnikService.dodajMesecnogPutnika(
           RegistrovaniPutnik.fromMap(putnikData),
           skipKapacitetCheck: skipCheck,
+          initialSchedule: weeklySchedule, // 🆕 PROSLEĐUJEMO RASPORED
         );
       }
 
@@ -1834,7 +1797,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'broj_telefona_oca': _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
       'broj_telefona_majke':
           _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
-      'polasci_po_danu': _getPolasciPoDanuMap(),
+      // UKLONJENO: polasci_po_danu - kolona je obrisana
       'radni_dani': _getRadniDaniString(),
       'status': (widget.existingPutnik?.status == 'aktivan' || widget.existingPutnik?.status == null)
           ? 'radi'

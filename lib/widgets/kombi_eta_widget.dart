@@ -282,75 +282,45 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     }
   }
 
-  /// 🆕 Učitaj vreme pokupljenja DIREKTNO iz baze (polasci_po_danu JSON)
+  /// 🆕 Učitaj vreme pokupljenja DIREKTNO iz baze (seat_requests)
   Future<void> _loadPokupljenjeIzBaze() async {
     if (widget.putnikId == null) return;
 
     try {
+      final now = DateTime.now();
+      final todayDate = now.toIso8601String().split('T')[0];
+      final place = _normalizeGrad(widget.grad).toUpperCase(); // 'BC' ili 'VS'
+
       final response = await supabase
-          .from('registrovani_putnici')
-          .select('polasci_po_danu')
-          .eq('id', widget.putnikId!)
+          .from('seat_requests')
+          .select('pokupljen_u')
+          .eq('putnik_id', widget.putnikId!)
+          .eq('datum', todayDate)
+          .eq('grad', place)
           .maybeSingle();
 
       if (!mounted || response == null) return;
 
-      final polasciPoDanu = response['polasci_po_danu'];
-      if (polasciPoDanu == null) return;
-
-      // Odredi ključ za grad (bc ili vs)
-      final place = _normalizeGrad(widget.grad).toLowerCase(); // 'bc' ili 'vs'
-      final pokupljenoKey = '${place}_pokupljeno';
-
-      // Odredi dan (pon, uto, sre...)
-      final now = DateTime.now();
-      const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      final danKratica = daniKratice[now.weekday - 1];
-
-      // Parsiraj JSON
-      Map<String, dynamic>? decoded;
-      if (polasciPoDanu is String) {
-        try {
-          decoded = Map<String, dynamic>.from(
-              polasciPoDanu.isNotEmpty ? Map<String, dynamic>.from(jsonDecode(polasciPoDanu)) : {});
-        } catch (_) {
-          return;
+      final pokupljenU = response['pokupljen_u'] as String?;
+      if (pokupljenU != null && pokupljenU.isNotEmpty) {
+        final parsedTime = DateTime.tryParse(pokupljenU);
+        if (parsedTime != null) {
+          setState(() {
+            _vremePokupljenja = parsedTime;
+            _jePokupljenIzBaze = true;
+          });
         }
-      } else if (polasciPoDanu is Map) {
-        decoded = Map<String, dynamic>.from(polasciPoDanu);
-      }
-
-      if (decoded == null) return;
-
-      final dayData = decoded[danKratica];
-      if (dayData == null || dayData is! Map) return;
-
-      final pokupljenoTimestamp = dayData[pokupljenoKey] as String?;
-      if (pokupljenoTimestamp == null || pokupljenoTimestamp.isEmpty) {
-        // Nije pokupljen
-        setState(() {
-          _jePokupljenIzBaze = false;
-        });
-        return;
-      }
-
-      // Parsiraj timestamp i proveri da li je DANAS
-      final pokupljenoDate = DateTime.tryParse(pokupljenoTimestamp)?.toLocal();
-      if (pokupljenoDate == null) return;
-
-      final danas = DateTime.now();
-      final jeDanas =
-          pokupljenoDate.year == danas.year && pokupljenoDate.month == danas.month && pokupljenoDate.day == danas.day;
-
-      if (jeDanas) {
-        // debugPrint('✅ KombiEtaWidget: Pokupljen iz baze u ${pokupljenoDate.hour}:${pokupljenoDate.minute}');
-        setState(() {
-          _jePokupljenIzBaze = true;
-          _vremePokupljenja = pokupljenoDate; // 🆕 TAČNO VREME IZ BAZE!
-        });
+      } else {
+        // Ako nije pokupljen u bazi, resetuj flag (bitno za realtime update)
+        if (_jePokupljenIzBaze) {
+          setState(() {
+            _jePokupljenIzBaze = false;
+            _vremePokupljenja = null;
+          });
+        }
       }
     } catch (e) {
-      debugPrint('❌ KombiEtaWidget._loadPokupljenjeIzBaze error: $e');
+      debugPrint('⚠️ Greška pri učitavanju pokupljenja: $e');
     }
   }
 
@@ -589,4 +559,3 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     return '~$minutes min';
   }
 }
-

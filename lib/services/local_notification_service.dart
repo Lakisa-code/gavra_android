@@ -6,7 +6,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../models/registrovani_putnik.dart';
 import '../screens/home_screen.dart';
 import '../supabase_client.dart';
 import 'notification_navigation_service.dart';
@@ -627,56 +626,50 @@ class LocalNotificationService {
   }
 
   /// 🔍 FETCH PUTNIK DATA FROM DATABASE BY NAME
-  /// 🔄 POJEDNOSTAVLJENO: Koristi samo registrovani_putnici
+  /// 🔄 NOVO: Koristi seat_requests kao izvor istine za termine
   static Future<Map<String, dynamic>?> _fetchPutnikFromDatabase(
     String putnikIme,
   ) async {
     try {
-      const registrovaniFields = '*,'
-          'polasci_po_danu';
+      final danas = DateTime.now().toIso8601String().split('T')[0];
 
-      final registrovaniResult = await supabase
+      // Prvo nađi putnika po imenu
+      final putnikResult = await supabase
           .from('registrovani_putnici')
-          .select(registrovaniFields)
+          .select('id')
           .eq('putnik_ime', putnikIme)
           .eq('aktivan', true)
           .eq('obrisan', false)
-          .order('created_at', ascending: false)
-          .limit(1);
+          .maybeSingle();
 
-      if (registrovaniResult.isNotEmpty) {
-        final data = registrovaniResult.first;
-        final registrovaniPutnik = RegistrovaniPutnik.fromMap(data);
+      if (putnikResult == null) return null;
 
-        final sada = DateTime.now();
-        final danNedelje = _getDanNedelje(sada.weekday);
+      final putnikId = putnikResult['id'];
 
-        String? polazak;
-        String? grad;
+      // Zatim nađi njegovu današnju vožnju
+      final seatRequest = await supabase
+          .from('seat_requests')
+          .select('grad, zeljeno_vreme')
+          .eq('putnik_id', putnikId)
+          .eq('datum', danas)
+          .inFilter('status', ['approved', 'confirmed', 'pending', 'manual']).maybeSingle();
 
-        final polazakBC = registrovaniPutnik.getPolazakBelaCrkvaZaDan(danNedelje);
-        final polazakVS = registrovaniPutnik.getPolazakVrsacZaDan(danNedelje);
+      if (seatRequest != null) {
+        final grad = (seatRequest['grad']?.toString().toLowerCase() == 'vs') ? 'Vršac' : 'Bela Crkva';
+        final zeljenoVremeStr = seatRequest['zeljeno_vreme']?.toString() ?? '';
+        final polazak = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : null;
 
-        if (polazakBC != null && polazakBC.isNotEmpty) {
-          polazak = polazakBC;
-          grad = 'Bela Crkva';
-        } else if (polazakVS != null && polazakVS.isNotEmpty) {
-          polazak = polazakVS;
-          grad = 'Vršac';
-        }
-
-        if (polazak != null && grad != null) {
-          return {
-            'grad': grad,
-            'polazak': polazak,
-            'dan': danNedelje,
-            'tip': 'registrovani', // ✅ FIX: koristi 'registrovani' umesto 'mesecni'
-          };
-        }
+        return {
+          'grad': grad,
+          'polazak': polazak,
+          'dan': _getDanNedelje(DateTime.now().weekday),
+          'tip': 'registrovani',
+        };
       }
 
       return null;
     } catch (e) {
+      debugPrint('⚠️ [_fetchPutnikFromDatabase] Greška: $e');
       return null;
     }
   }
@@ -714,39 +707,33 @@ class LocalNotificationService {
 
       final putnikId = payloadData['putnikId'] as String?;
       final dan = payloadData['dan'] as String?;
-      final polasciRaw = payloadData['polasci'];
       final radniDani = payloadData['radniDani'] as String?;
 
       if (putnikId == null || dan == null || termin.isEmpty) return;
 
-      // Parsiraj polasci
-      Map<String, dynamic> polasci = {};
-      if (polasciRaw is Map) {
-        polasciRaw.forEach((key, value) {
-          if (value is Map) {
-            polasci[key.toString()] = Map<String, dynamic>.from(value);
-          }
-        });
-      }
+      // 📅 Izračunaj datum (obično sutra ili sledeći radni dan)
+      final targetDate = SeatRequestService.getNextDateForDay(DateTime.now(), dan);
+      final datumStr = targetDate.toIso8601String().split('T')[0];
 
-      // Ažuriraj sa novim terminom
-      polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
-      (polasci[dan] as Map<String, dynamic>)['bc'] = termin;
-      (polasci[dan] as Map<String, dynamic>)['bc_status'] = 'confirmed';
-      (polasci[dan] as Map<String, dynamic>)['bc_resolved_at'] = DateTime.now().toUtc().toIso8601String();
-      // Očisti bc_ceka_od jer je resolved
-      (polasci[dan] as Map<String, dynamic>).remove('bc_ceka_od');
+      // 🚀 PRIHVATI ALTERNATIVU - Ažurira seat_requests tabelu
+      await SeatRequestService.acceptAlternative(
+        putnikId: putnikId,
+        novoVreme: termin,
+        grad: 'BC',
+        datum: datumStr,
+      );
 
       // Dohvati tip korisnika za precizan log
       final putnikData =
           await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).limit(1).maybeSingle();
       final userType = putnikData?['tip'] ?? 'Putnik';
 
-      // Sačuvaj u bazu
-      await supabase.from('registrovani_putnici').update({
-        'polasci_po_danu': polasci,
-        if (radniDani != null) 'radni_dani': radniDani,
-      }).eq('id', putnikId);
+      // Sačuvaj radne dane ako su se promenili (bez polasci_po_danu!)
+      if (radniDani != null) {
+        await supabase.from('registrovani_putnici').update({
+          'radni_dani': radniDani,
+        }).eq('id', putnikId);
+      }
 
       // 📝 LOG U DNEVNIK
       try {
@@ -756,13 +743,13 @@ class LocalNotificationService {
           vreme: termin,
           grad: 'bc',
           tipPutnika: userType,
-          detalji: 'Prihvaćen alternativni termin (Preko notifikacije)',
+          detalji: 'Prihvaćen alternativni termin BC (Preko notifikacije)',
         );
       } catch (e) {
         debugPrint('⚠️ Error logging BC alternative: $e');
       }
 
-      // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
+      // 📲 Pošalji push notifikaciju putniku
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ Mesto osigurano!',
@@ -770,7 +757,7 @@ class LocalNotificationService {
         data: {'type': 'bc_alternativa_confirmed', 'termin': termin},
       );
     } catch (e) {
-      // 🔇 Ignore errors
+      debugPrint('⚠️ [_handleBcAlternativaAction] Greška: $e');
     }
   }
 
@@ -786,39 +773,33 @@ class LocalNotificationService {
 
       final putnikId = payloadData['putnikId'] as String?;
       final dan = payloadData['dan'] as String?;
-      final polasciRaw = payloadData['polasci'];
       final radniDani = payloadData['radniDani'] as String?;
 
       if (putnikId == null || dan == null || termin.isEmpty) return;
 
-      // Parsiraj polasci
-      Map<String, dynamic> polasci = {};
-      if (polasciRaw is Map) {
-        polasciRaw.forEach((key, value) {
-          if (value is Map) {
-            polasci[key.toString()] = Map<String, dynamic>.from(value);
-          }
-        });
-      }
+      // 📅 Izračunaj datum
+      final targetDate = SeatRequestService.getNextDateForDay(DateTime.now(), dan);
+      final datumStr = targetDate.toIso8601String().split('T')[0];
 
-      // Ažuriraj sa novim terminom
-      polasci[dan] ??= <String, dynamic>{'bc': null, 'vs': null};
-      (polasci[dan] as Map<String, dynamic>)['vs'] = termin;
-      (polasci[dan] as Map<String, dynamic>)['vs_status'] = 'confirmed';
-      (polasci[dan] as Map<String, dynamic>)['vs_resolved_at'] = DateTime.now().toUtc().toIso8601String();
-      // Očisti vs_ceka_od jer je resolved
-      (polasci[dan] as Map<String, dynamic>).remove('vs_ceka_od');
+      // 🚀 PRIHVATI ALTERNATIVU - Ažurira seat_requests tabelu
+      await SeatRequestService.acceptAlternative(
+        putnikId: putnikId,
+        novoVreme: termin,
+        grad: 'VS',
+        datum: datumStr,
+      );
 
       // Dohvati tip korisnika za precizan log
       final putnikResult =
           await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).limit(1).maybeSingle();
       final userType = putnikResult?['tip'] ?? 'Putnik';
 
-      // Sačuvaj u bazu
-      await supabase.from('registrovani_putnici').update({
-        'polasci_po_danu': polasci,
-        if (radniDani != null) 'radni_dani': radniDani,
-      }).eq('id', putnikId);
+      // Sačuvaj radne dane ako su se promenili
+      if (radniDani != null) {
+        await supabase.from('registrovani_putnici').update({
+          'radni_dani': radniDani,
+        }).eq('id', putnikId);
+      }
 
       // 📝 LOG U DNEVNIK
       try {
@@ -828,13 +809,13 @@ class LocalNotificationService {
           vreme: termin,
           grad: 'vs',
           tipPutnika: userType,
-          detalji: 'Prihvaćen alternativni termin (Preko notifikacije)',
+          detalji: 'Prihvaćen alternativni termin VS (Preko notifikacije)',
         );
       } catch (e) {
         debugPrint('⚠️ Error logging VS alternative: $e');
       }
 
-      // 📲 Pošalji push notifikaciju putniku (radi čak i kad je app zatvoren)
+      // 📲 Pošalji push notifikaciju putniku
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ [VS] Termin potvrđen',
@@ -842,7 +823,7 @@ class LocalNotificationService {
         data: {'type': 'vs_alternativa_confirmed', 'termin': termin},
       );
     } catch (e) {
-      // 🔇 Ignore
+      debugPrint('⚠️ [_handleVsAlternativaAction] Greška: $e');
     }
   }
 

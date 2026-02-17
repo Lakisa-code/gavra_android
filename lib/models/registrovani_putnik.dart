@@ -1,5 +1,4 @@
 ﻿import '../services/adresa_supabase_service.dart';
-import '../utils/registrovani_helpers.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
 class RegistrovaniPutnik {
@@ -12,7 +11,6 @@ class RegistrovaniPutnik {
     this.brojTelefonaMajke,
     required this.tip,
     this.tipSkole,
-    required this.polasciPoDanu,
     this.adresaBelaCrkvaId,
     this.adresaVrsacId,
     this.radniDani = 'pon,uto,sre,cet,pet',
@@ -68,9 +66,6 @@ class RegistrovaniPutnik {
 
   /// Tip škole (samo za učenike)
   final String? tipSkole;
-
-  /// Polasci po danu - mapa gde je ključ dan, a vrednost lista vremena polaska
-  final Map<String, List<String>> polasciPoDanu;
 
   /// UUID reference za adresu u Beloj Crkvi
   final String? adresaBelaCrkvaId;
@@ -148,18 +143,6 @@ class RegistrovaniPutnik {
   final int brojMesta;
 
   factory RegistrovaniPutnik.fromMap(Map<String, dynamic> map) {
-    // Parse polasciPoDanu using helper
-    Map<String, List<String>> polasciPoDanu = {};
-    final parsed = RegistrovaniHelpers.parsePolasciPoDanu(map['polasci_po_danu']);
-    parsed.forEach((day, inner) {
-      final List<String> list = [];
-      final bc = inner['bc'];
-      final vs = inner['vs'];
-      if (bc != null && bc.isNotEmpty) list.add('$bc BC');
-      if (vs != null && vs.isNotEmpty) list.add('$vs VS');
-      if (list.isNotEmpty) polasciPoDanu[day] = list;
-    });
-
     return RegistrovaniPutnik(
       id: map['id'] as String? ?? _generateUuid(),
       putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String? ?? '',
@@ -169,7 +152,6 @@ class RegistrovaniPutnik {
       brojTelefonaMajke: map['broj_telefona_majke'] as String?,
       tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
-      polasciPoDanu: polasciPoDanu,
       adresaBelaCrkvaId: map['adresa_bela_crkva_id'] as String?,
       adresaVrsacId: map['adresa_vrsac_id'] as String?,
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
@@ -182,24 +164,18 @@ class RegistrovaniPutnik {
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : DateTime.now(),
       updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String).toLocal() : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
-      status: (map['status'] == 'aktivan' || map['status'] == null)
-          ? 'radi'
-          : map['status'] as String, // 🔧 FIX: Mapiraj 'aktivan' na 'radi'
+      status: (map['status'] == 'aktivan' || map['status'] == null) ? 'radi' : map['status'] as String,
       obrisan: map['obrisan'] as bool? ?? false,
-      // Nova polja
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
       vozacId: map['vozac_id'] as String?,
-      // Computed fields za UI display (dolaze iz JOIN-a)
       adresa: map['adresa'] as String? ??
           (map['adresa_bc'] is Map ? (map['adresa_bc'] as Map)['naziv'] as String? : null) ??
           (map['adresa_vs'] is Map ? (map['adresa_vs'] as Map)['naziv'] as String? : null),
       grad: map['grad'] as String? ??
           (map['adresa_bc'] is Map ? 'Bela Crkva' : (map['adresa_vs'] is Map ? 'Vršac' : null)),
-      // Tracking polja - UKLONJENO: pokupljen, placeno - sada u voznje_log
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
       cenaPoDanu: _parseNum(map['cena_po_danu'])?.toDouble(), // 🆕 Custom cena po danu
-      // 🧾 Polja za račune
       trebaRacun: map['treba_racun'] as bool? ?? false,
       firmaNaziv: map['firma_naziv'] as String?,
       firmaPib: map['firma_pib'] as String?,
@@ -207,29 +183,11 @@ class RegistrovaniPutnik {
       firmaZiro: map['firma_ziro'] as String?,
       firmaAdresa: map['firma_adresa'] as String?,
       brojMesta: _parseNum(map['broj_mesta'])?.toInt() ?? 1, // 🆕 Čitaj broj mesta
-      // Uklonjeno: ime, prezime - koristi se putnikIme
-      // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
     );
   }
 
   /// Konvertuje objekat u Map za bazu
   Map<String, dynamic> toMap() {
-    // Build normalized polasci_po_danu structure
-    final Map<String, Map<String, String?>> normalizedPolasci = {};
-    polasciPoDanu.forEach((day, times) {
-      String? bc;
-      String? vs;
-      for (final time in times) {
-        final normalized = RegistrovaniHelpers.normalizeTime(time.split(' ')[0]);
-        if (time.contains('BC')) {
-          bc = normalized;
-        } else if (time.contains('VS')) {
-          vs = normalized;
-        }
-      }
-      normalizedPolasci[day] = {'bc': bc, 'vs': vs};
-    });
-
     // ⚔️ BINARYBITCH CLEAN toMap() - SAMO kolone koje postoje u bazi!
     Map<String, dynamic> result = {
       'putnik_ime': putnikIme,
@@ -239,7 +197,6 @@ class RegistrovaniPutnik {
       'broj_telefona_majke': brojTelefonaMajke,
       'tip': tip,
       'tip_skole': tipSkole,
-      'polasci_po_danu': normalizedPolasci,
       'adresa_bela_crkva_id': adresaBelaCrkvaId,
       'adresa_vrsac_id': adresaVrsacId,
       'radni_dani': radniDani,
@@ -279,28 +236,6 @@ class RegistrovaniPutnik {
 
   // UKLONJENO: jePlacen, iznosPlacanja, stvarniIznosPlacanja - sada se računa iz voznje_log
 
-  /// Polazak za Belu Crkvu za dati dan
-  String? getPolazakBelaCrkvaZaDan(String dan) {
-    final polasci = polasciPoDanu[dan] ?? [];
-    for (final polazak in polasci) {
-      if (polazak.toUpperCase().contains('BC')) {
-        return polazak.replaceAll(' BC', '').trim();
-      }
-    }
-    return null;
-  }
-
-  /// Polazak za Vršac za dati dan
-  String? getPolazakVrsacZaDan(String dan) {
-    final polasci = polasciPoDanu[dan] ?? [];
-    for (final polazak in polasci) {
-      if (polazak.toUpperCase().contains('VS')) {
-        return polazak.replaceAll(' VS', '').trim();
-      }
-    }
-    return null;
-  }
-
   /// copyWith metoda za kreiranje kopije sa izmenjenim poljima
   RegistrovaniPutnik copyWith({
     String? id,
@@ -310,7 +245,6 @@ class RegistrovaniPutnik {
     String? brojTelefonaMajke,
     String? tip,
     String? tipSkole,
-    Map<String, List<String>>? polasciPoDanu,
     String? adresaBelaCrkvaId,
     String? adresaVrsacId,
     String? radniDani,
@@ -338,7 +272,6 @@ class RegistrovaniPutnik {
       brojTelefonaMajke: brojTelefonaMajke ?? this.brojTelefonaMajke,
       tip: tip ?? this.tip,
       tipSkole: tipSkole ?? this.tipSkole,
-      polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
       adresaBelaCrkvaId: adresaBelaCrkvaId ?? this.adresaBelaCrkvaId,
       adresaVrsacId: adresaVrsacId ?? this.adresaVrsacId,
       radniDani: radniDani ?? this.radniDani,

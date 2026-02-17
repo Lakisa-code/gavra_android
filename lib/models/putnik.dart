@@ -1,6 +1,4 @@
-﻿import 'dart:convert';
-
-import '../globals.dart' as globals_file;
+﻿import '../globals.dart' as globals_file;
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
@@ -77,6 +75,7 @@ class Putnik {
     this.brojMesta = 1, // ?? Broj rezervisanih mesta (default 1)
     this.tipPutnika, // ?? Tip putnika: radnik, ucenik, dnevni
     this.otkazanZaPolazak = false, // ?? Da li je otkazan za ovaj specificni polazak (grad)
+    this.vozacId, // 🆕 UUID vozača iz seat_requests
   });
 
   factory Putnik.fromMap(Map<String, dynamic> map) {
@@ -172,6 +171,7 @@ class Putnik {
       vremeOtkazivanja: vremeOtkazivanja,
       otkazaoVozac: otkazaoVozac,
       otkazanZaPolazak: otkazanZaPolazak, // ?? Da li je otkazan za ovaj polazak
+      vozacId: map['vozac_id'] as String?, // 🆕 Dodato za podršku "Booking-first" arhitekturi
     );
   }
 
@@ -202,10 +202,11 @@ class Putnik {
   final bool obrisan; // NOVO - soft delete flag
   final int? priority; // NOVO - prioritet za optimizaciju ruta (1-5, gde je 1 najmanji)
   final String? brojTelefona; // NOVO - broj telefona putnika
-  final String? datum;
-  final int brojMesta; // ?? Broj rezervisanih mesta (1, 2, 3...)
+  final String? datum; // ISO format
+  final int brojMesta; // ?? Broj rezervisanih mesta
   final String? tipPutnika; // ?? Tip putnika: radnik, ucenik, dnevni
-  final bool otkazanZaPolazak; // ?? Da li je otkazan za ovaj specificni polazak (grad)
+  final bool otkazanZaPolazak; // ?? Da li je otkazan za ovaj polazak
+  final String? vozacId; // 🆕 UUID vozača iz seat_requests
 
   // ?? Helper getter za proveru da li je dnevni tip
   bool get isDnevniTip => tipPutnika?.toLowerCase() == 'dnevni' || mesecnaKarta == false;
@@ -280,6 +281,57 @@ class Putnik {
   double? get iznosPlacanja => cena;
 
   PutnikStatus? get statusEnum => PutnikStatusExtension.fromString(status);
+
+  // 🆕 FACTORY: Kreira Putnik objekat iz seat_request zapisa (SA JOIN-om na registrovani_putnici)
+  factory Putnik.fromSeatRequest(Map<String, dynamic> req, {Map<String, dynamic>? profile}) {
+    // Ako je profil join-ovan u samom requestu (Supabase .select('*, registrovani_putnici(...)'))
+    final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
+
+    final datumStr = req['datum']?.toString() ?? '';
+    final grad = (req['grad']?.toString().toLowerCase() == 'vs' || req['grad']?.toString().toLowerCase() == 'vršac')
+        ? 'Vršac'
+        : 'Bela Crkva';
+    final zeljenoVremeStr = req['zeljeno_vreme']?.toString() ?? '';
+    // Format: "HH:mm:ss" -> "HH:mm"
+    final vreme = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : '05:00';
+
+    final tip = p['tip'] as String?;
+    final isDnevni = tip == 'dnevni' || tip == 'posiljka';
+
+    return Putnik(
+      id: p['id'] ?? req['putnik_id'],
+      ime: p['putnik_ime'] ?? p['ime'] ?? '',
+      polazak: vreme,
+      dan: _getDayNameFromIso(datumStr),
+      grad: grad,
+      status: req['status'],
+      datum: datumStr,
+      tipPutnika: tip,
+      mesecnaKarta: !isDnevni,
+      brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
+      adresa: grad == 'Vršac'
+          ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
+          : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv']),
+      adresaId: grad == 'Vršac' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id'],
+      brojTelefona: p['broj_telefona'],
+      statusVreme: p['updated_at'],
+      vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
+      vremePokupljenja: req['processed_at'] != null ? DateTime.parse(req['processed_at']).toLocal() : null,
+      pokupioVozac: VozacMappingService.getNameFromUuidOrNameSync(req['vozac_id']),
+      obrisan: false,
+      vozacId: req['vozac_id'],
+      dodeljenVozac: VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']),
+    );
+  }
+
+  static String _getDayNameFromIso(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate);
+      return ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'][dt.weekday - 1];
+    } catch (_) {
+      return '';
+    }
+  }
 
   // NOVA METODA: Kreira VIŠE putnik objekata za mesecne putnike sa više polazaka
   static List<Putnik> fromRegistrovaniPutniciMultiple(Map<String, dynamic> map) {
@@ -663,22 +715,6 @@ class Putnik {
       'tip': 'radnik', // ili 'ucenik' - treba logiku za odredivanje
       'tip_skole': null, // ? NOVA KOLONA - možda treba logika
       'broj_telefona': brojTelefona,
-      // Store per-day polasci as canonical JSON
-      'polasci_po_danu': jsonEncode({
-        // map display day (Pon/Uto/...) to kratica used by registrovani_putnici
-        (() {
-          final map = {
-            'Pon': 'pon',
-            'Uto': 'uto',
-            'Sre': 'sre',
-            'Cet': 'cet',
-            'Pet': 'pet',
-            'Sub': 'sub',
-            'Ned': 'ned',
-          };
-          return map[dan] ?? dan.toLowerCase().substring(0, 3);
-        })(): grad == 'Bela Crkva' ? {'bc': polazak} : {'vs': polazak},
-      }),
       'tip_prikazivanja': null,
       'radni_dani': dan,
       'aktivan': !obrisan,
@@ -777,6 +813,7 @@ class Putnik {
     int? brojMesta,
     String? tipPutnika,
     bool? otkazanZaPolazak,
+    String? vozacId,
   }) {
     return Putnik(
       id: id ?? this.id,
@@ -808,6 +845,7 @@ class Putnik {
       brojMesta: brojMesta ?? this.brojMesta,
       tipPutnika: tipPutnika ?? this.tipPutnika,
       otkazanZaPolazak: otkazanZaPolazak ?? this.otkazanZaPolazak,
+      vozacId: vozacId ?? this.vozacId,
     );
   }
 

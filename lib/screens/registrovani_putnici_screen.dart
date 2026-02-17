@@ -995,95 +995,37 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                   ),
                 ),
 
-              // ?? RADNO VREME - prikaži polazak vremena ako je definisan bar jedan dan
-              if (_daniOrder
-                  .any((d) => putnik.getPolazakBelaCrkvaZaDan(d) != null || putnik.getPolazakVrsacZaDan(d) != null))
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.blue.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              // Raspored termina je uklonjen jer se sada koristi isključivo tabela seat_requests
+              // koji su vezani za konkretne datume, a ne fiksno za profil putnika.
+
+              // Radni dani
+              if (putnik.radniDani.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
                     children: [
-                      // Kompaktni prikaz - sve u jednom Wrap-u
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: _daniOrder.map((dan) {
-                          final bc = putnik.getPolazakBelaCrkvaZaDan(dan);
-                          final vs = putnik.getPolazakVrsacZaDan(dan);
-                          if (bc == null && vs == null) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final label =
-                              {'pon': 'Pon', 'uto': 'Uto', 'sre': 'Sre', 'cet': 'Cet', 'pet': 'Pet'}[dan] ?? dan;
-
-                          // Formatiranje: "Pon: 13?6" umesto dugackog teksta
-                          String timeText = '';
-                          if (bc != null && vs != null) {
-                            // Oba smera - skraceno
-                            final bcShort = bc.replaceAll(':00', '');
-                            final vsShort = vs.replaceAll(':00', '');
-                            timeText = '$bcShort?$vsShort';
-                          } else if (bc != null) {
-                            timeText = '???${bc.replaceAll(':00', '')}';
-                          } else if (vs != null) {
-                            timeText = '??${vs.replaceAll(':00', '')}';
-                          }
-
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '$label: $timeText',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.blue.shade800,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: Colors.grey.shade600,
                       ),
-                      // Radni dani
-                      if (putnik.radniDani.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                'Radni dani: ${putnik.radniDani}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade700,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Radni dani: ${putnik.radniDani}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
 
               // ??? PLACANJE I STATISTIKE - jednaki elementi u redu
+
               Row(
                 children: [
                   // ?? DUGME ZA PLACANJE

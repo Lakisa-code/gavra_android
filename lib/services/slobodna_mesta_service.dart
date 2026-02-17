@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,8 +10,6 @@ import '../utils/putnik_helpers.dart';
 import 'kapacitet_service.dart';
 import 'putnik_service.dart';
 import 'realtime/realtime_manager.dart';
-import 'realtime_notification_service.dart';
-import 'voznje_log_service.dart';
 
 /// 🎫 Model za slobodna mesta po polasku
 class SlobodnaMesta {
@@ -222,15 +219,7 @@ class SlobodnaMestaService {
     return false;
   }
 
-  /// Promeni vreme polaska za putnika
-  /// Vraća: {'success': bool, 'message': String}
-  ///
-  /// Ograničenja za tip 'ucenik' (do 16h):
-  /// - Za DANAŠNJI dan: samo 1 promena
-  /// - Za BUDUĆE dane: max 3 promene po danu
-  ///
-  /// Tip 'radnik' nema ograničenja.
-  /// Tip 'dnevni' - admin kontroliše mogućnost zakazivanja putem dugmeta u Admin Screen.
+  /// Promeni vreme polaska za putnika koristeci RPC funkciju update_putnik_polazak_v2
   static Future<Map<String, dynamic>> promeniVremePutnika({
     required String putnikId,
     required String novoVreme,
@@ -239,175 +228,25 @@ class SlobodnaMestaService {
     bool skipKapacitetCheck = false, // 🆕 Admin bypass
   }) async {
     try {
-      final sada = DateTime.now();
-      final danas = sada.toIso8601String().split('T')[0];
-      final danasDan = _isoDateToDayAbbr(danas);
-      final jeZaDanas = dan.toLowerCase() == danasDan.toLowerCase();
+      final gradKey = grad.toLowerCase() == 'bc' ? 'BC' : 'VS';
 
-      // 📅 Izračunaj ciljni datum (targetDate) za proveru kapaciteta
-      String targetIsoDate = danas;
-      if (!jeZaDanas) {
-        const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
-        final targetWeekday = daniMap[dan.toLowerCase()] ?? 1;
-        int diff = targetWeekday - sada.weekday;
-        if (diff <= 0) diff += 7; // Sledeća nedelja
-        targetIsoDate = sada.add(Duration(days: diff)).toIso8601String().split('T')[0];
+      // 🚀 POZIVAMO RPC FUNKCIJU koja jedina zna da radi sa seat_requests
+      await _supabase.rpc('update_putnik_polazak_v2', params: {
+        'p_id': putnikId,
+        'p_dan': dan.toLowerCase(),
+        'p_grad': gradKey,
+        'p_vreme': novoVreme,
+        'p_status': skipKapacitetCheck ? 'confirmed' : 'pending',
+      });
+
+      // Ako je admin, odmah možemo vratiti uspeh
+      if (skipKapacitetCheck) {
+        return {'success': true, 'message': 'Vreme potvrđeno na $novoVreme (Admin)'};
       }
 
-      // Dohvati podatke putnika
-      final putnikResponse = await _supabase
-          .from('registrovani_putnici')
-          .select('id, putnik_ime, tip, polasci_po_danu')
-          .eq('id', putnikId)
-          .maybeSingle();
-
-      if (putnikResponse == null) {
-        return {'success': false, 'message': 'Putnik nije pronađen'};
-      }
-
-      final tipPutnika = (putnikResponse['tip'] as String?)?.toLowerCase() ?? 'radnik';
-
-      // Parsiraj polaske ODMAH, jer nam trebaju za ažuriranje kasnije
-      final polasciRaw = putnikResponse['polasci_po_danu'];
-      Map<String, dynamic> polasci = {};
-      if (polasciRaw is String) {
-        polasci = Map<String, dynamic>.from(jsonDecode(polasciRaw));
-      } else if (polasciRaw is Map) {
-        polasci = Map<String, dynamic>.from(polasciRaw);
-      }
-
-      bool performCapacityCheck = true;
-      String successMessage = 'Vreme promenjeno na $novoVreme';
-
-      // ═══════════════════════════════════════════════════════════════
-      // 🎓 OGRANIČENJA ZA UČENIKE
-      // ═══════════════════════════════════════════════════════════════
-      if (tipPutnika == 'ucenik') {
-        final limitSati = 16; // ✅ Vraćeno na 16h prema BC LOGIKA.md
-
-        // 1. Provera roka (do 16h) za buduće dane
-        if (sada.hour < limitSati && !jeZaDanas) {
-          // Prihvati bez provere kapaceta
-          performCapacityCheck = false;
-          successMessage = 'Zakazivanje uspešno bez provere slobodnih mesta.';
-        } else if (!jeZaDanas && sada.hour >= limitSati) {
-          // Kasno zakazivanje za budućnost (posle 16h/24h)
-
-          if (sada.hour < 20) {
-            // 16h-20h: Prihvati ali "provera u 20h"
-            // Ovde takodje ne proveravamo kapacitet SAD, vec se oslanjamo na naknadnu proveru
-            performCapacityCheck = false;
-            successMessage = 'Vaš zahtev je prihvaćen. Provera slobodnih mesta biće izvršena u 20:00.';
-          } else {
-            // Posle 20h: Mora provera kapaciteta
-            performCapacityCheck = true;
-            // Ako nema mesta, logika dole ce ponuditi alternativu
-          }
-        }
-
-        // 2. Provera limita promena - UKLONJENO
-        // Sistem sada dozvoljava neograničene promene jer korisnici ionako čekaju na proveru kapaciteta
-      }
-
-      // ═══════════════════════════════════════════════════════════════
-      // 🎫 PROVERA SLOBODNIH MESTA
-      // ═══════════════════════════════════════════════════════════════
-
-      // Ako treba provera kapaciteta:
-      if (performCapacityCheck && !skipKapacitetCheck) {
-        final jeUcenikBC = tipPutnika == 'ucenik' && grad.toUpperCase() == 'BC';
-
-        // Stari kod: if (!jeUcenikBC) { final imaMesta = ... }
-        // Znaci ucenik iz BC ne proverava kapacitet nikad? (Pretpostavka: da)
-
-        if (!jeUcenikBC) {
-          final imaMesta = await imaSlobodnihMesta(grad, novoVreme, datum: targetIsoDate);
-
-          if (!imaMesta) {
-            // Ako je ucenik i zakazuje kasno (posle 20h za buducnost), nudi alternativu
-            if (tipPutnika == 'ucenik' && !jeZaDanas && sada.hour >= 20) {
-              final alternativnoVreme =
-                  await nadjiAlternativnoVreme(grad, datum: targetIsoDate, zeljenoVreme: novoVreme);
-              if (alternativnoVreme != null) {
-                return {
-                  'success': false,
-                  'message':
-                      'Nažalost, nema slobodnih mesta za traženo vreme. Predlažemo alternativno vreme: $alternativnoVreme.',
-                };
-              } else {
-                return {
-                  'success': false,
-                  'message': 'Nažalost, nema slobodnih mesta za traženo vreme, niti imamo alternativu.',
-                };
-              }
-            }
-
-            return {'success': false, 'message': 'Nema slobodnih mesta za $novoVreme'};
-          }
-        }
-      }
-
-      // ═══════════════════════════════════════════════════════════════
-      // 💾 AŽURIRANJE BAZE
-      // ═══════════════════════════════════════════════════════════════
-
-      final gradKey = grad.toLowerCase() == 'bc' ? 'bc' : 'vs';
-
-      // Ažuriraj vreme i status (očisti pending status ako postoji)
-      if (polasci[dan] == null || polasci[dan] is! Map) {
-        polasci[dan] = {};
-      }
-      final danData = Map<String, dynamic>.from(polasci[dan] as Map);
-      danData[gradKey] = novoVreme;
-
-      danData['${gradKey}_status'] = 'confirmed';
-      danData['${gradKey}_vreme_obrade'] = DateTime.now().toUtc().toIso8601String();
-
-      polasci[dan] = danData;
-
-      // Sačuvaj u bazu
-      await _supabase.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
-
-      // Zapiši promenu - UKLONJENO
-      // Sistem više ne ograničava broj promena
-
-      // 📝 LOG POTVRDU U voznje_log (da se pojavi u Monitoru Zahteva)
-      try {
-        await VoznjeLogService.logPotvrda(
-          putnikId: putnikId,
-          dan: dan,
-          vreme: novoVreme,
-          grad: gradKey,
-          tipPutnika: putnikResponse['tip']?.toString() ?? 'Putnik',
-          detalji: 'Zahtev obrađen (Vreme promenjeno)',
-        );
-      } catch (logError) {
-        debugPrint('Greška pri logovanju potvrde: $logError');
-      }
-
-      // 📱 POŠALJI NOTIFIKACIJU PUTNIKU
-      try {
-        final putnikIme = putnikResponse['putnik_ime']?.toString() ?? 'Putnik';
-        final gradNaziv = gradKey.toUpperCase() == 'BC' ? 'Bela Crkva' : 'Vršac';
-
-        await RealtimeNotificationService.sendNotificationToPutnik(
-          putnikId: putnikId,
-          title: '✅ Zahtev Odobren',
-          body: 'Vaš zahtev za termin $novoVreme u $gradNaziv je odobren za $dan.',
-          data: {
-            'type': 'zahtev_odobren',
-            'putnikId': putnikId,
-            'vreme': novoVreme,
-            'grad': gradKey,
-            'dan': dan,
-          },
-        );
-      } catch (notifError) {
-        debugPrint('Greška pri slanju notifikacije: $notifError');
-      }
-
-      return {'success': true, 'message': successMessage};
+      return {'success': true, 'message': 'Zahtev za $novoVreme poslat na obradu. Proverite profil za status.'};
     } catch (e) {
+      debugPrint('❌ Greška u promeniVremePutnika: $e');
       return {'success': false, 'message': 'Greška: $e'};
     }
   }
@@ -448,46 +287,19 @@ class SlobodnaMestaService {
   /// Ovo je ključno za VS logiku povratka - znamo koliko ih OČEKUJEMO nazad.
   static Future<int> getBrojUcenikaKojiSuOtisliUSkolu(String dan) async {
     try {
-      final response = await _supabase
-          .from('registrovani_putnici')
-          .select('id, tip, polasci_po_danu, radni_dani, status, broj_mesta') // Dodat broj_mesta
-          .eq('is_duplicate', false)
-          .not('polasci_po_danu', 'is', null);
+      final isoDate = _getIsoDateForDay(dan);
+      final putnici = await _putnikService.getPutniciByDayIso(isoDate);
 
+      // Svi učenici koji idu IZ Bele Crkve
       int count = 0;
-      final normalizedDan = dan.toLowerCase();
-
-      for (final row in response) {
-        // 1. Proveri tip (mora biti učenik)
-        final tip = (row['tip'] as String?)?.toLowerCase() ?? '';
-        if (!tip.contains('ucenik')) continue;
-
-        // 2. Proveri status (mora biti aktivan)
-        final status = (row['status'] as String?)?.toLowerCase() ?? 'aktivan';
-        if (status == 'obrisan' || status == 'neaktivan') continue;
-
-        // 3. Proveri da li ide taj dan
-        final radniDaniStr = row['radni_dani'] as String? ?? '';
-        final radniDani = radniDaniStr.toLowerCase().split(',').map((s) => s.trim()).toList();
-        if (!radniDani.contains(normalizedDan)) continue;
-
-        // 4. Proveri da li ima JUTARNJI (BC) polazak
-        final polasci = _getPolasciMap(row['polasci_po_danu']);
-        if (polasci == null) continue;
-
-        final danData = polasci[normalizedDan] as Map<String, dynamic>?;
-        if (danData == null) continue;
-
-        final bcVreme = danData['bc'] as String?;
-        // Ako ima BC vreme (nije null i nije prazno), znači da je krenuo u školu
-        if (bcVreme != null && bcVreme.isNotEmpty) {
-          final int bm = (row['broj_mesta'] as num?)?.toInt() ?? 1;
-          count += bm;
+      for (final p in putnici) {
+        if (p.tipPutnika == 'ucenik' && GradAdresaValidator.isBelaCrkva(p.grad)) {
+          count += p.brojMesta;
         }
       }
-
       return count;
     } catch (e) {
+      debugPrint('Error in getBrojUcenikaKojiSuOtisliUSkolu: $e');
       return 0;
     }
   }
@@ -495,43 +307,33 @@ class SlobodnaMestaService {
   /// 🎓 Broji koliko učenika ima UPISAN POVRATAK (VS) za dati dan (bilo confirmed ili pending)
   static Future<int> getBrojUcenikaKojiSeVracaju(String dan) async {
     try {
-      final response = await _supabase
-          .from('registrovani_putnici')
-          .select('id, tip, polasci_po_danu, radni_dani, status, broj_mesta') // Dodat broj_mesta
-          .eq('is_duplicate', false)
-          .not('polasci_po_danu', 'is', null);
+      final isoDate = _getIsoDateForDay(dan);
+      final putnici = await _putnikService.getPutniciByDayIso(isoDate);
 
+      // Svi učenici koji idu IZ Vršca (povratak)
       int count = 0;
-      final normalizedDan = dan.toLowerCase();
-
-      for (final row in response) {
-        final tip = (row['tip'] as String?)?.toLowerCase() ?? '';
-        if (!tip.contains('ucenik')) continue;
-
-        final status = (row['status'] as String?)?.toLowerCase() ?? 'aktivan';
-        if (status == 'obrisan' || status == 'neaktivan') continue;
-
-        final radniDaniStr = row['radni_dani'] as String? ?? '';
-        final radniDani = radniDaniStr.toLowerCase().split(',').map((s) => s.trim()).toList();
-        if (!radniDani.contains(normalizedDan)) continue;
-
-        final polasci = _getPolasciMap(row['polasci_po_danu']);
-        if (polasci == null) continue;
-
-        final danData = polasci[normalizedDan] as Map<String, dynamic>?;
-        if (danData == null) continue;
-
-        final vsVreme = danData['vs'] as String?;
-        if (vsVreme != null && vsVreme.isNotEmpty && vsVreme != 'null') {
-          final int bm = (row['broj_mesta'] as num?)?.toInt() ?? 1;
-          count += bm;
+      for (final p in putnici) {
+        if (p.tipPutnika == 'ucenik' && GradAdresaValidator.isVrsac(p.grad)) {
+          count += p.brojMesta;
         }
       }
-
       return count;
     } catch (e) {
+      debugPrint('Error in getBrojUcenikaKojiSeVracaju: $e');
       return 0;
     }
+  }
+
+  /// Pomoćna funkcija za dobijanje datuma iz skraćenice dana
+  static String _getIsoDateForDay(String danAbbr) {
+    final sada = DateTime.now();
+    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
+    final targetWeekday = daniMap[danAbbr.toLowerCase()] ?? 1;
+
+    int diff = targetWeekday - sada.weekday;
+    if (diff < 0) diff += 7; // Ako je prošlo, gledamo sledeću nedelju
+
+    return sada.add(Duration(days: diff)).toIso8601String().split('T')[0];
   }
 
   /// Izračunava projektovano opterećenje za grad i vreme
@@ -560,31 +362,21 @@ class SlobodnaMestaService {
     }
   }
 
-  /// Dohvati broj slobodnih mesta za određeni grad i vreme
+  /// Dohvati broj slobodnih mesta za određeni grad i vreme (Vršac)
   static Future<int> getOccupiedSeatsVs(String dan, String vreme) async {
     try {
-      final response =
-          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').eq('is_duplicate', false);
+      final isoDate = _getIsoDateForDay(dan);
+      final putnici = await _putnikService.getPutniciByDayIso(isoDate);
 
       int count = 0;
       final targetVreme = GradAdresaValidator.normalizeTime(vreme);
 
-      for (final row in response) {
-        final polasci = _getPolasciMap(row['polasci_po_danu']);
-        if (polasci == null) continue;
-
-        final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
-        if (danData == null) continue;
-
-        final vsVreme = danData['vs'] as String?;
-        final vsStatus = danData['vs_status'] as String?;
-
-        // Proveri da li je zaista zauzeto mesto (status nije pending ili manual)
-        if (vsVreme == vreme && vsStatus != 'pending' && vsStatus != 'manual') {
-          count++;
+      for (final p in putnici) {
+        if (!GradAdresaValidator.isVrsac(p.grad)) continue;
+        if (GradAdresaValidator.normalizeTime(p.polazak) == targetVreme) {
+          count += p.brojMesta;
         }
       }
-
       return count;
     } catch (e) {
       return 0;
@@ -594,28 +386,18 @@ class SlobodnaMestaService {
   /// 🆕 Dohvati broj zauzetih mesta za BC za dati dan i vreme
   static Future<int> getOccupiedSeatsBc(String dan, String vreme) async {
     try {
-      final response =
-          await _supabase.from('registrovani_putnici').select('id, polasci_po_danu, tip').eq('is_duplicate', false);
+      final isoDate = _getIsoDateForDay(dan);
+      final putnici = await _putnikService.getPutniciByDayIso(isoDate);
 
       int count = 0;
       final targetVreme = GradAdresaValidator.normalizeTime(vreme);
 
-      for (final row in response) {
-        final polasci = _getPolasciMap(row['polasci_po_danu']);
-        if (polasci == null) continue;
-
-        final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
-        if (danData == null) continue;
-
-        final bcVreme = danData['bc'] as String?;
-        final bcStatus = danData['bc_status'] as String?;
-
-        // Proveri da li je zaista zauzeto mesto (status nije pending ili manual)
-        if (bcVreme == vreme && bcStatus != 'pending' && bcStatus != 'manual') {
-          count++;
+      for (final p in putnici) {
+        if (!GradAdresaValidator.isBelaCrkva(p.grad)) continue;
+        if (GradAdresaValidator.normalizeTime(p.polazak) == targetVreme) {
+          count += p.brojMesta;
         }
       }
-
       return count;
     } catch (e) {
       return 0;
@@ -633,20 +415,5 @@ class SlobodnaMestaService {
     // Otkaži realtime subscriptions
     RealtimeManager.instance.unsubscribe('registrovani_putnici');
     RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
-  }
-
-  /// 🛡️ Sigurno parsira polasci_po_danu (Map ili String)
-  static Map<String, dynamic>? _getPolasciMap(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is Map) return Map<String, dynamic>.from(raw);
-    if (raw is String) {
-      try {
-        return json.decode(raw) as Map<String, dynamic>?;
-      } catch (e) {
-        debugPrint('Greška pri parsu polasci_po_danu: $e');
-        return null;
-      }
-    }
-    return null;
   }
 }

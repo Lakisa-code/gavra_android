@@ -888,12 +888,13 @@ class _PutnikCardState extends State<PutnikCard> {
       // 📳 Haptic feedback
       HapticService.mediumImpact();
 
+      // 🛡️ NOVO: Direktno označi kao pokupljen u bazi (seat_requests)
       await PutnikService().oznaciPokupljen(
         _putnik.id!,
-        widget.currentDriver,
+        true,
         grad: _putnik.grad,
-        selectedDan: _putnik.dan,
-        selectedVreme: _putnik.polazak,
+        vreme: _putnik.polazak,
+        driver: widget.currentDriver, // 🆕 Prosledi vozača
       );
 
       if (mounted) {
@@ -1912,10 +1913,9 @@ class _PutnikCardState extends State<PutnikCard> {
       try {
         await PutnikService().otkaziPutnika(
           _putnik.id!,
-          widget.currentDriver,
-          selectedVreme: _putnik.polazak,
-          selectedGrad: _putnik.grad,
-          selectedDan: _putnik.dan,
+          widget.currentDriver, // 🆕 Dodato vozač kao pozicioni
+          grad: _putnik.grad,
+          vreme: _putnik.polazak,
         );
 
         // A�uriraj lokalni _putnik sa novim statusom

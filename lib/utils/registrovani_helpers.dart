@@ -1,6 +1,4 @@
-﻿import 'dart:convert';
-
-import 'grad_adresa_validator.dart';
+﻿import 'grad_adresa_validator.dart';
 
 enum RegistrovaniStatus { active, canceled, vacation, unknown }
 
@@ -13,68 +11,25 @@ class RegistrovaniHelpers {
   // Parse polasci_po_danu which may be a JSON string or Map.
   // Returns map like {'pon': {'bc': '6:00', 'vs': '14:00'}, ...}
   static Map<String, Map<String, String?>> parsePolasciPoDanu(dynamic raw) {
-    final decoded = _decodePolasciPoDanu(raw);
-    if (decoded == null) return {};
-
-    final Map<String, Map<String, String?>> out = {};
-    decoded.forEach((dayKey, val) {
-      if (val == null) return;
-      if (val is Map) {
-        final bc = val['bc'] ?? val['bela_crkva'] ?? val['polazak_bc'] ?? val['bc_time'];
-        final vs = val['vs'] ?? val['vrsac'] ?? val['polazak_vs'] ?? val['vs_time'];
-        final bc2 = val['bc2'];
-        final vs2 = val['vs2'];
-        out[dayKey] = {
-          'bc': normalizeTime(bc?.toString()),
-          'vs': normalizeTime(vs?.toString()),
-          'bc2': normalizeTime(bc2?.toString()),
-          'vs2': normalizeTime(vs2?.toString()),
-        };
-      } else if (val is String) {
-        out[dayKey] = {'bc': normalizeTime(val), 'vs': null};
-      }
-    });
-    return out;
+    // ⚠️ UKLONJENO: Polasci po danu više ne postoje u bazi (JSON kolona obrisana)
+    // Ova metoda se zadržava privremeno radi kompatibilnosti, ali uvek vraća prazno.
+    return {};
   }
 
   /// NOVO: Vraća sirove podatke iz polasci_po_danu bez filtriranja ključeva
   static Map<String, dynamic> parsePolasciPoDanuRaw(dynamic raw) {
-    return _decodePolasciPoDanu(raw) ?? {};
-  }
-
-  static Map<String, dynamic>? _decodePolasciPoDanu(dynamic raw) {
-    Map<String, dynamic>? decoded;
-    if (raw == null) return null;
-    if (raw is String) {
-      if (raw.trim().isEmpty) return null;
-      try {
-        decoded = jsonDecode(raw) as Map<String, dynamic>?;
-      } catch (_) {
-        return null;
-      }
-    } else if (raw is Map<String, dynamic>) {
-      decoded = raw;
-    } else if (raw is Map) {
-      decoded = Map<String, dynamic>.from(raw);
-    }
-
-    if (decoded == null) return null;
-
-    // Osiguraj da su svi ključevi dana lowercase za konzistentnost
-    return decoded.map((key, value) => MapEntry(key.toLowerCase(), value));
+    return {};
   }
 
   // Get broj mesta for a day and place (place 'bc' or 'vs').
   static int getBrojMestaForDay(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    final polasci = parsePolasciPoDanuRaw(rawMap['polasci_po_danu']);
-    final dayData = polasci[dayKratica.toLowerCase()];
-    if (dayData is Map) {
-      final key = '${place.toLowerCase()}_mesta';
-      final val = dayData[key] ?? dayData['mesta'];
-      if (val is num) return val.toInt();
-      if (val is String) return int.tryParse(val) ?? 1;
+    // Ako postoji broj_mesta u samom mapu (npr. iz seat_requests join-a), koristi njega
+    if (rawMap.containsKey('broj_mesta') && rawMap['broj_mesta'] != null) {
+      final bm = rawMap['broj_mesta'];
+      if (bm is num) return bm.toInt();
+      if (bm is String) return int.tryParse(bm) ?? 1;
     }
-    return (rawMap['broj_mesta'] as int?) ?? 1;
+    return 1;
   }
 
   // Get polazak for a day and place ('bc' or 'vs').
@@ -84,24 +39,13 @@ class RegistrovaniHelpers {
     String place, {
     bool isWinter = false,
   }) {
-    final polasci = parsePolasciPoDanu(rawMap['polasci_po_danu']);
-    final dayData = polasci[dayKratica.toLowerCase()];
-    if (dayData != null) {
-      final key = isWinter ? '${place.toLowerCase()}2' : place.toLowerCase();
-      return dayData[key];
-    }
-
-    // Fallback logic for legacy columns
-    final candidates = [
-      'polazak_${place}_$dayKratica',
-      'polazak_${place}_${dayKratica}_time',
-      '${place}_polazak_$dayKratica',
-      '${place}_${dayKratica}_polazak',
-    ];
-
-    for (final col in candidates) {
-      if (rawMap.containsKey(col) && rawMap[col] != null) {
-        return normalizeTime(rawMap[col]?.toString());
+    // ⚠️ UKLONJENO: Više se ne čita iz JSON kolone.
+    // Ako je map zapravo seat_request (join-ovan), vreme je u 'zeljeno_vreme'
+    if (rawMap.containsKey('zeljeno_vreme') && rawMap['zeljeno_vreme'] != null) {
+      final grad = rawMap['grad']?.toString().toLowerCase();
+      final targetGrad = (place.toLowerCase() == 'vs' || place.toLowerCase() == 'vrsac') ? 'vs' : 'bc';
+      if (grad == targetGrad) {
+        return normalizeTime(rawMap['zeljeno_vreme'].toString());
       }
     }
     return null;
@@ -109,158 +53,62 @@ class RegistrovaniHelpers {
 
   /// 🆕 Čitaj "adresa danas" ID iz polasci_po_danu JSON
   static String? getAdresaDanasIdForDay(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    final polasci = parsePolasciPoDanuRaw(rawMap['polasci_po_danu']);
-    final dayData = polasci[dayKratica.toLowerCase()];
-    if (dayData is Map) {
-      return dayData['${place.toLowerCase()}_adresa_danas_id'] as String?;
-    }
-    return null;
+    return null; // Obrisano sa JSON kolonom
   }
 
   /// 🆕 Čitaj "adresa danas" naziv iz polasci_po_danu JSON
   static String? getAdresaDanasNazivForDay(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    final polasci = parsePolasciPoDanuRaw(rawMap['polasci_po_danu']);
-    final dayData = polasci[dayKratica.toLowerCase()];
-    if (dayData is Map) {
-      return dayData['${place.toLowerCase()}_adresa_danas'] as String?;
-    }
-    return null;
+    return null; // Obrisano sa JSON kolonom
   }
 
   /// 🆕 Proveri da li je putnik otkazan
   static bool isOtkazanForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    final polasci = parsePolasciPoDanuRaw(rawMap['polasci_po_danu']);
-    final dayData = polasci[dayKratica.toLowerCase()];
-    if (dayData is Map) {
-      final otkazanoTimestamp = dayData['${place.toLowerCase()}_otkazano'] as String?;
-      if (otkazanoTimestamp != null && otkazanoTimestamp.isNotEmpty) {
-        try {
-          DateTime.parse(otkazanoTimestamp).toLocal();
-          return true;
-        } catch (_) {}
-      }
+    // Ako je map seat_request, proveri status kolonu
+    if (rawMap.containsKey('status')) {
+      final status = rawMap['status']?.toString().toLowerCase();
+      return status == 'otkazano' || status == 'cancelled';
     }
     return false;
   }
 
   /// 🆕 Dobij vreme otkazivanja
   static DateTime? getVremeOtkazivanjaForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    final polasci = parsePolasciPoDanuRaw(rawMap['polasci_po_danu']);
-    final dayData = polasci[dayKratica.toLowerCase()];
-    if (dayData is Map) {
-      final val = dayData['${place.toLowerCase()}_otkazano'];
-      if (val != null) return DateTime.tryParse(val.toString())?.toLocal();
+    if (rawMap.containsKey('processed_at') && isOtkazanForDayAndPlace(rawMap, dayKratica, place)) {
+      return DateTime.tryParse(rawMap['processed_at'].toString())?.toLocal();
     }
     return null;
   }
 
   static String? getOtkazaoVozacForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    final polasci = parsePolasciPoDanuRaw(rawMap['polasci_po_danu']);
-    final dayData = polasci[dayKratica.toLowerCase()];
-    if (dayData is Map) {
-      return dayData['${place.toLowerCase()}_otkazano_vozac'] as String?;
+    if (rawMap.containsKey('vozac_id') && isOtkazanForDayAndPlace(rawMap, dayKratica, place)) {
+      return rawMap['vozac_id']?.toString();
     }
     return null;
   }
 
   static String? getStatusForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    final polasci = parsePolasciPoDanuRaw(rawMap['polasci_po_danu']);
-    final dayData = polasci[dayKratica.toLowerCase()];
-    if (dayData is Map) {
-      return dayData['${place.toLowerCase()}_status'] as String?;
+    if (rawMap.containsKey('status')) {
+      return rawMap['status']?.toString();
     }
     return null;
   }
 
   static double? getIznosPlacanjaForDayAndPlace(Map<String, dynamic> map, String dan, String place) {
-    final polasci = parsePolasciPoDanuRaw(map['polasci_po_danu']);
-    final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
-    if (danData == null) return null;
-
-    final placeLower = place.toLowerCase();
-    final payments = danData['${placeLower}_placanja'] as List?;
-    if (payments != null && payments.isNotEmpty) {
-      double sum = 0;
-      for (var p in payments) {
-        if (p is Map) {
-          final iznos = p['iznos'];
-          if (iznos is num) {
-            sum += iznos.toDouble();
-          } else if (iznos is String) {
-            sum += double.tryParse(iznos) ?? 0;
-          }
-        }
-      }
-      return sum > 0 ? sum : null;
-    }
-
-    final value = danData['${placeLower}_placeno'] ?? danData['${placeLower}_iznos_placanja'];
-    if (value == null) return null;
-    if (value is bool) return value ? 600.0 : null; // Legacy true -> 600
-    return (value is num) ? value.toDouble() : double.tryParse(value.toString());
+    return null; // Više se ne čita odavde
   }
 
-  static DateTime? getVremePlacanjaForDayAndPlace(Map<String, dynamic> map, String dan, String place) {
-    final polasci = parsePolasciPoDanuRaw(map['polasci_po_danu']);
-    final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
-    if (danData == null) return null;
-
-    final placeLower = place.toLowerCase();
-    final payments = danData['${placeLower}_placanja'] as List?;
-    if (payments != null && payments.isNotEmpty) {
-      String? latest;
-      for (var p in payments) {
-        if (p is Map && p['vreme'] != null) {
-          final pVreme = p['vreme'].toString();
-          if (latest == null || pVreme.compareTo(latest) > 0) {
-            latest = pVreme;
-          }
-        }
-      }
-      return latest != null ? DateTime.tryParse(latest)?.toLocal() : null;
-    }
-
-    final value = danData['${placeLower}_vreme_placanja'] ?? danData['${placeLower}_placeno'];
-    if (value == null) return null;
-    if (value is bool) return value ? DateTime.now() : null; // Legacy true -> now
-    return DateTime.tryParse(value.toString())?.toLocal();
+  static DateTime? getVremePlacanjaForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
+    return null; // Obrisano sa JSON kolonom
   }
 
-  static String? getNaplatioVozacForDayAndPlace(Map<String, dynamic> map, String dan, String place) {
-    final polasci = parsePolasciPoDanuRaw(map['polasci_po_danu']);
-    final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
-    if (danData == null) return null;
-
-    final payments = danData['${place.toLowerCase()}_placanja'] as List?;
-    if (payments != null && payments.isNotEmpty) {
-      String? driver;
-      String? latest;
-      for (var p in payments) {
-        if (p is Map && p['vozac'] != null) {
-          if (latest == null || (p['vreme'] ?? '').toString().compareTo(latest) > 0) {
-            latest = (p['vreme'] ?? '').toString();
-            driver = p['vozac'] as String;
-          }
-        }
-      }
-      return driver;
-    }
-    return danData['${place.toLowerCase()}_naplatio_vozac'] as String?;
+  static String? getNaplatioVozacForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
+    return null; // Obrisano sa JSON kolonom
   }
 
-  static DateTime? getVremePokupljenjaForDayAndPlace(Map<String, dynamic> map, String dan, String place) {
-    final polasci = parsePolasciPoDanuRaw(map['polasci_po_danu']);
-    final danData = polasci[dan.toLowerCase()] as Map<String, dynamic>?;
-    if (danData == null) return null;
-
-    final value = danData['${place.toLowerCase()}_pokupljeno'];
-    if (value == null) return null;
-
-    try {
-      final dt = DateTime.parse(value.toString()).toLocal();
-      final today = DateTime.now();
-      if (dt.year == today.year && dt.month == today.month && dt.day == today.day) return dt;
-    } catch (_) {}
+  static DateTime? getVremePokupljenjaForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
+    if (rawMap.containsKey('status') && rawMap['status'] == 'confirmed') {
+      return rawMap['processed_at'] != null ? DateTime.parse(rawMap['processed_at']).toLocal() : null;
+    }
     return null;
   }
 

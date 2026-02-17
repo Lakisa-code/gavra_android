@@ -24,18 +24,7 @@ RETURNS integer AS $$
 DECLARE
     max_mesta_val integer;
     zauzeto_val integer;
-    dan_kratica text;
-    grad_key text;
-    status_key text;
 BEGIN
-    dan_kratica := get_dan_kratica(target_datum);
-    grad_key := lower(target_grad);
-    -- Odredi sezonski ključ (bc2/vs2) ako je datum u zimskom periodu (Oktobar-Mart)
-    IF EXTRACT(MONTH FROM target_datum) >= 10 OR EXTRACT(MONTH FROM target_datum) <= 3 THEN
-        grad_key := grad_key || '2';
-    END IF;
-    status_key := grad_key || '_status';
-
     -- 1. Dohvati max mesta iz kapaciteta
     SELECT kp.max_mesta INTO max_mesta_val 
     FROM kapacitet_polazaka kp
@@ -43,23 +32,14 @@ BEGIN
     
     IF max_mesta_val IS NULL THEN max_mesta_val := 8; END IF;
 
-    -- 2. Prebroj putnike koji već ZAUZIMAJU mesto kod dispečera
-    -- Podržava i zimski red vožnje (bc2/vs2) sa fallback-om na letnji (bc/vs)
-    SELECT COALESCE(SUM(rp.broj_mesta), 0) INTO zauzeto_val
-    FROM registrovani_putnici rp
-    WHERE rp.obrisan = false AND rp.aktivan = true
-      AND (
-        (
-            -- Proveri zimski ključ ako postoji, inače letnji
-            COALESCE(
-                rp.polasci_po_danu->dan_kratica->>grad_key, -- npr 'bc2'
-                CASE WHEN grad_key LIKE '%2' THEN rp.polasci_po_danu->dan_kratica->>lower(target_grad) ELSE NULL END -- fallback na 'bc'
-            ) IN (target_vreme::text, to_char(target_vreme, 'HH24:MI'))
-        )
-      )
-      -- Računaj sve, osim ako su eksplicitno obeleženi kao odbijeni ili otkazani
-      AND (rp.polasci_po_danu->dan_kratica->>status_key IS NULL OR rp.polasci_po_danu->dan_kratica->>status_key != 'rejected')
-      AND (rp.polasci_po_danu->dan_kratica->>(grad_key || '_otkazano') IS NULL);
+    -- 2. Prebroj putnike koji već ZAUZIMAJU mesto kod dispečera u tabeli SEAT_REQUESTS
+    -- Računamo one koji su PENDING (čekaju obradu), MANUAL (čekaju admina) ili APPROVED/CONFIRMED
+    SELECT COALESCE(SUM(sr.broj_mesta), 0) INTO zauzeto_val
+    FROM seat_requests sr
+    WHERE sr.datum = target_datum
+      AND sr.grad = UPPER(target_grad)
+      AND sr.zeljeno_vreme::time = target_vreme
+      AND sr.status IN ('pending', 'manual', 'approved', 'confirmed');
 
     RETURN max_mesta_val - zauzeto_val;
 END;
@@ -71,17 +51,10 @@ RETURNS void AS $$
 DECLARE
     req_record record;
     putnik_record record;
-    dan_kratica text;
     ima_mesta boolean;
     slobodno_mesta integer;
     novi_status text;
     v_alternatives jsonb := '[]'::jsonb;
-    json_key_status text;
-    json_key_ceka text;
-    json_key_vreme text;
-    trenutni_polasci jsonb;
-    current_polasci jsonb;
-    dan_data jsonb;
     is_bc_student_guaranteed boolean;
     new_radni_dani text;
 BEGIN
@@ -91,17 +64,6 @@ BEGIN
 
     SELECT * INTO putnik_record FROM registrovani_putnici r WHERE r.id = req_record.putnik_id;
     IF NOT FOUND THEN RETURN; END IF;
-
-    dan_kratica := get_dan_kratica(req_record.datum);
-    json_key_vreme := lower(req_record.grad);
-    
-    -- ❄️ ZIMSKI RED VOŽNJE PROVERA (Oktobar - Mart)
-    IF EXTRACT(MONTH FROM req_record.datum) >= 10 OR EXTRACT(MONTH FROM req_record.datum) <= 3 THEN
-        json_key_vreme := json_key_vreme || '2';
-    END IF;
-
-    json_key_status := json_key_vreme || '_status';
-    json_key_ceka := json_key_vreme || '_ceka_od';
 
     -- 2. BC LOGIKA ZA UČENIKE (Garantovano mesto do 16h za sutra)
     is_bc_student_guaranteed := (
@@ -125,7 +87,7 @@ BEGIN
     ELSE
         novi_status := 'rejected';
         
-        -- Pronađi PRVI slobodan termin pre i PRVI slobodan termin posle (bez obzira na razliku u vremenu)
+        -- Pronađi PRVI slobodan termin pre i PRVI slobodan termin posle
         SELECT jsonb_agg(to_char(vreme, 'HH24:MI')) INTO v_alternatives
         FROM (
             -- Prvi dostupni pre željenog vremena
@@ -158,36 +120,17 @@ BEGIN
         updated_at = now()
     WHERE id = req_id;
 
-    -- 6. AŽURIRAJ REGISTROVANI_PUTNICI (JSONB polje)
-    trenutni_polasci := putnik_record.polasci_po_danu;
-    dan_data := COALESCE(trenutni_polasci->dan_kratica, '{}'::jsonb);
-
-    IF novi_status = 'approved' THEN
-        dan_data := dan_data || jsonb_build_object(
-            json_key_status, 'confirmed',
-            json_key_vreme, req_record.zeljeno_vreme::text
-        );
-    ELSIF novi_status = 'rejected' THEN
-        dan_data := dan_data || jsonb_build_object(json_key_status, 'rejected');
-    END IF;
-
-    current_polasci := jsonb_set(COALESCE(trenutni_polasci, '{}'::jsonb), ARRAY[dan_kratica], dan_data);
-
-    -- Izračunaj radni_dani na osnovu novog stanja
-    SELECT string_agg(key, ',') INTO new_radni_dani
-    FROM (
-        SELECT key
-        FROM jsonb_each(current_polasci)
-        WHERE (value->>'bc' IS NOT NULL AND value->>'bc' != '' AND value->>'bc' != 'null')
-           OR (value->>'vs' IS NOT NULL AND value->>'vs' != '' AND value->>'vs' != 'null')
-        ORDER BY CASE key
-            WHEN 'pon' THEN 1 WHEN 'uto' THEN 2 WHEN 'sre' THEN 3 WHEN 'cet' THEN 4
-            WHEN 'pet' THEN 5 WHEN 'sub' THEN 6 WHEN 'ned' THEN 7 ELSE 8 END
-    ) sub;
+    -- 6. AŽURIRAJ REGISTROVANI_PUTNICI (radni_dani na osnovu narednih 7 dana u seat_requests)
+    -- Ovo osigurava da profil i liste vide na koji dan putnik putuje
+    SELECT string_agg(DISTINCT get_dan_kratica(sr.datum), ',') INTO new_radni_dani
+    FROM seat_requests sr
+    WHERE sr.putnik_id = putnik_record.id
+      AND sr.datum >= CURRENT_DATE 
+      AND sr.datum <= (CURRENT_DATE + 7)
+      AND sr.status NOT IN ('rejected', 'cancelled', 'otkazano');
 
     UPDATE registrovani_putnici 
-    SET polasci_po_danu = current_polasci,
-        radni_dani = COALESCE(new_radni_dani, ''),
+    SET radni_dani = COALESCE(new_radni_dani, radni_dani),
         updated_at = now()
     WHERE id = putnik_record.id;
 END;
@@ -266,7 +209,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ==========================================
--- 5. POMOĆNA FUNKCIJA: Atomski update polaska
+-- 5. POMOĆNA FUNKCIJA: Atomski update polaska (SADA RADI PREKO SEAT_REQUESTS)
 -- ==========================================
 CREATE OR REPLACE FUNCTION update_putnik_polazak_v2(
     p_id UUID,
@@ -274,64 +217,63 @@ CREATE OR REPLACE FUNCTION update_putnik_polazak_v2(
     p_grad TEXT,
     p_vreme TEXT,
     p_status TEXT DEFAULT NULL,
-    p_ceka_od TEXT DEFAULT NULL,
+    p_ceka_od TEXT DEFAULT NULL, -- Ignorišemo, koristimo created_at u seat_requests
     p_otkazano TEXT DEFAULT NULL,
     p_otkazano_vreme TEXT DEFAULT NULL,
     p_otkazao_vozac TEXT DEFAULT NULL
 ) RETURNS void AS $$
 DECLARE
-    current_data jsonb;
-    dan_data jsonb;
-    new_radni_dani text;
+    target_date date;
+    grad_clean text;
+    final_status text;
+    existing_id uuid;
+    p_broj_mesta integer;
 BEGIN
-    -- Zaključaj red za ažuriranje ( Race Condition prevention )
-    SELECT polasci_po_danu INTO current_data 
-    FROM registrovani_putnici 
-    WHERE id = p_id FOR UPDATE;
+    -- 1. Odredi datum za p_dan (npr 'pon')
+    -- Tražimo sledeći datum koji odgovara krativci dana, uključujući i danas ako još nije prošao
+    SELECT d INTO target_date
+    FROM (
+        SELECT CURRENT_DATE + i as d
+        FROM generate_series(0, 7) i
+    ) dates
+    WHERE get_dan_kratica(d) = lower(p_dan)
+    LIMIT 1;
 
-    -- Inicijalizuj polasci_po_danu ako je null
-    current_data := COALESCE(current_data, '{}'::jsonb);
+    -- 2. Očisti grad (bc2 -> BC, vs2 -> VS)
+    grad_clean := UPPER(replace(p_grad, '2', ''));
 
-    -- Inicijalizuj dan ako ne postoji
-    dan_data := COALESCE(current_data->p_dan, '{"bc": null, "vs": null}'::jsonb);
-
-    -- Sigurno postavljanje vrednosti (koristiteći || i jsonb_build_object koji ne puca na null)
-    dan_data := dan_data || jsonb_build_object(
-        p_grad, p_vreme,
-        p_grad || '_status', p_status,
-        p_grad || '_ceka_od', p_ceka_od,
-        p_grad || '_otkazano', p_otkazano,
-        p_grad || '_otkazano_vreme', p_otkazano_vreme,
-        p_grad || '_otkazao_vozac', p_otkazao_vozac
-    );
-
-    -- Ukloni resolved_at ako status nije confirmed/approved
-    IF p_status IS NULL OR (p_status != 'confirmed' AND p_status != 'approved') THEN
-        dan_data := dan_data - (p_grad || '_resolved_at');
+    -- 3. Odredi status
+    final_status := COALESCE(p_status, 'pending');
+    IF p_vreme IS NULL OR p_vreme = '' OR p_vreme = 'null' THEN
+        final_status := 'cancelled';
     END IF;
 
-    -- Formiraj finalni JSON
-    current_data := jsonb_set(current_data, ARRAY[p_dan], dan_data);
+    -- 4. Dohvati broj mesta putnika
+    SELECT broj_mesta INTO p_broj_mesta FROM registrovani_putnici WHERE id = p_id;
+    IF p_broj_mesta IS NULL THEN p_broj_mesta := 1; END IF;
 
-    -- Automatski izračunaj radni_dani string (podržava i zimski red vožnje bc2/vs2)
-    SELECT string_agg(key, ',') INTO new_radni_dani
-    FROM (
-        SELECT key
-        FROM jsonb_each(current_data)
-        WHERE (value->>'bc' IS NOT NULL AND value->>'bc' != '' AND value->>'bc' != 'null')
-           OR (value->>'vs' IS NOT NULL AND value->>'vs' != '' AND value->>'vs' != 'null')
-           OR (value->>'bc2' IS NOT NULL AND value->>'bc2' != '' AND value->>'bc2' != 'null')
-           OR (value->>'vs2' IS NOT NULL AND value->>'vs2' != '' AND value->>'vs2' != 'null')
-        ORDER BY CASE key
-            WHEN 'pon' THEN 1 WHEN 'uto' THEN 2 WHEN 'sre' THEN 3 WHEN 'cet' THEN 4
-            WHEN 'pet' THEN 5 WHEN 'sub' THEN 6 WHEN 'ned' THEN 7 ELSE 8 END
-    ) sub;
+    -- 5. UPSERT u seat_requests za taj datum i putnika
+    -- Prvo proveri da li već postoji zahtev za taj datum i taj smer (grad)
+    SELECT id INTO existing_id 
+    FROM seat_requests 
+    WHERE putnik_id = p_id AND datum = target_date AND grad = grad_clean;
 
-    -- Ažuriraj bazu sa svim podacima
+    IF existing_id IS NOT NULL THEN
+        UPDATE seat_requests 
+        SET zeljeno_vreme = COALESCE(p_vreme, zeljeno_vreme),
+            status = final_status,
+            updated_at = now()
+        WHERE id = existing_id;
+    ELSE
+        INSERT INTO seat_requests (putnik_id, grad, zeljeno_vreme, datum, status, broj_mesta, created_at, updated_at)
+        VALUES (p_id, grad_clean, p_vreme, target_date, final_status, p_broj_mesta, now(), now());
+    END IF;
+
+    -- 6. Ažuriraj radni_dani putnika (da bi se videlo u profilu)
+    -- Ovo radi preko seat_requests u obradi_seat_request, ali možemo i ovde odmah
+    -- da bi korisnik video promenu u profilu bez osvežavanja
     UPDATE registrovani_putnici 
-    SET polasci_po_danu = current_data,
-        radni_dani = COALESCE(new_radni_dani, ''),
-        updated_at = now()
+    SET updated_at = now()
     WHERE id = p_id;
 END;
 $$ LANGUAGE plpgsql;
