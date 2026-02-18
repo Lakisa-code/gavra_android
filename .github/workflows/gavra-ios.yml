@@ -1,0 +1,145 @@
+name: gavra ios
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //; s/+.*//')
+          BUILD_NUMBER=$(grep "^version:" pubspec.yaml | sed 's/.*+//')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Ruby for Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: ios
+
+      - name: Install CocoaPods
+        run: |
+          sudo gem install cocoapods
+          cd ios
+          pod install
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          ${{ secrets.ENV_FILE_CONTENT }}
+          EOF
+
+      - name: Create Firebase and Apple services files
+        run: |
+          mkdir -p ios/Runner
+          echo '${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}' > ios/Runner/GoogleService-Info.plist
+
+      - name: Import Apple certificates
+        env:
+          P12_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_P12_B64 }}
+          P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # Import certificate
+          echo "$P12_CERTIFICATE" | base64 --decode > certificate.p12
+          security import certificate.p12 \
+            -P "$P12_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          
+          rm certificate.p12
+
+      - name: Import provisioning profile
+        env:
+          PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE_B64 }}
+        run: |
+          # Create provisioning profiles directory
+          PP_PATH=~/Library/MobileDevice/Provisioning\ Profiles
+          mkdir -p "$PP_PATH"
+          
+          # Decode and save provisioning profile
+          echo "$PROVISIONING_PROFILE" | base64 --decode > "$PP_PATH/app.mobileprovision"
+
+      - name: Flutter Doctor
+        run: flutter doctor -v
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build iOS IPA
+        run: |
+          flutter build ipa \
+            --release \
+            --obfuscate \
+            --split-debug-info=build/ios/outputs/mapping \
+            --export-options-plist=ios/ExportOptions.plist
+
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          # Create API key file
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > ~/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+          
+          # Install xcodeproj gem for upload
+          gem install xcodeproj
+          
+          # Upload to TestFlight using xcrun altool
+          xcrun altool --upload-app \
+            --type ios \
+            --file build/ios/ipa/*.ipa \
+            --apiKey $APP_STORE_CONNECT_API_KEY_ID \
+            --apiIssuer $APP_STORE_CONNECT_API_ISSUER_ID
+
+      - name: ✅ Upload complete
+        run: |
+          echo "🎉 Successfully built and uploaded to TestFlight!"
+          echo ""
+          echo "📦 Build Details:"
+          echo "  - App: Gavra 013"
+          echo "  - Version: ${{ env.VERSION }}"
+          echo "  - Build: ${{ env.BUILD_NUMBER }}"
+          echo "  - Platform: iOS"
+          echo ""
+          echo "⏭️  Next steps:"
+          echo "  1. Review build in App Store Connect"
+          echo "  2. Submit for TestFlight beta review"
+          echo "  3. Notify testers about new build"
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain $KEYCHAIN_PATH
+          fi
