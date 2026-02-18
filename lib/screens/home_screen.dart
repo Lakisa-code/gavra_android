@@ -28,6 +28,7 @@ import '../services/registrovani_putnik_service.dart';
 import '../services/seat_request_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
+import '../services/vreme_vozac_service.dart'; // 🚐 Za border boju dodeljenog vozača
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
@@ -160,6 +161,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _initializeData();
     _setupRealtimeMonitoring(); // 🔄 Popravljeno ime metode
     _startDigitalDispecer(); // 🤖 Pokreni dispečera
+
+    // 🚐 Učitaj cache za dodeljene vozače terminima
+    VremeVozacService().loadAllVremeVozac();
   }
 
   /// 🤖 POKREĆE DIGITALNOG DISPEČERA
@@ -2717,6 +2721,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
+          showVozacBoja: true,
         );
       case 'zimski':
         return BottomNavBarZimski(
@@ -2727,6 +2732,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
+          showVozacBoja: true,
         );
       default: // 'letnji' ili nepoznato
         return BottomNavBarLetnji(
@@ -2737,6 +2743,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
+          showVozacBoja: true,
         );
     }
   }
