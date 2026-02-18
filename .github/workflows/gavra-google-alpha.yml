@@ -144,7 +144,7 @@ jobs:
                   releases: [{
                     name: 'Closed Testing Build v' + versionCode,
                     versionCodes: [versionCode.toString()],
-                    status: 'inProgress',
+                    status: 'completed',
                     releaseNotes: [{
                       language: 'sr-RS',
                       text: 'Alpha Closed Testing Build'
@@ -152,7 +152,7 @@ jobs:
                   }]
                 }
               });
-              console.log('✅ Alpha track updated (status: inProgress - Closed Testing)');
+              console.log('✅ Alpha track updated (status: completed - Closed Testing)');
           
               // Commit edit
               const commitRes = await androidPublisher.edits.commit({
