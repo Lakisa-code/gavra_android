@@ -187,6 +187,27 @@ class Putnik {
       finalStatus = profileStatus;
     }
 
+    // 🆕 Odredi dodeljenog vozača sa prioritetom:
+    // 1) Per-putnik (vozac_id iz seat_requests tabele - NAJVIŠI PRIORITET)
+    // 2) Per-vreme (iz vreme_vozac tabele - svi putnici na tom terminu)
+    String? dodeljenVozacFinal;
+    try {
+      // Prvo proveri individualnu dodelu (najviši prioritet)
+      final perPutnik = VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']);
+      if (perPutnik != null && perPutnik.isNotEmpty && perPutnik != 'Nedodeljen') {
+        dodeljenVozacFinal = perPutnik;
+      } else {
+        // Ako nema individualne dodele, proveri vreme vozač
+        final danKratica = _getDanNedeljeKratica(DateTime.parse(datumStr).weekday);
+        final perVreme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
+        if (perVreme != null && perVreme.isNotEmpty) {
+          dodeljenVozacFinal = _getVozacIme(perVreme);
+        }
+      }
+    } catch (_) {
+      dodeljenVozacFinal = VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']);
+    }
+
     return Putnik(
       id: p['id'] ?? req['putnik_id'],
       ime: p['putnik_ime'] ?? p['ime'] ?? '',
@@ -210,7 +231,7 @@ class Putnik {
       pokupioVozac: VozacMappingService.getNameFromUuidOrNameSync(req['vozac_id']),
       obrisan: false,
       vozacId: req['vozac_id'],
-      dodeljenVozac: VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']),
+      dodeljenVozac: dodeljenVozacFinal,
       requestId: req['id']?.toString(), // ✅ DODATO: ID seat_request-a
     );
   }

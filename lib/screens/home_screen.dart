@@ -22,7 +22,6 @@ import '../services/local_notification_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/racun_service.dart';
-import '../services/realtime/realtime_manager.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/seat_request_service.dart';
@@ -260,9 +259,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _setupRealtimeListener() {
+    // UKLONJEN - PutnikService već ima realtime listener-e
+    // Ne treba dupli listener koji ništa ne radi
     _realtimeSubscription?.cancel();
-    // Koristi RealtimeManager za centralizovanu pretplatu na registrovane putnike
-    _realtimeSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((_) {});
+    _realtimeSubscription = null;
   }
 
   /// 🕒 Bira polazak koji je najbliži trenutnom vremenu

@@ -29,21 +29,30 @@ class PutnikService {
   static final Map<String, StreamController<List<Putnik>>> _streams = {};
   static final Map<String, List<Putnik>> _lastValues = {};
   static final Map<String, _StreamParams> _streamParams = {};
-  static final Map<String, StreamSubscription<dynamic>> _realtimeSubscriptions = {};
+
+  // 🌐 GLOBALNI SHARED LISTENER-I (jedan po tabeli, ne po stream key-u)
+  static StreamSubscription? _globalSeatRequestsListener;
+  static StreamSubscription? _globalVoznjeLogListener;
+  static StreamSubscription? _globalRegistrovaniListener;
 
   static void closeStream({String? isoDate, String? grad, String? vreme}) {
     final key = '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
     final controller = _streams[key];
     if (controller != null && !controller.isClosed) controller.close();
-    _realtimeSubscriptions[key]?.cancel();
-    _realtimeSubscriptions['$key:log']?.cancel(); // Nova pretplata na logove
-    _realtimeSubscriptions['$key:registrovani']?.cancel(); // Nova pretplata na registrovane
     _streams.remove(key);
     _lastValues.remove(key);
     _streamParams.remove(key);
-    _realtimeSubscriptions.remove(key);
-    _realtimeSubscriptions.remove('$key:log');
-    _realtimeSubscriptions.remove('$key:registrovani');
+
+    // ✅ Zatvori globalne listener-e ako nema više aktivnih streamova
+    if (_streams.isEmpty) {
+      _globalSeatRequestsListener?.cancel();
+      _globalVoznjeLogListener?.cancel();
+      _globalRegistrovaniListener?.cancel();
+      _globalSeatRequestsListener = null;
+      _globalVoznjeLogListener = null;
+      _globalRegistrovaniListener = null;
+      debugPrint('🛑 [PutnikService] Svi streamovi zatvoreni - globalni listener-i otkazani');
+    }
   }
 
   String _streamKey({String? isoDate, String? grad, String? vreme}) => '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
@@ -69,8 +78,17 @@ class PutnikService {
       _streams.remove(key);
       _lastValues.remove(key);
       _streamParams.remove(key);
-      _realtimeSubscriptions[key]?.cancel();
-      _realtimeSubscriptions.remove(key);
+
+      // ✅ Zatvori globalne listener-e ako nema više aktivnih streamova
+      if (_streams.isEmpty) {
+        _globalSeatRequestsListener?.cancel();
+        _globalVoznjeLogListener?.cancel();
+        _globalRegistrovaniListener?.cancel();
+        _globalSeatRequestsListener = null;
+        _globalVoznjeLogListener = null;
+        _globalRegistrovaniListener = null;
+        debugPrint('🛑 [PutnikService] Svi streamovi zatvoreni - globalni listener-i otkazani');
+      }
     };
     return controller.stream;
   }
@@ -151,28 +169,46 @@ class PutnikService {
 
   void _setupRealtimeRefresh(
       String key, String? isoDate, String? grad, String? vreme, StreamController<List<Putnik>> controller) {
-    _realtimeSubscriptions[key]?.cancel();
-    _realtimeSubscriptions['$key:log']?.cancel();
-    _realtimeSubscriptions['$key:registrovani']?.cancel();
+    // 🌐 SETUP GLOBALNIH SHARED LISTENER-A (samo ako već nisu kreirani)
 
-    // Refresh when seat_requests change for the target date
-    _realtimeSubscriptions[key] = RealtimeManager.instance.subscribe('seat_requests').listen((payload) {
-      debugPrint('🔄 [PutnikService] Realtime UPDATE (seat_requests): ${payload.eventType}');
-      _doFetchForStream(key, isoDate, grad, vreme, controller);
-    });
+    // Listener za seat_requests - refreshuje SVE aktivne streamove
+    if (_globalSeatRequestsListener == null) {
+      _globalSeatRequestsListener = RealtimeManager.instance.subscribe('seat_requests').listen((payload) {
+        debugPrint('🔄 [PutnikService] GLOBAL realtime UPDATE (seat_requests): ${payload.eventType}');
+        _refreshAllActiveStreams();
+      });
+      debugPrint('✅ [PutnikService] Globalni seat_requests listener kreiran');
+    }
 
-    // Refresh when voznje_log change (pokupljanja, naplate)
-    _realtimeSubscriptions['$key:log'] = RealtimeManager.instance.subscribe('voznje_log').listen((payload) {
-      debugPrint('🔄 [PutnikService] Realtime UPDATE (voznje_log): ${payload.eventType}');
-      _doFetchForStream(key, isoDate, grad, vreme, controller);
-    });
+    // Listener za voznje_log
+    if (_globalVoznjeLogListener == null) {
+      _globalVoznjeLogListener = RealtimeManager.instance.subscribe('voznje_log').listen((payload) {
+        debugPrint('🔄 [PutnikService] GLOBAL realtime UPDATE (voznje_log): ${payload.eventType}');
+        _refreshAllActiveStreams();
+      });
+      debugPrint('✅ [PutnikService] Globalni voznje_log listener kreiran');
+    }
 
-    // Refresh when registrovani_putnici change (polazak updates, etc.)
-    _realtimeSubscriptions['$key:registrovani'] =
-        RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
-      debugPrint('🔄 [PutnikService] Realtime UPDATE (registrovani_putnici): ${payload.eventType}');
-      _doFetchForStream(key, isoDate, grad, vreme, controller);
-    });
+    // Listener za registrovani_putnici
+    if (_globalRegistrovaniListener == null) {
+      _globalRegistrovaniListener = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+        debugPrint('🔄 [PutnikService] GLOBAL realtime UPDATE (registrovani_putnici): ${payload.eventType}');
+        _refreshAllActiveStreams();
+      });
+      debugPrint('✅ [PutnikService] Globalni registrovani_putnici listener kreiran');
+    }
+  }
+
+  /// 🔄 Refreshuje SVE aktivne streamove
+  void _refreshAllActiveStreams() {
+    for (final entry in _streams.entries) {
+      final key = entry.key;
+      final controller = entry.value;
+      final params = _streamParams[key];
+      if (params != null && !controller.isClosed) {
+        _doFetchForStream(key, params.isoDate, params.grad, params.vreme, controller);
+      }
+    }
   }
 
   static final Map<String, DateTime> _lastActionTime = {};
@@ -668,18 +704,35 @@ class PutnikService {
     // 2. Determine the date (since seat_requests works on date, not day of week)
     final dateStr = app_date_utils.DateUtils.getIsoDateForDay(selectedDan ?? 'Ponedeljak');
 
-    // 3. Update seat_requests
-    final gradKey = (pravac?.toLowerCase().contains('vr') ?? false || pravac?.toLowerCase() == 'vs') ? 'vs' : 'bc';
+    // 3. Determine grad - try all possible values in order (lowercase is most common)
+    final isVrsac = pravac?.toLowerCase().contains('vr') ?? false || pravac?.toLowerCase() == 'vs';
 
-    await supabase.from('seat_requests').update({
-      'vozac_id': vozacUuid,
-      'status': 'confirmed',
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }).match({
-      'putnik_id': id,
-      'datum': dateStr,
-      'grad': gradKey,
-    });
+    // Try lowercase first (most common), then uppercase, then full names
+    final gradVariants = isVrsac ? ['vs', 'VS', 'VRŠAC', 'Vršac'] : ['bc', 'BC', 'BELA CRKVA', 'Bela Crkva'];
+
+    // 4. Try to update with each variant until one succeeds
+    bool updated = false;
+    for (final gradKey in gradVariants) {
+      final result = await supabase.from('seat_requests').update({
+        'vozac_id': vozacUuid,
+        'status': 'confirmed',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).match({
+        'putnik_id': id,
+        'datum': dateStr,
+        'grad': gradKey,
+      }).select();
+
+      if (result.isNotEmpty) {
+        updated = true;
+        break;
+      }
+    }
+
+    if (!updated) {
+      throw Exception(
+          'Putnik nije pronađen u seat_requests tabeli za datum $dateStr i grad ${isVrsac ? "Vršac" : "Bela Crkva"}');
+    }
   }
 
   Future<void> prebacijPutnikaVozacu(String id, String? vozac) async {
