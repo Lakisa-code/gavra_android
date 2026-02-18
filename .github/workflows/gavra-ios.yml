@@ -33,7 +33,7 @@ jobs:
           ${{ secrets.ENV_FILE_CONTENT }}
           EOF
 
-      - name: Create Firebase and Apple services files
+      - name: Create Firebase config
         run: |
           mkdir -p ios/Runner
           echo '${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}' > ios/Runner/GoogleService-Info.plist
@@ -44,35 +44,20 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build iOS IPA
+      - name: Install CocoaPods
         run: |
-          flutter build ipa \
+          cd ios
+          pod install
+
+      - name: Build iOS (unsigned for testing)
+        run: |
+          flutter build ios \
             --release \
-            --export-options-plist=ios/ExportOptions.plist
+            --no-codesign
 
-      - name: Upload to TestFlight
-        env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+      - name: ✅ Build complete
         run: |
-          # Create API key file
-          mkdir -p ~/private_keys
-          echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > ~/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
-          
-          # Install xcodeproj gem for upload
-          gem install xcodeproj
-          
-          # Upload to TestFlight using xcrun altool
-          xcrun altool --upload-app \
-            --type ios \
-            --file build/ios/ipa/*.ipa \
-            --apiKey $APP_STORE_CONNECT_API_KEY_ID \
-            --apiIssuer $APP_STORE_CONNECT_API_ISSUER_ID
-
-      - name: ✅ Upload complete
-        run: |
-          echo "🎉 Successfully built and uploaded to TestFlight!"
+          echo "🎉 iOS build completed successfully!"
           echo ""
           echo "📦 Build Details:"
           echo "  - App: Gavra 013"
@@ -80,7 +65,5 @@ jobs:
           echo "  - Build: ${{ env.BUILD_NUMBER }}"
           echo "  - Platform: iOS"
           echo ""
-          echo "⏭️  Next steps:"
-          echo "  1. Review build in App Store Connect"
-          echo "  2. Submit for TestFlight beta review"
-          echo "  3. Notify testers about new build"
+          echo "⚠️  Note: This build is unsigned and for validation only."
+          echo "For TestFlight upload, build locally with proper signing or use Fastlane Match."

@@ -1,0 +1,28 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Sync code signing with Match"
+  lane :sync_signing do
+    match(
+      type: "appstore",
+      readonly: true,
+      app_identifier: "com.gavra013.gavra_android"
+    )
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    # Sync certificates and profiles
+    match(
+      type: "appstore",
+      readonly: true,
+      app_identifier: "com.gavra013.gavra_android"
+    )
+    
+    # Build is done by Flutter, just upload
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      ipa: "../build/ios/ipa/gavra_android.ipa"
+    )
+  end
+end
