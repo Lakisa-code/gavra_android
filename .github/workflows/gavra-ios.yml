@@ -7,6 +7,12 @@ jobs:
   build-and-release:
     runs-on: macos-latest
     
+    env:
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APPSTORE_KEY_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,42 +44,46 @@ jobs:
           mkdir -p ios/Runner
           echo '${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}' > ios/Runner/GoogleService-Info.plist
 
+      - name: Install Codemagic CLI Tools
+        run: pip3 install codemagic-cli-tools
+
       - name: Flutter Doctor
         run: flutter doctor -v
 
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Setup Ruby and Bundler
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-          bundler-cache: true
-          working-directory: ios
+      - name: Setup keychain
+        run: keychain initialize
 
-      - name: Install dependencies with Bundler
+      - name: Fetch signing files
+        run: |
+          app-store-connect fetch-signing-files "com.gavra013.gavra_android" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Setup certificates
+        run: keychain add-certificates
+
+      - name: Setup code signing
+        run: xcode-project use-profiles
+
+      - name: Install CocoaPods
         run: |
           cd ios
-          bundle install
-          bundle exec pod install
+          pod install
 
-      - name: Setup Fastlane Match
-        env:
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
-          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
-          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
-          MATCH_KEYCHAIN_NAME: ${{ secrets.MATCH_KEYCHAIN_NAME }}
-          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APPSTORE_API_KEY_P8 }}
+      - name: Build iOS IPA
         run: |
-          cd ios
-          bundle exec fastlane beta
+          flutter build ipa \
+            --release \
+            --build-name=${{ env.VERSION }} \
+            --build-number=${{ env.BUILD_NUMBER }}
+
+      - name: Upload to TestFlight
+        run: |
+          app-store-connect publish --path build/ios/ipa/*.ipa
+          echo "✅ Build uploaded to TestFlight!"
 
       - name: ✅ Upload complete
         run: |
@@ -86,6 +96,6 @@ jobs:
           echo "  - Platform: iOS"
           echo ""
           echo "⏭️  Next steps:"
-          echo "  1. Review build in App Store Connect"
-          echo "  2. Submit for TestFlight beta review"
-          echo "  3. Notify testers about new build"
+          echo "  1. Wait for Apple to process the build (~5-10 minutes)"
+          echo "  2. Review build in App Store Connect"
+          echo "  3. Submit for TestFlight beta review if needed"
