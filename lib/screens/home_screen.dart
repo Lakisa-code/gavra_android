@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // bool _isAddingPutnik = false; // previously used loading state; now handled local to dialog
   String _selectedDay = 'Ponedeljak'; // Biće postavljeno na današnji dan u initState
   String _selectedGrad = 'Bela Crkva';
-  String _selectedVreme = '5:00';
+  String _selectedVreme = '05:00'; // ✅ FIX: Format sa vodećom nulom (konzistentno sa RouteConfig)
 
   // Key and overlay entry for custom days dropdown
   // (removed overlay support for now) - will use DropdownButton2 built-in overlay
