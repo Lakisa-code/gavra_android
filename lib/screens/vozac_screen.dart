@@ -1370,6 +1370,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                     _currentDriver!, // ? FIX: Koristi dinamicki _currentDriver umesto hardkodovanog _vozacIme
                                 selectedGrad: _selectedGrad,
                                 selectedVreme: _selectedVreme,
+                                selectedDay: _isoDateToDayAbbr(_getWorkingDateIso()),
                                 onPutnikStatusChanged: _reoptimizeAfterStatusChange,
                                 bcVremena: _bcVremena,
                                 vsVremena: _vsVremena,
