@@ -35,7 +35,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   // Filteri - identicno kao HomeScreen
   String _selectedDay = 'Ponedeljak';
   String _selectedGrad = 'Bela Crkva';
-  String _selectedVreme = '5:00';
+  String _selectedVreme = '05:00';
 
   // Stream subscription
   StreamSubscription<List<Putnik>>? _putnikSubscription;
@@ -85,7 +85,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   // ?? Svi polasci za BottomNavBar
   List<String> get _sviPolasci {
     final bcList = bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = vsVremena.map((v) => '$v Vr�ac').toList();
+    final vsList = vsVremena.map((v) => '$v Vršac').toList();
     return [...bcList, ...vsList];
   }
 
@@ -94,11 +94,16 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     super.initState();
     _selectedDay = _getTodayName();
     _setupRealtimeListener();
+    _loadVremeVozacCache(); // 🆕 Učitaj vreme-vozac mapiranja
     _setupStream();
   }
 
+  void _loadVremeVozacCache() {
+    VremeVozacService().loadAllVremeVozac();
+  }
+
   void _setupRealtimeListener() {
-    // Slu�aj promjene u registrovani_putnici tabeli
+    // Slušaj promjene u registrovani_putnici tabeli
     RealtimeManager.instance.subscribe('registrovani_putnici').listen((_) {
       if (mounted) {
         _setupStream();
@@ -114,29 +119,18 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   String _getTodayName() {
     final today = DateTime.now();
-    // Vikendom (subota=6, nedelja=7) prika�i ponedeljak
+    // Vikendom (subota=6, nedelja=7) prikaži ponedeljak
     if (today.weekday == DateTime.saturday || today.weekday == DateTime.sunday) {
       return 'Ponedeljak';
     }
     return app_date_utils.DateUtils.getTodayFullName();
   }
 
-  // ? KORISTI CENTRALNU FUNKCIJU IZ DateUtils
-
   void _setupStream() {
     // ?? Zatvori stari stream ako postoji
     _putnikSubscription?.cancel();
 
     final isoDate = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
-
-    // ?? Ako menjamo datum, zatvori stari stream eksplicitno
-    if (_currentStreamKey != null) {
-      // Ekstraktuj isoDate iz starog kljuca
-      final oldIsoDate = _currentStreamKey!.split('|')[0];
-      if (oldIsoDate.isNotEmpty && oldIsoDate != isoDate) {
-        PutnikService.closeStream(isoDate: oldIsoDate);
-      }
-    }
 
     _currentStreamKey = isoDate;
     final normalizedVreme = GradAdresaValidator.normalizeTime(_selectedVreme);
@@ -154,12 +148,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
         // Sacuvaj sve putnike za dan (za BottomNavBar count)
         _allPutnici = putnici.where((p) {
-          return p.dan.toLowerCase() == danAbbrev.toLowerCase();
+          final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(danAbbrev.toLowerCase());
+          return dayMatch;
         }).toList();
 
         // Filtriraj za prikaz po vremenu i gradu
         final filtered = _allPutnici.where((p) {
-          final vremeMatch = GradAdresaValidator.normalizeTime(p.polazak) == normalizedVreme;
+          final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
+          final vremeMatch = pVreme == normalizedVreme;
           final gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
           return vremeMatch && gradMatch;
         }).toList();
@@ -700,9 +696,9 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.3),
+          color: Colors.white, // Bela pozadina kako bi boja vozača došla do izražaja
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white, width: 1.5),
+          border: Border.all(color: color, width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -711,7 +707,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
               width: 10,
               height: 10,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: color, // Tačkica u boji vozača
                 shape: BoxShape.circle,
               ),
             ),
@@ -721,7 +717,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: color, // Ime vozača u njegovoj boji
               ),
             ),
           ],
@@ -734,6 +730,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ?? Dobijamo boju trenutno dodeljenog vozaca za ovaj termin (za fallback)
+    final terminVozac = VremeVozacService().getVozacZaVremeSync(
+      _selectedGrad,
+      _selectedVreme,
+      _currentDayKratica,
+    );
+    final currentTerminalColor = terminVozac != null ? VozacBoja.getSync(terminVozac) : Colors.white;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light, // ?? Bele ikonice u status baru
       child: Container(
@@ -839,7 +843,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                             itemCount: _putnici.length,
                             itemBuilder: (context, index) {
                               final putnik = _putnici[index];
-                              final vozacColor = VozacBoja.getColorOrDefaultSync(putnik.dodeljenVozac, Colors.grey);
+                              // Ako putnik nije dodeljen, koristi boju termina (npr. narandzasta za BC 5:00)
+                              // umesto bledo sive, ili belu ako termin nema vozaca.
+                              final vozacColor = VozacBoja.getColorOrDefaultSync(
+                                putnik.dodeljenVozac,
+                                currentTerminalColor,
+                              );
                               final isSelected = putnik.id != null && _selectedPutnici.contains(putnik.id);
 
                               // ?? Boja kartice prema statusu putnika
@@ -856,6 +865,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                 statusText = '??? ${putnik.status?.toUpperCase() ?? "ODSUSTVO"}';
                               } else if (isSelected) {
                                 cardColor = vozacColor.withOpacity(0.1);
+                              } else if (putnik.dodeljenVozac != null &&
+                                  putnik.dodeljenVozac != 'Nedodeljen' &&
+                                  putnik.dodeljenVozac!.isNotEmpty) {
+                                cardColor = vozacColor.withOpacity(0.1);
+                                borderColor = vozacColor.withOpacity(0.5);
                               }
 
                               return Card(
@@ -898,7 +912,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                     putnik.ime,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: borderColor,
+                                      color: borderColor ?? vozacColor,
                                     ),
                                   ),
                                   subtitle: Column(
@@ -1155,6 +1169,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: _onPolazakChanged,
           selectedDan: _selectedDay,
+          showVozacBoja: true,
         );
       case 'zimski':
         return BottomNavBarZimski(
@@ -1165,6 +1180,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: _onPolazakChanged,
           selectedDan: _selectedDay,
+          showVozacBoja: true,
         );
       default: // 'letnji' ili nepoznato
         return BottomNavBarLetnji(
@@ -1175,6 +1191,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: _onPolazakChanged,
           selectedDan: _selectedDay,
+          showVozacBoja: true,
         );
     }
   }

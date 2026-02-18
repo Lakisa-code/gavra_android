@@ -218,7 +218,7 @@ class Putnik {
   static String _getDayNameFromIso(String isoDate) {
     try {
       final dt = DateTime.parse(isoDate);
-      return ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'][dt.weekday - 1];
+      return DayConstants.getNameByIndex(DayConstants.weekdayToIndex(dt.weekday));
     } catch (_) {
       return '';
     }

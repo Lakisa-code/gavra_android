@@ -20,6 +20,7 @@ class BottomNavBarZimski extends StatefulWidget {
     this.bcVremena,
     this.vsVremena,
     this.selectedDan, // 🆕 Dan za proveru dodeljenog vozača (npr. 'pon', 'uto')
+    this.showVozacBoja = false, // 🆕
   });
   final List<String> sviPolasci;
   final String selectedGrad;
@@ -31,6 +32,7 @@ class BottomNavBarZimski extends StatefulWidget {
   final List<String>? bcVremena;
   final List<String>? vsVremena;
   final String? selectedDan; // 🆕
+  final bool showVozacBoja; // 🆕
 
   @override
   State<BottomNavBarZimski> createState() => _BottomNavBarZimskiState();
@@ -51,8 +53,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
   @override
   void didUpdateWidget(BottomNavBarZimski oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedVreme != widget.selectedVreme ||
-        oldWidget.selectedGrad != widget.selectedGrad) {
+    if (oldWidget.selectedVreme != widget.selectedVreme || oldWidget.selectedGrad != widget.selectedGrad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToSelected();
       });
@@ -69,8 +70,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
     if (widget.selectedGrad == 'Bela Crkva') {
       final index = bcVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _bcScrollController.hasClients) {
-        final targetOffset =
-            (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
         _bcScrollController.animateTo(
           targetOffset.clamp(0.0, _bcScrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 300),
@@ -80,8 +80,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
     } else if (widget.selectedGrad == 'Vršac') {
       final index = vsVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _vsScrollController.hasClients) {
-        final targetOffset =
-            (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
         _vsScrollController.animateTo(
           targetOffset.clamp(0.0, _vsScrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 300),
@@ -132,33 +131,44 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // top-right total removed (per user request)
-                _PolazakRow(
-                  label: 'BC',
-                  vremena: bcVremena,
-                  selectedGrad: widget.selectedGrad,
-                  selectedVreme: widget.selectedVreme,
-                  grad: 'Bela Crkva',
-                  onPolazakChanged: widget.onPolazakChanged,
-                  getPutnikCount: widget.getPutnikCount,
-                  getKapacitet: widget.getKapacitet,
-                  isSlotLoading: widget.isSlotLoading,
-                  scrollController: _bcScrollController,
-                  currentThemeId: currentThemeId,
-                  selectedDan: widget.selectedDan, // 🆕
+                // BC Red
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _PolazakRow(
+                    label: 'BC',
+                    grad: 'Bela Crkva',
+                    vremena: bcVremena,
+                    selectedGrad: widget.selectedGrad,
+                    selectedVreme: widget.selectedVreme,
+                    onPolazakChanged: widget.onPolazakChanged,
+                    getPutnikCount: widget.getPutnikCount,
+                    getKapacitet: widget.getKapacitet,
+                    isSlotLoading: widget.isSlotLoading,
+                    scrollController: _bcScrollController,
+                    currentThemeId: currentThemeId,
+                    selectedDan: widget.selectedDan,
+                    showVozacBoja: widget.showVozacBoja,
+                  ),
                 ),
-                _PolazakRow(
-                  label: 'VS',
-                  vremena: vsVremena,
-                  selectedGrad: widget.selectedGrad,
-                  selectedVreme: widget.selectedVreme,
-                  grad: 'Vršac',
-                  onPolazakChanged: widget.onPolazakChanged,
-                  getPutnikCount: widget.getPutnikCount,
-                  getKapacitet: widget.getKapacitet,
-                  isSlotLoading: widget.isSlotLoading,
-                  scrollController: _vsScrollController,
-                  currentThemeId: currentThemeId,
-                  selectedDan: widget.selectedDan, // 🆕
+                const Divider(height: 1),
+                // VS Red
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _PolazakRow(
+                    label: 'VS',
+                    grad: 'Vršac',
+                    vremena: vsVremena,
+                    selectedGrad: widget.selectedGrad,
+                    selectedVreme: widget.selectedVreme,
+                    onPolazakChanged: widget.onPolazakChanged,
+                    getPutnikCount: widget.getPutnikCount,
+                    getKapacitet: widget.getKapacitet,
+                    isSlotLoading: widget.isSlotLoading,
+                    scrollController: _vsScrollController,
+                    currentThemeId: currentThemeId,
+                    selectedDan: widget.selectedDan,
+                    showVozacBoja: widget.showVozacBoja,
+                  ),
                 ),
               ],
             ),
@@ -183,6 +193,7 @@ class _PolazakRow extends StatelessWidget {
     this.isSlotLoading,
     this.scrollController,
     this.selectedDan, // 🆕
+    this.showVozacBoja = false,
   });
   final String label;
   final List<String> vremena;
@@ -196,6 +207,7 @@ class _PolazakRow extends StatelessWidget {
   final ScrollController? scrollController;
   final String currentThemeId;
   final String? selectedDan; // 🆕
+  final bool showVozacBoja;
 
   /// 🆕 Konvertuj puno ime dana u kraticu za bazu
   String _getDanKratica(String dan) {
@@ -206,8 +218,7 @@ class _PolazakRow extends StatelessWidget {
   Color? _getVozacBorderColor(String vreme) {
     if (selectedDan == null) return null;
     final danKratica = _getDanKratica(selectedDan!);
-    final vozacIme =
-        VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
+    final vozacIme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
     if (vozacIme == null) return null;
     return VozacBoja.getSync(vozacIme);
   }
@@ -234,10 +245,9 @@ class _PolazakRow extends StatelessWidget {
               controller: scrollController,
               child: Row(
                 children: vremena.map((vreme) {
-                  final bool selected =
-                      selectedGrad == grad && selectedVreme == vreme;
-                  // 🆕 Proveri da li je dodeljen vozač za ovo vreme
-                  final vozacBorderColor = _getVozacBorderColor(vreme);
+                  final bool selected = selectedGrad == grad && selectedVreme == vreme;
+                  // 🆕 Proveri da li je dodeljen vozač za ovo vreme - samo ako showVozacBoja je true
+                  final vozacBorderColor = showVozacBoja ? _getVozacBorderColor(vreme) : null;
                   final hasVozac = vozacBorderColor != null;
 
                   return GestureDetector(
@@ -251,41 +261,29 @@ class _PolazakRow extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: selected
                             ? (currentThemeId == 'dark_steel_grey'
-                                ? const Color(0xFF4A4A4A)
-                                    .withOpacity(0.15) // Crna tema
+                                ? const Color(0xFF4A4A4A).withOpacity(0.3)
                                 : currentThemeId == 'passionate_rose'
-                                    ? const Color(0xFFDC143C)
-                                        .withOpacity(0.15) // Crvena tema
+                                    ? const Color(0xFFDC143C).withOpacity(0.3)
                                     : currentThemeId == 'dark_pink'
-                                        ? const Color(0xFFE91E8C)
-                                            .withOpacity(0.15) // Dark Pink tema
-                                        : Colors.blueAccent
-                                            .withOpacity(0.15)) // Plava tema
+                                        ? const Color(0xFFE91E8C).withOpacity(0.3)
+                                        : Colors.blueAccent.withOpacity(0.3))
                             : hasVozac
-                                ? vozacBorderColor.withOpacity(
-                                    0.1) // 🆕 Lagana pozadina ako ima vozača
+                                ? vozacBorderColor.withOpacity(0.25)
                                 : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          // 🆕 Ako ima dodeljen vozač, koristi njegovu boju za border
                           color: hasVozac
                               ? vozacBorderColor
                               : selected
                                   ? (currentThemeId == 'dark_steel_grey'
-                                      ? const Color(0xFF4A4A4A) // Crna tema
+                                      ? const Color(0xFF4A4A4A)
                                       : currentThemeId == 'passionate_rose'
-                                          ? const Color(
-                                              0xFFDC143C) // Crvena tema
+                                          ? const Color(0xFFDC143C)
                                           : currentThemeId == 'dark_pink'
-                                              ? const Color(
-                                                  0xFFE91E8C) // Dark Pink tema
-                                              : Colors.blue) // Plava tema
+                                              ? const Color(0xFFE91E8C)
+                                              : Colors.blue)
                                   : Colors.grey[300]!,
-                          width: hasVozac
-                              ? 2.5
-                              : (selected
-                                  ? 2
-                                  : 1), // 🆕 Deblji border ako ima vozača
+                          width: hasVozac ? 3 : (selected ? 2.5 : 1),
                         ),
                       ),
                       child: Column(
@@ -298,11 +296,9 @@ class _PolazakRow extends StatelessWidget {
                                   ? (currentThemeId == 'dark_steel_grey'
                                       ? const Color(0xFF4A4A4A) // Crna tema
                                       : currentThemeId == 'passionate_rose'
-                                          ? const Color(
-                                              0xFFDC143C) // Crvena tema
+                                          ? const Color(0xFFDC143C) // Crvena tema
                                           : currentThemeId == 'dark_pink'
-                                              ? const Color(
-                                                  0xFFE91E8C) // Dark Pink tema
+                                              ? const Color(0xFFE91E8C) // Dark Pink tema
                                               : Colors.blue) // Plava tema
                                   : Colors.white,
                             ),
@@ -310,21 +306,17 @@ class _PolazakRow extends StatelessWidget {
                           const SizedBox(height: 2),
                           Builder(
                             builder: (ctx) {
-                              final loading =
-                                  isSlotLoading?.call(grad, vreme) ?? false;
+                              final loading = isSlotLoading?.call(grad, vreme) ?? false;
                               if (loading) {
                                 return const SizedBox(
                                   height: 12,
                                   width: 12,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 );
                               }
                               final count = getPutnikCount(grad, vreme);
                               final kapacitet = getKapacitet?.call(grad, vreme);
-                              final displayText = kapacitet != null
-                                  ? '$count ($kapacitet)'
-                                  : '$count';
+                              final displayText = kapacitet != null ? '$count ($kapacitet)' : '$count';
                               return Text(
                                 displayText,
                                 style: TextStyle(
@@ -333,11 +325,9 @@ class _PolazakRow extends StatelessWidget {
                                       ? (currentThemeId == 'dark_steel_grey'
                                           ? const Color(0xFF4A4A4A) // Crna tema
                                           : currentThemeId == 'passionate_rose'
-                                              ? const Color(
-                                                  0xFFDC143C) // Crvena tema
+                                              ? const Color(0xFFDC143C) // Crvena tema
                                               : currentThemeId == 'dark_pink'
-                                                  ? const Color(
-                                                      0xFFE91E8C) // Dark Pink tema
+                                                  ? const Color(0xFFE91E8C) // Dark Pink tema
                                                   : Colors.blue) // Plava tema
                                       : Colors.white70,
                                 ),

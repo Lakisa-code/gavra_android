@@ -23,6 +23,7 @@ class BottomNavBarPraznici extends StatefulWidget {
     this.bcVremena,
     this.vsVremena,
     this.selectedDan,
+    this.showVozacBoja = false,
   });
   final List<String> sviPolasci;
   final String selectedGrad;
@@ -34,6 +35,7 @@ class BottomNavBarPraznici extends StatefulWidget {
   final List<String>? bcVremena;
   final List<String>? vsVremena;
   final String? selectedDan;
+  final bool showVozacBoja;
 
   @override
   State<BottomNavBarPraznici> createState() => _BottomNavBarPrazniciState();
@@ -54,8 +56,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
   @override
   void didUpdateWidget(BottomNavBarPraznici oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedVreme != widget.selectedVreme ||
-        oldWidget.selectedGrad != widget.selectedGrad) {
+    if (oldWidget.selectedVreme != widget.selectedVreme || oldWidget.selectedGrad != widget.selectedGrad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToSelected();
       });
@@ -71,8 +72,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
     if (widget.selectedGrad == 'Bela Crkva') {
       final index = bcVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _bcScrollController.hasClients) {
-        final targetOffset =
-            (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
         _bcScrollController.animateTo(
           targetOffset.clamp(0.0, _bcScrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 300),
@@ -82,8 +82,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
     } else if (widget.selectedGrad == 'Vršac') {
       final index = vsVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _vsScrollController.hasClients) {
-        final targetOffset =
-            (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
         _vsScrollController.animateTo(
           targetOffset.clamp(0.0, _vsScrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 300),
@@ -134,10 +133,10 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
               children: [
                 _PolazakRow(
                   label: 'BC',
+                  grad: 'Bela Crkva',
                   vremena: bcVremena,
                   selectedGrad: widget.selectedGrad,
                   selectedVreme: widget.selectedVreme,
-                  grad: 'Bela Crkva',
                   onPolazakChanged: widget.onPolazakChanged,
                   getPutnikCount: widget.getPutnikCount,
                   getKapacitet: widget.getKapacitet,
@@ -145,7 +144,9 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
                   scrollController: _bcScrollController,
                   currentThemeId: currentThemeId,
                   selectedDan: widget.selectedDan,
+                  showVozacBoja: widget.showVozacBoja,
                 ),
+                const Divider(height: 1),
                 _PolazakRow(
                   label: 'VS',
                   vremena: vsVremena,
@@ -159,6 +160,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
                   scrollController: _vsScrollController,
                   currentThemeId: currentThemeId,
                   selectedDan: widget.selectedDan,
+                  showVozacBoja: widget.showVozacBoja,
                 ),
               ],
             ),
@@ -183,6 +185,7 @@ class _PolazakRow extends StatelessWidget {
     this.isSlotLoading,
     this.scrollController,
     this.selectedDan,
+    this.showVozacBoja = false,
   });
   final String label;
   final List<String> vremena;
@@ -196,6 +199,7 @@ class _PolazakRow extends StatelessWidget {
   final ScrollController? scrollController;
   final String currentThemeId;
   final String? selectedDan;
+  final bool showVozacBoja;
 
   /// 🆕 Konvertuj puno ime dana u kraticu za bazu
   String _getDanKratica(String dan) {
@@ -206,8 +210,7 @@ class _PolazakRow extends StatelessWidget {
   Color? _getVozacBorderColor(String vreme) {
     if (selectedDan == null) return null;
     final danKratica = _getDanKratica(selectedDan!);
-    final vozac =
-        VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
+    final vozac = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
     if (vozac != null) return VozacBoja.getSync(vozac);
     return null;
   }
@@ -234,9 +237,11 @@ class _PolazakRow extends StatelessWidget {
               controller: scrollController,
               child: Row(
                 children: vremena.map((vreme) {
-                  final bool selected =
-                      selectedGrad == grad && selectedVreme == vreme;
-                  final vozacColor = _getVozacBorderColor(vreme);
+                  final bool selected = selectedGrad == grad && selectedVreme == vreme;
+                  // 🆕 Proveri da li je dodeljen vozač za ovo vreme - samo ako showVozacBoja je true
+                  final vozacBorderColor = showVozacBoja ? _getVozacBorderColor(vreme) : null;
+                  final hasVozac = vozacBorderColor != null;
+
                   return GestureDetector(
                     onTap: () => onPolazakChanged(grad, vreme),
                     child: Container(
@@ -248,26 +253,29 @@ class _PolazakRow extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: selected
                             ? (currentThemeId == 'dark_steel_grey'
-                                ? const Color(0xFF4A4A4A).withOpacity(0.15)
+                                ? const Color(0xFF4A4A4A).withOpacity(0.3)
                                 : currentThemeId == 'passionate_rose'
-                                    ? const Color(0xFFDC143C).withOpacity(0.15)
+                                    ? const Color(0xFFDC143C).withOpacity(0.3)
                                     : currentThemeId == 'dark_pink'
-                                        ? const Color(0xFFE91E8C)
-                                            .withOpacity(0.15)
-                                        : Colors.blueAccent.withOpacity(0.15))
-                            : Colors.transparent,
+                                        ? const Color(0xFFE91E8C).withOpacity(0.3)
+                                        : Colors.blueAccent.withOpacity(0.3))
+                            : hasVozac
+                                ? vozacBorderColor.withOpacity(0.25)
+                                : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: selected
-                              ? (currentThemeId == 'dark_steel_grey'
-                                  ? const Color(0xFF4A4A4A)
-                                  : currentThemeId == 'passionate_rose'
-                                      ? const Color(0xFFDC143C)
-                                      : currentThemeId == 'dark_pink'
-                                          ? const Color(0xFFE91E8C)
-                                          : Colors.blue)
-                              : vozacColor ?? Colors.grey[300]!,
-                          width: selected ? 2 : 1,
+                          color: hasVozac
+                              ? vozacBorderColor
+                              : selected
+                                  ? (currentThemeId == 'dark_steel_grey'
+                                      ? const Color(0xFF4A4A4A)
+                                      : currentThemeId == 'passionate_rose'
+                                          ? const Color(0xFFDC143C)
+                                          : currentThemeId == 'dark_pink'
+                                              ? const Color(0xFFE91E8C)
+                                              : Colors.blue)
+                                  : Colors.grey[300]!,
+                          width: hasVozac ? 3 : (selected ? 2.5 : 1),
                         ),
                       ),
                       child: Column(
@@ -290,21 +298,17 @@ class _PolazakRow extends StatelessWidget {
                           const SizedBox(height: 2),
                           Builder(
                             builder: (ctx) {
-                              final loading =
-                                  isSlotLoading?.call(grad, vreme) ?? false;
+                              final loading = isSlotLoading?.call(grad, vreme) ?? false;
                               if (loading) {
                                 return const SizedBox(
                                   height: 12,
                                   width: 12,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 );
                               }
                               final count = getPutnikCount(grad, vreme);
                               final kapacitet = getKapacitet?.call(grad, vreme);
-                              final displayText = kapacitet != null
-                                  ? '$count ($kapacitet)'
-                                  : '$count';
+                              final displayText = kapacitet != null ? '$count ($kapacitet)' : '$count';
                               return Text(
                                 displayText,
                                 style: TextStyle(

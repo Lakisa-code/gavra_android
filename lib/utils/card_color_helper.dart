@@ -80,8 +80,7 @@ class CardColorHelper {
   static const Color odsustvoText = Color(0xFFF57C00); // Colors.orange[700]
 
   // 🔴 OTKAZANO - DRUGI PRIORITET
-  static const Color otkazanoBackground =
-      Color(0xFFEF9A9A); // Red[200] - tamnija crvena
+  static const Color otkazanoBackground = Color(0xFFEF9A9A); // Red[200] - tamnija crvena
   static const Color otkazanoBorder = Colors.red;
   static const Color otkazanoText = Color(0xFFEF5350); // Colors.red[400]
 
@@ -152,9 +151,7 @@ class CardColorHelper {
       return CardState.pokupljeno;
     }
     // ?? TU�I PUTNIK: ima vozaca, vozac nije trenutni
-    if (putnik.dodeljenVozac != null &&
-        putnik.dodeljenVozac!.isNotEmpty &&
-        putnik.dodeljenVozac != currentDriver) {
+    if (putnik.dodeljenVozac != null && putnik.dodeljenVozac!.isNotEmpty && putnik.dodeljenVozac != currentDriver) {
       return CardState.tudji;
     }
     return CardState.nepokupljeno;
@@ -167,82 +164,13 @@ class CardColorHelper {
   /// Vraca boju pozadine kartice na osnovu stanja putnika
   static Color getBackgroundColor(Putnik putnik) {
     final state = getCardState(putnik);
-    switch (state) {
-      case CardState.odsustvo:
-        return odsustvoBackground;
-      case CardState.otkazano:
-        return otkazanoBackground;
-      case CardState.placeno:
-        return placenoBackground;
-      case CardState.pokupljeno:
-        return pokupljenoBackground;
-      case CardState.tudji:
-        return tudjiBackground;
-      case CardState.nepokupljeno:
-        return defaultBackground.withOpacity(0.70);
-    }
+    return _getBackgroundForState(state);
   }
 
   /// Vraca gradijent za karticu (ako je potrebno)
   static Gradient? getBackgroundGradient(Putnik putnik) {
     final state = getCardState(putnik);
-
-    switch (state) {
-      case CardState.odsustvo:
-        return LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.98),
-            odsustvoBackground,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case CardState.otkazano:
-        return LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.98),
-            otkazanoBackground,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case CardState.placeno:
-        return LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.98),
-            placenoBackground,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case CardState.pokupljeno:
-        return LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.98),
-            pokupljenoBackground,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case CardState.tudji:
-        return LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.98),
-            tudjiBackground,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case CardState.nepokupljeno:
-        return LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.98),
-            Colors.white.withOpacity(0.98),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-    }
+    return _getGradientForState(state);
   }
 
   // ---------------------------------------------------------------------------
@@ -252,20 +180,7 @@ class CardColorHelper {
   /// Vraca boju border-a kartice
   static Color getBorderColor(Putnik putnik) {
     final state = getCardState(putnik);
-    switch (state) {
-      case CardState.odsustvo:
-        return odsustueBorder.withOpacity(0.6);
-      case CardState.otkazano:
-        return otkazanoBorder.withOpacity(0.25);
-      case CardState.placeno:
-        return placenoBorder.withOpacity(0.4);
-      case CardState.pokupljeno:
-        return pokupljenoBorder.withOpacity(0.4);
-      case CardState.tudji:
-        return tudjiBorder.withOpacity(0.5);
-      case CardState.nepokupljeno:
-        return defaultBorder.withOpacity(0.10);
-    }
+    return _getBorderForState(state);
   }
 
   // ---------------------------------------------------------------------------
@@ -275,20 +190,7 @@ class CardColorHelper {
   /// Vraca boju senke kartice
   static Color getShadowColor(Putnik putnik) {
     final state = getCardState(putnik);
-    switch (state) {
-      case CardState.odsustvo:
-        return odsustueBorder.withOpacity(0.2);
-      case CardState.otkazano:
-        return otkazanoBorder.withOpacity(0.08);
-      case CardState.placeno:
-        return placenoBorder.withOpacity(0.15);
-      case CardState.pokupljeno:
-        return pokupljenoBorder.withOpacity(0.15);
-      case CardState.tudji:
-        return tudjiBorder.withOpacity(0.15);
-      case CardState.nepokupljeno:
-        return Colors.black.withOpacity(0.07);
-    }
+    return _getShadowForState(state);
   }
 
   // ---------------------------------------------------------------------------
@@ -298,20 +200,7 @@ class CardColorHelper {
   /// Vraca boju teksta za karticu
   static Color getTextColor(Putnik putnik, BuildContext context) {
     final state = getCardState(putnik);
-    switch (state) {
-      case CardState.odsustvo:
-        return odsustvoText;
-      case CardState.otkazano:
-        return otkazanoText;
-      case CardState.placeno:
-        return Theme.of(context).colorScheme.primary; // successPrimary
-      case CardState.pokupljeno:
-        return pokupljenoText;
-      case CardState.tudji:
-        return tudjiText;
-      case CardState.nepokupljeno:
-        return defaultText;
-    }
+    return _getTextForState(state, Theme.of(context).colorScheme.primary);
   }
 
   /// Vraca boju teksta sa fallback na successPrimary iz teme
@@ -321,20 +210,7 @@ class CardColorHelper {
     required Color successPrimary,
   }) {
     final state = getCardState(putnik);
-    switch (state) {
-      case CardState.odsustvo:
-        return odsustvoText;
-      case CardState.otkazano:
-        return otkazanoText;
-      case CardState.placeno:
-        return successPrimary;
-      case CardState.pokupljeno:
-        return pokupljenoText;
-      case CardState.tudji:
-        return tudjiText;
-      case CardState.nepokupljeno:
-        return defaultText;
-    }
+    return _getTextForState(state, successPrimary);
   }
 
   // ---------------------------------------------------------------------------
@@ -344,6 +220,7 @@ class CardColorHelper {
   /// Vraca boju za adresu/sekundarni tekst (bleda verzija glavne boje)
   static Color getSecondaryTextColor(Putnik putnik) {
     final state = getCardState(putnik);
+    // 🆕 Revertovano na originalno ponasanje gde su tudji putnici sivi
     switch (state) {
       case CardState.odsustvo:
         return const Color(0xFFFF9800).withOpacity(0.8); // Orange[500]
@@ -385,19 +262,20 @@ class CardColorHelper {
 
   /// Vraca kompletnu BoxDecoration za karticu (bez provere vozaca)
   static BoxDecoration getCardDecoration(Putnik putnik) {
-    final gradient = getBackgroundGradient(putnik);
+    final state = getCardState(putnik);
+    final gradient = _getGradientForState(state);
 
     return BoxDecoration(
       gradient: gradient,
-      color: gradient == null ? getBackgroundColor(putnik) : null,
+      color: gradient == null ? _getBackgroundForState(state) : null,
       borderRadius: BorderRadius.circular(18),
       border: Border.all(
-        color: getBorderColor(putnik),
-        width: 1.2,
+        color: _getBorderForState(state),
+        width: _getBorderWidthForState(state),
       ),
       boxShadow: [
         BoxShadow(
-          color: getShadowColor(putnik),
+          color: _getShadowForState(state),
           blurRadius: 10,
           offset: const Offset(0, 2),
         ),
@@ -406,8 +284,7 @@ class CardColorHelper {
   }
 
   /// Vraca kompletnu BoxDecoration za karticu SA proverom vozaca (za sivu boju)
-  static BoxDecoration getCardDecorationWithDriver(
-      Putnik putnik, String currentDriver) {
+  static BoxDecoration getCardDecorationWithDriver(Putnik putnik, String currentDriver) {
     final state = getCardStateWithDriver(putnik, currentDriver);
     final gradient = _getGradientForState(state);
 
@@ -417,7 +294,7 @@ class CardColorHelper {
       borderRadius: BorderRadius.circular(18),
       border: Border.all(
         color: _getBorderForState(state),
-        width: 1.2,
+        width: _getBorderWidthForState(state),
       ),
       boxShadow: [
         BoxShadow(
@@ -441,8 +318,7 @@ class CardColorHelper {
   }
 
   /// Vraca sekundarnu boju teksta SA proverom vozaca
-  static Color getSecondaryTextColorWithDriver(
-      Putnik putnik, String currentDriver) {
+  static Color getSecondaryTextColorWithDriver(Putnik putnik, String currentDriver) {
     final state = getCardStateWithDriver(putnik, currentDriver);
     return _getSecondaryTextForState(state);
   }
@@ -542,6 +418,10 @@ class CardColorHelper {
       case CardState.nepokupljeno:
         return defaultBorder.withOpacity(0.10);
     }
+  }
+
+  static double _getBorderWidthForState(CardState state) {
+    return 1.2;
   }
 
   static Color _getShadowForState(CardState state) {
