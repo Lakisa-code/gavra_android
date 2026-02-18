@@ -447,6 +447,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           pravac,
           vreme: _selectedVreme, // • Prosleđivanje vremena
           selectedDan: dan,
+          requestId: putnik.requestId, // 🆕 Precizno mapiranje preko requestId
         );
 
         if (mounted) {
@@ -876,7 +877,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                 putnik.dodeljenVozac,
                                 currentTerminalColor,
                               );
-                              final isSelected = putnik.id != null && _selectedPutnici.contains(putnik.id);
+                              final isSelected = (putnik.requestId ?? putnik.id) != null &&
+                                  _selectedPutnici.contains(putnik.requestId ?? putnik.id);
 
                               // • Boja kartice prema statusu putnika
                               Color? cardColor;
@@ -914,12 +916,13 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                           value: isSelected,
                                           activeColor: vozacColor,
                                           onChanged: (value) {
-                                            if (putnik.id != null) {
+                                            final pId = putnik.requestId ?? putnik.id;
+                                            if (pId != null) {
                                               setState(() {
                                                 if (value == true) {
-                                                  _selectedPutnici.add(putnik.id!);
+                                                  _selectedPutnici.add(pId);
                                                 } else {
-                                                  _selectedPutnici.remove(putnik.id);
+                                                  _selectedPutnici.remove(pId);
                                                 }
                                               });
                                             }
@@ -973,12 +976,13 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                         )
                                       : const Icon(Icons.swap_horiz),
                                   onTap: () {
-                                    if (_isSelectionMode && putnik.id != null) {
+                                    final pId = putnik.requestId ?? putnik.id;
+                                    if (_isSelectionMode && pId != null) {
                                       setState(() {
-                                        if (_selectedPutnici.contains(putnik.id)) {
-                                          _selectedPutnici.remove(putnik.id);
+                                        if (_selectedPutnici.contains(pId)) {
+                                          _selectedPutnici.remove(pId);
                                         } else {
-                                          _selectedPutnici.add(putnik.id!);
+                                          _selectedPutnici.add(pId);
                                         }
                                       });
                                     } else {
@@ -986,10 +990,11 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                     }
                                   },
                                   onLongPress: () {
-                                    if (!_isSelectionMode && putnik.id != null) {
+                                    final pId = putnik.requestId ?? putnik.id;
+                                    if (!_isSelectionMode && pId != null) {
                                       setState(() {
                                         _isSelectionMode = true;
-                                        _selectedPutnici.add(putnik.id!);
+                                        _selectedPutnici.add(pId);
                                       });
                                     }
                                   },
@@ -1085,15 +1090,22 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     final pravac = _currentPlaceKratica;
     final dan = _currentDayKratica;
 
-    for (final id in _selectedPutnici.toList()) {
+    for (final identifier in _selectedPutnici.toList()) {
       try {
+        // Pronađi putnika u keširanoj listi da izvučemo IDs
+        final p = _allPutnici.firstWhere(
+          (p) => (p.requestId ?? p.id) == identifier,
+          orElse: () => _putnici.firstWhere((p) => (p.requestId ?? p.id) == identifier),
+        );
+
         // • Koristi per-pravac per-vreme dodeljivanje
         await _putnikService.dodelPutnikaVozacuZaPravac(
-          id,
+          p.id!,
           noviVozac,
           pravac,
           vreme: _selectedVreme, // • Prosleđivanje vremena
           selectedDan: dan,
+          requestId: p.requestId,
         );
         uspesno++;
         // Čekaj između operacija da se baza ažurira
@@ -1152,10 +1164,21 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     int greska = 0;
 
     final targetDate = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
-    for (final id in _selectedPutnici.toList()) {
+    for (final identifier in _selectedPutnici.toList()) {
       try {
-        await _putnikService.otkaziPutnika(id, 'Admin',
-            datum: targetDate, selectedVreme: _selectedVreme, selectedGrad: _selectedGrad);
+        final p = _allPutnici.firstWhere(
+          (p) => (p.requestId ?? p.id) == identifier,
+          orElse: () => _putnici.firstWhere((p) => (p.requestId ?? p.id) == identifier),
+        );
+
+        await _putnikService.otkaziPutnika(
+          p.id!,
+          'Admin',
+          datum: targetDate,
+          selectedVreme: _selectedVreme,
+          selectedGrad: _selectedGrad,
+          requestId: p.requestId,
+        );
         uspesno++;
         // Čekaj između operacija da se baza ažurira
         await Future.delayed(const Duration(milliseconds: 100));

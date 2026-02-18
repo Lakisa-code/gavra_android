@@ -174,7 +174,13 @@ class VoznjeLogService {
       for (var l in (response as List)) {
         final pid = l['putnik_id'].toString();
         final meta = l['meta'] as Map<String, dynamic>?;
-        final grad = meta?['grad']?.toString().toLowerCase();
+        final gradRaw = meta?['grad']?.toString().toLowerCase();
+        // ✅ FIX: Konvertuj puna imena u skraćenice za konzistentnost sa _enrichWithLogData
+        final grad = (gradRaw == 'vršac' || gradRaw == 'vrsac' || gradRaw == 'vs')
+            ? 'vs'
+            : (gradRaw == 'bela crkva' || gradRaw == 'belacrkva' || gradRaw == 'bc')
+                ? 'bc'
+                : gradRaw;
         final vreme = meta?['vreme']?.toString();
 
         // Kreiramo kompozitni ključ za precizno mapiranje (putnik + grad + vreme)
@@ -191,6 +197,12 @@ class VoznjeLogService {
           'created_at': l['created_at'],
           'meta': meta,
         };
+
+        // ✅ FALLBACK: Dodaj i unos samo pod putnik_id (ako već nije zauzeto preciznijim ključem)
+        // Ovo osigurava da fallback u _enrichWithLogData uvek radi
+        if (key != pid && !res.containsKey(pid)) {
+          res[pid] = res[key]!;
+        }
       }
       return res;
     } catch (e) {

@@ -182,8 +182,10 @@ class PutnikService {
 
     // Listener za voznje_log
     if (_globalVoznjeLogListener == null) {
-      _globalVoznjeLogListener = RealtimeManager.instance.subscribe('voznje_log').listen((payload) {
+      _globalVoznjeLogListener = RealtimeManager.instance.subscribe('voznje_log').listen((payload) async {
         debugPrint('🔄 [PutnikService] GLOBAL realtime UPDATE (voznje_log): ${payload.eventType}');
+        // ✅ FIX: Dodaj mali delay da se eventual consistency resolvira
+        await Future.delayed(const Duration(milliseconds: 500));
         _refreshAllActiveStreams();
       });
       debugPrint('✅ [PutnikService] Globalni voznje_log listener kreiran');
@@ -381,7 +383,7 @@ class PutnikService {
       vozacId = await VozacMappingService.getVozacUuid(driver);
     }
 
-    // ✅ OZNAČI KAO POKUPLJEN (Samo u voznje_log, po zahtevu korisnika)
+    // ✅ OZNAČI KAO POKUPLJEN (Samo u vozač_log, po zahtevu korisnika)
     // Proveri da li već postoji unos za ovog putnika za ovaj datum/grad/vreme
     final existing = await VoznjeLogService.getLogEntry(
       putnikId: id.toString(),
@@ -479,26 +481,31 @@ class PutnikService {
         (finalDan != null
             ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
             : DateTime.now().toIso8601String().split('T')[0]);
-    final gradKey =
-        (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
+
+    final isVrsac = (finalGrad?.toLowerCase().contains('vr') ?? false) || (finalGrad?.toLowerCase() == 'vs' ?? false);
+    final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
     debugPrint(
-        '🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, gradKey=$gradKey, time=$normalizedTime');
+        '🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, gradVariants=$gradVariants, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {
         // Pokušaj sa zeljeno_vreme
-        var res = await supabase.from('seat_requests').update({
-          'status': 'bez_polaska',
-          'processed_at': DateTime.now().toUtc().toIso8601String(),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).match({
-          'putnik_id': id.toString(),
-          'datum': dateStr,
-          'grad': gradKey,
-          'zeljeno_vreme': '$normalizedTime:00',
-        }).select();
+        var res = await supabase
+            .from('seat_requests')
+            .update({
+              'status': 'bez_polaska',
+              'processed_at': DateTime.now().toUtc().toIso8601String(),
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .match({
+              'putnik_id': id.toString(),
+              'datum': dateStr,
+            })
+            .inFilter('grad', gradVariants)
+            .eq('zeljeno_vreme', '$normalizedTime:00')
+            .select();
 
         if (res.isNotEmpty) {
           debugPrint('🗑️ [PutnikService] ukloniPolazak SUCCESS (zeljeno_vreme): ${res.length} rows');
@@ -506,16 +513,20 @@ class PutnikService {
         }
 
         // Pokušaj sa dodeljeno_vreme
-        res = await supabase.from('seat_requests').update({
-          'status': 'bez_polaska',
-          'processed_at': DateTime.now().toUtc().toIso8601String(),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).match({
-          'putnik_id': id.toString(),
-          'datum': dateStr,
-          'grad': gradKey,
-          'dodeljeno_vreme': '$normalizedTime:00',
-        }).select();
+        res = await supabase
+            .from('seat_requests')
+            .update({
+              'status': 'bez_polaska',
+              'processed_at': DateTime.now().toUtc().toIso8601String(),
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .match({
+              'putnik_id': id.toString(),
+              'datum': dateStr,
+            })
+            .inFilter('grad', gradVariants)
+            .eq('dodeljeno_vreme', '$normalizedTime:00')
+            .select();
 
         if (res.isNotEmpty) {
           debugPrint('🗑️ [PutnikService] ukloniPolazak SUCCESS (dodeljeno_vreme): ${res.length} rows');
@@ -524,24 +535,24 @@ class PutnikService {
       }
 
       // Zadnji fallback: match bez vremena
-      final res = await supabase.from('seat_requests').update({
-        'status': 'bez_polaska',
-        'processed_at': DateTime.now().toUtc().toIso8601String(),
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }).match({
-        'putnik_id': id.toString(),
-        'datum': dateStr,
-        'grad': gradKey,
-      }).select();
+      final res = await supabase
+          .from('seat_requests')
+          .update({
+            'status': 'bez_polaska',
+            'processed_at': DateTime.now().toUtc().toIso8601String(),
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .match({
+            'putnik_id': id.toString(),
+            'datum': dateStr,
+          })
+          .inFilter('grad', gradVariants)
+          .select();
 
       debugPrint('🗑️ [PutnikService] ukloniPolazak (fallback): updated ${res.length} rows');
-
-      // 2. Clear metadata/update timestamp
-      await supabase.from('registrovani_putnici').update({
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', id.toString());
     } catch (e) {
       debugPrint('❌ [PutnikService] ukloniPolazak ERROR: $e');
+      rethrow;
     }
   }
 
@@ -589,25 +600,31 @@ class PutnikService {
         (finalDan != null
             ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
             : DateTime.now().toIso8601String().split('T')[0]);
-    final gradKey =
-        (finalGrad?.toLowerCase().contains('vr') ?? false || finalGrad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
+
+    final isVrsac = (finalGrad?.toLowerCase().contains('vr') ?? false) || (finalGrad?.toLowerCase() == 'vs' ?? false);
+    final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
-    debugPrint('🛑 [PutnikService] otkaziPutnika (fallback): dateStr=$dateStr, gradKey=$gradKey, time=$normalizedTime');
+    debugPrint(
+        '🛑 [PutnikService] otkaziPutnika (fallback): dateStr=$dateStr, gradVariants=$gradVariants, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {
         // Pokušaj sa zeljeno_vreme
-        var res = await supabase.from('seat_requests').update({
-          'status': status,
-          'processed_at': DateTime.now().toUtc().toIso8601String(),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).match({
-          'putnik_id': id.toString(),
-          'datum': dateStr,
-          'grad': gradKey,
-          'zeljeno_vreme': '$normalizedTime:00',
-        }).select();
+        var res = await supabase
+            .from('seat_requests')
+            .update({
+              'status': status,
+              'processed_at': DateTime.now().toUtc().toIso8601String(),
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .match({
+              'putnik_id': id.toString(),
+              'datum': dateStr,
+            })
+            .inFilter('grad', gradVariants)
+            .eq('zeljeno_vreme', '$normalizedTime:00')
+            .select();
 
         if (res.isNotEmpty) {
           debugPrint('🛑 [PutnikService] otkaziPutnika SUCCESS (zeljeno_vreme)');
@@ -615,16 +632,20 @@ class PutnikService {
         }
 
         // Pokušaj sa dodeljeno_vreme
-        res = await supabase.from('seat_requests').update({
-          'status': status,
-          'processed_at': DateTime.now().toUtc().toIso8601String(),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).match({
-          'putnik_id': id.toString(),
-          'datum': dateStr,
-          'grad': gradKey,
-          'dodeljeno_vreme': '$normalizedTime:00',
-        }).select();
+        res = await supabase
+            .from('seat_requests')
+            .update({
+              'status': status,
+              'processed_at': DateTime.now().toUtc().toIso8601String(),
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .match({
+              'putnik_id': id.toString(),
+              'datum': dateStr,
+            })
+            .inFilter('grad', gradVariants)
+            .eq('dodeljeno_vreme', '$normalizedTime:00')
+            .select();
 
         if (res.isNotEmpty) {
           debugPrint('🛑 [PutnikService] otkaziPutnika SUCCESS (dodeljeno_vreme)');
@@ -633,15 +654,19 @@ class PutnikService {
       }
 
       // Zadnji fallback: bez vremena
-      final withoutTime = await supabase.from('seat_requests').update({
-        'status': status,
-        'processed_at': DateTime.now().toUtc().toIso8601String(),
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }).match({
-        'putnik_id': id.toString(),
-        'datum': dateStr,
-        'grad': gradKey,
-      }).select();
+      final withoutTime = await supabase
+          .from('seat_requests')
+          .update({
+            'status': status,
+            'processed_at': DateTime.now().toUtc().toIso8601String(),
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .match({
+            'putnik_id': id.toString(),
+            'datum': dateStr,
+          })
+          .inFilter('grad', gradVariants)
+          .select();
 
       debugPrint('🛑 [PutnikService] otkaziPutnika SUCCESS (fallback): ${withoutTime.length} rows');
     } catch (e) {
@@ -657,27 +682,37 @@ class PutnikService {
     String? grad,
     String? selectedVreme,
     String? selectedDan,
+    String? requestId, // 🆕 Dodato
   }) async {
     final danasStr = DateTime.now().toIso8601String().split('T')[0];
     final dateStr = selectedDan != null ? app_date_utils.DateUtils.getIsoDateForDay(selectedDan) : danasStr;
-    final gradKey = (grad?.toLowerCase().contains('vr') ?? false || grad?.toLowerCase() == 'vs') ? 'vs' : 'bc';
+
+    final isVrsac = (grad?.toLowerCase().contains('vr') ?? false) || (grad?.toLowerCase() == 'vs' ?? false);
+    final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
     String? vozacId;
     if (driver != null) {
       vozacId = await VozacMappingService.getVozacUuid(driver);
     }
 
-    // Ažuriraj seat_requests: postavi status confirmed i processed_at
-    await supabase.from('seat_requests').update({
+    // Ažuriraj seat_requests
+    var query = supabase.from('seat_requests').update({
       'status': 'confirmed',
       'processed_at': DateTime.now().toUtc().toIso8601String(),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
       'vozac_id': vozacId,
-    }).match({
-      'putnik_id': id,
-      'datum': dateStr,
-      'grad': gradKey,
     });
+
+    if (requestId != null && requestId.isNotEmpty) {
+      query = query.eq('id', requestId);
+    } else {
+      query = query.match({
+        'putnik_id': id,
+        'datum': dateStr,
+      }).inFilter('grad', gradVariants);
+    }
+
+    await query;
 
     // Dodaj u voznje_log preko servisa
     await VoznjeLogService.dodajUplatu(
@@ -694,6 +729,7 @@ class PutnikService {
     String? pravac, {
     String? vreme,
     String? selectedDan,
+    String? requestId, // 🆕 Dodato za precizno mapiranje
   }) async {
     // 1. Get driver UUID
     String? vozacUuid;
@@ -701,43 +737,55 @@ class PutnikService {
       vozacUuid = await VozacMappingService.getVozacUuid(vozac);
     }
 
-    // 2. Determine the date (since seat_requests works on date, not day of week)
+    // 2. Determine the date
     final dateStr = app_date_utils.DateUtils.getIsoDateForDay(selectedDan ?? 'Ponedeljak');
 
-    // 3. Normalize grad and vreme for precise matching
+    // 3. Normalize grad
     final isVrsac = (pravac?.toLowerCase().contains('vr') ?? false) || (pravac?.toLowerCase() == 'vs');
     final gradKey = isVrsac ? 'vs' : 'bc';
+    final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
-    // 4. Update the specific seat_request
+    // 4. Update query
     var query = supabase.from('seat_requests').update({
       'vozac_id': vozacUuid,
       'status': 'confirmed',
       'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }).match({
-      'putnik_id': id,
-      'datum': dateStr,
-      'grad': gradKey,
     });
 
-    // Ako je prosleđeno vreme, filtriraj i po njemu (HH:mm:ss format u bazi)
-    if (vreme != null && vreme.isNotEmpty) {
-      final normVreme = GradAdresaValidator.normalizeTime(vreme);
-      query = query.eq('zeljeno_vreme', '$normVreme:00');
+    // PRIORITET 1: Ako imamo requestId, to je najsigurnije
+    if (requestId != null && requestId.isNotEmpty) {
+      query = query.eq('id', requestId);
+    } else {
+      // PRIORITET 2: Match po setu parametara
+      query = query.match({
+        'putnik_id': id,
+        'datum': dateStr,
+      }).inFilter('grad', gradVariants);
+
+      // Ako je prosleđeno vreme, filtriraj i po njemu
+      if (vreme != null && vreme.isNotEmpty) {
+        final normVreme = GradAdresaValidator.normalizeTime(vreme);
+        query = query.eq('zeljeno_vreme', '$normVreme:00');
+      }
     }
 
     final result = await query.select();
 
-    if (result.isEmpty) {
-      // Fallback: pokusaj bez vremena ako inicijalni match nije uspeo (legacy podrška)
-      final fallbackResult = await supabase.from('seat_requests').update({
-        'vozac_id': vozacUuid,
-        'status': 'confirmed',
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }).match({
-        'putnik_id': id,
-        'datum': dateStr,
-        'grad': gradKey,
-      }).select();
+    if (result.isEmpty && requestId == null) {
+      // Fallback: pokusaj bez vremena i bez gornje-donje crte (pokušaj samo putnik+datum+grad)
+      final fallbackResult = await supabase
+          .from('seat_requests')
+          .update({
+            'vozac_id': vozacUuid,
+            'status': 'confirmed',
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .match({
+            'putnik_id': id,
+            'datum': dateStr,
+          })
+          .inFilter('grad', gradVariants)
+          .select();
 
       if (fallbackResult.isEmpty) {
         throw Exception(
@@ -763,7 +811,14 @@ class PutnikService {
       final putnikId = data['putnik_id']?.toString();
       if (putnikId == null) continue;
 
-      final grad = data['grad']?.toString().toLowerCase();
+      final gradRaw = data['grad']?.toString().toLowerCase();
+      // ✅ FIX: Normalizuj grad na 'vs'/'bc' skraćenice za konzistentan match sa logData
+      final grad = (gradRaw == 'vršac' || gradRaw == 'vrsac' || gradRaw == 'vs')
+          ? 'vs'
+          : (gradRaw == 'bela crkva' || gradRaw == 'belacrkva' || gradRaw == 'bc')
+              ? 'bc'
+              : gradRaw;
+
       final vremeRaw = (data['dodeljeno_vreme'] ?? data['zeljeno_vreme'])?.toString();
 
       // ✅ FIX: Koristi centralizovanu normalizaciju vremena (HH:mm format)
@@ -775,6 +830,9 @@ class PutnikService {
 
       if (logData.containsKey(compositeKey)) {
         match = logData[compositeKey];
+      } else if (logData.containsKey(putnikId)) {
+        // Fallback na match samo po ID-u (ako fale meta podaci u logu)
+        match = logData[putnikId];
       }
 
       if (match != null) {
@@ -798,7 +856,8 @@ class PutnikService {
     required String vreme,
   }) async {
     try {
-      final gradKey = (grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+      final isVrsac = (grad.toLowerCase().contains('vr')) || (grad.toLowerCase() == 'vs');
+      final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
       var query = supabase.from('seat_requests').update({
         'status': 'bez_polaska',
@@ -806,18 +865,15 @@ class PutnikService {
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).match({
         'datum': datum,
-        'grad': gradKey,
-      });
+      }).inFilter('grad', gradVariants);
 
-      if (vreme != 'Sva vremena') {
-        final normalizedTime = GradAdresaValidator.normalizeTime(vreme);
-        query = query.or('zeljeno_vreme.eq.$normalizedTime:00,dodeljeno_vreme.eq.$normalizedTime:00');
+      if (vreme.isNotEmpty) {
+        query = query.eq('zeljeno_vreme', '${GradAdresaValidator.normalizeTime(vreme)}:00');
       }
 
-      final response = await query.select();
-
-      debugPrint('🚫 [PutnikService] globalniBezPolaska SUCCESS: ${response.length} rows updated');
-      return response.length;
+      final res = await query.select();
+      debugPrint('🚫 [PutnikService] globalniBezPolaska: updated ${res.length} rows');
+      return res.length;
     } catch (e) {
       debugPrint('❌ [PutnikService] globalniBezPolaska ERROR: $e');
       return 0;

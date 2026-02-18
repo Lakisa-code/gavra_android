@@ -303,11 +303,11 @@ class Putnik {
   bool get jeOdsustvo => jeBolovanje || jeGodisnji;
 
   bool get jePokupljen {
+    // 1. Ako je eksplicitno prosleđen flag (iz voznje_log preko _enrichWithLogData) - NAJVEĆI PRIORITET
+    if (pokupljen == true) return true;
+
     // 🛡️ STATUS 'confirmed' NIJE POKUPLJEN (to je samo potvrđena rezervacija)
     if (status?.toLowerCase() == 'confirmed') return false;
-
-    // 1. Ako je eksplicitno prosleđen flag (iz voznje_log preko _enrichWithLogData)
-    if (pokupljen == true) return true;
 
     // 2. Za seat_requests: pokupljen je ako je status 'pokupljen'
     if (status?.toLowerCase() == 'pokupljen') {
