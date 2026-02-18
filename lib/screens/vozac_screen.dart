@@ -261,7 +261,7 @@ class _VozacScreenState extends State<VozacScreen> {
   String _isoDateToDayAbbr(String isoDate) {
     try {
       final date = DateTime.parse(isoDate);
-      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
       return dani[date.weekday - 1];
     } catch (e) {
       return 'pon'; // fallback

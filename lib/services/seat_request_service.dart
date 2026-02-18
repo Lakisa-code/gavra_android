@@ -180,7 +180,7 @@ class SeatRequestService {
 
   /// Pomoćna funkcija za dobijanje skraćenice dana
   static String getDanKratica(DateTime date) {
-    const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
     return dani[date.weekday - 1];
   }
 

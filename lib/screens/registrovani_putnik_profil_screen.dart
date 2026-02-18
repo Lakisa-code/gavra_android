@@ -30,12 +30,10 @@ class RegistrovaniPutnikProfilScreen extends StatefulWidget {
   const RegistrovaniPutnikProfilScreen({super.key, required this.putnikData});
 
   @override
-  State<RegistrovaniPutnikProfilScreen> createState() =>
-      _RegistrovaniPutnikProfilScreenState();
+  State<RegistrovaniPutnikProfilScreen> createState() => _RegistrovaniPutnikProfilScreenState();
 }
 
-class _RegistrovaniPutnikProfilScreenState
-    extends State<RegistrovaniPutnikProfilScreen> with WidgetsBindingObserver {
+class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfilScreen> with WidgetsBindingObserver {
   Map<String, dynamic> _putnikData = {};
   bool _isLoading = false;
   // 🔔 Status notifikacija
@@ -48,12 +46,9 @@ class _RegistrovaniPutnikProfilScreenState
   List<Map<String, dynamic>> _istorijaPl = [];
 
   // 📊 Statistike - detaljno po zapisima iz dnevnika
-  final Map<String, List<Map<String, dynamic>>> _voznjeDetaljno =
-      {}; // mesec -> lista zapisa vožnji
-  final Map<String, List<Map<String, dynamic>>> _otkazivanjaDetaljno =
-      {}; // mesec -> lista zapisa otkazivanja
-  final Map<String, int> _brojMestaPoVoznji =
-      {}; // datum -> broj_mesta (za tačan obračun)
+  final Map<String, List<Map<String, dynamic>>> _voznjeDetaljno = {}; // mesec -> lista zapisa vožnji
+  final Map<String, List<Map<String, dynamic>>> _otkazivanjaDetaljno = {}; // mesec -> lista zapisa otkazivanja
+  final Map<String, int> _brojMestaPoVoznji = {}; // datum -> broj_mesta (za tačan obračun)
   double _ukupnoZaduzenje = 0.0; // ukupno zaduženje za celu godinu
   double _cenaPoVoznji = 0.0; // 💰 Cena po vožnji/danu
   String? _adresaBC; // BC adresa
@@ -100,8 +95,7 @@ class _RegistrovaniPutnikProfilScreenState
   void _onSeasonChanged() {
     if (mounted) {
       setState(() {
-        debugPrint(
-            '❄️ [Season] Sezona promenjena na: ${navBarTypeNotifier.value}. Osvežavam UI profil ekrana.');
+        debugPrint('❄️ [Season] Sezona promenjena na: ${navBarTypeNotifier.value}. Osvežavam UI profil ekrana.');
       });
     }
   }
@@ -164,27 +158,21 @@ class _RegistrovaniPutnikProfilScreenState
     if (putnikId == null) return;
 
     // Koristi RealtimeManager za centralizovanu pretplatu
-    _statusSubscription = RealtimeManager.instance
-        .subscribe('registrovani_putnici')
-        .where((payload) {
+    _statusSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').where((payload) {
       // Filtriraj samo ako je ažuriran ovaj putnik
       return payload.newRecord['id'].toString() == putnikId;
     }).listen((payload) {
-      debugPrint(
-          '🎯 [Realtime] Status promena detektovana za putnika $putnikId');
+      debugPrint('🎯 [Realtime] Status promena detektovana za putnika $putnikId');
       _handleStatusChange(payload);
     });
 
     // 🆕 Dodaj listener za seat_requests (sve promene za ovog putnika)
-    _seatRequestSubscription =
-        RealtimeManager.instance.subscribe('seat_requests').where((payload) {
+    _seatRequestSubscription = RealtimeManager.instance.subscribe('seat_requests').where((payload) {
       // Filtriraj samo za ovog putnika
-      final record =
-          payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
+      final record = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
       return record['putnik_id'].toString() == putnikId;
     }).listen((payload) {
-      debugPrint(
-          '🆕 [Realtime] Seat request promena detektovana: ${payload.eventType}');
+      debugPrint('🆕 [Realtime] Seat request promena detektovana: ${payload.eventType}');
       _loadActiveRequests(); // Osveži listu zahteva
     });
 
@@ -203,25 +191,13 @@ class _RegistrovaniPutnikProfilScreenState
           .from('seat_requests')
           .select()
           .eq('putnik_id', putnikId)
-          .gte(
-              'datum',
-              DateTime.now()
-                  .subtract(const Duration(days: 1))
-                  .toIso8601String())
-          .inFilter('status', [
-        'pending',
-        'manual',
-        'approved',
-        'confirmed',
-        'otkazano',
-        'cancelled'
-      ]);
+          .gte('datum', DateTime.now().subtract(const Duration(days: 1)).toIso8601String())
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
 
       if (mounted) {
         setState(() {
           _activeSeatRequests = List<Map<String, dynamic>>.from(res);
-          debugPrint(
-              '📥 [ActiveRequests] Učitano: ${_activeSeatRequests.length} zahteva');
+          debugPrint('📥 [ActiveRequests] Učitano: ${_activeSeatRequests.length} zahteva');
         });
       }
     } catch (e) {
@@ -248,11 +224,7 @@ class _RegistrovaniPutnikProfilScreenState
       final putnikId = _putnikData['id']?.toString();
       if (putnikId == null) return;
 
-      final response = await supabase
-          .from('registrovani_putnici')
-          .select()
-          .eq('id', putnikId)
-          .maybeSingle();
+      final response = await supabase.from('registrovani_putnici').select().eq('id', putnikId).maybeSingle();
 
       if (response != null && mounted) {
         setState(() {
@@ -278,24 +250,14 @@ class _RegistrovaniPutnikProfilScreenState
   /// Briše zahteve starije od 1 dana
   Future<void> _cleanupOldSeatRequests() async {
     try {
-      final yesterday = DateTime.now()
-          .subtract(const Duration(days: 1))
-          .toUtc()
-          .toIso8601String();
-      final oldRequests = await supabase
-          .from('seat_requests')
-          .select('id')
-          .lt('created_at', yesterday);
+      final yesterday = DateTime.now().subtract(const Duration(days: 1)).toUtc().toIso8601String();
+      final oldRequests = await supabase.from('seat_requests').select('id').lt('created_at', yesterday);
 
       if (oldRequests.isNotEmpty) {
-        debugPrint(
-            '🧹 [Cleanup] Brisanje ${oldRequests.length} starih zahteva...');
+        debugPrint('🧹 [Cleanup] Brisanje ${oldRequests.length} starih zahteva...');
 
         // Briši stare zahteve
-        await supabase
-            .from('seat_requests')
-            .delete()
-            .lt('created_at', yesterday);
+        await supabase.from('seat_requests').delete().lt('created_at', yesterday);
       }
     } catch (e) {
       debugPrint('❌ [Cleanup] Greška: $e');
@@ -325,19 +287,13 @@ class _RegistrovaniPutnikProfilScreenState
     if (putnikId == null) return;
 
     try {
-      final tipPutnikaRaw =
-          (_putnikData['tip'] ?? 'radnik').toString().toLowerCase();
-      bool isJeDnevni(String t) =>
-          t.contains('dnevni') ||
-          t.contains('posiljka') ||
-          t.contains('pošiljka');
+      final tipPutnikaRaw = (_putnikData['tip'] ?? 'radnik').toString().toLowerCase();
+      bool isJeDnevni(String t) => t.contains('dnevni') || t.contains('posiljka') || t.contains('pošiljka');
       final jeDnevni = isJeDnevni(tipPutnikaRaw);
 
       // 1. Dohvati vožnje za TEKUĆI MESEC
-      final datumPocetakMeseca =
-          DateTime(now.year, now.month, 1).toIso8601String().split('T')[0];
-      final datumKrajMeseca =
-          DateTime(now.year, now.month + 1, 0).toIso8601String().split('T')[0];
+      final datumPocetakMeseca = DateTime(now.year, now.month, 1).toIso8601String().split('T')[0];
+      final datumKrajMeseca = DateTime(now.year, now.month + 1, 0).toIso8601String().split('T')[0];
 
       final voznjeResponse = await supabase
           .from('voznje_log')
@@ -407,32 +363,22 @@ class _RegistrovaniPutnikProfilScreenState
 
       try {
         if (adresaBcId != null && adresaBcId.isNotEmpty) {
-          final bcResponse = await supabase
-              .from('adrese')
-              .select('naziv, gps_lat, gps_lng')
-              .eq('id', adresaBcId)
-              .maybeSingle();
+          final bcResponse =
+              await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaBcId).maybeSingle();
           if (bcResponse != null) {
             adresaBcNaziv = bcResponse['naziv'] as String?;
-            if (grad == 'BC' &&
-                bcResponse['gps_lat'] != null &&
-                bcResponse['gps_lng'] != null) {
+            if (grad == 'BC' && bcResponse['gps_lat'] != null && bcResponse['gps_lng'] != null) {
               putnikLat = _toDouble(bcResponse['gps_lat']);
               putnikLng = _toDouble(bcResponse['gps_lng']);
             }
           }
         }
         if (adresaVsId != null && adresaVsId.isNotEmpty) {
-          final vsResponse = await supabase
-              .from('adrese')
-              .select('naziv, gps_lat, gps_lng')
-              .eq('id', adresaVsId)
-              .maybeSingle();
+          final vsResponse =
+              await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaVsId).maybeSingle();
           if (vsResponse != null) {
             adresaVsNaziv = vsResponse['naziv'] as String?;
-            if (grad == 'VS' &&
-                vsResponse['gps_lat'] != null &&
-                vsResponse['gps_lng'] != null) {
+            if (grad == 'VS' && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {
               putnikLat = _toDouble(vsResponse['gps_lat']);
               putnikLng = _toDouble(vsResponse['gps_lng']);
             }
@@ -447,8 +393,7 @@ class _RegistrovaniPutnikProfilScreenState
         grad: grad,
         letnji: !isZimski(now),
       );
-      final sledeciPolazak =
-          _getNextPolazak(vremenaPolazaka, now.hour, now.minute);
+      final sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute);
 
       // 💰 Istorija plaćanja - poslednjih 6 meseci
       final istorija = await _loadIstorijuPlacanja(putnikId);
@@ -470,20 +415,13 @@ class _RegistrovaniPutnikProfilScreenState
         final datum = DateTime.tryParse(datumStr);
         if (datum == null) continue;
 
-        final mesecKey =
-            '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
+        final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
         final tip = v['tip'] as String?;
 
         if (tip == 'otkazivanje') {
-          otkazivanjaDetaljnoMap[mesecKey] = [
-            ...(otkazivanjaDetaljnoMap[mesecKey] ?? []),
-            v
-          ];
+          otkazivanjaDetaljnoMap[mesecKey] = [...(otkazivanjaDetaljnoMap[mesecKey] ?? []), v];
         } else if (tip == 'voznja') {
-          voznjeDetaljnoMap[mesecKey] = [
-            ...(voznjeDetaljnoMap[mesecKey] ?? []),
-            v
-          ];
+          voznjeDetaljnoMap[mesecKey] = [...(voznjeDetaljnoMap[mesecKey] ?? []), v];
         }
       }
 
@@ -494,11 +432,8 @@ class _RegistrovaniPutnikProfilScreenState
       double ukupnoZaplacanje = 0;
       final Map<String, int> brojMestaPoVoznji = {};
       try {
-        final sveVoznjeZaDug = await supabase
-            .from('voznje_log')
-            .select('datum, broj_mesta')
-            .eq('putnik_id', putnikId)
-            .eq('tip', 'voznja');
+        final sveVoznjeZaDug =
+            await supabase.from('voznje_log').select('datum, broj_mesta').eq('putnik_id', putnikId).eq('tip', 'voznja');
 
         if (jeDnevni) {
           for (final voznja in sveVoznjeZaDug) {
@@ -567,8 +502,7 @@ class _RegistrovaniPutnikProfilScreenState
           _putnikLat = putnikLat;
           _putnikLng = putnikLng;
           _sledeciPolazak = sledeciPolazak;
-          _smerTure =
-              (grad == 'BC' || grad == 'Bela Crkva') ? 'BC_VS' : 'VS_BC';
+          _smerTure = (grad == 'BC' || grad == 'Bela Crkva') ? 'BC_VS' : 'VS_BC';
           _sledecaVoznjaInfo = _izracunajSledecuVoznju();
           _isLoading = false;
         });
@@ -581,8 +515,7 @@ class _RegistrovaniPutnikProfilScreenState
 
   /// 🕐 Nađi sledeći polazak na osnovu trenutnog vremena
   /// Vraća polazak od 30 min PRE termina. Widget sam upravlja nestajanjem nakon pokupljenja.
-  String? _getNextPolazak(
-      List<String> vremena, int currentHour, int currentMinute) {
+  String? _getNextPolazak(List<String> vremena, int currentHour, int currentMinute) {
     final currentMinutes = currentHour * 60 + currentMinute;
 
     for (final vreme in vremena) {
@@ -596,8 +529,7 @@ class _RegistrovaniPutnikProfilScreenState
       // Prozor za praćenje: 30 min pre polaska do 120 min posle (fallback)
       // Widget sam nestaje 60 min nakon pokupljenja ili kad vozač završi turu
       final windowStart = polazakMinutes - 30; // 30 min pre polaska
-      final windowEnd =
-          polazakMinutes + 120; // 120 min posle polaska (safety fallback)
+      final windowEnd = polazakMinutes + 120; // 120 min posle polaska (safety fallback)
 
       if (currentMinutes >= windowStart && currentMinutes <= windowEnd) {
         return vreme;
@@ -614,18 +546,15 @@ class _RegistrovaniPutnikProfilScreenState
       if (_activeSeatRequests.isEmpty) return null;
 
       final now = DateTime.now();
-      final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet'];
       final daniPuniNaziv = <String, String>{};
       for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
-        daniPuniNaziv[DayConstants.dayAbbreviations[i]] =
-            DayConstants.dayNamesInternal[i];
+        daniPuniNaziv[DayConstants.dayAbbreviations[i]] = DayConstants.dayNamesInternal[i];
       }
 
       // Sortiraj zahteve po datumu
-      final sortedRequests = List<Map<String, dynamic>>.from(
-          _activeSeatRequests)
-        ..sort(
-            (a, b) => (a['datum'] as String).compareTo(b['datum'] as String));
+      final sortedRequests = List<Map<String, dynamic>>.from(_activeSeatRequests)
+        ..sort((a, b) => (a['datum'] as String).compareTo(b['datum'] as String));
 
       for (final req in sortedRequests) {
         final datumStr = req['datum'] as String?;
@@ -635,22 +564,15 @@ class _RegistrovaniPutnikProfilScreenState
         if (datum == null) continue;
 
         // Ako je datum u budućnosti ili danas
-        if (datum.year >= now.year &&
-            datum.month >= now.month &&
-            datum.day >= now.day) {
-          final polazak = (req['zeljeno_vreme'] ?? '')
-              .toString()
-              .replaceAll(':00', '')
-              .replaceFirst(RegExp('^0'), '');
+        if (datum.year >= now.year && datum.month >= now.month && datum.day >= now.day) {
+          final polazak = (req['zeljeno_vreme'] ?? '').toString().replaceAll(':00', '').replaceFirst(RegExp('^0'), '');
           final grad = (req['grad'] ?? '').toString().toUpperCase();
           final status = req['status'] as String?;
 
           if (polazak.isEmpty || status == 'otkazano') continue;
 
           // Ako je danas, proveri da li je polazak prošao
-          if (datum.year == now.year &&
-              datum.month == now.month &&
-              datum.day == now.day) {
+          if (datum.year == now.year && datum.month == now.month && datum.day == now.day) {
             final parts = polazak.split(':');
             final h = int.tryParse(parts[0]) ?? 0;
             final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
@@ -670,8 +592,7 @@ class _RegistrovaniPutnikProfilScreenState
 
   /// 💰 Učitaj istoriju plaćanja - od 1. januara tekuće godine
   /// 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
-  Future<List<Map<String, dynamic>>> _loadIstorijuPlacanja(
-      String putnikId) async {
+  Future<List<Map<String, dynamic>>> _loadIstorijuPlacanja(String putnikId) async {
     try {
       final now = DateTime.now();
       final pocetakGodine = DateTime(now.year, 1, 1);
@@ -696,15 +617,13 @@ class _RegistrovaniPutnikProfilScreenState
         final datum = DateTime.tryParse(datumStr);
         if (datum == null) continue;
 
-        final mesecKey =
-            '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
+        final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
         final iznos = _toDouble(p['iznos']);
 
         poMesecima[mesecKey] = (poMesecima[mesecKey] ?? 0.0) + iznos;
 
         // Zapamti poslednji datum uplate za taj mesec
-        if (!poslednjeDatum.containsKey(mesecKey) ||
-            datum.isAfter(poslednjeDatum[mesecKey]!)) {
+        if (!poslednjeDatum.containsKey(mesecKey) || datum.isAfter(poslednjeDatum[mesecKey]!)) {
           poslednjeDatum[mesecKey] = datum;
         }
       }
@@ -714,12 +633,7 @@ class _RegistrovaniPutnikProfilScreenState
         final parts = e.key.split('-');
         final godina = int.parse(parts[0]);
         final mesec = int.parse(parts[1]);
-        return {
-          'mesec': mesec,
-          'godina': godina,
-          'iznos': e.value,
-          'datum': poslednjeDatum[e.key]
-        };
+        return {'mesec': mesec, 'godina': godina, 'iznos': e.value, 'datum': poslednjeDatum[e.key]};
       }).toList();
 
       result.sort((a, b) {
@@ -740,12 +654,9 @@ class _RegistrovaniPutnikProfilScreenState
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: const Text('Odjava?', style: TextStyle(color: Colors.white)),
-        content: Text('Da li želiš da se odjaviš?',
-            style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text('Da li želiš da se odjaviš?', style: TextStyle(color: Colors.white.withOpacity(0.8))),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Ne')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ne')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -785,15 +696,13 @@ class _RegistrovaniPutnikProfilScreenState
           ),
           title: Text(
             jeNaOdsustvu ? 'Vratite se na posao' : 'Godišnji / Bolovanje',
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
           subtitle: Text(
             jeNaOdsustvu
                 ? 'Trenutno ste na ${status == "godisnji" ? "godišnjem odmoru" : "bolovanju"}'
                 : 'Postavite se na odsustvo',
-            style:
-                TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
           ),
           trailing: const Icon(Icons.chevron_right, color: Colors.white54),
           onTap: () => _pokaziOdsustvoDialog(jeNaOdsustvu),
@@ -819,9 +728,7 @@ class _RegistrovaniPutnikProfilScreenState
           ),
           content: const Text('Da li želite da se vratite na posao?'),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Ne')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ne')),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -881,11 +788,7 @@ class _RegistrovaniPutnikProfilScreenState
               ),
             ],
           ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Odustani'))
-          ],
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Odustani'))],
         ),
       );
 
@@ -934,9 +837,7 @@ class _RegistrovaniPutnikProfilScreenState
 
   // 🌤️ KOMPAKTAN PRIKAZ TEMPERATURE ZA GRAD (isti kao na danas_screen)
   Widget _buildWeatherCompact(String grad) {
-    final stream = grad == 'BC'
-        ? WeatherService.bcWeatherStream
-        : WeatherService.vsWeatherStream;
+    final stream = grad == 'BC' ? WeatherService.bcWeatherStream : WeatherService.vsWeatherStream;
 
     return StreamBuilder<WeatherData?>(
       stream: stream,
@@ -958,8 +859,7 @@ class _RegistrovaniPutnikProfilScreenState
         // Widget za ikonu - slika ili emoji (usklađene veličine)
         Widget iconWidget;
         if (WeatherData.isAssetIcon(icon)) {
-          iconWidget = Image.asset(WeatherData.getAssetPath(icon),
-              width: 32, height: 32);
+          iconWidget = Image.asset(WeatherData.getAssetPath(icon), width: 32, height: 32);
         } else {
           iconWidget = Text(icon, style: const TextStyle(fontSize: 14));
         }
@@ -977,12 +877,7 @@ class _RegistrovaniPutnikProfilScreenState
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: tempColor,
-                  shadows: const [
-                    Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 2,
-                        color: Colors.black54)
-                  ],
+                  shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
                 ),
               ),
             ],
@@ -1001,19 +896,12 @@ class _RegistrovaniPutnikProfilScreenState
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          constraints:
-              BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.9),
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.9),
           decoration: BoxDecoration(
             gradient: Theme.of(context).backgroundGradient,
             borderRadius: BorderRadius.circular(20),
-            border:
-                Border.all(color: Theme.of(context).glassBorder, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  spreadRadius: 2)
-            ],
+            border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, spreadRadius: 2)],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1023,19 +911,14 @@ class _RegistrovaniPutnikProfilScreenState
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).glassContainer,
-                  borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20)),
+                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
                         '🌤️ Vreme - $gradPun',
-                        style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                     GestureDetector(
@@ -1054,8 +937,7 @@ class _RegistrovaniPutnikProfilScreenState
                           // Upozorenje za kišu/sneg
                           if (data.willSnow)
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               margin: const EdgeInsets.only(bottom: 16),
                               decoration: BoxDecoration(
                                 color: Colors.blue.withOpacity(0.3),
@@ -1065,8 +947,7 @@ class _RegistrovaniPutnikProfilScreenState
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Text('❄️',
-                                      style: TextStyle(fontSize: 20)),
+                                  const Text('❄️', style: TextStyle(fontSize: 20)),
                                   const SizedBox(width: 6),
                                   Text(
                                     'SNEG ${data.precipitationStartTime ?? 'SADA'}',
@@ -1081,20 +962,17 @@ class _RegistrovaniPutnikProfilScreenState
                             )
                           else if (data.willRain)
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               margin: const EdgeInsets.only(bottom: 16),
                               decoration: BoxDecoration(
                                 color: Colors.indigo.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(12),
-                                border:
-                                    Border.all(color: Colors.indigo.shade200),
+                                border: Border.all(color: Colors.indigo.shade200),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Text('🌧️',
-                                      style: TextStyle(fontSize: 20)),
+                                  const Text('🌧️', style: TextStyle(fontSize: 20)),
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
@@ -1115,11 +993,9 @@ class _RegistrovaniPutnikProfilScreenState
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if (WeatherData.isAssetIcon(data.icon))
-                                Image.asset(WeatherData.getAssetPath(data.icon),
-                                    width: 80, height: 80)
+                                Image.asset(WeatherData.getAssetPath(data.icon), width: 80, height: 80)
                               else
-                                Text(data.icon,
-                                    style: const TextStyle(fontSize: 60)),
+                                Text(data.icon, style: const TextStyle(fontSize: 60)),
                               const SizedBox(width: 16),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1137,19 +1013,14 @@ class _RegistrovaniPutnikProfilScreenState
                                                   ? Colors.white
                                                   : Colors.orange,
                                       shadows: const [
-                                        Shadow(
-                                            offset: Offset(2, 2),
-                                            blurRadius: 4,
-                                            color: Colors.black54),
+                                        Shadow(offset: Offset(2, 2), blurRadius: 4, color: Colors.black54),
                                       ],
                                     ),
                                   ),
-                                  if (data.tempMin != null &&
-                                      data.tempMax != null)
+                                  if (data.tempMin != null && data.tempMax != null)
                                     Text(
                                       '${data.tempMin!.round()}° / ${data.tempMax!.round()}°',
-                                      style: const TextStyle(
-                                          fontSize: 16, color: Colors.white70),
+                                      style: const TextStyle(fontSize: 16, color: Colors.white70),
                                     ),
                                 ],
                               ),
@@ -1158,20 +1029,14 @@ class _RegistrovaniPutnikProfilScreenState
                           const SizedBox(height: 16),
                           // Opis baziran na weather code
                           Text(
-                            _getWeatherDescription(
-                                data.dailyWeatherCode ?? data.weatherCode),
-                            style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500),
+                            _getWeatherDescription(data.dailyWeatherCode ?? data.weatherCode),
+                            style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500),
                             textAlign: TextAlign.center,
                           ),
                         ],
                       )
                     : const Center(
-                        child: Text('Podaci nisu dostupni',
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 16)),
+                        child: Text('Podaci nisu dostupni', style: TextStyle(color: Colors.white70, fontSize: 16)),
                       ),
               ),
             ],
@@ -1215,8 +1080,7 @@ class _RegistrovaniPutnikProfilScreenState
     // ignore: unused_local_variable
     final grad = _putnikData['grad'] as String? ?? 'BC';
     final tip = _putnikData['tip'] as String? ?? 'radnik';
-    final tipPrikazivanja =
-        _putnikData['tip_prikazivanja'] as String? ?? 'standard';
+    final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
     // ignore: unused_local_variable
     final aktivan = _putnikData['aktivan'] as bool? ?? true;
 
@@ -1251,8 +1115,7 @@ class _RegistrovaniPutnikProfilScreenState
           ],
         ),
         body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.amber))
+            ? const Center(child: CircularProgressIndicator(color: Colors.amber))
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1264,23 +1127,19 @@ class _RegistrovaniPutnikProfilScreenState
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                              child: Center(child: _buildWeatherCompact('BC'))),
+                          Expanded(child: Center(child: _buildWeatherCompact('BC'))),
                           const SizedBox(width: 16),
-                          Expanded(
-                              child: Center(child: _buildWeatherCompact('VS'))),
+                          Expanded(child: Center(child: _buildWeatherCompact('VS'))),
                         ],
                       ),
                     ),
 
                     // ⚠️ NOTIFIKACIJE UPOZORENJE (ako su ugašene)
-                    if (_notificationStatus.isDenied ||
-                        _notificationStatus.isPermanentlyDenied)
+                    if (_notificationStatus.isDenied || _notificationStatus.isPermanentlyDenied)
                       Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(12),
@@ -1288,8 +1147,7 @@ class _RegistrovaniPutnikProfilScreenState
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.notifications_off,
-                                color: Colors.white),
+                            const Icon(Icons.notifications_off, color: Colors.white),
                             const SizedBox(width: 12),
                             const Expanded(
                               child: Column(
@@ -1297,14 +1155,11 @@ class _RegistrovaniPutnikProfilScreenState
                                 children: [
                                   Text(
                                     'Notifikacije isključene!',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                   ),
                                   Text(
                                     'Nećete videti potvrde vožnji.',
-                                    style: TextStyle(
-                                        color: Colors.white70, fontSize: 12),
+                                    style: TextStyle(color: Colors.white70, fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -1336,23 +1191,12 @@ class _RegistrovaniPutnikProfilScreenState
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: tip == 'ucenik'
-                                    ? [
-                                        Colors.blue.shade400,
-                                        Colors.indigo.shade600
-                                      ]
+                                    ? [Colors.blue.shade400, Colors.indigo.shade600]
                                     : tip == 'posiljka'
-                                        ? [
-                                            Colors.purple.shade400,
-                                            Colors.deepPurple.shade600
-                                          ]
-                                        : [
-                                            Colors.orange.shade400,
-                                            Colors.deepOrange.shade600
-                                          ],
+                                        ? [Colors.purple.shade400, Colors.deepPurple.shade600]
+                                        : [Colors.orange.shade400, Colors.deepOrange.shade600],
                               ),
-                              border: Border.all(
-                                  color: Colors.white.withOpacity(0.4),
-                                  width: 2),
+                              border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
                               boxShadow: [
                                 BoxShadow(
                                   color: (tip == 'ucenik'
@@ -1374,12 +1218,7 @@ class _RegistrovaniPutnikProfilScreenState
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                   letterSpacing: 2,
-                                  shadows: [
-                                    Shadow(
-                                        offset: Offset(1, 1),
-                                        blurRadius: 3,
-                                        color: Colors.black38)
-                                  ],
+                                  shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black38)],
                                 ),
                               ),
                             ),
@@ -1402,20 +1241,17 @@ class _RegistrovaniPutnikProfilScreenState
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: tip == 'ucenik'
                                       ? Colors.blue.withOpacity(0.3)
-                                      : (tip == 'dnevni' ||
-                                              tipPrikazivanja == 'DNEVNI')
+                                      : (tip == 'dnevni' || tipPrikazivanja == 'DNEVNI')
                                           ? Colors.green.withOpacity(0.3)
                                           : tip == 'posiljka'
                                               ? Colors.purple.withOpacity(0.3)
                                               : Colors.orange.withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                      color: Colors.white.withOpacity(0.3)),
+                                  border: Border.all(color: Colors.white.withOpacity(0.3)),
                                 ),
                                 child: Text(
                                   tip == 'ucenik'
@@ -1437,19 +1273,16 @@ class _RegistrovaniPutnikProfilScreenState
                               if (telefon.isNotEmpty && telefon != '-') ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: Colors.white.withOpacity(0.3)),
+                                    border: Border.all(color: Colors.white.withOpacity(0.3)),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.phone,
-                                          color: Colors.white70, size: 14),
+                                      Icon(Icons.phone, color: Colors.white70, size: 14),
                                       const SizedBox(width: 4),
                                       Text(
                                         telefon,
@@ -1471,30 +1304,21 @@ class _RegistrovaniPutnikProfilScreenState
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                if (_adresaBC != null &&
-                                    _adresaBC!.isNotEmpty) ...[
-                                  Icon(Icons.home,
-                                      color: Colors.white70, size: 16),
+                                if (_adresaBC != null && _adresaBC!.isNotEmpty) ...[
+                                  Icon(Icons.home, color: Colors.white70, size: 16),
                                   const SizedBox(width: 4),
                                   Text(
                                     _adresaBC!,
-                                    style: TextStyle(
-                                        color: Colors.white.withOpacity(0.9),
-                                        fontSize: 13),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
                                   ),
                                 ],
-                                if (_adresaBC != null && _adresaVS != null)
-                                  const SizedBox(width: 16),
-                                if (_adresaVS != null &&
-                                    _adresaVS!.isNotEmpty) ...[
-                                  Icon(Icons.work,
-                                      color: Colors.white70, size: 16),
+                                if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
+                                if (_adresaVS != null && _adresaVS!.isNotEmpty) ...[
+                                  Icon(Icons.work, color: Colors.white70, size: 16),
                                   const SizedBox(width: 4),
                                   Text(
                                     _adresaVS!,
-                                    style: TextStyle(
-                                        color: Colors.white.withOpacity(0.9),
-                                        fontSize: 13),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
                                   ),
                                 ],
                               ],
@@ -1507,8 +1331,7 @@ class _RegistrovaniPutnikProfilScreenState
                     // ─────────── Divider ───────────
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Divider(
-                          color: Colors.white.withOpacity(0.2), thickness: 1),
+                      child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
                     ),
 
                     // 🚐 ETA Widget sa fazama:
@@ -1522,16 +1345,14 @@ class _RegistrovaniPutnikProfilScreenState
                       grad: grad,
                       vremePolaska: _sledeciPolazak,
                       sledecaVoznja: _sledecaVoznjaInfo,
-                      putnikId: _putnikData['id']
-                          ?.toString(), // 🆕 Za čitanje pokupljenja iz baze
+                      putnikId: _putnikData['id']?.toString(), // 🆕 Za čitanje pokupljenja iz baze
                     ),
 
                     // ─────────── Divider ───────────
 
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Divider(
-                          color: Colors.white.withOpacity(0.2), thickness: 1),
+                      child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
                     ),
                     const SizedBox(height: 8),
 
@@ -1539,12 +1360,7 @@ class _RegistrovaniPutnikProfilScreenState
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStatCard(
-                              '🚌',
-                              'Vožnje',
-                              _brojVoznji.toString(),
-                              Colors.blue,
-                              'ovaj mesec'),
+                          child: _buildStatCard('🚌', 'Vožnje', _brojVoznji.toString(), Colors.blue, 'ovaj mesec'),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1561,8 +1377,7 @@ class _RegistrovaniPutnikProfilScreenState
                     const SizedBox(height: 16),
 
                     // 🏖️ Bolovanje/Godišnji dugme - SAMO za radnike
-                    if (_putnikData['tip']?.toString().toLowerCase() ==
-                        'radnik') ...[
+                    if (_putnikData['tip']?.toString().toLowerCase() == 'radnik') ...[
                       _buildOdsustvoButton(),
                       const SizedBox(height: 16),
                     ],
@@ -1575,22 +1390,14 @@ class _RegistrovaniPutnikProfilScreenState
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: _ukupnoZaduzenje > 0
-                                ? [
-                                    Colors.red.withOpacity(0.2),
-                                    Colors.red.withOpacity(0.05)
-                                  ]
-                                : [
-                                    Colors.green.withOpacity(0.2),
-                                    Colors.green.withOpacity(0.05)
-                                  ],
+                                ? [Colors.red.withOpacity(0.2), Colors.red.withOpacity(0.05)]
+                                : [Colors.green.withOpacity(0.2), Colors.green.withOpacity(0.05)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _ukupnoZaduzenje > 0
-                                ? Colors.red.withOpacity(0.3)
-                                : Colors.green.withOpacity(0.3),
+                            color: _ukupnoZaduzenje > 0 ? Colors.red.withOpacity(0.3) : Colors.green.withOpacity(0.3),
                             width: 1,
                           ),
                         ),
@@ -1606,13 +1413,9 @@ class _RegistrovaniPutnikProfilScreenState
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _ukupnoZaduzenje > 0
-                                  ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD'
-                                  : 'IZMIRENO OK',
+                              _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO OK',
                               style: TextStyle(
-                                color: _ukupnoZaduzenje > 0
-                                    ? Colors.red.shade200
-                                    : Colors.green.shade200,
+                                color: _ukupnoZaduzenje > 0 ? Colors.red.shade200 : Colors.green.shade200,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1651,8 +1454,7 @@ class _RegistrovaniPutnikProfilScreenState
   /// 📅 Widget za prikaz rasporeda polazaka po danima
   Widget _buildRasporedCard() {
     final tip = _putnikData['tip'] as String? ?? 'radnik';
-    final tipPrikazivanja =
-        _putnikData['tip_prikazivanja'] as String? ?? 'standard';
+    final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
 
     // 🆕 Inicijalizuj polasci mapu sa praznim vrednostima za svih 7 dana
     Map<String, Map<String, dynamic>> polasci = {};
@@ -1666,13 +1468,12 @@ class _RegistrovaniPutnikProfilScreenState
     }
 
     // 🆕 MERGE AKTIVNIH ZAHTEVA iz _activeSeatRequests
-    final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet'];
     final now = DateTime.now();
 
     // Sortiraju se da bi noviji zahtevi isteka istog dana pregazili starije ako ih ima (ne bi trebalo)
     final sortedRequests = List<Map<String, dynamic>>.from(_activeSeatRequests);
-    sortedRequests
-        .sort((a, b) => (a['datum'] as String).compareTo(b['datum'] as String));
+    sortedRequests.sort((a, b) => (a['datum'] as String).compareTo(b['datum'] as String));
 
     for (final req in sortedRequests) {
       try {
@@ -1681,8 +1482,7 @@ class _RegistrovaniPutnikProfilScreenState
 
         final datum = DateTime.parse(datumStr);
         // Prikazujemo samo zahteve koji su u narednih 7 dana
-        if (datum.isBefore(now.subtract(const Duration(days: 1))) ||
-            datum.isAfter(now.add(const Duration(days: 7)))) {
+        if (datum.isBefore(now.subtract(const Duration(days: 1))) || datum.isAfter(now.add(const Duration(days: 7)))) {
           continue;
         }
 
@@ -1690,8 +1490,7 @@ class _RegistrovaniPutnikProfilScreenState
         if (danIndex < 0 || danIndex >= daniNedelje.length) continue;
 
         final danKratica = daniNedelje[danIndex];
-        final grad =
-            (req['grad'] ?? '').toString().toLowerCase(); // 'bc' ili 'vs'
+        final grad = (req['grad'] ?? '').toString().toLowerCase(); // 'bc' ili 'vs'
         final status = req['status'] as String?;
         final vreme = (req['zeljeno_vreme'] ?? '').toString();
 
@@ -1711,16 +1510,12 @@ class _RegistrovaniPutnikProfilScreenState
     }
 
     // Prikazujemo samo radne dane
-    final dani = DayConstants.dayAbbreviations
-        .where((d) => d != 'sub' && d != 'ned')
-        .toList();
+    final dani = DayConstants.dayAbbreviations.where((d) => d != 'sub' && d != 'ned').toList();
     final daniLabels = <String, String>{};
     for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
       final short = DayConstants.dayAbbreviations[i];
       if (short == 'sub' || short == 'ned') continue;
-      final long = (i < DayConstants.dayNamesInternal.length)
-          ? DayConstants.dayNamesInternal[i]
-          : short;
+      final long = (i < DayConstants.dayNamesInternal.length) ? DayConstants.dayNamesInternal[i] : short;
       daniLabels[short] = long;
     }
 
@@ -1737,10 +1532,7 @@ class _RegistrovaniPutnikProfilScreenState
           const Center(
             child: Text(
               '🕐 Vremena polaska',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 16),
@@ -1751,16 +1543,12 @@ class _RegistrovaniPutnikProfilScreenState
                   child: Center(
                       child: Text('BC',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14)))),
+                              color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.bold, fontSize: 14)))),
               Expanded(
                   child: Center(
                       child: Text('VS',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14)))),
+                              color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.bold, fontSize: 14)))),
             ],
           ),
           const SizedBox(height: 8),
@@ -1783,9 +1571,7 @@ class _RegistrovaniPutnikProfilScreenState
                 children: [
                   SizedBox(
                       width: 100,
-                      child: Text(daniLabels[dan] ?? dan,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 14))),
+                      child: Text(daniLabels[dan] ?? dan, style: const TextStyle(color: Colors.white, fontSize: 14))),
                   Expanded(
                     child: Center(
                       child: TimePickerCell(
@@ -1796,8 +1582,7 @@ class _RegistrovaniPutnikProfilScreenState
                         isCancelled: bcOtkazano,
                         tipPutnika: tip.toString(),
                         tipPrikazivanja: tipPrikazivanja,
-                        onChanged: (newValue) =>
-                            _updatePolazak(dan, 'bc', newValue),
+                        onChanged: (newValue) => _updatePolazak(dan, 'bc', newValue),
                       ),
                     ),
                   ),
@@ -1811,8 +1596,7 @@ class _RegistrovaniPutnikProfilScreenState
                         isCancelled: vsOtkazano,
                         tipPutnika: tip.toString(),
                         tipPrikazivanja: tipPrikazivanja,
-                        onChanged: (newValue) =>
-                            _updatePolazak(dan, 'vs', newValue),
+                        onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
                       ),
                     ),
                   ),
@@ -1826,17 +1610,14 @@ class _RegistrovaniPutnikProfilScreenState
   }
 
   /// 🕐 Ažurira polazak
-  Future<void> _updatePolazak(
-      String dan, String tipGrad, String? novoVreme) async {
+  Future<void> _updatePolazak(String dan, String tipGrad, String? novoVreme) async {
     final putnikId = _putnikData['id']?.toString();
     if (putnikId == null) return;
 
     final tipPutnika = (_putnikData['tip'] ?? '').toString().toLowerCase();
-    final jeDnevni =
-        tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka');
+    final jeDnevni = tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka');
 
-    final String? normalizedVreme =
-        novoVreme == null ? null : RegistrovaniHelpers.normalizeTime(novoVreme);
+    final String? normalizedVreme = novoVreme == null ? null : RegistrovaniHelpers.normalizeTime(novoVreme);
 
     String? rpcStatus = 'pending';
     if (normalizedVreme != null && normalizedVreme.isNotEmpty) {
@@ -1876,8 +1657,7 @@ class _RegistrovaniPutnikProfilScreenState
     }
   }
 
-  Widget _buildStatCard(
-      String icon, String title, String value, Color color, String subtitle) {
+  Widget _buildStatCard(String icon, String title, String value, Color color, String subtitle) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1900,8 +1680,7 @@ class _RegistrovaniPutnikProfilScreenState
                 ),
                 child: Text(
                   title,
-                  style: TextStyle(
-                      color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -1909,13 +1688,11 @@ class _RegistrovaniPutnikProfilScreenState
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Text(
             subtitle,
-            style:
-                TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
           ),
         ],
       ),
@@ -1941,12 +1718,10 @@ class _RegistrovaniPutnikProfilScreenState
             tipSkole: _putnikData['tip_skole'],
             brojTelefona: _putnikData['broj_telefona'],
             radniDani: _putnikData['radni_dani'] ?? 'pon,uto,sre,cet,pet',
-            createdAt: _putnikData['created_at'] != null
-                ? DateTime.tryParse(_putnikData['created_at'].toString())
-                : null,
-            updatedAt: _putnikData['updated_at'] != null
-                ? DateTime.tryParse(_putnikData['updated_at'].toString())
-                : null,
+            createdAt:
+                _putnikData['created_at'] != null ? DateTime.tryParse(_putnikData['created_at'].toString()) : null,
+            updatedAt:
+                _putnikData['updated_at'] != null ? DateTime.tryParse(_putnikData['updated_at'].toString()) : null,
             aktivan: _putnikData['aktivan'] ?? true,
           );
         },
@@ -1957,19 +1732,14 @@ class _RegistrovaniPutnikProfilScreenState
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.analytics_outlined,
-                  color: Colors.blue.shade300, size: 24),
+              Icon(Icons.analytics_outlined, color: Colors.blue.shade300, size: 24),
               const SizedBox(width: 12),
               const Text(
                 'Detaljne statistike',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600),
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_ios,
-                  color: Colors.white.withOpacity(0.5), size: 16),
+              Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.5), size: 16),
             ],
           ),
         ),

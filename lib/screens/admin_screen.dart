@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../config/route_config.dart'; // 🕐 RASPORED VREMENA
 import '../constants/day_constants.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
@@ -202,6 +203,133 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
+  /// 🚫 DIJALOG ZA GLOBALNO UKLANJANJE POLASKA
+  void _showGlobalniBezPolaskaDialog() {
+    String selectedGrad = 'Bela Crkva';
+    String selectedVreme = '05:00';
+    String selectedDan = _selectedDan; // 🆕 Inicijalno uzmi trenutno izabrani dan
+    bool isProcessing = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(builder: (context, setDialogState) {
+        // Dohvati vremena za izabrani grad i trenutni režim (zimski/letnji/praznici)
+        final navType = navBarTypeNotifier.value;
+        List<String> vremena;
+        if (selectedGrad == 'Bela Crkva') {
+          if (navType == 'praznici')
+            vremena = ['Sva vremena', ...RouteConfig.bcVremenaPraznici];
+          else if (navType == 'zimski')
+            vremena = ['Sva vremena', ...RouteConfig.bcVremenaZimski];
+          else
+            vremena = ['Sva vremena', ...RouteConfig.bcVremenaLetnji];
+        } else {
+          if (navType == 'praznici')
+            vremena = ['Sva vremena', ...RouteConfig.vsVremenaPraznici];
+          else if (navType == 'zimski')
+            vremena = ['Sva vremena', ...RouteConfig.vsVremenaZimski];
+          else
+            vremena = ['Sva vremena', ...RouteConfig.vsVremenaLetnji];
+        }
+
+        if (!vremena.contains(selectedVreme)) {
+          selectedVreme = 'Sva vremena';
+        }
+
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Ukloni polazak svima',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                selectedVreme == 'Sva vremena'
+                    ? 'Ova akcija će SVIM putnicima u izabranom gradu za CEO DAN postaviti status "Bez polaska".'
+                    : 'Ova akcija će svim putnicima u izabranom terminu postaviti status "Bez polaska".',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                value: selectedDan,
+                decoration: const InputDecoration(labelText: 'Dan'),
+                items: DayConstants.dayNamesInternal.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selectedDan = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedGrad,
+                decoration: const InputDecoration(labelText: 'Grad'),
+                items: ['Bela Crkva', 'Vršac'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selectedGrad = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedVreme,
+                decoration: const InputDecoration(labelText: 'Vreme polaska'),
+                items: vremena.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selectedVreme = val);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isProcessing ? null : () => Navigator.pop(context),
+              child: const Text('Otkaži'),
+            ),
+            ElevatedButton(
+              onPressed: isProcessing
+                  ? null
+                  : () async {
+                      setDialogState(() => isProcessing = true);
+
+                      final dateStr = app_date_utils.DateUtils.getIsoDateForDay(selectedDan);
+
+                      final count = await _putnikService.globalniBezPolaska(
+                        datum: dateStr,
+                        grad: selectedGrad,
+                        vreme: selectedVreme,
+                      );
+
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(selectedVreme == 'Sva vremena'
+                                ? '✅ Uspešno uklonjeno $count putnika za ceo dan ($selectedGrad) - $selectedDan'
+                                : '✅ Uspešno uklonjeno $count putnika za $selectedVreme ($selectedGrad) - $selectedDan'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              child: isProcessing
+                  ? const SizedBox(
+                      width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('POTVRDI'),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
   // 📊 STATISTIKE MENI - otvara BottomSheet sa opcijama
   void _showStatistikeMenu(BuildContext context) {
     showModalBottomSheet(
@@ -351,19 +479,10 @@ class _AdminScreenState extends State<AdminScreen> {
                           // DRUGI RED - Putnici, Adrese, NavBar, Dropdown (4 dugmeta)
                           LayoutBuilder(
                             builder: (context, constraints) {
-                              final screenWidth = constraints.maxWidth;
-                              const spacing = 1.0;
-                              const padding = 8.0;
-                              final availableWidth = screenWidth - padding;
-                              final buttonWidth = (availableWidth - (spacing * 3)) / 4; // 4 dugmeta
-
                               return Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   // PUTNICI
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: InkWell(
                                       onTap: () => Navigator.push(
                                         context,
@@ -374,6 +493,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).glassContainer,
@@ -401,8 +521,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
 
                                   // ADRESE
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: InkWell(
                                       onTap: () => Navigator.push(
                                         context,
@@ -413,6 +532,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).glassContainer,
@@ -440,13 +560,13 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
 
                                   // NAV BAR DROPDOWN
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: ValueListenableBuilder<String>(
                                       valueListenable: navBarTypeNotifier,
                                       builder: (context, navType, _) {
                                         return Container(
                                           height: 28,
+                                          margin: const EdgeInsets.symmetric(horizontal: 1),
                                           decoration: BoxDecoration(
                                             color: Theme.of(context).glassContainer,
                                             borderRadius: BorderRadius.circular(12),
@@ -507,10 +627,10 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
 
                                   // DROPDOWN DANA
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: Container(
                                       height: 28,
+                                      margin: const EdgeInsets.symmetric(horizontal: 1),
                                       decoration: BoxDecoration(
                                         color: Theme.of(context).glassContainer,
                                         borderRadius: BorderRadius.circular(12),
@@ -560,24 +680,17 @@ class _AdminScreenState extends State<AdminScreen> {
                           // TRECI RED - Auth, PIN, Statistike, Dodeli (4 dugmeta)
                           LayoutBuilder(
                             builder: (context, constraints) {
-                              final screenWidth = constraints.maxWidth;
-                              const spacing = 1.0;
-                              const padding = 8.0;
-                              final availableWidth = screenWidth - padding;
-                              final buttonWidth = (availableWidth - (spacing * 3)) / 4; // 4 dugmeta
-
                               return Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   // AUTH
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: InkWell(
                                       onTap: () => Navigator.push(
                                           context, MaterialPageRoute<void>(builder: (context) => const AuthScreen())),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).glassContainer,
@@ -603,8 +716,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
 
                                   // PIN
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: InkWell(
                                       onTap: () async {
                                         await Navigator.push(context,
@@ -617,6 +729,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                         children: [
                                           Container(
                                             height: 28,
+                                            margin: const EdgeInsets.symmetric(horizontal: 1),
                                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                             decoration: BoxDecoration(
                                               color: Theme.of(context).glassContainer,
@@ -663,13 +776,13 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
 
                                   // STATISTIKE (otvara meni sa opcijama)
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: InkWell(
                                       onTap: () => _showStatistikeMenu(context),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).glassContainer,
@@ -685,14 +798,14 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
 
                                   // DODELI
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: InkWell(
                                       onTap: () => Navigator.push(context,
                                           MaterialPageRoute<void>(builder: (context) => const DodeliPutnikeScreen())),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).glassContainer,
@@ -721,26 +834,19 @@ class _AdminScreenState extends State<AdminScreen> {
                             },
                           ),
                           const SizedBox(height: 4),
-                          // TRECI RED - Vozac, Monitor, Mesta (3 dugmeta)
+                          // CETVRTI RED - Vozac, Monitor, Mesta (3 dugmeta)
                           LayoutBuilder(
                             builder: (context, constraints) {
-                              final screenWidth = constraints.maxWidth;
-                              const spacing = 4.0; // Increased spacing safety
-                              const padding = 12.0; // Increased padding safety
-                              final availableWidth = screenWidth - padding;
-                              final buttonWidth = (availableWidth - (spacing * 2)) / 3;
-
                               return Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   // VOZAC - Dropdown za admin preview
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: InkWell(
                                       onTap: () => _showVozacPickerDialog(context),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).glassContainer,
@@ -765,15 +871,47 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                   ),
 
+                                  // GLOBAL BEZ POLASKA
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: _showGlobalniBezPolaskaDialog,
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.red.withOpacity(0.5), width: 1.5),
+                                        ),
+                                        child: const Center(
+                                            child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text('Bez polaska',
+                                                    style: TextStyle(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                        shadows: [
+                                                          Shadow(
+                                                              offset: Offset(1, 1),
+                                                              blurRadius: 3,
+                                                              color: Colors.black54)
+                                                        ])))),
+                                      ),
+                                    ),
+                                  ),
+
                                   // MESTA
-                                  SizedBox(
-                                    width: buttonWidth,
+                                  Expanded(
                                     child: InkWell(
                                       onTap: () => Navigator.push(context,
                                           MaterialPageRoute<void>(builder: (context) => const KapacitetScreen())),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).glassContainer,

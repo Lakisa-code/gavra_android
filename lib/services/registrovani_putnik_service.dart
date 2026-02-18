@@ -389,8 +389,8 @@ class RegistrovaniPutnikService {
 
     final danas = DateTime.now();
     final currentWeekday = danas.weekday;
-    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
-    final daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5};
+    final daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet'];
 
     // Proveri svaki dan koji putnik ima definisan
     for (final danKratica in daniKratice) {
@@ -536,11 +536,8 @@ class RegistrovaniPutnikService {
     final todayStr = today.toIso8601String().split('T')[0];
 
     // 1. Dohvati bazne podatke o putniku (broj_mesta) koji su potrebni za nove unose
-    final putnikData = await _supabase
-        .from('registrovani_putnici')
-        .select('broj_mesta')
-        .eq('id', putnikId)
-        .maybeSingle();
+    final putnikData =
+        await _supabase.from('registrovani_putnici').select('broj_mesta').eq('id', putnikId).maybeSingle();
 
     final int brojMesta = (putnikData?['broj_mesta'] as num?)?.toInt() ?? 1;
 
@@ -551,7 +548,8 @@ class RegistrovaniPutnikService {
         .select()
         .eq('putnik_id', putnikId)
         .gte('datum', todayStr)
-        .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'rejected', 'bez_polaska', 'cancelled', 'otkazano']);
+        .inFilter('status',
+            ['pending', 'manual', 'approved', 'confirmed', 'rejected', 'bez_polaska', 'cancelled', 'otkazano']);
 
     // Organizuj postojeće po datum|grad za lakšu proveru
     final Map<String, dynamic> existingByDateGrad = {};
@@ -559,61 +557,71 @@ class RegistrovaniPutnikService {
       existingByDateGrad['${r['datum']}|${r['grad'].toString().toLowerCase()}'] = r;
     }
 
-    debugPrint('🔄 [RegistrovaniPutnikService] Sinhronizujem raspored za putnika $putnikId (nađeno ${requests.length} postojećih)');
+    debugPrint(
+        '🔄 [RegistrovaniPutnikService] Sinhronizujem raspored za putnika $putnikId (nađeno ${requests.length} postojećih)');
 
-    final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet'];
 
     // Prolazimo kroz narednih 7 dana (uključujući danas) i sinhronizujemo
     for (int i = 0; i < 7; i++) {
-        final targetDate = today.add(Duration(days: i));
-        final targetDateStr = targetDate.toIso8601String().split('T')[0];
-        final danAbbr = daniNedelje[targetDate.weekday - 1];
-        
-        final noviPodaciZaDan = noviPolasci[danAbbr];
-        if (noviPodaciZaDan == null || noviPodaciZaDan is! Map) continue;
+      final targetDate = today.add(Duration(days: i));
 
-        // ❄️ Zimski režim Aware
-        final isWinterDay = isWinterDate(targetDate);
+      // 🛡️ SKIP VIKEND: Ne sinhronizujemo subotu (6) i nedelju (7)
+      if (targetDate.weekday > 5) continue;
 
-        // Proveri oba pravca
-        for (final gradCode in ['bc', 'vs']) {
-            final String effectiveKey = isWinterDay ? '${gradCode}2' : gradCode;
-            final novoVremeStr = noviPodaciZaDan[effectiveKey]?.toString();
-            final String lookupKey = '$targetDateStr|$gradCode';
-            final existing = existingByDateGrad[lookupKey];
+      final targetDateStr = targetDate.toIso8601String().split('T')[0];
+      final danAbbr = daniNedelje[targetDate.weekday - 1];
 
-            if (novoVremeStr != null && novoVremeStr.isNotEmpty && novoVremeStr != 'null') {
-                // Postoji vreme u rasporedu -> treba da postoji confirmed seat_request
-                if (existing != null) {
-                    await _supabase.from('seat_requests').update({
-                        'zeljeno_vreme': '$novoVremeStr:00',
-                        'status': 'confirmed',
-                        'processed_at': DateTime.now().toUtc().toIso8601String(),
-                        'updated_at': DateTime.now().toUtc().toIso8601String(),
-                    }).eq('id', existing['id']);
-                } else {
-                    // Ne postoji -> KREIRAJ NOVI
-                    await _supabase.from('seat_requests').insert({
-                        'putnik_id': putnikId,
-                        'grad': gradCode.toUpperCase(),
-                        'datum': targetDateStr,
-                        'zeljeno_vreme': '$novoVremeStr:00',
-                        'status': 'confirmed',
-                        'broj_mesta': brojMesta,
-                        'processed_at': DateTime.now().toUtc().toIso8601String(),
-                    });
-                }
-            } else {
-                // Nema vremena u rasporedu -> ako postoji seat_request, sakrij ga
-                if (existing != null && existing['status'] != 'bez_polaska' && existing['status'] != 'cancelled' && existing['status'] != 'otkazano') {
-                    await _supabase.from('seat_requests').update({
-                        'status': 'bez_polaska',
-                        'processed_at': DateTime.now().toUtc().toIso8601String(),
-                        'updated_at': DateTime.now().toUtc().toIso8601String(),
-                    }).eq('id', existing['id']);
-                }
-            }
+      final noviPodaciZaDan = noviPolasci[danAbbr];
+
+      // ❄️ Zimski režim Aware
+      final isWinterDay = isWinterDate(targetDate);
+
+      // Proveri oba pravca
+      for (final gradCode in ['bc', 'vs']) {
+        String? novoVremeStr;
+        if (noviPodaciZaDan != null && noviPodaciZaDan is Map) {
+          final String effectiveKey = isWinterDay ? '${gradCode}2' : gradCode;
+          novoVremeStr = noviPodaciZaDan[effectiveKey]?.toString();
         }
+
+        final String lookupKey = '$targetDateStr|$gradCode';
+        final existing = existingByDateGrad[lookupKey];
+
+        if (novoVremeStr != null && novoVremeStr.isNotEmpty && novoVremeStr != 'null') {
+          // Postoji vreme u rasporedu -> treba da postoji confirmed seat_request
+          if (existing != null) {
+            await _supabase.from('seat_requests').update({
+              'zeljeno_vreme': '$novoVremeStr:00',
+              'status': 'confirmed',
+              'processed_at': null, // 🔄 Resetuj vreme pokupljenja pri promeni vremena
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            }).eq('id', existing['id']);
+          } else {
+            // Ne postoji -> KREIRAJ NOVI
+            await _supabase.from('seat_requests').insert({
+              'putnik_id': putnikId,
+              'grad': gradCode.toUpperCase(),
+              'datum': targetDateStr,
+              'zeljeno_vreme': '$novoVremeStr:00',
+              'status': 'confirmed',
+              'broj_mesta': brojMesta,
+            });
+          }
+        } else {
+          // Nema vremena u rasporedu -> ako postoji seat_request, sakrij ga
+          if (existing != null &&
+              existing['status'] != 'bez_polaska' &&
+              existing['status'] != 'cancelled' &&
+              existing['status'] != 'otkazano') {
+            await _supabase.from('seat_requests').update({
+              'status': 'bez_polaska',
+              'processed_at': DateTime.now().toUtc().toIso8601String(),
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            }).eq('id', existing['id']);
+          }
+        }
+      }
     }
   }
 

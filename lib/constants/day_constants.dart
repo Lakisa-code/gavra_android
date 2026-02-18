@@ -11,8 +11,6 @@ class DayConstants {
     'Sreda',
     'Cetvrtak',
     'Petak',
-    'Subota',
-    'Nedelja',
   ];
 
   // 🎨 PUNI NAZIVI DANA - UI (sa dijakritikom za prikaz)
@@ -22,8 +20,6 @@ class DayConstants {
     'Sreda',
     'Četvrtak',
     'Petak',
-    'Subota',
-    'Nedelja',
   ];
 
   // 📝 KRATICE DANA
@@ -33,8 +29,6 @@ class DayConstants {
     'sre',
     'cet',
     'pet',
-    'sub',
-    'ned',
   ];
 
   // 🔤 MALA SLOVA DANA
@@ -44,8 +38,6 @@ class DayConstants {
     'sreda',
     'cetvrtak',
     'petak',
-    'subota',
-    'nedelja',
   ];
 
   /// Konvertuj bilo koji format dana u standardni INTERNAL format (bez dijakritika)
@@ -98,11 +90,15 @@ class DayConstants {
 
   /// Konvertuj DateTime.weekday (1=Monday) na naš index (0=Ponedeljak)
   static int weekdayToIndex(int weekday) {
+    // 🛡️ Rezilijentnost na vikend: Subota/Nedelja -> Ponedeljak
+    if (weekday > 5) return 0;
     return weekday - 1;
   }
 
   /// Konvertuj naš index (0=Ponedeljak) na DateTime.weekday (1=Monday)
   static int indexToWeekday(int index) {
+    // 🛡️ Ne dozvoljavamo index van opsega radnih dana (0-4)
+    if (index > 4) return 1;
     return index + 1;
   }
 }

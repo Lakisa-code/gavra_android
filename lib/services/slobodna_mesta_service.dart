@@ -40,13 +40,11 @@ class SlobodnaMestaService {
 
   static StreamSubscription? _projectedStatsSubscription;
   static StreamSubscription? _kapacitetStatsSubscription;
-  static final StreamController<Map<String, dynamic>>
-      _projectedStatsController =
+  static final StreamController<Map<String, dynamic>> _projectedStatsController =
       StreamController<Map<String, dynamic>>.broadcast();
 
   /// Izračunaj broj zauzetih mesta za određeni grad/vreme/datum
-  static int _countPutniciZaPolazak(
-      List<Putnik> putnici, String grad, String vreme, String isoDate,
+  static int _countPutniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
       {String? excludePutnikId}) {
     final normalizedGrad = grad.toLowerCase();
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
@@ -57,8 +55,7 @@ class SlobodnaMestaService {
     int count = 0;
     for (final p in putnici) {
       // 🛡️ AKO RADIMO UPDATE: Isključi putnika koga menjamo da ne bi sam sebi zauzimao mesto
-      if (excludePutnikId != null &&
-          p.id?.toString() == excludePutnikId.toString()) {
+      if (excludePutnikId != null && p.id?.toString() == excludePutnikId.toString()) {
         continue;
       }
 
@@ -67,9 +64,7 @@ class SlobodnaMestaService {
       if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
       // Proveri datum/dan
-      final dayMatch = p.datum != null
-          ? p.datum == isoDate
-          : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+      final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
       if (!dayMatch) continue;
 
       // Proveri vreme - OBA MORAJU BITI NORMALIZOVANA
@@ -80,8 +75,7 @@ class SlobodnaMestaService {
       final jeBC = GradAdresaValidator.isBelaCrkva(p.grad);
       final jeVS = GradAdresaValidator.isVrsac(p.grad);
 
-      if ((normalizedGrad == 'bc' && jeBC) ||
-          (normalizedGrad == 'vs' && jeVS)) {
+      if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
         // ✅ NOVO: Brojimo sve putnike bez obzira na grad (BC i VS sada rade isto)
         count += p.brojMesta;
       }
@@ -90,16 +84,14 @@ class SlobodnaMestaService {
     return count;
   }
 
-  static int _countUceniciZaPolazak(
-      List<Putnik> putnici, String grad, String vreme, String isoDate,
+  static int _countUceniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
       {String? excludePutnikId}) {
     final normalizedGrad = grad.toLowerCase();
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
     for (final p in putnici) {
-      if (excludePutnikId != null &&
-          p.id?.toString() == excludePutnikId.toString()) {
+      if (excludePutnikId != null && p.id?.toString() == excludePutnikId.toString()) {
         continue;
       }
 
@@ -110,9 +102,7 @@ class SlobodnaMestaService {
       if (p.tipPutnika != 'ucenik') continue;
 
       // Proveri datum/dan
-      final dayMatch = p.datum != null
-          ? p.datum == isoDate
-          : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+      final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
       if (!dayMatch) continue;
 
       // Proveri vreme
@@ -123,8 +113,7 @@ class SlobodnaMestaService {
       final jeBC = GradAdresaValidator.isBelaCrkva(p.grad);
       final jeVS = GradAdresaValidator.isVrsac(p.grad);
 
-      if ((normalizedGrad == 'bc' && jeBC) ||
-          (normalizedGrad == 'vs' && jeVS)) {
+      if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
         count += p.brojMesta;
       }
     }
@@ -136,7 +125,7 @@ class SlobodnaMestaService {
   static String _isoDateToDayAbbr(String isoDate) {
     try {
       final date = DateTime.parse(isoDate);
-      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
       return dani[date.weekday - 1];
     } catch (e) {
       return 'pon';
@@ -144,8 +133,7 @@ class SlobodnaMestaService {
   }
 
   /// Jednokratno dohvatanje slobodnih mesta
-  static Future<Map<String, List<SlobodnaMesta>>> getSlobodnaMesta(
-      {String? datum, String? excludeId}) async {
+  static Future<Map<String, List<SlobodnaMesta>>> getSlobodnaMesta({String? datum, String? excludeId}) async {
     final isoDate = datum ?? DateTime.now().toIso8601String().split('T')[0];
 
     // Dohvati kapacitet
@@ -162,10 +150,8 @@ class SlobodnaMestaService {
 
     for (final vreme in bcVremenaSorted) {
       final maxMesta = bcKapaciteti[vreme] ?? 8;
-      final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate,
-          excludePutnikId: excludeId);
-      final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate,
-          excludePutnikId: excludeId);
+      final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludeId);
+      final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludeId);
 
       result['BC']!.add(
         SlobodnaMesta(
@@ -185,10 +171,8 @@ class SlobodnaMestaService {
 
     for (final vreme in vsVremenaSorted) {
       final maxMesta = vsKapaciteti[vreme] ?? 8;
-      final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate,
-          excludePutnikId: excludeId);
-      final ucenici = _countUceniciZaPolazak(putnici, 'VS', vreme, isoDate,
-          excludePutnikId: excludeId);
+      final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludeId);
+      final ucenici = _countUceniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludeId);
 
       result['VS']!.add(
         SlobodnaMesta(
@@ -207,10 +191,7 @@ class SlobodnaMestaService {
 
   /// Proveri da li ima slobodnih mesta za određeni polazak
   static Future<bool> imaSlobodnihMesta(String grad, String vreme,
-      {String? datum,
-      String? tipPutnika,
-      int brojMesta = 1,
-      String? excludeId}) async {
+      {String? datum, String? tipPutnika, int brojMesta = 1, String? excludeId}) async {
     // 📦 POŠILJKE: Ne zauzimaju mesto, pa uvek ima "mesta" za njih
     if (tipPutnika == 'posiljka') {
       return true;
@@ -260,17 +241,10 @@ class SlobodnaMestaService {
 
       // Ako je admin, odmah možemo vratiti uspeh
       if (skipKapacitetCheck) {
-        return {
-          'success': true,
-          'message': 'Vreme potvrđeno na $novoVreme (Admin)'
-        };
+        return {'success': true, 'message': 'Vreme potvrđeno na $novoVreme (Admin)'};
       }
 
-      return {
-        'success': true,
-        'message':
-            'Zahtev za $novoVreme poslat na obradu. Proverite profil za status.'
-      };
+      return {'success': true, 'message': 'Zahtev za $novoVreme poslat na obradu. Proverite profil za status.'};
     } catch (e) {
       debugPrint('❌ Greška u promeniVremePutnika: $e');
       return {'success': false, 'message': 'Greška: $e'};
@@ -319,8 +293,7 @@ class SlobodnaMestaService {
       // Svi učenici koji idu IZ Bele Crkve
       int count = 0;
       for (final p in putnici) {
-        if (p.tipPutnika == 'ucenik' &&
-            GradAdresaValidator.isBelaCrkva(p.grad)) {
+        if (p.tipPutnika == 'ucenik' && GradAdresaValidator.isBelaCrkva(p.grad)) {
           count += p.brojMesta;
         }
       }
@@ -354,15 +327,7 @@ class SlobodnaMestaService {
   /// Pomoćna funkcija za dobijanje datuma iz skraćenice dana
   static String _getIsoDateForDay(String danAbbr) {
     final sada = DateTime.now();
-    const daniMap = {
-      'pon': 1,
-      'uto': 2,
-      'sre': 3,
-      'cet': 4,
-      'pet': 5,
-      'sub': 6,
-      'ned': 7
-    };
+    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
     final targetWeekday = daniMap[danAbbr.toLowerCase()] ?? 1;
 
     int diff = targetWeekday - sada.weekday;

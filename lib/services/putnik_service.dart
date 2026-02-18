@@ -709,9 +709,6 @@ class PutnikService {
 
       if (logData.containsKey(compositeKey)) {
         match = logData[compositeKey];
-      } else if (logData.containsKey(putnikId)) {
-        // Fallback na stari format (samo putnik_id) - za logove bez meta podataka
-        match = logData[putnikId];
       }
 
       if (match != null) {
@@ -725,6 +722,39 @@ class PutnikService {
       } else {
         data['pokupljen_iz_loga'] = false;
       }
+    }
+  }
+
+  /// 🚫 GLOBALNO UKLONI POLAZAK: Postavlja 'bez_polaska' status za sve putnike u datom terminu
+  Future<int> globalniBezPolaska({
+    required String datum,
+    required String grad,
+    required String vreme,
+  }) async {
+    try {
+      final gradKey = (grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+
+      var query = supabase.from('seat_requests').update({
+        'status': 'bez_polaska',
+        'processed_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).match({
+        'datum': datum,
+        'grad': gradKey,
+      });
+
+      if (vreme != 'Sva vremena') {
+        final normalizedTime = GradAdresaValidator.normalizeTime(vreme);
+        query = query.or('zeljeno_vreme.eq.$normalizedTime:00,dodeljeno_vreme.eq.$normalizedTime:00');
+      }
+
+      final response = await query.select();
+
+      debugPrint('🚫 [PutnikService] globalniBezPolaska SUCCESS: ${response.length} rows updated');
+      return response.length;
+    } catch (e) {
+      debugPrint('❌ [PutnikService] globalniBezPolaska ERROR: $e');
+      return 0;
     }
   }
 }

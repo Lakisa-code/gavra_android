@@ -2043,7 +2043,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           // Get target day abbreviation for additional filtering
           final targetDateIso = _getTargetDateIsoFromSelectedDay(_selectedDay);
           final date = DateTime.parse(targetDateIso);
-          const dayAbbrs = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          const dayAbbrs = ['pon', 'uto', 'sre', 'cet', 'pet'];
           final targetDayAbbr = dayAbbrs[date.weekday - 1];
 
           // Additional client-side filtering like danas_screen
