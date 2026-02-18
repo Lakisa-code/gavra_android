@@ -32,3 +32,20 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# Fastlane
+*.mobileprovision
+*.cert
+*.certSigningRequest
+*.p12
+*.cer
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+fastlane/README.md
+
+# Bundler
+.bundle/
+vendor/bundle/
+Gemfile.lock

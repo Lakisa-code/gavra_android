@@ -44,20 +44,40 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Install CocoaPods
+      - name: Setup Ruby and Bundler
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: ios
+
+      - name: Install dependencies with Bundler
         run: |
           cd ios
-          pod install
+          bundle install
+          bundle exec pod install
 
-      - name: Build iOS (unsigned for testing)
+      - name: Setup Fastlane Match
+        env:
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_KEYCHAIN_NAME: ${{ secrets.MATCH_KEYCHAIN_NAME }}
+          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APPSTORE_API_KEY_P8 }}
         run: |
-          flutter build ios \
-            --release \
-            --no-codesign
+          cd ios
+          bundle exec fastlane beta
 
-      - name: ✅ Build complete
+      - name: ✅ Upload complete
         run: |
-          echo "🎉 iOS build completed successfully!"
+          echo "🎉 Successfully built and uploaded to TestFlight!"
           echo ""
           echo "📦 Build Details:"
           echo "  - App: Gavra 013"
@@ -65,5 +85,7 @@ jobs:
           echo "  - Build: ${{ env.BUILD_NUMBER }}"
           echo "  - Platform: iOS"
           echo ""
-          echo "⚠️  Note: This build is unsigned and for validation only."
-          echo "For TestFlight upload, build locally with proper signing or use Fastlane Match."
+          echo "⏭️  Next steps:"
+          echo "  1. Review build in App Store Connect"
+          echo "  2. Submit for TestFlight beta review"
+          echo "  3. Notify testers about new build"
