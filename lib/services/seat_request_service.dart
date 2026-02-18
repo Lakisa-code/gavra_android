@@ -30,16 +30,15 @@ class SeatRequestService {
       final gradKey = (grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
       final normVreme = GradAdresaValidator.normalizeTime(vreme);
 
-      // 🛡️ PROVERA: Da li već postoji aktivan zahtev za OVAJ GRAD, DATUM i VREME?
-      // ✅ FIX: Uključen i status 'confirmed' u listu za otkazivanje da se izbegnu duplikati
-      // Takođe proveravamo i varijante imena grada za legacy podršku
+      // 🛡️ PROVERA: Da li već postoji aktivan zahtev za OVAJ GRAD/DATUM?
+      // ✅ FIX: Uklanjamo proveru vremena da bi ostalo samo POSLEDNJE dodato vreme za taj grad
+      // Uključen i status 'confirmed' u listu za otkazivanje da se izbegnu duplikati
       await _supabase
           .from('seat_requests')
           .update({'status': 'cancelled'})
           .eq('putnik_id', putnikId)
           .inFilter('grad', [gradKey, gradKey == 'bc' ? 'Bela Crkva' : 'Vršac', gradKey.toUpperCase()])
           .eq('datum', datumStr)
-          .eq('zeljeno_vreme', '$normVreme:00')
           .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
       await _supabase.from('seat_requests').insert({

@@ -482,7 +482,7 @@ class PutnikService {
             ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
             : DateTime.now().toIso8601String().split('T')[0]);
 
-    final isVrsac = (finalGrad?.toLowerCase().contains('vr') ?? false) || (finalGrad?.toLowerCase() == 'vs' ?? false);
+    final isVrsac = (finalGrad?.toLowerCase().contains('vr') ?? false) || (finalGrad?.toLowerCase() == 'vs');
     final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
@@ -601,7 +601,7 @@ class PutnikService {
             ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
             : DateTime.now().toIso8601String().split('T')[0]);
 
-    final isVrsac = (finalGrad?.toLowerCase().contains('vr') ?? false) || (finalGrad?.toLowerCase() == 'vs' ?? false);
+    final isVrsac = (finalGrad?.toLowerCase().contains('vr') ?? false) || (finalGrad?.toLowerCase() == 'vs');
     final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
@@ -687,7 +687,7 @@ class PutnikService {
     final danasStr = DateTime.now().toIso8601String().split('T')[0];
     final dateStr = selectedDan != null ? app_date_utils.DateUtils.getIsoDateForDay(selectedDan) : danasStr;
 
-    final isVrsac = (grad?.toLowerCase().contains('vr') ?? false) || (grad?.toLowerCase() == 'vs' ?? false);
+    final isVrsac = (grad?.toLowerCase().contains('vr') ?? false) || (grad?.toLowerCase() == 'vs');
     final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
     String? vozacId;
