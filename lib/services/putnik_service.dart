@@ -570,6 +570,25 @@ class PutnikService {
   }) async {
     debugPrint('🛑 [PutnikService] otkaziPutnika: id=$id, requestId=$requestId, status=$status');
 
+    // ✅ LOGOVANJE AKCIJE (sa gradom i vremenom za preciznost)
+    try {
+      String? vozacUuid;
+      if (driver != null) {
+        vozacUuid = await VozacMappingService.getVozacUuid(driver);
+      }
+
+      await VoznjeLogService.logGeneric(
+        tip: 'otkazivanje',
+        putnikId: id.toString(),
+        vozacId: vozacUuid,
+        grad: selectedGrad ?? grad,
+        vreme: selectedVreme ?? vreme,
+        datum: datum,
+      );
+    } catch (e) {
+      debugPrint('⚠️ [PutnikService] Greška pri logovanju otkazivanja: $e');
+    }
+
     // 1. PRIORITET: Match po requestId
     if (requestId != null && requestId.isNotEmpty) {
       try {
@@ -830,21 +849,26 @@ class PutnikService {
 
       if (logData.containsKey(compositeKey)) {
         match = logData[compositeKey];
-      } else if (logData.containsKey(putnikId)) {
-        // Fallback na match samo po ID-u (ako fale meta podaci u logu)
-        match = logData[putnikId];
       }
 
       if (match != null) {
-        data['pokupljen_iz_loga'] = true;
-        // Ako vozač nije definisan u seat_request, uzmi ga iz loga (onaj koji je STVARNO pokupio)
+        final tip = match['tip'];
+        if (tip == 'voznja') {
+          data['pokupljen_iz_loga'] = true;
+        } else if (tip == 'otkazivanje') {
+          data['status'] = 'otkazano';
+          data['otkazano_iz_loga'] = true;
+        }
+
+        // Ako vozač nije definisan u seat_request, uzmi ga iz loga
         if (data['vozac_id'] == null) {
           data['vozac_id'] = match['vozac_id'];
         }
-        // Vreme pokupljenja iz loga ima prioritet za prikaz statusa
+        // Vreme akcije iz loga ima prioritet
         data['processed_at'] = match['created_at'] ?? data['processed_at'];
       } else {
         data['pokupljen_iz_loga'] = false;
+        data['otkazano_iz_loga'] = false;
       }
     }
   }

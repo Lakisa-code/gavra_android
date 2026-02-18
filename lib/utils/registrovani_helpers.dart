@@ -69,25 +69,6 @@ class RegistrovaniHelpers {
     return null;
   }
 
-  static double? getIznosPlacanjaForDayAndPlace(Map<String, dynamic> map, String dan, String place) {
-    return null; // Više se ne čita odavde
-  }
-
-  static DateTime? getVremePlacanjaForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    return null; // Obrisano sa JSON kolonom
-  }
-
-  static String? getNaplatioVozacForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    return null; // Obrisano sa JSON kolonom
-  }
-
-  static DateTime? getVremePokupljenjaForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    if (rawMap.containsKey('status') && rawMap['status'] == 'confirmed') {
-      return rawMap['processed_at'] != null ? DateTime.parse(rawMap['processed_at']).toLocal() : null;
-    }
-    return null;
-  }
-
   // Is active (soft delete handling)
   static bool isActiveFromMap(Map<String, dynamic>? m) {
     if (m == null) return true;
@@ -134,31 +115,6 @@ class RegistrovaniHelpers {
       if (s.contains(k)) return map[k]!;
     }
     return RegistrovaniStatus.unknown;
-  }
-
-  // Price paid check - flexible and safe
-  // NAPOMENA: Ovo se sada koristi samo za polasci_po_danu JSON polja
-  // Prava provera plaćanja se radi iz voznje_log tabele
-  static bool priceIsPaid(Map<String, dynamic>? m) {
-    if (m == null) return false;
-
-    // Provera placeno polja u polasci_po_danu JSON
-    final placeno = m['placeno'];
-    if (placeno != null) {
-      if (placeno is bool) return placeno;
-      final s = placeno.toString().toLowerCase();
-      if (s == 'true' || s == '1' || s == 't') return true;
-      // Ako je timestamp, znači da je plaćeno
-      if (s.contains('2025') || s.contains('2024') || s.contains('2026')) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  static Map<String, Map<String, String?>> normalizePolasciForSend(dynamic raw) {
-    return {};
   }
 
   static bool isActive(Map<String, dynamic> map) {

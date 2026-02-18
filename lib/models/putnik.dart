@@ -1,5 +1,4 @@
 import '../constants/day_constants.dart';
-import '../globals.dart' as globals_file;
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
@@ -166,14 +165,15 @@ class Putnik {
     final grad = (req['grad']?.toString().toLowerCase() == 'vs' || req['grad']?.toString().toLowerCase() == 'vršac')
         ? 'Vršac'
         : 'Bela Crkva';
-    final zeljenoVremeStr = req['zeljeno_vreme']?.toString() ?? '';
+
+    // ✅ PRIORITET: Dodeljeno vreme (ako je vozač pomerio termin), inače željeno
+    final vremeRaw = (req['dodeljeno_vreme'] ?? req['zeljeno_vreme'])?.toString() ?? '';
 
     // Provera da li je pokupljen (iz voznje_log ili statusa)
     final bool isPickedUp = req['pokupljen_iz_loga'] == true || req['status']?.toString().toLowerCase() == 'pokupljen';
 
-    // ✅ FIX: Koristi centralizovanu normalizaciju vremena umesto substring(0,5)
-    // Supabase vraća "HH:mm:ss", nama treba "HH:mm" - normalizeTime to rešava
-    final vreme = RegistrovaniHelpers.normalizeTime(zeljenoVremeStr) ?? '05:00';
+    // ✅ FIX: Koristi centralizovanu normalizaciju vremena
+    final vreme = RegistrovaniHelpers.normalizeTime(vremeRaw) ?? '05:00';
 
     final tip = p['tip'] as String?;
     final isDnevni = tip == 'dnevni' || tip == 'posiljka';
@@ -326,286 +326,8 @@ class Putnik {
   // ? FIX: Citaj ime vozača iz seat_requests ili registrovani_putnici
   String? get vozacIme => naplatioVozac ?? _getVozacIme(vozacId);
 
-  // NOVA METODA: Kreira VIŠE putnik objekata za mesecne putnike sa više polazaka
-  static List<Putnik> fromRegistrovaniPutniciMultiple(Map<String, dynamic> map) {
-    final danas = DateTime.now();
-    final trenutniDan = _getDanNedeljeKratica(danas.weekday);
-    return _parseAndCreatePutniciForDay(map, trenutniDan);
-  }
-
-  // NOVA METODA: Kreira putnik objekte za SPECIFICAN DAN (umesto trenutni dan)
-  static List<Putnik> fromRegistrovaniPutniciMultipleForDay(
-    Map<String, dynamic> map,
-    String targetDan, {
-    String? isoDate,
-  }) {
-    return _parseAndCreatePutniciForDay(map, targetDan, isoDate: isoDate);
-  }
-
-  // ?? HELPER: Zajednicka logika za parsiranje i kreiranje putnika
-  static List<Putnik> _parseAndCreatePutniciForDay(
-    Map<String, dynamic> map,
-    String targetDan, {
-    String? isoDate,
-  }) {
-    final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
-    final danString = map['radni_dani'] as String? ?? 'pon';
-    final statusIzBaze = map['status'] as String? ?? 'radi';
-    final vremeDodavanja = map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null;
-
-    // Status se odreduje na osnovu otkazanZaPolazak koji se proverava u _createPutniciForDay
-    String status = statusIzBaze;
-    // Placanje se sada cita iz voznje_log, ne iz registrovani_putnici
-    final bool placeno = false; // Proverava se naknadno iz voznje_log
-    final double iznosPlacanja = 0.0;
-    final vozac = (map['vozac'] as String?) ?? _getVozacIme(map['vozac_id'] as String?);
-    final obrisan = map['aktivan'] == false;
-    // ?? FIX: Citaj tip putnika iz baze
-    final tipPutnika = map['tip'] as String?;
-
-    return _createPutniciForDay(
-      map,
-      ime,
-      danString,
-      status,
-      vremeDodavanja,
-      null, // vremePlacanja - sada iz voznje_log
-      placeno,
-      iznosPlacanja,
-      vozac,
-      obrisan,
-      targetDan,
-      tipPutnika,
-      isoDate: isoDate,
-    );
-  }
-
-  // Helper metoda za kreiranje putnika za odreden dan
-  static List<Putnik> _createPutniciForDay(
-    Map<String, dynamic> map,
-    String ime,
-    String danString,
-    String status,
-    DateTime? vremeDodavanja,
-    DateTime? vremePlacanja,
-    bool placeno,
-    double? iznosPlacanja,
-    String? vozac,
-    bool obrisan,
-    String targetDan,
-    String? tipPutnika, {
-    String? isoDate,
-  }) {
-    final List<Putnik> putnici = [];
-    // ?? FIX: mesecnaKarta = true samo za radnik i ucenik, false za dnevni i posiljka
-    final bool mesecnaKarta = tipPutnika != 'dnevni' && tipPutnika != 'posiljka';
-
-    // ? NOVA LOGIKA: Citaj vremena iz novih kolona po danima
-    // ?? FIX: Ako radni_dani kolona nedostaje, koristi polasci_po_danu za odredivanje radnih dana
-    final List<String> radniDani;
-    if (map['radni_dani'] != null) {
-      radniDani = (map['radni_dani'] as String)
-          .split(',')
-          .map((s) => s.trim().toLowerCase())
-          .where((s) => s.isNotEmpty)
-          .toList();
-    } else {
-      // Podrazumevamo radnu nedelju ako nije definisano
-      radniDani = ['pon', 'uto', 'sre', 'cet', 'pet'];
-    }
-
-    final normalizedTarget = targetDan.trim().toLowerCase();
-
-    if (!radniDani.contains(normalizedTarget)) {
-      return putnici; // Putnik ne radi za targetDan
-    }
-
-    // Odredi da li je zimski mod za ovaj konkretan datum (ako je prosleđen)
-    bool isWinter = globals_file.isWinter;
-    if (isoDate != null) {
-      try {
-        final date = DateTime.parse(isoDate);
-        isWinter = globals_file.isWinterDate(date);
-      } catch (_) {
-        // Zadržava default vrednost
-      }
-    }
-
-    // Citaj vremena za targetDan koristeci helpers koji kombinuju JSON i stare kolone
-    final polazakBC = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'bc', isWinter: isWinter);
-    final polazakVS = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'vs', isWinter: isWinter);
-
-    // ? NOVO: Citaj vremena pokupljenja iz polasci_po_danu JSON (samo DANAS)
-    final vremePokupljenjaBC = RegistrovaniHelpers.getVremePokupljenjaForDayAndPlace(map, normalizedTarget, 'bc');
-    final vremePokupljenjaVS = RegistrovaniHelpers.getVremePokupljenjaForDayAndPlace(map, normalizedTarget, 'vs');
-
-    // ? NOVO: Citaj vozace koji su pokupili iz voznje_log (via SSOT)
-    final pokupioVozacBC = null;
-    final pokupioVozacVS = null;
-
-    // ? NOVO: Citaj vozace koji su naplatili iz polasci_po_danu JSON
-    final naplatioVozacBC = RegistrovaniHelpers.getNaplatioVozacForDayAndPlace(map, normalizedTarget, 'bc');
-    final naplatioVozacVS = RegistrovaniHelpers.getNaplatioVozacForDayAndPlace(map, normalizedTarget, 'vs');
-
-    // ? FIX: Citaj iznose placanja iz polasci_po_danu JSON (za dnevne putnike)
-    final iznosPlacanjaBC = RegistrovaniHelpers.getIznosPlacanjaForDayAndPlace(map, normalizedTarget, 'bc');
-    final iznosPlacanjaVS = RegistrovaniHelpers.getIznosPlacanjaForDayAndPlace(map, normalizedTarget, 'vs');
-
-    // ? FIX: Citaj vremena placanja iz polasci_po_danu JSON (za filter dužnika)
-    final vremePlacanjaBC = RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, normalizedTarget, 'bc');
-    final vremePlacanjaVS = RegistrovaniHelpers.getVremePlacanjaForDayAndPlace(map, normalizedTarget, 'vs');
-
-    // ? NOVO: Citaj adrese iz JOIN-a sa adrese tabelom (ako postoji)
-    // JOIN format: adresa_bc: {id, naziv, ulica, broj, grad, koordinate}
-    final adresaBcJoin = map['adresa_bc'] as Map<String, dynamic>?;
-    final adresaVsJoin = map['adresa_vs'] as Map<String, dynamic>?;
-
-    // Koristi naziv iz JOIN-a (adresa_bc, adresa_vs su sada jedini izvor)
-    final adresaBelaCrkva = adresaBcJoin?['naziv'] as String?;
-    final adresaVrsac = adresaVsJoin?['naziv'] as String?;
-
-    // ?? Prioritet: adresa sa zahteva ili join-a
-    final finalAdresaBc = adresaBelaCrkva;
-    final finalAdresaBcId = adresaBcJoin?['id']?.toString() ?? map['adresa_bela_crkva_id']?.toString();
-    final finalAdresaVs = adresaVrsac;
-    final finalAdresaVsId = adresaVsJoin?['id']?.toString() ?? map['adresa_vrsac_id']?.toString();
-
-    // ?? Proveri da li je putnik otkazan
-    final bcOtkazan = RegistrovaniHelpers.isOtkazanForDayAndPlace(map, normalizedTarget, 'bc');
-    final vsOtkazan = RegistrovaniHelpers.isOtkazanForDayAndPlace(map, normalizedTarget, 'vs');
-
-    // ?? Citaj status
-    final bcStatus = RegistrovaniHelpers.getStatusForDayAndPlace(map, normalizedTarget, 'bc');
-    final vsStatus = RegistrovaniHelpers.getStatusForDayAndPlace(map, normalizedTarget, 'vs');
-
-    // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan ILI ako je otkazan
-    if ((polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') || bcOtkazan) {
-      // ? KORISTI ODVOJENU KOLONU: vreme_pokupljenja_bc za Bela Crkva polazak
-      bool pokupljenZaOvajPolazak = false;
-      if (vremePokupljenjaBC != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
-        pokupljenZaOvajPolazak = true; // Vec je provera DANAS u helper funkciji
-      }
-
-      // ?? Ako je otkazan bez polaska, koristi placeholder
-      final efectivePolazakBC = polazakBC ?? 'Otkazano';
-
-      // ✅ ISPRAVLJENO: Čuvaj UKUPAN iznos plaćanja (ne deli sa brojem mesta)
-      // Primer: ako je plaćeno 1200 za x2 mesta, prikaži 1200 (ne 600)
-      final brojMestaBC = RegistrovaniHelpers.getBrojMestaForDay(map, normalizedTarget, 'bc');
-      final cenaBC = iznosPlacanjaBC ?? iznosPlacanja;
-
-      putnici.add(
-        Putnik(
-          id: map['id'], // ? Direktno proslijedi ID bez parsiranja
-          ime: ime,
-          polazak: efectivePolazakBC,
-          pokupljen: pokupljenZaOvajPolazak,
-          vremeDodavanja: vremeDodavanja,
-          mesecnaKarta: mesecnaKarta, // ?? FIX: koristi izracunatu vrednost
-          dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status:
-              (status == 'bolovanje' || status == 'godisnji') ? status : (bcOtkazan ? 'otkazan' : (bcStatus ?? status)),
-          statusVreme: map['updated_at'] as String?,
-          vremePokupljenja: vremePokupljenjaBC, // ? NOVO: Iz polasci_po_danu
-          vremePlacanja: vremePlacanjaBC, // ? FIX: Citaj iz JSON-a za BC
-          placeno: (iznosPlacanjaBC ?? 0) > 0 || vremePlacanjaBC != null, // ? FIX: placeno ako ima iznos ili vreme
-          cena: cenaBC, // 🔧 FIX: Koristi cenu po mjestu, ne ukupan iznos
-          // ? NOVO: Citaj naplatioVozac iz polasci_po_danu
-          naplatioVozac: naplatioVozacBC ?? _getVozacIme(map['vozac_id'] as String?),
-          // ? NOVO: Citaj pokupioVozac iz polasci_po_danu
-          pokupioVozac: pokupioVozacBC,
-          // ?? dodeljenVozac - 3 nivoa: 1) per-putnik (bc_vozac), 2) per-vreme, 3) globalni vozac_id
-          dodeljenVozac: polazakBC != null
-              ? _getDodeljenVozacWithPriority(
-                  map: map,
-                  danKratica: normalizedTarget,
-                  place: 'bc',
-                  grad: 'Bela Crkva',
-                  vreme: polazakBC,
-                )
-              : null,
-          vozac: vozac,
-          grad: 'Bela Crkva',
-          adresa: finalAdresaBc, // ?? PRIORITET: adresa_danas > stalna adresa
-          adresaId: finalAdresaBcId, // ?? PRIORITET: adresa_danas_id > stalni ID
-          obrisan: obrisan,
-          brojTelefona: map['broj_telefona'] as String?, // ? DODATO
-          brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
-              map, normalizedTarget, 'bc'), // ?? Broj rezervisanih mesta iz JSON-a
-          tipPutnika: tipPutnika, // ?? FIX: dodaj tip putnika
-          vremeOtkazivanja: RegistrovaniHelpers.getVremeOtkazivanjaForDayAndPlace(map, normalizedTarget, 'bc'),
-          otkazaoVozac: RegistrovaniHelpers.getOtkazaoVozacForDayAndPlace(map, normalizedTarget, 'bc'),
-          otkazanZaPolazak: bcOtkazan, // ? Koristi vec izracunatu vrednost
-          datum: isoDate, // ?? FIX: Postavi datum za koji je putnik kreiran
-        ),
-      );
-    }
-
-    // Kreiraj putnik za Vršac ako ima polazak za targetDan ILI ako je otkazan
-    if ((polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') || vsOtkazan) {
-      // ? NOVO: Citaj vreme pokupljenja iz polasci_po_danu (samo DANAS)
-      bool pokupljenZaOvajPolazak = false;
-      if (vremePokupljenjaVS != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
-        pokupljenZaOvajPolazak = true; // Vec je provera DANAS u helper funkciji
-      }
-
-      // ?? Ako je otkazan bez polaska, koristi placeholder
-      final efectivePolazakVS = polazakVS ?? 'Otkazano';
-
-      // ✅ ISPRAVLJENO: Čuvaj UKUPAN iznos plaćanja (ne deli sa brojem mesta)
-      // Primer: ako je plaćeno 1200 za x2 mesta, prikaži 1200 (ne 600)
-      final brojMestaVS = RegistrovaniHelpers.getBrojMestaForDay(map, normalizedTarget, 'vs');
-      final cenaVS = iznosPlacanjaVS ?? iznosPlacanja;
-
-      putnici.add(
-        Putnik(
-          id: map['id'], // ? Direktno proslijedi ID bez parsiranja
-          ime: ime,
-          polazak: efectivePolazakVS,
-          pokupljen: pokupljenZaOvajPolazak,
-          vremeDodavanja: vremeDodavanja,
-          mesecnaKarta: mesecnaKarta, // ?? FIX: koristi izracunatu vrednost
-          dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
-          status:
-              (status == 'bolovanje' || status == 'godisnji') ? status : (vsOtkazan ? 'otkazan' : (vsStatus ?? status)),
-          statusVreme: map['updated_at'] as String?,
-          vremePokupljenja: vremePokupljenjaVS, // ? NOVO: Iz polasci_po_danu
-          vremePlacanja: vremePlacanjaVS, // ? FIX: Citaj iz JSON-a za VS
-          placeno: (iznosPlacanjaVS ?? 0) > 0 || vremePlacanjaVS != null, // ? FIX: placeno ako ima iznos ili vreme
-          cena: cenaVS, // 🔧 FIX: Koristi cenu po mjestu, ne ukupan iznos
-          // ? NOVO: Citaj naplatioVozac iz polasci_po_danu
-          naplatioVozac: naplatioVozacVS ?? _getVozacIme(map['vozac_id'] as String?),
-          // ? NOVO: Citaj pokupioVozac iz polasci_po_danu
-          pokupioVozac: pokupioVozacVS,
-          // ?? dodeljenVozac - 3 nivoa: 1) per-putnik (vs_vozac), 2) per-vreme, 3) globalni vozac_id
-          dodeljenVozac: polazakVS != null
-              ? _getDodeljenVozacWithPriority(
-                  map: map,
-                  danKratica: normalizedTarget,
-                  place: 'vs',
-                  grad: 'Vršac',
-                  vreme: polazakVS,
-                )
-              : null,
-          vozac: vozac,
-          grad: 'Vršac',
-          adresa: finalAdresaVs, // ?? PRIORITET: adresa_danas > stalna adresa
-          adresaId: finalAdresaVsId, // ?? PRIORITET: adresa_danas_id > stalni ID
-          obrisan: obrisan,
-          brojTelefona: map['broj_telefona'] as String?, // ? DODATO
-          brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
-              map, normalizedTarget, 'vs'), // ?? Broj rezervisanih mesta iz JSON-a
-          tipPutnika: tipPutnika, // ?? FIX: dodaj tip putnika
-          vremeOtkazivanja: RegistrovaniHelpers.getVremeOtkazivanjaForDayAndPlace(map, normalizedTarget, 'vs'),
-          otkazaoVozac: RegistrovaniHelpers.getOtkazaoVozacForDayAndPlace(map, normalizedTarget, 'vs'),
-          otkazanZaPolazak: vsOtkazan, // ? Koristi vec izracunatu vrednost
-          datum: isoDate, // ?? FIX: Postavi datum za koji je putnik kreiran
-        ),
-      );
-    }
-
-    return putnici;
-  }
+  // ⚠️ NAPOMENA: Sve metode koje su koristile polasci_po_danu su UKLONJENE.
+  // Koristi se Putnik.fromSeatRequest za kreiranje objekata iz baze.
 
   // HELPER METODE za mapiranje
   static String _determineGradFromRegistrovani(Map<String, dynamic> map) {
@@ -707,33 +429,6 @@ class Putnik {
 
   static String _getDanNedeljeKratica(int weekday) {
     return DayConstants.getAbbreviationByIndex(DayConstants.weekdayToIndex(weekday));
-  }
-
-  /// ?? HELPER: Odredi dodel?enog vozaca sa 3 nivoa prioriteta
-  /// 1) Per-putnik per-pravac (bc_vozac/vs_vozac iz polasci_po_danu)
-  /// 2) Per-vreme (iz vreme_vozac tabele - svi putnici na tom terminu)
-  /// 3) Globalni vozac_id (fallback)
-  static String? _getDodeljenVozacWithPriority({
-    required Map<String, dynamic> map,
-    required String danKratica,
-    required String place,
-    required String grad,
-    required String vreme,
-  }) {
-    // 1?? PRIORITET: Per-vreme (iz vreme_vozac tabele)
-    // Koristi sinhroni pristup keširanju - keš MORA biti ucitan pre poziva!
-    final perVreme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
-    if (perVreme != null && perVreme.isNotEmpty) {
-      return _getVozacIme(perVreme);
-    }
-
-    // 2?? FALLBACK: Globalni vozac_id (iz tabele registrovani_putnici)
-    final globalVozacId = map['vozac_id'] as String?;
-    if (globalVozacId != null && globalVozacId.isNotEmpty) {
-      return _getVozacIme(globalVozacId);
-    }
-
-    return null;
   }
 
   // ? CENTRALIZOVANO: Konvertuj UUID u ime vozaca sa fallback-om

@@ -158,8 +158,17 @@ class SeatRequestService {
     required String datum,
   }) async {
     try {
-      final gradUpper = grad.toUpperCase();
+      final gradKey = (grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
       final nowStr = DateTime.now().toUtc().toIso8601String();
+
+      // 🛡️ OTKAŽI POSTOJEĆE: Osiguraj da ostane samo ovaj (last one wins)
+      await _supabase
+          .from('seat_requests')
+          .update({'status': 'cancelled'})
+          .eq('putnik_id', putnikId)
+          .inFilter('grad', [gradKey, gradKey == 'bc' ? 'Bela Crkva' : 'Vršac', gradKey.toUpperCase()])
+          .eq('datum', datum)
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
       if (requestId != null && requestId.isNotEmpty) {
         await _supabase.from('seat_requests').update({
@@ -170,7 +179,7 @@ class SeatRequestService {
       } else {
         await _supabase.from('seat_requests').insert({
           'putnik_id': putnikId,
-          'grad': gradUpper,
+          'grad': gradKey,
           'datum': datum,
           'zeljeno_vreme': novoVreme,
           'status': 'approved',

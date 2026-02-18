@@ -14,7 +14,6 @@ import '../services/putnik_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/unified_geocoding_service.dart';
 import '../services/vozac_mapping_service.dart';
-import '../services/voznje_log_service.dart';
 import '../services/vreme_vozac_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart';
@@ -959,9 +958,7 @@ class _PutnikCardState extends State<PutnikCard> {
     // Odredi ko je "vlasnik" ovog putnika za potrebe bojenja (siva vs bela)
     String displayDodeljenVozac = _putnik.dodeljenVozac ?? '';
     if (displayDodeljenVozac.isEmpty || displayDodeljenVozac == 'Nedodeljen') {
-      if (widget.selectedGrad != null &&
-          widget.selectedVreme != null &&
-          widget.selectedDay != null) {
+      if (widget.selectedGrad != null && widget.selectedVreme != null && widget.selectedDay != null) {
         final slotDriver = VremeVozacService().getVozacZaVremeSync(
           widget.selectedGrad!,
           widget.selectedVreme!,
@@ -1759,7 +1756,7 @@ class _PutnikCardState extends State<PutnikCard> {
       final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
       // ?? FIX: Prosleduj IME vozaca, ne UUID - konverzija se radi u servisu
-      // Ime vozaca se koristi za prikaz boja u polasci_po_danu JSON
+      // Ime vozaca se koristi za validaciju plaćanja u voznje_log
 
       // Koristi metodu koja postavlja vreme placanja na trenutni datum
       final uspeh = await RegistrovaniPutnikService().azurirajPlacanjeZaMesec(
@@ -2064,14 +2061,6 @@ class _PutnikCardState extends State<PutnikCard> {
           datum: _putnik.datum,
           requestId: _putnik.requestId,
           status: 'otkazano',
-        );
-
-        // Dodaj u voznje_log kao otkazivanje preko servisa
-        final vozacId = await VozacMappingService.getVozacUuid(widget.currentDriver);
-        await VoznjeLogService.logGeneric(
-          tip: 'otkazivanje',
-          putnikId: _putnik.id!.toString(),
-          vozacId: vozacId,
         );
 
         // Ažuriraj lokalni _putnik sa novim statusom

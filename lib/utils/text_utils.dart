@@ -73,7 +73,7 @@ class TextUtils {
 
   /// 🆕 Proverava da li putnik treba da se RAČUNA u broju mesta
   /// Ne računa: otkazane, bolovanje, godišnji, obrisane
-  /// KORISTI Putnik getters za potpunu proveru (uključujući polasci_po_danu)
+  /// KORISTI Putnik getters za potpunu proveru (iz seat_requests)
   /// Import: import '../models/putnik.dart';
   // NOTE: Ova funkcija je definisana u putnik_helpers.dart jer zahteva import Putnik modela
 }

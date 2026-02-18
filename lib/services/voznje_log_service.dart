@@ -161,21 +161,23 @@ class VoznjeLogService {
     }
   }
 
-  /// 🔍 DETALJI O POKUPLJENIM PUTNICIMA (SSOT) - Vraća Map: putnik_id -> {vozac_id, created_at, meta}
+  /// 🔍 DETALJI O AKTIVNOSTIMA (SSOT) - Vraća Map: ključ -> {tip, vozac_id, created_at, meta}
+  /// Ključ je "$putnikId|$grad|$vreme"
   static Future<Map<String, Map<String, dynamic>>> getPickedUpLogData({required String datumStr}) async {
     try {
       final response = await _supabase
           .from('voznje_log')
-          .select('putnik_id, vozac_id, created_at, meta')
+          .select('putnik_id, vozac_id, created_at, meta, tip')
           .eq('datum', datumStr)
-          .eq('tip', 'voznja');
+          .inFilter('tip', ['voznja', 'otkazivanje']);
 
       final Map<String, Map<String, dynamic>> res = {};
       for (var l in (response as List)) {
         final pid = l['putnik_id'].toString();
+        final tip = l['tip']?.toString();
         final meta = l['meta'] as Map<String, dynamic>?;
         final gradRaw = meta?['grad']?.toString().toLowerCase();
-        // ✅ FIX: Konvertuj puna imena u skraćenice za konzistentnost sa _enrichWithLogData
+
         final grad = (gradRaw == 'vršac' || gradRaw == 'vrsac' || gradRaw == 'vs')
             ? 'vs'
             : (gradRaw == 'bela crkva' || gradRaw == 'belacrkva' || gradRaw == 'bc')
@@ -183,26 +185,18 @@ class VoznjeLogService {
                 : gradRaw;
         final vreme = meta?['vreme']?.toString();
 
-        // Kreiramo kompozitni ključ za precizno mapiranje (putnik + grad + vreme)
-        // Ako nema meta podataka (stari logovi), koristimo samo putnik_id
         String key = pid;
         if (grad != null && vreme != null) {
-          // ✅ FIX: Koristi centralizovanu normalizaciju na HH:mm format
           final normVreme = GradAdresaValidator.normalizeTime(vreme);
           key = "$pid|$grad|$normVreme";
         }
 
         res[key] = {
+          'tip': tip,
           'vozac_id': l['vozac_id'],
           'created_at': l['created_at'],
           'meta': meta,
         };
-
-        // ✅ FALLBACK: Dodaj i unos samo pod putnik_id (ako već nije zauzeto preciznijim ključem)
-        // Ovo osigurava da fallback u _enrichWithLogData uvek radi
-        if (key != pid && !res.containsKey(pid)) {
-          res[pid] = res[key]!;
-        }
       }
       return res;
     } catch (e) {

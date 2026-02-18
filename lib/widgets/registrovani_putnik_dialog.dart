@@ -75,9 +75,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   final Map<String, TextEditingController> _polazakBcControllers = {};
   final Map<String, TextEditingController> _polazakVsControllers = {};
 
-  // Original polasci_po_danu to preserve status/notes when updating
-  Map<String, dynamic>? _originalPolasciPoDanu;
-
   // 🆕 Weekly seat_requests (overrides)
   List<Map<String, dynamic>> _weeklyOverrides = [];
 
@@ -316,16 +313,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       return status;
     }
 
-    // 2. Ako nema override-a, vrati iz originalnog šablona
-    if (_originalPolasciPoDanu == null) return null;
-    final dayData = _originalPolasciPoDanu![day];
-    if (dayData == null) return null;
-
-    if (_isWinterMode) {
-      return isBC ? dayData['bc2_status'] : dayData['vs2_status'];
-    }
-
-    return isBC ? dayData['bc_status'] : dayData['vs_status'];
+    // 2. Ako nema override-a, vrati null (Legacy polasci_po_danu više ne postoji)
+    return null;
   }
 
   /// Privatni helper za dobijanje override-a za dan i smer
@@ -1547,23 +1536,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
       bool imaTermin = bcRaw.isNotEmpty || vsRaw.isNotEmpty;
 
-      // Proveri i originalne termine (za drugu sezonu koja trenutno nije u kontrolerima)
-      if (!imaTermin && _originalPolasciPoDanu != null) {
-        final danRaw = _originalPolasciPoDanu![dan];
-        if (danRaw is Map) {
-          final bc = danRaw['bc'];
-          final vs = danRaw['vs'];
-          final bc2 = danRaw['bc2'];
-          final vs2 = danRaw['vs2'];
-          if ((bc != null && bc.toString().isNotEmpty && bc.toString() != 'null') ||
-              (vs != null && vs.toString().isNotEmpty && vs.toString() != 'null') ||
-              (bc2 != null && bc2.toString().isNotEmpty && bc2.toString() != 'null') ||
-              (vs2 != null && vs2.toString().isNotEmpty && vs2.toString() != 'null')) {
-            imaTermin = true;
-          }
-        }
-      }
-
       if (imaTermin) {
         aktivniDani.add(dan);
       }
@@ -1572,8 +1544,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     return aktivniDani.join(',');
   }
 
-  /// Vraća polasci_po_danu u formatu koji baza očekuje: {dan: {bc: time, vs: time}}
-  /// Za editovanje, čuva postojeće status/note podatke
   String? _validateForm() {
     final ime = _imeController.text.trim();
     if (ime.isEmpty) {

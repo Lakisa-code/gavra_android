@@ -440,7 +440,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         final pravac = _currentPlaceKratica; // 'bc' ili 'vs'
         final dan = _currentDayKratica; // 'pon', 'uto', itd.
 
-        // • Sačuvaj per-pravac per-vreme (bc_5:00_vozac ili vs_14:00_vozac u polasci_po_danu)
+        // • Sačuvaj per-pravac per-vreme (Ažurira vozac_id u seat_requests)
         await _putnikService.dodelPutnikaVozacuZaPravac(
           putnik.id!,
           noviVozac,

@@ -382,7 +382,7 @@ class RegistrovaniPutnikService {
   }
 
   /// 🚫 Validira da ima slobodnih mesta za sve termine putnika
-  /// Prima raw polasci_po_danu map iz baze (format: { "pon": { "bc": "8:00", "vs": null }, ... })
+  /// Prima weeklySchedule map (format: { "pon": { "bc": "8:00", "vs": null }, ... })
   Future<void> _validateKapacitetForRawPolasci(Map<String, dynamic> polasciPoDanu,
       {int brojMesta = 1, String? tipPutnika, String? excludeId}) async {
     if (polasciPoDanu.isEmpty) return;
@@ -483,12 +483,12 @@ class RegistrovaniPutnikService {
   }
 
   /// Ažurira mesečnog putnika
-  /// Proverava kapacitet ako se menjaju termini (polasci_po_danu)
+  /// Proverava kapacitet ako se menjaju termini (novi raspored)
   Future<RegistrovaniPutnik> updateRegistrovaniPutnik(
     String id,
     Map<String, dynamic> updates, {
     bool skipKapacitetCheck = false,
-    Map<String, dynamic>? newWeeklySchedule, // 🆕 NOVO: Zamena za polasci_po_danu
+    Map<String, dynamic>? newWeeklySchedule, // 🆕 NOVO: Zamena za legacy JSON
   }) async {
     updates['updated_at'] = DateTime.now().toUtc().toIso8601String();
 
