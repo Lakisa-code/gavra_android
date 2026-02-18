@@ -2,10 +2,13 @@
   xmlns:tools="http://schemas.android.com/tools"
   package="com.gavra013.gavra_android">
 
-  <!-- 🚫 Remove unused media permissions added by plugins -->
-  <!-- UKLONJENO: tools:node="remove" za READ_MEDIA_IMAGES i READ_MEDIA_VIDEO jer ih permission_handler traži -->
-  <!-- <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" /> -->
-  <!-- <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" /> -->
+  <!-- 🚫 Remove unused media permissions added by plugins (flutter_contacts) -->
+  <!-- Google Play rejects apps that request photo/video permissions without using them -->
+  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+  <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+  <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove" />
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
 
   <!-- 🛰️ GPS/Location permissions -->
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
