@@ -32,6 +32,7 @@ class PutnikCard extends StatefulWidget {
     this.vsVremena,
     this.selectedVreme,
     this.selectedGrad,
+    this.selectedDay,
     this.onChanged,
     this.onPokupljen,
   });
@@ -43,6 +44,7 @@ class PutnikCard extends StatefulWidget {
   final List<String>? vsVremena;
   final String? selectedVreme;
   final String? selectedGrad;
+  final String? selectedDay;
   final VoidCallback? onChanged;
   final VoidCallback? onPokupljen;
 
@@ -953,22 +955,45 @@ class _PutnikCardState extends State<PutnikCard> {
 
   @override
   Widget build(BuildContext context) {
-    // Proverava uslove za prikazivanje X ikone
-    if (_putnik.ime == 'Ljilla') {}
+    // Odredi ko je "vlasnik" ovog putnika za potrebe bojenja (siva vs bela)
+    String displayDodeljenVozac = _putnik.dodeljenVozac ?? '';
+    if (displayDodeljenVozac.isEmpty || displayDodeljenVozac == 'Nedodeljen') {
+      final slotDriver = VremeVozacService().getVozacZaVremeSync(
+        widget.selectedGrad,
+        widget.selectedVreme,
+        widget.selectedDay,
+      );
+      if (slotDriver != null) {
+        displayDodeljenVozac = slotDriver;
+      }
+    }
 
-    // 🎨 BOJE KARTICE - koristi CardColorHelper sa proverom vozača
+    // 🎨 BOJE KARTICE - koristi CardColorHelper sa pročišćenim vozačem
     final BoxDecoration cardDecoration = CardColorHelper.getCardDecorationWithDriver(
       _putnik,
+      widget.currentDriver, // Ko gleda
+    );
+
+    // FIX: Ako putnik nije moj (ni po slotu ni direktno), forsira sivu boju preko stanja
+    // Ali CardColorHelper to već radi ako mu prosledimo ko je vlasnik putnika vs ko gleda.
+    // Međutim, CardColorHelper unutra gleda putnik.dodeljenVozac.
+    // Moramo mu "podmetnuti" putnika sa ispravnim vozačem ili izmeniti CardColorHelper.
+
+    // Jednostavnije: Privremeni putnik za kalkulaciju boja
+    final displayPutnik = _putnik.copyWith(dodeljenVozac: displayDodeljenVozac);
+
+    final BoxDecoration finalDecoration = CardColorHelper.getCardDecorationWithDriver(
+      displayPutnik,
       widget.currentDriver,
     );
     final Color textColor = CardColorHelper.getTextColorWithDriver(
-      _putnik,
+      displayPutnik,
       widget.currentDriver,
       context,
       successPrimary: Theme.of(context).colorScheme.successPrimary,
     );
     final Color secondaryTextColor = CardColorHelper.getSecondaryTextColorWithDriver(
-      _putnik,
+      displayPutnik,
       widget.currentDriver,
     );
 
@@ -991,7 +1016,7 @@ class _PutnikCardState extends State<PutnikCard> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
-        decoration: cardDecoration, // Koristi CardColorHelper
+        decoration: finalDecoration, // Koristi CardColorHelper
         child: Padding(
           padding: const EdgeInsets.all(6.0),
           child: Column(

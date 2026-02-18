@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
-import 'vozac_boja.dart';
 
 /// Enum za stanja kartice putnika
 enum CardState {
@@ -96,9 +95,9 @@ class CardColorHelper {
   static const Color pokupljenoText = Color(0xFF0D47A1);
 
   // ⚪ TUĐI PUTNIK (dodeljen drugom vozaču)
-  static const Color tudjiBackground = Color(0xFF757575); // Grey[600]
-  static const Color tudjiBorder = Color(0xFFBDBDBD); // Grey[400]
-  static const Color tudjiText = Color(0xFF757575); // Grey[600]
+  static const Color tudjiBackground = Color(0xFF9E9E9E); // Grey[500]
+  static const Color tudjiBorder = Color(0xFF757575); // Grey[600]
+  static const Color tudjiText = Color(0xFF424242); // Grey[800]
 
   // ? NEPOKUPLJENO - DEFAULT
   static const Color defaultBackground = Colors.white;
@@ -151,8 +150,11 @@ class CardColorHelper {
       }
       return CardState.pokupljeno;
     }
-    // ?? TU�I PUTNIK: ima vozaca, vozac nije trenutni
-    if (putnik.dodeljenVozac != null && putnik.dodeljenVozac!.isNotEmpty && putnik.dodeljenVozac != currentDriver) {
+    // ?? TUĐI PUTNIK: ima vozaca, vozac nije trenutni i nije "Nedodeljen"
+    if (putnik.dodeljenVozac != null &&
+        putnik.dodeljenVozac!.isNotEmpty &&
+        putnik.dodeljenVozac != 'Nedodeljen' &&
+        putnik.dodeljenVozac != currentDriver) {
       return CardState.tudji;
     }
     return CardState.nepokupljeno;
@@ -232,7 +234,7 @@ class CardColorHelper {
       case CardState.pokupljeno:
         return pokupljenoText.withOpacity(0.8);
       case CardState.tudji:
-        return const Color(0xFF9E9E9E).withOpacity(0.8); // Grey[500]
+        return const Color(0xFF757575).withOpacity(0.8); // Grey[600]
       case CardState.nepokupljeno:
         return const Color(0xFF757575).withOpacity(0.8); // Grey[600]
     }
@@ -386,8 +388,8 @@ class CardColorHelper {
       case CardState.tudji:
         return LinearGradient(
           colors: [
-            const Color(0xFFEEEEEE),
-            const Color(0xFFBDBDBD),
+            const Color(0xFFBDBDBD), // Colors.grey[400]
+            const Color(0xFF9E9E9E), // Colors.grey[500]
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -470,7 +472,7 @@ class CardColorHelper {
       case CardState.pokupljeno:
         return pokupljenoText.withOpacity(0.8);
       case CardState.tudji:
-        return const Color(0xFF9E9E9E).withOpacity(0.8);
+        return const Color(0xFF757575).withOpacity(0.8);
       case CardState.nepokupljeno:
         return const Color(0xFF757575).withOpacity(0.8);
     }

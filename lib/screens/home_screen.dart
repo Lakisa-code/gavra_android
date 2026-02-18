@@ -2678,6 +2678,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             currentDriver: _currentDriver!,
                             selectedGrad: _selectedGrad,
                             selectedVreme: _selectedVreme,
+                            selectedDay: _getDayAbbreviation(_selectedDay),
                             onPutnikStatusChanged: () {
                               if (mounted) setState(() {});
                             },

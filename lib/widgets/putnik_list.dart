@@ -20,6 +20,7 @@ class PutnikList extends StatelessWidget {
     this.onPokupljen,
     this.selectedGrad,
     this.selectedVreme,
+    this.selectedDay,
     this.isDugovanjaMode = false,
   });
   final bool showActions;
@@ -34,6 +35,7 @@ class PutnikList extends StatelessWidget {
   final VoidCallback? onPokupljen;
   final String? selectedGrad;
   final String? selectedVreme;
+  final String? selectedDay;
 
   // Helper metoda za sortiranje putnika po grupama
   // Prioritet zavisi od toga da li ima sivih kartica:
@@ -66,6 +68,7 @@ class PutnikList extends StatelessWidget {
     // 🔘 SIVI - Tuđi putnici (dodeljen DRUGOM vozaču) - NEPOKUPLJENI
     final bool isTudji = p.dodeljenVozac != null &&
         p.dodeljenVozac!.isNotEmpty &&
+        p.dodeljenVozac != 'Nedodeljen' &&
         p.dodeljenVozac != currentDriver;
     if (isTudji) {
       return 3; // sivi - tuđi putnici
@@ -94,6 +97,7 @@ class PutnikList extends StatelessWidget {
         !p.jePokupljen &&
         p.dodeljenVozac != null &&
         p.dodeljenVozac!.isNotEmpty &&
+        p.dodeljenVozac != 'Nedodeljen' &&
         p.dodeljenVozac != currentDriver);
   }
 
@@ -156,10 +160,8 @@ class PutnikList extends StatelessWidget {
           // SORTIRANJE: Ako ima sivih: Moji → Nedodeljeni → Sivi → ostali
           // Ako nema sivih: Svi beli alfabetski → ostali
           filteredPutnici.sort((a, b) {
-            final aSortKey =
-                _putnikSortKey(a, currentDriver, imaSivih: imaSivih);
-            final bSortKey =
-                _putnikSortKey(b, currentDriver, imaSivih: imaSivih);
+            final aSortKey = _putnikSortKey(a, currentDriver, imaSivih: imaSivih);
+            final bSortKey = _putnikSortKey(b, currentDriver, imaSivih: imaSivih);
 
             final cmp = aSortKey.compareTo(bSortKey);
             if (cmp != 0) return cmp;
@@ -191,6 +193,7 @@ class PutnikList extends StatelessWidget {
                 vsVremena: vsVremena,
                 selectedGrad: selectedGrad,
                 selectedVreme: selectedVreme,
+                selectedDay: selectedDay,
                 onChanged: onPutnikStatusChanged,
                 onPokupljen: onPokupljen,
               );
@@ -252,15 +255,7 @@ class PutnikList extends StatelessWidget {
         }
 
         // Spoji sve grupe: MOJI → NEDODELJENI → SIVI (tuđi) → PLAVI → ZELENI → CRVENI → ŽUTI
-        final prikaz = [
-          ...moji,
-          ...nedodeljeni,
-          ...sivi,
-          ...plavi,
-          ...zeleni,
-          ...crveni,
-          ...zuti
-        ];
+        final prikaz = [...moji, ...nedodeljeni, ...sivi, ...plavi, ...zeleni, ...crveni, ...zuti];
 
         if (prikaz.isEmpty) {
           return const Center(child: Text('Nema putnika za prikaz.'));
