@@ -418,7 +418,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🔄 SINHRONIZACIJA OPTIMIZOVANE RUTE SA REALTIME STREAM-om
   // Ažurira statuse putnika u optimizovanoj listi kada se promene u bazi
   // ⏱️ SA THROTTLING-om: Sprečava prekomerne UI rebuilde (max 2x/sec)
-  // 🚀 AUTO-REOPTIMIZACIJA: Kada se doda ili otkaže putnik, automatski reoptimizuje rutu
+  // 🚀 AUTO-REOPTIMIZACIJA: Kada se doda ili otkaze putnik, automatski reoptimizuje rutu
   void _syncOptimizedRouteWithStream(List<Putnik> streamPutnici) {
     // 🛡️ Filter durations and state check
     if (DateTime.now().difference(_lastSyncTime!) < _syncThrottleDuration) {
@@ -1273,10 +1273,30 @@ class _VozacScreenState extends State<VozacScreen> {
                     );
                   }
 
-                  // ?? FILTER: Prika�i ISKLJUCIVO putnike koje je admin dodelio ovom vozacu
+                  // ?? FILTER: Prikaži putnike koji su direktno dodeljeni ILI putnike koji pripadaju dodeljenom terminu
                   final sviPutnici = snapshot.data ?? [];
+                  final targetDayAbbr = _isoDateToDayAbbr(_getWorkingDateIso());
                   final mojiPutnici = sviPutnici.where((p) {
-                    return p.dodeljenVozac == _currentDriver;
+                    // 1. Direktno dodeljen ovom vozaču
+                    if (p.dodeljenVozac == _currentDriver) return true;
+
+                    // 2. Ako nije dodeljen drugom vozaču, proveri da li mu termin (vreme/grad) pripada globalno
+                    bool isAssignedToOther = p.dodeljenVozac != null &&
+                        p.dodeljenVozac != 'Nedodeljen' &&
+                        p.dodeljenVozac!.isNotEmpty &&
+                        p.dodeljenVozac != _currentDriver;
+
+                    if (!isAssignedToOther) {
+                      final pGradCanonical = GradAdresaValidator.isVrsac(p.grad) ? 'Vršac' : 'Bela Crkva';
+                      final globalniVozac = VremeVozacService().getVozacZaVremeSync(
+                        pGradCanonical,
+                        p.polazak,
+                        targetDayAbbr,
+                      );
+                      return globalniVozac == _currentDriver;
+                    }
+
+                    return false;
                   }).toList();
 
                   // ? CLIENT-SIDE FILTER za grad i vreme - kao u DanasScreen

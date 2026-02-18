@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
+import 'vozac_boja.dart';
 
 /// Enum za stanja kartice putnika
 enum CardState {
@@ -385,8 +386,8 @@ class CardColorHelper {
       case CardState.tudji:
         return LinearGradient(
           colors: [
-            Colors.white.withOpacity(0.98),
-            tudjiBackground,
+            const Color(0xFFEEEEEE),
+            const Color(0xFFBDBDBD),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -414,7 +415,7 @@ class CardColorHelper {
       case CardState.pokupljeno:
         return pokupljenoBorder.withOpacity(0.4);
       case CardState.tudji:
-        return tudjiBorder.withOpacity(0.5);
+        return tudjiBorder;
       case CardState.nepokupljeno:
         return defaultBorder.withOpacity(0.10);
     }
