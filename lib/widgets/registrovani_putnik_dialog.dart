@@ -12,6 +12,7 @@ import '../services/auth_manager.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/voznje_log_service.dart'; // 📝 DODATO
 import '../theme.dart';
+import '../utils/grad_adresa_validator.dart';
 import '../utils/registrovani_helpers.dart';
 import '../widgets/shared/time_row.dart';
 
@@ -193,7 +194,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 if (status == 'bez_polaska' || status == 'hidden' || status == 'cancelled') {
                   _polazakBcControllers[dan]!.clear();
                 } else {
-                  _polazakBcControllers[dan]!.text = bcOver['zeljeno_vreme'].toString().substring(0, 5);
+                  _polazakBcControllers[dan]!.text =
+                      GradAdresaValidator.normalizeTime(bcOver['zeljeno_vreme'].toString());
                 }
               }
 
@@ -203,7 +205,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 if (status == 'bez_polaska' || status == 'hidden' || status == 'cancelled') {
                   _polazakVsControllers[dan]!.clear();
                 } else {
-                  _polazakVsControllers[dan]!.text = vsOver['zeljeno_vreme'].toString().substring(0, 5);
+                  _polazakVsControllers[dan]!.text =
+                      GradAdresaValidator.normalizeTime(vsOver['zeljeno_vreme'].toString());
                 }
               }
             }

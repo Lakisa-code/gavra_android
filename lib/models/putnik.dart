@@ -171,8 +171,9 @@ class Putnik {
     // Provera da li je pokupljen (iz voznje_log ili statusa)
     final bool isPickedUp = req['pokupljen_iz_loga'] == true || req['status']?.toString().toLowerCase() == 'pokupljen';
 
-    // Format: "HH:mm:ss" -> "HH:mm"
-    final vreme = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : '05:00';
+    // ✅ FIX: Koristi centralizovanu normalizaciju vremena umesto substring(0,5)
+    // Supabase vraća "HH:mm:ss", nama treba "HH:mm" - normalizeTime to rešava
+    final vreme = RegistrovaniHelpers.normalizeTime(zeljenoVremeStr) ?? '05:00';
 
     final tip = p['tip'] as String?;
     final isDnevni = tip == 'dnevni' || tip == 'posiljka';

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../models/voznje_log.dart';
+import '../utils/grad_adresa_validator.dart';
 import 'realtime/realtime_manager.dart';
 import 'vozac_mapping_service.dart';
 
@@ -180,8 +181,8 @@ class VoznjeLogService {
         // Ako nema meta podataka (stari logovi), koristimo samo putnik_id
         String key = pid;
         if (grad != null && vreme != null) {
-          // Normalizujemo vreme na HH:mm format za lakše poređenje
-          final normVreme = vreme.length > 5 ? vreme.substring(0, 5) : vreme;
+          // ✅ FIX: Koristi centralizovanu normalizaciju na HH:mm format
+          final normVreme = GradAdresaValidator.normalizeTime(vreme);
           key = "$pid|$grad|$normVreme";
         }
 
@@ -210,11 +211,13 @@ class VoznjeLogService {
       var query = _supabase.from('voznje_log').select('id').eq('putnik_id', putnikId).eq('datum', datum).eq('tip', tip);
 
       if (grad != null) {
-        query = query.eq('meta->>grad', grad.toLowerCase());
+        // ✅ FIX: Koristi bc/vs skraćenice
+        final gradKey = (grad.toLowerCase().contains('vrsac') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+        query = query.eq('meta->>grad', gradKey);
       }
       if (vreme != null) {
-        // Normalizacija vremena za pretragu
-        final normVreme = vreme.length > 5 ? vreme.substring(0, 5) : vreme;
+        // ✅ FIX: Koristi centralizovanu normalizaciju vremena (HH:mm)
+        final normVreme = GradAdresaValidator.normalizeTime(vreme);
         query = query.eq('meta->>vreme', normVreme);
       }
 
@@ -783,9 +786,13 @@ class VoznjeLogService {
 
       // Priprema meta podataka
       final Map<String, dynamic> finalMeta = Map.from(meta ?? {});
-      if (grad != null) finalMeta['grad'] = grad.toLowerCase();
+      if (grad != null) {
+        // ✅ FIX: Koristi bc/vs skraćenice za konzistentnost sa seat_requests
+        finalMeta['grad'] = (grad.toLowerCase().contains('vrsac') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+      }
       if (vreme != null) {
-        finalMeta['vreme'] = vreme.length > 5 ? vreme.substring(0, 5) : vreme;
+        // ✅ FIX: Standardizuj na HH:mm pre upisa u log (da bi match radio kasnije)
+        finalMeta['vreme'] = GradAdresaValidator.normalizeTime(vreme);
       }
 
       await _supabase.from('voznje_log').insert({

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../models/seat_request.dart';
+import '../utils/grad_adresa_validator.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (seat_requests tabela)
 class SeatRequestService {
@@ -25,26 +26,32 @@ class SeatRequestService {
       final datum = fixedDate != null ? DateTime.parse(fixedDate) : getNextDateForDay(DateTime.now(), dan);
       final datumStr = datum.toIso8601String().split('T')[0];
 
-      // 🛡️ PROVERA: Da li već postoji aktivan zahtev za OVAJ GRAD i DATUM?
-      // Ako postoji bilo šta (pending, manual, approved), otkaži to jer šaljemo NOVU verziju
+      // ✅ FIX: Normalizacija grada (bc/vs) i vremena (05:00) za konzistentnost
+      final gradKey = (grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+      final normVreme = GradAdresaValidator.normalizeTime(vreme);
+
+      // 🛡️ PROVERA: Da li već postoji aktivan zahtev za OVAJ GRAD, DATUM i VREME?
+      // ✅ FIX: Uključen i status 'confirmed' u listu za otkazivanje da se izbegnu duplikati
+      // Takođe proveravamo i varijante imena grada za legacy podršku
       await _supabase
           .from('seat_requests')
           .update({'status': 'cancelled'})
           .eq('putnik_id', putnikId)
-          .eq('grad', grad.toUpperCase())
+          .inFilter('grad', [gradKey, gradKey == 'bc' ? 'Bela Crkva' : 'Vršac', gradKey.toUpperCase()])
           .eq('datum', datumStr)
-          .inFilter('status', ['pending', 'manual', 'approved']);
+          .eq('zeljeno_vreme', '$normVreme:00')
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
       await _supabase.from('seat_requests').insert({
         'putnik_id': putnikId,
-        'grad': grad.toUpperCase(),
+        'grad': gradKey,
         'datum': datumStr,
-        'zeljeno_vreme': vreme,
+        'zeljeno_vreme': '$normVreme:00',
         'status': status,
         'broj_mesta': brojMesta,
         'priority': priority,
       });
-      debugPrint('✅ [SeatRequestService] Inserted for $grad $vreme on $dan (Datum: $datumStr)');
+      debugPrint('✅ [SeatRequestService] Inserted for $gradKey $normVreme on $dan (Datum: $datumStr)');
     } catch (e) {
       debugPrint('❌ [SeatRequestService] Error inserting seat request: $e');
     }

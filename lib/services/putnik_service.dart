@@ -704,16 +704,32 @@ class PutnikService {
     // 2. Determine the date (since seat_requests works on date, not day of week)
     final dateStr = app_date_utils.DateUtils.getIsoDateForDay(selectedDan ?? 'Ponedeljak');
 
-    // 3. Determine grad - try all possible values in order (lowercase is most common)
-    final isVrsac = pravac?.toLowerCase().contains('vr') ?? false || pravac?.toLowerCase() == 'vs';
+    // 3. Normalize grad and vreme for precise matching
+    final isVrsac = (pravac?.toLowerCase().contains('vr') ?? false) || (pravac?.toLowerCase() == 'vs');
+    final gradKey = isVrsac ? 'vs' : 'bc';
 
-    // Try lowercase first (most common), then uppercase, then full names
-    final gradVariants = isVrsac ? ['vs', 'VS', 'VRŠAC', 'Vršac'] : ['bc', 'BC', 'BELA CRKVA', 'Bela Crkva'];
+    // 4. Update the specific seat_request
+    var query = supabase.from('seat_requests').update({
+      'vozac_id': vozacUuid,
+      'status': 'confirmed',
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).match({
+      'putnik_id': id,
+      'datum': dateStr,
+      'grad': gradKey,
+    });
 
-    // 4. Try to update with each variant until one succeeds
-    bool updated = false;
-    for (final gradKey in gradVariants) {
-      final result = await supabase.from('seat_requests').update({
+    // Ako je prosleđeno vreme, filtriraj i po njemu (HH:mm:ss format u bazi)
+    if (vreme != null && vreme.isNotEmpty) {
+      final normVreme = GradAdresaValidator.normalizeTime(vreme);
+      query = query.eq('zeljeno_vreme', '$normVreme:00');
+    }
+
+    final result = await query.select();
+
+    if (result.isEmpty) {
+      // Fallback: pokusaj bez vremena ako inicijalni match nije uspeo (legacy podrška)
+      final fallbackResult = await supabase.from('seat_requests').update({
         'vozac_id': vozacUuid,
         'status': 'confirmed',
         'updated_at': DateTime.now().toUtc().toIso8601String(),
@@ -723,15 +739,10 @@ class PutnikService {
         'grad': gradKey,
       }).select();
 
-      if (result.isNotEmpty) {
-        updated = true;
-        break;
+      if (fallbackResult.isEmpty) {
+        throw Exception(
+            'Putnik nije pronađen u seat_requests tabeli za datum $dateStr, grad $gradKey ${vreme != null ? "i vreme $vreme" : ""}');
       }
-    }
-
-    if (!updated) {
-      throw Exception(
-          'Putnik nije pronađen u seat_requests tabeli za datum $dateStr i grad ${isVrsac ? "Vršac" : "Bela Crkva"}');
     }
   }
 
@@ -754,7 +765,9 @@ class PutnikService {
 
       final grad = data['grad']?.toString().toLowerCase();
       final vremeRaw = (data['dodeljeno_vreme'] ?? data['zeljeno_vreme'])?.toString();
-      final normVreme = vremeRaw != null && vremeRaw.length > 5 ? vremeRaw.substring(0, 5) : vremeRaw;
+
+      // ✅ FIX: Koristi centralizovanu normalizaciju vremena (HH:mm format)
+      final normVreme = GradAdresaValidator.normalizeTime(vremeRaw);
 
       // Pokušavamo da nađemo precizan match (putnik + grad + vreme)
       String compositeKey = "$putnikId|$grad|$normVreme";

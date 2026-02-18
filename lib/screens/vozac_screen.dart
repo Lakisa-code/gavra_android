@@ -53,7 +53,7 @@ class _VozacScreenState extends State<VozacScreen> {
   StreamSubscription<Map<String, dynamic>>? _notificationSubscription; // ⚡ ZA AUTOMATSKI POPIS
 
   String _selectedGrad = 'Bela Crkva';
-  String _selectedVreme = '5:00';
+  String _selectedVreme = '05:00'; // ✅ VRAĆENO NA 05:00 (konzistentno sa RouteConfig)
 
   // 📍 OPTIMIZACIJA RUTE - kopirano iz DanasScreen
   bool _isRouteOptimized = false;
