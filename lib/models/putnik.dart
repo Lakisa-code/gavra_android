@@ -172,6 +172,11 @@ class Putnik {
     // Provera da li je pokupljen (iz voznje_log ili statusa)
     final bool isPickedUp = req['pokupljen_iz_loga'] == true || req['status']?.toString().toLowerCase() == 'pokupljen';
 
+    // Provera da li je plaćeno (za dnevne putnike)
+    final bool isPaid = req['placeno_iz_loga'] == true ||
+        req['status']?.toString().toLowerCase() == 'confirmed' ||
+        req['status']?.toString().toLowerCase() == 'pokupljen';
+
     // ✅ FIX: Koristi centralizovanu normalizaciju vremena
     final vreme = RegistrovaniHelpers.normalizeTime(vremeRaw) ?? '05:00';
 
@@ -217,6 +222,7 @@ class Putnik {
       grad: grad,
       status: finalStatus,
       pokupljen: isPickedUp, // ✅ Redizajnirano: Gleda status ili voznje_log flag
+      placeno: isPaid, // ✅ Novo: Gleda status ili voznje_log flag
       datum: datumStr,
       tipPutnika: tip,
       mesecnaKarta: !isDnevni,

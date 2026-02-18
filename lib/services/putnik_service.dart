@@ -733,12 +733,14 @@ class PutnikService {
 
     await query;
 
-    // Dodaj u voznje_log preko servisa
+    // Dodaj u voznje_log preko servisa (sa gradom i vremenom za preciznost)
     await VoznjeLogService.dodajUplatu(
       putnikId: id.toString(),
       datum: DateTime.parse(dateStr),
       iznos: iznos.toDouble(),
       vozacId: vozacId,
+      grad: grad,
+      vreme: selectedVreme,
     );
   }
 
@@ -852,12 +854,17 @@ class PutnikService {
       }
 
       if (match != null) {
-        final tip = match['tip'];
-        if (tip == 'voznja') {
+        final List tipovi = match['tipovi'] ?? [match['tip']];
+
+        if (tipovi.contains('voznja')) {
           data['pokupljen_iz_loga'] = true;
-        } else if (tip == 'otkazivanje') {
+        }
+        if (tipovi.contains('otkazivanje')) {
           data['status'] = 'otkazano';
           data['otkazano_iz_loga'] = true;
+        }
+        if (tipovi.contains('uplata') || tipovi.contains('uplata_dnevna')) {
+          data['placeno_iz_loga'] = true;
         }
 
         // Ako vozač nije definisan u seat_request, uzmi ga iz loga
@@ -869,6 +876,7 @@ class PutnikService {
       } else {
         data['pokupljen_iz_loga'] = false;
         data['otkazano_iz_loga'] = false;
+        data['placeno_iz_loga'] = false;
       }
     }
   }

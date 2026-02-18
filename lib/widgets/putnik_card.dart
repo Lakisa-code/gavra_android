@@ -1611,7 +1611,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           ),
                         ),
                       // Placeno info
-                      if (_putnik.placeno == true) ...[
+                      if (_putnik.placeno == true && _putnik.iznosPlacanja != null) ...[
                         if (_putnik.vremePokupljenja != null) const SizedBox(width: 12),
                         Text(
                           'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',

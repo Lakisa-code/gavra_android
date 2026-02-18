@@ -13,8 +13,7 @@ class PermissionService {
     BuildContext context,
   ) async {
     // 📸 SCREENSHOT MODE - preskoči permissions dialog za testiranje
-    const isScreenshotMode =
-        bool.fromEnvironment('SCREENSHOT_MODE', defaultValue: false);
+    const isScreenshotMode = bool.fromEnvironment('SCREENSHOT_MODE', defaultValue: false);
     if (isScreenshotMode) {
       return true; // Preskoči dialog u screenshot modu
     }
@@ -35,32 +34,20 @@ class PermissionService {
   static Future<bool> checkAllPermissionsGranted() async {
     final location = await Permission.location.status;
     final contacts = await Permission.contacts.status;
-    final camera = await Permission.camera.status;
-    final microphone = await Permission.microphone.status;
     final notification = await Permission.notification.status;
 
     // Ako su sve dozvole grantovane, ne prikazuj dialog
-    return location.isGranted &&
-        contacts.isGranted &&
-        camera.isGranted &&
-        microphone.isGranted &&
-        notification.isGranted;
+    return location.isGranted && contacts.isGranted && notification.isGranted;
   }
 
   /// Proveri da li su sve dozvole već date
   static Future<bool> _checkIfAllPermissionsGranted() async {
     final location = await Permission.location.status;
     final contacts = await Permission.contacts.status;
-    final camera = await Permission.camera.status;
-    final microphone = await Permission.microphone.status;
     final notification = await Permission.notification.status;
 
     // Ako su sve dozvole grantovane, ne prikazuj dialog
-    return location.isGranted &&
-        contacts.isGranted &&
-        camera.isGranted &&
-        microphone.isGranted &&
-        notification.isGranted;
+    return location.isGranted && contacts.isGranted && notification.isGranted;
   }
 
   /// 📱 DIALOG ZA POČETNO PODEŠAVANJE DOZVOLA
@@ -186,8 +173,7 @@ class PermissionService {
                                       ),
                                     ),
                                     onPressed: () async {
-                                      final success =
-                                          await requestAllPermissions();
+                                      final success = await requestAllPermissions();
                                       if (context.mounted) {
                                         Navigator.of(context).pop(success);
                                       }
@@ -222,8 +208,7 @@ class PermissionService {
                                     ),
                                   ),
                                   child: TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(false),
+                                    onPressed: () => Navigator.of(context).pop(false),
                                     style: TextButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 16,
@@ -343,34 +328,23 @@ class PermissionService {
   /// ✅ BATCH PERMISSION REQUEST - Optimizovano za jedan klik
   static Future<bool> requestAllPermissions() async {
     try {
-      final locationStatus = await _requestLocationPermission()
-          .timeout(const Duration(seconds: 30), onTimeout: () => false);
+      final locationStatus =
+          await _requestLocationPermission().timeout(const Duration(seconds: 30), onTimeout: () => false);
 
       final permissions = [
         Permission.phone,
         Permission.contacts,
-        Permission.camera,
-        Permission.microphone,
         Permission.notification,
       ];
-      final Map<Permission, PermissionStatus> statuses =
-          await permissions.request();
+      final Map<Permission, PermissionStatus> statuses = await permissions.request();
 
       final phoneStatus = statuses[Permission.phone] ?? PermissionStatus.denied;
-      final contactsStatus =
-          statuses[Permission.contacts] ?? PermissionStatus.denied;
-      final cameraStatus =
-          statuses[Permission.camera] ?? PermissionStatus.denied;
-      final microphoneStatus =
-          statuses[Permission.microphone] ?? PermissionStatus.denied;
-      final notificationStatus =
-          statuses[Permission.notification] ?? PermissionStatus.denied;
+      final contactsStatus = statuses[Permission.contacts] ?? PermissionStatus.denied;
+      final notificationStatus = statuses[Permission.notification] ?? PermissionStatus.denied;
 
       final allCriticalGranted = locationStatus &&
           (phoneStatus.isGranted || phoneStatus.isLimited) &&
           (contactsStatus.isGranted || contactsStatus.isLimited) &&
-          (cameraStatus.isGranted || cameraStatus.isLimited) &&
-          (microphoneStatus.isGranted || microphoneStatus.isLimited) &&
           (notificationStatus.isGranted || notificationStatus.isLimited);
 
       return allCriticalGranted;
@@ -387,8 +361,7 @@ class PermissionService {
         permission = await Geolocator.requestPermission();
       }
 
-      return permission != LocationPermission.denied &&
-          permission != LocationPermission.deniedForever;
+      return permission != LocationPermission.denied && permission != LocationPermission.deniedForever;
     } catch (e) {
       return false;
     }
@@ -492,8 +465,7 @@ class PermissionService {
                                 ),
                               ),
                               child: TextButton(
-                                onPressed: () =>
-                                    Navigator.of(context).pop(false),
+                                onPressed: () => Navigator.of(context).pop(false),
                                 child: const Text(
                                   'Otkaži',
                                   style: TextStyle(
@@ -521,8 +493,7 @@ class PermissionService {
                                   elevation: 0,
                                   shadowColor: Colors.transparent,
                                 ),
-                                onPressed: () =>
-                                    Navigator.of(context).pop(true),
+                                onPressed: () => Navigator.of(context).pop(true),
                                 child: const Text(
                                   'Uključi GPS',
                                   style: TextStyle(fontWeight: FontWeight.bold),

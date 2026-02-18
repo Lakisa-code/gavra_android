@@ -174,11 +174,13 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         final seenIds = <String>{};
         final deduplicated = <Putnik>[];
         for (final p in filtered) {
-          if (p.id != null && !seenIds.contains(p.id)) {
-            seenIds.add(p.id!);
+          // Koristi requestId ako postoji, inače fallback na p.id
+          final uniqueId = p.requestId ?? p.id;
+          if (uniqueId != null && !seenIds.contains(uniqueId)) {
+            seenIds.add(uniqueId);
             deduplicated.add(p);
-          } else if (p.id == null) {
-            // Ako nema ID, dodaj svakako (ne bi trebalo da se desi)
+          } else if (uniqueId == null) {
+            // Ako nema ni requestId ni ID, dodaj svakako (ne bi trebalo da se desi)
             deduplicated.add(p);
           }
         }
@@ -1098,6 +1100,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           orElse: () => _putnici.firstWhere((p) => (p.requestId ?? p.id) == identifier),
         );
 
+        // Proveri da putnik ima ID pre nego što nastaviš
+        if (p.id == null) {
+          greska++;
+          continue;
+        }
+
         // • Koristi per-pravac per-vreme dodeljivanje
         await _putnikService.dodelPutnikaVozacuZaPravac(
           p.id!,
@@ -1170,6 +1178,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           (p) => (p.requestId ?? p.id) == identifier,
           orElse: () => _putnici.firstWhere((p) => (p.requestId ?? p.id) == identifier),
         );
+
+        // Proveri da putnik ima ID pre nego što nastaviš
+        if (p.id == null) {
+          greska++;
+          continue;
+        }
 
         await _putnikService.otkaziPutnika(
           p.id!,

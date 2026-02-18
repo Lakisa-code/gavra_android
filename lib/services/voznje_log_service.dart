@@ -169,7 +169,7 @@ class VoznjeLogService {
           .from('voznje_log')
           .select('putnik_id, vozac_id, created_at, meta, tip')
           .eq('datum', datumStr)
-          .inFilter('tip', ['voznja', 'otkazivanje']);
+          .inFilter('tip', ['voznja', 'otkazivanje', 'uplata', 'uplata_dnevna']);
 
       final Map<String, Map<String, dynamic>> res = {};
       for (var l in (response as List)) {
@@ -191,12 +191,21 @@ class VoznjeLogService {
           key = "$pid|$grad|$normVreme";
         }
 
-        res[key] = {
-          'tip': tip,
-          'vozac_id': l['vozac_id'],
-          'created_at': l['created_at'],
-          'meta': meta,
-        };
+        if (res.containsKey(key)) {
+          final existing = res[key]!;
+          if (!existing.containsKey('tipovi')) {
+            existing['tipovi'] = [existing['tip']];
+          }
+          (existing['tipovi'] as List).add(tip);
+        } else {
+          res[key] = {
+            'tip': tip,
+            'tipovi': [tip],
+            'vozac_id': l['vozac_id'],
+            'created_at': l['created_at'],
+            'meta': meta,
+          };
+        }
       }
       return res;
     } catch (e) {
@@ -437,7 +446,18 @@ class VoznjeLogService {
     String tipUplate = 'uplata',
     String? tipPlacanja,
     String? status,
+    String? grad,
+    String? vreme,
   }) async {
+    // Priprema meta podataka za precizno mapiranje polazaka
+    final Map<String, dynamic> meta = {};
+    if (grad != null) {
+      meta['grad'] = (grad.toLowerCase().contains('vrsac') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+    }
+    if (vreme != null) {
+      meta['vreme'] = GradAdresaValidator.normalizeTime(vreme);
+    }
+
     await _supabase.from('voznje_log').insert({
       'putnik_id': putnikId,
       'datum': datum.toIso8601String().split('T')[0],
@@ -448,6 +468,7 @@ class VoznjeLogService {
       'placena_godina': placenaGodina ?? datum.year,
       'tip_placanja': tipPlacanja,
       'status': status,
+      'meta': meta.isEmpty ? null : meta,
     });
   }
 
