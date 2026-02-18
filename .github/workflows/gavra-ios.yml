@@ -27,6 +27,23 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          ${{ secrets.ENV_FILE_CONTENT }}
+          EOF
+
+      - name: Create Firebase and Apple services files
+        run: |
+          mkdir -p ios/Runner
+          echo '${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}' > ios/Runner/GoogleService-Info.plist
+
+      - name: Flutter Doctor
+        run: flutter doctor -v
+
+      - name: Get dependencies
+        run: flutter pub get
+
       - name: Setup Ruby for Fastlane
         uses: ruby/setup-ruby@v1
         with:
@@ -39,17 +56,6 @@ jobs:
           sudo gem install cocoapods
           cd ios
           pod install
-
-      - name: Create .env file
-        run: |
-          cat > .env << EOF
-          ${{ secrets.ENV_FILE_CONTENT }}
-          EOF
-
-      - name: Create Firebase and Apple services files
-        run: |
-          mkdir -p ios/Runner
-          echo '${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}' > ios/Runner/GoogleService-Info.plist
 
       - name: Import Apple certificates
         env:
@@ -86,12 +92,6 @@ jobs:
           
           # Decode and save provisioning profile
           echo "$PROVISIONING_PROFILE" | base64 --decode > "$PP_PATH/app.mobileprovision"
-
-      - name: Flutter Doctor
-        run: flutter doctor -v
-
-      - name: Get dependencies
-        run: flutter pub get
 
       - name: Build iOS IPA
         run: |
