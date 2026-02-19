@@ -12,6 +12,9 @@ jobs:
       FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
       FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
       FASTLANE_SKIP_UPDATE_CHECK: true
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
       CI: true
     
     steps:
@@ -56,32 +59,15 @@ jobs:
           pod install --repo-update
           cd ..
 
-      - name: Install Codemagic CLI Tools
-        run: |
-          brew install pipx
-          pipx install codemagic-cli-tools
-          pipx ensurepath
+      - name: Install Fastlane
+        run: sudo gem install fastlane -NV
 
-      - name: Setup App Store Connect API Key
+      - name: Sync code signing with Fastlane Match
         run: |
-          mkdir -p ~/private_keys
-          printf '%s' "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 -d > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-
-      - name: Fetch signing certificates and profiles
-        run: |
-          app-store-connect fetch-signing-files "com.gavra013.gavra_android" \
-            --type IOS_APP_STORE \
-            --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
-            --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
-            --private-key ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-            --create
-
-      - name: Setup iOS code signing in Xcode
-        run: |
-          # Import certificates into keychain
-          keychain initialize
-          keychain add-certificates
+          cd ios
+          fastlane sync_code_signing
+        env:
+          FASTLANE_SKIP_UPDATE_CHECK: true
 
       - name: Build IPA
         run: |

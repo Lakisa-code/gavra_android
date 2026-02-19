@@ -1,11 +1,22 @@
 default_platform(:ios)
 
 platform :ios do
+  desc "Sync code signing certificates and profiles"
+  lane :sync_code_signing do
+    setup_ci if ENV['CI']
+    
+    match(
+      type: "appstore",
+      readonly: is_ci,
+      app_identifier: "com.gavra013.gavra_android",
+      force_for_new_devices: false
+    )
+  end
+
   desc "Upload IPA to TestFlight"
   lane :upload_testflight do
     setup_ci if ENV['CI']
     
-    # Upload to TestFlight using Apple ID credentials
     pilot(
       ipa: "build/ios/ipa/gavra_android.ipa",
       skip_waiting_for_build_processing: false,
