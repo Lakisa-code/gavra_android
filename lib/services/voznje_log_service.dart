@@ -167,7 +167,7 @@ class VoznjeLogService {
     try {
       final response = await _supabase
           .from('voznje_log')
-          .select('putnik_id, vozac_id, created_at, meta, tip')
+          .select('putnik_id, vozac_id, created_at, grad, vreme_polaska, tip')
           .eq('datum', datumStr)
           .inFilter('tip', ['voznja', 'otkazivanje', 'uplata', 'uplata_dnevna']);
 
@@ -175,15 +175,15 @@ class VoznjeLogService {
       for (var l in (response as List)) {
         final pid = l['putnik_id'].toString();
         final tip = l['tip']?.toString();
-        final meta = l['meta'] as Map<String, dynamic>?;
-        final gradRaw = meta?['grad']?.toString().toLowerCase();
 
+        // ✅ NOVO: Čitamo iz dedicated kolona umesto meta JSONB
+        final gradRaw = l['grad']?.toString().toLowerCase();
         final grad = GradAdresaValidator.isVrsac(gradRaw)
             ? 'vs'
             : GradAdresaValidator.isBelaCrkva(gradRaw)
                 ? 'bc'
                 : gradRaw;
-        final vreme = meta?['vreme']?.toString();
+        final vreme = l['vreme_polaska']?.toString();
 
         String key = pid;
         if (grad != null && vreme != null) {
@@ -203,7 +203,6 @@ class VoznjeLogService {
             'tipovi': [tip],
             'vozac_id': l['vozac_id'],
             'created_at': l['created_at'],
-            'meta': meta,
           };
         }
       }
@@ -226,14 +225,14 @@ class VoznjeLogService {
       var query = _supabase.from('voznje_log').select('id').eq('putnik_id', putnikId).eq('datum', datum).eq('tip', tip);
 
       if (grad != null) {
-        // ✅ FIX: Koristi bc/vs skraćenice
+        // ✅ NOVO: Koristi dedicirane kolone umesto meta JSONB
         final gradKey = GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc';
-        query = query.eq('meta->>grad', gradKey);
+        query = query.eq('grad', gradKey);
       }
       if (vreme != null) {
-        // ✅ FIX: Koristi centralizovanu normalizaciju vremena (HH:mm)
+        // ✅ NOVO: Koristi dedicirane kolone
         final normVreme = GradAdresaValidator.normalizeTime(vreme);
-        query = query.eq('meta->>vreme', normVreme);
+        query = query.eq('vreme_polaska', normVreme);
       }
 
       return await query.maybeSingle();
@@ -449,14 +448,9 @@ class VoznjeLogService {
     String? grad,
     String? vreme,
   }) async {
-    // Priprema meta podataka za precizno mapiranje polazaka
-    final Map<String, dynamic> meta = {};
-    if (grad != null) {
-      meta['grad'] = GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc';
-    }
-    if (vreme != null) {
-      meta['vreme'] = GradAdresaValidator.normalizeTime(vreme);
-    }
+    // ✅ NOVO: Koristimo dedicirane kolone umesto meta JSONB
+    final String? gradKod = grad != null ? (GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc') : null;
+    final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
     await _supabase.from('voznje_log').insert({
       'putnik_id': putnikId,
@@ -468,7 +462,8 @@ class VoznjeLogService {
       'placena_godina': placenaGodina ?? datum.year,
       'tip_placanja': tipPlacanja,
       'status': status,
-      'meta': meta.isEmpty ? null : meta,
+      'grad': gradKod,
+      'vreme_polaska': vremeNormalizovano,
     });
   }
 
@@ -811,16 +806,12 @@ class VoznjeLogService {
       final now = DateTime.now();
       final datumStr = datum ?? now.toIso8601String().split('T')[0];
 
-      // Priprema meta podataka
-      final Map<String, dynamic> finalMeta = Map.from(meta ?? {});
-      if (grad != null) {
-        // ✅ FIX: Koristi bc/vs skraćenice za konzistentnost sa seat_requests
-        finalMeta['grad'] = GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc';
-      }
-      if (vreme != null) {
-        // ✅ FIX: Standardizuj na HH:mm pre upisa u log (da bi match radio kasnije)
-        finalMeta['vreme'] = GradAdresaValidator.normalizeTime(vreme);
-      }
+      // ✅ NOVO: Koristimo dedicirane kolone umesto meta JSONB
+      final String? gradKod = grad != null ? (GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc') : null;
+      final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
+
+      // Zadržavamo dodatne meta podatke ako ih ima (za edge cases)
+      final Map<String, dynamic>? finalMeta = (meta != null && meta.isNotEmpty) ? meta : null;
 
       await _supabase.from('voznje_log').insert({
         'tip': tip,
@@ -830,7 +821,9 @@ class VoznjeLogService {
         'broj_mesta': brojMesta,
         'datum': datumStr,
         'detalji': detalji,
-        'meta': finalMeta.isEmpty ? null : finalMeta,
+        'grad': gradKod,
+        'vreme_polaska': vremeNormalizovano,
+        'meta': finalMeta,
         'placeni_mesec': now.month,
         'placena_godina': now.year,
         'sati_pre_polaska': satiPrePolaska,
