@@ -40,47 +40,33 @@ jobs:
         run: |
           mkdir -p ~/private_keys
           
-          # Koristimo Python za precizno čišćenje i formatiranje ključa
+          # Python skripta za čišćenje i dobijanje čistog PEM-a
           python3 -c "
           import os, sys
           key = os.environ.get('P8_KEY', '').strip()
           if not key:
-              print('❌ P8_KEY is empty!')
               sys.exit(1)
-          
-          # Ukloni headere ako postoje da bismo očistili unutrašnji sadržaj
           raw_content = key.replace('-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '').strip()
-          # Ukloni sve praznine (newlines, spaces, \r)
           raw_content = ''.join(raw_content.split())
-          
-          # Ponovo sastavi validan PEM
           formatted_key = '-----BEGIN PRIVATE KEY-----\n'
-          # Podeli na linije od 64 karaktera
           for i in range(0, len(raw_content), 64):
               formatted_key += raw_content[i:i+64] + '\n'
           formatted_key += '-----END PRIVATE KEY-----\n'
-          
           with open(os.path.expanduser('~/private_keys/AuthKey.p8'), 'w') as f:
               f.write(formatted_key)
           "
           
-          echo "✅ Key processed."
+          # Postavljamo Codemagic environment varijable koje alat automatski prepoznaje
+          export APP_STORE_CONNECT_ISSUER_ID="$APPSTORE_ISSUER_ID"
+          export APP_STORE_CONNECT_KEY_IDENTIFIER="$APPSTORE_KEY_ID"
+          export APP_STORE_CONNECT_PRIVATE_KEY=$(cat ~/private_keys/AuthKey.p8)
           
-          # Provera validnosti ključa pomoću openssl (bez ispisivanja sadržaja)
-          if openssl pkey -in ~/private_keys/AuthKey.p8 -pubout -out /dev/null 2>/dev/null; then
-            echo "✅ Openssl potvrdio: Ključ je validan PEM."
-          else
-            echo "❌ Openssl kaže: Ključ NIJE validan PEM! Verovatno je sam sadržaj (Base64) oštećen."
-            # Nećemo raditi exit 1 ovde da vidimo error od app-store-connect
-          fi
-
-          # Preuzimanje sertifikata i profila
+          echo "✅ Environment variables set. Running fetch-signing-files..."
+          
+          # Pokretanje bez eksplicitnih flagova za ključeve (alat će ih uzeti iz env)
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --install-certificate \
-            --issuer-id "$APPSTORE_ISSUER_ID" \
-            --key-id "$APPSTORE_KEY_ID" \
-            --private-key "$HOME/private_keys/AuthKey.p8"
+            --install-certificate
 
       - name: Setup Provisioning Profiles
         run: |
