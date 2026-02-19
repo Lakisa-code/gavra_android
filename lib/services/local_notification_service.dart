@@ -15,8 +15,7 @@ import 'voznje_log_service.dart';
 import 'wake_lock_service.dart';
 
 @pragma('vm:entry-point')
-void notificationTapBackground(
-    NotificationResponse notificationResponse) async {
+void notificationTapBackground(NotificationResponse notificationResponse) async {
   // 1. Inicijalizuj Supabase jer smo u background isolate-u
   try {
     await Supabase.initialize(
@@ -32,18 +31,15 @@ void notificationTapBackground(
 }
 
 class LocalNotificationService {
-  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   static final Map<String, DateTime> _recentNotificationIds = {};
-  static final Map<String, bool> _processingLocks =
-      {}; // 🔒 Lock za deduplikaciju
+  static final Map<String, bool> _processingLocks = {}; // 🔒 Lock za deduplikaciju
   static const Duration _dedupeDuration = Duration(seconds: 30);
 
   static Future<void> initialize(BuildContext context) async {
     // 📸 SCREENSHOT MODE - preskoči inicijalizaciju notifikacija
-    const isScreenshotMode =
-        bool.fromEnvironment('SCREENSHOT_MODE', defaultValue: false);
+    const isScreenshotMode = bool.fromEnvironment('SCREENSHOT_MODE', defaultValue: false);
     if (isScreenshotMode) {
       return;
     }
@@ -57,8 +53,7 @@ class LocalNotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
+    const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
     );
 
@@ -82,8 +77,7 @@ class LocalNotificationService {
     );
 
     final androidPlugin =
-        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
     await androidPlugin?.createNotificationChannel(channel);
 
@@ -102,8 +96,7 @@ class LocalNotificationService {
     String? payload,
     bool playCustomSound = false, // 🔇 ONEMOGUĆENO: Custom zvuk ne radi
   }) async {
-    String dedupeKey =
-        ''; // 🔑 Premesteno izvan try-catch da bude dostupno u finally bloku
+    String dedupeKey = ''; // 🔑 Premesteno izvan try-catch da bude dostupno u finally bloku
 
     try {
       try {
@@ -137,8 +130,7 @@ class LocalNotificationService {
         }
       }
       _recentNotificationIds[dedupeKey] = now;
-      _recentNotificationIds
-          .removeWhere((k, v) => now.difference(v) > _dedupeDuration);
+      _recentNotificationIds.removeWhere((k, v) => now.difference(v) > _dedupeDuration);
 
       // 📱 Pali ekran kada stigne notifikacija (za lock screen)
       try {
@@ -152,24 +144,16 @@ class LocalNotificationService {
         try {
           final Map<String, dynamic> data = jsonDecode(payload);
           if (data['type'] == 'seat_request_alternatives') {
-            // 🛡️ PARSIRANJE ALTERNATIVA: Može biti List<String> ili String "[...]"
+            // ✅ NOVO: Čitanje iz alternative_1 i alternative_2 umesto JSONB niza
             List<String> parsedAlts = [];
-            final rawAlts = data['alternatives'];
-            if (rawAlts is List) {
-              parsedAlts = rawAlts.map((e) => e.toString()).toList();
-            } else if (rawAlts is String &&
-                rawAlts.startsWith('[') &&
-                rawAlts.endsWith(']')) {
-              try {
-                final cleaned = rawAlts.substring(1, rawAlts.length - 1);
-                parsedAlts = cleaned
-                    .split(',')
-                    .map((e) => e.trim())
-                    .where((e) => e.isNotEmpty)
-                    .toList();
-              } catch (e) {
-                debugPrint('⚠️ Error parsing stringified alternatives: $e');
-              }
+            final alt1 = data['alternative_1']?.toString();
+            final alt2 = data['alternative_2']?.toString();
+
+            if (alt1 != null && alt1.isNotEmpty && alt1 != 'null') {
+              parsedAlts.add(alt1);
+            }
+            if (alt2 != null && alt2.isNotEmpty && alt2 != 'null') {
+              parsedAlts.add(alt2);
             }
 
             await showSeatRequestAlternativesNotification(
@@ -197,8 +181,7 @@ class LocalNotificationService {
           android: AndroidNotificationDetails(
             'gavra_realtime_channel',
             'Gavra Realtime Notifikacije',
-            channelDescription:
-                'Kanal za realtime heads-up notifikacije sa zvukom',
+            channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
@@ -211,8 +194,7 @@ class LocalNotificationService {
             visibility: NotificationVisibility.public,
             ticker: '$title - $body',
             color: const Color(0xFF64CAFB),
-            largeIcon:
-                const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+            largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
             styleInformation: BigTextStyleInformation(
               body,
               htmlFormatBigText: true,
@@ -289,10 +271,7 @@ class LocalNotificationService {
       // Kreiraj body text
       String bodyText;
       if (terminPre != null || terminPosle != null) {
-        final altTermini = [
-          if (terminPre != null) terminPre,
-          if (terminPosle != null) terminPosle
-        ];
+        final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
         bodyText =
             'Trenutno nema slobodnih mesta za $zeljeniTermin. Ali ne brinite, imamo mesta u ovim terminima: ${altTermini.join(", ")}';
       } else {
@@ -352,24 +331,16 @@ class LocalNotificationService {
 
           // 🎨 SPECIJALNA OBRADA ZA ALTERNATIVE U POZADINI
           if (data['type'] == 'seat_request_alternatives') {
-            // 🛡️ PARSIRANJE ALTERNATIVA: Može biti List<String> ili String "[...]"
+            // ✅ NOVO: Čitanje iz alternative_1 i alternative_2 umesto JSONB niza
             List<String> parsedAlts = [];
-            final rawAlts = data['alternatives'];
-            if (rawAlts is List) {
-              parsedAlts = rawAlts.map((e) => e.toString()).toList();
-            } else if (rawAlts is String &&
-                rawAlts.startsWith('[') &&
-                rawAlts.endsWith(']')) {
-              try {
-                final cleaned = rawAlts.substring(1, rawAlts.length - 1);
-                parsedAlts = cleaned
-                    .split(',')
-                    .map((e) => e.trim())
-                    .where((e) => e.isNotEmpty)
-                    .toList();
-              } catch (e) {
-                debugPrint('⚠️ Error parsing stringified alternatives: $e');
-              }
+            final alt1 = data['alternative_1']?.toString();
+            final alt2 = data['alternative_2']?.toString();
+
+            if (alt1 != null && alt1.isNotEmpty && alt1 != 'null') {
+              parsedAlts.add(alt1);
+            }
+            if (alt2 != null && alt2.isNotEmpty && alt2 != 'null') {
+              parsedAlts.add(alt2);
             }
 
             await showSeatRequestAlternativesNotification(
@@ -409,16 +380,13 @@ class LocalNotificationService {
         }
       }
       _recentNotificationIds[dedupeKey] = now;
-      _recentNotificationIds
-          .removeWhere((k, v) => now.difference(v) > _dedupeDuration);
-      final FlutterLocalNotificationsPlugin plugin =
-          FlutterLocalNotificationsPlugin();
+      _recentNotificationIds.removeWhere((k, v) => now.difference(v) > _dedupeDuration);
+      final FlutterLocalNotificationsPlugin plugin = FlutterLocalNotificationsPlugin();
 
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      const InitializationSettings initializationSettings =
-          InitializationSettings(
+      const InitializationSettings initializationSettings = InitializationSettings(
         android: initializationSettingsAndroid,
       );
 
@@ -476,22 +444,19 @@ class LocalNotificationService {
   ) async {
     try {
       // 🎫 Handle Seat Request alternativa action buttons
-      if (response.actionId != null &&
-          response.actionId!.startsWith('prihvati_alt_')) {
+      if (response.actionId != null && response.actionId!.startsWith('prihvati_alt_')) {
         await _handleSeatRequestAlternativeAction(response);
         return;
       }
 
       // 🎫 Handle BC alternativa action buttons
-      if (response.actionId != null &&
-          response.actionId!.startsWith('prihvati_')) {
+      if (response.actionId != null && response.actionId!.startsWith('prihvati_')) {
         await _handleBcAlternativaAction(response);
         return;
       }
 
       // 🎫 Handle VS alternativa action buttons
-      if (response.actionId != null &&
-          response.actionId!.startsWith('vs_prihvati_')) {
+      if (response.actionId != null && response.actionId!.startsWith('vs_prihvati_')) {
         await _handleVsAlternativaAction(response);
         return;
       }
@@ -516,8 +481,7 @@ class LocalNotificationService {
 
       if (response.payload != null) {
         try {
-          final Map<String, dynamic> payloadData =
-              jsonDecode(response.payload!) as Map<String, dynamic>;
+          final Map<String, dynamic> payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
 
           // 🛠️ FIX: Assign notificationType from payload
           notificationType = payloadData['type'] as String?;
@@ -533,8 +497,7 @@ class LocalNotificationService {
           }
 
           // 🔐 PIN zahtev ili Manual Seat Request - otvori PIN zahtevi ekran (Admin/Vozac screen)
-          if (notificationType == 'pin_zahtev' ||
-              notificationType == 'seat_request_manual') {
+          if (notificationType == 'pin_zahtev' || notificationType == 'seat_request_manual') {
             await NotificationNavigationService.navigateToPinZahtevi();
             return;
           }
@@ -543,16 +506,14 @@ class LocalNotificationService {
           if (putnikData is Map<String, dynamic>) {
             putnikIme = (putnikData['ime'] ?? putnikData['name']) as String?;
             putnikGrad = putnikData['grad'] as String?;
-            putnikVreme =
-                (putnikData['vreme'] ?? putnikData['polazak']) as String?;
+            putnikVreme = (putnikData['vreme'] ?? putnikData['polazak']) as String?;
           } else if (putnikData is String) {
             try {
               final putnikMap = jsonDecode(putnikData);
               if (putnikMap is Map<String, dynamic>) {
                 putnikIme = (putnikMap['ime'] ?? putnikMap['name']) as String?;
                 putnikGrad = putnikMap['grad'] as String?;
-                putnikVreme =
-                    (putnikMap['vreme'] ?? putnikMap['polazak']) as String?;
+                putnikVreme = (putnikMap['vreme'] ?? putnikMap['polazak']) as String?;
               }
             } catch (e) {
               putnikIme = putnikData;
@@ -560,15 +521,12 @@ class LocalNotificationService {
           }
 
           // 🔍 DOHVATI PUTNIK PODATKE IZ BAZE ako nisu u payload-u
-          if (putnikIme != null &&
-              (putnikGrad == null || putnikVreme == null)) {
+          if (putnikIme != null && (putnikGrad == null || putnikVreme == null)) {
             try {
               final putnikInfo = await _fetchPutnikFromDatabase(putnikIme);
               if (putnikInfo != null) {
                 putnikGrad = putnikGrad ?? putnikInfo['grad'] as String?;
-                putnikVreme = putnikVreme ??
-                    (putnikInfo['polazak'] ?? putnikInfo['vreme_polaska'])
-                        as String?;
+                putnikVreme = putnikVreme ?? (putnikInfo['polazak'] ?? putnikInfo['vreme_polaska']) as String?;
               }
             } catch (e) {
               // 🔇 Ignore
@@ -688,17 +646,12 @@ class LocalNotificationService {
           .select('grad, zeljeno_vreme')
           .eq('putnik_id', putnikId)
           .eq('datum', danas)
-          .inFilter('status',
-              ['approved', 'confirmed', 'pending', 'manual']).maybeSingle();
+          .inFilter('status', ['approved', 'confirmed', 'pending', 'manual']).maybeSingle();
 
       if (seatRequest != null) {
-        final grad = (seatRequest['grad']?.toString().toLowerCase() == 'vs')
-            ? 'Vršac'
-            : 'Bela Crkva';
+        final grad = (seatRequest['grad']?.toString().toLowerCase() == 'vs') ? 'Vršac' : 'Bela Crkva';
         final zeljenoVremeStr = seatRequest['zeljeno_vreme']?.toString() ?? '';
-        final polazak = zeljenoVremeStr.length >= 5
-            ? zeljenoVremeStr.substring(0, 5)
-            : null;
+        final polazak = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : null;
 
         return {
           'grad': grad,
@@ -737,8 +690,7 @@ class LocalNotificationService {
   }
 
   /// 🎫 Handler za BC alternativa action button - sačuva izabrani termin
-  static Future<void> _handleBcAlternativaAction(
-      NotificationResponse response) async {
+  static Future<void> _handleBcAlternativaAction(NotificationResponse response) async {
     try {
       if (response.payload == null || response.actionId == null) return;
 
@@ -753,8 +705,7 @@ class LocalNotificationService {
       if (putnikId == null || dan == null || termin.isEmpty) return;
 
       // 📅 Izračunaj datum (obično sutra ili sledeći radni dan)
-      final targetDate =
-          SeatRequestService.getNextDateForDay(DateTime.now(), dan);
+      final targetDate = SeatRequestService.getNextDateForDay(DateTime.now(), dan);
       final datumStr = targetDate.toIso8601String().split('T')[0];
 
       // 🚀 PRIHVATI ALTERNATIVU - Ažurira seat_requests tabelu
@@ -766,12 +717,8 @@ class LocalNotificationService {
       );
 
       // Dohvati tip korisnika za precizan log
-      final putnikData = await supabase
-          .from('registrovani_putnici')
-          .select('tip')
-          .eq('id', putnikId)
-          .limit(1)
-          .maybeSingle();
+      final putnikData =
+          await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).limit(1).maybeSingle();
       final userType = putnikData?['tip'] ?? 'Putnik';
 
       // UKLONJENO: Ažuriranje radni_dani kolone (više ne postoji)
@@ -794,8 +741,7 @@ class LocalNotificationService {
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ Mesto osigurano!',
-        body:
-            '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
+        body: '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
         data: {'type': 'bc_alternativa_confirmed', 'termin': termin},
       );
     } catch (e) {
@@ -804,8 +750,7 @@ class LocalNotificationService {
   }
 
   /// 🎫 Handler za VS alternativa action button
-  static Future<void> _handleVsAlternativaAction(
-      NotificationResponse response) async {
+  static Future<void> _handleVsAlternativaAction(NotificationResponse response) async {
     try {
       if (response.payload == null || response.actionId == null) return;
 
@@ -820,8 +765,7 @@ class LocalNotificationService {
       if (putnikId == null || dan == null || termin.isEmpty) return;
 
       // 📅 Izračunaj datum
-      final targetDate =
-          SeatRequestService.getNextDateForDay(DateTime.now(), dan);
+      final targetDate = SeatRequestService.getNextDateForDay(DateTime.now(), dan);
       final datumStr = targetDate.toIso8601String().split('T')[0];
 
       // 🚀 PRIHVATI ALTERNATIVU - Ažurira seat_requests tabelu
@@ -833,12 +777,8 @@ class LocalNotificationService {
       );
 
       // Dohvati tip korisnika za precizan log
-      final putnikResult = await supabase
-          .from('registrovani_putnici')
-          .select('tip')
-          .eq('id', putnikId)
-          .limit(1)
-          .maybeSingle();
+      final putnikResult =
+          await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).limit(1).maybeSingle();
       final userType = putnikResult?['tip'] ?? 'Putnik';
 
       // UKLONJENO: Ažuriranje radni_dani kolone (više ne postoji)
@@ -861,8 +801,7 @@ class LocalNotificationService {
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ [VS] Termin potvrđen',
-        body:
-            '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
+        body: '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
         data: {'type': 'vs_alternativa_confirmed', 'termin': termin},
       );
     } catch (e) {
@@ -896,9 +835,7 @@ class LocalNotificationService {
       // Dodaj prve dve alternative kao dugmiće
       for (int i = 0; i < alternatives.length && i < 2; i++) {
         final alt = alternatives[i];
-        final displayTime = alt.contains(':')
-            ? '${alt.split(':')[0]}:${alt.split(':')[1]}'
-            : alt;
+        final displayTime = alt.contains(':') ? '${alt.split(':')[0]}:${alt.split(':')[1]}' : alt;
         actions.add(AndroidNotificationAction(
           'prihvati_alt_$alt',
           '✅ $displayTime',
@@ -921,8 +858,7 @@ class LocalNotificationService {
           android: AndroidNotificationDetails(
             'gavra_realtime_channel',
             'Gavra Realtime Notifikacije',
-            channelDescription:
-                'Kanal za realtime notifikacije sa alternativama',
+            channelDescription: 'Kanal za realtime notifikacije sa alternativama',
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
@@ -942,13 +878,11 @@ class LocalNotificationService {
     }
   }
 
-  static Future<void> _handleSeatRequestAlternativeAction(
-      NotificationResponse response) async {
+  static Future<void> _handleSeatRequestAlternativeAction(NotificationResponse response) async {
     try {
       if (response.payload == null || response.actionId == null) return;
       final data = jsonDecode(response.payload!);
-      final requestId =
-          data['id']?.toString(); // 🆔 ID originalnog zahteva koji je odbijen
+      final requestId = data['id']?.toString(); // 🆔 ID originalnog zahteva koji je odbijen
       final putnikId = data['putnik_id'];
       final grad = data['grad'] ?? 'BC';
       final datum = data['datum'];

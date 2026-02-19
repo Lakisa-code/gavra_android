@@ -51,10 +51,16 @@ BEGIN
                 v_body := 'Vaš zahtev za ' || NEW.zeljeno_vreme || ' (' || NEW.grad || ') je odobren. Srećan put!';
                 v_data := jsonb_build_object('type', 'seat_request_approved', 'id', NEW.id);
             ELSIF NEW.status = 'rejected' THEN
-                IF NEW.alternatives IS NOT NULL AND jsonb_array_length(NEW.alternatives) > 0 THEN
+                IF NEW.alternative_vreme_1 IS NOT NULL OR NEW.alternative_vreme_2 IS NOT NULL THEN
                     v_title := '⚠️ Termin pun - Alternative?';
                     v_body := 'Termin u ' || NEW.zeljeno_vreme || ' je pun, ali imamo mesta u drugim terminima. Pogledaj profil!';
-                    v_data := jsonb_build_object('type', 'seat_request_alternatives', 'id', NEW.id);
+                    -- ✅ Uključi alternative u payload za notifikaciju
+                    v_data := jsonb_build_object(
+                        'type', 'seat_request_alternatives', 
+                        'id', NEW.id,
+                        'alternative_1', to_char(NEW.alternative_vreme_1, 'HH24:MI'),
+                        'alternative_2', to_char(NEW.alternative_vreme_2, 'HH24:MI')
+                    );
                 ELSE
                     v_title := '❌ Termin popunjen';
                     v_body := 'Nažalost, u terminu ' || NEW.zeljeno_vreme || ' više nema slobodnih mesta.';

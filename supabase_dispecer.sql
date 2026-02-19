@@ -54,7 +54,8 @@ DECLARE
     ima_mesta boolean;
     slobodno_mesta integer;
     novi_status text;
-    v_alternatives jsonb := '[]'::jsonb;
+    v_alt_1 time;
+    v_alt_2 time;
     is_bc_student_guaranteed boolean;
 BEGIN
     -- 1. Dohvati podatke o zahtevu i putniku
@@ -86,35 +87,32 @@ BEGIN
     ELSE
         novi_status := 'rejected';
         
-        -- Pronađi PRVI slobodan termin pre i PRVI slobodan termin posle
-        SELECT jsonb_agg(to_char(vreme, 'HH24:MI')) INTO v_alternatives
-        FROM (
-            -- Prvi dostupni pre željenog vremena
-            (SELECT vreme 
-             FROM kapacitet_polazaka 
-             WHERE grad = UPPER(req_record.grad) 
-               AND aktivan = true 
-               AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.datum) >= req_record.broj_mesta
-               AND vreme < req_record.zeljeno_vreme
-             ORDER BY vreme DESC
-             LIMIT 1)
-            UNION ALL
-            -- Prvi dostupni posle željenog vremena
-            (SELECT vreme 
-             FROM kapacitet_polazaka 
-             WHERE grad = UPPER(req_record.grad) 
-               AND aktivan = true 
-               AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.datum) >= req_record.broj_mesta
-               AND vreme > req_record.zeljeno_vreme
-             ORDER BY vreme ASC
-             LIMIT 1)
-        ) sub;
+        -- Pronađi PRVI slobodan termin PRE željenog vremena
+        SELECT vreme INTO v_alt_1
+        FROM kapacitet_polazaka 
+        WHERE grad = UPPER(req_record.grad) 
+          AND aktivan = true 
+          AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.datum) >= req_record.broj_mesta
+          AND vreme < req_record.zeljeno_vreme
+        ORDER BY vreme DESC
+        LIMIT 1;
+        
+        -- Pronađi PRVI slobodan termin POSLE željenog vremena
+        SELECT vreme INTO v_alt_2
+        FROM kapacitet_polazaka 
+        WHERE grad = UPPER(req_record.grad) 
+          AND aktivan = true 
+          AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.datum) >= req_record.broj_mesta
+          AND vreme > req_record.zeljeno_vreme
+        ORDER BY vreme ASC
+        LIMIT 1;
     END IF;
 
     -- 5. AŽURIRAJ SEAT_REQUESTS
     UPDATE seat_requests 
     SET status = novi_status, 
-        alternatives = v_alternatives,
+        alternative_vreme_1 = v_alt_1,
+        alternative_vreme_2 = v_alt_2,
         processed_at = now(),
         updated_at = now()
     WHERE id = req_id;
