@@ -12,11 +12,7 @@ jobs:
       FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
       FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
       FASTLANE_SKIP_UPDATE_CHECK: true
-      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-      MATCH_KEYCHAIN_NAME: ${{ secrets.MATCH_KEYCHAIN_NAME }}
-      MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
+      CI: true
     
     steps:
       - name: Checkout code
@@ -54,22 +50,11 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Install Fastlane
-        run: |
-          sudo gem install fastlane -NV
-
-      - name: Setup keychain for code signing
-        run: |
-          security create-keychain -p "" ~/Library/Keychains/ci.keychain
-          security default-keychain -s ~/Library/Keychains/ci.keychain
-          security unlock-keychain -p "" ~/Library/Keychains/ci.keychain
-
-      - name: Sync code signing
+      - name: Install CocoaPods
         run: |
           cd ios
-          fastlane sync_code_signing
-        env:
-          FASTLANE_SKIP_UPDATE_CHECK: true
+          pod install --repo-update
+          cd ..
 
       - name: Build IPA
         run: |
