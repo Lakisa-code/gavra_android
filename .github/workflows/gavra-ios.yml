@@ -9,26 +9,57 @@ jobs:
     
     env:
       BUNDLE_ID: com.gavra013.gavra_android
-      FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
-      FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
-      FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-      FASTLANE_SKIP_UPDATE_CHECK: true
+      APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+      APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+      APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
       CI: true
     
     steps:
       - name: Check secrets
         run: |
-          if [ -z "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "❌ Missing APPLE_TEAM_ID"; exit 1; fi
-          if [ -z "${{ secrets.MATCH_PASSWORD }}" ]; then echo "❌ Missing MATCH_PASSWORD"; exit 1; fi
-          if [ -z "${{ secrets.MATCH_GIT_URL }}" ]; then echo "❌ Missing MATCH_GIT_URL"; exit 1; fi
-          if [ -z "${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}" ]; then echo "❌ Missing FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD"; exit 1; fi
+          if [ -z "${{ secrets.APPSTORE_ISSUER_ID }}" ]; then echo "❌ Missing APPSTORE_ISSUER_ID"; exit 1; fi
+          if [ -z "${{ secrets.APPSTORE_KEY_ID }}" ]; then echo "❌ Missing APPSTORE_KEY_ID"; exit 1; fi
+          if [ -z "${{ secrets.APPSTORE_API_KEY_P8 }}" ]; then echo "❌ Missing APPSTORE_API_KEY_P8"; exit 1; fi
 
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install Codemagic CLI
+        run: |
+          brew install pipx
+          pipx install codemagic-cli-tools
+          pipx ensurepath
+          echo "/Users/runner/.local/bin" >> $GITHUB_PATH
+
+      - name: Initialize Keychain
+        run: keychain initialize
+
+      - name: Fetch Certificates and Profiles
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey.p8
+          
+          # Provera formata ključa i dekodiranje ako je potrebno
+          if grep -q "BEGIN PRIVATE KEY" ~/private_keys/AuthKey.p8; then
+            echo "Key is in PEM format"
+          else
+            echo "Decoding base64 key"
+            base64 -d ~/private_keys/AuthKey.p8 > ~/private_keys/AuthKey_decoded.p8
+            mv ~/private_keys/AuthKey_decoded.p8 ~/private_keys/AuthKey.p8
+          fi
+
+          # Preuzimanje sertifikata i profila
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --install-certificate \
+            --issuer-id "$APPSTORE_ISSUER_ID" \
+            --key-id "$APPSTORE_KEY_ID" \
+            --private-key ~/private_keys/AuthKey.p8
+
+      - name: Setup Provisioning Profiles
+        run: |
+          keychain add-certificates
+          # xcode-project use-profiles # Opciono, flutter build ipa obično radi sa export-options-plist
 
       - name: Get version from pubspec.yaml
         id: version
@@ -59,24 +90,13 @@ jobs:
           ${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}
           PLISTEOF
 
-      - name: Get dependencies
-        run: flutter pub get
-
       - name: Install dependencies
         run: |
+          flutter pub get
           cd ios
-          bundle install
-
-      - name: Install CocoaPods
-        run: |
-          cd ios
-          bundle exec pod install --repo-update
+          # CocoaPods instalacija bez Fastlane Match-a
+          pod install --repo-update
           cd ..
-
-      - name: Sync code signing
-        run: |
-          cd ios
-          bundle exec fastlane sync_code_signing
 
       - name: Build IPA
         run: |
@@ -87,10 +107,11 @@ jobs:
 
       - name: Upload to TestFlight
         run: |
-          cd ios
-          bundle exec fastlane upload_testflight
-        env:
-          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          app-store-connect publish \
+            --issuer-id "$APPSTORE_ISSUER_ID" \
+            --key-id "$APPSTORE_KEY_ID" \
+            --private-key ~/private_keys/AuthKey.p8 \
+            --path $(ls build/ios/ipa/*.ipa)
 
       - name: Upload IPA artifact
         if: always()

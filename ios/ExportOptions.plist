@@ -15,7 +15,7 @@
     <key>provisioningProfiles</key>
     <dict>
         <key>com.gavra013.gavra_android</key>
-        <string>match AppStore com.gavra013.gavra_android</string>
+        <string>com_gavra013_gavra_android_appstore</string>
     </dict>
     <key>destination</key>
     <string>upload</string>
