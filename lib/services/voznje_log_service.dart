@@ -197,6 +197,12 @@ class VoznjeLogService {
             existing['tipovi'] = [existing['tip']];
           }
           (existing['tipovi'] as List).add(tip);
+          
+          // ✅ FIX: Ažuriraj iznos i vozac_ime ako je tip uplata (ima prioritet nad voznja)
+          if (tip == 'uplata' || tip == 'uplata_dnevna') {
+            existing['iznos'] = l['iznos'];
+            existing['vozac_ime'] = l['vozac_ime'];
+          }
         } else {
           res[key] = {
             'tip': tip,
