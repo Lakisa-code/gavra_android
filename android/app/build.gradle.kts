@@ -39,7 +39,7 @@ android {
         applicationId = "com.gavra013.gavra_android"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
-        versionCode = 430
+        versionCode = 431
         versionName = "6.0.60"
         multiDexEnabled = true
     }

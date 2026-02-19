@@ -161,13 +161,13 @@ class VoznjeLogService {
     }
   }
 
-  /// 🔍 DETALJI O AKTIVNOSTIMA (SSOT) - Vraća Map: ključ -> {tip, vozac_id, created_at, meta}
+  /// 🔍 DETALJI O AKTIVNOSTIMA (SSOT) - Vraća Map: ključ -> {tip, vozac_id, created_at, iznos, vozac_ime}
   /// Ključ je "$putnikId|$grad|$vreme"
   static Future<Map<String, Map<String, dynamic>>> getPickedUpLogData({required String datumStr}) async {
     try {
       final response = await _supabase
           .from('voznje_log')
-          .select('putnik_id, vozac_id, created_at, grad, vreme_polaska, tip')
+          .select('putnik_id, vozac_id, vozac_ime, created_at, grad, vreme_polaska, tip, iznos')
           .eq('datum', datumStr)
           .inFilter('tip', ['voznja', 'otkazivanje', 'uplata', 'uplata_dnevna']);
 
@@ -202,7 +202,9 @@ class VoznjeLogService {
             'tip': tip,
             'tipovi': [tip],
             'vozac_id': l['vozac_id'],
+            'vozac_ime': l['vozac_ime'],
             'created_at': l['created_at'],
+            'iznos': l['iznos'],
           };
         }
       }

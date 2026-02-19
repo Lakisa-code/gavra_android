@@ -874,6 +874,9 @@ class PutnikService {
         }
         if (tipovi.contains('uplata') || tipovi.contains('uplata_dnevna')) {
           data['placeno_iz_loga'] = true;
+          // ✅ NOVO: Popuni iznos i vozač ime za prikaz u kartici putnika
+          data['cena'] = match['iznos'];
+          data['naplatioVozac'] = match['vozac_ime'];
         }
 
         // Ako vozač nije definisan u seat_request, uzmi ga iz loga

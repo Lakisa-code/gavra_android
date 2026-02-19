@@ -235,6 +235,8 @@ class Putnik {
       vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
       vremePokupljenja: req['processed_at'] != null ? DateTime.parse(req['processed_at']).toLocal() : null,
       pokupioVozac: VozacMappingService.getNameFromUuidOrNameSync(req['vozac_id']),
+      naplatioVozac: req['naplatioVozac'], // ✅ NOVO: Ime vozača koji je naplatio
+      cena: req['cena']?.toDouble(), // ✅ NOVO: Iznos plaćanja iz voznje_log
       obrisan: false,
       vozacId: req['vozac_id'],
       dodeljenVozac: dodeljenVozacFinal,
