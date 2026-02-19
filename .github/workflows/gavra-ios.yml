@@ -63,19 +63,6 @@ jobs:
           mkdir -p ~/private_keys
           echo "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
           chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          echo "=== Decoded P8 key (first 5 lines) ==="
-          head -5 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          echo "=== Last 2 lines ==="
-          tail -2 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          echo "=== Testing key validity ==="
-          app-store-connect apps list \
-            --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
-            --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
-            --private-key ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-            --json | head -10
-
-      - name: Exit early for testing
-        run: exit 0
 
       - name: Fetch signing files
         run: |
