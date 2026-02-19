@@ -162,9 +162,8 @@ class Putnik {
     final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
 
     final datumStr = req['datum']?.toString() ?? '';
-    final grad = (req['grad']?.toString().toLowerCase() == 'vs' || req['grad']?.toString().toLowerCase() == 'vršac')
-        ? 'Vršac'
-        : 'Bela Crkva';
+    final gRaw = req['grad']?.toString().toLowerCase() ?? '';
+    final grad = (gRaw == 'vs' || gRaw.contains('vrš') || gRaw.contains('vrs')) ? 'Vršac' : 'Bela Crkva';
 
     // ✅ PRIORITET: Dodeljeno vreme (ako je vozač pomerio termin), inače željeno
     final vremeRaw = (req['dodeljeno_vreme'] ?? req['zeljeno_vreme'])?.toString() ?? '';

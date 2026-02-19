@@ -178,9 +178,9 @@ class VoznjeLogService {
         final meta = l['meta'] as Map<String, dynamic>?;
         final gradRaw = meta?['grad']?.toString().toLowerCase();
 
-        final grad = (gradRaw == 'vršac' || gradRaw == 'vrsac' || gradRaw == 'vs')
+        final grad = GradAdresaValidator.isVrsac(gradRaw)
             ? 'vs'
-            : (gradRaw == 'bela crkva' || gradRaw == 'belacrkva' || gradRaw == 'bc')
+            : GradAdresaValidator.isBelaCrkva(gradRaw)
                 ? 'bc'
                 : gradRaw;
         final vreme = meta?['vreme']?.toString();
@@ -227,7 +227,7 @@ class VoznjeLogService {
 
       if (grad != null) {
         // ✅ FIX: Koristi bc/vs skraćenice
-        final gradKey = (grad.toLowerCase().contains('vrsac') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+        final gradKey = GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc';
         query = query.eq('meta->>grad', gradKey);
       }
       if (vreme != null) {
@@ -452,7 +452,7 @@ class VoznjeLogService {
     // Priprema meta podataka za precizno mapiranje polazaka
     final Map<String, dynamic> meta = {};
     if (grad != null) {
-      meta['grad'] = (grad.toLowerCase().contains('vrsac') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+      meta['grad'] = GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc';
     }
     if (vreme != null) {
       meta['vreme'] = GradAdresaValidator.normalizeTime(vreme);
@@ -815,7 +815,7 @@ class VoznjeLogService {
       final Map<String, dynamic> finalMeta = Map.from(meta ?? {});
       if (grad != null) {
         // ✅ FIX: Koristi bc/vs skraćenice za konzistentnost sa seat_requests
-        finalMeta['grad'] = (grad.toLowerCase().contains('vrsac') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+        finalMeta['grad'] = GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc';
       }
       if (vreme != null) {
         // ✅ FIX: Standardizuj na HH:mm pre upisa u log (da bi match radio kasnije)

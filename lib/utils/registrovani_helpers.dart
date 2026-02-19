@@ -29,9 +29,12 @@ class RegistrovaniHelpers {
     bool isWinter = false,
   }) {
     if (rawMap.containsKey('zeljeno_vreme') && rawMap['zeljeno_vreme'] != null) {
-      final grad = rawMap['grad']?.toString().toLowerCase();
-      final targetGrad = (place.toLowerCase() == 'vs' || place.toLowerCase() == 'vrsac') ? 'vs' : 'bc';
-      if (grad == targetGrad) {
+      final gradRaw = rawMap['grad']?.toString();
+      final isVs = (place.toLowerCase() == 'vs' || place.toLowerCase() == 'vrsac');
+
+      final matches = isVs ? GradAdresaValidator.isVrsac(gradRaw) : GradAdresaValidator.isBelaCrkva(gradRaw);
+
+      if (matches) {
         return normalizeTime(rawMap['zeljeno_vreme'].toString());
       }
     }

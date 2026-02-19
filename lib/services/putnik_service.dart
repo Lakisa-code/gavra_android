@@ -832,13 +832,13 @@ class PutnikService {
       final putnikId = data['putnik_id']?.toString();
       if (putnikId == null) continue;
 
-      final gradRaw = data['grad']?.toString().toLowerCase();
+      final gradRaw = data['grad']?.toString();
       // ✅ FIX: Normalizuj grad na 'vs'/'bc' skraćenice za konzistentan match sa logData
-      final grad = (gradRaw == 'vršac' || gradRaw == 'vrsac' || gradRaw == 'vs')
+      final grad = GradAdresaValidator.isVrsac(gradRaw)
           ? 'vs'
-          : (gradRaw == 'bela crkva' || gradRaw == 'belacrkva' || gradRaw == 'bc')
+          : GradAdresaValidator.isBelaCrkva(gradRaw)
               ? 'bc'
-              : gradRaw;
+              : gradRaw?.toLowerCase();
 
       final vremeRaw = (data['dodeljeno_vreme'] ?? data['zeljeno_vreme'])?.toString();
 
