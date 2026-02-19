@@ -360,6 +360,8 @@ class PutnikService {
       grad: putnik.grad,
       brojMesta: putnik.brojMesta,
       status: 'confirmed', // Vozač ga je dodao ručno
+      customAdresa: putnik.adresa,
+      customAdresaId: putnik.adresaId,
     );
   }
 

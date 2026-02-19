@@ -36,19 +36,17 @@ class StatistikaService {
     final danPocetak = DateTime(now.year, now.month, now.day);
     final danKraj = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    return VoznjeLogService.streamBrojUplataPoVozacima(
-            from: danPocetak, to: danKraj)
-        .map((brojUplata) {
+    return VoznjeLogService.streamBrojUplataPoVozacima(from: danPocetak, to: danKraj).map((brojUplata) {
       return brojUplata[vozac] ?? 0;
     });
   }
 
   /// Stream broja dužnika
+  /// ✅ DEPRECATED: Koristi direktno PutnikService stream umesto voznje_log
   static Stream<int> streamBrojDuznikaZaVozaca({required String vozac}) {
-    return VoznjeLogService.streamBrojDuznikaPoVozacu(
-      vozacIme: vozac,
-      datum: DateTime.now(),
-    );
+    // NOTA: Ova funkcija je zastarela jer se broj dužnika računa
+    // direktno iz seat_requests/putnika, ne iz voznje_log tabele
+    return Stream.value(0); // Placeholder - ne koristi se
   }
 
   /// Detaljne statistike po vozačima
@@ -80,8 +78,7 @@ class StatistikaService {
   }
 
   /// Dohvati kilometražu za vozača
-  Future<double> getKilometrazu(
-      String vozac, DateTime from, DateTime to) async {
+  Future<double> getKilometrazu(String vozac, DateTime from, DateTime to) async {
     try {
       final fromStr = from.toIso8601String().split('T')[0];
       final toStr = to.toIso8601String().split('T')[0];

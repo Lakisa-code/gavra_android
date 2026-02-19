@@ -846,7 +846,12 @@ class _PutnikCardState extends State<PutnikCard> {
         );
       }
 
+      // ✅ OSVEŽI STANJE PUTNIKA - postavi placeno na true
       if (mounted) {
+        setState(() {
+          _putnik = _putnik.copyWith(placeno: true);
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Plaćanje uspešno evidentirano: $iznos RSD'),
