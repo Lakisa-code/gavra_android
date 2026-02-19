@@ -19,8 +19,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   final String _selectedFilter = 'svi'; // 'svi', 'veliki_dug', 'mali_dug'
-  final String _sortBy =
-      'vreme'; // 'iznos', 'vreme', 'ime', 'vozac' - default: najnoviji gore
+  final String _sortBy = 'vreme'; // 'iznos', 'vreme', 'ime', 'vozac' - default: najnoviji gore
 
   @override
   void initState() {
@@ -78,8 +77,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
   double _calculateDugAmount(Putnik putnik) {
     // ✅ FIX: Koristi efektivnu cenu iz modela pomnoženu sa brojem mesta
     // Umesto hardkodovanih 500.0
-    return putnik.effectivePrice *
-        (putnik.brojMesta > 0 ? putnik.brojMesta : 1);
+    return putnik.effectivePrice * (putnik.brojMesta > 0 ? putnik.brojMesta : 1);
   }
 
   List<Putnik> _applyFiltersAndSort(List<Putnik> input) {
@@ -90,8 +88,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
     if (searchQuery.isNotEmpty) {
       result = result.where((duznik) {
         return duznik.ime.toLowerCase().contains(searchQuery) ||
-            (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ??
-                false) ||
+            (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ?? false) ||
             (duznik.grad.toLowerCase().contains(searchQuery));
       }).toList();
     }
@@ -124,20 +121,16 @@ class _DugoviScreenState extends State<DugoviScreen> {
       ),
       builder: (context, snapshot) {
         final putnici = snapshot.data ?? [];
-        final isLoading = snapshot.connectionState == ConnectionState.waiting &&
-            putnici.isEmpty;
+        final isLoading = snapshot.connectionState == ConnectionState.waiting && putnici.isEmpty;
 
         // ✅ Filter dužnike - putnici sa PLAVOM KARTICOM (nisu mesečni tip) koji nisu platili
         final duzniciRaw = putnici
             .where(
               (p) =>
-                  (!p
-                      .isMesecniTip) && // ✅ FIX: Plava kartica = nije mesečni tip
-                  (p.placeno !=
-                      true) && // ✅ FIX: Koristi placeno flag iz voznje_log
+                  (!p.isMesecniTip) && // ✅ FIX: Plava kartica = nije mesečni tip
+                  (p.placeno != true) && // ✅ FIX: Koristi placeno flag iz voznje_log
                   (p.jePokupljen) &&
-                  (p.status == null ||
-                      (p.status != 'Otkazano' && p.status != 'otkazan')),
+                  (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')),
               // 🎯 IZMENA: Uklonjen filter po vozaču da bi se prikazali SVI dužnici (zahtev 26.01.2026)
             )
             .toList();
@@ -168,25 +161,21 @@ class _DugoviScreenState extends State<DugoviScreen> {
                 ),
                 Text(
                   'Svi neplaćeni putnici (Plava kartica)',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.white70.withOpacity(0.8)),
+                  style: TextStyle(fontSize: 12, color: Colors.white70.withOpacity(0.8)),
                 ),
               ],
             ),
             automaticallyImplyLeading: false,
           ),
           body: Container(
-            decoration:
-                BoxDecoration(gradient: Theme.of(context).backgroundGradient),
+            decoration: BoxDecoration(gradient: Theme.of(context).backgroundGradient),
             child: SafeArea(
               child: Column(
                 children: [
                   // ...existing code...
                   Expanded(
                     child: isLoading
-                        ? const Center(
-                            child:
-                                CircularProgressIndicator(color: Colors.white))
+                        ? const Center(child: CircularProgressIndicator(color: Colors.white))
                         : filteredDugovi.isEmpty
                             ? const Center(
                                 child: Text(
