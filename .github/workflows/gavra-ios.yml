@@ -60,8 +60,9 @@ jobs:
 
       - name: Setup App Store Connect API Key
         run: |
-          mkdir -p $HOME/private_keys
-          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" > $HOME/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
 
       - name: Fetch signing files
         run: |
@@ -69,7 +70,7 @@ jobs:
             --type IOS_APP_STORE \
             --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
             --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
-            --private-key "$HOME/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8" \
+            --private-key ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
             --create
 
       - name: Setup certificates
