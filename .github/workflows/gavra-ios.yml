@@ -58,11 +58,11 @@ jobs:
               f.write(formatted_key)
           "
           
-      # 2. Instalacija zavisnosti za čišćenje sertifikata
-      pip3 install pyjwt cryptography requests --break-system-packages
+          # 2. Instalacija zavisnosti za čišćenje sertifikata
+          pip3 install pyjwt cryptography requests --break-system-packages
 
-      # 3. Skripta za automatsko brisanje najstarijeg sertifikata (ako je limit od 3 dostignut)
-      python3 -c "
+          # 3. Skripta za automatsko brisanje najstarijeg sertifikata (ako je limit od 3 dostignut)
+          python3 -c "
 import jwt, time, requests, os, json
 from datetime import datetime
 
@@ -100,12 +100,13 @@ if r.status_code == 200:
             print('✅ Sertifikat uspešno obrisan.')
         else:
             print(f'❌ Greška pri brisanju: {dr.status_code} {dr.text}')
-            # Ne izlazimo sa greškom ovde, možda Codemagic ipak uspe ako je neki drugi problem
     else:
         print('Limit nije dostignut, nema potrebe za brisanjem.')
 else:
     print(f'❌ Greška pri listanju sertifikata: {r.status_code} {r.text}')
-"          # 4. Standardni Codemagic Fetch
+"
+
+          # 4. Standardni Codemagic Fetch
           export APP_STORE_CONNECT_ISSUER_ID="$ISSUER_ID"
           export APP_STORE_CONNECT_KEY_IDENTIFIER="$KEY_ID"
           export APP_STORE_CONNECT_PRIVATE_KEY="$(cat ~/private_keys/AuthKey.p8)"
