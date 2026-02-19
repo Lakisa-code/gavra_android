@@ -343,6 +343,8 @@ class PutnikService {
   }
 
   Future<void> dodajPutnika(Putnik putnik, {bool skipKapacitetCheck = false}) async {
+    debugPrint('🔍 [PutnikService] dodajPutnika: ime="${putnik.ime}"');
+    
     final res = await supabase
         .from('registrovani_putnici')
         .select('id, tip')
@@ -350,6 +352,8 @@ class PutnikService {
         .eq('aktivan', true)
         .eq('obrisan', false)
         .maybeSingle();
+
+    debugPrint('🔍 [PutnikService] Query result: ${res != null ? "FOUND id=${res['id']}" : "NOT FOUND"}');
 
     if (res == null) {
       throw Exception('Putnik "${putnik.ime}" nije pronađen u bazi ili nije aktivan');
