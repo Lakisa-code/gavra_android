@@ -350,7 +350,9 @@ class PutnikService {
         .eq('aktivan', true)
         .maybeSingle();
 
-    if (res == null) return;
+    if (res == null) {
+      throw Exception('Putnik "${putnik.ime}" nije pronađen u bazi ili nije aktivan');
+    }
     final putnikId = res['id'];
 
     await SeatRequestService.insertSeatRequest(

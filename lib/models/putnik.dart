@@ -225,9 +225,10 @@ class Putnik {
       tipPutnika: tip,
       mesecnaKarta: !isDnevni,
       brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
-      adresa: req['custom_adresa'] ?? (grad == 'Vršac'
-          ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
-          : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv'])),
+      adresa: req['custom_adresa'] ??
+          (grad == 'Vršac'
+              ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
+              : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv'])),
       adresaId: req['custom_adresa_id'] ?? (grad == 'Vršac' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id']),
       brojTelefona: p['broj_telefona'],
       statusVreme: p['updated_at'],
