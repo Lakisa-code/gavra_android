@@ -119,7 +119,7 @@ class PutnikService {
 
       return (reqs as List)
           .map((r) => Putnik.fromSeatRequest(r as Map<String, dynamic>))
-          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden')
+          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error fetching by day: $e');
@@ -155,7 +155,7 @@ class PutnikService {
 
       final results = (reqs as List)
           .map((r) => Putnik.fromSeatRequest(r as Map<String, dynamic>))
-          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden')
+          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
 
       _lastValues[key] = results;
@@ -295,7 +295,7 @@ class PutnikService {
 
       return (res as List)
           .map((row) => Putnik.fromSeatRequest(row as Map<String, dynamic>))
-          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden')
+          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error in getPutniciByIds: $e');
@@ -320,7 +320,7 @@ class PutnikService {
 
       return (res as List)
           .map((row) => Putnik.fromSeatRequest(row as Map<String, dynamic>))
-          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden')
+          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error in getAllPutnici: $e');
