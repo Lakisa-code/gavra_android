@@ -39,18 +39,23 @@ jobs:
           P8_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
         run: |
           mkdir -p ~/private_keys
-          echo "$P8_KEY" > ~/private_keys/AuthKey.p8
           
-          # Provera formata (bez ispisivanja ključa)
-          if head -n 1 ~/private_keys/AuthKey.p8 | grep -q "BEGIN PRIVATE KEY"; then
-            echo "✅ Key starts with BEGIN PRIVATE KEY"
-          elif grep -q "BEGIN PRIVATE KEY" ~/private_keys/AuthKey.p8; then
-            echo "⚠️ Key contains BEGIN PRIVATE KEY but not at the first line. Fixing..."
-            # Ukloni prazne linije na početku
-            sed -i '' -e '/BEGIN PRIVATE KEY/,$!d' ~/private_keys/AuthKey.p8
-          else
-            echo "⚠️ Key does not contain BEGIN PRIVATE KEY header!"
+          # Čišćenje i re-formatiranje PEM ključa
+          # 1. Uzmi samo sadržaj između (ili bez) headera
+          # 2. Ukloni sav whitespace (uključujući \r i nove redove)
+          # 3. Ponovo dodaj standardne PEM headere i prelome na 64 karaktera
+          RAW_BASE64=$(echo "$P8_KEY" | sed 's/-----BEGIN PRIVATE KEY-----//g; s/-----END PRIVATE KEY-----//g' | tr -d '[:space:]')
+          
+          if [ -z "$RAW_BASE64" ]; then
+            echo "❌ Greška: Privatni ključ je prazan!"
+            exit 1
           fi
+          
+          echo "-----BEGIN PRIVATE KEY-----" > ~/private_keys/AuthKey.p8
+          echo "$RAW_BASE64" | fold -w 64 >> ~/private_keys/AuthKey.p8
+          echo "-----END PRIVATE KEY-----" >> ~/private_keys/AuthKey.p8
+          
+          echo "✅ PEM ključ je re-formatiran i sačuvan."
 
           # Preuzimanje sertifikata i profila
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
