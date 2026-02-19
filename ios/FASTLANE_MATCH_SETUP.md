@@ -22,10 +22,11 @@ openssl rand -base64 32
 ```
 
 ### 3. MATCH_GIT_BASIC_AUTHORIZATION (ako koristiš HTTPS)
-Base64 encoded GitHub Personal Access Token:
+Base64 encoded format `username:token`. Za GitHub, username može biti bilo šta:
 ```bash
-echo -n "your_github_token" | base64
+echo -n "any_user:ghp_your_github_token" | base64
 ```
+Zameni `ghp_your_github_token` sa tvojim pravim tokenom.
 
 Ili kreiraj SSH deploy key za `gavra-ios-certificates` repo.
 

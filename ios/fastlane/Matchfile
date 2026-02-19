@@ -3,3 +3,4 @@ storage_mode("git")
 type("appstore")
 app_identifier(["com.gavra013.gavra_android"])
 username(ENV["FASTLANE_USER"])
+branch("main") # GitHub standard branch is now main

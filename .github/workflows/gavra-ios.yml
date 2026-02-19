@@ -20,6 +20,13 @@ jobs:
       CI: true
     
     steps:
+      - name: Check secrets
+        run: |
+          if [ -z "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "❌ Missing APPLE_TEAM_ID"; exit 1; fi
+          if [ -z "${{ secrets.MATCH_PASSWORD }}" ]; then echo "❌ Missing MATCH_PASSWORD"; exit 1; fi
+          if [ -z "${{ secrets.MATCH_GIT_URL }}" ]; then echo "❌ Missing MATCH_GIT_URL"; exit 1; fi
+          if [ -z "${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}" ]; then echo "❌ Missing FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD"; exit 1; fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 

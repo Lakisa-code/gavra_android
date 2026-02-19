@@ -26,7 +26,8 @@ Write-Host ""
 Write-Host "3. MATCH_GIT_BASIC_AUTHORIZATION (GitHub PAT)"
 Write-Host "   Kreiraj Personal Access Token sa 'repo' scope-om:"
 Write-Host "   https://github.com/settings/tokens/new" -ForegroundColor White
-Write-Host "   Zatim encode-uj token u base64"
+Write-Host "   Base64 encode format 'anyuser:TOKEN':"
+Write-Host "   [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes('anyuser:ghp_TOKEN_OVDE'))" -ForegroundColor White
 Write-Host ""
 Write-Host "4. FASTLANE_USER"
 Write-Host "   Tvoj Apple ID email (npr. email@example.com)"
