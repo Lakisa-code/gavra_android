@@ -39,34 +39,60 @@ jobs:
           P8_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
         run: |
           mkdir -p ~/private_keys
+          mkdir -p ~/certs
+          mkdir -p ~/profiles
           
-          # Python skripta za čišćenje i dobijanje čistog PEM-a
+          # Koristimo Python za precizno čišćenje i formatiranje ključa
           python3 -c "
           import os, sys
           key = os.environ.get('P8_KEY', '').strip()
           if not key:
               sys.exit(1)
+          
           raw_content = key.replace('-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '').strip()
           raw_content = ''.join(raw_content.split())
+          
           formatted_key = '-----BEGIN PRIVATE KEY-----\n'
           for i in range(0, len(raw_content), 64):
               formatted_key += raw_content[i:i+64] + '\n'
           formatted_key += '-----END PRIVATE KEY-----\n'
+          
           with open(os.path.expanduser('~/private_keys/AuthKey.p8'), 'w') as f:
               f.write(formatted_key)
           "
           
-          # Postavljamo Codemagic environment varijable koje alat automatski prepoznaje
-          export APP_STORE_CONNECT_ISSUER_ID="$APPSTORE_ISSUER_ID"
-          export APP_STORE_CONNECT_KEY_IDENTIFIER="$APPSTORE_KEY_ID"
-          export APP_STORE_CONNECT_PRIVATE_KEY=$(cat ~/private_keys/AuthKey.p8)
+          # Eksportujemo varijable
+          export APP_STORE_CONNECT_ISSUER_ID="${{ secrets.APPSTORE_ISSUER_ID }}"
+          export APP_STORE_CONNECT_KEY_IDENTIFIER="${{ secrets.APPSTORE_KEY_ID }}"
+          # Koristimo navodnike da sačuvamo newlines
+          export APP_STORE_CONNECT_PRIVATE_KEY="$(cat ~/private_keys/AuthKey.p8)"
           
-          echo "✅ Environment variables set. Running fetch-signing-files..."
+          echo "✅ Authentication environment established."
           
-          # Pokretanje bez eksplicitnih flagova za ključeve (alat će ih uzeti iz env)
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --install-certificate
+            --create \
+            --certificates-dir ~/certs \
+            --profiles-dir ~/profiles
+          
+      - name: Install Certificates and Profiles
+        run: |
+          # Instalacija sertifikata u keychain
+          # Tražimo .p12 fajlove u ~/certs
+          if [ -d "$HOME/certs" ]; then
+            find "$HOME/certs" -name "*.p12" -exec keychain add-certificates --certificate {} \;
+          fi
+          
+          # Kopiranje profila na standardnu lokaciju koju Xcode koristi
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          if [ -d "$HOME/profiles" ]; then
+            # Provera da li ima fajlova pre kopiranja
+            if ls "$HOME/profiles/"*.mobileprovision 1> /dev/null 2>&1; then
+              cp "$HOME/profiles/"*.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/"
+            fi
+          fi
+          
+          echo "✅ Certificates and profiles installed."
 
       - name: Setup Provisioning Profiles
         run: |
