@@ -9,6 +9,14 @@ jobs:
     
     env:
       BUNDLE_ID: com.gavra013.gavra_android
+      FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+      FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+      FASTLANE_SKIP_UPDATE_CHECK: true
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+      MATCH_KEYCHAIN_NAME: ${{ secrets.MATCH_KEYCHAIN_NAME }}
+      MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
     
     steps:
       - name: Checkout code
@@ -43,59 +51,25 @@ jobs:
           ${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}
           PLISTEOF
 
-      - name: Install Codemagic CLI Tools
-        run: |
-          brew install pipx
-          pipx install codemagic-cli-tools
-          pipx ensurepath
-
-      - name: Flutter Doctor
-        run: flutter doctor -v
-
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Setup keychain
-        run: keychain initialize
-
-      - name: Decode and setup App Store Connect API Key
+      - name: Install Fastlane
         run: |
-          mkdir -p ~/private_keys
-          # Decode base64 if needed, otherwise use as-is
-          if echo "${{ secrets.APPSTORE_API_KEY_P8 }}" | head -c 4 | grep -q "^LS0t"; then
-            echo "Key is base64 encoded, decoding..."
-            printf '%s' "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 -d > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          else
-            echo "Key is already in PEM format"
-            printf '%s' "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          fi
-          chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          
-          # Verify key format
-          echo "=== Key file size and format ==="
-          ls -lh ~/private_keys/
-          head -1 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          sudo gem install fastlane -NV
 
-      - name: Fetch signing files
+      - name: Setup keychain for code signing
         run: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
-            --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
-            --private-key ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-            --create
+          security create-keychain -p "" ~/Library/Keychains/ci.keychain
+          security default-keychain -s ~/Library/Keychains/ci.keychain
+          security unlock-keychain -p "" ~/Library/Keychains/ci.keychain
 
-      - name: Setup certificates
-        run: keychain add-certificates
-
-      - name: Setup code signing
-        run: xcode-project use-profiles
-
-      - name: Install CocoaPods
+      - name: Sync code signing
         run: |
           cd ios
-          pod install --repo-update
-          cd ..
+          fastlane sync_code_signing
+        env:
+          FASTLANE_SKIP_UPDATE_CHECK: true
 
       - name: Build IPA
         run: |
@@ -105,8 +79,23 @@ jobs:
 
       - name: Upload to TestFlight
         run: |
-          app-store-connect publish \
-            --path build/ios/ipa/gavra_android.ipa \
-            --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
-            --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
-            --private-key ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          cd ios
+          fastlane upload_testflight
+        env:
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+
+      - name: Upload IPA artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-ipa
+          path: build/ios/ipa/*.ipa
+          retention-days: 30
+
+      - name: Success notification
+        if: success()
+        run: |
+          echo "✅ iOS build successful!"
+          echo "📦 Version: ${{ env.VERSION }} (${{ env.BUILD_NUMBER }})"
+          echo "📱 App: com.gavra013.gavra_android"
+          echo "⏳ Build uploaded to TestFlight, waiting for Apple processing..."
