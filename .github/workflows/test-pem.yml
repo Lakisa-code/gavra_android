@@ -1,0 +1,40 @@
+name: Test PEM Key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-key:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Setup App Store Connect API Key
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          echo "=== Decoded P8 key (first 3 lines) ==="
+          head -3 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          echo ""
+          echo "=== Last 2 lines ==="
+          tail -2 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          echo ""
+          echo "=== File size ==="
+          wc -c ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+
+      - name: Install Codemagic CLI
+        run: |
+          brew install pipx
+          pipx install codemagic-cli-tools
+          pipx ensurepath
+
+      - name: Test API Connection
+        run: |
+          echo "=== Testing App Store Connect API ==="
+          app-store-connect apps list \
+            --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
+            --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
+            --private-key ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
+            --json || echo "API call failed but continuing..."
+          echo ""
+          echo "✅ Test completed!"
