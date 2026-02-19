@@ -348,6 +348,7 @@ class PutnikService {
         .select('id, tip')
         .eq('putnik_ime', putnik.ime)
         .eq('aktivan', true)
+        .eq('obrisan', false)
         .maybeSingle();
 
     if (res == null) {
