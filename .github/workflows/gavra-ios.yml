@@ -35,27 +35,21 @@ jobs:
         run: keychain initialize
 
       - name: Fetch Certificates and Profiles
+        env:
+          P8_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
         run: |
           mkdir -p ~/private_keys
-          # Upisujemo sirov sadržaj
-          printf "%s" "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey.raw
+          echo "$P8_KEY" > ~/private_keys/AuthKey.p8
           
-          # Detekcija i čišćenje ključa
-          if grep -q "BEGIN PRIVATE KEY" ~/private_keys/AuthKey.raw; then
-            echo "Key is in PEM format, cleaning up..."
-            # Čistimo eventualne Windows \r karaktere i popravljamo PEM format
-            cat ~/private_keys/AuthKey.raw | tr -d '\r' > ~/private_keys/AuthKey.p8
+          # Provera formata (bez ispisivanja ključa)
+          if head -n 1 ~/private_keys/AuthKey.p8 | grep -q "BEGIN PRIVATE KEY"; then
+            echo "✅ Key starts with BEGIN PRIVATE KEY"
+          elif grep -q "BEGIN PRIVATE KEY" ~/private_keys/AuthKey.p8; then
+            echo "⚠️ Key contains BEGIN PRIVATE KEY but not at the first line. Fixing..."
+            # Ukloni prazne linije na početku
+            sed -i '' -e '/BEGIN PRIVATE KEY/,$!d' ~/private_keys/AuthKey.p8
           else
-            echo "Key is not in PEM format, attempting base64 decode..."
-            # Čistimo razmake i dekodiramo
-            cat ~/private_keys/AuthKey.raw | tr -d '[:space:]' | base64 -d > ~/private_keys/AuthKey.p8
-          fi
-          
-          # Finalna provera i formatiranje (dodavanje headera ako fali)
-          if ! grep -q "BEGIN PRIVATE KEY" ~/private_keys/AuthKey.p8; then
-             echo "Adding missing PEM headers..."
-             { echo "-----BEGIN PRIVATE KEY-----"; cat ~/private_keys/AuthKey.p8; echo "-----END PRIVATE KEY-----"; } > ~/private_keys/AuthKey.p8.tmp
-             mv ~/private_keys/AuthKey.p8.tmp ~/private_keys/AuthKey.p8
+            echo "⚠️ Key does not contain BEGIN PRIVATE KEY header!"
           fi
 
           # Preuzimanje sertifikata i profila
