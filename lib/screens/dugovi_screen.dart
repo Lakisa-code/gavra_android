@@ -133,8 +133,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
               (p) =>
                   (!p
                       .isMesecniTip) && // ✅ FIX: Plava kartica = nije mesečni tip
-                  (p.vremePlacanja ==
-                      null) && // ✅ FIX: Nije platio ako nema vremePlacanja
+                  (p.placeno !=
+                      true) && // ✅ FIX: Koristi placeno flag iz voznje_log
                   (p.jePokupljen) &&
                   (p.status == null ||
                       (p.status != 'Otkazano' && p.status != 'otkazan')),
