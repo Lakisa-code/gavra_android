@@ -63,6 +63,10 @@ jobs:
           mkdir -p ~/private_keys
           echo "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
           chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          echo "=== First 5 lines of key file ==="
+          head -5 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          echo "=== File exists check ==="
+          ls -la ~/private_keys/
 
       - name: Fetch signing files
         run: |
