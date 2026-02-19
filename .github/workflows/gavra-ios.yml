@@ -11,6 +11,11 @@ jobs:
       BUNDLE_ID: com.gavra013.gavra_android
       FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
       FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+      FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
       FASTLANE_SKIP_UPDATE_CHECK: true
       CI: true
     
@@ -50,23 +55,33 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Install dependencies
+        run: |
+          cd ios
+          bundle install
+
       - name: Install CocoaPods
         run: |
           cd ios
-          pod install --repo-update
+          bundle exec pod install --repo-update
           cd ..
+
+      - name: Sync code signing
+        run: |
+          cd ios
+          bundle exec fastlane sync_code_signing
 
       - name: Build IPA
         run: |
           flutter build ipa --release \
             --build-name=${{ env.VERSION }} \
             --build-number=${{ env.BUILD_NUMBER }} \
-            --export-method=app-store
+            --export-options-plist=ios/ExportOptions.plist
 
       - name: Upload to TestFlight
         run: |
           cd ios
-          fastlane upload_testflight
+          bundle exec fastlane upload_testflight
         env:
           FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
 

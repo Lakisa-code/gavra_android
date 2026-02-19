@@ -17,8 +17,11 @@ platform :ios do
   lane :upload_testflight do
     setup_ci if ENV['CI']
     
+    # Get the ipa path
+    ipa_path = Dir["../build/ios/ipa/*.ipa"].first
+    
     pilot(
-      ipa: "build/ios/ipa/gavra_android.ipa",
+      ipa: ipa_path,
       skip_waiting_for_build_processing: false,
       skip_submission: false,
       distribute_external: false,
