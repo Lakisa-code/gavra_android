@@ -58,50 +58,54 @@ jobs:
               f.write(formatted_key)
           "
           
-          # 2. Instalacija zavisnosti za čišćenje sertifikata
-          pip3 install pyjwt cryptography requests
-          
-          # 3. Skripta za automatsko brisanje najstarijeg sertifikata (ako je limit od 3 dostignut)
-          python3 -c "
-          import jwt, time, requests, os, json
-          from datetime import datetime
-          
-          ISSUER_ID = os.environ.get('ISSUER_ID')
-          KEY_ID = os.environ.get('KEY_ID')
-          with open(os.path.expanduser('~/private_keys/AuthKey.p8'), 'r') as f:
-              PRIVATE_KEY = f.read()
-          
-          header = {'alg': 'ES256', 'kid': KEY_ID, 'typ': 'JWT'}
-          payload = {
-              'iss': ISSUER_ID,
-              'exp': int(time.time()) + 600,
-              'aud': 'appstoreconnect-v1'
-          }
-          token = jwt.encode(payload, PRIVATE_KEY, algorithm='ES256', headers=header)
-          headers = {'Authorization': f'Bearer {token}'}
-          
-          # Listanje sertifikata
-          r = requests.get('https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=DISTRIBUTION', headers=headers)
-          data = r.json()
-          
-          if r.status_code == 200:
-              certs = data.get('data', [])
-              print(f'Pronađeno {len(certs)} DISTRIBUTION sertifikata.')
-              if len(certs) >= 3:
-                  # Brišemo najstariji (onaj na kraju liste)
-                  oldest = certs[-1]
-                  cert_id = oldest['id']
-                  print(f'⚠️ Brišem najstariji sertifikat {cert_id} (Revoke)...')
-                  dr = requests.delete(f'https://api.appstoreconnect.apple.com/v1/certificates/{cert_id}', headers=headers)
-                  if dr.status_code == 204:
-                      print('✅ Sertifikat uspešno obrisan.')
-                  else:
-                      print(f'❌ Greška pri brisanju: {dr.status_code}')
-          else:
-              print(f'❌ Greška pri listanju sertifikata: {r.status_code}')
-          "
-          
-          # 4. Standardni Codemagic Fetch
+      # 2. Instalacija zavisnosti za čišćenje sertifikata
+      pip3 install pyjwt cryptography requests --break-system-packages
+
+      # 3. Skripta za automatsko brisanje najstarijeg sertifikata (ako je limit od 3 dostignut)
+      python3 -c "
+import jwt, time, requests, os, json
+from datetime import datetime
+
+ISSUER_ID = os.environ.get('ISSUER_ID')
+KEY_ID = os.environ.get('KEY_ID')
+with open(os.path.expanduser('~/private_keys/AuthKey.p8'), 'r') as f:
+    PRIVATE_KEY = f.read()
+
+header = {'alg': 'ES256', 'kid': KEY_ID, 'typ': 'JWT'}
+payload = {
+    'iss': ISSUER_ID,
+    'exp': int(time.time()) + 600,
+    'aud': 'appstoreconnect-v1'
+}
+token = jwt.encode(payload, PRIVATE_KEY, algorithm='ES256', headers=header)
+headers = {'Authorization': f'Bearer {token}'}
+
+# Listanje sertifikata
+r = requests.get('https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=DISTRIBUTION', headers=headers)
+data = r.json()
+
+if r.status_code == 200:
+    certs = data.get('data', [])
+    print(f'Pronađeno {len(certs)} DISTRIBUTION sertifikata.')
+    if len(certs) >= 3:
+        # Sortiramo po datumu kreiranja (najstariji prvi)
+        certs.sort(key=lambda x: x['attributes']['expirationDate'])
+        # Brišemo najstariji
+        oldest = certs[0] 
+        cert_id = oldest['id']
+        name = oldest['attributes']['name']
+        print(f'⚠️ Brišem najstariji sertifikat {name} ({cert_id})...')
+        dr = requests.delete(f'https://api.appstoreconnect.apple.com/v1/certificates/{cert_id}', headers=headers)
+        if dr.status_code == 204:
+            print('✅ Sertifikat uspešno obrisan.')
+        else:
+            print(f'❌ Greška pri brisanju: {dr.status_code} {dr.text}')
+            # Ne izlazimo sa greškom ovde, možda Codemagic ipak uspe ako je neki drugi problem
+    else:
+        print('Limit nije dostignut, nema potrebe za brisanjem.')
+else:
+    print(f'❌ Greška pri listanju sertifikata: {r.status_code} {r.text}')
+"          # 4. Standardni Codemagic Fetch
           export APP_STORE_CONNECT_ISSUER_ID="$ISSUER_ID"
           export APP_STORE_CONNECT_KEY_IDENTIFIER="$KEY_ID"
           export APP_STORE_CONNECT_PRIVATE_KEY="$(cat ~/private_keys/AuthKey.p8)"
