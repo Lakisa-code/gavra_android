@@ -11,20 +11,19 @@ jobs:
       - name: Setup App Store Connect API Key
         run: |
           mkdir -p ~/private_keys
-          printf '%s' "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 -d > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          echo "=== Decoded P8 key (first 3 lines) ==="
-          head -3 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          # Try method 1: Direct (no base64)
+          printf '%s' "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey_direct.p8
+          # Try method 2: Base64 decode
+          printf '%s' "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 -d > ~/private_keys/AuthKey_decoded.p8
+          
+          echo "=== Method 1: Direct (first 3 lines) ==="
+          head -3 ~/private_keys/AuthKey_direct.p8 || echo "Failed"
           echo ""
-          echo "=== Last 2 lines ==="
-          tail -2 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          echo "=== Method 2: Base64 decoded (first 3 lines) ==="
+          head -3 ~/private_keys/AuthKey_decoded.p8 || echo "Failed"
           echo ""
-          echo "=== File size and format check ==="
-          wc -c ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          file ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          echo ""
-          echo "=== Hex dump of first 50 bytes ==="
-          xxd -l 50 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          echo "=== File sizes ==="
+          ls -lh ~/private_keys/
 
       - name: Install Codemagic CLI
         run: |
@@ -34,11 +33,20 @@ jobs:
 
       - name: Test API Connection
         run: |
-          echo "=== Testing App Store Connect API ==="
+          echo "=== Testing with DIRECT method ==="
           app-store-connect apps list \
             --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
             --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
-            --private-key ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-            --json || echo "API call failed but continuing..."
+            --private-key ~/private_keys/AuthKey_direct.p8 \
+            --json 2>&1 | head -5 || echo "Direct method failed"
+          
+          echo ""
+          echo "=== Testing with BASE64 DECODED method ==="
+          app-store-connect apps list \
+            --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
+            --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
+            --private-key ~/private_keys/AuthKey_decoded.p8 \
+            --json 2>&1 | head -5 || echo "Decoded method failed"
+          
           echo ""
           echo "✅ Test completed!"
