@@ -40,22 +40,39 @@ jobs:
         run: |
           mkdir -p ~/private_keys
           
-          # Čišćenje i re-formatiranje PEM ključa
-          # 1. Uzmi samo sadržaj između (ili bez) headera
-          # 2. Ukloni sav whitespace (uključujući \r i nove redove)
-          # 3. Ponovo dodaj standardne PEM headere i prelome na 64 karaktera
-          RAW_BASE64=$(echo "$P8_KEY" | sed 's/-----BEGIN PRIVATE KEY-----//g; s/-----END PRIVATE KEY-----//g' | tr -d '[:space:]')
+          # Koristimo Python za precizno čišćenje i formatiranje ključa
+          python3 -c "
+          import os, sys
+          key = os.environ.get('P8_KEY', '').strip()
+          if not key:
+              print('❌ P8_KEY is empty!')
+              sys.exit(1)
           
-          if [ -z "$RAW_BASE64" ]; then
-            echo "❌ Greška: Privatni ključ je prazan!"
-            exit 1
+          # Ukloni headere ako postoje da bismo očistili unutrašnji sadržaj
+          raw_content = key.replace('-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '').strip()
+          # Ukloni sve praznine (newlines, spaces, \r)
+          raw_content = ''.join(raw_content.split())
+          
+          # Ponovo sastavi validan PEM
+          formatted_key = '-----BEGIN PRIVATE KEY-----\n'
+          # Podeli na linije od 64 karaktera
+          for i in range(0, len(raw_content), 64):
+              formatted_key += raw_content[i:i+64] + '\n'
+          formatted_key += '-----END PRIVATE KEY-----\n'
+          
+          with open(os.path.expanduser('~/private_keys/AuthKey.p8'), 'w') as f:
+              f.write(formatted_key)
+          "
+          
+          echo "✅ Key processed."
+          
+          # Provera validnosti ključa pomoću openssl (bez ispisivanja sadržaja)
+          if openssl pkey -in ~/private_keys/AuthKey.p8 -pubout -out /dev/null 2>/dev/null; then
+            echo "✅ Openssl potvrdio: Ključ je validan PEM."
+          else
+            echo "❌ Openssl kaže: Ključ NIJE validan PEM! Verovatno je sam sadržaj (Base64) oštećen."
+            # Nećemo raditi exit 1 ovde da vidimo error od app-store-connect
           fi
-          
-          echo "-----BEGIN PRIVATE KEY-----" > ~/private_keys/AuthKey.p8
-          echo "$RAW_BASE64" | fold -w 64 >> ~/private_keys/AuthKey.p8
-          echo "-----END PRIVATE KEY-----" >> ~/private_keys/AuthKey.p8
-          
-          echo "✅ PEM ključ je re-formatiran i sačuvan."
 
           # Preuzimanje sertifikata i profila
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
