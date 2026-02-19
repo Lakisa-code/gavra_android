@@ -172,9 +172,8 @@ class Putnik {
     final bool isPickedUp = req['pokupljen_iz_loga'] == true || req['status']?.toString().toLowerCase() == 'pokupljen';
 
     // Provera da li je plaćeno (za dnevne putnike)
-    final bool isPaid = req['placeno_iz_loga'] == true ||
-        req['status']?.toString().toLowerCase() == 'confirmed' ||
-        req['status']?.toString().toLowerCase() == 'pokupljen';
+    // ✅ SAMO iz voznje_log (uplata/uplata_dnevna), ne iz statusa!
+    final bool isPaid = req['placeno_iz_loga'] == true;
 
     // ✅ FIX: Koristi centralizovanu normalizaciju vremena
     final vreme = RegistrovaniHelpers.normalizeTime(vremeRaw) ?? '05:00';
