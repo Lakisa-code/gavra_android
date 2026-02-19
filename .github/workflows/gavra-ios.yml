@@ -37,41 +37,75 @@ jobs:
       - name: Fetch Certificates and Profiles
         env:
           P8_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
+          ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
         run: |
           mkdir -p ~/private_keys
           mkdir -p ~/certs
           mkdir -p ~/profiles
           
-          # Koristimo Python za precizno čišćenje i formatiranje ključa
+          # 1. Priprema API ključa
           python3 -c "
           import os, sys
           key = os.environ.get('P8_KEY', '').strip()
-          if not key:
-              sys.exit(1)
-          
           raw_content = key.replace('-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '').strip()
           raw_content = ''.join(raw_content.split())
-          
           formatted_key = '-----BEGIN PRIVATE KEY-----\n'
           for i in range(0, len(raw_content), 64):
               formatted_key += raw_content[i:i+64] + '\n'
           formatted_key += '-----END PRIVATE KEY-----\n'
-          
           with open(os.path.expanduser('~/private_keys/AuthKey.p8'), 'w') as f:
               f.write(formatted_key)
           "
           
-          # Eksportujemo varijable
-          export APP_STORE_CONNECT_ISSUER_ID="${{ secrets.APPSTORE_ISSUER_ID }}"
-          export APP_STORE_CONNECT_KEY_IDENTIFIER="${{ secrets.APPSTORE_KEY_ID }}"
-          # Koristimo navodnike da sačuvamo newlines
+          # 2. Instalacija zavisnosti za čišćenje sertifikata
+          pip3 install pyjwt cryptography requests
+          
+          # 3. Skripta za automatsko brisanje najstarijeg sertifikata (ako je limit od 3 dostignut)
+          python3 -c "
+          import jwt, time, requests, os, json
+          from datetime import datetime
+          
+          ISSUER_ID = os.environ.get('ISSUER_ID')
+          KEY_ID = os.environ.get('KEY_ID')
+          with open(os.path.expanduser('~/private_keys/AuthKey.p8'), 'r') as f:
+              PRIVATE_KEY = f.read()
+          
+          header = {'alg': 'ES256', 'kid': KEY_ID, 'typ': 'JWT'}
+          payload = {
+              'iss': ISSUER_ID,
+              'exp': int(time.time()) + 600,
+              'aud': 'appstoreconnect-v1'
+          }
+          token = jwt.encode(payload, PRIVATE_KEY, algorithm='ES256', headers=header)
+          headers = {'Authorization': f'Bearer {token}'}
+          
+          # Listanje sertifikata
+          r = requests.get('https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=DISTRIBUTION', headers=headers)
+          data = r.json()
+          
+          if r.status_code == 200:
+              certs = data.get('data', [])
+              print(f'Pronađeno {len(certs)} DISTRIBUTION sertifikata.')
+              if len(certs) >= 3:
+                  # Brišemo najstariji (onaj na kraju liste)
+                  oldest = certs[-1]
+                  cert_id = oldest['id']
+                  print(f'⚠️ Brišem najstariji sertifikat {cert_id} (Revoke)...')
+                  dr = requests.delete(f'https://api.appstoreconnect.apple.com/v1/certificates/{cert_id}', headers=headers)
+                  if dr.status_code == 204:
+                      print('✅ Sertifikat uspešno obrisan.')
+                  else:
+                      print(f'❌ Greška pri brisanju: {dr.status_code}')
+          else:
+              print(f'❌ Greška pri listanju sertifikata: {r.status_code}')
+          "
+          
+          # 4. Standardni Codemagic Fetch
+          export APP_STORE_CONNECT_ISSUER_ID="$ISSUER_ID"
+          export APP_STORE_CONNECT_KEY_IDENTIFIER="$KEY_ID"
           export APP_STORE_CONNECT_PRIVATE_KEY="$(cat ~/private_keys/AuthKey.p8)"
           
-          echo "✅ Authentication environment established."
-          
-          # Generišemo novi privatni ključ za sertifikat (ovo NIJE API ključ)
-          # Ovo omogućava Codemagic-u da kreira novi sertifikat ako stari nema ključ
-          mkdir -p "$HOME/certs"
           openssl genrsa -out "$HOME/certs/signing.key" 2048
           
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
