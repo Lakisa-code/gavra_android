@@ -11,7 +11,6 @@ jobs:
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APPSTORE_KEY_ID }}
       APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
-      CERTIFICATE_PRIVATE_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
     
     steps:
       - name: Checkout code
@@ -59,11 +58,24 @@ jobs:
       - name: Setup keychain
         run: keychain initialize
 
+      - name: Setup App Store Connect API Key
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APPSTORE_KEY_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+
       - name: Fetch signing files
         run: |
           app-store-connect fetch-signing-files "com.gavra013.gavra_android" \
             --type IOS_APP_STORE \
             --create
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APPSTORE_KEY_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
 
       - name: Setup certificates
         run: keychain add-certificates
