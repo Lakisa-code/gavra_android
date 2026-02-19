@@ -98,12 +98,10 @@ jobs:
             fi
           fi
           
+          # Automatski setujemo profile u Xcode projektu
+          xcode-project use-profiles --bundle-id "$BUNDLE_ID"
+          
           echo "✅ Certificates and profiles installed."
-
-      - name: Setup Provisioning Profiles
-        run: |
-          keychain add-certificates
-          # xcode-project use-profiles # Opciono, flutter build ipa obično radi sa export-options-plist
 
       - name: Get version from pubspec.yaml
         id: version
