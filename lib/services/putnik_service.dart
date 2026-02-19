@@ -344,7 +344,7 @@ class PutnikService {
 
   Future<void> dodajPutnika(Putnik putnik, {bool skipKapacitetCheck = false}) async {
     debugPrint('🔍 [PutnikService] dodajPutnika: ime="${putnik.ime}"');
-    
+
     final res = await supabase
         .from('registrovani_putnici')
         .select('id, tip')
@@ -867,16 +867,19 @@ class PutnikService {
 
         if (tipovi.contains('voznja')) {
           data['pokupljen_iz_loga'] = true;
+          debugPrint('✅ [_enrichWithLogData] Putnik $putnikId - pokupljen_iz_loga = true');
         }
         if (tipovi.contains('otkazivanje')) {
           data['status'] = 'otkazano';
           data['otkazano_iz_loga'] = true;
+          debugPrint('✅ [_enrichWithLogData] Putnik $putnikId - otkazano_iz_loga = true');
         }
         if (tipovi.contains('uplata') || tipovi.contains('uplata_dnevna')) {
           data['placeno_iz_loga'] = true;
           // ✅ NOVO: Popuni iznos i vozač ime za prikaz u kartici putnika
           data['cena'] = match['iznos'];
           data['naplatioVozac'] = match['vozac_ime'];
+          debugPrint('✅ [_enrichWithLogData] Putnik $putnikId - placeno_iz_loga = true, cena=${match['iznos']}, naplatioVozac=${match['vozac_ime']}');
         }
 
         // Ako vozač nije definisan u seat_request, uzmi ga iz loga
