@@ -56,7 +56,6 @@ DECLARE
     novi_status text;
     v_alternatives jsonb := '[]'::jsonb;
     is_bc_student_guaranteed boolean;
-    new_radni_dani text;
 BEGIN
     -- 1. Dohvati podatke o zahtevu i putniku
     SELECT * INTO req_record FROM seat_requests s WHERE s.id = req_id;
@@ -120,19 +119,7 @@ BEGIN
         updated_at = now()
     WHERE id = req_id;
 
-    -- 6. AŽURIRAJ REGISTROVANI_PUTNICI (radni_dani na osnovu narednih 7 dana u seat_requests)
-    -- Ovo osigurava da profil i liste vide na koji dan putnik putuje
-    SELECT string_agg(DISTINCT get_dan_kratica(sr.datum), ',') INTO new_radni_dani
-    FROM seat_requests sr
-    WHERE sr.putnik_id = putnik_record.id
-      AND sr.datum >= CURRENT_DATE 
-      AND sr.datum <= (CURRENT_DATE + 7)
-      AND sr.status NOT IN ('rejected', 'cancelled', 'otkazano');
-
-    UPDATE registrovani_putnici 
-    SET radni_dani = COALESCE(new_radni_dani, radni_dani),
-        updated_at = now()
-    WHERE id = putnik_record.id;
+    -- UKLONJENO: Ažuriranje radni_dani kolone u registrovani_putnici (kolona obrisana)
 END;
 $$ LANGUAGE plpgsql;
 
@@ -281,9 +268,8 @@ BEGIN
         );
     END IF;
 
-    -- 6. Ažuriraj radni_dani putnika (da bi se videlo u profilu)
-    -- Ovo radi preko seat_requests u obradi_seat_request, ali možemo i ovde odmah
-    -- da bi korisnik video promenu u profilu bez osvežavanja
+    -- UKLONJENO: Ažuriranje radni_dani kolone (kolona obrisana)
+    -- Samo ažuriraj updated_at
     UPDATE registrovani_putnici 
     SET updated_at = now()
     WHERE id = p_id;

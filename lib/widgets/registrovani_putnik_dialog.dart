@@ -80,13 +80,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
   // Form data
   String _tip = 'radnik';
-  Map<String, bool> _radniDani = {
-    'pon': true,
-    'uto': true,
-    'sre': true,
-    'cet': true,
-    'pet': true,
-  };
 
   bool _isLoading = false;
   // Brisanje lokalnog _isWinterMode i korišćenje globalnog isWinter
@@ -213,34 +206,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška pri učitavanju override-ova: $e');
       }
 
-      // Load working days
-      _setRadniDaniFromString(putnik.radniDani);
-
       // Load addresses asynchronously
       _loadAdreseForEditovanje();
     } else {
       // Default za novog putnika
       _brojMestaController.text = '1';
-    }
-  }
-
-  void _setRadniDaniFromString(String? radniDaniStr) {
-    if (radniDaniStr == null || radniDaniStr.isEmpty) return;
-
-    _radniDani = {
-      'pon': false,
-      'uto': false,
-      'sre': false,
-      'cet': false,
-      'pet': false,
-    };
-
-    final dani = radniDaniStr.split(',');
-    for (final dan in dani) {
-      final cleanDan = dan.trim().toLowerCase();
-      if (_radniDani.containsKey(cleanDan)) {
-        _radniDani[cleanDan] = true;
-      }
     }
   }
 
@@ -1524,26 +1494,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     );
   }
 
-  /// Radni dani se sada računaju iz unetih vremena polaska
-  /// Ako je uneto bilo koje vreme (BC ili VS) za dan, taj dan je radni dan
-  String _getRadniDaniString() {
-    List<String> aktivniDani = [];
-
-    // Rezultat treba da sadrži dane koji imaju bilo koji polazak (letnji ili zimski)
-    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-      final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
-      final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
-
-      bool imaTermin = bcRaw.isNotEmpty || vsRaw.isNotEmpty;
-
-      if (imaTermin) {
-        aktivniDani.add(dan);
-      }
-    }
-
-    return aktivniDani.join(',');
-  }
-
   String? _validateForm() {
     final ime = _imeController.text.trim();
     if (ime.isEmpty) {
@@ -1781,7 +1731,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'broj_telefona_majke':
           _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
       // UKLONJENO: polasci_po_danu - kolona je obrisana
-      'radni_dani': _getRadniDaniString(),
+      // UKLONJENO: radni_dani - kolona je obrisana, informacija se čuva u seat_requests
       'status': (widget.existingPutnik?.status == 'aktivan' || widget.existingPutnik?.status == null)
           ? 'radi'
           : widget.existingPutnik!.status,

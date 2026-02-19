@@ -93,7 +93,7 @@ class Putnik {
 
   // NOVI: Factory za registrovani_putnici tabelu (PROFIL PUTNIKA)
   factory Putnik.fromRegistrovaniPutnici(Map<String, dynamic> map) {
-    final danFromMap = map['radni_dani'] as String? ?? '';
+    final danFromMap = ''; // radni_dani kolona je uklonjena
     final grad = _determineGradFromRegistrovani(map);
     final place = grad.toLowerCase().contains('vr') || grad.contains('Vršac') ? 'vs' : 'bc';
 
@@ -418,7 +418,6 @@ class Putnik {
       'tip_skole': null, // ? NOVA KOLONA - možda treba logika
       'broj_telefona': brojTelefona,
       'tip_prikazivanja': null,
-      'radni_dani': dan,
       'aktivan': !obrisan,
       'status': status ?? 'radi',
       'datum_pocetka_meseca': startOfMonth.toIso8601String().split('T')[0],

@@ -271,7 +271,7 @@ class PutnikStatistikeHelper {
               ),
               const SizedBox(height: 8),
               _buildStatRow('👤 Ime:', putnikIme),
-              _buildStatRow('📅 Radni dani:', radniDani),
+              // UKLONJENO: radni_dani kolona
               _buildStatRow('📊 Tip putnika:', tip),
               if (tipSkole != null)
                 _buildStatRow(

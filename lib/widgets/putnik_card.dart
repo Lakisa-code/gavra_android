@@ -76,12 +76,6 @@ class _PutnikCardState extends State<PutnikCard> {
     _putnik = widget.putnik;
   }
 
-  // ignore: unused_element
-  String _formatVremeDodavanja(DateTime vreme) {
-    return '${vreme.day.toString().padLeft(2, '0')}.${vreme.month.toString().padLeft(2, '0')}.${vreme.year}. '
-        '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
-  }
-
   // Format za otkazivanje - prikazuje vreme ako je danas, inače datum i vreme
   String _formatOtkazivanje(DateTime vreme) {
     final danas = DateTime.now();

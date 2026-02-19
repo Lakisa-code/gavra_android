@@ -246,7 +246,6 @@ class LocalNotificationService {
     required String putnikId,
     required String dan,
     required Map<String, dynamic> polasci,
-    required String radniDani,
     String? terminPre,
     String? terminPosle,
   }) async {
@@ -258,7 +257,6 @@ class LocalNotificationService {
         'dan': dan,
         'zeljeniTermin': zeljeniTermin,
         'polasci': polasci,
-        'radniDani': radniDani,
       });
 
       // Kreiraj listu akcija
@@ -751,7 +749,6 @@ class LocalNotificationService {
 
       final putnikId = payloadData['putnikId'] as String?;
       final dan = payloadData['dan'] as String?;
-      final radniDani = payloadData['radniDani'] as String?;
 
       if (putnikId == null || dan == null || termin.isEmpty) return;
 
@@ -777,12 +774,7 @@ class LocalNotificationService {
           .maybeSingle();
       final userType = putnikData?['tip'] ?? 'Putnik';
 
-      // Sačuvaj radne dane ako su se promenili (bez polasci_po_danu!)
-      if (radniDani != null) {
-        await supabase.from('registrovani_putnici').update({
-          'radni_dani': radniDani,
-        }).eq('id', putnikId);
-      }
+      // UKLONJENO: Ažuriranje radni_dani kolone (više ne postoji)
 
       // 📝 LOG U DNEVNIK
       try {
@@ -824,7 +816,6 @@ class LocalNotificationService {
 
       final putnikId = payloadData['putnikId'] as String?;
       final dan = payloadData['dan'] as String?;
-      final radniDani = payloadData['radniDani'] as String?;
 
       if (putnikId == null || dan == null || termin.isEmpty) return;
 
@@ -850,12 +841,7 @@ class LocalNotificationService {
           .maybeSingle();
       final userType = putnikResult?['tip'] ?? 'Putnik';
 
-      // Sačuvaj radne dane ako su se promenili
-      if (radniDani != null) {
-        await supabase.from('registrovani_putnici').update({
-          'radni_dani': radniDani,
-        }).eq('id', putnikId);
-      }
+      // UKLONJENO: Ažuriranje radni_dani kolone (više ne postoji)
 
       // 📝 LOG U DNEVNIK
       try {

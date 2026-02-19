@@ -16,6 +16,8 @@ class SeatRequest {
   final int changesCount;
   final int brojMesta;
   final String? vozacId;
+  final String? customAdresa;
+  final String? customAdresaId;
 
   // Polja iz join-a (opciono)
   final String? putnikIme;
@@ -39,6 +41,8 @@ class SeatRequest {
     this.changesCount = 0,
     this.brojMesta = 1,
     this.vozacId,
+    this.customAdresa,
+    this.customAdresaId,
     this.putnikIme,
     this.brojTelefona,
     this.tipPutnika,
@@ -65,6 +69,8 @@ class SeatRequest {
       changesCount: json['changes_count'] as int? ?? 0,
       brojMesta: json['broj_mesta'] as int? ?? 1,
       vozacId: json['vozac_id'] as String?,
+      customAdresa: json['custom_adresa'] as String?,
+      customAdresaId: json['custom_adresa_id'] as String?,
       putnikIme: putnikData?['putnik_ime'] ?? json['putnik_ime'] as String?,
       brojTelefona: putnikData?['broj_telefona'] ?? json['broj_telefona'] as String?,
       tipPutnika: putnikData?['tip'] ?? json['tip'] as String?,
@@ -89,6 +95,8 @@ class SeatRequest {
       'changes_count': changesCount,
       'broj_mesta': brojMesta,
       'vozac_id': vozacId,
+      'custom_adresa': customAdresa,
+      'custom_adresa_id': customAdresaId,
       if (putnikIme != null) 'putnik_ime': putnikIme,
       if (brojTelefona != null) 'broj_telefona': brojTelefona,
       if (tipPutnika != null) 'tip': tipPutnika,
@@ -112,6 +120,8 @@ class SeatRequest {
     int? changesCount,
     int? brojMesta,
     String? vozacId,
+    String? customAdresa,
+    String? customAdresaId,
     String? putnikIme,
     String? brojTelefona,
     String? tipPutnika,
@@ -133,6 +143,8 @@ class SeatRequest {
       changesCount: changesCount ?? this.changesCount,
       brojMesta: brojMesta ?? this.brojMesta,
       vozacId: vozacId ?? this.vozacId,
+      customAdresa: customAdresa ?? this.customAdresa,
+      customAdresaId: customAdresaId ?? this.customAdresaId,
       putnikIme: putnikIme ?? this.putnikIme,
       brojTelefona: brojTelefona ?? this.brojTelefona,
       tipPutnika: tipPutnika ?? this.tipPutnika,
