@@ -8,9 +8,7 @@ jobs:
     runs-on: macos-latest
     
     env:
-      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APPSTORE_KEY_ID }}
-      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
+      BUNDLE_ID: com.gavra013.gavra_android
     
     steps:
       - name: Checkout code
@@ -34,14 +32,16 @@ jobs:
 
       - name: Create .env file
         run: |
-          cat > .env << EOF
+          cat > .env << 'ENVEOF'
           ${{ secrets.ENV_FILE_CONTENT }}
-          EOF
+          ENVEOF
 
       - name: Create Firebase config
         run: |
           mkdir -p ios/Runner
-          echo '${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}' > ios/Runner/GoogleService-Info.plist
+          cat > ios/Runner/GoogleService-Info.plist << 'PLISTEOF'
+          ${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}
+          PLISTEOF
 
       - name: Install Codemagic CLI Tools
         run: |
@@ -58,15 +58,27 @@ jobs:
       - name: Setup keychain
         run: keychain initialize
 
-      - name: Setup App Store Connect API Key
+      - name: Decode and setup App Store Connect API Key
         run: |
           mkdir -p ~/private_keys
-          echo "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          # Decode base64 if needed, otherwise use as-is
+          if echo "${{ secrets.APPSTORE_API_KEY_P8 }}" | head -c 4 | grep -q "^LS0t"; then
+            echo "Key is base64 encoded, decoding..."
+            printf '%s' "${{ secrets.APPSTORE_API_KEY_P8 }}" | base64 -d > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          else
+            echo "Key is already in PEM format"
+            printf '%s' "${{ secrets.APPSTORE_API_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          fi
           chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          
+          # Verify key format
+          echo "=== Key file size and format ==="
+          ls -lh ~/private_keys/
+          head -1 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
 
       - name: Fetch signing files
         run: |
-          app-store-connect fetch-signing-files "com.gavra013.gavra_android" \
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
             --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
@@ -82,31 +94,19 @@ jobs:
       - name: Install CocoaPods
         run: |
           cd ios
-          pod install
+          pod install --repo-update
+          cd ..
 
-      - name: Build iOS IPA
+      - name: Build IPA
         run: |
-          flutter build ipa \
-            --release \
+          flutter build ipa --release \
             --build-name=${{ env.VERSION }} \
             --build-number=${{ env.BUILD_NUMBER }}
 
       - name: Upload to TestFlight
         run: |
-          app-store-connect publish --path build/ios/ipa/*.ipa
-          echo "✅ Build uploaded to TestFlight!"
-
-      - name: ✅ Upload complete
-        run: |
-          echo "🎉 Successfully built and uploaded to TestFlight!"
-          echo ""
-          echo "📦 Build Details:"
-          echo "  - App: Gavra 013"
-          echo "  - Version: ${{ env.VERSION }}"
-          echo "  - Build: ${{ env.BUILD_NUMBER }}"
-          echo "  - Platform: iOS"
-          echo ""
-          echo "⏭️  Next steps:"
-          echo "  1. Wait for Apple to process the build (~5-10 minutes)"
-          echo "  2. Review build in App Store Connect"
-          echo "  3. Submit for TestFlight beta review if needed"
+          app-store-connect publish \
+            --path build/ios/ipa/gavra_android.ipa \
+            --issuer-id "${{ secrets.APPSTORE_ISSUER_ID }}" \
+            --key-id "${{ secrets.APPSTORE_KEY_ID }}" \
+            --private-key ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
