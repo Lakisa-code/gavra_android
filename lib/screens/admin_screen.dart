@@ -1005,7 +1005,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 return false; // ✅ FIX: Plava kartica = nije mesecni tip
               }
 
-              final nijePlatio = putnik.vremePlacanja == null; // ✅ FIX: Nije platio ako nema vremePlacanja
+              final nijePlatio = putnik.placeno != true; // ✅ FIX: Koristi placeno flag iz voznje_log
               final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
               final pokupljen = putnik.jePokupljen;
 

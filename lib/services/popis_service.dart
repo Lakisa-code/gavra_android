@@ -97,7 +97,7 @@ class PopisService {
       );
 
       final duzniciRaw = putnici
-          .where((p) => !p.isMesecniTip && p.vremePlacanja == null && p.jePokupljen && !p.jeOtkazan && !p.jeBezPolaska)
+          .where((p) => !p.isMesecniTip && p.placeno != true && p.jePokupljen && !p.jeOtkazan && !p.jeBezPolaska)
           .toList();
 
       // Deduplikacija

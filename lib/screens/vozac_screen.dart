@@ -1595,7 +1595,7 @@ class _VozacScreenState extends State<VozacScreen> {
     final filteredDuzniciRaw = sviPutnici.where((putnik) {
       final nijeMesecni = !putnik.isMesecniTip;
       if (!nijeMesecni) return false;
-      final nijePlatio = putnik.vremePlacanja == null;
+      final nijePlatio = putnik.placeno != true; // ✅ FIX: Koristi placeno flag iz voznje_log
       final nijeOtkazan = !putnik.jeOtkazan && !putnik.jeBezPolaska;
       final pokupljen = putnik.jePokupljen;
       return nijePlatio && nijeOtkazan && pokupljen;

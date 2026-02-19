@@ -258,7 +258,7 @@ class DailyCheckInService {
 
         final duzniciRaw = putnici
             .where(
-                (p) => !p.isMesecniTip && p.vremePlacanja == null && p.jePokupljen && !p.jeOtkazan && !p.jeBezPolaska)
+                (p) => !p.isMesecniTip && p.placeno != true && p.jePokupljen && !p.jeOtkazan && !p.jeBezPolaska)
             .toList();
 
         // Deduplikacija
