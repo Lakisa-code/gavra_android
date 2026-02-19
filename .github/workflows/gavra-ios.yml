@@ -69,11 +69,17 @@ jobs:
           
           echo "✅ Authentication environment established."
           
+          # Generišemo novi privatni ključ za sertifikat (ovo NIJE API ključ)
+          # Ovo omogućava Codemagic-u da kreira novi sertifikat ako stari nema ključ
+          mkdir -p "$HOME/certs"
+          openssl genrsa -out "$HOME/certs/signing.key" 2048
+          
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
-            --certificates-dir ~/certs \
-            --profiles-dir ~/profiles
+            --certificate-key "$(cat "$HOME/certs/signing.key")" \
+            --certificates-dir "$HOME/certs" \
+            --profiles-dir "$HOME/profiles"
           
       - name: Install Certificates and Profiles
         run: |
