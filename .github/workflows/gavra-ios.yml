@@ -45,7 +45,10 @@ jobs:
           echo '${{ secrets.IOS_GOOGLE_SERVICES_PLIST }}' > ios/Runner/GoogleService-Info.plist
 
       - name: Install Codemagic CLI Tools
-        run: pip3 install codemagic-cli-tools
+        run: |
+          brew install pipx
+          pipx install codemagic-cli-tools
+          pipx ensurepath
 
       - name: Flutter Doctor
         run: flutter doctor -v
