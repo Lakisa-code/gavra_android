@@ -58,7 +58,7 @@ jobs:
             --install-certificate \
             --issuer-id "$APPSTORE_ISSUER_ID" \
             --key-id "$APPSTORE_KEY_ID" \
-            --private-key ~/private_keys/AuthKey.p8
+            --private-key "$HOME/private_keys/AuthKey.p8"
 
       - name: Setup Provisioning Profiles
         run: |
