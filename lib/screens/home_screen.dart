@@ -1731,7 +1731,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           skipKapacitetCheck: AdminSecurityService.isAdmin(_currentDriver),
                                         );
 
-                                        // Supabase realtime automatski triggeruje refresh
+                                        // 🔄 Eksplicitan refresh stream-a da se putnik odmah prikaže
+                                        _putnikService.refreshAllActiveStreams();
 
                                         if (!context.mounted) return;
 
@@ -1742,9 +1743,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                         Navigator.pop(context);
 
-                                        // 🔄 FIX: Forsiraj setState da se UI osveži
+                                        // 🔄 PREBACI NA VREME PUTNIKA DA BI BIO VIDLJIV - mora posle pop()
                                         if (mounted) {
-                                          setState(() {});
+                                          setState(() {
+                                            _selectedVreme = putnik.polazak;
+                                          });
                                         }
 
                                         ScaffoldMessenger.of(context).showSnackBar(

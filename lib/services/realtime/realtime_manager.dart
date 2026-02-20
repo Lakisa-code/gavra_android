@@ -141,23 +141,23 @@ class RealtimeManager {
         // Filtriraj samo INSERT i UPDATE evente, preskoči DELETE
         if (payload.eventType == PostgresChangeEvent.delete) return;
 
-        // debugPrint('🔄 [RealtimeManager] EVENT na tabeli "$table": ${payload.eventType}');
+        debugPrint('🔄 [RealtimeManager] EVENT na tabeli "$table": ${payload.eventType}');
         if (_controllers.containsKey(table) && !_controllers[table]!.isClosed) {
           _controllers[table]!.add(payload);
-          // debugPrint('✅ [RealtimeManager] Payload emitovan za tabelu "$table"');
+          debugPrint('✅ [RealtimeManager] Payload emitovan za tabelu "$table"');
         } else {
-          // debugPrint('⚠️ [RealtimeManager] Controller zatvoren ili ne postoji za tabelu "$table"');
+          debugPrint('⚠️ [RealtimeManager] Controller zatvoren ili ne postoji za tabelu "$table"');
         }
       },
     )
         .subscribe((status, [error]) {
-      // debugPrint(
-      //     '📡 [RealtimeManager] Subscribe status za "$table": $status${error != null ? " (Error: $error)" : ""}');
+      debugPrint(
+          '📡 [RealtimeManager] Subscribe status za "$table": $status${error != null ? " (Error: $error)" : ""}');
       _handleSubscribeStatus(table, status, error);
     });
 
     _channels[table] = channel;
-    // debugPrint('🔗 [RealtimeManager] Channel kreiiran za tabelu "$table"');
+    debugPrint('🔗 [RealtimeManager] Channel kreiran za tabelu "$table"');
   }
 
   /// Handle status promene od Supabase

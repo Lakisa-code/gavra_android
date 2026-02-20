@@ -247,7 +247,9 @@ class Putnik {
   static String _getDayNameFromIso(String isoDate) {
     try {
       final dt = DateTime.parse(isoDate);
-      return DayConstants.getNameByIndex(DayConstants.weekdayToIndex(dt.weekday));
+      // ✅ FIX: Vrati KRATICU (pet) umesto punog imena (Petak) - zbog client-side filtera
+      final index = DayConstants.weekdayToIndex(dt.weekday);
+      return DayConstants.dayAbbreviations[index];
     } catch (_) {
       return '';
     }

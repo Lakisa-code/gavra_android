@@ -158,6 +158,9 @@ class PutnikService {
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
 
+      debugPrint(
+          '🔍 [_doFetchForStream] Stream key=$key, datum=$todayDate, grad=$grad, vreme=$vreme → ${results.length} putnika');
+
       _lastValues[key] = results;
       if (!controller.isClosed) controller.add(results);
       _setupRealtimeRefresh(key, isoDate, grad, vreme, controller);
@@ -203,14 +206,23 @@ class PutnikService {
 
   /// 🔄 Refreshuje SVE aktivne streamove
   void _refreshAllActiveStreams() {
+    debugPrint('🔄 [PutnikService] _refreshAllActiveStreams: ${_streams.length} aktivnih streamova');
     for (final entry in _streams.entries) {
       final key = entry.key;
       final controller = entry.value;
       final params = _streamParams[key];
       if (params != null && !controller.isClosed) {
+        debugPrint(
+            '🔄 [PutnikService] Refreshujem stream: isoDate=${params.isoDate}, grad=${params.grad}, vreme=${params.vreme}');
         _doFetchForStream(key, params.isoDate, params.grad, params.vreme, controller);
       }
     }
+  }
+
+  /// 🔄 PUBLIC metoda za eksplicitno refresh-ovanje streamova (npr. posle dodavanja putnika)
+  void refreshAllActiveStreams() {
+    debugPrint('🔄 [PutnikService] Eksplicitan refresh svih aktivnih streamova');
+    _refreshAllActiveStreams();
   }
 
   static final Map<String, DateTime> _lastActionTime = {};

@@ -82,8 +82,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   String _tip = 'radnik';
 
   bool _isLoading = false;
-  // Brisanje lokalnog _isWinterMode i korišćenje globalnog isWinter
-  bool get _isWinterMode => isWinter;
 
   @override
   void initState() {
@@ -290,27 +288,35 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   /// Privatni helper za dobijanje override-a za dan i smer
   Map<String, dynamic>? _getOverrideForDay(String day, bool isBC) {
     try {
-      final now = DateTime.now();
-      final todayWeekday = now.weekday;
+      // POJEDNOSTAVLJENO: Pretraži seat_requests direktno po danu u nedelji
+      // bez komplikovanog računanja offset-a
       final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet'];
       final targetWeekday = dayNames.indexOf(day.toLowerCase()) + 1;
+      if (targetWeekday < 1) return null;
 
-      if (targetWeekday > 0) {
-        int diff = targetWeekday - todayWeekday;
-        if (diff < 0) diff += 7;
+      // Pretraži sve učitane seat_requests i nađi prvi koji odgovara
+      for (final req in _weeklyOverrides) {
+        final datumStr = req['datum']?.toString() ?? '';
+        if (datumStr.isEmpty) continue;
 
-        final targetDate = DateTime(now.year, now.month, now.day).add(Duration(days: diff));
-        final dateStr = targetDate.toIso8601String().split('T')[0];
+        // Parsuj datum i proveri da li je ispravan dan u nedelji
+        final datum = DateTime.tryParse(datumStr);
+        if (datum == null || datum.weekday != targetWeekday) continue;
 
-        final region = isBC ? 'Bela Crkva' : 'Vršac';
-        final override = _weeklyOverrides.firstWhere(
-          (req) =>
-              req['datum'] == dateStr &&
-              (req['grad'] == region || (isBC && req['grad'] == 'BC') || (!isBC && req['grad'] == 'VS')),
-          orElse: () => {},
-        );
+        // Preskoči cancelled, bez_polaska, hidden, obrisan
+        final status = req['status']?.toString().toLowerCase() ?? '';
+        if (status == 'cancelled' || status == 'bez_polaska' || status == 'hidden' || status == 'obrisan') {
+          continue;
+        }
 
-        return override.isNotEmpty ? override : null;
+        // Proveri grad (podržava i VS/BC i Vršac/Bela Crkva i vs/bc)
+        final grad = req['grad']?.toString().toLowerCase() ?? '';
+        final matchesBC = isBC && (grad == 'bc' || grad == 'bela crkva');
+        final matchesVS = !isBC && (grad == 'vs' || grad == 'vršac');
+
+        if (matchesBC || matchesVS) {
+          return req;
+        }
       }
     } catch (e) {
       debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška u _getOverrideForDay: $e');
@@ -1636,6 +1642,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final putnikData = _preparePutnikData();
 
       // 🆕 PRIPREMA NOVOG RASPOREDA (za seat_requests)
+      // Format: {'pon': {'bc': '07:00', 'vs': '13:00'}, 'uto': {...}, ...}
       final Map<String, dynamic> weeklySchedule = {};
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
         final bcVal = _polazakBcControllers[dan]?.text.trim() ?? '';
@@ -1644,15 +1651,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         final bc = bcVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(bcVal) : null;
         final vs = vsVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(vsVal) : null;
 
+        // POJEDNOSTAVLJENO: nema više bc2/vs2 za zimski režim
         final dayMap = <String, dynamic>{};
-        if (_isWinterMode) {
-          dayMap['bc2'] = bc;
-          dayMap['vs2'] = vs;
-        } else {
-          dayMap['bc'] = bc;
-          dayMap['vs'] = vs;
+        if (bc != null) dayMap['bc'] = bc;
+        if (vs != null) dayMap['vs'] = vs;
+
+        if (dayMap.isNotEmpty) {
+          weeklySchedule[dan] = dayMap;
         }
-        weeklySchedule[dan] = dayMap;
       }
 
       final currentDriver = await AuthManager.getCurrentDriver();
@@ -1663,14 +1669,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           widget.existingPutnik!.id,
           putnikData,
           skipKapacitetCheck: skipCheck,
-          newWeeklySchedule: weeklySchedule, // 🆕 PROSLEĐUJEMO RASPORED
+          newWeeklySchedule: weeklySchedule, // 🆕 Prosleđujemo raspored
         );
       } else {
         // Za novog putnika, kreiramo ga ODMAH sa rasporedom
         await _registrovaniPutnikService.dodajMesecnogPutnika(
           RegistrovaniPutnik.fromMap(putnikData),
           skipKapacitetCheck: skipCheck,
-          initialSchedule: weeklySchedule, // 🆕 PROSLEĐUJEMO RASPORED
+          initialSchedule: weeklySchedule, // 🆕 Prosleđujemo raspored
         );
       }
 
