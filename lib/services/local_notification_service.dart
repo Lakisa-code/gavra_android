@@ -721,8 +721,6 @@ class LocalNotificationService {
           await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).limit(1).maybeSingle();
       final userType = putnikData?['tip'] ?? 'Putnik';
 
-      // UKLONJENO: Ažuriranje radni_dani kolone (više ne postoji)
-
       // 📝 LOG U DNEVNIK
       try {
         await VoznjeLogService.logPotvrda(
@@ -780,8 +778,6 @@ class LocalNotificationService {
       final putnikResult =
           await supabase.from('registrovani_putnici').select('tip').eq('id', putnikId).limit(1).maybeSingle();
       final userType = putnikResult?['tip'] ?? 'Putnik';
-
-      // UKLONJENO: Ažuriranje radni_dani kolone (više ne postoji)
 
       // 📝 LOG U DNEVNIK
       try {

@@ -1717,7 +1717,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             tip: _putnikData['tip'] ?? 'radnik',
             tipSkole: _putnikData['tip_skole'],
             brojTelefona: _putnikData['broj_telefona'],
-            radniDani: '', // UKLONJENO: radni_dani kolona više ne postoji
             createdAt:
                 _putnikData['created_at'] != null ? DateTime.tryParse(_putnikData['created_at'].toString()) : null,
             updatedAt:

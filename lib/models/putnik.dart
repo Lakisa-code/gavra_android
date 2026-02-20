@@ -93,7 +93,6 @@ class Putnik {
 
   // NOVI: Factory za registrovani_putnici tabelu (PROFIL PUTNIKA)
   factory Putnik.fromRegistrovaniPutnici(Map<String, dynamic> map) {
-    final danFromMap = ''; // radni_dani kolona je uklonjena
     final grad = _determineGradFromRegistrovani(map);
     final place = grad.toLowerCase().contains('vr') || grad.contains('Vršac') ? 'vs' : 'bc';
 
@@ -110,7 +109,7 @@ class Putnik {
       pokupljen: false,
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : null,
       mesecnaKarta: !isDnevni,
-      dan: danFromMap,
+      dan: '',
       status: map['status'] as String? ?? 'radi',
       statusVreme: map['updated_at'] as String?,
       grad: grad,

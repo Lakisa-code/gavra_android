@@ -1736,8 +1736,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'broj_telefona_oca': _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
       'broj_telefona_majke':
           _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
-      // UKLONJENO: polasci_po_danu - kolona je obrisana
-      // UKLONJENO: radni_dani - kolona je obrisana, informacija se čuva u seat_requests
       'status': (widget.existingPutnik?.status == 'aktivan' || widget.existingPutnik?.status == null)
           ? 'radi'
           : widget.existingPutnik!.status,

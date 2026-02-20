@@ -15,7 +15,6 @@ class PutnikStatistikeHelper {
     required String tip,
     String? tipSkole,
     String? brojTelefona,
-    String radniDani = 'pon,uto,sre,cet,pet',
     DateTime? createdAt,
     DateTime? updatedAt,
     bool aktivan = true,
@@ -65,8 +64,7 @@ class PutnikStatistikeHelper {
                             Icons.arrow_drop_down,
                             color: Colors.blue.shade600,
                           ),
-                          items: _getMonthOptions()
-                              .map<DropdownMenuItem<String>>((String value) {
+                          items: _getMonthOptions().map<DropdownMenuItem<String>>((String value) {
                             return DropdownMenuItem<String>(
                               value: value,
                               child: Row(
@@ -126,13 +124,10 @@ class PutnikStatistikeHelper {
                     const SizedBox(height: 16),
 
                     StreamBuilder<Map<String, dynamic>>(
-                      stream: _streamStatistikeZaPeriod(
-                          putnikId, selectedPeriod, tip),
+                      stream: _streamStatistikeZaPeriod(putnikId, selectedPeriod, tip),
                       builder: (context, snapshot) {
                         // Loading state
-                        if (snapshot.connectionState ==
-                                ConnectionState.waiting ||
-                            !snapshot.hasData) {
+                        if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData) {
                           return const SizedBox(
                             height: 200,
                             child: Center(child: CircularProgressIndicator()),
@@ -176,7 +171,6 @@ class PutnikStatistikeHelper {
                           tip: tip,
                           tipSkole: tipSkole,
                           brojTelefona: brojTelefona,
-                          radniDani: radniDani,
                           createdAt: createdAt,
                           updatedAt: updatedAt,
                           aktivan: aktivan,
@@ -228,7 +222,6 @@ class PutnikStatistikeHelper {
     required String tip,
     String? tipSkole,
     String? brojTelefona,
-    required String radniDani,
     DateTime? createdAt,
     DateTime? updatedAt,
     required bool aktivan,
@@ -271,15 +264,13 @@ class PutnikStatistikeHelper {
               ),
               const SizedBox(height: 8),
               _buildStatRow('👤 Ime:', putnikIme),
-              // UKLONJENO: radni_dani kolona
               _buildStatRow('📊 Tip putnika:', tip),
               if (tipSkole != null)
                 _buildStatRow(
                   tip == 'ucenik' ? '🏫 Škola:' : '🏢 Ustanova/Firma:',
                   tipSkole,
                 ),
-              if (brojTelefona != null)
-                _buildStatRow('📞 Telefon:', brojTelefona),
+              if (brojTelefona != null) _buildStatRow('📞 Telefon:', brojTelefona),
             ],
           ),
         ),
@@ -372,8 +363,7 @@ class PutnikStatistikeHelper {
     );
   }
 
-  static Widget _buildFinancialSection(
-      String putnikId, String tip, dynamic customCena) {
+  static Widget _buildFinancialSection(String putnikId, String tip, dynamic customCena) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -428,16 +418,13 @@ class PutnikStatistikeHelper {
                 children: [
                   _buildStatRow(
                     '💵 Poslednje plaćanje:',
-                    iznos > 0
-                        ? '${iznos.toStringAsFixed(0)} RSD'
-                        : 'Nema podataka',
+                    iznos > 0 ? '${iznos.toStringAsFixed(0)} RSD' : 'Nema podataka',
                   ),
                   _buildStatRow(
                     '📅 Datum plaćanja:',
                     datum ?? 'Nema podataka o datumu',
                   ),
-                  _buildStatRow(
-                      '🚗 Vozač (naplata):', vozacIme ?? 'Nema podataka'),
+                  _buildStatRow('🚗 Vozač (naplata):', vozacIme ?? 'Nema podataka'),
                 ],
               );
             },
@@ -447,8 +434,7 @@ class PutnikStatistikeHelper {
     );
   }
 
-  static Widget _buildPlaceniMeseciSection(
-      String tip, Set<String> placeniMeseci) {
+  static Widget _buildPlaceniMeseciSection(String tip, Set<String> placeniMeseci) {
     if (tip.toLowerCase() == 'dnevni' || tip.toLowerCase() == 'posiljka') {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -488,10 +474,7 @@ class PutnikStatistikeHelper {
             spacing: 8,
             runSpacing: 8,
             children: placeniMeseci.isEmpty
-                ? [
-                    const Text('Nema evidentiranih uplata',
-                        style: TextStyle(fontSize: 12))
-                  ]
+                ? [const Text('Nema evidentiranih uplata', style: TextStyle(fontSize: 12))]
                 : placeniMeseci.map((m) {
                     return Chip(
                       label: Text(m, style: const TextStyle(fontSize: 11)),
@@ -603,14 +586,11 @@ class PutnikStatistikeHelper {
   }
 
   // 📊 STREAM STATISTIKA ZA PERIOD
-  static Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(
-      String putnikId, String period, String tipPutnika) {
-    return Stream.fromFuture(
-        _getStatistikeForPeriod(putnikId, period, tipPutnika));
+  static Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(String putnikId, String period, String tipPutnika) {
+    return Stream.fromFuture(_getStatistikeForPeriod(putnikId, period, tipPutnika));
   }
 
-  static Future<Map<String, dynamic>> _getStatistikeForPeriod(
-      String putnikId, String period, String tipPutnika) async {
+  static Future<Map<String, dynamic>> _getStatistikeForPeriod(String putnikId, String period, String tipPutnika) async {
     try {
       final RegistrovaniPutnikService service = RegistrovaniPutnikService();
       final placeniMeseci = await _getPlaceniMeseci(putnikId);
@@ -631,8 +611,7 @@ class PutnikStatistikeHelper {
           if (year != null) {
             final monthNumber = _getMonthNumber(monthName);
             if (monthNumber > 0) {
-              stats = await _getStatistikeZaMesec(
-                  putnikId, monthNumber, year, tipPutnika);
+              stats = await _getStatistikeZaMesec(putnikId, monthNumber, year, tipPutnika);
             }
           }
         }
@@ -647,16 +626,13 @@ class PutnikStatistikeHelper {
     }
   }
 
-  static Future<Map<String, dynamic>> _getGodisnjeStatistike(
-      String putnikId, String tipPutnika) async {
+  static Future<Map<String, dynamic>> _getGodisnjeStatistike(String putnikId, String tipPutnika) async {
     final currentYear = DateTime.now().year;
     final startOfYearStr = '$currentYear-01-01';
     final endOfYearStr = '$currentYear-12-31';
 
     final tp = tipPutnika.toLowerCase();
-    final bool jeDnevni = tp.contains('dnevni') ||
-        tp.contains('posiljka') ||
-        tp.contains('pošiljka');
+    final bool jeDnevni = tp.contains('dnevni') || tp.contains('posiljka') || tp.contains('pošiljka');
 
     final response = await supabase
         .from('voznje_log')
@@ -681,8 +657,7 @@ class PutnikStatistikeHelper {
         ukupanPrihod += iznos;
         if (jeDnevni) {
           // Za dnevne sabiramo svako sedište (transakciono)
-          final uniqueKey = record['id']?.toString() ??
-              (datum + (record['created_at']?.toString() ?? ''));
+          final uniqueKey = record['id']?.toString() ?? (datum + (record['created_at']?.toString() ?? ''));
           dailyMaxVoznje[uniqueKey] = bm;
         } else {
           // Za radnike/učenike uzimamo max broj mesta u toku dana
@@ -701,8 +676,7 @@ class PutnikStatistikeHelper {
         }
       } else if (tip == 'otkazivanje' && datum != null) {
         if (jeDnevni) {
-          final uniqueKey = record['id']?.toString() ??
-              (datum + (record['created_at']?.toString() ?? ''));
+          final uniqueKey = record['id']?.toString() ?? (datum + (record['created_at']?.toString() ?? ''));
           dailyMaxOtkazivanja[uniqueKey] = bm;
         } else {
           if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
@@ -738,13 +712,9 @@ class PutnikStatistikeHelper {
     };
   }
 
-  static Future<Map<String, dynamic>> _getUkupneStatistike(
-      String putnikId, String tipPutnika) async {
-    final response = await supabase
-        .from('voznje_log')
-        .select()
-        .eq('putnik_id', putnikId)
-        .order('datum', ascending: false);
+  static Future<Map<String, dynamic>> _getUkupneStatistike(String putnikId, String tipPutnika) async {
+    final response =
+        await supabase.from('voznje_log').select().eq('putnik_id', putnikId).order('datum', ascending: false);
 
     Map<String, int> dailyMaxVoznje = {};
     Map<String, int> dailyMaxOtkazivanja = {};
@@ -752,9 +722,7 @@ class PutnikStatistikeHelper {
     double ukupanPrihod = 0;
 
     final tp = tipPutnika.toLowerCase();
-    final bool jeDnevni = tp.contains('dnevni') ||
-        tp.contains('posiljka') ||
-        tp.contains('pošiljka');
+    final bool jeDnevni = tp.contains('dnevni') || tp.contains('posiljka') || tp.contains('pošiljka');
 
     for (final record in response) {
       final tip = record['tip'] as String?;
@@ -765,8 +733,7 @@ class PutnikStatistikeHelper {
       if (tip == 'voznja' && datum != null) {
         ukupanPrihod += iznos;
         if (jeDnevni) {
-          final uniqueKey = record['id']?.toString() ??
-              (datum + (record['created_at']?.toString() ?? ''));
+          final uniqueKey = record['id']?.toString() ?? (datum + (record['created_at']?.toString() ?? ''));
           dailyMaxVoznje[uniqueKey] = bm;
         } else {
           if (bm > (dailyMaxVoznje[datum] ?? 0)) {
@@ -784,8 +751,7 @@ class PutnikStatistikeHelper {
         }
       } else if (tip == 'otkazivanje' && datum != null) {
         if (jeDnevni) {
-          final uniqueKey = record['id']?.toString() ??
-              (datum + (record['created_at']?.toString() ?? ''));
+          final uniqueKey = record['id']?.toString() ?? (datum + (record['created_at']?.toString() ?? ''));
           dailyMaxOtkazivanja[uniqueKey] = bm;
         } else {
           if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
@@ -827,13 +793,10 @@ class PutnikStatistikeHelper {
     try {
       final startOfMonthStr = "$godina-${mesec.toString().padLeft(2, '0')}-01";
       final lastDay = DateTime(godina, mesec + 1, 0).day;
-      final endOfMonthStr =
-          "$godina-${mesec.toString().padLeft(2, '0')}-${lastDay.toString().padLeft(2, '0')}";
+      final endOfMonthStr = "$godina-${mesec.toString().padLeft(2, '0')}-${lastDay.toString().padLeft(2, '0')}";
 
       final tp = tipPutnika.toLowerCase();
-      final bool jeDnevni = tp.contains('dnevni') ||
-          tp.contains('posiljka') ||
-          tp.contains('pošiljka');
+      final bool jeDnevni = tp.contains('dnevni') || tp.contains('posiljka') || tp.contains('pošiljka');
 
       final response = await supabase
           .from('voznje_log')
@@ -859,8 +822,7 @@ class PutnikStatistikeHelper {
         if (tip == 'voznja' && datum != null) {
           ukupanPrihodData += iznos;
           if (jeDnevni) {
-            final uniqueKey = voznja['id']?.toString() ??
-                (datum + (voznja['created_at']?.toString() ?? ''));
+            final uniqueKey = voznja['id']?.toString() ?? (datum + (voznja['created_at']?.toString() ?? ''));
             dailyMaxVoznje[uniqueKey] = bm;
           } else {
             if (bm > (dailyMaxVoznje[datum] ?? 0)) {
@@ -870,8 +832,7 @@ class PutnikStatistikeHelper {
           poslednjiDatum ??= datum;
         } else if (tip == 'otkazivanje' && datum != null) {
           if (jeDnevni) {
-            final uniqueKey = voznja['id']?.toString() ??
-                (datum + (voznja['created_at']?.toString() ?? ''));
+            final uniqueKey = voznja['id']?.toString() ?? (datum + (voznja['created_at']?.toString() ?? ''));
             dailyMaxOtkazivanja[uniqueKey] = bm;
           } else {
             if (bm > (dailyMaxOtkazivanja[datum] ?? 0)) {
@@ -900,8 +861,7 @@ class PutnikStatistikeHelper {
         'otkazivanja': brojOtkazivanja,
         'poslednje': poslednjiDatum ?? 'Nema podataka',
         'uspesnost': (brojPutovanja + brojOtkazivanja) > 0
-            ? ((brojPutovanja / (brojPutovanja + brojOtkazivanja)) * 100)
-                .round()
+            ? ((brojPutovanja / (brojPutovanja + brojOtkazivanja)) * 100).round()
             : 0,
         'ukupan_prihod': '${ukupanPrihodData.toStringAsFixed(0)} RSD',
       };
@@ -918,16 +878,13 @@ class PutnikStatistikeHelper {
   }
 
   /// 📊 DOHVATI ISTORIJU UPLATA
-  static Future<List<Map<String, dynamic>>> getUplateHistory(
-      String putnikId) async {
+  static Future<List<Map<String, dynamic>>> getUplateHistory(String putnikId) async {
     try {
       final response = await supabase
           .from('voznje_log')
           .select()
           .eq('putnik_id', putnikId)
-          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']).order(
-              'created_at',
-              ascending: false);
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']).order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {

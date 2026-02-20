@@ -73,11 +73,21 @@ class RealtimeManager {
     }
 
     _listenerCount[table] = (_listenerCount[table] ?? 0) + 1;
+    debugPrint('📊 [RealtimeManager] Subscribe na "$table" - listenera: ${_listenerCount[table]}');
 
-    if (!_controllers.containsKey(table) || _controllers[table]!.isClosed) {
-      _controllers[table] = StreamController<PostgresChangePayload>.broadcast();
-      _createChannel(table);
+    // ✅ GUARD: Ako channel već postoji i aktivan je, samo vrati stream
+    if (_controllers.containsKey(table) && !_controllers[table]!.isClosed) {
+      debugPrint('♻️ [RealtimeManager] Reusing postojeći channel za "$table"');
+      return _controllers[table]!.stream;
     }
+
+    // ✅ GUARD: Otkaži pending reconnect ako postoji (novi subscribe preuzima kontrolu)
+    _reconnectTimers[table]?.cancel();
+    _reconnectTimers[table] = null;
+
+    // Kreiraj novi controller i channel
+    _controllers[table] = StreamController<PostgresChangePayload>.broadcast();
+    _createChannel(table);
 
     return _controllers[table]!.stream;
   }
@@ -112,6 +122,10 @@ class RealtimeManager {
 
   /// Zatvori channel za tabelu
   void _closeChannel(String table) {
+    // Otkaži pending reconnect
+    _reconnectTimers[table]?.cancel();
+    _reconnectTimers[table] = null;
+
     _channels[table]?.unsubscribe();
     _channels.remove(table);
     _controllers[table]?.close();
@@ -162,27 +176,35 @@ class RealtimeManager {
 
   /// Handle status promene od Supabase
   void _handleSubscribeStatus(String table, RealtimeSubscribeStatus status, dynamic error) {
+    debugPrint('🔍 [RealtimeManager] Status handler za "$table": $status (listenera: ${_listenerCount[table] ?? 0})');
+
     switch (status) {
       case RealtimeSubscribeStatus.subscribed:
         _reconnectAttempts[table] = 0;
         _updateStatus(table, RealtimeStatus.connected);
+        debugPrint('✅ [RealtimeManager] "$table" uspešno konektovan');
         break;
 
       case RealtimeSubscribeStatus.channelError:
+        debugPrint('❌ [RealtimeManager] Channel error za "$table": $error');
         _scheduleReconnect(table);
         break;
 
       case RealtimeSubscribeStatus.closed:
+        debugPrint('🔴 [RealtimeManager] Channel zatvoren za "$table" (listenera: ${_listenerCount[table] ?? 0})');
         // ✅ FIKSUJ: Ne pokušavaj reconnect ako nema aktivnih listenera
         if (_listenerCount[table] != null && _listenerCount[table]! > 0) {
+          debugPrint('🔄 [RealtimeManager] Zakazujem reconnect za "$table"');
           _scheduleReconnect(table);
         } else {
+          debugPrint('⏹️ [RealtimeManager] Zatvaranjem kanala za "$table" - nema listenera');
           // Nema listenera, samo zatvori
           _closeChannel(table);
         }
         break;
 
       case RealtimeSubscribeStatus.timedOut:
+        debugPrint('⏱️ [RealtimeManager] Timeout za "$table"');
         _scheduleReconnect(table);
         break;
     }
@@ -190,10 +212,14 @@ class RealtimeManager {
 
   /// Zakaži reconnect sa exponential backoff
   void _scheduleReconnect(String table) {
+    // ✅ DEBOUNCE: Otkaži prethodni pending reconnect
+    _reconnectTimers[table]?.cancel();
+
     final attempts = _reconnectAttempts[table] ?? 0;
 
     if (attempts >= RealtimeConfig.maxReconnectAttempts) {
       _updateStatus(table, RealtimeStatus.error);
+      _reconnectTimers[table] = null;
       return;
     }
 
@@ -205,47 +231,58 @@ class RealtimeManager {
     final delays = [3, 6, 10]; // sekunde za attempt 0, 1, 2
     final delay = delays[attempts.clamp(0, delays.length - 1)];
 
-    Future.delayed(Duration(seconds: delay), () async {
-      // Proveri da li još uvek ima listenera
-      if (_listenerCount[table] != null && _listenerCount[table]! > 0) {
-        // ВАЖНО: Морамо потпуно уклонити канал из SDK пре креирања новог!
-        // Supabase SDK има leaveOpenTopic() који затвара канале са истим именом
-        // што изазива race condition ако се нови канал направи пре него што
-        // је стари потпуно уклоњен.
-        final existingChannel = _channels[table];
-        if (existingChannel != null) {
-          try {
-            // ✅ Користи removeChannel() уместо unsubscribe()
-            // SDK метода: SupabaseClient.removeChannel(RealtimeChannel)
-            // https://pub.dev/documentation/supabase_flutter/latest/supabase_flutter/SupabaseClient/removeChannel.html
-            // Ово потпуно уклања канал из SDK и спречава race conditions
-            await _supabase.removeChannel(existingChannel);
-          } catch (e) {
-            debugPrint('⚠️ Error removing realtime channel: $e');
-          }
-          _channels.remove(table);
-        }
+    _reconnectTimers[table] = Timer(Duration(seconds: delay), () async {
+      _reconnectTimers[table] = null;
 
-        // 🔁 RETRY LOOP: Сачекај да SDK стварно очисти канал
-        int retries = 0;
-        const maxRetries = 20; // 20 x 50ms = 1 sekунда max
-        final initialChannelCount = _supabase.getChannels().length;
-
-        while (retries < maxRetries) {
-          final currentChannelCount = _supabase.getChannels().length;
-
-          // Ako se broj kanala smanjio, SDK je očistio kanal
-          if (currentChannelCount < initialChannelCount) {
-            break;
-          }
-
-          await Future.delayed(const Duration(milliseconds: 50));
-          retries++;
-        }
-
-        // Сада безбедно креирај нови канал
-        _createChannel(table);
+      // ✅ GUARD: Proveri da li još uvek ima listenera
+      if (_listenerCount[table] == null || _listenerCount[table]! <= 0) {
+        debugPrint('⏭️ [RealtimeManager] Preskačem reconnect za "$table" - nema aktivnih listenera');
+        return;
       }
+
+      // ✅ GUARD: Proveri da li već postoji aktivan channel
+      if (_channels.containsKey(table)) {
+        debugPrint('⏭️ [RealtimeManager] Preskačem reconnect za "$table" - channel već postoji');
+        return;
+      }
+
+      // ВАЖНО: Морамо потпуно уклонити канал из SDK пре креирања новог!
+      // Supabase SDK има leaveOpenTopic() који затвара канале са истим именом
+      // што изазива race condition ако се нови канал направи пре него што
+      // је стари потпуно уклоњен.
+      final existingChannel = _channels[table];
+      if (existingChannel != null) {
+        try {
+          // ✅ Користи removeChannel() уместо unsubscribe()
+          // SDK метода: SupabaseClient.removeChannel(RealtimeChannel)
+          // https://pub.dev/documentation/supabase_flutter/latest/supabase_flutter/SupabaseClient/removeChannel.html
+          // Ово потпуно уклања канал из SDK и спречава race conditions
+          await _supabase.removeChannel(existingChannel);
+        } catch (e) {
+          debugPrint('⚠️ Error removing realtime channel: $e');
+        }
+        _channels.remove(table);
+      }
+
+      // 🔁 RETRY LOOP: Сачекај да SDK стварно очисти канал
+      int retries = 0;
+      const maxRetries = 20; // 20 x 50ms = 1 sekунда max
+      final initialChannelCount = _supabase.getChannels().length;
+
+      while (retries < maxRetries) {
+        final currentChannelCount = _supabase.getChannels().length;
+
+        // Ako se broj kanala smanjio, SDK je očistio kanal
+        if (currentChannelCount < initialChannelCount) {
+          break;
+        }
+
+        await Future.delayed(const Duration(milliseconds: 50));
+        retries++;
+      }
+
+      // Сада безбедно креирај нови канал
+      _createChannel(table);
     });
   }
 
@@ -290,6 +327,12 @@ class RealtimeManager {
 
   /// Ugasi sve channel-e i očisti resurse
   void dispose() {
+    // Otkaži sve pending reconnect timere
+    for (final timer in _reconnectTimers.values) {
+      timer?.cancel();
+    }
+    _reconnectTimers.clear();
+
     for (final channel in _channels.values) {
       channel.unsubscribe();
     }

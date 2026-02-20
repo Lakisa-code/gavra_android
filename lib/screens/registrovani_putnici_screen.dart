@@ -1875,7 +1875,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       tip: putnik.tip,
       tipSkole: putnik.tipSkole,
       brojTelefona: putnik.brojTelefona,
-      radniDani: '', // UKLONJENO: radni_dani kolona
       createdAt: putnik.createdAt,
       updatedAt: putnik.updatedAt,
       aktivan: putnik.aktivan,

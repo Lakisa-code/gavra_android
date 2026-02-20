@@ -102,6 +102,39 @@ class TimePickerCell extends StatelessWidget {
     return false;
   }
 
+  /// ✅ Nova metoda: Proveri da li je POJEDINAČNO VREME prošlo (za time picker dialog)
+  bool _isSpecificTimePassed(String vreme) {
+    if (dayName == null) return false;
+
+    final now = DateTime.now();
+    final dayDate = _getDateForDay();
+    if (dayDate == null) return false;
+
+    // Ako je dan u prošlosti - vreme je prošlo
+    final todayOnly = DateTime(now.year, now.month, now.day);
+    if (dayDate.isBefore(todayOnly)) return true;
+
+    // Ako je današnji dan - proveri da li je vreme prošlo
+    if (dayDate.isAtSameMomentAs(todayOnly)) {
+      try {
+        final timeParts = vreme.split(':');
+        if (timeParts.length >= 2) {
+          final hour = int.parse(timeParts[0]);
+          final minute = int.parse(timeParts[1]);
+
+          // ČIM PROĐE VREME - ZAKLJUČAJ GA!
+          if (now.hour > hour || (now.hour == hour && now.minute >= minute)) {
+            return true; // Vreme je prošlo
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [TimePickerCell] Greška pri parsiranju vremena: $e');
+      }
+    }
+
+    return false; // Vreme još nije prošlo
+  }
+
   /// Da li je dan zaključan (prošao ili danas posle 18:00)
   /// 🆕 Za dnevne putnike: zaključano ako admin nije omogućio zakazivanje, a ako jeste, SAMO tekući dan
   bool get isLocked {
@@ -448,40 +481,40 @@ class TimePickerCell extends StatelessWidget {
                         },
                       ),
                       const Divider(color: Colors.white24),
-                      // Time options - BLOKIRANO AKO JE VREME PROŠLO (osim za admina)
-                      if (!timePassed || isAdmin)
-                        ...vremena.map((vreme) {
-                          final isSelected = value == vreme;
-                          return ListTile(
-                            title: Text(
-                              vreme,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.white70,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                            leading: Icon(
-                              isSelected ? Icons.check_circle : Icons.circle_outlined,
-                              color: isSelected ? Colors.green : Colors.white54,
-                            ),
-                            onTap: () {
-                              onChanged(vreme);
-                              Navigator.of(dialogContext).pop();
-                            },
-                          );
-                        })
-                      else
-                        // Poruka kada je vreme prošlo
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(
-                            child: Text(
-                              '🔒 Izmena vremena nije moguća.\nMožete samo otkazati termin.',
-                              style: TextStyle(color: Colors.white70, fontSize: 13),
-                              textAlign: TextAlign.center,
+                      // Time options - INDIVIDUALNO ZAKLJUČANA VREMENA
+                      ...vremena.map((vreme) {
+                        final isSelected = value == vreme;
+                        final isTimePassedIndividual = _isSpecificTimePassed(vreme);
+                        final isDisabled = !isAdmin && isTimePassedIndividual;
+
+                        return ListTile(
+                          enabled: !isDisabled,
+                          title: Text(
+                            vreme,
+                            style: TextStyle(
+                              color: isDisabled ? Colors.white38 : (isSelected ? Colors.white : Colors.white70),
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              decoration: isDisabled ? TextDecoration.lineThrough : null,
                             ),
                           ),
-                        ),
+                          leading: Icon(
+                            isDisabled ? Icons.lock_clock : (isSelected ? Icons.check_circle : Icons.circle_outlined),
+                            color: isDisabled ? Colors.white38 : (isSelected ? Colors.green : Colors.white54),
+                          ),
+                          subtitle: isDisabled
+                              ? const Text(
+                                  '⏰ Vreme je prošlo',
+                                  style: TextStyle(color: Colors.red, fontSize: 11),
+                                )
+                              : null,
+                          onTap: isDisabled
+                              ? null
+                              : () {
+                                  onChanged(vreme);
+                                  Navigator.of(dialogContext).pop();
+                                },
+                        );
+                      }),
                     ],
                   ),
                 ),
