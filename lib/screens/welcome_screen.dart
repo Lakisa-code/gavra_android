@@ -80,9 +80,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     try {
       final vozacService = VozacService();
       final vozaci = await vozacService.getAllVozaci().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 3),
         onTimeout: () {
-          throw TimeoutException('Supabase query timed out');
+          debugPrint('⏱️ [WelcomeScreen] getAllVozaci timeout - pokazujem prazan ekran');
+          return [];
         },
       );
       if (!mounted) return;
@@ -149,26 +150,37 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       // Auto-login sa zapamćenim uređajem
       final email = rememberedDevice['email']!;
       // 🔄 FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
-      final driverName = await VozacBoja.getVozacForEmail(email);
-      // Ne dozvoli auto-login ako vozač nije prepoznat
-      if (driverName == null || !VozacBoja.isValidDriverSync(driverName)) {
-        // Ostani na welcome/login i ne auto-login
+      try {
+        final driverName = await VozacBoja.getVozacForEmail(email).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            debugPrint('⏱️ [WelcomeScreen] VozacBoja.getVozacForEmail timeout');
+            return null;
+          },
+        );
+        // Ne dozvoli auto-login ako vozač nije prepoznat
+        if (driverName == null || !VozacBoja.isValidDriverSync(driverName)) {
+          // Ostani na welcome/login i ne auto-login
+          return;
+        }
+
+        // Postavi driver session
+        await AuthManager.setCurrentDriver(driverName);
+
+        if (!mounted) return;
+
+        // Direktno na Home Screen bez daily check-in
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute<void>(
+            builder: (context) => _getScreenForDriver(driverName),
+          ),
+        );
         return;
+      } catch (e) {
+        debugPrint('❌ [WelcomeScreen] Auto-login failed: $e');
+        // Nastavi dalje bez auto-login-a
       }
-
-      // Postavi driver session
-      await AuthManager.setCurrentDriver(driverName);
-
-      if (!mounted) return;
-
-      // Direktno na Home Screen bez daily check-in
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute<void>(
-          builder: (context) => _getScreenForDriver(driverName),
-        ),
-      );
-      return;
     }
 
     // Koristi AuthManager za session management

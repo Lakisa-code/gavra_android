@@ -7,16 +7,16 @@ import '../models/vozac.dart';
 import '../services/vozac_service.dart';
 import '../theme.dart';
 
-/// 🔐 AUTH SCREEN - Admin panel za upravljanje vozačima
+/// 👥 VOZAČI ADMIN SCREEN - Admin panel za upravljanje vozačima
 /// Ovde dodaješ/brišeš vozače, emailove, šifre, telefone, boje
-class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+class VozaciAdminScreen extends StatefulWidget {
+  const VozaciAdminScreen({super.key});
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  State<VozaciAdminScreen> createState() => _VozaciAdminScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
   // Forma za novog vozača
   final _formKey = GlobalKey<FormState>();
   final _imeController = TextEditingController();
@@ -40,15 +40,21 @@ class _AuthScreenState extends State<AuthScreen> {
   ];
 
   // Kešuiraj stream da se ne kreira novi svaki put
-  late final Stream<List<Vozac>> _vozaciStream;
   late final VozacService _vozacService;
+  late Future<List<Vozac>> _vozaciFuture;
 
   @override
   void initState() {
     super.initState();
-    // Inicijalizuj service i stream JEDNOM
+    // Inicijalizuj service i učitaj vozače sa timeout-om
     _vozacService = VozacService();
-    _vozaciStream = _vozacService.streamAllVozaci();
+    _vozaciFuture = _vozacService.getAllVozaci().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        debugPrint('⏱️ [VozaciAdminScreen] getAllVozaci timeout');
+        return [];
+      },
+    );
   }
 
   @override
@@ -75,8 +81,14 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       final vozacService = VozacService();
       await vozacService.addVozac(noviVozac);
-      // StreamBuilder će automatski pratiti promene
+      // Osvježi listu vozača
       if (!mounted) return;
+      setState(() {
+        _vozaciFuture = _vozacService.getAllVozaci().timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => [],
+            );
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vozač dodan')),
       );
@@ -160,16 +172,20 @@ class _AuthScreenState extends State<AuthScreen> {
             email: _emailController.text.trim().toLowerCase(),
             sifra: _sifraController.text,
             brojTelefona: _telefonController.text.trim(),
-            boja: _selectedColor.value
-                .toRadixString(16)
-                .padLeft(8, '0')
-                .substring(2),
+            boja: _selectedColor.value.toRadixString(16).padLeft(8, '0').substring(2),
           );
 
           try {
             await _vozacService.updateVozac(updatedVozac);
             if (!mounted) return;
             Navigator.pop(context);
+            // Osvježi listu
+            setState(() {
+              _vozaciFuture = _vozacService.getAllVozaci().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () => [],
+                  );
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Vozač ažuriran')),
             );
@@ -185,8 +201,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   /// Dialog za dodavanje/editovanje vozača
-  Widget _buildVozacDialog(
-      {required String title, required VoidCallback onSave}) {
+  Widget _buildVozacDialog({required String title, required VoidCallback onSave}) {
     return StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
@@ -239,8 +254,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 16),
 
                 // Boja
-                const Text('Izaberi boju:',
-                    style: TextStyle(color: Colors.white70)),
+                const Text('Izaberi boju:', style: TextStyle(color: Colors.white70)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -260,22 +274,12 @@ class _AuthScreenState extends State<AuthScreen> {
                           color: color,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color:
-                                isSelected ? Colors.white : Colors.transparent,
+                            color: isSelected ? Colors.white : Colors.transparent,
                             width: 3,
                           ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                      color: color.withOpacity(0.5),
-                                      blurRadius: 8)
-                                ]
-                              : null,
+                          boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8)] : null,
                         ),
-                        child: isSelected
-                            ? const Icon(Icons.check,
-                                color: Colors.white, size: 20)
-                            : null,
+                        child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
                       ),
                     );
                   }).toList(),
@@ -345,14 +349,12 @@ class _AuthScreenState extends State<AuthScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                '🔐 Auth Admin',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                '👥 Vozači Admin',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               const SizedBox(width: 12),
               IconButton(
-                icon:
-                    const Icon(Icons.add_circle, color: Colors.green, size: 32),
+                icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
                 onPressed: () {
                   _imeController.clear();
                   _emailController.clear();
@@ -372,8 +374,8 @@ class _AuthScreenState extends State<AuthScreen> {
             ],
           ),
         ),
-        body: StreamBuilder<List<Vozac>>(
-          stream: _vozaciStream,
+        body: FutureBuilder<List<Vozac>>(
+          future: _vozaciFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -406,16 +408,14 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.blue,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         '${vozaci.length}',
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -444,12 +444,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       margin: const EdgeInsets.only(bottom: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                            color: boja.withOpacity(0.6), width: 1.5),
+                        side: BorderSide(color: boja.withOpacity(0.6), width: 1.5),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         child: Row(
                           children: [
                             // Avatar
@@ -486,36 +484,29 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                       // Actions - olovka i kanta
                                       IconButton(
-                                        icon: Icon(Icons.edit,
-                                            color: boja, size: 20),
+                                        icon: Icon(Icons.edit, color: boja, size: 20),
                                         onPressed: () => _editVozac(index),
                                         padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
+                                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                         visualDensity: VisualDensity.compact,
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Colors.redAccent, size: 20),
+                                        icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
                                         onPressed: () => _deleteVozac(index),
                                         padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
+                                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                         visualDensity: VisualDensity.compact,
                                       ),
                                     ],
                                   ),
                                   Row(
                                     children: [
-                                      Icon(Icons.email,
-                                          size: 14, color: Colors.white54),
+                                      Icon(Icons.email, size: 14, color: Colors.white54),
                                       const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
                                           vozac.email ?? '-',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12),
+                                          style: const TextStyle(color: Colors.white, fontSize: 12),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
                                         ),
@@ -525,19 +516,16 @@ class _AuthScreenState extends State<AuthScreen> {
                                   const SizedBox(height: 3),
                                   Row(
                                     children: [
-                                      Icon(Icons.phone,
-                                          size: 14, color: Colors.white54),
+                                      Icon(Icons.phone, size: 14, color: Colors.white54),
                                       const SizedBox(width: 6),
                                       Text(
                                         vozac.brojTelefona ?? '-',
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 13),
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
                                       ),
                                       if (vozac.sifra?.isNotEmpty == true)
                                         const Padding(
                                           padding: EdgeInsets.only(left: 6),
-                                          child: Text('🔒',
-                                              style: TextStyle(fontSize: 12)),
+                                          child: Text('🔒', style: TextStyle(fontSize: 12)),
                                         ),
                                     ],
                                   ),

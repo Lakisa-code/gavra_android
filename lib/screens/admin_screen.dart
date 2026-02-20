@@ -21,7 +21,6 @@ import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'adrese_screen.dart'; // 🏘️ Upravljanje adresama
-import 'auth_screen.dart'; // DODANO za auth admin
 import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozacima
 import 'dugovi_screen.dart';
 import 'finansije_screen.dart'; // 💰 Finansijski izveštaj
@@ -30,6 +29,7 @@ import 'odrzavanje_screen.dart'; // 🚛 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 🔑 PIN ZAHTEVI
 import 'registrovani_putnici_screen.dart';
 import 'vozac_screen.dart';
+import 'vozaci_admin_screen.dart'; // Admin panel za upravljanje vozačima
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -685,8 +685,8 @@ class _AdminScreenState extends State<AdminScreen> {
                                   // AUTH
                                   Expanded(
                                     child: InkWell(
-                                      onTap: () => Navigator.push(
-                                          context, MaterialPageRoute<void>(builder: (context) => const AuthScreen())),
+                                      onTap: () => Navigator.push(context,
+                                          MaterialPageRoute<void>(builder: (context) => const VozaciAdminScreen())),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
                                         height: 28,
@@ -700,17 +700,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                         child: const Center(
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
-                                                child: Text('Auth',
-                                                    style: TextStyle(
-                                                        fontWeight: FontWeight.w600,
-                                                        fontSize: 14,
-                                                        color: Colors.white,
-                                                        shadows: [
-                                                          Shadow(
-                                                              offset: Offset(1, 1),
-                                                              blurRadius: 3,
-                                                              color: Colors.black54)
-                                                        ])))),
+                                                child: Icon(Icons.lock, size: 20, color: Colors.white))),
                                       ),
                                     ),
                                   ),

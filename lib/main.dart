@@ -162,7 +162,7 @@ Future<void> _initAppServices() async {
 
   // PRVO - Inicijalizuj vozač mapiranje (MORA biti pre stream-ova!)
   try {
-    await VozacMappingService.initialize();
+    await VozacMappingService.initialize().timeout(const Duration(seconds: 5));
     if (kDebugMode) debugPrint('[Main] VozacMappingService initialized');
   } catch (e) {
     if (kDebugMode) debugPrint('[Main] VozacMappingService init failed: $e');
@@ -170,9 +170,15 @@ Future<void> _initAppServices() async {
 
   // Ostali servisi se mogu pokrenuti paralelno
   final services = [
-    VozacBoja.initialize(), // 🎨 Inicijalizuj cache vozača i boja
-    AppSettingsService.initialize(),
-    KapacitetService.initializeKapacitetCache(), // 🎫 Inicijalizuj cache kapaciteta
+    VozacBoja.initialize().timeout(const Duration(seconds: 5)).catchError((e) {
+      if (kDebugMode) debugPrint('[Main] VozacBoja init timeout: $e');
+    }),
+    AppSettingsService.initialize().timeout(const Duration(seconds: 3)).catchError((e) {
+      if (kDebugMode) debugPrint('[Main] AppSettings init timeout: $e');
+    }),
+    KapacitetService.initializeKapacitetCache().timeout(const Duration(seconds: 3)).catchError((e) {
+      if (kDebugMode) debugPrint('[Main] Kapacitet init timeout: $e');
+    }),
   ];
 
   for (var service in services) {
