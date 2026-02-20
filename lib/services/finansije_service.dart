@@ -204,13 +204,69 @@ class FinansijeService {
     }
   }
 
-  /// Dohvati ukupna potraživanja (iznosi koji nisu plaćeni)
+  /// Dohvati ukupna potraživanja (putnici s vožnjama koji nisu platili u tekućem mesecu)
   static Future<double> getPotrazivanja() async {
     try {
-      // ⚠️ POLASCI_PO_DANU JE OBRISANA.
-      // Potraživanja se sada računaju isključivo preko voznje_log tabele.
-      // Trenutno vraćamo 0 dok ne implementiramo novi SQL upit za agregaciju dugova.
-      return 0;
+      final now = DateTime.now();
+      final mesec = now.month;
+      final godina = now.year;
+
+      // Dohvati sve putnike koji su imali vožnje ovaj mesec
+      final voznjeResp = await _supabase
+          .from('voznje_log')
+          .select('putnik_id')
+          .eq('tip', 'voznja')
+          .filter('datum', 'gte', '$godina-${mesec.toString().padLeft(2, '0')}-01')
+          .filter('datum', 'lte', '$godina-${mesec.toString().padLeft(2, '0')}-31');
+
+      final putnikIds =
+          (voznjeResp as List).map((r) => r['putnik_id'] as String?).where((id) => id != null).toSet().toList();
+
+      if (putnikIds.isEmpty) return 0;
+
+      // Od tih putnika, koji su platili ovaj mesec
+      final uplateResp = await _supabase
+          .from('voznje_log')
+          .select('putnik_id')
+          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
+          .filter('datum', 'gte', '$godina-${mesec.toString().padLeft(2, '0')}-01')
+          .filter('datum', 'lte', '$godina-${mesec.toString().padLeft(2, '0')}-31');
+
+      final placeniIds = (uplateResp as List).map((r) => r['putnik_id'] as String?).where((id) => id != null).toSet();
+
+      // Putnici s dugom = imaju vožnje ali nisu platili
+      final duznici = putnikIds.where((id) => !placeniIds.contains(id)).toList();
+
+      // Proceni dug: 1500 din po dnevnom, 6000 po mesečnom (prosek)
+      // Tačniji pristup: broji voznje * cena_po_danu za dnevne
+      if (duznici.isEmpty) return 0;
+
+      final putnicResp =
+          await _supabase.from('registrovani_putnici').select('id, tip, cena_po_danu').inFilter('id', duznici);
+
+      double ukupnoDug = 0;
+      for (final p in putnicResp as List) {
+        final tip = p['tip'] as String? ?? '';
+        final cenaPoDanu = (p['cena_po_danu'] as num?)?.toDouble();
+
+        if (tip == 'mesecni' || tip == 'radnik' || tip == 'ucenik') {
+          // Mesečni - paušal 6000 ako nema cenu
+          ukupnoDug += cenaPoDanu != null ? cenaPoDanu * 22 : 6000;
+        } else {
+          // Dnevni - procena po broju vožnji
+          final brojVoznjiResp = await _supabase
+              .from('voznje_log')
+              .select('id')
+              .eq('putnik_id', p['id'] as String)
+              .eq('tip', 'voznja')
+              .filter('datum', 'gte', '$godina-${mesec.toString().padLeft(2, '0')}-01')
+              .filter('datum', 'lte', '$godina-${mesec.toString().padLeft(2, '0')}-31');
+          final brojVoznji = (brojVoznjiResp as List).length;
+          ukupnoDug += brojVoznji * (cenaPoDanu ?? 300);
+        }
+      }
+
+      return ukupnoDug;
     } catch (e) {
       debugPrint('❌ [Finansije] Greška pri računanju potraživanja: $e');
       return 0;
@@ -314,6 +370,7 @@ class FinansijeService {
       });
       return Map<String, dynamic>.from(response);
     } catch (e) {
+      debugPrint('❌ [Finansije] Greška custom report: $e');
       return {'prihod': 0, 'voznje': 0, 'troskovi': 0, 'neto': 0};
     }
   }

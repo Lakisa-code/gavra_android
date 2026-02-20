@@ -198,6 +198,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       if (mounted) {
         setState(() {
           _activeSeatRequests = List<Map<String, dynamic>>.from(res);
+          _sledecaVoznjaInfo = _izracunajSledecuVoznju(); // 🔄 Reračunaj nakon učitavanja
           debugPrint('📥 [ActiveRequests] Učitano: ${_activeSeatRequests.length} zahteva');
         });
       }
@@ -315,12 +316,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // Broj vožnji ovog meseca
       int brojVoznjiTotal = 0;
+      final Map<String, int> dailyMaxSeatsV = {};
       if (jeDnevni) {
         for (final v in voznjeResponse) {
           brojVoznjiTotal += _toInt(v['broj_mesta']);
         }
       } else {
-        final Map<String, int> dailyMaxSeatsV = {};
         for (final v in voznjeResponse) {
           final d = v['datum'] as String?;
           if (d != null) {
@@ -350,7 +351,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             }
           }
         }
-        dailyMaxSeatsO.forEach((_, val) => brojOtkazivanjaTotal += val);
+        // Broji otkazivanje samo ako taj dan NEMA vožnje (isti dan = vožnja, ne otkazivanje)
+        dailyMaxSeatsO.forEach((dan, val) {
+          if (!dailyMaxSeatsV.containsKey(dan)) {
+            brojOtkazivanjaTotal += val;
+          }
+        });
       }
 
       // 🏠 Učitaj obe adrese iz tabele adrese
@@ -566,7 +572,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         // Ako je datum u budućnosti ili danas
         if (datum.year >= now.year && datum.month >= now.month && datum.day >= now.day) {
-          final polazak = (req['zeljeno_vreme'] ?? '').toString().replaceAll(':00', '').replaceFirst(RegExp('^0'), '');
+          final polazakRaw = (req['zeljeno_vreme'] ?? '').toString().trim();
+          // Osiguraj format H:MM (ukloni sekunde ako postoje, dodaj :00 ako nema minuta)
+          final polazakParts = polazakRaw.split(':');
+          final polazakH = polazakParts.isNotEmpty ? (int.tryParse(polazakParts[0]) ?? 0) : 0;
+          final polazakM = polazakParts.length > 1 ? (int.tryParse(polazakParts[1]) ?? 0) : 0;
+          final polazak = '$polazakH:${polazakM.toString().padLeft(2, '0')}';
           final grad = (req['grad'] ?? '').toString().toUpperCase();
           final status = req['status'] as String?;
 
@@ -574,15 +585,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
           // Ako je danas, proveri da li je polazak prošao
           if (datum.year == now.year && datum.month == now.month && datum.day == now.day) {
-            final parts = polazak.split(':');
-            final h = int.tryParse(parts[0]) ?? 0;
-            final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-            if (h * 60 + m < now.hour * 60 + now.minute - 30) continue;
+            if (polazakH * 60 + polazakM < now.hour * 60 + now.minute - 30) continue;
           }
 
           final danKratica = daniNedelje[datum.weekday - 1];
           final danNaziv = daniPuniNaziv[danKratica] ?? danKratica;
-          return '$danNaziv, $polazak $grad';
+          return '$danNaziv $grad - $polazak';
         }
       }
       return null;

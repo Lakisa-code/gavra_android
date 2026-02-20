@@ -14,6 +14,7 @@ import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/pin_dialog.dart';
 import '../widgets/registrovani_putnik_dialog.dart';
+import 'registrovani_putnik_profil_screen.dart';
 
 // 🔌 HELPER EXTENSION za Set poredenje
 extension SetExtensions<T> on Set<T> {
@@ -1133,6 +1134,25 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       icon: Icons.edit_outlined,
                       label: 'Uredi',
                       color: Colors.blue,
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  // 👤 Profil
+                  Expanded(
+                    child: _buildCompactActionButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => RegistrovaniPutnikProfilScreen(
+                            putnikData: putnik.toMap(),
+                          ),
+                        ),
+                      ),
+                      icon: Icons.person_outline,
+                      label: 'Profil',
+                      color: Colors.purple,
                     ),
                   ),
 
