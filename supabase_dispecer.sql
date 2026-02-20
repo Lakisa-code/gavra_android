@@ -65,7 +65,7 @@ BEGIN
     SELECT * INTO putnik_record FROM registrovani_putnici r WHERE r.id = req_record.putnik_id;
     IF NOT FOUND THEN RETURN; END IF;
 
-    -- 2. BC LOGIKA ZA UČENIKE (Garantovano mesto do 16h za sutra)
+    -- 2. BC LOGIKA ZA UČENIKE (Garantovano mesto sa čekanjem 5 min)
     is_bc_student_guaranteed := (
         lower(putnik_record.tip) = 'ucenik' 
         AND upper(req_record.grad) = 'BC' 
@@ -74,6 +74,7 @@ BEGIN
     );
 
     -- 3. PROVERA KAPACITETA
+    -- Učenici BC (pre 16h) ne proveravaju kapacitet - garantovano mesto
     IF is_bc_student_guaranteed THEN
         ima_mesta := true;
     ELSE
@@ -130,37 +131,73 @@ DECLARE
     current_req_data jsonb;
 BEGIN
     -- Pronađi sve koji čekaju obradu:
-    -- 1. Radnik (BC): čekaju 2 minuta (brže nego pre)
-    -- 2. Ostali: čekaju 5 minuta (brže nego pre)
-    -- 3. Učenik (BC za sutra, posle 16h): čekaju do 20:00h
+    -- BC:
+    --   1. Učenik (pre 16h za sutra): 5 minuta BEZ provere kapaciteta
+    --   2. Radnik: 5 minuta SA proverom kapaciteta
+    -- VS:
+    --   3. Radnik: 10 minuta SA proverom kapaciteta
+    --   4. Učenik: 10 minuta SA proverom kapaciteta
+    -- OPŠTE:
+    --   5. Dnevni putnik: NE obrađuje se automatski - šalje se adminima (manual)
+    --   6. Ostali: 5 minuta
     FOR v_req IN 
         SELECT sr.id 
         FROM seat_requests sr
         JOIN registrovani_putnici rp ON sr.putnik_id = rp.id
         WHERE sr.status = 'pending' 
           AND (
-            -- 👷 SLCUČAJ RADNIK (BC): čeka se 2 minuta
+            -- 🎓 UČENIK (BC, pre 16h, za sutra): čeka 5 minuta
+            (
+                lower(rp.tip) = 'ucenik' 
+                AND upper(sr.grad) = 'BC' 
+                AND sr.datum = (CURRENT_DATE + 1)
+                AND EXTRACT(HOUR FROM sr.created_at) < 16
+                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
+            )
+            OR
+            -- 👷 RADNIK (BC): čeka 5 minuta
             (
                 lower(rp.tip) = 'radnik' 
                 AND upper(sr.grad) = 'BC' 
-                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 2)
+                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
             )
             OR
-            -- 🟢 SLUČAJ OSTALI: standardnih 5 minuta
+            -- 👷 RADNIK (VS): čeka 10 minuta
             (
-                NOT (
-                    lower(rp.tip) = 'radnik' AND upper(sr.grad) = 'BC'
-                )
+                lower(rp.tip) = 'radnik' 
+                AND upper(sr.grad) = 'VS' 
+                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 10)
+            )
+            OR
+            -- 🎓 UČENIK (VS): čeka 10 minuta
+            (
+                lower(rp.tip) = 'ucenik' 
+                AND upper(sr.grad) = 'VS' 
+                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 10)
+            )
+            OR
+            -- 🟢 OSTALI (ne-dnevni, ne specifični BC/VS slučajevi): 5 minuta
+            (
+                lower(rp.tip) != 'dnevni'
                 AND NOT (
                     lower(rp.tip) = 'ucenik' 
                     AND upper(sr.grad) = 'BC' 
                     AND sr.datum = (CURRENT_DATE + 1)
-                    AND EXTRACT(HOUR FROM sr.created_at) >= 16
+                    AND EXTRACT(HOUR FROM sr.created_at) < 16
+                )
+                AND NOT (
+                    lower(rp.tip) = 'radnik' AND upper(sr.grad) = 'BC'
+                )
+                AND NOT (
+                    lower(rp.tip) = 'radnik' AND upper(sr.grad) = 'VS'
+                )
+                AND NOT (
+                    lower(rp.tip) = 'ucenik' AND upper(sr.grad) = 'VS'
                 )
                 AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
             )
             OR
-            -- 🟡 SLUČAJ B: Učenik (BC, sutra, posle 16h) -> Obrađuje se u 20h ili kasnije
+            -- 🟡 UČENIK (BC, sutra, posle 16h) -> Obrađuje se u 20h ili kasnije
             (
                 lower(rp.tip) = 'ucenik' 
                 AND upper(sr.grad) = 'BC' 
@@ -169,6 +206,8 @@ BEGIN
                 AND EXTRACT(HOUR FROM now()) >= 20
             )
           )
+          -- ISKLJUČI DNEVNE: oni se ne obrađuju automatski, već idu na manual (admin)
+          AND lower(rp.tip) != 'dnevni'
     LOOP
         PERFORM obradi_seat_request(v_req.id);
         
@@ -213,7 +252,11 @@ DECLARE
     final_status text;
     existing_id uuid;
     p_broj_mesta integer;
+    putnik_tip text;
 BEGIN
+    -- 0. Dohvati tip putnika
+    SELECT tip INTO putnik_tip FROM registrovani_putnici WHERE id = p_id;
+    
     -- 1. Odredi datum za p_dan (npr 'pon')
     -- Tražimo sledeći datum koji odgovara krativci dana, uključujući i danas ako još nije prošao
     SELECT d INTO target_date
@@ -228,7 +271,13 @@ BEGIN
     grad_clean := UPPER(replace(p_grad, '2', ''));
 
     -- 3. Odredi status
-    final_status := COALESCE(p_status, 'pending');
+    -- Ako je dnevni putnik -> automatski 'manual' (admin obrađuje)
+    IF lower(putnik_tip) = 'dnevni' THEN
+        final_status := 'manual';
+    ELSE
+        final_status := COALESCE(p_status, 'pending');
+    END IF;
+    
     IF p_vreme IS NULL OR p_vreme = '' OR p_vreme = 'null' THEN
         final_status := 'cancelled';
     END IF;
