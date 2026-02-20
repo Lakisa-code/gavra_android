@@ -65,16 +65,7 @@ class CalendarConfig {
     '2025-11-30': 'Prvi klasifikacioni period',
     '2026-01-31': 'Drugi klasifikacioni period',
     '2026-04-30': 'Treći klasifikacioni period',
-  }; // 🚫 Dani kada NE VOZE kombiji (customize per potrebi)
-  static final List<String> neradniDaniKombija = [
-    '2026-01-01', // Nova godina
-    '2026-01-02',
-    '2026-01-07', // Božić
-    '2026-04-19', // Uskrs
-    '2026-04-20',
-    '2026-05-01', // Praznik rada
-    '2026-05-02',
-  ];
+  };
 
   /// Provera da li je datum državni praznik
   static bool isPraznik(DateTime date) {
@@ -93,12 +84,6 @@ class CalendarConfig {
       }
     }
     return false;
-  }
-
-  /// Provera da li kombiji voze tog dana
-  static bool kombijNijeRadanDan(DateTime date) {
-    final key = _formatDate(date);
-    return neradniDaniKombija.contains(key);
   }
 
   /// Dobavi opis praznika ili događaja
