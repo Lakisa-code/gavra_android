@@ -46,6 +46,9 @@ BEGIN
               AND EXTRACT(HOUR FROM p_created_at) >= 16
         THEN
             RETURN QUERY SELECT 0, true; -- Specijalni slučaj, obrađuje se u 20h
+        -- Pošiljka: 5 min, BEZ provere (ne zauzima mesto)
+        ELSIF lower(p_tip) = 'posiljka' THEN
+            RETURN QUERY SELECT 5, false;
         ELSE
             -- Default BC: 5 min, provera kapaciteta
             RETURN QUERY SELECT 5, true;
@@ -59,6 +62,9 @@ BEGIN
         -- Učenik: 10 min, SA proverom kapaciteta
         ELSIF lower(p_tip) = 'ucenik' THEN
             RETURN QUERY SELECT 10, true;
+        -- Pošiljka: 5 min, BEZ provere (ne zauzima mesto)
+        ELSIF lower(p_tip) = 'posiljka' THEN
+            RETURN QUERY SELECT 5, false;
         ELSE
             -- Default VS: 10 min, provera kapaciteta
             RETURN QUERY SELECT 10, true;
