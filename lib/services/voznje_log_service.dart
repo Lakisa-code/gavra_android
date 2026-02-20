@@ -460,10 +460,18 @@ class VoznjeLogService {
     final String? gradKod = grad != null ? (GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc') : null;
     final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
-    // ✅ NOVO: Dohvati vozac_ime iz vozac_id
+    // ✅ NOVO: Dohvati vozac_ime direktno iz baze (garantovano)
     String? vozacIme;
     if (vozacId != null && vozacId.isNotEmpty) {
-      vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+      try {
+        final vozacData = await _supabase.from('vozaci').select('ime').eq('id', vozacId).maybeSingle();
+        vozacIme = vozacData?['ime'] as String?;
+        debugPrint('💰 [dodajUplatu] vozacId=$vozacId → vozac_ime=$vozacIme');
+      } catch (e) {
+        debugPrint('⚠️ Greška pri dohvatanju vozac_ime: $e');
+      }
+    } else {
+      debugPrint('⚠️ [dodajUplatu] vozacId je NULL ili prazan!');
     }
 
     await _supabase.from('voznje_log').insert({
@@ -828,10 +836,15 @@ class VoznjeLogService {
       // Zadržavamo dodatne meta podatke ako ih ima (za edge cases)
       final Map<String, dynamic>? finalMeta = (meta != null && meta.isNotEmpty) ? meta : null;
 
-      // ✅ NOVO: Dohvati vozac_ime iz vozac_id
+      // ✅ NOVO: Dohvati vozac_ime direktno iz baze (garantovano)
       String? vozacIme;
       if (vozacId != null && vozacId.isNotEmpty) {
-        vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+        try {
+          final vozacData = await _supabase.from('vozaci').select('ime').eq('id', vozacId).maybeSingle();
+          vozacIme = vozacData?['ime'] as String?;
+        } catch (e) {
+          debugPrint('⚠️ Greška pri dohvatanju vozac_ime: $e');
+        }
       }
 
       await _supabase.from('voznje_log').insert({

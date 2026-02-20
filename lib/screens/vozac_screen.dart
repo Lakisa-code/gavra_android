@@ -1614,8 +1614,13 @@ class _VozacScreenState extends State<VozacScreen> {
     final Map<dynamic, Set<String>> putnikSmerovi = {};
 
     for (var p in sviPutnici) {
+      // ISKLJUCUJEMO: otkazano, bez_polaska, odsustvo, obrisan, posiljke
       if (p.jeOtkazan || p.jeBezPolaska || p.jeOdsustvo || p.obrisan) continue;
       if (p.tipPutnika == 'posiljka') continue;
+
+      // DODATNA PROVERA: eksplicitno preskoci 'otkazano', 'cancelled', 'bez_polaska' status
+      final statusLower = p.status?.toLowerCase() ?? '';
+      if (statusLower == 'otkazano' || statusLower == 'cancelled' || statusLower == 'bez_polaska') continue;
 
       final id = p.id;
       if (id == null) continue;

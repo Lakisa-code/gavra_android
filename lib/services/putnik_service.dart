@@ -398,10 +398,15 @@ class PutnikService {
 
     final targetDatum = datum ?? DateTime.now().toIso8601String().split('T')[0];
 
-    // Ažuriraj seat_requests - postavi status confirmed/approved
+    // ✅ DIREKTAN QUERY: Dohvati vozac_id iz baze umesto VozacMappingService
     String? vozacId;
     if (driver != null) {
-      vozacId = await VozacMappingService.getVozacUuid(driver);
+      try {
+        final vozacData = await supabase.from('vozaci').select('id').eq('ime', driver).maybeSingle();
+        vozacId = vozacData?['id'] as String?;
+      } catch (e) {
+        debugPrint('⚠️ [oznaciPokupljen] Greška pri dohvatanju vozača "$driver": $e');
+      }
     }
 
     // ✅ OZNAČI KAO POKUPLJEN (Samo u vozač_log, po zahtevu korisnika)
@@ -730,9 +735,18 @@ class PutnikService {
     final isVrsac = (grad?.toLowerCase().contains('vr') ?? false) || (grad?.toLowerCase() == 'vs');
     final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
 
+    // ✅ DIREKTAN QUERY: Dohvati vozac_id iz baze umesto VozacMappingService
     String? vozacId;
     if (driver != null) {
-      vozacId = await VozacMappingService.getVozacUuid(driver);
+      try {
+        final vozacData = await supabase.from('vozaci').select('id').eq('ime', driver).maybeSingle();
+        vozacId = vozacData?['id'] as String?;
+        debugPrint('💰 [oznaciPlaceno] driver="$driver" → vozacId=$vozacId');
+      } catch (e) {
+        debugPrint('⚠️ [oznaciPlaceno] Greška pri dohvatanju vozača "$driver": $e');
+      }
+    } else {
+      debugPrint('⚠️ [oznaciPlaceno] driver je NULL!');
     }
 
     // Ažuriraj seat_requests
