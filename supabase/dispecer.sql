@@ -489,3 +489,42 @@ SELECT cron.schedule(
     '0 9 * * 6',
     $$ SELECT posalji_podsetnik_radnicima() $$
 );
+
+-- ============================================================
+-- SEKCIJA 9: SERVER SECRETS (OBAVEZNO PODESITI PRE POKRETANJA)
+-- ============================================================
+-- Ovi ključevi se čuvaju u tabeli server_secrets i koriste se
+-- od strane Edge funkcija i SQL trigera za slanje notifikacija.
+--
+-- NAPOMENA: Ovo su primeri vrednosti. Pravi ključevi se mogu
+-- naći u: C:\Users\Bojan\Desktop\AI BACKUP\secrets\huawei\HUAWEI.txt
+--         i Supabase Dashboard → Project Settings → API
+--
+-- Pokretati samo jednom pri inicijalnom setup-u (ili pri rotaciji ključeva):
+
+/*
+INSERT INTO server_secrets (key, value) VALUES
+    -- Supabase (Project Settings → API)
+    ('SUPABASE_URL',              'https://gjtabtwudbrmfeyjiicu.supabase.co'),
+    ('SUPABASE_ANON_KEY',         '<anon key iz Supabase Dashboard>'),
+    ('SUPABASE_SERVICE_ROLE_KEY', '<service_role key iz Supabase Dashboard>'),
+    ('EDGE_FUNCTION_URL',         'https://gjtabtwudbrmfeyjiicu.supabase.co/functions/v1'),
+
+    -- Firebase (za FCM push - Android/iOS vozači i putnici)
+    -- Preuzeti iz: Firebase Console → Project Settings → Service Accounts → Generate new private key
+    ('FIREBASE_SERVICE_ACCOUNT',  '<JSON sadržaj firebase service account fajla>'),
+
+    -- Huawei HMS Push Kit (za Huawei uređaje)
+    -- VAŽNO: Koristiti OAuth 2.0 client kredencijale, NE AppGallery Connect API kredencijale!
+    -- Preuzeti iz: HUAWEI.txt → "OAuth 2.0 client" sekcija
+    -- client_id  = App ID (kratki broj, npr. 116046535)
+    -- client_secret = OAuth secret (ebae022b...)
+    ('HUAWEI_APP_ID',             '116046535'),
+    ('HUAWEI_CLIENT_ID',          '116046535'),
+    ('HUAWEI_CLIENT_SECRET',      'ebae022b57aeda6ff61826da26ba2493d946879b098adf72e5ea792f2a71f498')
+
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+*/
+
+-- Provjera trenutnih vrednosti:
+-- SELECT key, LEFT(value, 40) || '...' as preview FROM server_secrets ORDER BY key;
