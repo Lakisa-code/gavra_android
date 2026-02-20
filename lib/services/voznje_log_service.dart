@@ -201,14 +201,16 @@ class VoznjeLogService {
           // ✅ FIX: Ažuriraj iznos i vozac_ime ako je tip uplata (ima prioritet nad voznja)
           if (tip == 'uplata' || tip == 'uplata_dnevna') {
             existing['iznos'] = l['iznos'];
-            existing['vozac_ime'] = l['vozac_ime'];
+            final vozacIme = l['vozac_ime'] ?? VozacMappingService.getNameFromUuidOrNameSync(l['vozac_id']);
+            existing['vozac_ime'] = vozacIme;
           }
         } else {
+          final vozacIme = l['vozac_ime'] ?? VozacMappingService.getNameFromUuidOrNameSync(l['vozac_id']);
           res[key] = {
             'tip': tip,
             'tipovi': [tip],
             'vozac_id': l['vozac_id'],
-            'vozac_ime': l['vozac_ime'],
+            'vozac_ime': vozacIme,
             'created_at': l['created_at'],
             'iznos': l['iznos'],
           };

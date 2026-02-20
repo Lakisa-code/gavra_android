@@ -28,6 +28,7 @@ import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'odrzavanje_screen.dart'; // 🚛 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 🔑 PIN ZAHTEVI
 import 'registrovani_putnici_screen.dart';
+import 'vozac_action_log_screen.dart'; // 📋 Dnevnik akcija vozača
 import 'vozac_screen.dart';
 import 'vozaci_admin_screen.dart'; // Admin panel za upravljanje vozačima
 
@@ -102,6 +103,78 @@ class _AdminScreenState extends State<AdminScreen> {
   void dispose() {
     // AdminScreen disposed
     super.dispose();
+  }
+
+  /// 📋 ACTION LOG PICKER DIALOG - Admin bira vozača za pregled dnevnika akcija
+  void _showActionLogDialog(BuildContext context) async {
+    try {
+      final vozacService = VozacService();
+      final vozaci = await vozacService.getAllVozaci();
+
+      if (!mounted) return;
+
+      if (vozaci.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Nema učitanih vozača')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      showDialog<void>(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Izaberi vozača za dnevnik'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: vozaci.length,
+                itemBuilder: (context, index) {
+                  final vozac = vozaci[index];
+                  final boja = vozac.color ?? const Color(0xFFBDBDBD);
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: boja,
+                      child: Text(
+                        vozac.ime[0].toUpperCase(),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    title: Text(vozac.ime),
+                    onTap: () {
+                      Navigator.of(dialogContext).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) => VozacActionLogScreen(
+                            vozacIme: vozac.ime,
+                            datum: DateTime.now(),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Otkaži'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Greška: $e')),
+      );
+    }
   }
 
   /// 👤 VOZAČ PICKER DIALOG - Admin može da vidi ekran bilo kog vozača
@@ -847,6 +920,38 @@ class _AdminScreenState extends State<AdminScreen> {
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
                                                 child: const Text('Vozač',
+                                                    style: TextStyle(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                        shadows: [
+                                                          Shadow(
+                                                              offset: Offset(1, 1),
+                                                              blurRadius: 3,
+                                                              color: Colors.black54)
+                                                        ])))),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // DNEVNIK AKCIJA
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => _showActionLogDialog(context),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+                                        ),
+                                        child: const Center(
+                                            child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text('📋',
                                                     style: TextStyle(
                                                         fontWeight: FontWeight.w600,
                                                         fontSize: 14,

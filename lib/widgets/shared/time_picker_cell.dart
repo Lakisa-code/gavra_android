@@ -450,37 +450,35 @@ class TimePickerCell extends StatelessWidget {
                   height: 350,
                   child: ListView(
                     children: [
-                      // Option to clear (UVEK DOSTUPNO)
-                      ListTile(
-                        title: const Text(
-                          'Bez polaska',
-                          style: TextStyle(color: Colors.white70),
+                      // "Bez polaska" - SAMO ZA ADMINA
+                      if (isAdmin) ...[
+                        ListTile(
+                          title: const Text(
+                            'Bez polaska',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          leading: Icon(
+                            value == null || value!.isEmpty ? Icons.check_circle : Icons.circle_outlined,
+                            color: value == null || value!.isEmpty ? Colors.green : Colors.white54,
+                          ),
+                          onTap: () async {
+                            if (value != null && value!.isNotEmpty) {
+                              onChanged(null);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Vreme polaska je obrisano.')),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Vreme polaska je već prazno.')),
+                              );
+                            }
+                            if (dialogContext.mounted) {
+                              Navigator.of(dialogContext).pop();
+                            }
+                          },
                         ),
-                        leading: Icon(
-                          value == null || value!.isEmpty ? Icons.check_circle : Icons.circle_outlined,
-                          color: value == null || value!.isEmpty ? Colors.green : Colors.white54,
-                        ),
-                        onTap: () async {
-                          // Uklonjena potvrda otkazivanja po zahtevu korisnika
-                          // Proveri da li je vreme već prazno da izbegneš nepotrebni callback
-                          if (value != null && value!.isNotEmpty) {
-                            onChanged(null);
-                            // Dodaj feedback korisniku
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Vreme polaska je obrisano.')),
-                            );
-                          } else {
-                            // Već je prazno, samo zatvori
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Vreme polaska je već prazno.')),
-                            );
-                          }
-                          if (dialogContext.mounted) {
-                            Navigator.of(dialogContext).pop();
-                          }
-                        },
-                      ),
-                      const Divider(color: Colors.white24),
+                        const Divider(color: Colors.white24),
+                      ],
                       // Time options - INDIVIDUALNO ZAKLJUČANA VREMENA
                       ...vremena.map((vreme) {
                         final isSelected = value == vreme;

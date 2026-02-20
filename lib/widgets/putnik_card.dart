@@ -1602,27 +1602,22 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Pokupljen: ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.getColorOrDefaultSync(
-                              _putnik.pokupioVozac ?? _putnik.vozac,
-                              Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                            ),
+                            color: VozacBoja.getSync(_putnik.pokupioVozac ?? _putnik.vozac),
                             fontWeight: FontWeight.bold, // Promenjeno sa w500
                           ),
                         ),
                       // Placeno info
                       if (_putnik.placeno == true && _putnik.iznosPlacanja != null) ...[
                         if (_putnik.vremePokupljenja != null) const SizedBox(width: 12),
-                        Text(
-                          'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: VozacBoja.getColorOrDefaultSync(
-                              _putnik.naplatioVozac,
-                              Colors.green,
+                        if (_putnik.naplatioVozac != null)
+                          Text(
+                            'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: VozacBoja.getSync(_putnik.naplatioVozac),
+                              fontWeight: FontWeight.w500,
                             ),
-                            fontWeight: FontWeight.w500,
                           ),
-                        ),
                       ],
                       // Otkazano info
                       if (_putnik.jeOtkazan && _putnik.vremeOtkazivanja != null) ...[
@@ -1633,10 +1628,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             fontSize: 13,
                             color: _putnik.otkazaoVozac == 'Putnik'
                                 ? Colors.red.shade900 // Jača crvena za putnika
-                                : VozacBoja.getColorOrDefaultSync(
-                                    _putnik.otkazaoVozac,
-                                    Colors.red,
-                                  ),
+                                : VozacBoja.getSync(_putnik.otkazaoVozac),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
