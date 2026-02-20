@@ -18,6 +18,59 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- 1A. POMOĆNA FUNKCIJA: Pravila čekanja po gradu i tipu putnika
+CREATE OR REPLACE FUNCTION get_cekanje_pravilo(
+    p_tip text,
+    p_grad text,
+    p_datum date,
+    p_created_at timestamptz
+) RETURNS TABLE(
+    minuta_cekanja integer,
+    provera_kapaciteta boolean
+) AS $$
+BEGIN
+    -- BC PRAVILA
+    IF upper(p_grad) = 'BC' THEN
+        -- Učenik (za sutra, pre 16h): 5 min, BEZ provere kapaciteta
+        IF lower(p_tip) = 'ucenik' 
+           AND p_datum = (CURRENT_DATE + 1)
+           AND EXTRACT(HOUR FROM p_created_at) < 16
+        THEN
+            RETURN QUERY SELECT 5, false;
+        -- Radnik: 5 min, SA proverom kapaciteta
+        ELSIF lower(p_tip) = 'radnik' THEN
+            RETURN QUERY SELECT 5, true;
+        -- Učenik (posle 16h): čeka do 20h
+        ELSIF lower(p_tip) = 'ucenik' 
+              AND p_datum = (CURRENT_DATE + 1)
+              AND EXTRACT(HOUR FROM p_created_at) >= 16
+        THEN
+            RETURN QUERY SELECT 0, true; -- Specijalni slučaj, obrađuje se u 20h
+        ELSE
+            -- Default BC: 5 min, provera kapaciteta
+            RETURN QUERY SELECT 5, true;
+        END IF;
+    
+    -- VS PRAVILA
+    ELSIF upper(p_grad) = 'VS' THEN
+        -- Radnik: 10 min, SA proverom kapaciteta
+        IF lower(p_tip) = 'radnik' THEN
+            RETURN QUERY SELECT 10, true;
+        -- Učenik: 10 min, SA proverom kapaciteta
+        ELSIF lower(p_tip) = 'ucenik' THEN
+            RETURN QUERY SELECT 10, true;
+        ELSE
+            -- Default VS: 10 min, provera kapaciteta
+            RETURN QUERY SELECT 10, true;
+        END IF;
+    
+    -- DEFAULT (nepoznat grad)
+    ELSE
+        RETURN QUERY SELECT 5, true;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 -- 2. POMOĆNA FUNKCIJA: Provera slobodnih mesta
 CREATE OR REPLACE FUNCTION proveri_slobodna_mesta(target_grad text, target_vreme time, target_datum date)
 RETURNS integer AS $$
@@ -45,7 +98,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 3. GLAVNA FUNKCIJA: Obrada pojedinačnog zahteva
+-- 3. GLAVNA FUNKCIJA: Obrada pojedinačnog zahteva (UNIVERZALNA za BC i VS)
 CREATE OR REPLACE FUNCTION obradi_seat_request(req_id uuid)
 RETURNS void AS $$
 DECLARE
@@ -56,7 +109,6 @@ DECLARE
     novi_status text;
     v_alt_1 time;
     v_alt_2 time;
-    is_bc_student_guaranteed boolean;
 BEGIN
     -- 1. Dohvati podatke o zahtevu i putniku
     SELECT * INTO req_record FROM seat_requests s WHERE s.id = req_id;
@@ -65,24 +117,20 @@ BEGIN
     SELECT * INTO putnik_record FROM registrovani_putnici r WHERE r.id = req_record.putnik_id;
     IF NOT FOUND THEN RETURN; END IF;
 
-    -- 2. BC LOGIKA ZA UČENIKE (Garantovano mesto sa čekanjem 5 min)
-    is_bc_student_guaranteed := (
-        lower(putnik_record.tip) = 'ucenik' 
-        AND upper(req_record.grad) = 'BC' 
-        AND req_record.datum = (CURRENT_DATE + 1)
-        AND EXTRACT(HOUR FROM req_record.created_at) < 16
-    );
-
-    -- 3. PROVERA KAPACITETA
-    -- Učenici BC (pre 16h) ne proveravaju kapacitet - garantovano mesto
-    IF is_bc_student_guaranteed THEN
+    -- 2. PROVERA KAPACITETA prema pravilima (poziva se get_cekanje_pravilo)
+    -- BC učenici (pre 16h za sutra) NE PROVERAVAJU kapacitet - garantovano mesto
+    IF lower(putnik_record.tip) = 'ucenik' 
+       AND upper(req_record.grad) = 'BC' 
+       AND req_record.datum = (CURRENT_DATE + 1)
+       AND EXTRACT(HOUR FROM req_record.created_at) < 16
+    THEN
         ima_mesta := true;
     ELSE
         slobodno_mesta := proveri_slobodna_mesta(req_record.grad, req_record.zeljeno_vreme, req_record.datum);
         ima_mesta := (slobodno_mesta >= req_record.broj_mesta);
     END IF;
 
-    -- 4. ODREĐIVANJE NOVOG STATUSA I LOGIČNIH ALTERNATIVA
+    -- 3. ODREĐIVANJE NOVOG STATUSA I LOGIČNIH ALTERNATIVA
     IF ima_mesta THEN
         novi_status := 'approved';
     ELSE
@@ -109,7 +157,7 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    -- 5. AŽURIRAJ SEAT_REQUESTS
+    -- 4. AŽURIRAJ SEAT_REQUESTS
     UPDATE seat_requests 
     SET status = novi_status, 
         alternative_vreme_1 = v_alt_1,
@@ -129,103 +177,61 @@ DECLARE
     v_req record;
     processed_records jsonb := '[]'::jsonb;
     current_req_data jsonb;
+    cekanje_pravilo record;
 BEGIN
-    -- Pronađi sve koji čekaju obradu:
-    -- BC:
-    --   1. Učenik (pre 16h za sutra): 5 minuta BEZ provere kapaciteta
-    --   2. Radnik: 5 minuta SA proverom kapaciteta
-    -- VS:
-    --   3. Radnik: 10 minuta SA proverom kapaciteta
-    --   4. Učenik: 10 minuta SA proverom kapaciteta
-    -- OPŠTE:
-    --   5. Dnevni putnik: NE obrađuje se automatski - šalje se adminima (manual)
-    --   6. Ostali: 5 minuta
+    -- Pronađi sve koji čekaju obradu prema pravilima čekanja
+    -- Koristi get_cekanje_pravilo() da odredi vreme čekanja za svaki tip/grad
     FOR v_req IN 
-        SELECT sr.id 
+        SELECT sr.id, sr.grad, sr.datum, sr.created_at, rp.tip
         FROM seat_requests sr
         JOIN registrovani_putnici rp ON sr.putnik_id = rp.id
         WHERE sr.status = 'pending' 
-          AND (
-            -- 🎓 UČENIK (BC, pre 16h, za sutra): čeka 5 minuta
-            (
-                lower(rp.tip) = 'ucenik' 
-                AND upper(sr.grad) = 'BC' 
-                AND sr.datum = (CURRENT_DATE + 1)
-                AND EXTRACT(HOUR FROM sr.created_at) < 16
-                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
-            )
-            OR
-            -- 👷 RADNIK (BC): čeka 5 minuta
-            (
-                lower(rp.tip) = 'radnik' 
-                AND upper(sr.grad) = 'BC' 
-                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
-            )
-            OR
-            -- 👷 RADNIK (VS): čeka 10 minuta
-            (
-                lower(rp.tip) = 'radnik' 
-                AND upper(sr.grad) = 'VS' 
-                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 10)
-            )
-            OR
-            -- 🎓 UČENIK (VS): čeka 10 minuta
-            (
-                lower(rp.tip) = 'ucenik' 
-                AND upper(sr.grad) = 'VS' 
-                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 10)
-            )
-            OR
-            -- 🟢 OSTALI (ne-dnevni, ne specifični BC/VS slučajevi): 5 minuta
-            (
-                lower(rp.tip) != 'dnevni'
-                AND NOT (
-                    lower(rp.tip) = 'ucenik' 
-                    AND upper(sr.grad) = 'BC' 
-                    AND sr.datum = (CURRENT_DATE + 1)
-                    AND EXTRACT(HOUR FROM sr.created_at) < 16
-                )
-                AND NOT (
-                    lower(rp.tip) = 'radnik' AND upper(sr.grad) = 'BC'
-                )
-                AND NOT (
-                    lower(rp.tip) = 'radnik' AND upper(sr.grad) = 'VS'
-                )
-                AND NOT (
-                    lower(rp.tip) = 'ucenik' AND upper(sr.grad) = 'VS'
-                )
-                AND (EXTRACT(EPOCH FROM (now() - sr.created_at)) / 60 >= 5)
-            )
-            OR
-            -- 🟡 UČENIK (BC, sutra, posle 16h) -> Obrađuje se u 20h ili kasnije
-            (
-                lower(rp.tip) = 'ucenik' 
-                AND upper(sr.grad) = 'BC' 
-                AND sr.datum = (CURRENT_DATE + 1)
-                AND EXTRACT(HOUR FROM sr.created_at) >= 16
-                AND EXTRACT(HOUR FROM now()) >= 20
-            )
-          )
-          -- ISKLJUČI DNEVNE: oni se ne obrađuju automatski, već idu na manual (admin)
-          AND lower(rp.tip) != 'dnevni'
+          AND lower(rp.tip) != 'dnevni' -- Dnevni putnici ne idu kroz auto-obradu
     LOOP
-        PERFORM obradi_seat_request(v_req.id);
+        -- Proveri pravilo čekanja za ovaj zahtev
+        SELECT * INTO cekanje_pravilo 
+        FROM get_cekanje_pravilo(
+            v_req.tip, 
+            v_req.grad, 
+            v_req.datum, 
+            v_req.created_at
+        );
         
-        SELECT jsonb_build_object(
-            'id', s.id,
-            'putnik_id', s.putnik_id,
-            'zeljeno_vreme', s.zeljeno_vreme::text,
-            'status', s.status,
-            'grad', s.grad,
-            'datum', s.datum::text,
-            'ime_putnika', rp.putnik_ime,
-            'alternatives', s.alternatives
-        ) INTO current_req_data
-        FROM seat_requests s
-        JOIN registrovani_putnici rp ON s.putnik_id = rp.id
-        WHERE s.id = v_req.id;
+        -- Ako je vreme isteklo, obradi zahtev
+        -- Specijalni slučaj: BC učenik posle 16h čeka do 20h
+        IF (
+            -- BC učenik posle 16h: obrađuje se u 20h
+            (lower(v_req.tip) = 'ucenik' 
+             AND upper(v_req.grad) = 'BC' 
+             AND v_req.datum = (CURRENT_DATE + 1)
+             AND EXTRACT(HOUR FROM v_req.created_at) >= 16
+             AND EXTRACT(HOUR FROM now()) >= 20)
+            OR
+            -- Svi ostali: proveri da li je vreme čekanja isteklo
+            ((EXTRACT(EPOCH FROM (now() - v_req.created_at)) / 60) >= cekanje_pravilo.minuta_cekanja
+             AND NOT (lower(v_req.tip) = 'ucenik' 
+                      AND upper(v_req.grad) = 'BC' 
+                      AND v_req.datum = (CURRENT_DATE + 1)
+                      AND EXTRACT(HOUR FROM v_req.created_at) >= 16))
+        ) THEN
+            PERFORM obradi_seat_request(v_req.id);
+            
+            SELECT jsonb_build_object(
+                'id', s.id,
+                'putnik_id', s.putnik_id,
+                'zeljeno_vreme', s.zeljeno_vreme::text,
+                'status', s.status,
+                'grad', s.grad,
+                'datum', s.datum::text,
+                'ime_putnika', rp.putnik_ime,
+                'alternatives', s.alternatives
+            ) INTO current_req_data
+            FROM seat_requests s
+            JOIN registrovani_putnici rp ON s.putnik_id = rp.id
+            WHERE s.id = v_req.id;
 
-        processed_records := processed_records || jsonb_build_array(current_req_data);
+            processed_records := processed_records || jsonb_build_array(current_req_data);
+        END IF;
     END LOOP;
 
     RETURN processed_records;
