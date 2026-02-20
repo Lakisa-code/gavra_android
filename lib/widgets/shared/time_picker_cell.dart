@@ -42,7 +42,15 @@ class TimePickerCell extends StatelessWidget {
     this.isAdmin = false,
   });
 
-  /// Vraća DateTime za određeni dan u tekućoj nedelji
+  /// 🆕 Da li je nova radna nedelja već počela (subota posle 02:00)
+  /// Nova nedelja = subota >= 02:00, raspored se resetuje za sledeću pon-pet
+  bool get _jeNovaNedelja {
+    final now = DateTime.now();
+    // Subota (weekday == 6) posle 02:00
+    return now.weekday == 6 && now.hour >= 2;
+  }
+
+  /// Vraća DateTime za određeni dan u tekućoj/sledećoj nedelji
   DateTime? _getDateForDay() {
     if (dayName == null) return null;
 
@@ -62,10 +70,20 @@ class TimePickerCell extends StatelessWidget {
     final targetWeekday = daniMap[dayName!.toLowerCase()];
     if (targetWeekday == null) return null;
 
-    // Razlika u danima od danas
+    // 🆕 NOVA NEDELJA: subota posle 02:00 → svi radni dani (pon-pet) su u sledećoj nedelji
+    if (_jeNovaNedelja) {
+      // Referentni dan je sledeći ponedeljak
+      // Koliko dana do sledećeg ponedeljka od danas (subote)
+      final daysToNextMonday = 8 - todayWeekday; // subota(6) → 2 dana do pon
+      final nextMonday = DateTime(now.year, now.month, now.day).add(Duration(days: daysToNextMonday));
+      // Offset od ponedeljka (0=pon, 1=uto, ...)
+      final offsetFromMonday = targetWeekday - 1;
+      return nextMonday.add(Duration(days: offsetFromMonday));
+    }
+
+    // INAČE: prošli dani u tekućoj nedelji ostaju u prošlosti (negativan diff)
     final diff = targetWeekday - todayWeekday;
-    final daysToAdd = diff == 0 ? 0 : (diff > 0 ? diff : diff + 7);
-    return DateTime(now.year, now.month, now.day).add(Duration(days: daysToAdd));
+    return DateTime(now.year, now.month, now.day).add(Duration(days: diff));
   }
 
   /// Da li je vreme za ovaj dan već prošlo (ne može se menjati, samo otkazati)
@@ -156,9 +174,11 @@ class TimePickerCell extends StatelessWidget {
       return true;
     }
 
-    // Zaključaj današnji dan posle 19:00 (nema smisla zakazivati uveče za isti dan)
-    if (dayDate.isAtSameMomentAs(todayOnly) && now.hour >= 19) {
-      return true;
+    // 🆕 Nova nedelja počinje u subotu 02:00 - do tada su svi dani tekuće nedelje zaključani
+    // (petak se ne zaključava posebno u 19:00 - ostaje otključan do subote 02:00)
+    if (!_jeNovaNedelja && dayDate.isAtSameMomentAs(todayOnly)) {
+      // Danas je radni dan koji još nije prošao - otključan
+      return false;
     }
 
     return false;
