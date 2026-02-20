@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 // 🔑 Tipovi podataka za zahtev
 interface PushPayload {
-    tokens: { token: string; provider: 'FCM' | 'HMS' }[]
+    tokens: { token: string; provider: string }[]
     title: string
     body: string
     data?: Record<string, string>
@@ -47,9 +47,9 @@ serve(async (req: any) => {
 
         const results = []
 
-        // 🚀 RAZDVAJANJE PO PROVAJDERIMA
-        const fcmTokens = tokens.filter(t => t.provider === 'FCM').map(t => t.token)
-        const hmsTokens = tokens.filter(t => t.provider === 'HMS').map(t => t.token)
+        // 🚀 RAZDVAJANJE PO PROVAJDERIMA (case-insensitive: 'fcm'/'FCM', 'huawei'/'hms'/'HMS')
+        const fcmTokens = tokens.filter(t => t.provider?.toUpperCase() === 'FCM').map(t => t.token)
+        const hmsTokens = tokens.filter(t => ['HMS', 'HUAWEI'].includes(t.provider?.toUpperCase())).map(t => t.token)
 
         // 1. 🟢 SLANJE PREKO FCM (Google/Apple)
         if (fcmTokens.length > 0) {
@@ -59,7 +59,7 @@ serve(async (req: any) => {
 
         // 2. 🔴 SLANJE PREKO HMS (Huawei)
         if (hmsTokens.length > 0) {
-            const hmsResult = await sendToHMS(hmsTokens, title, body, data, secrets)
+            const hmsResult = await sendToHMS(hmsTokens, title, body, data, secrets, supabaseClient)
             results.push({ provider: 'HMS', ...hmsResult })
         }
 
@@ -123,7 +123,7 @@ async function sendToFCM(tokens: string[], title: string, body: string, data?: a
 /**
  * 🔴 HUAWEI HMS IMPLEMENTACIJA
  */
-async function sendToHMS(tokens: string[], title: string, body: string, data?: any, secrets?: any) {
+async function sendToHMS(tokens: string[], title: string, body: string, data?: any, secrets?: any, supabase?: any) {
     const clientId = secrets?.HUAWEI_CLIENT_ID || (Deno as any).env.get('HUAWEI_CLIENT_ID')
     const clientSecret = secrets?.HUAWEI_CLIENT_SECRET || (Deno as any).env.get('HUAWEI_CLIENT_SECRET')
     const appId = secrets?.HUAWEI_APP_ID || (Deno as any).env.get('HUAWEI_APP_ID')
@@ -165,7 +165,17 @@ async function sendToHMS(tokens: string[], title: string, body: string, data?: a
         })
 
         const resData = await response.json()
-        return { success: response.ok, status: resData.msg }
+        console.log('🔴 HMS full response:', JSON.stringify(resData))
+
+        // Ako je token istekao/nevažeći, obriši ga iz baze
+        if (resData.code === '80200003' || resData.code === '80300007') {
+            console.log('⚠️ HMS token expired/invalid, deleting from DB...')
+            if (supabase) {
+                await supabase.from('push_tokens').delete().in('token', tokens)
+            }
+        }
+
+        return { success: resData.code === '80000000', code: resData.code, msg: resData.msg }
     } catch (e: any) {
         return { success: false, error: e.message }
     }
