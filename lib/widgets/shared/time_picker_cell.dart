@@ -174,11 +174,10 @@ class TimePickerCell extends StatelessWidget {
       return true;
     }
 
-    // 🆕 Nova nedelja počinje u subotu 02:00 - do tada su svi dani tekuće nedelje zaključani
-    // (petak se ne zaključava posebno u 19:00 - ostaje otključan do subote 02:00)
-    if (!_jeNovaNedelja && dayDate.isAtSameMomentAs(todayOnly)) {
-      // Danas je radni dan koji još nije prošao - otključan
-      return false;
+    // 🔒 Zaključaj danas posle 05:00 - nova nedelja počinje u subotu 02:00
+    // Putnik može menjati polazak samo do 05:00 ujutru tekućeg dana
+    if (dayDate.isAtSameMomentAs(todayOnly) && now.hour >= 5) {
+      return true;
     }
 
     return false;
@@ -288,7 +287,16 @@ class TimePickerCell extends StatelessWidget {
         }
 
         if (locked && !isAdmin) {
-          return; // Ostali slučajevi zaključavanja (npr. prošli dan)
+          final msg = hasTime
+              ? '🔒 Vaš polazak je zakazan. Izmene više nisu moguće.'
+              : '🔒 Zakazivanje za ovo vreme je prošlo. Od subote kreće novi ciklus.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          return;
         }
 
         // 🆕 PROVERA ZA DNEVNE PUTNIKE - samo danas i sutra

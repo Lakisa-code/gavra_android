@@ -399,3 +399,93 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- 7. SEDMIČNI RESET: Subota 01:00 - postavi sve aktivne seat_requests na bez_polaska
+-- Pokreće se automatski kao cron job svake subote u 01:00
+-- Cilj: statistike ostaju čiste, putnici od 02:00 zakazuju novu nedelju
+-- ==========================================
+CREATE OR REPLACE FUNCTION resetuj_nedeljne_polaske()
+RETURNS jsonb AS $$
+DECLARE
+    v_updated integer;
+BEGIN
+    -- Postavi sve aktivne seat_requests na bez_polaska
+    -- Aktivni = status je pending, manual, approved, confirmed
+    -- Ne diraj: already bez_polaska, otkazano, cancelled, rejected, hidden
+    UPDATE seat_requests
+    SET 
+        status = 'bez_polaska',
+        updated_at = now()
+    WHERE status IN ('pending', 'manual', 'approved', 'confirmed');
+
+    GET DIAGNOSTICS v_updated = ROW_COUNT;
+
+    RETURN jsonb_build_object(
+        'resetovano', v_updated,
+        'vreme', now()
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+-- CRON JOB: Pokreni resetuj_nedeljne_polaske() svake subote u 00:00 UTC (01:00 srpskog)
+-- Pokrenuti jednom ručno u Supabase SQL editoru:
+SELECT cron.schedule(
+    'sedmicni-reset-polazaka',
+    '0 0 * * 6',
+    $$ SELECT resetuj_nedeljne_polaske() $$
+);
+
+-- ==========================================
+-- 8. PODSETNIK RADNICIMA: Subota 10:00 - push notifikacija radnicima koji nisu zakazali
+-- ==========================================
+CREATE OR REPLACE FUNCTION posalji_podsetnik_radnicima()
+RETURNS jsonb AS $$
+DECLARE
+    v_tokens jsonb;
+    v_putnik record;
+    v_payload jsonb;
+    v_sent integer := 0;
+BEGIN
+    FOR v_putnik IN
+        SELECT DISTINCT rp.id, rp.putnik_ime
+        FROM registrovani_putnici rp
+        JOIN seat_requests sr ON sr.putnik_id = rp.id
+        WHERE lower(rp.tip) = 'radnik'
+          AND sr.status = 'bez_polaska'
+          AND NOT EXISTS (
+              SELECT 1 FROM seat_requests sr2
+              WHERE sr2.putnik_id = rp.id
+                AND sr2.status IN ('pending', 'manual', 'approved', 'confirmed')
+          )
+    LOOP
+        SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
+        INTO v_tokens
+        FROM push_tokens
+        WHERE putnik_id = v_putnik.id;
+
+        IF v_tokens IS NULL OR jsonb_array_length(v_tokens) = 0 THEN CONTINUE; END IF;
+
+        PERFORM net.http_post(
+            url := (SELECT value FROM server_secrets WHERE key = 'EDGE_FUNCTION_URL' LIMIT 1) || '/send-push-notification',
+            headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || (SELECT value FROM server_secrets WHERE key = 'SUPABASE_SERVICE_ROLE_KEY' LIMIT 1)),
+            body := jsonb_build_object(
+                'tokens', v_tokens,
+                'title', '🚌 Novi raspored',
+                'body', 'Molimo vas da ažurirate polaske za narednu nedelju.',
+                'data', jsonb_build_object('type', 'podsetnik_raspored')
+            )
+        );
+        v_sent := v_sent + 1;
+    END LOOP;
+
+    RETURN jsonb_build_object('poslato', v_sent, 'vreme', now());
+END;
+$$ LANGUAGE plpgsql;
+
+-- CRON JOB: Podsetnik radnicima svake subote u 09:00 UTC (10:00 srpskog)
+SELECT cron.schedule(
+    'podsetnik-radnici-subota',
+    '0 9 * * 6',
+    $$ SELECT posalji_podsetnik_radnicima() $$
+);
