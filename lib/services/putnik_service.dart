@@ -879,7 +879,8 @@ class PutnikService {
           // ✅ NOVO: Popuni iznos i vozač ime za prikaz u kartici putnika
           data['cena'] = match['iznos'];
           data['naplatioVozac'] = match['vozac_ime'];
-          debugPrint('✅ [_enrichWithLogData] Putnik $putnikId - placeno_iz_loga = true, cena=${match['iznos']}, naplatioVozac=${match['vozac_ime']}');
+          debugPrint(
+              '✅ [_enrichWithLogData] Putnik $putnikId - placeno_iz_loga = true, cena=${match['iznos']}, naplatioVozac=${match['vozac_ime']}');
         }
 
         // Ako vozač nije definisan u seat_request, uzmi ga iz loga

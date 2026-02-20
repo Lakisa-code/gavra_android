@@ -197,7 +197,7 @@ class VoznjeLogService {
             existing['tipovi'] = [existing['tip']];
           }
           (existing['tipovi'] as List).add(tip);
-          
+
           // ✅ FIX: Ažuriraj iznos i vozac_ime ako je tip uplata (ima prioritet nad voznja)
           if (tip == 'uplata' || tip == 'uplata_dnevna') {
             existing['iznos'] = l['iznos'];
@@ -460,12 +460,19 @@ class VoznjeLogService {
     final String? gradKod = grad != null ? (GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc') : null;
     final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
+    // ✅ NOVO: Dohvati vozac_ime iz vozac_id
+    String? vozacIme;
+    if (vozacId != null && vozacId.isNotEmpty) {
+      vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+    }
+
     await _supabase.from('voznje_log').insert({
       'putnik_id': putnikId,
       'datum': datum.toIso8601String().split('T')[0],
       'tip': tipUplate,
       'iznos': iznos,
       'vozac_id': vozacId,
+      'vozac_ime': vozacIme,
       'placeni_mesec': placeniMesec ?? datum.month,
       'placena_godina': placenaGodina ?? datum.year,
       'tip_placanja': tipPlacanja,
@@ -821,10 +828,17 @@ class VoznjeLogService {
       // Zadržavamo dodatne meta podatke ako ih ima (za edge cases)
       final Map<String, dynamic>? finalMeta = (meta != null && meta.isNotEmpty) ? meta : null;
 
+      // ✅ NOVO: Dohvati vozac_ime iz vozac_id
+      String? vozacIme;
+      if (vozacId != null && vozacId.isNotEmpty) {
+        vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+      }
+
       await _supabase.from('voznje_log').insert({
         'tip': tip,
         'putnik_id': putnikId,
         'vozac_id': vozacId,
+        'vozac_ime': vozacIme,
         'iznos': iznos,
         'broj_mesta': brojMesta,
         'datum': datumStr,
