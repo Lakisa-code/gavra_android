@@ -17,6 +17,7 @@ import '../services/realtime/realtime_manager.dart';
 import '../services/theme_manager.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
+import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/registrovani_helpers.dart';
 import '../utils/schedule_utils.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
@@ -1617,15 +1618,60 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final tipPutnika = (_putnikData['tip'] ?? '').toString().toLowerCase();
     final jeDnevni = tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka');
 
-    final String? normalizedVreme = novoVreme == null ? null : RegistrovaniHelpers.normalizeTime(novoVreme);
+    // 🚫 BEZ POLASKA od strane putnika → otkazana vožnja (upisuje se u voznje_log)
+    if (novoVreme == null) {
+      try {
+        // Pronađi aktivan seat_request za ovaj dan i grad da dobijemo requestId i vreme
+        final gradKey = tipGrad.startsWith('bc') ? 'bc' : 'vs';
+        final datum = app_date_utils.DateUtils.getIsoDateForDay(dan);
+        final gradVariants = gradKey == 'vs' ? ['vs', 'VS', 'Vršac', 'Vrsac'] : ['bc', 'BC', 'Bela Crkva'];
+
+        final existing = await supabase
+            .from('seat_requests')
+            .select('id, zeljeno_vreme')
+            .eq('putnik_id', putnikId)
+            .eq('datum', datum)
+            .inFilter('grad', gradVariants)
+            .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']).maybeSingle();
+
+        await PutnikService().otkaziPutnika(
+          putnikId,
+          null, // nema vozača - putnik sam otkazuje
+          grad: gradKey,
+          vreme: existing?['zeljeno_vreme']?.toString(),
+          selectedDan: dan,
+          datum: datum,
+          requestId: existing?['id']?.toString(),
+          status: 'otkazano',
+        );
+
+        await _loadActiveRequests();
+        await _refreshPutnikData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Vožnja otkazana. Evidentirano kao otkazivanje.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('❌ Greška u _updatePolazak (otkazivanje): $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Greška pri otkazivanju.')),
+          );
+        }
+      }
+      return;
+    }
+
+    final String normalizedVreme = RegistrovaniHelpers.normalizeTime(novoVreme) ?? '';
 
     String? rpcStatus = 'pending';
-    if (normalizedVreme != null && normalizedVreme.isNotEmpty) {
-      if (tipGrad.startsWith('bc') && jeDnevni) {
-        rpcStatus = 'manual';
-      }
-    } else {
-      rpcStatus = 'cancelled';
+    if (tipGrad.startsWith('bc') && jeDnevni) {
+      rpcStatus = 'manual';
     }
 
     try {
@@ -1642,7 +1688,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       await _loadActiveRequests();
       await _refreshPutnikData();
 
-      if (mounted && normalizedVreme != null && rpcStatus != 'cancelled') {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Vaš zahtev je uspešno primljen.')),
         );
