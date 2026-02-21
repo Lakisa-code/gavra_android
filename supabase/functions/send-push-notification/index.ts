@@ -98,7 +98,17 @@ async function sendToFCM(tokens: string[], title: string, body: string, data?: a
                     token,
                     notification: { title, body },
                     data: data || {},
-                    android: { priority: "high", notification: { sound: "default" } },
+                    android: {
+                        priority: "high",
+                        notification: {
+                            sound: "default",
+                            channel_id: "gavra_realtime_channel",
+                            default_sound: true,
+                            default_vibrate_timings: true,
+                            notification_priority: "PRIORITY_MAX",
+                            visibility: "PUBLIC",
+                        }
+                    },
                     apns: { payload: { aps: { sound: "default" } } }
                 }
             }
