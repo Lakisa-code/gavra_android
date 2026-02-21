@@ -1641,7 +1641,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         await PutnikService().otkaziPutnika(
           putnikId,
-          null, // nema vozača - putnik sam otkazuje
+          'Putnik', // putnik sam otkazuje - loguje se kao 'Putnik'
           grad: gradKey,
           vreme: existing?['zeljeno_vreme']?.toString(),
           selectedDan: dan,

@@ -816,6 +816,7 @@ class VoznjeLogService {
     required String tip,
     String? putnikId,
     String? vozacId,
+    String? vozacImeOverride, // direktno ime ako vozacId nije poznat (npr. 'Putnik', 'Admin')
     double iznos = 0,
     int brojMesta = 1,
     String? detalji,
@@ -835,8 +836,8 @@ class VoznjeLogService {
       final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
       // ✅ Dohvati vozac_ime direktno iz baze (garantovano)
-      String? vozacIme;
-      if (vozacId != null && vozacId.isNotEmpty) {
+      String? vozacIme = vozacImeOverride;
+      if (vozacIme == null && vozacId != null && vozacId.isNotEmpty) {
         try {
           final vozacData = await _supabase.from('vozaci').select('ime').eq('id', vozacId).maybeSingle();
           vozacIme = vozacData?['ime'] as String?;

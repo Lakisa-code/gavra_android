@@ -461,6 +461,7 @@ class PutnikService {
         tip: 'voznja',
         putnikId: id.toString(),
         vozacId: vozacId,
+        vozacImeOverride: vozacId == null ? driver : null,
         datum: targetDatum,
         grad: grad,
         vreme: vreme,
@@ -643,6 +644,7 @@ class PutnikService {
         tip: 'otkazivanje',
         putnikId: id.toString(),
         vozacId: vozacUuid,
+        vozacImeOverride: vozacUuid == null ? driver : null, // 'Putnik', 'Admin', itd.
         grad: selectedGrad ?? grad,
         vreme: selectedVreme ?? vreme,
         datum: datum,

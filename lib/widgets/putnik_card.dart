@@ -1477,11 +1477,11 @@ class _PutnikCardState extends State<PutnikCard> {
                       if (_putnik.jeOtkazan && _putnik.vremeOtkazivanja != null) ...[
                         if (_putnik.vremePokupljenja != null || (_putnik.placeno == true)) const SizedBox(width: 12),
                         Text(
-                          '${_putnik.otkazaoVozac == 'Putnik' ? 'Putnik otkazao' : 'Otkazao'}: ${_formatOtkazivanje(_putnik.vremeOtkazivanja!)}',
+                          '${(_putnik.otkazaoVozac == null || _putnik.otkazaoVozac == 'Putnik') ? 'Putnik otkazao' : 'Otkazao'}: ${_formatOtkazivanje(_putnik.vremeOtkazivanja!)}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: _putnik.otkazaoVozac == 'Putnik'
-                                ? Colors.red.shade900 // Jača crvena za putnika
+                            color: (_putnik.otkazaoVozac == null || _putnik.otkazaoVozac == 'Putnik')
+                                ? Colors.red.shade900 // Jača crvena za putnika koji sam otkazuje
                                 : VozacBoja.getSync(_putnik.otkazaoVozac),
                             fontWeight: FontWeight.w600,
                           ),
