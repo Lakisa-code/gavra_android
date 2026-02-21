@@ -41,7 +41,7 @@ BEGIN
     -- Samo ako se status mijenja
     IF (OLD.status = NEW.status) THEN RETURN NEW; END IF;
 
-    v_grad_display := CASE WHEN NEW.grad = 'BC' THEN 'Bečej' WHEN NEW.grad = 'VS' THEN 'Vršac' ELSE NEW.grad END;
+    v_grad_display := CASE WHEN NEW.grad = 'BC' THEN 'Bela Crkva' WHEN NEW.grad = 'VS' THEN 'Vršac' ELSE NEW.grad END;
 
     -- Dohvati tokene putnika
     SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
