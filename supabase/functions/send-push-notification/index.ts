@@ -184,26 +184,55 @@ async function sendToHMS(tokens: string[], title: string, body: string, data?: a
 // --- HELPER FUNKCIJE ZA TOKENE ---
 
 async function getGoogleAccessToken(serviceAccount: any) {
-    // Dinamički import za JWT (Deno specifično)
-    const { default: jwt } = await import("https://esm.sh/jsonwebtoken@9.0.0")
-
     const iat = Math.floor(Date.now() / 1000)
     const exp = iat + 3600
 
-    const payload = {
+    const header = { alg: 'RS256', typ: 'JWT' }
+    const claimSet = {
         iss: serviceAccount.client_email,
-        scope: "https://www.googleapis.com/auth/firebase.messaging",
-        aud: "https://oauth2.googleapis.com/token",
+        scope: 'https://www.googleapis.com/auth/firebase.messaging',
+        aud: 'https://oauth2.googleapis.com/token',
         exp,
         iat,
     }
 
-    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' })
+    const encode = (obj: any) => btoa(JSON.stringify(obj))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 
-    const response = await fetch("https://oauth2.googleapis.com/token", {
+    const headerB64 = encode(header)
+    const claimB64 = encode(claimSet)
+    const signingInput = `${headerB64}.${claimB64}`
+
+    // Učitaj private key (PEM → CryptoKey)
+    const pemBody = serviceAccount.private_key
+        .replace(/-----BEGIN PRIVATE KEY-----/, '')
+        .replace(/-----END PRIVATE KEY-----/, '')
+        .replace(/\s/g, '')
+    const binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0))
+
+    const cryptoKey = await crypto.subtle.importKey(
+        'pkcs8',
+        binaryDer,
+        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+        false,
+        ['sign']
+    )
+
+    const signature = await crypto.subtle.sign(
+        'RSASSA-PKCS1-v1_5',
+        cryptoKey,
+        new TextEncoder().encode(signingInput)
+    )
+
+    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+
+    const jwt = `${signingInput}.${signatureB64}`
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
+        body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
     })
 
     const data = await response.json()

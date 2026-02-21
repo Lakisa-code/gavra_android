@@ -36,8 +36,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
       final naziv = (adresa.naziv).toLowerCase();
       final grad = adresa.grad ?? '';
 
-      final matchesSearch =
-          _searchQuery.isEmpty || naziv.contains(_searchQuery.toLowerCase());
+      final matchesSearch = _searchQuery.isEmpty || naziv.contains(_searchQuery.toLowerCase());
       final matchesGrad = _filterGrad == 'Svi' || grad == _filterGrad;
 
       return matchesSearch && matchesGrad;
@@ -171,13 +170,10 @@ class _AdreseScreenState extends State<AdreseScreen> {
       stream: AdresaSupabaseService.streamSveAdrese(),
       builder: (context, snapshot) {
         final adrese = snapshot.data ?? [];
-        final isLoading = snapshot.connectionState == ConnectionState.waiting &&
-            adrese.isEmpty;
+        final isLoading = snapshot.connectionState == ConnectionState.waiting && adrese.isEmpty;
 
-        final belaCrkvaCount =
-            adrese.where((a) => a.grad == 'Bela Crkva').length;
-        final vrsacCount =
-            adrese.where((a) => a.grad == 'Vršac' || a.grad == 'Vrsac').length;
+        final belaCrkvaCount = adrese.where((a) => a.grad == 'Bela Crkva').length;
+        final vrsacCount = adrese.where((a) => a.grad == 'Vršac' || a.grad == 'Vrsac').length;
         final filteredAdrese = _getFilteredAdrese(adrese);
 
         return Scaffold(
@@ -209,12 +205,9 @@ class _AdreseScreenState extends State<AdreseScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _buildStatCard('Ukupno', adrese.length.toString(),
-                                Colors.blue),
-                            _buildStatCard('B. Crkva',
-                                belaCrkvaCount.toString(), Colors.green),
-                            _buildStatCard(
-                                'Vršac', vrsacCount.toString(), Colors.orange),
+                            _buildStatCard('Ukupno', adrese.length.toString(), Colors.blue),
+                            _buildStatCard('B. Crkva', belaCrkvaCount.toString(), Colors.green),
+                            _buildStatCard('Vršac', vrsacCount.toString(), Colors.orange),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -224,12 +217,10 @@ class _AdreseScreenState extends State<AdreseScreen> {
                           decoration: InputDecoration(
                             hintText: 'Pretraži adrese...',
                             hintStyle: TextStyle(color: Colors.grey[400]),
-                            prefixIcon:
-                                const Icon(Icons.search, color: Colors.white70),
+                            prefixIcon: const Icon(Icons.search, color: Colors.white70),
                             suffixIcon: _searchQuery.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear,
-                                        color: Colors.white70),
+                                    icon: const Icon(Icons.clear, color: Colors.white70),
                                     onPressed: () {
                                       _searchController.clear();
                                       setState(() => _searchQuery = '');
@@ -238,26 +229,21 @@ class _AdreseScreenState extends State<AdreseScreen> {
                                 : null,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                  color: Colors.white.withOpacity(0.3)),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                  color: Colors.white.withOpacity(0.3)),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: Colors.blue, width: 2),
+                              borderSide: const BorderSide(color: Colors.blue, width: 2),
                             ),
                             filled: true,
                             fillColor: Colors.black.withOpacity(0.3),
                           ),
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 16),
-                          onChanged: (value) =>
-                              setState(() => _searchQuery = value),
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          onChanged: (value) => setState(() => _searchQuery = value),
                         ),
                         const SizedBox(height: 12),
                         // Filter dugmad
@@ -266,8 +252,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
                           children: [
                             _buildFilterChip('Svi', _filterGrad == 'Svi'),
                             const SizedBox(width: 8),
-                            _buildFilterChip(
-                                'Bela Crkva', _filterGrad == 'Bela Crkva'),
+                            _buildFilterChip('Bela Crkva', _filterGrad == 'Bela Crkva'),
                             const SizedBox(width: 8),
                             _buildFilterChip('Vršac', _filterGrad == 'Vršac'),
                           ],
@@ -288,8 +273,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
                                 ),
                               )
                             : ListView.builder(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
                                 itemCount: filteredAdrese.length,
                                 itemBuilder: (context, index) {
                                   final adresa = filteredAdrese[index];
@@ -303,8 +287,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
           ),
           // 📱 ANDROID 15 EDGE-TO-EDGE: Padding za gesture navigation bar
           floatingActionButton: Padding(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewPadding.bottom),
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
             child: FloatingActionButton.extended(
               onPressed: _addAdresa,
               icon: const Icon(Icons.add),
@@ -369,9 +352,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: adresa.grad == 'Bela Crkva'
-              ? Colors.green.withOpacity(0.2)
-              : Colors.orange.withOpacity(0.2),
+          backgroundColor: adresa.grad == 'Bela Crkva' ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
           child: Icon(
             Icons.location_on,
             color: adresa.grad == 'Bela Crkva' ? Colors.green : Colors.orange,
@@ -379,8 +360,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
         ),
         title: Text(
           adresa.naziv,
-          style:
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,10 +430,8 @@ class _AdresaDialogState extends State<_AdresaDialog> {
     _nazivController = TextEditingController(text: widget.initialNaziv);
     _ulicaController = TextEditingController(text: widget.initialUlica);
     _brojController = TextEditingController(text: widget.initialBroj);
-    _latitudeController =
-        TextEditingController(text: widget.initialLatitude?.toString());
-    _longitudeController =
-        TextEditingController(text: widget.initialLongitude?.toString());
+    _latitudeController = TextEditingController(text: widget.initialLatitude?.toString());
+    _longitudeController = TextEditingController(text: widget.initialLongitude?.toString());
     if (widget.initialGrad != null) {
       _selectedGrad = widget.initialGrad!;
     }
@@ -524,8 +502,7 @@ class _AdresaDialogState extends State<_AdresaDialog> {
                       labelText: 'Latitude (opciono)',
                       hintText: 'npr. 44.7568',
                     ),
-                    keyboardType:
-                        TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -536,8 +513,7 @@ class _AdresaDialogState extends State<_AdresaDialog> {
                       labelText: 'Longitude (opciono)',
                       hintText: 'npr. 21.1622',
                     ),
-                    keyboardType:
-                        TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
               ],
@@ -578,12 +554,8 @@ class _AdresaDialogState extends State<_AdresaDialog> {
             Navigator.pop(context, {
               'naziv': naziv,
               'grad': _selectedGrad,
-              'ulica': _ulicaController.text.trim().isEmpty
-                  ? naziv
-                  : _ulicaController.text.trim(),
-              'broj': _brojController.text.trim().isEmpty
-                  ? null
-                  : _brojController.text.trim(),
+              'ulica': _ulicaController.text.trim().isEmpty ? naziv : _ulicaController.text.trim(),
+              'broj': _brojController.text.trim().isEmpty ? null : _brojController.text.trim(),
               'latitude': latitude,
               'longitude': longitude,
             });

@@ -174,8 +174,7 @@ class _ONamaScreenState extends State<ONamaScreen> {
                   children: [
                     _buildInfoRow('Pun naziv', 'PR LIMO SERVIS GAVRA 013'),
                     const Divider(color: Colors.white24, height: 16),
-                    _buildInfoRow(
-                        'Delatnost', '4932 - Limo servis + Taksi prevoz'),
+                    _buildInfoRow('Delatnost', '4932 - Limo servis + Taksi prevoz'),
                     const Divider(color: Colors.white24, height: 16),
                     _buildInfoRow('PIB', '102853497'),
                     const Divider(color: Colors.white24, height: 16),

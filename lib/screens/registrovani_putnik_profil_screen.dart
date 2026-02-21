@@ -13,11 +13,11 @@ import '../models/registrovani_putnik.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
-import '../utils/app_snack_bar.dart';
 import '../services/realtime/realtime_manager.dart';
 import '../services/theme_manager.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
+import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/registrovani_helpers.dart';
 import '../utils/schedule_utils.dart';

@@ -64,11 +64,8 @@ class RacunService {
     final godina = DateTime.now().year;
 
     try {
-      final response = await _supabase
-          .from('racun_sequence')
-          .select('poslednji_broj')
-          .eq('godina', godina)
-          .maybeSingle();
+      final response =
+          await _supabase.from('racun_sequence').select('poslednji_broj').eq('godina', godina).maybeSingle();
 
       final trenutniBroj = response?['poslednji_broj'] as int? ?? 0;
       return '${trenutniBroj + 1}/$godina';
@@ -161,8 +158,7 @@ class RacunService {
 
       // Sačuvaj PDF
       final tempDir = await getTemporaryDirectory();
-      final fileName =
-          'Racuni_${DateFormat('dd_MM_yyyy_HHmm').format(DateTime.now())}.pdf';
+      final fileName = 'Racuni_${DateFormat('dd_MM_yyyy_HHmm').format(DateTime.now())}.pdf';
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(await pdf.save(), flush: true);
 
@@ -197,8 +193,7 @@ class RacunService {
 
       final pdf = pw.Document();
       final obracunskiDatum = datumPrometa ?? DateTime.now();
-      final mesecStr =
-          DateFormat('MMMM yyyy', 'sr_Latn').format(obracunskiDatum);
+      final mesecStr = DateFormat('MMMM yyyy', 'sr_Latn').format(obracunskiDatum);
 
       for (final podaci in racuniPodaci) {
         final putnik = podaci['putnik'];
@@ -227,8 +222,7 @@ class RacunService {
 
       // Sačuvaj PDF
       final tempDir = await getTemporaryDirectory();
-      final fileName =
-          'Racuni_Firme_${DateFormat('MM_yyyy').format(DateTime.now())}.pdf';
+      final fileName = 'Racuni_Firme_${DateFormat('MM_yyyy').format(DateTime.now())}.pdf';
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(await pdf.save(), flush: true);
 
@@ -282,26 +276,17 @@ class RacunService {
             // ========== IZDAVALAC ==========
             pw.Container(
               padding: const pw.EdgeInsets.all(10),
-              decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey400)),
+              decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Text('IZDAVALAC',
-                      style: pw.TextStyle(
-                          fontSize: 10,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.grey600)),
+                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey600)),
                   pw.SizedBox(height: 8),
-                  pw.Text(firmaIme,
-                      style: pw.TextStyle(
-                          fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                  pw.Text('Adresa: $firmaAdresa',
-                      style: const pw.TextStyle(fontSize: 11)),
-                  pw.Text('PIB: $firmaPIB | MB: $firmaMB',
-                      style: const pw.TextStyle(fontSize: 11)),
-                  pw.Text('Žiro račun: $firmaTekuciRacun',
-                      style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text(firmaIme, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Adresa: $firmaAdresa', style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text('PIB: $firmaPIB | MB: $firmaMB', style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text('Žiro račun: $firmaTekuciRacun', style: const pw.TextStyle(fontSize: 11)),
                 ],
               ),
             ),
@@ -310,28 +295,21 @@ class RacunService {
 
             // ========== NASLOV ==========
             pw.Center(
-              child: pw.Text('RAČUN br. $brojRacuna',
-                  style: pw.TextStyle(
-                      fontSize: 20, fontWeight: pw.FontWeight.bold)),
+              child:
+                  pw.Text('RAČUN br. $brojRacuna', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
             ),
             pw.SizedBox(height: 4),
             pw.Center(
-              child: pw.Text(
-                  'za mesec: ${DateFormat('MMMM yyyy', 'sr_Latn').format(referentniDatum)}',
-                  style: pw.TextStyle(
-                      fontSize: 12,
-                      fontStyle: pw.FontStyle.italic,
-                      color: PdfColors.grey700)),
+              child: pw.Text('za mesec: ${DateFormat('MMMM yyyy', 'sr_Latn').format(referentniDatum)}',
+                  style: pw.TextStyle(fontSize: 12, fontStyle: pw.FontStyle.italic, color: PdfColors.grey700)),
             ),
 
             pw.SizedBox(height: 10),
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('Datum izdavanja: $danas',
-                    style: const pw.TextStyle(fontSize: 11)),
-                pw.Text('Datum prometa: $datumPrometaStr',
-                    style: const pw.TextStyle(fontSize: 11)),
+                pw.Text('Datum izdavanja: $danas', style: const pw.TextStyle(fontSize: 11)),
+                pw.Text('Datum prometa: $datumPrometaStr', style: const pw.TextStyle(fontSize: 11)),
               ],
             ),
 
@@ -340,36 +318,20 @@ class RacunService {
             // ========== KUPAC (FIRMA) ==========
             pw.Container(
               padding: const pw.EdgeInsets.all(10),
-              decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey400)),
+              decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Text('KUPAC',
-                      style: pw.TextStyle(
-                          fontSize: 10,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.grey600)),
+                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey600)),
                   pw.SizedBox(height: 8),
-                  pw.Text(firmaNaziv,
-                      style: pw.TextStyle(
-                          fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                  if (firmaAdresa.isNotEmpty)
-                    pw.Text('Adresa: $firmaAdresa',
-                        style: const pw.TextStyle(fontSize: 11)),
-                  if (firmaPib.isNotEmpty)
-                    pw.Text('PIB: $firmaPib',
-                        style: const pw.TextStyle(fontSize: 11)),
-                  if (firmaMb.isNotEmpty)
-                    pw.Text('MB: $firmaMb',
-                        style: const pw.TextStyle(fontSize: 11)),
-                  if (firmaZiro.isNotEmpty)
-                    pw.Text('Žiro račun: $firmaZiro',
-                        style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text(firmaNaziv, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                  if (firmaAdresa.isNotEmpty) pw.Text('Adresa: $firmaAdresa', style: const pw.TextStyle(fontSize: 11)),
+                  if (firmaPib.isNotEmpty) pw.Text('PIB: $firmaPib', style: const pw.TextStyle(fontSize: 11)),
+                  if (firmaMb.isNotEmpty) pw.Text('MB: $firmaMb', style: const pw.TextStyle(fontSize: 11)),
+                  if (firmaZiro.isNotEmpty) pw.Text('Žiro račun: $firmaZiro', style: const pw.TextStyle(fontSize: 11)),
                   pw.SizedBox(height: 8),
-                  pw.Text('Putnik: $putnikIme',
-                      style: pw.TextStyle(
-                          fontSize: 11, fontStyle: pw.FontStyle.italic)),
+                  pw.Text('Putnik: $putnikIme', style: pw.TextStyle(fontSize: 11, fontStyle: pw.FontStyle.italic)),
                 ],
               ),
             ),
@@ -416,11 +378,9 @@ class RacunService {
               alignment: pw.Alignment.centerRight,
               child: pw.Container(
                 padding: const pw.EdgeInsets.all(10),
-                decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey600, width: 2)),
+                decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey600, width: 2)),
                 child: pw.Text('UKUPNO: ${ukupno.toStringAsFixed(0)} RSD',
-                    style: pw.TextStyle(
-                        fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
               ),
             ),
 
@@ -429,17 +389,13 @@ class RacunService {
             // ========== NAPOMENA ==========
             pw.Container(
               padding: const pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(
-                  color: PdfColors.grey100,
-                  border: pw.Border.all(color: PdfColors.grey300)),
+              decoration: pw.BoxDecoration(color: PdfColors.grey100, border: pw.Border.all(color: PdfColors.grey300)),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('Napomena: $napomenaPDV',
-                      style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('Napomena: $napomenaPDV', style: const pw.TextStyle(fontSize: 10)),
                   pw.SizedBox(height: 4),
-                  pw.Text(napomenaValidnost,
-                      style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text(napomenaValidnost, style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
             ),
@@ -454,26 +410,20 @@ class RacunService {
                   children: [
                     pw.Container(
                         width: 150,
-                        decoration: const pw.BoxDecoration(
-                            border:
-                                pw.Border(bottom: pw.BorderSide(width: 0.5))),
+                        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 0.5))),
                         child: pw.SizedBox(height: 40)),
                     pw.SizedBox(height: 4),
-                    pw.Text('Potpis kupca',
-                        style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Potpis kupca', style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
                 pw.Column(
                   children: [
                     pw.Container(
                         width: 150,
-                        decoration: const pw.BoxDecoration(
-                            border:
-                                pw.Border(bottom: pw.BorderSide(width: 0.5))),
+                        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 0.5))),
                         child: pw.SizedBox(height: 40)),
                     pw.SizedBox(height: 4),
-                    pw.Text('M.P. Potpis izdavaoca',
-                        style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('M.P. Potpis izdavaoca', style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
               ],
@@ -544,14 +494,10 @@ class RacunService {
                       ),
                     ),
                     pw.SizedBox(height: 4),
-                    pw.Text('Adresa: $firmaAdresa',
-                        style: const pw.TextStyle(fontSize: 11)),
-                    pw.Text('PIB: $firmaPIB',
-                        style: const pw.TextStyle(fontSize: 11)),
-                    pw.Text('Matični broj: $firmaMB',
-                        style: const pw.TextStyle(fontSize: 11)),
-                    pw.Text('Tekući račun: $firmaTekuciRacun',
-                        style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Adresa: $firmaAdresa', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('PIB: $firmaPIB', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Matični broj: $firmaMB', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Tekući račun: $firmaTekuciRacun', style: const pw.TextStyle(fontSize: 11)),
                   ],
                 ),
               ),
@@ -575,10 +521,8 @@ class RacunService {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Datum izdavanja: $danas',
-                      style: const pw.TextStyle(fontSize: 11)),
-                  pw.Text('Datum prometa: $datumPrometaStr',
-                      style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text('Datum izdavanja: $danas', style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text('Datum prometa: $datumPrometaStr', style: const pw.TextStyle(fontSize: 11)),
                 ],
               ),
 
@@ -610,8 +554,7 @@ class RacunService {
                       ),
                     ),
                     if (adresaKupca.isNotEmpty)
-                      pw.Text('Adresa: $adresaKupca',
-                          style: const pw.TextStyle(fontSize: 11)),
+                      pw.Text('Adresa: $adresaKupca', style: const pw.TextStyle(fontSize: 11)),
                   ],
                 ),
               ),
@@ -632,8 +575,7 @@ class RacunService {
                 children: [
                   // Zaglavlje tabele
                   pw.TableRow(
-                    decoration:
-                        const pw.BoxDecoration(color: PdfColors.grey200),
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                     children: [
                       _tableCell('R.br.', isHeader: true),
                       _tableCell('Naziv dobra / usluge', isHeader: true),
@@ -719,8 +661,7 @@ class RacunService {
                         child: pw.SizedBox(height: 40),
                       ),
                       pw.SizedBox(height: 4),
-                      pw.Text('Potpis kupca',
-                          style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('Potpis kupca', style: const pw.TextStyle(fontSize: 10)),
                     ],
                   ),
                   // Pečat i potpis izdavaoca
@@ -734,8 +675,7 @@ class RacunService {
                         child: pw.SizedBox(height: 40),
                       ),
                       pw.SizedBox(height: 4),
-                      pw.Text('M.P. Potpis izdavaoca',
-                          style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('M.P. Potpis izdavaoca', style: const pw.TextStyle(fontSize: 10)),
                     ],
                   ),
                 ],
@@ -821,14 +761,10 @@ class RacunService {
                     ),
                   ),
                   pw.SizedBox(height: 4),
-                  pw.Text('Adresa: $firmaAdresa',
-                      style: const pw.TextStyle(fontSize: 11)),
-                  pw.Text('PIB: $firmaPIB',
-                      style: const pw.TextStyle(fontSize: 11)),
-                  pw.Text('Matični broj: $firmaMB',
-                      style: const pw.TextStyle(fontSize: 11)),
-                  pw.Text('Tekući račun: $firmaTekuciRacun',
-                      style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text('Adresa: $firmaAdresa', style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text('PIB: $firmaPIB', style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text('Matični broj: $firmaMB', style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text('Tekući račun: $firmaTekuciRacun', style: const pw.TextStyle(fontSize: 11)),
                 ],
               ),
             ),
@@ -852,10 +788,8 @@ class RacunService {
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('Datum izdavanja: $danas',
-                    style: const pw.TextStyle(fontSize: 11)),
-                pw.Text('Datum prometa: $datumPrometaStr',
-                    style: const pw.TextStyle(fontSize: 11)),
+                pw.Text('Datum izdavanja: $danas', style: const pw.TextStyle(fontSize: 11)),
+                pw.Text('Datum prometa: $datumPrometaStr', style: const pw.TextStyle(fontSize: 11)),
               ],
             ),
 
@@ -886,9 +820,7 @@ class RacunService {
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
-                  if (adresaKupca.isNotEmpty)
-                    pw.Text('Adresa: $adresaKupca',
-                        style: const pw.TextStyle(fontSize: 11)),
+                  if (adresaKupca.isNotEmpty) pw.Text('Adresa: $adresaKupca', style: const pw.TextStyle(fontSize: 11)),
                 ],
               ),
             ),
@@ -992,8 +924,7 @@ class RacunService {
                       child: pw.SizedBox(height: 40),
                     ),
                     pw.SizedBox(height: 4),
-                    pw.Text('Potpis kupca',
-                        style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Potpis kupca', style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
                 pw.Column(
@@ -1006,8 +937,7 @@ class RacunService {
                       child: pw.SizedBox(height: 40),
                     ),
                     pw.SizedBox(height: 4),
-                    pw.Text('M.P. Potpis izdavaoca',
-                        style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('M.P. Potpis izdavaoca', style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
               ],

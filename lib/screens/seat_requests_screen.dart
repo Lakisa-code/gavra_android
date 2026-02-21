@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../utils/app_snack_bar.dart';
 
 import '../models/seat_request.dart';
 import '../services/seat_request_service.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
+import '../utils/app_snack_bar.dart';
 
 class SeatRequestsScreen extends StatefulWidget {
   const SeatRequestsScreen({super.key});

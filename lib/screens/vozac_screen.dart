@@ -19,8 +19,8 @@ import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart'; // 🕒 Za dodeljena vremena vozača
-import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/app_snack_bar.dart';
+import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/putnik_helpers.dart'; // 🛠️ Centralizovani helperi
 import '../utils/text_utils.dart'; // 📝 Za TextUtils.isStatusActive

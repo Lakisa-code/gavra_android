@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import '../utils/app_snack_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme.dart';
+import '../utils/app_snack_bar.dart';
 
 /// 🔐 PROMENA ŠIFRE SCREEN
 /// Vozač može da promeni svoju šifru nakon uspešnog logina
@@ -51,8 +51,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
       final List<dynamic> decoded = jsonDecode(vozaciJson);
       final vozaci = decoded.map((v) => Map<String, dynamic>.from(v)).toList();
       final vozac = vozaci.firstWhere(
-        (v) =>
-            v['ime'].toString().toLowerCase() == widget.vozacIme.toLowerCase(),
+        (v) => v['ime'].toString().toLowerCase() == widget.vozacIme.toLowerCase(),
         orElse: () => <String, dynamic>{},
       );
       if (vozac.isNotEmpty) {
@@ -82,8 +81,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
 
       // Pronađi vozača
       final index = vozaci.indexWhere(
-        (v) =>
-            v['ime'].toString().toLowerCase() == widget.vozacIme.toLowerCase(),
+        (v) => v['ime'].toString().toLowerCase() == widget.vozacIme.toLowerCase(),
       );
 
       if (index == -1) {
@@ -93,9 +91,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
 
       // Proveri staru šifru
       final staraSifra = _staraSifraController.text;
-      if (_trenutnaSifra != null &&
-          _trenutnaSifra!.isNotEmpty &&
-          _trenutnaSifra != staraSifra) {
+      if (_trenutnaSifra != null && _trenutnaSifra!.isNotEmpty && _trenutnaSifra != staraSifra) {
         _showError('Pogrešna trenutna šifra.');
         return;
       }
@@ -191,19 +187,14 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                     obscureText: !_staraSifraVisible,
                     decoration: InputDecoration(
                       labelText: 'Trenutna šifra',
-                      labelStyle:
-                          TextStyle(color: Colors.white.withOpacity(0.7)),
-                      prefixIcon:
-                          const Icon(Icons.lock_outline, color: Colors.amber),
+                      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      prefixIcon: const Icon(Icons.lock_outline, color: Colors.amber),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _staraSifraVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                          _staraSifraVisible ? Icons.visibility_off : Icons.visibility,
                           color: Colors.amber,
                         ),
-                        onPressed: () => setState(
-                            () => _staraSifraVisible = !_staraSifraVisible),
+                        onPressed: () => setState(() => _staraSifraVisible = !_staraSifraVisible),
                       ),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.1),
@@ -213,8 +204,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: Colors.amber.withOpacity(0.3)),
+                        borderSide: BorderSide(color: Colors.amber.withOpacity(0.3)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -242,13 +232,10 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                     prefixIcon: const Icon(Icons.lock, color: Colors.amber),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _novaSifraVisible
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        _novaSifraVisible ? Icons.visibility_off : Icons.visibility,
                         color: Colors.amber,
                       ),
-                      onPressed: () => setState(
-                          () => _novaSifraVisible = !_novaSifraVisible),
+                      onPressed: () => setState(() => _novaSifraVisible = !_novaSifraVisible),
                     ),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.1),
@@ -258,8 +245,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.amber.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Colors.amber.withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -286,17 +272,13 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                   decoration: InputDecoration(
                     labelText: 'Potvrdi novu šifru',
                     labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                    prefixIcon:
-                        const Icon(Icons.lock_clock, color: Colors.amber),
+                    prefixIcon: const Icon(Icons.lock_clock, color: Colors.amber),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _potvrdaVisible
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        _potvrdaVisible ? Icons.visibility_off : Icons.visibility,
                         color: Colors.amber,
                       ),
-                      onPressed: () =>
-                          setState(() => _potvrdaVisible = !_potvrdaVisible),
+                      onPressed: () => setState(() => _potvrdaVisible = !_potvrdaVisible),
                     ),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.1),
@@ -306,8 +288,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.amber.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Colors.amber.withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -341,13 +322,11 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(
-                              color: Colors.black, strokeWidth: 2),
+                          child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
                         )
                       : Text(
                           imaSifru ? '🔄 Promeni šifru' : '✅ Postavi šifru',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                 ),
                 const SizedBox(height: 24),
@@ -362,15 +341,12 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline,
-                          color: Colors.white54, size: 20),
+                      const Icon(Icons.info_outline, color: Colors.white54, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Nova šifra će važiti od sledeće prijave.',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 12),
+                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                         ),
                       ),
                     ],

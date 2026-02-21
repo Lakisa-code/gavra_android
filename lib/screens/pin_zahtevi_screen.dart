@@ -24,29 +24,24 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
       stream: PinZahtevService.streamZahteviKojiCekaju(),
       builder: (context, snapshot) {
         final zahtevi = snapshot.data ?? [];
-        final isLoading = snapshot.connectionState == ConnectionState.waiting &&
-            zahtevi.isEmpty;
+        final isLoading = snapshot.connectionState == ConnectionState.waiting && zahtevi.isEmpty;
 
         return Scaffold(
           extendBodyBehindAppBar: true,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: const Text('PIN Zahtevi',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text('PIN Zahtevi', style: TextStyle(fontWeight: FontWeight.bold)),
             automaticallyImplyLeading: false,
           ),
           body: Container(
-            decoration:
-                BoxDecoration(gradient: Theme.of(context).backgroundGradient),
+            decoration: BoxDecoration(gradient: Theme.of(context).backgroundGradient),
             child: SafeArea(
               child: Column(
                 children: [
                   Expanded(
                     child: isLoading
-                        ? const Center(
-                            child:
-                                CircularProgressIndicator(color: Colors.white))
+                        ? const Center(child: CircularProgressIndicator(color: Colors.white))
                         : zahtevi.isEmpty
                             ? const Center(
                                 child: Text(
@@ -79,8 +74,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
   }
 
   /// Pošalji PIN putem SMS-a
-  Future<void> _posaljiPinSms(
-      String brojTelefona, String pin, String ime) async {
+  Future<void> _posaljiPinSms(String brojTelefona, String pin, String ime) async {
     final message = 'Vaš PIN za aplikaciju Gavra 013 je: $pin\n'
         'Koristite ovaj PIN zajedno sa brojem telefona za pristup.\n'
         '- Gavra 013';
@@ -111,9 +105,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     final zahtevId = zahtev['id'] as String;
     final putnik = zahtev['registrovani_putnici'] as Map<String, dynamic>?;
     final ime = putnik?['putnik_ime'] ?? '';
-    final brojTelefona = putnik?['broj_telefona'] as String? ??
-        zahtev['telefon'] as String? ??
-        '';
+    final brojTelefona = putnik?['broj_telefona'] as String? ?? zahtev['telefon'] as String? ?? '';
 
     final generisaniPin = _generatePin();
     final pinController = TextEditingController(text: generisaniPin);
@@ -127,9 +119,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
           children: [
             const Icon(Icons.vpn_key, color: Colors.green),
             const SizedBox(width: 8),
-            Expanded(
-                child: Text('Dodeli PIN za $ime',
-                    style: const TextStyle(color: Colors.white, fontSize: 16))),
+            Expanded(child: Text('Dodeli PIN za $ime', style: const TextStyle(color: Colors.white, fontSize: 16))),
           ],
         ),
         content: Column(
@@ -137,8 +127,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
           children: [
             TextField(
               controller: pinController,
-              style: const TextStyle(
-                  color: Colors.white, fontSize: 28, letterSpacing: 12),
+              style: const TextStyle(color: Colors.white, fontSize: 28, letterSpacing: 12),
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               maxLength: 4,
@@ -167,8 +156,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                 pinController.text = _generatePin();
               },
               icon: const Icon(Icons.refresh, color: Colors.amber),
-              label: const Text('Generiši novi',
-                  style: TextStyle(color: Colors.amber)),
+              label: const Text('Generiši novi', style: TextStyle(color: Colors.amber)),
             ),
           ],
         ),
@@ -186,8 +174,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child:
-                const Text('Dodeli PIN', style: TextStyle(color: Colors.white)),
+            child: const Text('Dodeli PIN', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -272,8 +259,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     if (createdAt != null) {
       final dt = DateTime.tryParse(createdAt);
       if (dt != null) {
-        vremeZahteva =
-            '${dt.day}.${dt.month}.${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+        vremeZahteva = '${dt.day}.${dt.month}.${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
       }
     }
 
@@ -293,8 +279,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                   backgroundColor: Colors.amber.withOpacity(0.2),
                   child: Text(
                     ime.isNotEmpty ? ime[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                        color: Colors.amber, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -316,15 +301,13 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                             : tip == 'ucenik'
                                 ? '🎓 Učenik'
                                 : tip,
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.6), fontSize: 13),
+                        style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),

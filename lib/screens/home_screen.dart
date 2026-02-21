@@ -30,12 +30,12 @@ import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/vreme_vozac_service.dart'; // 🚐 Za border boju dodeljenog vozača
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
+import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/text_utils.dart';
-import '../utils/app_snack_bar.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
@@ -1636,7 +1636,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             _currentDriver!.isEmpty ||
                                             !VozacBoja.isValidDriverSync(_currentDriver)) {
                                           if (!context.mounted) return;
-                                          AppSnackBar.error(context, '❌ GREŠKA: Vozač "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.');
+                                          AppSnackBar.error(context,
+                                              '❌ GREŠKA: Vozač "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.');
                                           return;
                                         }
 
@@ -1653,7 +1654,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           );
                                           if (!imaMesta) {
                                             if (!context.mounted) return;
-                                            AppSnackBar.error(context, '❌ Termin $_selectedVreme ($_selectedGrad) je PUN! Izaberite drugo vreme.');
+                                            AppSnackBar.error(context,
+                                                '❌ Termin $_selectedVreme ($_selectedGrad) je PUN! Izaberite drugo vreme.');
                                             return;
                                           }
                                         }

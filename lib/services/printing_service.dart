@@ -10,9 +10,9 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
+import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
-import '../utils/app_snack_bar.dart';
 import '../utils/text_utils.dart';
 
 class PrintingService {
@@ -75,30 +75,23 @@ class PrintingService {
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
           final odgovarajuciGrad =
-              normalizedPutnikGrad.contains(normalizedGrad) ||
-                  normalizedGrad.contains(normalizedPutnikGrad);
+              normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
           final putnikPolazak = putnik.polazak.toString().trim();
           final selectedVremeStr = selectedVreme.trim();
-          final odgovarajuciPolazak =
-              normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
-                  (normalizeTime(putnikPolazak)
-                      .startsWith(normalizeTime(selectedVremeStr)));
+          final odgovarajuciPolazak = normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
+              (normalizeTime(putnikPolazak).startsWith(normalizeTime(selectedVremeStr)));
 
-          final odgovarajuciDan =
-              putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
+          final odgovarajuciDan = putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
 
-          final result = odgovarajuciGrad &&
-              odgovarajuciPolazak &&
-              odgovarajuciDan &&
-              normalizedStatus != 'obrisan';
+          final result = odgovarajuciGrad && odgovarajuciPolazak && odgovarajuciDan && normalizedStatus != 'obrisan';
 
           return result;
         } else {
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
-          final gradMatch = normalizedPutnikGrad.contains(normalizedGrad) ||
-              normalizedGrad.contains(normalizedPutnikGrad);
+          final gradMatch =
+              normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
           final odgovara = gradMatch &&
               normalizeTime(putnik.polazak) == normalizeTime(selectedVreme) &&
@@ -111,7 +104,8 @@ class PrintingService {
 
       if (putnici.isEmpty) {
         if (context.mounted) {
-          AppSnackBar.warning(context,
+          AppSnackBar.warning(
+            context,
             '📄 Nema putnika za $selectedDay - $selectedVreme - $selectedGrad',
           );
         }
@@ -224,9 +218,8 @@ class PrintingService {
                 putnici.length > 8 ? putnici.length : 8,
                 (index) {
                   final broj = index + 1;
-                  final imePutnika = index < putnici.length
-                      ? putnici[index].ime
-                      : '______________________________________';
+                  final imePutnika =
+                      index < putnici.length ? putnici[index].ime : '______________________________________';
                   return pw.Padding(
                     padding: const pw.EdgeInsets.symmetric(vertical: 6),
                     child: pw.Row(

@@ -869,22 +869,33 @@ class LocalNotificationService {
   static Future<void> _handleSeatRequestAlternativeAction(NotificationResponse response) async {
     try {
       if (response.payload == null || response.actionId == null) return;
-      final data = jsonDecode(response.payload!);
-      final requestId = data['id']?.toString(); // 🆔 ID originalnog zahteva koji je odbijen
-      final putnikId = data['putnik_id'];
-      final grad = data['grad'] ?? 'BC';
-      final datum = data['datum'];
+      final data = jsonDecode(response.payload!) as Map<String, dynamic>;
+      final requestId = data['id']?.toString();
+      final putnikId = data['putnik_id']?.toString();
+      final grad = data['grad']?.toString() ?? 'BC';
+      final datum = data['datum']?.toString();
+
+      if (putnikId == null || datum == null) {
+        debugPrint('❌ [SeatRequestAlternative] Nedostaje putnik_id ili datum u payload-u');
+        return;
+      }
 
       final selectedTime = response.actionId!.replaceFirst('prihvati_alt_', '');
 
-      // 🚀 PRIHVATI ALTERNATIVU - Sada je ODMAH ODOBRENO bez ponovnog čekanja
-      await SeatRequestService.acceptAlternative(
+      // 🚀 PRIHVATI ALTERNATIVU → status postaje 'approved' → trigger šalje push potvrde
+      final success = await SeatRequestService.acceptAlternative(
         requestId: requestId,
         putnikId: putnikId,
         novoVreme: selectedTime,
         grad: grad,
         datum: datum,
       );
+
+      if (success) {
+        debugPrint('✅ [SeatRequestAlternative] Prihvaćeno: $selectedTime ($grad, $datum)');
+      } else {
+        debugPrint('❌ [SeatRequestAlternative] Nije uspelo prihvatanje alternative');
+      }
     } catch (e) {
       debugPrint('❌ Error handling seat request alternative action: $e');
     }

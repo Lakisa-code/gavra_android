@@ -58,12 +58,18 @@ BEGIN
         ELSIF NEW.status = 'rejected' THEN
             -- ⛔ NE MIJENJATI: koristiti alternative_vreme_1/2, NE alternatives kolonu
             IF NEW.alternative_vreme_1 IS NOT NULL OR NEW.alternative_vreme_2 IS NOT NULL THEN
-                v_title := '⚠️ Termin pun - Alternative?';
-                v_body := 'Termin u ' || NEW.zeljeno_vreme || ' je pun, ali imamo mesta u drugim terminima. Pogledaj profil!';
+                v_title := '⚠️ Termin pun - Izaberi alternativu';
+                v_body := 'Termin ' || to_char(NEW.zeljeno_vreme, 'HH24:MI') || ' je pun. Slobodna mesta: '
+                    || COALESCE(to_char(NEW.alternative_vreme_1, 'HH24:MI'), '')
+                    || CASE WHEN NEW.alternative_vreme_1 IS NOT NULL AND NEW.alternative_vreme_2 IS NOT NULL THEN ' i ' ELSE '' END
+                    || COALESCE(to_char(NEW.alternative_vreme_2, 'HH24:MI'), '');
                 v_data := jsonb_build_object(
                     'type', 'seat_request_alternatives',
                     'id', NEW.id,
                     'grad', NEW.grad,
+                    'datum', to_char(NEW.datum, 'YYYY-MM-DD'),
+                    'vreme', to_char(NEW.zeljeno_vreme, 'HH24:MI'),
+                    'putnik_id', NEW.putnik_id,
                     'alternative_1', to_char(NEW.alternative_vreme_1, 'HH24:MI'),
                     'alternative_2', to_char(NEW.alternative_vreme_2, 'HH24:MI')
                 );
