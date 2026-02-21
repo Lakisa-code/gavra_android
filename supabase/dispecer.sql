@@ -19,6 +19,29 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 1A. POMOĆNA FUNKCIJA: Pravila čekanja po gradu i tipu putnika
+--
+-- ⛔⛔⛔ NE MIJENJATI - ZACEMENTIRANA PRAVILA ⛔⛔⛔
+-- Ova pravila su dogovorena i potvrđena 21.02.2026.
+-- Svaka izmjena mora biti eksplicitno odobrena od vlasnika projekta.
+--
+-- PRAVILA ČEKANJA (vrijede za SVE putničke tipove):
+--
+--   BC - RADNIK   : 5 minuta čekanja, SA provjerom kapaciteta
+--   BC - UČENIK   : (za sutra, zahtjev poslat PRIJE 16:00) → 5 min, BEZ provjere kapaciteta (garantovano mjesto)
+--   BC - UČENIK   : (zahtjev poslat POSLE 16:00) → čeka do 20:00h, SA provjerom kapaciteta
+--   BC - POŠILJKA : 5 minuta čekanja, BEZ provjere kapaciteta (ne zauzima mjesto)
+--   BC - default  : 5 minuta čekanja, SA provjerom kapaciteta
+--
+--   VS - RADNIK   : 10 minuta čekanja, SA provjerom kapaciteta
+--   VS - UČENIK   : 10 minuta čekanja, SA provjerom kapaciteta
+--   VS - POŠILJKA : 5 minuta čekanja, BEZ provjere kapaciteta (ne zauzima mjesto)
+--   VS - default  : 10 minuta čekanja, SA provjerom kapaciteta
+--
+--   DNEVNI putnici: NIKAD ne prolaze kroz auto-obradu → uvijek status 'manual' (admin odobrava ručno)
+--
+-- NAPOMENA: p_created_at parametar se prosleđuje updated_at vrijednost iz seat_requests
+--           (čekanje se mjeri od posljednje izmjene, ne od prvog insert-a)
+-- ⛔⛔⛔ KRAJ ZACEMENTIRANIH PRAVILA ⛔⛔⛔
 CREATE OR REPLACE FUNCTION get_cekanje_pravilo(
     p_tip text,
     p_grad text,
@@ -31,42 +54,42 @@ CREATE OR REPLACE FUNCTION get_cekanje_pravilo(
 BEGIN
     -- BC PRAVILA
     IF upper(p_grad) = 'BC' THEN
-        -- Učenik (za sutra, pre 16h): 5 min, BEZ provere kapaciteta
+        -- ⛔ BC Učenik (za sutra, pre 16h): 5 min, BEZ provere kapaciteta - garantovano mesto
         IF lower(p_tip) = 'ucenik' 
            AND p_datum = (CURRENT_DATE + 1)
            AND EXTRACT(HOUR FROM p_created_at) < 16
         THEN
             RETURN QUERY SELECT 5, false;
-        -- Radnik: 5 min, SA proverom kapaciteta
+        -- ⛔ BC Radnik: 5 min, SA proverom kapaciteta
         ELSIF lower(p_tip) = 'radnik' THEN
             RETURN QUERY SELECT 5, true;
-        -- Učenik (posle 16h): čeka do 20h
+        -- ⛔ BC Učenik (posle 16h): čeka do 20h, SA proverom kapaciteta
         ELSIF lower(p_tip) = 'ucenik' 
               AND p_datum = (CURRENT_DATE + 1)
               AND EXTRACT(HOUR FROM p_created_at) >= 16
         THEN
             RETURN QUERY SELECT 0, true; -- Specijalni slučaj, obrađuje se u 20h
-        -- Pošiljka: 5 min, BEZ provere (ne zauzima mesto)
+        -- ⛔ BC Pošiljka: 5 min, BEZ provere (ne zauzima mesto)
         ELSIF lower(p_tip) = 'posiljka' THEN
             RETURN QUERY SELECT 5, false;
         ELSE
-            -- Default BC: 5 min, provera kapaciteta
+            -- ⛔ BC Default: 5 min, SA proverom kapaciteta
             RETURN QUERY SELECT 5, true;
         END IF;
     
     -- VS PRAVILA
     ELSIF upper(p_grad) = 'VS' THEN
-        -- Radnik: 10 min, SA proverom kapaciteta
+        -- ⛔ VS Radnik: 10 min, SA proverom kapaciteta
         IF lower(p_tip) = 'radnik' THEN
             RETURN QUERY SELECT 10, true;
-        -- Učenik: 10 min, SA proverom kapaciteta
+        -- ⛔ VS Učenik: 10 min, SA proverom kapaciteta
         ELSIF lower(p_tip) = 'ucenik' THEN
             RETURN QUERY SELECT 10, true;
-        -- Pošiljka: 5 min, BEZ provere (ne zauzima mesto)
+        -- ⛔ VS Pošiljka: 5 min, BEZ provere (ne zauzima mesto)
         ELSIF lower(p_tip) = 'posiljka' THEN
             RETURN QUERY SELECT 5, false;
         ELSE
-            -- Default VS: 10 min, provera kapaciteta
+            -- ⛔ VS Default: 10 min, SA proverom kapaciteta
             RETURN QUERY SELECT 10, true;
         END IF;
     
@@ -190,7 +213,7 @@ BEGIN
         FROM seat_requests sr
         JOIN registrovani_putnici rp ON sr.putnik_id = rp.id
         WHERE sr.status = 'pending' 
-          AND lower(rp.tip) != 'dnevni' -- Dnevni putnici ne idu kroz auto-obradu
+          AND lower(rp.tip) != 'dnevni' -- ⛔ NE MIJENJATI: Dnevni putnici NIKAD ne prolaze auto-obradu → manual
     LOOP
         -- Proveri pravilo čekanja za ovaj zahtev
         -- VAŽNO: Koristimo updated_at (ne created_at) da bi reset vremena radio
