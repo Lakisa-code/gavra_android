@@ -64,7 +64,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     try {
       final response = await supabase
           .from('registrovani_putnici')
-          .select('id, putnik_ime, tip, vozac_id')
+          .select('id, putnik_ime, tip')
           .eq('obrisan', false)
           .order('putnik_ime');
 
