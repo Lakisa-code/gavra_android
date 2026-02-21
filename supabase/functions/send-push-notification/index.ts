@@ -102,7 +102,7 @@ async function sendToFCM(tokens: string[], title: string, body: string, data?: a
                         priority: "high",
                         notification: {
                             sound: "default",
-                            channel_id: "gavra_realtime_channel",
+                            channel_id: "gavra_push_v2",
                             default_sound: true,
                             default_vibrate_timings: true,
                             notification_priority: "PRIORITY_MAX",

@@ -71,9 +71,9 @@ class LocalNotificationService {
     );
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'gavra_realtime_channel',
-      'Gavra Realtime Notifikacije',
-      description: 'Kanal za realtime heads-up notifikacije sa zvukom',
+      'gavra_push_v2',
+      'Gavra Push Notifikacije',
+      description: 'Kanal za push notifikacije sa zvukom i vibracijom',
       importance: Importance.max,
       enableLights: true,
       enableVibration: true,
@@ -184,9 +184,9 @@ class LocalNotificationService {
         body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'gavra_realtime_channel',
-            'Gavra Realtime Notifikacije',
-            channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
+            'gavra_push_v2',
+            'Gavra Push Notifikacije',
+            channelDescription: 'Kanal za push notifikacije sa zvukom i vibracijom',
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
@@ -290,9 +290,9 @@ class LocalNotificationService {
         bodyText,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'gavra_realtime_channel',
-            'Gavra Realtime Notifikacije',
-            channelDescription: 'Kanal za realtime notifikacije',
+            'gavra_push_v2',
+            'Gavra Push Notifikacije',
+            channelDescription: 'Kanal za push notifikacije sa zvukom i vibracijom',
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
@@ -400,9 +400,9 @@ class LocalNotificationService {
       );
 
       final androidDetails = AndroidNotificationDetails(
-        'gavra_realtime_channel',
-        'Gavra Realtime Notifikacije',
-        channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
+        'gavra_push_v2',
+        'Gavra Push Notifikacije',
+        channelDescription: 'Kanal za push notifikacije sa zvukom i vibracijom',
         importance: Importance.max,
         priority: Priority.high,
         playSound: true,
@@ -844,9 +844,9 @@ class LocalNotificationService {
         body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'gavra_realtime_channel',
-            'Gavra Realtime Notifikacije',
-            channelDescription: 'Kanal za realtime notifikacije sa alternativama',
+            'gavra_push_v2',
+            'Gavra Push Notifikacije',
+            channelDescription: 'Kanal za push notifikacije sa zvukom i vibracijom',
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
