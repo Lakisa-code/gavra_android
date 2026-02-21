@@ -8,6 +8,7 @@ import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_cache.dart';
+import 'putnik_service.dart';
 import 'realtime/realtime_manager.dart';
 import 'slobodna_mesta_service.dart';
 import 'voznje_log_service.dart'; // 🔄 DODATO za istoriju vožnji
@@ -520,6 +521,8 @@ class RegistrovaniPutnikService {
     if (newWeeklySchedule != null) {
       try {
         await _syncSeatRequestsWithTemplate(id, newWeeklySchedule);
+        // ✅ Force refresh svih stream-ova nakon sync-a jer Realtime može kasniti
+        PutnikService().refreshAllActiveStreams();
       } catch (e) {
         debugPrint('⚠️ [RegistrovaniPutnikService] Greška pri sinhronizaciji seat_requests: $e');
       }

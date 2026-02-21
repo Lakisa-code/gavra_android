@@ -146,7 +146,8 @@ class PutnikService {
     if (row['naplatioVozac'] != null) map['naplatioVozac'] = row['naplatioVozac'];
     if (row['otkazaoVozac'] != null) map['otkazaoVozac'] = row['otkazaoVozac'];
     if (row['log_created_at'] != null) map['processed_at'] ??= row['log_created_at'];
-    if (row['je_otkazan_iz_loga'] == true && map['status'] != 'otkazano') {
+    // Ne override-uj 'bez_polaska' - admin je eksplicitno uklonio polazak, ima prioritet nad logom
+    if (row['je_otkazan_iz_loga'] == true && map['status'] != 'otkazano' && map['status'] != 'bez_polaska') {
       map['status'] = 'otkazano';
     }
     return map;
