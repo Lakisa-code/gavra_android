@@ -859,9 +859,9 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                               final putnik = _putnici[index];
                               // Ako putnik nije dodeljen, koristi boju termina (npr. narandžasta za BC 5:00)
                               // umesto bledo sive, ili belu ako termin nema vozača.
-                              final vozacColor = VozacBoja.getColorOrDefaultSync(
+                              final vozacColor = VozacBoja.getSync(
                                 putnik.dodeljenVozac,
-                                currentTerminalColor,
+                                fallback: currentTerminalColor,
                               );
                               final isSelected = (putnik.requestId ?? putnik.id) != null &&
                                   _selectedPutnici.contains(putnik.requestId ?? putnik.id);

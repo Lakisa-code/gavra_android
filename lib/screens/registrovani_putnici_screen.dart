@@ -1651,9 +1651,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     // Ako imamo ime vozaca iz strema, koristimo njegovu boju
-                                                    color: VozacBoja.getColorOrDefaultSync(
+                                                    color: VozacBoja.getSync(
                                                       vozacIme,
-                                                      Colors.green.shade600,
+                                                      fallback: Colors.green.shade600,
                                                     ),
                                                     fontWeight: FontWeight.w500,
                                                   ),
