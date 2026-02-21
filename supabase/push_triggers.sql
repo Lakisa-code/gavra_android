@@ -27,6 +27,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 2. FUNKCIJA: Automatizacija Seat Request Notifikacija
+-- ⛔ NE MIJENJATI - zacementirana logika notifikacija 21.02.2026.
 CREATE OR REPLACE FUNCTION notify_seat_request_update()
 RETURNS trigger AS $$
 DECLARE
@@ -35,59 +36,65 @@ DECLARE
     v_body text;
     v_data jsonb;
     v_putnik_ime text;
+    v_grad_display text;
 BEGIN
-    -- Samo ako se status menja na 'approved', 'rejected' ili 'manual'
-    IF (OLD.status = 'pending' AND NEW.status != 'pending') OR (NEW.status = 'manual') THEN
-        
-        -- Dohvati tokene za putnika
-        SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
-        INTO v_tokens
-        FROM push_tokens
-        WHERE putnik_id = NEW.putnik_id;
+    -- Samo ako se status mijenja
+    IF (OLD.status = NEW.status) THEN RETURN NEW; END IF;
 
-        IF v_tokens IS NOT NULL THEN
-            IF NEW.status = 'approved' THEN
-                v_title := '✅ Mesto osigurano!';
-                v_body := 'Vaš zahtev za ' || NEW.zeljeno_vreme || ' (' || NEW.grad || ') je odobren. Srećan put!';
-                v_data := jsonb_build_object('type', 'seat_request_approved', 'id', NEW.id);
-            ELSIF NEW.status = 'rejected' THEN
-                IF NEW.alternative_vreme_1 IS NOT NULL OR NEW.alternative_vreme_2 IS NOT NULL THEN
-                    v_title := '⚠️ Termin pun - Alternative?';
-                    v_body := 'Termin u ' || NEW.zeljeno_vreme || ' je pun, ali imamo mesta u drugim terminima. Pogledaj profil!';
-                    -- ✅ Uključi alternative u payload za notifikaciju
-                    v_data := jsonb_build_object(
-                        'type', 'seat_request_alternatives', 
-                        'id', NEW.id,
-                        'alternative_1', to_char(NEW.alternative_vreme_1, 'HH24:MI'),
-                        'alternative_2', to_char(NEW.alternative_vreme_2, 'HH24:MI')
-                    );
-                ELSE
-                    v_title := '❌ Termin popunjen';
-                    v_body := 'Nažalost, u terminu ' || NEW.zeljeno_vreme || ' više nema slobodnih mesta.';
-                    v_data := jsonb_build_object('type', 'seat_request_rejected', 'id', NEW.id);
-                END IF;
-            END IF;
+    v_grad_display := CASE WHEN NEW.grad = 'BC' THEN 'Bečej' WHEN NEW.grad = 'VS' THEN 'Vršac' ELSE NEW.grad END;
 
-            IF v_title IS NOT NULL THEN
-                PERFORM notify_push(v_tokens, v_title, v_body, v_data);
+    -- Dohvati tokene putnika
+    SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
+    INTO v_tokens
+    FROM push_tokens
+    WHERE putnik_id = NEW.putnik_id;
+
+    IF v_tokens IS NOT NULL AND jsonb_array_length(v_tokens) > 0 THEN
+        IF NEW.status = 'approved' THEN
+            -- ⛔ NE MIJENJATI: approved poruka
+            v_title := '✅ Mesto osigurano!';
+            v_body := 'Vaš zahtev za ' || NEW.zeljeno_vreme || ' (' || v_grad_display || ') je odobren. Srećan put!';
+            v_data := jsonb_build_object('type', 'seat_request_approved', 'id', NEW.id, 'grad', NEW.grad);
+        ELSIF NEW.status = 'rejected' THEN
+            -- ⛔ NE MIJENJATI: koristiti alternative_vreme_1/2, NE alternatives kolonu
+            IF NEW.alternative_vreme_1 IS NOT NULL OR NEW.alternative_vreme_2 IS NOT NULL THEN
+                v_title := '⚠️ Termin pun - Alternative?';
+                v_body := 'Termin u ' || NEW.zeljeno_vreme || ' je pun, ali imamo mesta u drugim terminima. Pogledaj profil!';
+                v_data := jsonb_build_object(
+                    'type', 'seat_request_alternatives',
+                    'id', NEW.id,
+                    'grad', NEW.grad,
+                    'alternative_1', to_char(NEW.alternative_vreme_1, 'HH24:MI'),
+                    'alternative_2', to_char(NEW.alternative_vreme_2, 'HH24:MI')
+                );
+            ELSE
+                -- ⛔ NE MIJENJATI: rejected bez alternativa
+                v_title := '❌ Termin popunjen';
+                v_body := 'Nažalost, u terminu ' || NEW.zeljeno_vreme || ' više nema slobodnih mesta.';
+                v_data := jsonb_build_object('type', 'seat_request_rejected', 'id', NEW.id, 'grad', NEW.grad);
             END IF;
         END IF;
 
-        -- Ako je NOVI zahtev ili status postane 'manual', obavesti admine
-        IF (NEW.status = 'manual') OR (TG_OP = 'INSERT' AND NEW.status = 'pending') THEN
-            SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
-            INTO v_tokens
-            FROM push_tokens
-            WHERE user_id IN (SELECT ime FROM vozaci WHERE tip = 'admin' OR ime = 'Bojan');
+        IF v_title IS NOT NULL THEN
+            PERFORM notify_push(v_tokens, v_title, v_body, v_data);
+        END IF;
+    END IF;
 
-            IF v_tokens IS NOT NULL THEN
-                SELECT putnik_ime INTO v_putnik_ime FROM registrovani_putnici WHERE id = NEW.putnik_id;
-                v_title := '🔔 Novi zahtev (' || NEW.grad || ')';
-                v_body := v_putnik_ime || ' traži mesto za ' || NEW.zeljeno_vreme;
-                v_data := jsonb_build_object('type', 'seat_request_manual', 'id', NEW.id);
-                
-                PERFORM notify_push(v_tokens, v_title, v_body, v_data);
-            END IF;
+    -- ⛔ NE MIJENJATI: Za manual → obavijesti admina (Bojan)
+    IF NEW.status = 'manual' THEN
+        SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
+        INTO v_tokens
+        FROM push_tokens
+        WHERE user_id IN (SELECT ime FROM vozaci WHERE email = 'gavra.prevoz@gmail.com' OR ime = 'Bojan');
+
+        IF v_tokens IS NOT NULL AND jsonb_array_length(v_tokens) > 0 THEN
+            SELECT putnik_ime INTO v_putnik_ime FROM registrovani_putnici WHERE id = NEW.putnik_id;
+            PERFORM notify_push(
+                v_tokens,
+                '🔔 Novi zahtev (' || v_grad_display || ')',
+                v_putnik_ime || ' traži mesto za ' || NEW.zeljeno_vreme,
+                jsonb_build_object('type', 'seat_request_manual', 'id', NEW.id, 'grad', NEW.grad)
+            );
         END IF;
     END IF;
 
