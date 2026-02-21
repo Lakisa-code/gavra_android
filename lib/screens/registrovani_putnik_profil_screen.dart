@@ -1477,9 +1477,25 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final daniNedelje = ['pon', 'uto', 'sre', 'cet', 'pet'];
     final now = DateTime.now();
 
-    // Sortiraju se da bi noviji zahtevi isteka istog dana pregazili starije ako ih ima (ne bi trebalo)
+    // Sortiramo: aktivni (confirmed/approved/pending) ZADNJI da pregazе otkazane
+    // Redosljed: otkazano/cancelled/bez_polaska → pending/manual/approved/confirmed
+    const statusPrioritet = {
+      'bez_polaska': 0,
+      'cancelled': 1,
+      'otkazano': 2,
+      'pending': 3,
+      'manual': 4,
+      'approved': 5,
+      'confirmed': 6,
+    };
     final sortedRequests = List<Map<String, dynamic>>.from(_activeSeatRequests);
-    sortedRequests.sort((a, b) => (a['datum'] as String).compareTo(b['datum'] as String));
+    sortedRequests.sort((a, b) {
+      final datumCmp = (a['datum'] as String).compareTo(b['datum'] as String);
+      if (datumCmp != 0) return datumCmp;
+      final aPrio = statusPrioritet[a['status']] ?? 0;
+      final bPrio = statusPrioritet[b['status']] ?? 0;
+      return aPrio.compareTo(bPrio); // niži prioritet dolazi prvi, viši pobijedi
+    });
 
     for (final req in sortedRequests) {
       try {
@@ -1496,19 +1512,26 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         if (danIndex < 0 || danIndex >= daniNedelje.length) continue;
 
         final danKratica = daniNedelje[danIndex];
-        final grad = (req['grad'] ?? '').toString().toLowerCase(); // 'bc' ili 'vs'
+        final gradRaw = (req['grad'] ?? '').toString().toLowerCase();
+        // Normalizuj grad na 'bc' ili 'vs'
+        final grad = (gradRaw == 'vs' || gradRaw.contains('vr') || gradRaw.contains('vršac')) ? 'vs' : 'bc';
         final status = req['status'] as String?;
         final vreme = (req['zeljeno_vreme'] ?? '').toString();
 
         final existing = polasci[danKratica]!;
 
-        if (status == 'otkazano' || status == 'cancelled') {
-          existing['${grad}_status'] = 'otkazano';
-          existing['${grad}_otkazano'] = true;
+        if (status == 'otkazano' || status == 'cancelled' || status == 'bez_polaska') {
+          // Postavi otkazano SAMO ako još nema aktivnog zahtjeva za ovaj grad
+          // (aktivni zahtjev dolazi zadnji zbog sortiranja pa će ga pregaziti)
+          existing['${grad}_status'] = status == 'bez_polaska' ? 'bez_polaska' : 'otkazano';
+          existing['${grad}_otkazano'] = status != 'bez_polaska';
           existing['${grad}_otkazano_vreme'] = vreme;
         } else {
+          // Aktivan zahtjev — uvijek pregazuje otkazano
           existing[grad] = vreme;
           existing['${grad}_status'] = status;
+          existing['${grad}_otkazano'] = false;
+          existing['${grad}_otkazano_vreme'] = null;
         }
       } catch (e) {
         debugPrint('⚠️ [MergeRequests] Greška: $e');
