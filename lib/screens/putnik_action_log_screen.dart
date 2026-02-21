@@ -51,7 +51,13 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     super.initState();
     _tabController = TabController(length: _actionTypes.length, vsync: this);
     _tabController!.addListener(() {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
+      // Učitaj zahtjeve kad se klikne na "Zahtjevi" tab
+      if (_tabController!.index == _actionTypes.indexOf('zahtevi') &&
+          !_tabController!.indexIsChanging) {
+        _loadSeatRequests();
+      }
     });
     _loadSviPutnici();
   }
@@ -114,7 +120,6 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
       debugPrint('❌ [PutnikLog] Greška pri učitavanju zahtjeva: $e');
     }
   }
-
 
   /// Formatira tip akcije za prikaz
   String _formatTip(String? tip) {
@@ -504,13 +509,10 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
         // Grupiši po datumu
         final Map<String, List<VoznjeLog>> grouped = {};
         for (final log in filteredLogs) {
-          final key = log.datum != null
-              ? log.datum!.toIso8601String().split('T')[0]
-              : 'Nepoznat datum';
+          final key = log.datum != null ? log.datum!.toIso8601String().split('T')[0] : 'Nepoznat datum';
           grouped.putIfAbsent(key, () => []).add(log);
         }
-        final sortedDates = grouped.keys.toList()
-          ..sort((a, b) => b.compareTo(a)); // najnoviji datum gore
+        final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a)); // najnoviji datum gore
 
         return ListView.builder(
           padding: const EdgeInsets.all(12),
@@ -519,9 +521,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
             final dateKey = sortedDates[i];
             final dayLogs = grouped[dateKey]!;
             DateTime? dt = DateTime.tryParse(dateKey);
-            final dateLabel = dt != null
-                ? DateFormat('EEEE, d. MMMM yyyy.', 'sr').format(dt)
-                : dateKey;
+            final dateLabel = dt != null ? DateFormat('EEEE, d. MMMM yyyy.', 'sr').format(dt) : dateKey;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
