@@ -13,6 +13,7 @@ import '../services/firebase_service.dart'; // 👤 Za vozača
 import '../services/kapacitet_service.dart'; // 🎫 Za broj mesta
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
 import '../services/putnik_service.dart';
+import '../services/putnik_vozac_dodela_service.dart'; // 👤 Za individualne dodele putnika
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
 import '../services/smart_navigation_service.dart';
@@ -52,6 +53,8 @@ class _VozacScreenState extends State<VozacScreen> {
 
   StreamSubscription<Position>? _driverPositionSubscription;
   StreamSubscription<Map<String, dynamic>>? _notificationSubscription; // ⚡ ZA AUTOMATSKI POPIS
+  StreamSubscription<void>? _vremeVozacSubscription; // 🕒 ZA PROMENE DODELJENIH VREMENA
+  StreamSubscription<void>? _putnikVozacSubscription; // 👤 ZA PROMENE INDIVIDUALNIH DODELA PUTNIKA
 
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '05:00'; // ✅ VRAĆENO NA 05:00 (konzistentno sa RouteConfig)
@@ -178,6 +181,22 @@ class _VozacScreenState extends State<VozacScreen> {
     // 3. Ostalo
     _initializeNotifications();
     _initializeGpsTracking();
+
+    // 4. 🕒 Slušaj promene dodeljenih vremena - kada admin dodeli/ukloni vreme, refresh UI
+    _vremeVozacSubscription = VremeVozacService().onChanges.listen((_) {
+      if (mounted) {
+        setState(() {});
+        // Ponovo izaberi najbliži polazak jer se raspored promenio
+        _selectClosestDeparture();
+      }
+    });
+
+    // 5. 👤 Slušaj individualne dodele putnika - kada admin dodeli putnika direktno vozacu
+    _putnikVozacSubscription = PutnikVozacDodelaService().onChanges.listen((_) {
+      // Osvezi stream putnika jer dodeljenVozac zavisi od putnik_vozac_dodela cache-a
+      _putnikService.refreshAllActiveStreams();
+      if (mounted) setState(() {});
+    });
   }
 
   // 🕒 UCITAJ VREME VOZAC PODATKE
@@ -201,6 +220,8 @@ class _VozacScreenState extends State<VozacScreen> {
   void dispose() {
     _driverPositionSubscription?.cancel();
     _notificationSubscription?.cancel(); // ⚡ CLEANUP
+    _vremeVozacSubscription?.cancel(); // 🕒 CLEANUP
+    _putnikVozacSubscription?.cancel(); // 👤 CLEANUP
     super.dispose();
   }
 
