@@ -566,7 +566,7 @@ class RegistrovaniPutnikService {
               .eq('putnik_id', putnikId)
               .eq('datum', targetDateStr)
               .inFilter('grad', gradVariants)
-              .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']).maybeSingle();
+              .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano']).maybeSingle();
 
           if (existing == null) {
             // KREIRAJ NOVI seat_request
@@ -580,15 +580,16 @@ class RegistrovaniPutnikService {
             });
             debugPrint('✅ Kreiran seat_request: $targetDateStr, $normalizedGrad, $vremeStr');
           } else {
-            // AŽURIRAJ postojeći ako se vreme promenilo
+            // AŽURIRAJ postojeći ako se vreme promenilo ILI ako je bio otkazan
             final existingVreme = existing['zeljeno_vreme']?.toString().substring(0, 5);
-            if (existingVreme != vremeStr) {
+            final existingStatus = existing['status']?.toString();
+            if (existingVreme != vremeStr || existingStatus == 'otkazano') {
               await _supabase.from('seat_requests').update({
                 'zeljeno_vreme': '$vremeStr:00',
                 'status': 'confirmed',
                 'updated_at': DateTime.now().toUtc().toIso8601String(),
               }).eq('id', existing['id']);
-              debugPrint('✅ Ažuriran seat_request: $targetDateStr, $normalizedGrad, $vremeStr');
+              debugPrint('✅ Ažuriran seat_request: $targetDateStr, $normalizedGrad, $vremeStr (bio: $existingStatus)');
             }
           }
         } else {
