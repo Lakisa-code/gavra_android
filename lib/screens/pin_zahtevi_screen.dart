@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/pin_zahtev_service.dart';
 import '../theme.dart';
+import '../utils/app_snack_bar.dart';
 
 /// 📋 PIN ZAHTEVI SCREEN
 /// Admin vidi sve zahteve za PIN i može da odobri/odbije
@@ -95,20 +96,12 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
         await launchUrl(smsUri);
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Ne mogu da otvorim SMS aplikaciju'),
-                backgroundColor: Colors.orange),
-          );
+          AppSnackBar.warning(context, 'Ne mogu da otvorim SMS aplikaciju');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Greška pri otvaranju SMS: $e'),
-              backgroundColor: Colors.red),
-        );
+        AppSnackBar.error(context, 'Greška pri otvaranju SMS: $e');
       }
     }
   }
@@ -189,11 +182,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
               if (pinController.text.length == 4) {
                 Navigator.pop(context, pinController.text);
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('PIN mora imati 4 cifre'),
-                      backgroundColor: Colors.orange),
-                );
+                AppSnackBar.warning(context, 'PIN mora imati 4 cifre');
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -212,22 +201,13 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
 
       if (!mounted) return;
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ PIN $rezultat dodeljen putniku $ime'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, '✅ PIN $rezultat dodeljen putniku $ime');
         // Automatski otvori SMS da pošalje PIN
         if (brojTelefona.isNotEmpty) {
           await _posaljiPinSms(brojTelefona, rezultat, ime);
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Greška pri dodeli PIN-a'),
-              backgroundColor: Colors.red),
-        );
+        AppSnackBar.error(context, 'Greška pri dodeli PIN-a');
       }
     }
   }
@@ -272,17 +252,9 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
       final success = await PinZahtevService.odbijZahtev(zahtevId);
       if (!mounted) return;
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Zahtev od $ime je odbijen'),
-              backgroundColor: Colors.orange),
-        );
+        AppSnackBar.warning(context, 'Zahtev od $ime je odbijen');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Greška pri odbijanju'),
-              backgroundColor: Colors.red),
-        );
+        AppSnackBar.error(context, 'Greška pri odbijanju');
       }
     }
   }

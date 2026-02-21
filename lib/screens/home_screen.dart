@@ -35,6 +35,7 @@ import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/text_utils.dart';
+import '../utils/app_snack_bar.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
@@ -360,12 +361,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (!mounted) return;
 
     if (putnici.isEmpty) {
-      scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Text('Nema putnika kojima treba račun'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppSnackBar.warning(context, 'Nema putnika kojima treba račun');
       return;
     }
 
@@ -712,10 +708,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             }
 
                             if (racuniPodaci.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Izaberite bar jednog putnika'), backgroundColor: Colors.orange),
-                              );
+                              AppSnackBar.warning(context, 'Izaberite bar jednog putnika');
                               return;
                             }
 
@@ -832,22 +825,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 onPressed: () async {
                   // Validacija
                   if (imeController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Unesite ime kupca'), backgroundColor: Colors.orange),
-                    );
+                    AppSnackBar.warning(context, 'Unesite ime kupca');
                     return;
                   }
                   if (opisController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Unesite opis usluge'), backgroundColor: Colors.orange),
-                    );
+                    AppSnackBar.warning(context, 'Unesite opis usluge');
                     return;
                   }
                   final iznos = double.tryParse(iznosController.text.trim());
                   if (iznos == null || iznos <= 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Unesite validan iznos'), backgroundColor: Colors.orange),
-                    );
+                    AppSnackBar.warning(context, 'Unesite validan iznos');
                     return;
                   }
 
@@ -1634,24 +1621,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   : () async {
                                       // Validacija - mora biti odabrani putnik
                                       if (selectedPutnik == null) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('❌ Morate odabrati putnika iz liste'),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
+                                        AppSnackBar.error(context, '❌ Morate odabrati putnika iz liste');
                                         return;
                                       }
 
                                       if (_selectedVreme.isEmpty || _selectedGrad.isEmpty) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              '❌ Greška: Nije odabrano vreme polaska',
-                                            ),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
+                                        AppSnackBar.error(context, '❌ Greška: Nije odabrano vreme polaska');
                                         return;
                                       }
 
@@ -1661,14 +1636,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             _currentDriver!.isEmpty ||
                                             !VozacBoja.isValidDriverSync(_currentDriver)) {
                                           if (!context.mounted) return;
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                '❌ GREŠKA: Vozač "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.',
-                                              ),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
+                                          AppSnackBar.error(context, '❌ GREŠKA: Vozač "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.');
                                           return;
                                         }
 
@@ -1685,15 +1653,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           );
                                           if (!imaMesta) {
                                             if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  '❌ Termin $_selectedVreme ($_selectedGrad) je PUN! Izaberite drugo vreme.',
-                                                ),
-                                                backgroundColor: Colors.red,
-                                                duration: const Duration(seconds: 3),
-                                              ),
-                                            );
+                                            AppSnackBar.error(context, '❌ Termin $_selectedVreme ($_selectedGrad) je PUN! Izaberite drugo vreme.');
                                             return;
                                           }
                                         }
@@ -1756,15 +1716,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           });
                                         }
 
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              '✅ Putnik je uspešno dodat',
-                                            ),
-                                            backgroundColor: Colors.green,
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
+                                        AppSnackBar.success(context, '✅ Putnik je uspešno dodat');
                                       } catch (e) {
                                         // ensure dialog loading is cleared
                                         setStateDialog(() {
@@ -1773,14 +1725,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                         if (!context.mounted) return;
 
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              '❌ Greška pri dodavanju: $e',
-                                            ),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
+                                        AppSnackBar.error(context, '❌ Greška pri dodavanju: $e');
                                       }
                                     },
                               child: isDialogLoading

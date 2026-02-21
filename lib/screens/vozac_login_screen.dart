@@ -9,6 +9,7 @@ import '../services/biometric_service.dart';
 import '../services/theme_manager.dart';
 import '../services/vozac_service.dart';
 import 'home_screen.dart';
+import '../utils/app_snack_bar.dart';
 import 'vozac_screen.dart';
 
 /// 🔐 VOZAČ LOGIN SCREEN
@@ -77,13 +78,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
     if (savedData == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('❌ Nema sačuvanih kredencijala. Prijavi se prvo ručno.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        AppSnackBar.warning(context, '❌ Nema sačuvanih kredencijala. Prijavi se prvo ručno.');
       }
       return;
     }
@@ -94,12 +89,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
     if (!authenticated) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Biometrijska autentifikacija nije uspela'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Biometrijska autentifikacija nije uspela');
       }
       return;
     }
@@ -292,12 +282,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
   void _showError(String message) {
     setState(() => _isLoading = false);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackBar.error(context, message);
     }
   }
 

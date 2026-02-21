@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_snack_bar.dart';
 
 import '../models/seat_request.dart';
 import '../services/seat_request_service.dart';
@@ -368,13 +369,7 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
     try {
       final success = await SeatRequestService.approveRequest(id);
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('✅ Zahtev uspešno odobren'),
-            backgroundColor: Colors.green.shade800,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackBar.success(context, '✅ Zahtev uspešno odobren');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -386,13 +381,7 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
     try {
       final success = await SeatRequestService.rejectRequest(id);
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('❌ Zahtev je odbijen'),
-            backgroundColor: Colors.red.shade800,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Zahtev je odbijen');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/permission_service.dart';
 import '../services/theme_manager.dart';
+import '../utils/app_snack_bar.dart';
 
 /// 📖 O NAMA SCREEN
 /// Informacije o Gavra 013 timu i aplikaciji
@@ -43,12 +44,7 @@ class _ONamaScreenState extends State<ONamaScreen> {
     final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
     if (!hasPermission) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dozvola za pozive je potrebna'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, 'Dozvola za pozive je potrebna');
       }
       return;
     }

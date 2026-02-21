@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../screens/home_screen.dart';
+import '../utils/app_snack_bar.dart';
 import 'notification_navigation_service.dart';
 import 'realtime_notification_service.dart';
 import 'seat_request_service.dart';
@@ -574,28 +575,15 @@ class LocalNotificationService {
           icon = Icons.info;
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(icon, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    message,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: bgColor,
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
-        );
+        if (bgColor == Colors.green) {
+          AppSnackBar.success(context, message);
+        } else if (bgColor == Colors.red) {
+          AppSnackBar.error(context, message);
+        } else if (bgColor == Colors.orange) {
+          AppSnackBar.warning(context, message);
+        } else {
+          AppSnackBar.info(context, message);
+        }
       }
     } catch (e) {
       final context = navigatorKey.currentContext;

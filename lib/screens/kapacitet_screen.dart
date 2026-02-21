@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_snack_bar.dart';
 
 import '../services/kapacitet_service.dart';
 import '../services/theme_manager.dart';
@@ -184,12 +185,7 @@ class _KapacitetScreenState extends State<KapacitetScreen>
                               if (value != null && value > 0 && value <= 20) {
                                 Navigator.pop(ctx, value);
                               } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Unesite broj između 1 i 20'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
+                                AppSnackBar.error(context, 'Unesite broj između 1 i 20');
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -222,20 +218,10 @@ class _KapacitetScreenState extends State<KapacitetScreen>
       if (!mounted) return;
       if (success) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ $grad $vreme = $result mesta'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          AppSnackBar.success(context, '✅ $grad $vreme = $result mesta');
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Greška pri čuvanju'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška pri čuvanju');
       }
     }
   }
@@ -282,12 +268,7 @@ class _KapacitetScreenState extends State<KapacitetScreen>
                                         grad, vreme, maxMesta - 1);
                                 if (!mounted) return;
                                 if (!success) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('❌ Greška pri čuvanju'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                  AppSnackBar.error(context, '❌ Greška pri čuvanju');
                                 }
                               }
                             : null,
@@ -322,12 +303,7 @@ class _KapacitetScreenState extends State<KapacitetScreen>
                                         grad, vreme, maxMesta + 1);
                                 if (!mounted) return;
                                 if (!success) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('❌ Greška pri čuvanju'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                  AppSnackBar.error(context, '❌ Greška pri čuvanju');
                                 }
                               }
                             : null,

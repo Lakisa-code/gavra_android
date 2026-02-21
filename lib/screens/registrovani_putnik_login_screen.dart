@@ -6,7 +6,6 @@ import '../globals.dart';
 import '../services/biometric_service.dart';
 import '../services/pin_zahtev_service.dart';
 import '../services/putnik_push_service.dart';
-import '../services/voznje_log_service.dart';
 import '../theme.dart';
 import 'registrovani_putnik_profil_screen.dart';
 
@@ -14,14 +13,12 @@ class RegistrovaniPutnikLoginScreen extends StatefulWidget {
   const RegistrovaniPutnikLoginScreen({super.key});
 
   @override
-  State<RegistrovaniPutnikLoginScreen> createState() =>
-      _RegistrovaniPutnikLoginScreenState();
+  State<RegistrovaniPutnikLoginScreen> createState() => _RegistrovaniPutnikLoginScreenState();
 }
 
 enum _LoginStep { telefon, email, pin, izborPutnika, zahtevPoslat }
 
-class _RegistrovaniPutnikLoginScreenState
-    extends State<RegistrovaniPutnikLoginScreen> {
+class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginScreen> {
   final _telefonController = TextEditingController();
   final _emailController = TextEditingController();
   final _pinController = TextEditingController();
@@ -88,10 +85,7 @@ class _RegistrovaniPutnikLoginScreenState
     final savedPhone = prefs.getString('registrovani_putnik_telefon');
     final savedPin = prefs.getString('registrovani_putnik_pin');
 
-    if (savedPhone != null &&
-        savedPhone.isNotEmpty &&
-        savedPin != null &&
-        savedPin.isNotEmpty) {
+    if (savedPhone != null && savedPhone.isNotEmpty && savedPin != null && savedPin.isNotEmpty) {
       // Automatski probaj login
       _telefonController.text = savedPhone;
       _pinController.text = savedPin;
@@ -177,13 +171,11 @@ class _RegistrovaniPutnikLoginScreenState
         } else if (pin == null || pin.isEmpty) {
           // Ima email ali nema PIN
           // Proveri da li je već poslao zahtev
-          final imaZahtev =
-              await PinZahtevService.imaZahtevKojiCeka(response['id']);
+          final imaZahtev = await PinZahtevService.imaZahtevKojiCeka(response['id']);
           if (imaZahtev) {
             setState(() {
               _currentStep = _LoginStep.zahtevPoslat;
-              _infoMessage =
-                  'Vaš zahtev za PIN je već poslat. Molimo sačekajte da admin odobri.';
+              _infoMessage = 'Vaš zahtev za PIN je već poslat. Molimo sačekajte da admin odobri.';
             });
           } else {
             // Ponudi da pošalje zahtev
@@ -198,8 +190,7 @@ class _RegistrovaniPutnikLoginScreenState
         }
       } else {
         setState(() {
-          _errorMessage =
-              'Niste pronađeni u sistemu.\nKontaktirajte admina za registraciju.';
+          _errorMessage = 'Niste pronađeni u sistemu.\nKontaktirajte admina za registraciju.';
         });
       }
     } catch (e) {
@@ -247,15 +238,7 @@ class _RegistrovaniPutnikLoginScreenState
     }
 
     // Blokiraj test/fake domene
-    final fakeDomains = [
-      'test.com',
-      'fake.com',
-      'example.com',
-      'asdf.com',
-      'qwer.com',
-      'aaa.com',
-      'bbb.com'
-    ];
+    final fakeDomains = ['test.com', 'fake.com', 'example.com', 'asdf.com', 'qwer.com', 'aaa.com', 'bbb.com'];
     if (fakeDomains.any((d) => domainPart == d)) {
       setState(() => _errorMessage = 'Unesite stvarnu email adresu');
       return;
@@ -334,8 +317,7 @@ class _RegistrovaniPutnikLoginScreenState
               _sendPinRequest();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: const Text('Pošalji zahtev',
-                style: TextStyle(color: Colors.black)),
+            child: const Text('Pošalji zahtev', style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -351,10 +333,8 @@ class _RegistrovaniPutnikLoginScreenState
 
     try {
       final putnikId = _putnikData!['id'] as String;
-      final email =
-          _putnikData!['email'] as String? ?? _emailController.text.trim();
-      final telefon = _putnikData!['broj_telefona'] as String? ??
-          _telefonController.text.trim();
+      final email = _putnikData!['email'] as String? ?? _emailController.text.trim();
+      final telefon = _putnikData!['broj_telefona'] as String? ?? _telefonController.text.trim();
 
       final success = await PinZahtevService.posaljiZahtev(
         putnikId: putnikId,
@@ -404,11 +384,7 @@ class _RegistrovaniPutnikLoginScreenState
       final normalizedInput = _normalizePhone(telefon);
 
       // Traži putnika - dohvati sve sa PIN-om i uporedi normalizovane brojeve
-      final allPutnici = await supabase
-          .from('registrovani_putnici')
-          .select()
-          .eq('pin', pin)
-          .eq('obrisan', false);
+      final allPutnici = await supabase.from('registrovani_putnici').select().eq('pin', pin).eq('obrisan', false);
 
       // Pronađi SVE putnike sa istim normalizovanim brojem i istim PIN-om
       List<Map<String, dynamic>> matches = [];
@@ -424,8 +400,7 @@ class _RegistrovaniPutnikLoginScreenState
         setState(() {
           _putnikCandidates = matches;
           _currentStep = _LoginStep.izborPutnika;
-          _infoMessage =
-              'Pronađeno je više korisnika na ovom broju. Izaberite svoj profil:';
+          _infoMessage = 'Pronađeno je više korisnika na ovom broju. Izaberite svoj profil:';
         });
         return;
       }
@@ -463,8 +438,7 @@ class _RegistrovaniPutnikLoginScreenState
 
       // 🎯 FIX: Sačuvaj ID i Ime za Firebase/Push token osvežavanje
       final putnikId = response['id'];
-      final putnikIme =
-          response['putnik_ime'] ?? response['ime_prezime'] ?? 'Putnik';
+      final putnikIme = response['putnik_ime'] ?? response['ime_prezime'] ?? 'Putnik';
 
       if (putnikId != null) {
         await prefs.setString('registrovani_putnik_id', putnikId.toString());
@@ -472,13 +446,10 @@ class _RegistrovaniPutnikLoginScreenState
       }
 
       // 📱 Registruj push token za notifikacije
-        if (putnikId != null) {
+      if (putnikId != null) {
         await PutnikPushService.registerPutnikToken(putnikId);
-      }      // 🔐 Ponudi biometrijsku prijavu ako je dostupna i nije već uključena
-      if (showBiometricPrompt &&
-          _biometricAvailable &&
-          !_biometricEnabled &&
-          mounted) {
+      } // 🔐 Ponudi biometrijsku prijavu ako je dostupna i nije već uključena
+      if (showBiometricPrompt && _biometricAvailable && !_biometricEnabled && mounted) {
         await _showBiometricSetupDialog(telefon, pin);
       }
 
@@ -529,14 +500,12 @@ class _RegistrovaniPutnikLoginScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child:
-                const Text('Ne, hvala', style: TextStyle(color: Colors.grey)),
+            child: const Text('Ne, hvala', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: Text('Uključi $_biometricTypeText',
-                style: const TextStyle(color: Colors.black)),
+            child: Text('Uključi $_biometricTypeText', style: const TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -623,14 +592,12 @@ class _RegistrovaniPutnikLoginScreenState
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle_outline,
-                            color: Colors.green, size: 20),
+                        const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _infoMessage!,
-                            style: const TextStyle(
-                                color: Colors.green, fontSize: 13),
+                            style: const TextStyle(color: Colors.green, fontSize: 13),
                           ),
                         ),
                       ],
@@ -655,14 +622,12 @@ class _RegistrovaniPutnikLoginScreenState
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline,
-                            color: Colors.red, size: 20),
+                        const Icon(Icons.error_outline, color: Colors.red, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: const TextStyle(
-                                color: Colors.red, fontSize: 13),
+                            style: const TextStyle(color: Colors.red, fontSize: 13),
                           ),
                         ),
                       ],
@@ -689,13 +654,11 @@ class _RegistrovaniPutnikLoginScreenState
                           ? const SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(
-                                  color: Colors.black, strokeWidth: 2),
+                              child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
                             )
                           : Text(
                               _getStepButtonText(),
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                     ),
                   ),
@@ -734,15 +697,12 @@ class _RegistrovaniPutnikLoginScreenState
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline,
-                          color: Colors.white54, size: 20),
+                      const Icon(Icons.info_outline, color: Colors.white54, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           _getInfoText(),
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 12),
+                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                         ),
                       ),
                     ],
@@ -837,8 +797,7 @@ class _RegistrovaniPutnikLoginScreenState
                       backgroundColor: Colors.amber,
                       child: Text(
                         ime.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                            color: Colors.black, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -848,16 +807,11 @@ class _RegistrovaniPutnikLoginScreenState
                         children: [
                           Text(
                             ime,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
+                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           Text(
                             tip.toUpperCase(),
-                            style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
-                                fontSize: 12),
+                            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
                           ),
                         ],
                       ),
@@ -890,8 +844,7 @@ class _RegistrovaniPutnikLoginScreenState
           hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
           prefixIcon: const Icon(Icons.phone, color: Colors.amber),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
         onSubmitted: (_) => _checkTelefon(),
       ),
@@ -915,8 +868,7 @@ class _RegistrovaniPutnikLoginScreenState
           hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
           prefixIcon: const Icon(Icons.email, color: Colors.amber),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
         onSubmitted: (_) => _saveEmail(),
       ),
@@ -934,21 +886,18 @@ class _RegistrovaniPutnikLoginScreenState
           ),
           child: TextField(
             controller: _pinController,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 24, letterSpacing: 8),
+            style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 8),
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
             maxLength: 4,
             obscureText: true,
             decoration: InputDecoration(
               hintText: '• • • •',
-              hintStyle: TextStyle(
-                  color: Colors.white.withOpacity(0.4), letterSpacing: 8),
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), letterSpacing: 8),
               prefixIcon: const Icon(Icons.lock, color: Colors.amber),
               border: InputBorder.none,
               counterText: '',
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
             onSubmitted: (_) => _loginWithPin(),
           ),
@@ -966,8 +915,7 @@ class _RegistrovaniPutnikLoginScreenState
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.amber,
                 side: const BorderSide(color: Colors.amber),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -996,8 +944,7 @@ class _RegistrovaniPutnikLoginScreenState
   Future<void> _loginWithBiometric() async {
     final credentials = await BiometricService.getSavedCredentials();
     if (credentials == null) {
-      setState(() =>
-          _errorMessage = 'Nema sačuvanih podataka za biometrijsku prijavu');
+      setState(() => _errorMessage = 'Nema sačuvanih podataka za biometrijsku prijavu');
       return;
     }
 
@@ -1041,8 +988,7 @@ class _RegistrovaniPutnikLoginScreenState
               _sendPinResetRequest();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: const Text('Zatraži novi PIN',
-                style: TextStyle(color: Colors.black)),
+            child: const Text('Zatraži novi PIN', style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -1059,16 +1005,14 @@ class _RegistrovaniPutnikLoginScreenState
     try {
       final putnikId = _putnikData!['id'] as String;
       final email = _putnikData!['email'] as String? ?? '';
-      final telefon = _putnikData!['broj_telefona'] as String? ??
-          _telefonController.text.trim();
+      final telefon = _putnikData!['broj_telefona'] as String? ?? _telefonController.text.trim();
 
       // Proveri da li već ima zahtev koji čeka
       final imaZahtev = await PinZahtevService.imaZahtevKojiCeka(putnikId);
       if (imaZahtev) {
         setState(() {
           _currentStep = _LoginStep.zahtevPoslat;
-          _infoMessage =
-              'Već ste poslali zahtev za PIN. Molimo sačekajte da admin odobri.';
+          _infoMessage = 'Već ste poslali zahtev za PIN. Molimo sačekajte da admin odobri.';
         });
         return;
       }
@@ -1082,12 +1026,10 @@ class _RegistrovaniPutnikLoginScreenState
       if (success) {
         setState(() {
           _currentStep = _LoginStep.zahtevPoslat;
-          _infoMessage =
-              'Zahtev za novi PIN je uspešno poslat! Admin će vam dodeliti novi PIN.';
+          _infoMessage = 'Zahtev za novi PIN je uspešno poslat! Admin će vam dodeliti novi PIN.';
         });
       } else {
-        setState(() =>
-            _errorMessage = 'Greška pri slanju zahteva. Pokušajte ponovo.');
+        setState(() => _errorMessage = 'Greška pri slanju zahteva. Pokušajte ponovo.');
       }
     } catch (e) {
       setState(() => _errorMessage = 'Greška: $e');

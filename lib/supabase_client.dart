@@ -21,12 +21,9 @@
 //   1. ConfigService (dotenv .env file) — main app
 //   2. String.fromEnvironment (--dart-define) — CI/build pipeline
 //   3. Empty string (will throw at Supabase.initialize)
-const String supabaseUrl =
-    String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-const String supabaseAnonKey =
-    String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
-const String supabaseServiceRoleKey =
-    String.fromEnvironment('SUPABASE_SERVICE_ROLE_KEY', defaultValue: '');
+const String supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+const String supabaseServiceRoleKey = String.fromEnvironment('SUPABASE_SERVICE_ROLE_KEY', defaultValue: '');
 
 // 📖 БРЗА РЕФЕРЕНЦА - REST API ПРИМЕРИ:
 //

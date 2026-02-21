@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../utils/app_snack_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/vozac.dart';
@@ -89,14 +90,10 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
               onTimeout: () => [],
             );
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vozač dodan')),
-      );
+      AppSnackBar.info(context, 'Vozač dodan');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška: $e')),
-      );
+      AppSnackBar.error(context, 'Greška: $e');
       return;
     }
 
@@ -108,12 +105,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
 
     if (mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Vozač ${noviVozac.ime} dodat!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      AppSnackBar.success(context, 'Vozač ${noviVozac.ime} dodat!');
     }
   }
 
@@ -186,14 +178,10 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
                     onTimeout: () => [],
                   );
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Vozač ažuriran')),
-            );
+            AppSnackBar.info(context, 'Vozač ažuriran');
           } catch (e) {
             if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Greška: $e')),
-            );
+            AppSnackBar.error(context, 'Greška: $e');
           }
         },
       ),

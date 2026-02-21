@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../globals.dart';
+import '../utils/app_snack_bar.dart';
 
 /// PIN DIALOG za mesečne putnike
 /// Prikazuje/generiše/šalje PIN kod
@@ -57,22 +58,12 @@ class _PinDialogState extends State<PinDialog> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PIN sačuvan!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, 'PIN sačuvan!');
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }
@@ -80,22 +71,12 @@ class _PinDialogState extends State<PinDialog> {
   /// Pošalji PIN putem SMS-a
   Future<void> _sendSms() async {
     if (widget.brojTelefona == null || widget.brojTelefona!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Putnik nema broj telefona!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppSnackBar.warning(context, 'Putnik nema broj telefona!');
       return;
     }
 
     if (_pin == null || _pin!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Prvo generiši PIN!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppSnackBar.warning(context, 'Prvo generiši PIN!');
       return;
     }
 
@@ -117,12 +98,7 @@ class _PinDialogState extends State<PinDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }
@@ -131,13 +107,7 @@ class _PinDialogState extends State<PinDialog> {
   void _copyPin() {
     if (_pin != null && _pin!.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: _pin!));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PIN kopiran!'),
-          backgroundColor: Colors.blue,
-          duration: Duration(seconds: 1),
-        ),
-      );
+      AppSnackBar.info(context, 'PIN kopiran!');
     }
   }
 

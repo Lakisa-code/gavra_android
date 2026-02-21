@@ -13,6 +13,7 @@ import '../models/registrovani_putnik.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
+import '../utils/app_snack_bar.dart';
 import '../services/realtime/realtime_manager.dart';
 import '../services/theme_manager.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
@@ -831,15 +832,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                 ? 'Postavljeni ste na godišnji odmor'
                 : 'Postavljeni ste na bolovanje';
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(poruka)),
-        );
+        AppSnackBar.info(context, poruka);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e')),
-        );
+        AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }
@@ -1657,19 +1654,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         await _refreshPutnikData();
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Vožnja otkazana. Evidentirano kao otkazivanje.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          AppSnackBar.warning(context, 'Vožnja otkazana. Evidentirano kao otkazivanje.');
         }
       } catch (e) {
         debugPrint('❌ Greška u _updatePolazak (otkazivanje): $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Greška pri otkazivanju.')),
-          );
+          AppSnackBar.error(context, 'Greška pri otkazivanju.');
         }
       }
       return;
@@ -1697,16 +1687,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       await _refreshPutnikData();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vaš zahtev je uspešno primljen.')),
-        );
+        AppSnackBar.success(context, 'Vaš zahtev je uspešno primljen.');
       }
     } catch (e) {
       debugPrint('❌ Greška u _updatePolazak: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Greška pri čuvanju promene.')),
-        );
+        AppSnackBar.error(context, 'Greška pri čuvanju promene.');
       }
     }
   }

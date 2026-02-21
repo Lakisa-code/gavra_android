@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../globals.dart';
 import '../../services/route_service.dart';
 import '../../services/theme_manager.dart';
+import '../../utils/app_snack_bar.dart';
 
 /// UNIVERZALNI TIME PICKER CELL WIDGET
 /// Koristi se za prikaz i izbor vremena polaska (BC ili VS)
@@ -241,20 +242,13 @@ class TimePickerCell extends StatelessWidget {
 
         // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor (sprečavanje spama)
         if (isPending && !isAdmin) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('⏳ Vaš zahtev je već u obradi. Molimo sačekajte odgovor.')),
-          );
+          AppSnackBar.warning(context, '⏳ Vaš zahtev je već u obradi. Molimo sačekajte odgovor.');
           return;
         }
 
         // ❌ BLOKADA ZA REJECTED STATUS - objasni korisniku
         if (isRejected && !isAdmin) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Ovaj termin je popunjen. Izaberite neko drugo slobodno vreme.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
+          AppSnackBar.error(context, '❌ Ovaj termin je popunjen. Izaberite neko drugo slobodno vreme.');
           return;
         }
 
@@ -268,13 +262,8 @@ class TimePickerCell extends StatelessWidget {
           final dayDate = _getDateForDay();
 
           if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌'),
-                duration: Duration(seconds: 4),
-              ),
-            );
+            AppSnackBar.blocked(context,
+                'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌');
           }
           return;
         }
@@ -283,12 +272,7 @@ class TimePickerCell extends StatelessWidget {
           final msg = hasTime
               ? '🔒 Vaš polazak je zakazan. Izmene više nisu moguće.'
               : '🔒 Zakazivanje za ovo vreme je prošlo. Od subote kreće novi ciklus.';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(msg),
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          AppSnackBar.warning(context, msg);
           return;
         }
 
@@ -299,13 +283,8 @@ class TimePickerCell extends StatelessWidget {
           final tomorrowOnly = todayOnly.add(const Duration(days: 1));
           final dayDate = _getDateForDay();
           if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly) && !dayDate.isAtSameMomentAs(tomorrowOnly)) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌'),
-                duration: Duration(seconds: 4),
-              ),
-            );
+            AppSnackBar.blocked(context,
+                'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌');
             return;
           }
         }
@@ -495,18 +474,13 @@ class TimePickerCell extends StatelessWidget {
                         onTap: () async {
                           if (value != null && value!.isNotEmpty) {
                             onChanged(null);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(isAdmin
-                                    ? 'Vreme polaska je obrisano.'
-                                    : 'Vožnja otkazana. Evidentirano kao otkazivanje.'),
-                                backgroundColor: isAdmin ? null : Colors.orange,
-                              ),
-                            );
+                            if (isAdmin) {
+                              AppSnackBar.info(context, 'Vreme polaska je obrisano.');
+                            } else {
+                              AppSnackBar.warning(context, 'Vožnja otkazana. Evidentirano kao otkazivanje.');
+                            }
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Vreme polaska je već prazno.')),
-                            );
+                            AppSnackBar.info(context, 'Vreme polaska je već prazno.');
                           }
                           if (dialogContext.mounted) {
                             Navigator.of(dialogContext).pop();

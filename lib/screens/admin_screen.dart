@@ -18,6 +18,7 @@ import '../services/vozac_mapping_service.dart'; // 🗺️ VOZAC MAPIRANJE
 import '../services/vozac_service.dart'; // 🛠️ VOZAC SERVIS
 import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
+import '../utils/app_snack_bar.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'adrese_screen.dart'; // 🏘️ Upravljanje adresama
@@ -116,9 +117,7 @@ class _AdminScreenState extends State<AdminScreen> {
       if (!mounted) return;
 
       if (vozaci.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ Nema učitanih vozača')),
-        );
+        AppSnackBar.error(context, '❌ Nema učitanih vozača');
         return;
       }
 
@@ -173,9 +172,7 @@ class _AdminScreenState extends State<AdminScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška: $e')),
-      );
+      AppSnackBar.error(context, 'Greška: $e');
     }
   }
 
@@ -189,9 +186,7 @@ class _AdminScreenState extends State<AdminScreen> {
       if (!mounted) return;
 
       if (vozaci.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ Nema učitanih vozača')),
-        );
+        AppSnackBar.error(context, '❌ Nema učitanih vozača');
         return;
       }
 
@@ -244,9 +239,7 @@ class _AdminScreenState extends State<AdminScreen> {
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error loading drivers: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Greška pri učitavanju vozača')),
-      );
+      AppSnackBar.error(context, '❌ Greška pri učitavanju vozača');
     }
   }
 
@@ -383,14 +376,9 @@ class _AdminScreenState extends State<AdminScreen> {
 
                       if (mounted) {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(selectedVreme == 'Sva vremena'
-                                ? '✅ Uspešno uklonjeno $count putnika za ceo dan ($selectedGrad) - $selectedDan'
-                                : '✅ Uspešno uklonjeno $count putnika za $selectedVreme ($selectedGrad) - $selectedDan'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+                        AppSnackBar.success(context, selectedVreme == 'Sva vremena'
+                            ? '✅ Uspešno uklonjeno $count putnika za ceo dan ($selectedGrad) - $selectedDan'
+                            : '✅ Uspešno uklonjeno $count putnika za $selectedVreme ($selectedGrad) - $selectedDan');
                       }
                     },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),

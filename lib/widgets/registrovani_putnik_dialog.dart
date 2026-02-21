@@ -12,6 +12,7 @@ import '../services/auth_manager.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/voznje_log_service.dart'; // 📝 DODATO
 import '../theme.dart';
+import '../utils/app_snack_bar.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/registrovani_helpers.dart';
 import '../widgets/shared/time_row.dart';
@@ -888,9 +889,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () {
               if (_firmaNazivController.text.trim().isEmpty || _firmaPibController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Unesite naziv firme i PIB'), backgroundColor: Colors.orange),
-                );
+                AppSnackBar.warning(dialogContext, 'Unesite naziv firme i PIB');
                 return;
               }
               Navigator.pop(dialogContext);
@@ -1364,12 +1363,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                   final contacts = await FlutterContacts.getContacts(withProperties: true);
                   if (contacts.isEmpty) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Nema kontakata u imeniku'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
+                      AppSnackBar.warning(context, 'Nema kontakata u imeniku');
                     }
                     return;
                   }
@@ -1391,12 +1385,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
                     if (contacts.isEmpty) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Nema kontakata u imeniku'),
-                            backgroundColor: Colors.orange,
-                          ),
-                        );
+                        AppSnackBar.warning(context, 'Nema kontakata u imeniku');
                       }
                       return;
                     }
@@ -1407,23 +1396,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                     }
                   } else {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Dozvola za pristup kontaktima je odbijena'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
+                      AppSnackBar.warning(context, 'Dozvola za pristup kontaktima je odbijena');
                     }
                   }
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Greška pri izboru kontakta: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  AppSnackBar.error(context, 'Greška pri izboru kontakta: $e');
                 }
               }
             },
@@ -1618,9 +1597,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   Future<void> _savePutnik() async {
     final validationError = _validateForm();
     if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validationError)),
-      );
+      AppSnackBar.warning(context, validationError);
       return;
     }
 
@@ -1631,9 +1608,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final duplicateError = await _checkDuplicatePhone();
       if (duplicateError != null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(duplicateError)),
-          );
+          AppSnackBar.warning(context, duplicateError);
         }
         setState(() => _isLoading = false);
         return;
@@ -1681,9 +1656,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Putnik uspešno sačuvan!')),
-        );
+        AppSnackBar.success(context, '✅ Putnik uspešno sačuvan!');
         Navigator.of(context).pop();
         if (widget.onSaved != null) widget.onSaved!();
       }
@@ -1705,9 +1678,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         if (errorMsg.contains('Exception:')) {
           errorMsg = errorMsg.split('Exception:').last.trim();
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $errorMsg')),
-        );
+        AppSnackBar.error(context, 'Greška: $errorMsg');
       }
     } finally {
       setState(() => _isLoading = false);

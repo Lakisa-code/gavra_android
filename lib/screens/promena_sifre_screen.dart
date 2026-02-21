@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../utils/app_snack_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme.dart';
@@ -113,12 +114,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Šifra uspešno promenjena!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      AppSnackBar.success(context, 'Šifra uspešno promenjena!');
 
       Navigator.pop(context);
     } catch (e) {
@@ -131,12 +127,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
   void _showError(String message) {
     setState(() => _isLoading = false);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackBar.error(context, message);
     }
   }
 

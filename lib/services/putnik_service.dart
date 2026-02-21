@@ -118,12 +118,13 @@ class PutnikService {
           : [];
       final registrovaniMap = {for (var r in registrovani) r['id'].toString(): r};
 
-      return reqs.map((r) {
-        final map = _rpcToPutnikMap(r as Map<String, dynamic>);
-        final rp = registrovaniMap[r['putnik_id']?.toString()];
-        if (rp != null) map['registrovani_putnici'] = rp;
-        return map;
-      })
+      return reqs
+          .map((r) {
+            final map = _rpcToPutnikMap(r as Map<String, dynamic>);
+            final rp = registrovaniMap[r['putnik_id']?.toString()];
+            if (rp != null) map['registrovani_putnici'] = rp;
+            return map;
+          })
           .map((r) => Putnik.fromSeatRequest(r))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
@@ -174,7 +175,7 @@ class PutnikService {
           : [];
       final registrovaniMap = {for (var r in registrovani) r['id'].toString(): r};
 
-      final enriched = (reqs as List).map((r) {
+      final enriched = (reqs).map((r) {
         final map = _rpcToPutnikMap(r as Map<String, dynamic>);
         final rp = registrovaniMap[r['putnik_id']?.toString()];
         if (rp != null) map['registrovani_putnici'] = rp;
@@ -269,24 +270,23 @@ class PutnikService {
     final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {'p_datum': todayStr});
     // Filtriraj po imenu kroz registrovani_putnici join
     // Dohvati putnik_id po imenu
-    final rpRes = await supabase
-        .from('registrovani_putnici')
-        .select('id')
-        .eq('putnik_ime', ime)
-        .maybeSingle();
+    final rpRes = await supabase.from('registrovani_putnici').select('id').eq('putnik_ime', ime).maybeSingle();
     if (rpRes == null) return null;
     final putnikId = rpRes['id'].toString();
 
-    final match = (reqs as List).cast<Map<String, dynamic>>().where((r) => r['putnik_id']?.toString() == putnikId).firstOrNull;
+    final match =
+        (reqs as List).cast<Map<String, dynamic>>().where((r) => r['putnik_id']?.toString() == putnikId).firstOrNull;
     if (match != null) {
-      final rp = await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', putnikId).maybeSingle();
+      final rp =
+          await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', putnikId).maybeSingle();
       final map = _rpcToPutnikMap(match);
       if (rp != null) map['registrovani_putnici'] = rp;
       return Putnik.fromSeatRequest(map);
     }
 
     // Fallback na profil ako nema današnjeg zahteva
-    final res = await supabase.from('registrovani_putnici').select(registrovaniFields).eq('putnik_ime', ime).maybeSingle();
+    final res =
+        await supabase.from('registrovani_putnici').select(registrovaniFields).eq('putnik_ime', ime).maybeSingle();
     if (res == null) return null;
     return Putnik.fromRegistrovaniPutnici(res);
   }
@@ -296,7 +296,10 @@ class PutnikService {
       final todayStr = DateTime.now().toIso8601String().split('T')[0];
 
       final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {'p_datum': todayStr});
-      final match = (reqs as List).cast<Map<String, dynamic>>().where((r) => r['putnik_id']?.toString() == id.toString()).firstOrNull;
+      final match = (reqs as List)
+          .cast<Map<String, dynamic>>()
+          .where((r) => r['putnik_id']?.toString() == id.toString())
+          .firstOrNull;
 
       if (match != null) {
         final rp = await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', id).maybeSingle();
@@ -320,9 +323,7 @@ class PutnikService {
       final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {'p_datum': danasStr});
 
       final idStrings = ids.map((id) => id.toString()).toSet();
-      final filtered = (reqs as List)
-          .where((r) => idStrings.contains(r['putnik_id']?.toString()))
-          .toList();
+      final filtered = (reqs as List).where((r) => idStrings.contains(r['putnik_id']?.toString())).toList();
 
       final putnikIds = filtered.map((r) => r['putnik_id'].toString()).toSet().toList();
       final registrovani = putnikIds.isNotEmpty
@@ -330,12 +331,13 @@ class PutnikService {
           : [];
       final registrovaniMap = {for (var r in registrovani) r['id'].toString(): r};
 
-      return filtered.map((r) {
-        final map = _rpcToPutnikMap(r as Map<String, dynamic>);
-        final rp = registrovaniMap[r['putnik_id']?.toString()];
-        if (rp != null) map['registrovani_putnici'] = rp;
-        return map;
-      })
+      return filtered
+          .map((r) {
+            final map = _rpcToPutnikMap(r as Map<String, dynamic>);
+            final rp = registrovaniMap[r['putnik_id']?.toString()];
+            if (rp != null) map['registrovani_putnici'] = rp;
+            return map;
+          })
           .map((r) => Putnik.fromSeatRequest(r))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
@@ -357,12 +359,13 @@ class PutnikService {
           : [];
       final registrovaniMap = {for (var r in registrovani) r['id'].toString(): r};
 
-      return reqs.map((r) {
-        final map = _rpcToPutnikMap(r as Map<String, dynamic>);
-        final rp = registrovaniMap[r['putnik_id']?.toString()];
-        if (rp != null) map['registrovani_putnici'] = rp;
-        return map;
-      })
+      return reqs
+          .map((r) {
+            final map = _rpcToPutnikMap(r as Map<String, dynamic>);
+            final rp = registrovaniMap[r['putnik_id']?.toString()];
+            if (rp != null) map['registrovani_putnici'] = rp;
+            return map;
+          })
           .map((r) => Putnik.fromSeatRequest(r))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();

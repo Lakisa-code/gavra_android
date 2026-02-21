@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -20,6 +20,7 @@ import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart'; // 🕒 Za dodeljena vremena vozača
 import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
+import '../utils/app_snack_bar.dart';
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/putnik_helpers.dart'; // 🛠️ Centralizovani helperi
 import '../utils/text_utils.dart'; // 📝 Za TextUtils.isStatusActive
@@ -368,12 +369,7 @@ class _VozacScreenState extends State<VozacScreen> {
           _optimizedRoute = pokupljeniIOtkazani; // ? ZADR�I pokupljene u listi
           _currentPassengerIndex = 0;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('? Svi putnici su pokupljeni!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, '✅ Svi putnici su pokupljeni!');
       }
       return;
     }
@@ -401,13 +397,7 @@ class _VozacScreenState extends State<VozacScreen> {
           if (!mounted) return;
 
           final sledeci = result.optimizedPutnici!.isNotEmpty ? result.optimizedPutnici!.first.ime : 'N/A';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('🔄 Ruta ažurirana! Sledeći: $sledeci (${preostaliPutnici.length} preostalo)'),
-              backgroundColor: Colors.blue,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          AppSnackBar.info(context, '🔄 Ruta ažurirana! Sledeći: $sledeci (${preostaliPutnici.length} preostalo)');
         }
       }
     } catch (e) {
@@ -507,8 +497,7 @@ class _VozacScreenState extends State<VozacScreen> {
                   ? '🔄 Novi putnik: ${newPassengerNames.join(", ")}'
                   : '🚫 Putnik otkazan: ${cancelledNames.join(", ")}');
 
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
+          AppSnackBar.info(context, message);
         }
 
         // AUTO-REOPTIMIZACIJA (ovo ce uraditi setState na kraju)
@@ -579,26 +568,14 @@ class _VozacScreenState extends State<VozacScreen> {
 
           // ? FIX: Ponovna provera mounted posle await operacije
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('? Ruta uspe�no reoptimizovana sa novim putnikom!'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
-              ),
-            );
+            AppSnackBar.success(context, '✅ Ruta uspešno reoptimizovana sa novim putnikom!');
           }
         }
       }
     } catch (e) {
       // Gre�ka pri reoptimizaciji - zadr�i postojecu rutu
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Greška pri reoptimizaciji: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška pri reoptimizaciji: $e');
       }
     } finally {
       // ?? UNLOCK: Uvek oslobodi lock
@@ -611,12 +588,12 @@ class _VozacScreenState extends State<VozacScreen> {
     // Proveri da li je ulogovan i valjan vozac
     if (_currentDriver == null || !VozacBoja.isValidDriverSync(_currentDriver)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Morate biti ulogovani i ovla�ceni da biste koristili optimizaciju rute.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        AppSnackBar.warning(context, 'Morate biti ulogovani i ovlašćeni da biste koristili optimizaciju rute.');
+
+
+
+
+
       }
       return;
     }
@@ -632,9 +609,7 @@ class _VozacScreenState extends State<VozacScreen> {
       if (putnici.isEmpty) {
         if (mounted) {
           setState(() => _isOptimizing = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('? Nema putnika sa adresama za reorder'), backgroundColor: Colors.orange),
-          );
+          AppSnackBar.warning(context, '⚠️ Nema putnika sa adresama za reorder');
         }
         return;
       }
@@ -651,26 +626,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final routeString = _optimizedRoute.take(3).map((p) => p.adresa?.split(',').first ?? p.ime).join(' ? ');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '?? Lista putnika optimizovana (server) za $_selectedGrad $_selectedVreme!',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text('?? Sledeci putnici: $routeString${_optimizedRoute.length > 3 ? "..." : ""}'),
-                Text(
-                    '?? Broj putnika: ${_optimizedRoute.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length}'),
-              ],
-            ),
-            duration: const Duration(seconds: 4),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, '📍 Lista putnika optimizovana (server) za $_selectedGrad $_selectedVreme!\n➡️ Sledeći: $routeString${_optimizedRoute.length > 3 ? "..." : ""}');
       }
       return;
     }
@@ -698,9 +654,7 @@ class _VozacScreenState extends State<VozacScreen> {
         setState(() {
           _isOptimizing = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('? Nema putnika sa adresama za optimizaciju'), backgroundColor: Colors.orange),
-        );
+        AppSnackBar.warning(context, '⚠️ Nema putnika sa adresama za optimizaciju');
       }
       return;
     }
@@ -740,28 +694,7 @@ class _VozacScreenState extends State<VozacScreen> {
         final hasSkipped = skipped != null && skipped.isNotEmpty;
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '?? RUTA OPTIMIZOVANA za $_selectedGrad $_selectedVreme!',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text('?? Sledeci putnici: $routeString${optimizedPutnici.length > 3 ? "..." : ""}'),
-                  Text(
-                      '?? Broj putnika: ${optimizedPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length}'),
-                  if (result.totalDistance != null)
-                    Text('?? Ukupno: ${(result.totalDistance! / 1000).toStringAsFixed(1)} km'),
-                ],
-              ),
-              duration: const Duration(seconds: 4),
-              backgroundColor: Colors.green,
-            ),
-          );
+          AppSnackBar.success(context, '📍 RUTA OPTIMIZOVANA za $_selectedGrad $_selectedVreme!');
 
           // ? OPTIMIZACIJA 3: Zameni blokirajuci AlertDialog sa Snackbar-om
           // Korisnik vidi notifikaciju ali NIJE BLOKIRAN da nastavi sa akcijama
@@ -771,38 +704,7 @@ class _VozacScreenState extends State<VozacScreen> {
               final skippedNames = skipped.take(5).map((p) => p.ime).join(', ');
               final moreText = skipped.length > 5 ? ' +${skipped.length - 5} jo�' : '';
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${skipped.length} putnika BEZ adrese',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$skippedNames$moreText',
-                        style: const TextStyle(fontSize: 12),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  backgroundColor: Colors.orange.shade700,
-                  duration: const Duration(seconds: 6),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              AppSnackBar.warning(context, '⚠️ ${skipped.length} putnika BEZ adrese: $skippedNames$moreText');
             }
           }
         }
@@ -813,13 +715,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _isOptimizing = false;
             // NE postavljaj _isRouteOptimized = true jer ruta NIJE optimizovana!
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('? Optimizacija neuspe�na: ${result.message}'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-            ),
-          );
+          AppSnackBar.error(context, '❌ Optimizacija neuspešna: ${result.message}');
         }
       }
     } catch (e) {
@@ -829,12 +725,7 @@ class _VozacScreenState extends State<VozacScreen> {
           _isRouteOptimized = false;
           _isListReordered = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('? Gre�ka pri optimizaciji: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška pri optimizaciji: $e');
       }
     }
   }
@@ -1101,37 +992,20 @@ class _VozacScreenState extends State<VozacScreen> {
               _isGpsTracking = false;
               _navigationStatus = '';
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('? Svi putnici pokupljeni! Tracking automatski zaustavljen.'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
+            AppSnackBar.success(context, '✅ Svi putnici pokupljeni! Tracking automatski zaustavljen.');
           }
         },
       );
 
       if (mounted) {
         setState(() => _isGpsTracking = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('?? GPS tracking pokrenut! Putnici dobijaju realtime lokaciju.'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        AppSnackBar.success(context, '📍 GPS tracking pokrenut! Putnici dobijaju realtime lokaciju.');
       }
 
       // ?? PO�ALJI PUSH NOTIFIKACIJE PUTNICIMA - bez ETA
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('? Gre�ka pri pokretanju GPS trackinga: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška pri pokretanju GPS trackinga: $e');
       }
     }
   }
@@ -1145,13 +1019,7 @@ class _VozacScreenState extends State<VozacScreen> {
         _isGpsTracking = false;
         _navigationStatus = '';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('?? GPS tracking zaustavljen'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppSnackBar.warning(context, '📍 GPS tracking zaustavljen');
     }
   }
 
@@ -1168,31 +1036,16 @@ class _VozacScreenState extends State<VozacScreen> {
 
       if (result.success) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('??? ${result.message}'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          AppSnackBar.success(context, '🗺️ ${result.message}');
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('? ${result.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, '❌ ${result.message}');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('? Gre�ka pri otvaranju navigacije: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška pri otvaranju navigacije: $e');
       }
     }
   }

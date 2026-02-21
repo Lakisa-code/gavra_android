@@ -12,6 +12,7 @@ import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
+import '../utils/app_snack_bar.dart';
 import '../utils/text_utils.dart';
 
 class PrintingService {
@@ -110,13 +111,8 @@ class PrintingService {
 
       if (putnici.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '📄 Nema putnika za $selectedDay - $selectedVreme - $selectedGrad',
-              ),
-              backgroundColor: Colors.orange,
-            ),
+          AppSnackBar.warning(context,
+            '📄 Nema putnika za $selectedDay - $selectedVreme - $selectedGrad',
           );
         }
         return;
@@ -142,12 +138,7 @@ class PrintingService {
       await OpenFilex.open(file.path);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Greška pri štampanju: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška pri štampanju: $e');
       }
     }
   }

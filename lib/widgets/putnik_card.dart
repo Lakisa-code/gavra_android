@@ -13,6 +13,7 @@ import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/unified_geocoding_service.dart';
+import '../utils/app_snack_bar.dart';
 import '../services/vozac_mapping_service.dart';
 import '../services/vreme_vozac_service.dart';
 import '../theme.dart';
@@ -102,12 +103,7 @@ class _PutnikCardState extends State<PutnikCard> {
     final vozacUuid = await VozacMappingService.getVozacUuid(widget.currentDriver);
     if (vozacUuid == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Greška: Vozač nije definisan u sistemu'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        AppSnackBar.error(context, 'Greška: Vozač nije definisan u sistemu');
       }
       return;
     }
@@ -249,12 +245,7 @@ class _PutnikCardState extends State<PutnikCard> {
       // Provjeri da li putnik ima valjan ID
       if (_putnik.id == null || _putnik.id.toString().isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Putnik nema valjan ID - ne mo�e se naplatiti'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          AppSnackBar.error(context, 'Putnik nema valjan ID - ne može se naplatiti');
         }
         return;
       }
@@ -266,13 +257,7 @@ class _PutnikCardState extends State<PutnikCard> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Naplaceno $brojMesta mesta - Ukupno: ${ukupnaSuma.toStringAsFixed(0)} RSD'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        AppSnackBar.payment(context, 'Naplaćeno $brojMesta mesta - Ukupno: ${ukupnaSuma.toStringAsFixed(0)} RSD');
       }
     }
   }
@@ -284,12 +269,7 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (registrovaniPutnik == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška: Mesečni putnik "${_putnik.ime}" nije pronađen'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        AppSnackBar.error(context, 'Greška: Mesečni putnik "${_putnik.ime}" nije pronađen');
       }
       return;
     }
@@ -753,12 +733,7 @@ class _PutnikCardState extends State<PutnikCard> {
       // Provjeri da li putnik ima valjan ID
       if (_putnik.id == null || _putnik.id.toString().isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Putnik nema valjan ID - ne mo�e se naplatiti'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          AppSnackBar.error(context, 'Putnik nema valjan ID - ne može se naplatiti');
         }
         return;
       }
@@ -770,12 +745,7 @@ class _PutnikCardState extends State<PutnikCard> {
         HapticService.lightImpact();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Greška pri plaćanju: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          AppSnackBar.error(context, 'Greška pri plaćanju: $e');
         }
       }
     }
@@ -852,21 +822,11 @@ class _PutnikCardState extends State<PutnikCard> {
           _putnik = _putnik.copyWith(placeno: true);
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Plaćanje uspešno evidentirano: $iznos RSD'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.payment(context, 'Plaćanje uspešno evidentirano: $iznos RSD');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri plaćanju: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        AppSnackBar.error(context, 'Greška pri plaćanju: $e');
       }
     } finally {
       // ✅ OBAVEZNO OSLOBODI LOCK
@@ -908,22 +868,11 @@ class _PutnikCardState extends State<PutnikCard> {
           widget.onChanged!();
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pokupljen: ${_putnik.ime}'),
-            backgroundColor: Theme.of(context).colorScheme.successPrimary,
-            duration: const Duration(seconds: 1),
-          ),
-        );
+        AppSnackBar.success(context, 'Pokupljen: ${_putnik.ime}');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri pokupljenju: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        AppSnackBar.error(context, 'Greška pri pokupljenju: $e');
       }
     } finally {
       // ✅ OBAVEZNO OSLOBODI LOCK
@@ -1256,21 +1205,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                                           await PermissionService.ensureGpsForNavigation();
                                                       if (!hasPermission) {
                                                         if (mounted && context.mounted) {
-                                                          ScaffoldMessenger.of(
-                                                            context,
-                                                          ).showSnackBar(
-                                                            SnackBar(
-                                                              content: const Text(
-                                                                '📍 GPS dozvole su potrebne za navigaciju',
-                                                              ),
-                                                              backgroundColor: Theme.of(
-                                                                context,
-                                                              ).colorScheme.error,
-                                                              duration: const Duration(
-                                                                seconds: 3,
-                                                              ),
-                                                            ),
-                                                          );
+                                                          AppSnackBar.error(context, '📍 GPS dozvole su potrebne za navigaciju');
                                                         }
                                                         return;
                                                       }
@@ -1279,35 +1214,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                                       try {
                                                         // Pokaži loading sa dužim timeout-om
                                                         if (mounted && context.mounted) {
-                                                          ScaffoldMessenger.of(
-                                                            context,
-                                                          ).showSnackBar(
-                                                            const SnackBar(
-                                                              content: Row(
-                                                                children: [
-                                                                  SizedBox(
-                                                                    width: 16,
-                                                                    height: 16,
-                                                                    child: CircularProgressIndicator(
-                                                                      strokeWidth: 2,
-                                                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                                                        Colors.white,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                  SizedBox(
-                                                                    width: 10,
-                                                                  ),
-                                                                  Text(
-                                                                    '🔄 Pripremam navigaciju...',
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                              duration: Duration(
-                                                                seconds: 15,
-                                                              ), // Duži timeout
-                                                            ),
-                                                          );
+                                                          AppSnackBar.info(context, '🔄 Pripremam navigaciju...');
                                                         }
 
                                                         // Dobij koordinate - UNIFIKOVANO za sve putnike
@@ -1324,73 +1231,18 @@ class _PutnikCardState extends State<PutnikCard> {
 
                                                           if (koordinate != null) {
                                                             // Uspešno - pokaži pozitivnu poruku
-                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                              SnackBar(
-                                                                content: const Text(
-                                                                  '🚀 Otvaram navigaciju...',
-                                                                ),
-                                                                backgroundColor:
-                                                                    Theme.of(context).colorScheme.successPrimary,
-                                                                duration: const Duration(
-                                                                  seconds: 1,
-                                                                ),
-                                                              ),
-                                                            );
+                                                            AppSnackBar.success(context, '🚀 Otvaram navigaciju...');
                                                             await _otvoriNavigaciju(
                                                               koordinate,
                                                             );
                                                           } else {
                                                             // Neuspešno - prikaži detaljniju grešku
-                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                              SnackBar(
-                                                                content: Column(
-                                                                  mainAxisSize: MainAxisSize.min,
-                                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                                  children: [
-                                                                    const Text(
-                                                                      '📍 Lokacija nije pronađena',
-                                                                    ),
-                                                                    Text(
-                                                                      'Adresa: ${_putnik.adresa}',
-                                                                    ),
-                                                                    const Text(
-                                                                      '🔄 Pokušajte ponovo za 10 sekundi',
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                                backgroundColor:
-                                                                    Theme.of(context).colorScheme.warningPrimary,
-                                                                action: SnackBarAction(
-                                                                  label: 'POKUŠAJ PONOVO',
-                                                                  textColor: Colors.white,
-                                                                  onPressed: () {
-                                                                    // Rekurzivno pozovi ponovo
-                                                                  },
-                                                                ),
-                                                              ),
-                                                            );
+                                                            AppSnackBar.warning(context, '📍 Lokacija nije pronađena\nAdresa: ${_putnik.adresa}\n🔄 Pokušajte ponovo za 10 sekundi');
                                                           }
                                                         }
                                                       } catch (e) {
                                                         if (mounted && context.mounted) {
-                                                          ScaffoldMessenger.of(
-                                                            context,
-                                                          ).hideCurrentSnackBar();
-                                                          ScaffoldMessenger.of(
-                                                            context,
-                                                          ).showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                '❌ Greška: ${e.toString()}',
-                                                              ),
-                                                              backgroundColor: Theme.of(
-                                                                context,
-                                                              ).colorScheme.error,
-                                                              duration: const Duration(
-                                                                seconds: 3,
-                                                              ),
-                                                            ),
-                                                          );
+                                                          AppSnackBar.error(context, '❌ Greška: ${e.toString()}');
                                                         }
                                                       }
                                                     },
@@ -1760,14 +1612,7 @@ class _PutnikCardState extends State<PutnikCard> {
 
       if (uspeh) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '💰 Plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec je sačuvano',
-              ),
-              backgroundColor: Theme.of(context).colorScheme.successPrimary,
-            ),
-          );
+          AppSnackBar.payment(context, '💰 Plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec je sačuvano');
         }
       } else {
         // ❌ FIX: Baci exception da _executePayment ne prikaže uspešnu poruku
@@ -1775,12 +1620,7 @@ class _PutnikCardState extends State<PutnikCard> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Greška: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška: $e');
       }
     }
   }
@@ -1950,12 +1790,7 @@ class _PutnikCardState extends State<PutnikCard> {
         );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Vreme polaska je uklonjeno za danas.'),
-              backgroundColor: Colors.blue,
-            ),
-          );
+          AppSnackBar.info(context, 'Vreme polaska je uklonjeno za danas.');
           // Osvježi lokalno stanje
           setState(() {
             _putnik = _putnik.copyWith(status: 'bez_polaska');
@@ -1963,12 +1798,7 @@ class _PutnikCardState extends State<PutnikCard> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Greška: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }
@@ -2059,21 +1889,11 @@ class _PutnikCardState extends State<PutnikCard> {
           setState(() {
             _putnik = _putnik.copyWith(status: 'otkazano');
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Putnik označen kao otkazan.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, 'Putnik označen kao otkazan.');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Greška: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }
@@ -2165,18 +1985,11 @@ class _PutnikCardState extends State<PutnikCard> {
 
       if (mounted) {
         if (widget.onChanged != null) widget.onChanged!();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Postavljeno: ${tip == 'bolovanje' ? 'Bolovanje' : 'Godišnji'}'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        AppSnackBar.warning(context, 'Postavljeno: ${tip == 'bolovanje' ? 'Bolovanje' : 'Godišnji'}');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-        );
+        AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }

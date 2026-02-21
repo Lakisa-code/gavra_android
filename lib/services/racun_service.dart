@@ -10,6 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import '../utils/app_snack_bar.dart';
 
 /// Servis za generisanje i štampanje računa za fizička lica
 class RacunService {
@@ -113,12 +114,7 @@ class RacunService {
       await OpenFilex.open(file.path);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Greška pri štampanju računa: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška pri štampanju računa: $e');
       }
     }
   }
@@ -132,12 +128,7 @@ class RacunService {
   }) async {
     if (imenaPutnika.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nema izabranih putnika'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        AppSnackBar.warning(context, 'Nema izabranih putnika');
       }
       return;
     }
@@ -179,21 +170,11 @@ class RacunService {
       await OpenFilex.open(file.path);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Generisano ${imenaPutnika.length} računa'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, '✅ Generisano ${imenaPutnika.length} računa');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Greška pri štampanju: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '❌ Greška pri štampanju: $e');
       }
     }
   }
@@ -206,11 +187,7 @@ class RacunService {
   }) async {
     if (racuniPodaci.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Nema računa za štampanje'),
-              backgroundColor: Colors.orange),
-        );
+        AppSnackBar.warning(context, 'Nema računa za štampanje');
       }
       return;
     }
@@ -258,19 +235,11 @@ class RacunService {
       await OpenFilex.open(file.path);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('✅ Generisano ${racuniPodaci.length} računa za firme'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, '✅ Generisano ${racuniPodaci.length} računa za firme');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Greška: $e'), backgroundColor: Colors.red),
-        );
+        AppSnackBar.error(context, '❌ Greška: $e');
       }
     }
   }

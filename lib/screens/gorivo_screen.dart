@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../services/gorivo_service.dart';
 import '../services/vozila_service.dart';
+import '../utils/app_snack_bar.dart';
 
 /// ⛽ GORIVO SCREEN
 /// Kućna pumpa — stanje, punjenja, točenja, statistike po vozilu
@@ -563,9 +564,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                 onPressed: () async {
                   final litri = double.tryParse(litriCtrl.text);
                   if (litri == null || litri <= 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Unesi broj litara!')),
-                    );
+                    AppSnackBar.warning(context, 'Unesi broj litara!');
                     return;
                   }
                   final ok = await GorivoService.addPunjenje(
@@ -578,12 +577,11 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                   if (!context.mounted) return;
                   Navigator.pop(ctx);
                   if (ok) setState(() {});
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(ok ? '✅ Punjenje dodato: $litri L' : '❌ Greška pri dodavanju'),
-                      backgroundColor: ok ? Colors.green : Colors.red,
-                    ),
-                  );
+                  if (ok) {
+                    AppSnackBar.success(context, '✅ Punjenje dodato: $litri L');
+                  } else {
+                    AppSnackBar.error(context, '❌ Greška pri dodavanju');
+                  }
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Dodaj punjenje'),
@@ -662,15 +660,11 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                 onPressed: () async {
                   final litri = double.tryParse(litriCtrl.text);
                   if (litri == null || litri <= 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Unesi broj litara!')),
-                    );
+                    AppSnackBar.warning(context, 'Unesi broj litara!');
                     return;
                   }
                   if (selectedVozilo == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Izaberi vozilo!')),
-                    );
+                    AppSnackBar.warning(context, 'Izaberi vozilo!');
                     return;
                   }
                   final ok = await GorivoService.addTocenje(
@@ -684,14 +678,11 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                   if (!context.mounted) return;
                   Navigator.pop(ctx);
                   if (ok) setState(() {});
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(ok
-                          ? '✅ Točenje zabeleženo: $litri L → ${selectedVozilo!.registarskiBroj}'
-                          : '❌ Greška pri dodavanju'),
-                      backgroundColor: ok ? Colors.green : Colors.red,
-                    ),
-                  );
+                  if (ok) {
+                    AppSnackBar.success(context, '✅ Točenje zabeleženo: $litri L → ${selectedVozilo!.registarskiBroj}');
+                  } else {
+                    AppSnackBar.error(context, '❌ Greška pri dodavanju');
+                  }
                 },
                 icon: const Icon(Icons.local_gas_station),
                 label: const Text('Zabeloži točenje'),
@@ -748,12 +739,11 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                 if (!context.mounted) return;
                 Navigator.pop(ctx);
                 if (ok) setState(() {});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(ok ? '✅ Podešavanja sačuvana' : '❌ Greška pri čuvanju'),
-                    backgroundColor: ok ? Colors.green : Colors.red,
-                  ),
-                );
+                if (ok) {
+                  AppSnackBar.success(context, '✅ podešavanja sačuvana');
+                } else {
+                  AppSnackBar.error(context, '❌ Greška pri čuvanju');
+                }
               },
               icon: const Icon(Icons.save),
               label: const Text('Sačuvaj'),

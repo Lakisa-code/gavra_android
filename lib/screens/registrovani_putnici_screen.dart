@@ -11,6 +11,7 @@ import '../services/cena_obracun_service.dart';
 import '../services/permission_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../theme.dart';
+import '../utils/app_snack_bar.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/pin_dialog.dart';
 import '../widgets/registrovani_putnik_dialog.dart';
@@ -1249,21 +1250,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final success = await _registrovaniPutnikService.toggleAktivnost(putnik.id, !putnik.aktivan);
 
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${putnik.putnikIme} je ${!putnik.aktivan ? "aktiviran" : "deaktiviran"}',
-          ),
-          backgroundColor: !putnik.aktivan ? Colors.green : Colors.orange,
-        ),
-      );
+      AppSnackBar.success(context, '${putnik.putnikIme} je ${!putnik.aktivan ? "aktiviran" : "deaktiviran"}');
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Greška pri promeni statusa'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackBar.error(context, 'Greška pri promeni statusa');
     }
   }
 
@@ -1396,28 +1385,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         }
 
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${putnik.putnikIme} je uspešno obrisan'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          AppSnackBar.success(context, '${putnik.putnikIme} je uspešno obrisan');
         } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Greška pri brisanju putnika'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, 'Greška pri brisanju putnika');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Greška: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }
@@ -1488,9 +1462,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     }
 
     if (opcije.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nema dostupnih kontakata')),
-      );
+      AppSnackBar.info(context, 'Nema dostupnih kontakata');
       return;
     }
 
@@ -1533,12 +1505,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
       if (!hasPermission) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('? Dozvola za pozive je potrebna'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, '❌ Dozvola za pozive je potrebna');
         }
         return;
       }
@@ -1548,22 +1515,12 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         await launchUrl(phoneUrl, mode: LaunchMode.externalApplication);
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('? Nije moguce pozivanje sa ovog uredaja'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, '❌ Nije moguće pozivanje sa ovog uređaja');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška pri pozivanju: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, 'Greška pri pozivanju: $e');
       }
     }
   }
@@ -1863,12 +1820,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                       Navigator.of(context).pop();
                       await _sacuvajPlacanje(putnik.id, iznos, selectedMonth);
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Unesite valjan iznos'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                      AppSnackBar.error(context, 'Unesite valjan iznos');
                     }
                   },
                   icon: Icon(ukupnoPlaceno > 0 ? Icons.add : Icons.save),
@@ -1923,33 +1875,16 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
       if (uspeh) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '? Dodato placanje od ${iznos.toStringAsFixed(0)} RSD za $mesec',
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
+          AppSnackBar.payment(context, '✅ Dodato plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec');
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Greška pri čuvanju plaćanja'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, 'Greška pri čuvanju plaćanja');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }

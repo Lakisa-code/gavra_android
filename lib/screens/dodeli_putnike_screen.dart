@@ -12,6 +12,7 @@ import '../services/putnik_vozac_dodela_service.dart'; // • Per-putnik individ
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart'; // • Per-vreme dodeljivanje
 import '../utils/date_utils.dart' as app_date_utils;
+import '../utils/app_snack_bar.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_count_helper.dart';
 import '../utils/vozac_boja.dart';
@@ -463,27 +464,18 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
         if (mounted) {
           final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(noviVozac == null
-                  ? '✓ ${putnik.ime} uklonjen sa vozača ($pravacLabel)'
-                  : '✓ ${putnik.ime} → $noviVozac ($pravacLabel)'),
-              backgroundColor: noviVozac == null ? Colors.grey : VozacBoja.getSync(noviVozac),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          if (noviVozac == null) {
+            AppSnackBar.info(context, '✓ ${putnik.ime} uklonjen sa vozača ($pravacLabel)');
+          } else {
+            AppSnackBar.success(context, '✓ ${putnik.ime} → $noviVozac ($pravacLabel)');
+          }
 
           // Osvezi UI odmah
           _setupStream();
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('• Greška: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, '• Greška: $e');
         }
       }
     }
@@ -664,13 +656,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
             danKratica,
           );
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('✓ $vremeLabel - dodeljivanje uklonjeno'),
-                backgroundColor: Colors.grey,
-                duration: const Duration(seconds: 2),
-              ),
-            );
+            AppSnackBar.info(context, '✓ $vremeLabel - dodeljivanje uklonjeno');
             // Prvo osvezi UI
             setState(() {});
             // Čekaj 500ms da se baza ažurira pre nego što osvežiš stream
@@ -687,13 +673,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
             selected,
           );
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('✓ $vremeLabel → $selected (ceo termin)'),
-                backgroundColor: VozacBoja.getSync(selected),
-                duration: const Duration(seconds: 2),
-              ),
-            );
+            AppSnackBar.success(context, '✓ $vremeLabel → $selected (ceo termin)');
             // Prvo osvezi UI
             setState(() {});
             // Čekaj 500ms da se baza ažurira pre nego što osvežiš stream
@@ -705,12 +685,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('• Greška: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackBar.error(context, '• Greška: $e');
         }
       }
     }
@@ -1140,12 +1115,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         _isSelectionMode = false;
         _selectedPutnici.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('• Prebačeno $uspesno putnika na $noviVozac${greska > 0 ? " (greške: $greska)" : ""}'),
-          backgroundColor: VozacBoja.getSync(noviVozac),
-        ),
-      );
+      AppSnackBar.info(context, '• Prebačeno $uspesno putnika na $noviVozac${greska > 0 ? " (greške: $greska)" : ""}');
       // Osveži listu nakon bulk prebacivanja
       _setupStream();
     }
@@ -1218,12 +1188,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         _isSelectionMode = false;
         _selectedPutnici.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('• Obrisano $uspesno putnika${greska > 0 ? " (greške: $greska)" : ""}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackBar.error(context, '• Obrisano $uspesno putnika${greska > 0 ? " (greške: $greska)" : ""}');
       // Osveži listu nakon bulk brisanja
       _setupStream();
     }

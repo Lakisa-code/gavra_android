@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../services/vozila_service.dart';
+import '../utils/app_snack_bar.dart';
 
 /// 📖 KOLSKA KNJIGA
 /// Tehničko praćenje vozila - servisi, registracija, gume...
@@ -187,9 +188,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
       await VozilaService.updateBrojMesta(vozilo.id, result);
       await _loadVozila();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Broj mesta za ${vozilo.registarskiBroj}: $result')),
-        );
+        AppSnackBar.info(context, 'Broj mesta za ${vozilo.registarskiBroj}: $result');
       }
     }
   }
@@ -603,9 +602,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
               Navigator.pop(context);
               if (success) {
                 _loadVozila();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ Sačuvano')),
-                );
+                AppSnackBar.success(context, '✅ Sačuvano');
               }
             },
             child: const Text('Sačuvaj'),
@@ -632,9 +629,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
       if (success) {
         _loadVozila();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ Sačuvano')),
-          );
+          AppSnackBar.success(context, '✅ Sačuvano');
         }
       }
     }
@@ -749,9 +744,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                         Navigator.pop(context);
                         if (success) {
                           _loadVozila();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('✅ Sačuvano')),
-                          );
+                          AppSnackBar.success(context, '✅ Sačuvano');
                         }
                       },
                       icon: const Icon(Icons.save),
@@ -969,9 +962,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                         Navigator.pop(context);
                         if (success) {
                           _loadVozila();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('✅ Sačuvano')),
-                          );
+                          AppSnackBar.success(context, '✅ Sačuvano');
                         }
                       },
                       icon: const Icon(Icons.save),

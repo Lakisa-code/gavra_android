@@ -4,6 +4,7 @@ import '../globals.dart';
 import '../models/adresa.dart';
 import '../services/adresa_supabase_service.dart';
 import '../theme.dart';
+import '../utils/app_snack_bar.dart';
 
 /// 📍 ADRESE SCREEN - Upravljanje dozvoljenim adresama
 /// Omogućava dodavanje, uređivanje i brisanje adresa direktno iz aplikacije
@@ -70,17 +71,11 @@ class _AdreseScreenState extends State<AdreseScreen> {
         await supabase.from('adrese').insert(insertData);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('✅ Adresa dodana'),
-                backgroundColor: Colors.green),
-          );
+          AppSnackBar.success(context, '✅ Adresa dodana');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-          );
+          AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }
@@ -120,17 +115,11 @@ class _AdreseScreenState extends State<AdreseScreen> {
         await supabase.from('adrese').update(updateData).eq('id', adresa.id);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('✅ Adresa ažurirana'),
-                backgroundColor: Colors.green),
-          );
+          AppSnackBar.success(context, '✅ Adresa ažurirana');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-          );
+          AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }
@@ -167,17 +156,11 @@ class _AdreseScreenState extends State<AdreseScreen> {
 
       if (mounted) {
         // Osvežavanje će se desiti automatski kroz stream
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('🗑️ Adresa obrisana'),
-              backgroundColor: Colors.orange),
-        );
+        AppSnackBar.warning(context, '🗑️ Adresa obrisana');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Greška: $e'), backgroundColor: Colors.red),
-        );
+        AppSnackBar.error(context, '❌ Greška: $e');
       }
     }
   }
@@ -571,9 +554,7 @@ class _AdresaDialogState extends State<_AdresaDialog> {
           onPressed: () {
             final naziv = _nazivController.text.trim();
             if (naziv.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Naziv je obavezan')),
-              );
+              AppSnackBar.warning(context, 'Naziv je obavezan');
               return;
             }
 
@@ -582,18 +563,14 @@ class _AdresaDialogState extends State<_AdresaDialog> {
             if (_latitudeController.text.trim().isNotEmpty) {
               latitude = double.tryParse(_latitudeController.text.trim());
               if (latitude == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nevažeća latitude vrednost')),
-                );
+                AppSnackBar.error(context, 'Nevažeća latitude vrednost');
                 return;
               }
             }
             if (_longitudeController.text.trim().isNotEmpty) {
               longitude = double.tryParse(_longitudeController.text.trim());
               if (longitude == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nevažeća longitude vrednost')),
-                );
+                AppSnackBar.error(context, 'Nevažeća longitude vrednost');
                 return;
               }
             }
