@@ -100,12 +100,13 @@ BEGIN
         END IF;
     END IF;
 
-    -- Za otkazano → obavijesti sve vozače
+    -- Za otkazano → obavijesti sve vozače (osim onog koji je otkazao)
     IF NEW.status = 'otkazano' THEN
         SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
         INTO v_tokens
         FROM push_tokens
-        WHERE user_id IN (SELECT ime FROM vozaci);
+        WHERE user_id IN (SELECT ime FROM vozaci)
+          AND user_id IS DISTINCT FROM NEW.cancelled_by;
 
         IF v_tokens IS NOT NULL AND jsonb_array_length(v_tokens) > 0 THEN
             SELECT putnik_ime INTO v_putnik_ime FROM registrovani_putnici WHERE id = NEW.putnik_id;

@@ -658,6 +658,7 @@ class PutnikService {
               'status': status,
               'processed_at': DateTime.now().toUtc().toIso8601String(),
               'updated_at': DateTime.now().toUtc().toIso8601String(),
+              if (driver != null) 'cancelled_by': driver,
             })
             .eq('id', requestId)
             .select();
@@ -696,6 +697,7 @@ class PutnikService {
               'status': status,
               'processed_at': DateTime.now().toUtc().toIso8601String(),
               'updated_at': DateTime.now().toUtc().toIso8601String(),
+              if (driver != null) 'cancelled_by': driver,
             })
             .match({
               'putnik_id': id.toString(),
@@ -717,6 +719,7 @@ class PutnikService {
               'status': status,
               'processed_at': DateTime.now().toUtc().toIso8601String(),
               'updated_at': DateTime.now().toUtc().toIso8601String(),
+              if (driver != null) 'cancelled_by': driver,
             })
             .match({
               'putnik_id': id.toString(),
@@ -739,6 +742,7 @@ class PutnikService {
             'status': status,
             'processed_at': DateTime.now().toUtc().toIso8601String(),
             'updated_at': DateTime.now().toUtc().toIso8601String(),
+            if (driver != null) 'cancelled_by': driver,
           })
           .match({
             'putnik_id': id.toString(),
