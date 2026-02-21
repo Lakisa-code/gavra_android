@@ -18,7 +18,7 @@ import '../services/vreme_vozac_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 import '../utils/card_color_helper.dart';
-import '../utils/vozac_boja.dart';
+import '../utils/vozac_cache.dart';
 
 /// Widget za prikaz putnik kartice sa podrškom za mesecne i dnevne putnike
 
@@ -1456,8 +1456,10 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Pokupljen: ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.getSync(_putnik.pokupioVozac ?? _putnik.vozac),
-                            fontWeight: FontWeight.bold, // Promenjeno sa w500
+                            color: VozacCache.getColorByUuid(_putnik.pokupioVozacId) != Colors.grey
+                                ? VozacCache.getColorByUuid(_putnik.pokupioVozacId)
+                                : VozacCache.getColor(_putnik.pokupioVozac ?? _putnik.vozac),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       // Placeno info
@@ -1468,7 +1470,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.getSync(_putnik.naplatioVozac),
+                              color: VozacCache.getColorByUuid(_putnik.naplatioVozacId) != Colors.grey
+                                  ? VozacCache.getColorByUuid(_putnik.naplatioVozacId)
+                                  : VozacCache.getColor(_putnik.naplatioVozac),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1481,8 +1485,10 @@ class _PutnikCardState extends State<PutnikCard> {
                           style: TextStyle(
                             fontSize: 13,
                             color: (_putnik.otkazaoVozac == null || _putnik.otkazaoVozac == 'Putnik')
-                                ? Colors.red.shade900 // Jača crvena za putnika koji sam otkazuje
-                                : VozacBoja.getSync(_putnik.otkazaoVozac),
+                                ? Colors.red.shade900
+                                : (VozacCache.getColorByUuid(_putnik.otkazaoVozacId) != Colors.grey
+                                    ? VozacCache.getColorByUuid(_putnik.otkazaoVozacId)
+                                    : VozacCache.getColor(_putnik.otkazaoVozac)),
                             fontWeight: FontWeight.w600,
                           ),
                         ),

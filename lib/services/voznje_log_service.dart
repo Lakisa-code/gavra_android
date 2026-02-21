@@ -6,8 +6,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../models/voznje_log.dart';
 import '../utils/grad_adresa_validator.dart';
+import '../utils/vozac_cache.dart';
 import 'realtime/realtime_manager.dart';
-import 'vozac_mapping_service.dart';
+import 'vozac_mapping_service.dart'; // backwards compat
 
 /// Servis za upravljanje istorijom vožnji
 /// MINIMALNA tabela: putnik_id, datum, tip (voznja/otkazivanje/uplata), iznos, vozac_id
@@ -835,15 +836,11 @@ class VoznjeLogService {
       final String? gradKod = grad != null ? (GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc') : null;
       final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
-      // ✅ Dohvati vozac_ime direktno iz baze (garantovano)
+      // Dohvati vozac_ime iz cache-a (bez async DB query)
+      // Fallback: DB trigger sync_vozac_ime_on_log će popuniti ako ostane null
       String? vozacIme = vozacImeOverride;
       if (vozacIme == null && vozacId != null && vozacId.isNotEmpty) {
-        try {
-          final vozacData = await _supabase.from('vozaci').select('ime').eq('id', vozacId).maybeSingle();
-          vozacIme = vozacData?['ime'] as String?;
-        } catch (e) {
-          debugPrint('⚠️ Greška pri dohvatanju vozac_ime: $e');
-        }
+        vozacIme = VozacCache.getImeByUuid(vozacId);
       }
 
       await _supabase.from('voznje_log').insert({

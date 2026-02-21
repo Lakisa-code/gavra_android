@@ -77,6 +77,9 @@ class Putnik {
     this.tipPutnika, // ?? Tip putnika: radnik, ucenik, dnevni
     this.otkazanZaPolazak = false, // ?? Da li je otkazan za ovaj specificni polazak (grad)
     this.requestId, // 🆕 ID konkretnog seat_request zapisa
+    this.pokupioVozacId, // UUID vozača koji je pokupljanje izvršio
+    this.naplatioVozacId, // UUID vozača koji je naplatio
+    this.otkazaoVozacId, // UUID vozača koji je otkazao
   });
 
   factory Putnik.fromMap(Map<String, dynamic> map) {
@@ -153,6 +156,9 @@ class Putnik {
   final String? tipPutnika; // ?? Tip putnika: radnik, ucenik, dnevni
   final bool otkazanZaPolazak; // ?? Da li je otkazan za ovaj polazak
   final String? requestId; // 🆕 ID konkretnog seat_request-a
+  final String? pokupioVozacId; // UUID vozača koji je pokupljanje izvršio
+  final String? naplatioVozacId; // UUID vozača koji je naplatio
+  final String? otkazaoVozacId; // UUID vozača koji je otkazao
 
   factory Putnik.fromSeatRequest(Map<String, dynamic> req, {Map<String, dynamic>? profile}) {
     // Ako je profil join-ovan u samom requestu (Supabase .select('*, registrovani_putnici(...)'))
@@ -240,6 +246,9 @@ class Putnik {
       pokupioVozac: req['pokupioVozac'],
       naplatioVozac: req['naplatioVozac'],
       otkazaoVozac: req['otkazaoVozac'],
+      pokupioVozacId: req['pokupioVozacId'] as String?,
+      naplatioVozacId: req['naplatioVozacId'] as String?,
+      otkazaoVozacId: req['otkazaoVozacId'] as String?,
       cena: req['cena']?.toDouble(), // ✅ NOVO: Iznos plaćanja iz voznje_log
       obrisan: false,
       dodeljenVozac: dodeljenVozacFinal,
@@ -483,6 +492,9 @@ class Putnik {
     String? tipPutnika,
     bool? otkazanZaPolazak,
     String? requestId,
+    String? pokupioVozacId,
+    String? naplatioVozacId,
+    String? otkazaoVozacId,
   }) {
     return Putnik(
       id: id ?? this.id,
@@ -515,6 +527,9 @@ class Putnik {
       tipPutnika: tipPutnika ?? this.tipPutnika,
       otkazanZaPolazak: otkazanZaPolazak ?? this.otkazanZaPolazak,
       requestId: requestId ?? this.requestId,
+      pokupioVozacId: pokupioVozacId ?? this.pokupioVozacId,
+      naplatioVozacId: naplatioVozacId ?? this.naplatioVozacId,
+      otkazaoVozacId: otkazaoVozacId ?? this.otkazaoVozacId,
     );
   }
 

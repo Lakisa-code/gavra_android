@@ -22,14 +22,15 @@ import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtim
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/slobodna_mesta_service.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
-import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
+import 'services/vozac_mapping_service.dart'; // 🗂️ backwards compat
 import 'services/vozac_service.dart';
 import 'services/vozila_service.dart';
 import 'services/voznje_log_service.dart';
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
-import 'utils/vozac_boja.dart'; // 🎨 VOZAČ BOJE - cache mehanizam
+import 'utils/vozac_boja.dart'; // 🎨 backwards compat (wraps VozacCache)
+import 'utils/vozac_cache.dart'; // 🎯 Jedinstven vozač cache
 
 // 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
 extension ColorCompat on Color {
@@ -161,19 +162,16 @@ Future<void> _initAppServices() async {
   // Sada nije potrebna provera - Supabase je već inicijalizovan u main() liniji 69
   if (kDebugMode) debugPrint('[Main] Starting app services...');
 
-  // PRVO - Inicijalizuj vozač mapiranje (MORA biti pre stream-ova!)
+  // PRVO - Inicijalizuj vozač cache (MORA biti pre stream-ova!)
   try {
-    await VozacMappingService.initialize().timeout(const Duration(seconds: 5));
-    if (kDebugMode) debugPrint('[Main] VozacMappingService initialized');
+    await VozacCache.initialize().timeout(const Duration(seconds: 5));
+    if (kDebugMode) debugPrint('[Main] VozacCache initialized');
   } catch (e) {
-    if (kDebugMode) debugPrint('[Main] VozacMappingService init failed: $e');
+    if (kDebugMode) debugPrint('[Main] VozacCache init failed: $e');
   }
 
   // Ostali servisi se mogu pokrenuti paralelno
   final services = [
-    VozacBoja.initialize().timeout(const Duration(seconds: 5)).catchError((e) {
-      if (kDebugMode) debugPrint('[Main] VozacBoja init timeout: $e');
-    }),
     AppSettingsService.initialize().timeout(const Duration(seconds: 3)).catchError((e) {
       if (kDebugMode) debugPrint('[Main] AppSettings init timeout: $e');
     }),
