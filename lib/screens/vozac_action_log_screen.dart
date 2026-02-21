@@ -3,9 +3,8 @@ import 'package:intl/intl.dart';
 
 import '../globals.dart';
 import '../models/voznje_log.dart';
-import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
-import '../utils/vozac_boja.dart';
+import '../utils/vozac_cache.dart';
 
 /// 📋 DNEVNIK AKCIJA VOZAČA
 /// Prikazuje sve akcije vozača za određeni dan
@@ -68,7 +67,7 @@ class _VozacActionLogScreenState extends State<VozacActionLogScreen> with Single
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: VozacBoja.getSync(widget.vozacIme),
+                  primary: VozacCache.getColor(widget.vozacIme),
                   surface: Theme.of(context).scaffoldBackgroundColor,
                 ),
           ),
@@ -162,9 +161,9 @@ class _VozacActionLogScreenState extends State<VozacActionLogScreen> with Single
 
   @override
   Widget build(BuildContext context) {
-    final vozacColor = VozacBoja.getSync(widget.vozacIme);
+    final vozacColor = VozacCache.getColor(widget.vozacIme);
     final datumStr = _selectedDate.toIso8601String().split('T')[0];
-    final vozacUuid = VozacMappingService.getVozacUuidSync(widget.vozacIme);
+    final vozacUuid = VozacCache.getUuidByIme(widget.vozacIme);
 
     return Scaffold(
       appBar: AppBar(

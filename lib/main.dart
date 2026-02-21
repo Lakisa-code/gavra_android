@@ -22,14 +22,12 @@ import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtim
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/slobodna_mesta_service.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
-import 'services/vozac_mapping_service.dart'; // 🗂️ backwards compat
 import 'services/vozac_service.dart';
 import 'services/vozila_service.dart';
 import 'services/voznje_log_service.dart';
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
-import 'utils/vozac_boja.dart'; // 🎨 backwards compat (wraps VozacCache)
 import 'utils/vozac_cache.dart'; // 🎯 Jedinstven vozač cache
 
 // 🎨 Extension za kompatibilnost sa starijim Flutter verzijama

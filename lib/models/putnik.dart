@@ -1,7 +1,7 @@
 import '../constants/day_constants.dart';
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/putnik_vozac_dodela_service.dart'; // Za per-putnik individualno dodeljivanje
-import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
+import '../utils/vozac_cache.dart'; // DODATO za UUID<->ime konverziju
 import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
 import '../utils/registrovani_helpers.dart';
 
@@ -454,7 +454,7 @@ class Putnik {
   // ? CENTRALIZOVANO: Konvertuj UUID u ime vozaca sa fallback-om
   static String? _getVozacIme(String? uuidOrName) {
     if (uuidOrName == null || uuidOrName.isEmpty) return null;
-    return VozacMappingService.getNameFromUuidOrNameSync(uuidOrName);
+    return VozacCache.resolveIme(uuidOrName);
   }
 
   // -----------------------------------------------------------------------

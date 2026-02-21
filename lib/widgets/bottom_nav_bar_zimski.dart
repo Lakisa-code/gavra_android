@@ -5,7 +5,7 @@ import '../constants/day_constants.dart';
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart'; // 🆕 Za border boju dodeljenog vozača
 import '../theme.dart';
-import '../utils/vozac_boja.dart'; // 🆕 Za border boju dodeljenog vozača
+import '../utils/vozac_cache.dart'; // 🆕 Za border boju dodeljenog vozača
 
 class BottomNavBarZimski extends StatefulWidget {
   const BottomNavBarZimski({
@@ -220,7 +220,7 @@ class _PolazakRow extends StatelessWidget {
     final danKratica = _getDanKratica(selectedDan!);
     final vozacIme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
     if (vozacIme == null) return null;
-    return VozacBoja.getSync(vozacIme);
+    return VozacCache.getColor(vozacIme);
   }
 
   @override

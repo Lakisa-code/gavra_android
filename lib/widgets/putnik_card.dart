@@ -13,7 +13,6 @@ import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/unified_geocoding_service.dart';
-import '../services/vozac_mapping_service.dart';
 import '../services/vreme_vozac_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
@@ -99,8 +98,8 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // 💰 UNIVERZALNA METODA ZA PLAĆANJE - custom cena za sve tipove putnika
   Future<void> _handlePayment() async {
-    // 🛡️ FIX: Validacija vozača pre pokušaja plaćanja - koristi VozacMappingService
-    final vozacUuid = await VozacMappingService.getVozacUuid(widget.currentDriver);
+    // 🛡️ FIX: Validacija vozača pre pokušaja plaćanja - koristi VozacCache
+    final vozacUuid = VozacCache.getUuidByIme(widget.currentDriver);
     if (vozacUuid == null) {
       if (mounted) {
         AppSnackBar.error(context, 'Greška: Vozač nije definisan u sistemu');

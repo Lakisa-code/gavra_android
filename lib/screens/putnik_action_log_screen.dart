@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 
 import '../globals.dart';
 import '../models/voznje_log.dart';
-import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
+import '../utils/vozac_cache.dart';
 
 /// 👤 DNEVNIK AKCIJA PUTNIKA
 /// Search bar za izbor putnika → prikazuje sve akcije po datumu
@@ -139,7 +139,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
   /// Dohvati ime vozača iz UUID-a
   String _getVozacIme(String? vozacId) {
     if (vozacId == null || vozacId.isEmpty) return '—';
-    return VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId.substring(0, 8);
+    return VozacCache.getImeByUuid(vozacId) ?? vozacId.substring(0, 8);
   }
 
   /// Dohvati grad i vreme iz meta

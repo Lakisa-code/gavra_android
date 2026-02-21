@@ -4,7 +4,7 @@ import '../services/daily_checkin_service.dart';
 import '../services/putnik_service.dart';
 import '../services/statistika_service.dart';
 import '../services/voznje_log_service.dart';
-import '../utils/vozac_boja.dart';
+import '../utils/vozac_cache.dart';
 
 /// 🎯 MODEL ZA PODATKE POPISA
 class PopisData {
@@ -134,7 +134,7 @@ class PopisService {
 
   /// Prikaži popis dialog i vrati true ako korisnik želi da sačuva
   static Future<bool> showPopisDialog(BuildContext context, PopisData data, {bool isAutomatic = false}) async {
-    final vozacColor = VozacBoja.getSync(data.vozac);
+    final vozacColor = VozacCache.getColor(data.vozac);
 
     final result = await showDialog<bool>(
       context: context,

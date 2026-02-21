@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../globals.dart';
+import '../utils/vozac_cache.dart';
 import 'putnik_service.dart';
 import 'statistika_service.dart';
-import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart';
 
 class DailyCheckInService {
@@ -17,8 +17,7 @@ class DailyCheckInService {
 
     try {
       // 👤 Normalizuj ime vozača koristeći mapping
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = VozacCache.resolveIme(vozac) ?? vozac;
 
       final response = await supabase
           .from('daily_reports')
@@ -26,7 +25,7 @@ class DailyCheckInService {
           .eq('vozac', zvanicnoIme)
           .eq('datum', todayStr)
           .maybeSingle()
-          .timeout(const Duration(seconds: 15)); // Povećan timeout na 15s
+          .timeout(const Duration(seconds: 15));
 
       return response != null;
     } catch (e) {
@@ -46,8 +45,7 @@ class DailyCheckInService {
     final today = date ?? DateTime.now();
 
     // 👤 Normalizuj ime vozača koristeći mapping
-    final zvanicnoIme =
-        await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+    final zvanicnoIme = VozacCache.resolveIme(vozac) ?? vozac;
 
     // 🌐 DIREKTNO U BAZU - upsert će ažurirati ako već postoji za danas
     try {
@@ -64,9 +62,7 @@ class DailyCheckInService {
   static Future<bool> isPopisSavedToday(String vozac, {DateTime? date}) async {
     try {
       // 👤 Normalizuj ime
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
-
+      final zvanicnoIme = VozacCache.resolveIme(vozac) ?? vozac;
       final targetDate = date ?? DateTime.now();
       final today = targetDate.toIso8601String().split('T')[0];
       final data = await supabase
@@ -94,7 +90,7 @@ class DailyCheckInService {
 
     while (retryCount < maxRetries) {
       try {
-        final vozacId = await VozacMappingService.getVozacUuid(vozac);
+        final vozacId = VozacCache.getUuidByIme(vozac);
         final updateData = {
           'vozac': vozac,
           'vozac_id': vozacId,
@@ -136,8 +132,7 @@ class DailyCheckInService {
   ) async {
     try {
       // 👤 Normalizuj ime vozača
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = VozacCache.resolveIme(vozac) ?? vozac;
 
       await _savePopisToSupabase(zvanicnoIme, popisPodaci, datum);
     } catch (e) {
@@ -149,8 +144,7 @@ class DailyCheckInService {
   static Future<Map<String, dynamic>?> getLastDailyReport(String vozac) async {
     try {
       // 👤 Normalizuj ime
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = VozacCache.resolveIme(vozac) ?? vozac;
 
       final data = await supabase
           .from('daily_reports')
@@ -176,8 +170,7 @@ class DailyCheckInService {
   static Future<Map<String, dynamic>?> getDailyReportForDate(String vozac, DateTime datum) async {
     try {
       // 👤 Normalizuj ime
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = VozacCache.resolveIme(vozac) ?? vozac;
 
       final datumStr = datum.toIso8601String().split('T')[0];
       final data =
@@ -308,7 +301,7 @@ class DailyCheckInService {
 
     while (retryCount < maxRetries) {
       try {
-        final vozacId = await VozacMappingService.getVozacUuid(vozac);
+        final vozacId = VozacCache.getUuidByIme(vozac);
         await supabase.from('daily_reports').upsert(
           {
             'vozac': vozac,
@@ -373,8 +366,7 @@ class DailyCheckInService {
   static Future<double> getLastKm(String vozac) async {
     try {
       // 👤 Normalizuj ime
-      final zvanicnoIme =
-          await VozacMappingService.getVozacIme(await VozacMappingService.getVozacUuid(vozac) ?? '') ?? vozac;
+      final zvanicnoIme = VozacCache.resolveIme(vozac) ?? vozac;
 
       final data = await supabase
           .from('daily_reports')

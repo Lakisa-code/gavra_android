@@ -24,7 +24,7 @@ import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/putnik_helpers.dart'; // 🛠️ Centralizovani helperi
 import '../utils/text_utils.dart'; // 📝 Za TextUtils.isStatusActive
-import '../utils/vozac_boja.dart'; // 🎨 Za validaciju vozača
+import '../utils/vozac_cache.dart'; // 🎨 Za validaciju vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
@@ -586,14 +586,9 @@ class _VozacScreenState extends State<VozacScreen> {
   // ?? OPTIMIZACIJA RUTE - IDENTICNO KAO DANAS SCREEN
   void _optimizeCurrentRoute(List<Putnik> putnici, {bool isAlreadyOptimized = false}) async {
     // Proveri da li je ulogovan i valjan vozac
-    if (_currentDriver == null || !VozacBoja.isValidDriverSync(_currentDriver)) {
+    if (_currentDriver == null || !VozacCache.isValidIme(_currentDriver)) {
       if (mounted) {
         AppSnackBar.warning(context, 'Morate biti ulogovani i ovlašćeni da biste koristili optimizaciju rute.');
-
-
-
-
-
       }
       return;
     }
@@ -626,7 +621,8 @@ class _VozacScreenState extends State<VozacScreen> {
       final routeString = _optimizedRoute.take(3).map((p) => p.adresa?.split(',').first ?? p.ime).join(' ? ');
 
       if (mounted) {
-        AppSnackBar.success(context, '📍 Lista putnika optimizovana (server) za $_selectedGrad $_selectedVreme!\n➡️ Sledeći: $routeString${_optimizedRoute.length > 3 ? "..." : ""}');
+        AppSnackBar.success(context,
+            '📍 Lista putnika optimizovana (server) za $_selectedGrad $_selectedVreme!\n➡️ Sledeći: $routeString${_optimizedRoute.length > 3 ? "..." : ""}');
       }
       return;
     }
@@ -811,7 +807,7 @@ class _VozacScreenState extends State<VozacScreen> {
           return true;
         }).toList();
 
-        final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriverSync(_currentDriver);
+        final bool isDriverValid = _currentDriver != null && VozacCache.isValidIme(_currentDriver);
         final bool canPress = !_isOptimizing && !_isLoading && isDriverValid;
 
         final baseColor = _isGpsTracking ? Colors.orange : (_isRouteOptimized ? Colors.green : Colors.white);
@@ -924,7 +920,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // ??? DUGME ZA NAVIGACIJU - OTVARA HERE WeGo SA REDOSLEDOM IZ OPTIMIZOVANE RUTE
   Widget _buildMapsButton() {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
-    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriverSync(_currentDriver);
+    final bool isDriverValid = _currentDriver != null && VozacCache.isValidIme(_currentDriver);
     final bool canPress = hasOptimizedRoute && isDriverValid;
     final baseColor = hasOptimizedRoute ? Colors.blue : Colors.white;
 
@@ -1343,7 +1339,7 @@ class _VozacScreenState extends State<VozacScreen> {
     // ?? Izracunaj boju za dan (ako smo u admin preview modu)
     final isPreview = widget.previewAsDriver != null && widget.previewAsDriver!.isNotEmpty;
     final driverColor =
-        isPreview ? VozacBoja.getSync(widget.previewAsDriver!) : Theme.of(context).colorScheme.onPrimary;
+        isPreview ? VozacCache.getColor(widget.previewAsDriver!) : Theme.of(context).colorScheme.onPrimary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

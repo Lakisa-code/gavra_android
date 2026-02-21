@@ -14,12 +14,11 @@ import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog gr
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
-import '../services/vozac_mapping_service.dart'; // 🗺️ VOZAC MAPIRANJE
 import '../services/vozac_service.dart'; // 🛠️ VOZAC SERVIS
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
-import '../utils/vozac_boja.dart';
+import '../utils/vozac_cache.dart';
 import '../widgets/dug_button.dart';
 import 'adrese_screen.dart'; // 🏘️ Upravljanje adresama
 import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozacima
@@ -64,7 +63,7 @@ class _AdminScreenState extends State<AdminScreen> {
     _selectedDan = todayName;
 
     // 🗺️ FORSIRANA INICIJALIZACIJA VOZAC MAPIRANJA
-    VozacMappingService.refreshMapping();
+    VozacCache.refresh();
 
     _loadCurrentDriver();
     _loadBrojPinZahteva(); // 🔑 Učitaj broj PIN zahteva
@@ -376,9 +375,11 @@ class _AdminScreenState extends State<AdminScreen> {
 
                       if (mounted) {
                         Navigator.pop(context);
-                        AppSnackBar.success(context, selectedVreme == 'Sva vremena'
-                            ? '✅ Uspešno uklonjeno $count putnika za ceo dan ($selectedGrad) - $selectedDan'
-                            : '✅ Uspešno uklonjeno $count putnika za $selectedVreme ($selectedGrad) - $selectedDan');
+                        AppSnackBar.success(
+                            context,
+                            selectedVreme == 'Sva vremena'
+                                ? '✅ Uspešno uklonjeno $count putnika za ceo dan ($selectedGrad) - $selectedDan'
+                                : '✅ Uspešno uklonjeno $count putnika za $selectedVreme ($selectedGrad) - $selectedDan');
                       }
                     },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
@@ -1236,7 +1237,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   pazar,
                 );
 
-                final Map<String, Color> vozacBoje = VozacBoja.bojeSync;
+                final Map<String, Color> vozacBoje = VozacCache.bojeSync;
                 final List<String> vozaciRedosled = [
                   'Bruda',
                   'Bilevski',

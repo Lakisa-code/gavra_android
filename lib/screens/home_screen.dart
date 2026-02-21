@@ -36,7 +36,7 @@ import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
 import '../utils/text_utils.dart';
-import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
+import '../utils/vozac_cache.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
@@ -190,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       await _initializeCurrentDriver();
       // 🔒 If the current driver is missing or invalid, redirect to welcome/login
-      if (_currentDriver == null || !VozacBoja.isValidDriverSync(_currentDriver)) {
+      if (_currentDriver == null || !VozacCache.isValidIme(_currentDriver)) {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
@@ -1634,18 +1634,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // STRIKTNA VALIDACIJA VOZAČA - PROVERI NULL, EMPTY I VALID DRIVER
                                         if (_currentDriver == null ||
                                             _currentDriver!.isEmpty ||
-                                            !VozacBoja.isValidDriverSync(_currentDriver)) {
+                                            !VozacCache.isValidIme(_currentDriver)) {
                                           if (!context.mounted) return;
                                           AppSnackBar.error(context,
                                               '❌ GREŠKA: Vozač "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.');
                                           return;
                                         }
 
-                                        // ✅ Validacija vozača koristi VozacBoja.isValidDriver()
+                                        // ✅ Validacija vozača koristi VozacCache.isValidIme()
 
                                         // 🎫 PROVERA KAPACITETA - da li ima slobodnih mesta
                                         // ⚠️ SAMO ZA PUTNIKE - vozači mogu dodavati bez ograničenja
-                                        final isVozac = VozacBoja.isValidDriverSync(_currentDriver);
+                                        final isVozac = VozacCache.isValidIme(_currentDriver);
                                         if (!isVozac) {
                                           final gradKey = _selectedGrad.toLowerCase().contains('bela') ? 'BC' : 'VS';
                                           final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
@@ -2172,7 +2172,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     height: 33,
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: VozacBoja.getSync(_currentDriver), // opaque (100%)
+                                      color: VozacCache.getColor(_currentDriver), // opaque (100%)
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: Theme.of(context).glassBorder,

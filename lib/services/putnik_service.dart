@@ -9,7 +9,7 @@ import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
 import 'realtime/realtime_manager.dart';
 import 'seat_request_service.dart';
-import 'vozac_mapping_service.dart';
+import '../utils/vozac_cache.dart';
 import 'voznje_log_service.dart';
 
 class _StreamParams {
@@ -637,7 +637,7 @@ class PutnikService {
     try {
       String? vozacUuid;
       if (driver != null) {
-        vozacUuid = await VozacMappingService.getVozacUuid(driver);
+        vozacUuid = VozacCache.getUuidByIme(driver);
       }
 
       await VoznjeLogService.logGeneric(
@@ -823,7 +823,7 @@ class PutnikService {
   Future<void> prebacijPutnikaVozacu(String id, String? vozac) async {
     String? vozacUuid;
     if (vozac != null) {
-      vozacUuid = await VozacMappingService.getVozacUuid(vozac);
+      vozacUuid = VozacCache.getUuidByIme(vozac);
     }
     await supabase
         .from('registrovani_putnici')

@@ -14,7 +14,7 @@ import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/theme_manager.dart';
 import '../services/vozac_service.dart';
-import '../utils/vozac_boja.dart';
+import '../utils/vozac_cache.dart';
 import 'home_screen.dart';
 import 'o_nama_screen.dart';
 import 'registrovani_putnik_login_screen.dart';
@@ -151,15 +151,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       final email = rememberedDevice['email']!;
       // 🔄 FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
       try {
-        final driverName = await VozacBoja.getVozacForEmail(email).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () {
-            debugPrint('⏱️ [WelcomeScreen] VozacBoja.getVozacForEmail timeout');
-            return null;
-          },
-        );
+        final driverName = VozacCache.getImeByEmail(email);
         // Ne dozvoli auto-login ako vozač nije prepoznat
-        if (driverName == null || !VozacBoja.isValidDriverSync(driverName)) {
+        if (driverName == null || !VozacCache.isValidIme(driverName)) {
           // Ostani na welcome/login i ne auto-login
           return;
         }
@@ -283,8 +277,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       final rememberedEmail = rememberedDevice['email']!;
       final rememberedName = rememberedDevice['driverName']!;
 
-      // 🔄 FORSIRAJ REFRESH: Koristi VozacBoja mapiranje za ispravno ime
-      final correctName = await VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
+      // 🔄 FORSIRAJ REFRESH: Koristi VozacCache mapiranje za ispravno ime
+      final correctName = VozacCache.getImeByEmail(rememberedEmail) ?? rememberedName;
 
       if (correctName == driverName) {
         // 👆 BIOMETRIJA: Ako je UKLJUČENA i dostupna, zahtevaj potvrdu pre auto-logina

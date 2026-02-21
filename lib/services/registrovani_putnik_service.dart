@@ -7,9 +7,9 @@ import '../constants/day_constants.dart';
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../utils/grad_adresa_validator.dart';
+import '../utils/vozac_cache.dart';
 import 'realtime/realtime_manager.dart';
 import 'slobodna_mesta_service.dart';
-import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart'; // 🔄 DODATO za istoriju vožnji
 
 /// Servis za upravljanje mesečnim putnicima (normalizovana šema)
@@ -638,9 +638,9 @@ class RegistrovaniPutnikService {
         } else {
           // Konvertuj ime u UUID
           try {
-            await VozacMappingService.initialize();
-            var converted = VozacMappingService.getVozacUuidSync(vozacIme);
-            converted ??= await VozacMappingService.getVozacUuid(vozacIme);
+            // VozacCache je već inicijalizovan pri startu
+            var converted = VozacCache.getUuidByIme(vozacIme);
+            converted ??= await VozacCache.getUuidByImeAsync(vozacIme);
             if (converted != null && _isValidUuid(converted)) {
               validVozacId = converted;
             }
@@ -766,11 +766,11 @@ class RegistrovaniPutnikService {
     try {
       final response = await _supabase.from('vozaci').select('ime').eq('id', vozacUuid).limit(1).maybeSingle();
       if (response == null) {
-        return VozacMappingService.getVozacIme(vozacUuid);
+        return VozacCache.getImeByUuid(vozacUuid);
       }
       return response['ime'] as String?;
     } catch (e) {
-      return VozacMappingService.getVozacIme(vozacUuid);
+      return VozacCache.getImeByUuid(vozacUuid);
     }
   }
 
@@ -851,7 +851,7 @@ class RegistrovaniPutnikService {
         if (putnik == null) return null;
         final vozacId = putnik.vozacId;
         if (vozacId != null && vozacId.isNotEmpty) {
-          return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          return VozacCache.getImeByUuid(vozacId);
         }
         return null;
       } catch (e) {
@@ -883,7 +883,7 @@ class RegistrovaniPutnikService {
       final iznos = (response['iznos'] as num?)?.toDouble() ?? 0.0;
       String? vozacIme;
       if (vozacId != null && vozacId.isNotEmpty) {
-        vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+        vozacIme = VozacCache.getImeByUuid(vozacId);
       }
 
       yield {

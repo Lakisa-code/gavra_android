@@ -8,7 +8,6 @@ import '../models/voznje_log.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_cache.dart';
 import 'realtime/realtime_manager.dart';
-import 'vozac_mapping_service.dart'; // backwards compat
 
 /// Servis za upravljanje istorijom vožnji
 /// MINIMALNA tabela: putnik_id, datum, tip (voznja/otkazivanje/uplata), iznos, vozac_id
@@ -30,7 +29,7 @@ class VoznjeLogService {
 
     try {
       // Dohvati UUID vozača
-      final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+      final vozacUuid = VozacCache.getUuidByIme(vozacIme);
       if (vozacUuid == null || vozacUuid.isEmpty) {
         return {'voznje': 0, 'otkazivanja': 0, 'uplate': 0, 'mesecne': 0, 'pazar': 0.0};
       }
@@ -202,11 +201,11 @@ class VoznjeLogService {
           // ✅ FIX: Ažuriraj iznos i vozac_ime ako je tip uplata (ima prioritet nad voznja)
           if (tip == 'uplata' || tip == 'uplata_dnevna') {
             existing['iznos'] = l['iznos'];
-            final vozacIme = l['vozac_ime'] ?? VozacMappingService.getNameFromUuidOrNameSync(l['vozac_id']);
+            final vozacIme = l['vozac_ime'] ?? VozacCache.resolveIme(l['vozac_id']);
             existing['vozac_ime'] = vozacIme;
           }
         } else {
-          final vozacIme = l['vozac_ime'] ?? VozacMappingService.getNameFromUuidOrNameSync(l['vozac_id']);
+          final vozacIme = l['vozac_ime'] ?? VozacCache.resolveIme(l['vozac_id']);
           res[key] = {
             'tip': tip,
             'tipovi': [tip],
@@ -255,7 +254,7 @@ class VoznjeLogService {
   /// 📊 STREAM STATISTIKA ZA POPIS - Realtime verzija
   static Stream<Map<String, dynamic>> streamStatistikePoVozacu({required String vozacIme, required DateTime datum}) {
     final datumStr = datum.toIso8601String().split('T')[0];
-    final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+    final vozacUuid = VozacCache.getUuidByIme(vozacIme);
 
     if (vozacUuid == null || vozacUuid.isEmpty) {
       return Stream.value({'voznje': 0, 'otkazivanja': 0, 'uplate': 0, 'pazar': 0.0});
@@ -298,7 +297,7 @@ class VoznjeLogService {
   /// 📊 STREAM BROJA DUŽNIKA - Realtime verzija
   static Stream<int> streamBrojDuznikaPoVozacu({required String vozacIme, required DateTime datum}) {
     final datumStr = datum.toIso8601String().split('T')[0];
-    final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+    final vozacUuid = VozacCache.getUuidByIme(vozacIme);
 
     if (vozacUuid == null || vozacUuid.isEmpty) {
       return Stream.value(0);
@@ -341,7 +340,7 @@ class VoznjeLogService {
   /// Dužnik = tip='dnevni', ima 'voznja' zapis ali NEMA 'uplata' zapis za isti datum
   static Future<int> getBrojDuznikaPoVozacu({required String vozacIme, required DateTime datum}) async {
     try {
-      final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+      final vozacUuid = VozacCache.getUuidByIme(vozacIme);
       if (vozacUuid == null || vozacUuid.isEmpty) return 0;
 
       final datumStr = datum.toIso8601String().split('T')[0];
@@ -433,7 +432,7 @@ class VoznjeLogService {
 
         String? vozacIme;
         if (vozacId != null && vozacId.isNotEmpty) {
-          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          vozacIme = VozacCache.getImeByUuid(vozacId);
         }
 
         result[putnikId] = {'datum': datum, 'vozacIme': vozacIme};
@@ -516,7 +515,7 @@ class VoznjeLogService {
         // Konvertuj UUID u ime vozača
         String vozacIme = vozacId ?? '';
         if (vozacId != null && vozacId.isNotEmpty) {
-          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
+          vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
         }
         if (vozacIme.isEmpty) continue;
 
@@ -621,7 +620,7 @@ class VoznjeLogService {
         String vozacIme = vozacId ?? '';
         if (vozacId != null && vozacId.isNotEmpty) {
           // Prvo pokušaj iz mapiranja
-          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
+          vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
         }
         if (vozacIme.isEmpty) continue;
 
@@ -643,7 +642,7 @@ class VoznjeLogService {
       // Dohvati UUID ako je prosleđeno ime
       String? vozacUuid = vozacImeIliUuid;
       if (!vozacImeIliUuid.contains('-')) {
-        vozacUuid = VozacMappingService.getVozacUuidSync(vozacImeIliUuid);
+        vozacUuid = VozacCache.getUuidByIme(vozacImeIliUuid);
       }
 
       final response = await _supabase
@@ -743,7 +742,7 @@ class VoznjeLogService {
         // Konvertuj UUID u ime vozača
         String vozacIme = vozacId ?? '';
         if (vozacId != null && vozacId.isNotEmpty) {
-          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId) ?? vozacId;
+          vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
         }
         if (vozacIme.isEmpty) continue;
 
@@ -759,7 +758,7 @@ class VoznjeLogService {
   /// 🕒 STREAM POSLEDNJIH AKCIJA - Za Dnevnik vozača
   /// ✅ ISPRAVKA: Uključuje i akcije putnika (gde je vozac_id NULL) ako su povezani sa ovim vozačem
   static Stream<List<VoznjeLog>> streamRecentLogs({required String vozacIme, int limit = 10}) {
-    final vozacUuid = VozacMappingService.getVozacUuidSync(vozacIme);
+    final vozacUuid = VozacCache.getUuidByIme(vozacIme);
     if (vozacUuid == null || vozacUuid.isEmpty) {
       return Stream.value([]);
     }

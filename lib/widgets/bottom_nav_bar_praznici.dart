@@ -5,7 +5,7 @@ import '../constants/day_constants.dart';
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart';
 import '../theme.dart';
-import '../utils/vozac_boja.dart';
+import '../utils/vozac_cache.dart';
 
 /// Bottom navigation bar za praznike/specijalne dane
 /// BC: 5:00, 6:00, 12:00, 13:00, 15:00
@@ -211,7 +211,7 @@ class _PolazakRow extends StatelessWidget {
     if (selectedDan == null) return null;
     final danKratica = _getDanKratica(selectedDan!);
     final vozac = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
-    if (vozac != null) return VozacBoja.getSync(vozac);
+    if (vozac != null) return VozacCache.getColor(vozac);
     return null;
   }
 

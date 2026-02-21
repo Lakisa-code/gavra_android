@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../globals.dart';
 import '../models/vozac.dart';
 import '../screens/welcome_screen.dart';
-import '../utils/vozac_boja.dart';
+import '../utils/vozac_cache.dart';
 import 'firebase_service.dart';
 import 'huawei_push_service.dart';
 import 'push_token_service.dart';
@@ -27,7 +27,7 @@ class AuthManager {
   /// Postavi trenutnog vozača (bez email auth-a)
   static Future<void> setCurrentDriver(String driverName) async {
     // Validacija da je vozač prepoznat
-    if (!(VozacBoja.isValidDriverSync(driverName))) {
+    if (!(VozacCache.isValidIme(driverName))) {
       throw ArgumentError('Vozač "$driverName" nije registrovan');
     }
 
@@ -45,30 +45,27 @@ class AuthManager {
       debugPrint('🔄 [AuthManager] Ažuriram token za vozača: $driverName');
 
       // Dohvati vozac_id direktno iz baze
-      Vozac? vozac = await VozacBoja.getVozac(driverName);
+      Vozac? vozac = VozacCache.getVozacByIme(driverName);
       String? vozacId = vozac?.id;
 
-      // Fallback: Ako VozacBoja nema podatke, probaj direktno iz baze
+      // Fallback: Ako VozacCache nema podatke, probaj direktno iz baze
       if (vozacId == null) {
-        debugPrint(
-            '🔄 [AuthManager] VozacBoja nema podatke, koristim direktno iz baze...');
+        debugPrint('🔄 [AuthManager] VozacCache nema podatke, koristim direktno iz baze...');
 
         // Direktno iz baze
         try {
-          vozac = await VozacBoja.getVozac(driverName);
+          vozac = VozacCache.getVozacByIme(driverName);
           vozacId = vozac?.id;
           if (vozacId != null) {
             debugPrint('🔄 [AuthManager] Vozac_id dobijen direktno: $vozacId');
           }
         } catch (e) {
-          debugPrint(
-              '⚠️ [AuthManager] VozacBoja inicijalizacija neuspešna: $e');
+          debugPrint('⚠️ [AuthManager] VozacBoja inicijalizacija neuspešna: $e');
         }
 
         // Ako i dalje nema podataka, probaj direktno iz baze
         if (vozacId == null) {
-          debugPrint(
-              '🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
+          debugPrint('🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
           try {
             final response = await supabase
                 .from('vozaci')
@@ -89,16 +86,14 @@ class AuthManager {
 
       // Registruj tokene samo ako je vozač uspešno identifikovan
       if (vozacId == null || vozacId.isEmpty || driverName.isEmpty) {
-        debugPrint(
-            '⚠️ [AuthManager] Vozač nije ulogovan ili identifikovan - preskačem registraciju tokena');
+        debugPrint('⚠️ [AuthManager] Vozač nije ulogovan ili identifikovan - preskačem registraciju tokena');
         return;
       }
 
       // 1. Pokušaj FCM token (Google/Samsung uređaji)
       final fcmToken = await FirebaseService.getFCMToken();
       if (fcmToken != null && fcmToken.isNotEmpty) {
-        debugPrint(
-            '🔄 [AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
+        debugPrint('🔄 [AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
         final success = await PushTokenService.registerToken(
           token: fcmToken,
           provider: 'fcm',
@@ -106,8 +101,7 @@ class AuthManager {
           userId: driverName,
           vozacId: vozacId,
         );
-        debugPrint(
-            '🔄 [AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
+        debugPrint('🔄 [AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
       }
 
       // 2. Pokušaj HMS token (Huawei uređaji)
@@ -115,8 +109,7 @@ class AuthManager {
       try {
         final hmsToken = await HuaweiPushService().getHMSToken();
         if (hmsToken != null && hmsToken.isNotEmpty) {
-          debugPrint(
-              '🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
+          debugPrint('🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
           final success = await PushTokenService.registerToken(
             token: hmsToken,
             provider: 'huawei',
@@ -124,11 +117,9 @@ class AuthManager {
             userId: driverName,
             vozacId: vozacId,
           );
-          debugPrint(
-              '🔄 [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
+          debugPrint('🔄 [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
         } else {
-          debugPrint(
-              '🔄 [AuthManager] HMS token nije dostupan (token je null/prazan)');
+          debugPrint('🔄 [AuthManager] HMS token nije dostupan (token je null/prazan)');
         }
       } catch (e) {
         // HMS nije dostupan na ovom uređaju - OK
@@ -230,7 +221,7 @@ class AuthManager {
         final currentDriver = await getCurrentDriver();
         if (currentDriver != null) {
           // Nađi vozac_id za trenutnog vozača
-          Vozac? vozac = await VozacBoja.getVozac(currentDriver);
+          Vozac? vozac = VozacCache.getVozacByIme(currentDriver);
           if (vozac?.id != null) {
             await PushTokenService.clearToken(vozacId: vozac!.id);
             debugPrint('✅ Push tokens cleared for vozac: $currentDriver');
@@ -318,8 +309,7 @@ class AuthManager {
       final deviceInfo = DeviceInfoPlugin();
       if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
-        deviceId =
-            '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
+        deviceId = '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         deviceId = '${iosInfo.identifierForVendor}_${iosInfo.model}';

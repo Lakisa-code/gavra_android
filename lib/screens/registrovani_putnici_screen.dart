@@ -12,7 +12,7 @@ import '../services/permission_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
-import '../utils/vozac_boja.dart';
+import '../utils/vozac_cache.dart';
 import '../widgets/pin_dialog.dart';
 import '../widgets/registrovani_putnik_dialog.dart';
 import 'registrovani_putnik_profil_screen.dart';
@@ -1651,7 +1651,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     // Ako imamo ime vozaca iz strema, koristimo njegovu boju
-                                                    color: VozacBoja.getSync(
+                                                    color: VozacCache.getColor(
                                                       vozacIme,
                                                       fallback: Colors.green.shade600,
                                                     ),
@@ -1663,7 +1663,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                                                   'Naplatio: $vozacIme',
                                                   style: TextStyle(
                                                     fontSize: 11,
-                                                    color: VozacBoja.getSync(
+                                                    color: VozacCache.getColor(
                                                       vozacIme,
                                                     ),
                                                     fontWeight: FontWeight.w500,
