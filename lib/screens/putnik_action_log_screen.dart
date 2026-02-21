@@ -29,9 +29,6 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
   List<Map<String, dynamic>> _sviPutnici = [];
   bool _loadingPutnici = false;
 
-  // Datum
-  DateTime _selectedDate = DateTime.now();
-
   // Seat requests
   List<Map<String, dynamic>> _seatRequests = [];
   bool _loadingSeatRequests = false;
@@ -96,17 +93,17 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     }).toList();
   }
 
-  /// Učitaj seat_requests za izabranog putnika i datum
+  /// Učitaj seat_requests za izabranog putnika (sve, sortirano najnovije gore)
   Future<void> _loadSeatRequests() async {
     if (_selectedPutnikId == null) return;
     setState(() => _loadingSeatRequests = true);
     try {
-      final datumStr = _selectedDate.toIso8601String().split('T')[0];
       final response = await supabase
           .from('seat_requests')
-          .select('id, grad, datum, zeljeno_vreme, dodeljeno_vreme, status, created_at, broj_mesta, priority, cancelled_by')
+          .select(
+              'id, grad, datum, zeljeno_vreme, dodeljeno_vreme, status, created_at, broj_mesta, priority, cancelled_by')
           .eq('putnik_id', _selectedPutnikId!)
-          .eq('datum', datumStr)
+          .order('datum', ascending: false)
           .order('created_at', ascending: false);
       setState(() {
         _seatRequests = List<Map<String, dynamic>>.from(response as List);
@@ -118,30 +115,6 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     }
   }
 
-  /// Otvori date picker
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2024, 1, 1),
-      lastDate: DateTime.now().add(const Duration(days: 7)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: _accentColor,
-                  surface: Theme.of(context).scaffoldBackgroundColor,
-                ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-      _loadSeatRequests();
-    }
-  }
 
   /// Formatira tip akcije za prikaz
   String _formatTip(String? tip) {
@@ -225,14 +198,6 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         backgroundColor: _accentColor,
-        actions: [
-          if (_selectedPutnikIme != null)
-            IconButton(
-              icon: const Icon(Icons.calendar_today),
-              onPressed: _selectDate,
-              tooltip: 'Izaberi datum',
-            ),
-        ],
       ),
       body: Column(
         children: [
@@ -399,23 +364,8 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
                                 color: _accentColor,
                               ),
                         ),
-                        Text(
-                          DateFormat('EEEE, d. MMMM yyyy.', 'sr').format(_selectedDate),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                        ),
                       ],
                     ),
-                  ),
-                  // Dugme za resetovanje datuma na danas
-                  IconButton(
-                    icon: Icon(Icons.today, color: _accentColor),
-                    onPressed: () {
-                      setState(() => _selectedDate = DateTime.now());
-                      _loadSeatRequests();
-                    },
-                    tooltip: 'Danas',
                   ),
                   // Dugme za promjenu putnika
                   IconButton(
@@ -500,18 +450,16 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     );
   }
 
-  /// Gradi listu akcija za odabranog putnika i datum
+  /// Gradi listu akcija za odabranog putnika (sva historija, sortirano najnovije gore)
   Widget _buildAkcijeList() {
-    final datumStr = _selectedDate.toIso8601String().split('T')[0];
     final putnikId = _selectedPutnikId!;
 
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream:
-          supabase.from('voznje_log').stream(primaryKey: ['id']).order('created_at', ascending: false).map((records) {
-                return records.where((r) {
-                  return r['putnik_id'] == putnikId && r['datum'] == datumStr;
-                }).toList();
-              }),
+      stream: supabase
+          .from('voznje_log')
+          .stream(primaryKey: ['id'])
+          .eq('putnik_id', putnikId)
+          .order('created_at', ascending: false),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: _accentColor));
@@ -543,28 +491,73 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Nema akcija za izabrani datum',
+                  'Nema akcija za ovog putnika',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
                       ),
-                ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: _selectDate,
-                  icon: const Icon(Icons.calendar_today, size: 16, color: _accentColor),
-                  label: const Text('Izaberi drugi datum', style: TextStyle(color: _accentColor)),
                 ),
               ],
             ),
           );
         }
 
+        // Grupiši po datumu
+        final Map<String, List<VoznjeLog>> grouped = {};
+        for (final log in filteredLogs) {
+          final key = log.datum != null
+              ? log.datum!.toIso8601String().split('T')[0]
+              : 'Nepoznat datum';
+          grouped.putIfAbsent(key, () => []).add(log);
+        }
+        final sortedDates = grouped.keys.toList()
+          ..sort((a, b) => b.compareTo(a)); // najnoviji datum gore
+
         return ListView.builder(
           padding: const EdgeInsets.all(12),
-          itemCount: filteredLogs.length,
-          itemBuilder: (context, index) {
-            final log = filteredLogs[index];
-            return _buildLogCard(log);
+          itemCount: sortedDates.length,
+          itemBuilder: (context, i) {
+            final dateKey = sortedDates[i];
+            final dayLogs = grouped[dateKey]!;
+            DateTime? dt = DateTime.tryParse(dateKey);
+            final dateLabel = dt != null
+                ? DateFormat('EEEE, d. MMMM yyyy.', 'sr').format(dt)
+                : dateKey;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _accentColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: _accentColor.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          dateLabel,
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: _accentColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${dayLogs.length} akcija',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                ...dayLogs.map((log) => _buildLogCard(log)),
+              ],
+            );
           },
         );
       },
@@ -691,9 +684,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     final brojMesta = req['broj_mesta'] as int? ?? 1;
     final priority = req['priority'] as int? ?? 0;
     final cancelledBy = req['cancelled_by'] as String?;
-    final createdAt = req['created_at'] != null
-        ? DateTime.tryParse(req['created_at'] as String)?.toLocal()
-        : null;
+    final createdAt = req['created_at'] != null ? DateTime.tryParse(req['created_at'] as String)?.toLocal() : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -833,7 +824,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               ),
                         ),
-                        if (priority > 0) ...[  
+                        if (priority > 0) ...[
                           const SizedBox(width: 8),
                           Icon(Icons.star, size: 12, color: Colors.amber),
                           const SizedBox(width: 2),
