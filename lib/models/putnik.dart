@@ -164,7 +164,7 @@ class Putnik {
     // Ako je profil join-ovan u samom requestu (Supabase .select('*, registrovani_putnici(...)'))
     final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
 
-    final datumStr = req['datum']?.toString() ?? '';
+    final datumStr = (req['datum']?.toString() ?? '').split('T')[0];
     final gRaw = req['grad']?.toString().toLowerCase() ?? '';
     final grad = (gRaw == 'vs' || gRaw.contains('vrš') || gRaw.contains('vrs')) ? 'Vršac' : 'Bela Crkva';
 
