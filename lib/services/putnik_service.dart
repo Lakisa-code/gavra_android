@@ -7,9 +7,9 @@ import '../globals.dart' as globals_file;
 import '../models/putnik.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
+import '../utils/vozac_cache.dart';
 import 'realtime/realtime_manager.dart';
 import 'seat_request_service.dart';
-import '../utils/vozac_cache.dart';
 import 'voznje_log_service.dart';
 
 class _StreamParams {
