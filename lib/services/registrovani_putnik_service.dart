@@ -538,33 +538,32 @@ class RegistrovaniPutnikService {
 
     final int brojMesta = (putnikData?['broj_mesta'] as num?)?.toInt() ?? 1;
 
-    // 2. Kreiraj seat_request SAMO za dane koji imaju upisano vreme
+    // 2. Kreiraj/ažuriraj/briši seat_requests prema novom rasporedu
     for (final danEntry in noviPolasci.entries) {
       final danKratica = danEntry.key; // npr. 'pon', 'uto'
       final danData = danEntry.value;
 
       if (danData == null || danData is! Map) continue;
 
-      // Proveri BC i VS vremena
-      for (final gradCode in ['bc', 'vs', 'bc2', 'vs2']) {
-        final vremeStr = danData[gradCode]?.toString();
+      final targetDate = _getNextDateForDay(DateTime.now(), danKratica);
+      final targetDateStr = targetDate.toIso8601String().split('T')[0];
+
+      // Proveri BC i VS vremena (bc2/vs2 su legacy, preskačemo)
+      for (final gradCode in ['bc', 'vs']) {
+        final vremeRaw = danData[gradCode];
+        final vremeStr = vremeRaw?.toString();
+        final normalizedGrad = gradCode == 'bc' ? 'BC' : 'VS';
+        final gradVariants = gradCode == 'bc' ? ['BC', 'bc', 'Bela Crkva'] : ['VS', 'vs', 'Vršac', 'Vrsac'];
 
         if (vremeStr != null && vremeStr.isNotEmpty && vremeStr != 'null') {
-          // Izračunaj sledeći datum za ovaj dan u nedelji
-          final targetDate = _getNextDateForDay(DateTime.now(), danKratica);
-          final targetDateStr = targetDate.toIso8601String().split('T')[0];
-
-          // Normalizuj grad kod (bc2/vs2 → BC/VS)
-          final normalizedGrad = gradCode.startsWith('bc') ? 'BC' : 'VS';
-
-          // Proveri da li već postoji seat_request za ovaj datum/grad
+          // IMA VREME → kreiraj ili ažuriraj seat_request
           final existing = await _supabase
               .from('seat_requests')
-              .select('id')
+              .select('id, zeljeno_vreme')
               .eq('putnik_id', putnikId)
               .eq('datum', targetDateStr)
-              .eq('grad', normalizedGrad)
-              .maybeSingle();
+              .inFilter('grad', gradVariants)
+              .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']).maybeSingle();
 
           if (existing == null) {
             // KREIRAJ NOVI seat_request
@@ -576,9 +575,33 @@ class RegistrovaniPutnikService {
               'status': 'confirmed',
               'broj_mesta': brojMesta,
             });
-
             debugPrint('✅ Kreiran seat_request: $targetDateStr, $normalizedGrad, $vremeStr');
+          } else {
+            // AŽURIRAJ postojeći ako se vreme promenilo
+            final existingVreme = existing['zeljeno_vreme']?.toString().substring(0, 5);
+            if (existingVreme != vremeStr) {
+              await _supabase.from('seat_requests').update({
+                'zeljeno_vreme': '$vremeStr:00',
+                'status': 'confirmed',
+                'updated_at': DateTime.now().toUtc().toIso8601String(),
+              }).eq('id', existing['id']);
+              debugPrint('✅ Ažuriran seat_request: $targetDateStr, $normalizedGrad, $vremeStr');
+            }
           }
+        } else {
+          // PRAZNO VREME (bez polaska) → postavi bez_polaska na postojeći seat_request
+          // Uključuje i 'otkazano' da admin može resetovati otkazane termine
+          await _supabase
+              .from('seat_requests')
+              .update({
+                'status': 'bez_polaska',
+                'updated_at': DateTime.now().toUtc().toIso8601String(),
+              })
+              .eq('putnik_id', putnikId)
+              .eq('datum', targetDateStr)
+              .inFilter('grad', gradVariants)
+              .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano']);
+          debugPrint('🚫 Bez polaska: $targetDateStr, $normalizedGrad');
         }
       }
     }

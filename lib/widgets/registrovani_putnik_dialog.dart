@@ -132,6 +132,44 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
       _polazakBcControllers[dan] = TextEditingController();
       _polazakVsControllers[dan] = TextEditingController();
+
+      // Listener: kada korisnik izabere "Bez polaska" (prazno polje),
+      // ukloni lokalni override iz _weeklyOverrides da se status cell-a ažurira
+      _polazakBcControllers[dan]!.addListener(() {
+        if (_polazakBcControllers[dan]!.text.trim().isEmpty) {
+          _removeLocalOverride(dan, isBC: true);
+        }
+      });
+      _polazakVsControllers[dan]!.addListener(() {
+        if (_polazakVsControllers[dan]!.text.trim().isEmpty) {
+          _removeLocalOverride(dan, isBC: false);
+        }
+      });
+    }
+  }
+
+  /// Uklanja lokalni override iz _weeklyOverrides za dati dan/smer
+  /// da se status cell-a odmah ažurira u UI bez čekanja na bazu
+  void _removeLocalOverride(String dan, {required bool isBC}) {
+    final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet'];
+    final targetWeekday = dayNames.indexOf(dan.toLowerCase()) + 1;
+    if (targetWeekday < 1) return;
+
+    final updated = _weeklyOverrides.where((req) {
+      final datumStr = req['datum']?.toString() ?? '';
+      final datum = DateTime.tryParse(datumStr);
+      if (datum == null || datum.weekday != targetWeekday) return true; // zadrži
+      final grad = req['grad']?.toString().toLowerCase() ?? '';
+      final matchesBC = isBC && (grad == 'bc' || grad == 'bela crkva');
+      final matchesVS = !isBC && (grad == 'vs' || grad == 'vršac');
+      if (matchesBC || matchesVS) return false; // ukloni
+      return true;
+    }).toList();
+
+    if (updated.length != _weeklyOverrides.length) {
+      setState(() {
+        _weeklyOverrides = updated;
+      });
     }
   }
 
@@ -183,6 +221,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 if (status == 'bez_polaska' || status == 'hidden' || status == 'cancelled') {
                   _polazakBcControllers[dan]!.clear();
                 } else {
+                  // Prikaži vreme i za 'otkazano' da admin može promijeniti
                   _polazakBcControllers[dan]!.text =
                       GradAdresaValidator.normalizeTime(bcOver['zeljeno_vreme'].toString());
                 }
@@ -194,6 +233,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                 if (status == 'bez_polaska' || status == 'hidden' || status == 'cancelled') {
                   _polazakVsControllers[dan]!.clear();
                 } else {
+                  // Prikaži vreme i za 'otkazano' da admin može promijeniti
                   _polazakVsControllers[dan]!.text =
                       GradAdresaValidator.normalizeTime(vsOver['zeljeno_vreme'].toString());
                 }
@@ -1617,7 +1657,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final putnikData = _preparePutnikData();
 
       // 🆕 PRIPREMA NOVOG RASPOREDA (za seat_requests)
-      // Format: {'pon': {'bc': '07:00', 'vs': '13:00'}, 'uto': {...}, ...}
+      // Format: {'pon': {'bc': '07:00', 'vs': null}, 'uto': {...}, ...}
+      // null vrednost znači "bez polaska" → briše postojeći seat_request
       final Map<String, dynamic> weeklySchedule = {};
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
         final bcVal = _polazakBcControllers[dan]?.text.trim() ?? '';
@@ -1626,14 +1667,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         final bc = bcVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(bcVal) : null;
         final vs = vsVal.isNotEmpty ? RegistrovaniHelpers.normalizeTime(vsVal) : null;
 
-        // POJEDNOSTAVLJENO: nema više bc2/vs2 za zimski režim
-        final dayMap = <String, dynamic>{};
-        if (bc != null) dayMap['bc'] = bc;
-        if (vs != null) dayMap['vs'] = vs;
-
-        if (dayMap.isNotEmpty) {
-          weeklySchedule[dan] = dayMap;
-        }
+        // Uvek uključi dan u raspored (sa null vrednostima za brisanje)
+        weeklySchedule[dan] = {'bc': bc, 'vs': vs};
       }
 
       final currentDriver = await AuthManager.getCurrentDriver();
