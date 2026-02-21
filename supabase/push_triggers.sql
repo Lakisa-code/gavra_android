@@ -27,7 +27,6 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 2. FUNKCIJA: Automatizacija Seat Request Notifikacija
--- ⛔ NE MIJENJATI - zacementirana logika notifikacija 21.02.2026.
 CREATE OR REPLACE FUNCTION notify_seat_request_update()
 RETURNS trigger AS $$
 DECLARE
@@ -51,12 +50,10 @@ BEGIN
 
     IF v_tokens IS NOT NULL AND jsonb_array_length(v_tokens) > 0 THEN
         IF NEW.status = 'approved' THEN
-            -- ⛔ NE MIJENJATI: approved poruka
             v_title := '✅ Mesto osigurano!';
-            v_body := 'Vaš zahtev za ' || NEW.zeljeno_vreme || ' (' || v_grad_display || ') je odobren. Srećan put!';
+            v_body := 'Vaš zahtev za ' || to_char(NEW.zeljeno_vreme, 'HH24:MI') || ' (' || v_grad_display || ') je odobren. Srećan put!';
             v_data := jsonb_build_object('type', 'seat_request_approved', 'id', NEW.id, 'grad', NEW.grad);
         ELSIF NEW.status = 'rejected' THEN
-            -- ⛔ NE MIJENJATI: koristiti alternative_vreme_1/2, NE alternatives kolonu
             IF NEW.alternative_vreme_1 IS NOT NULL OR NEW.alternative_vreme_2 IS NOT NULL THEN
                 v_title := '⚠️ Termin pun - Izaberi alternativu';
                 v_body := 'Termin ' || to_char(NEW.zeljeno_vreme, 'HH24:MI') || ' je pun. Slobodna mesta: '
@@ -74,9 +71,8 @@ BEGIN
                     'alternative_2', to_char(NEW.alternative_vreme_2, 'HH24:MI')
                 );
             ELSE
-                -- ⛔ NE MIJENJATI: rejected bez alternativa
                 v_title := '❌ Termin popunjen';
-                v_body := 'Nažalost, u terminu ' || NEW.zeljeno_vreme || ' više nema slobodnih mesta.';
+                v_body := 'Nažalost, u terminu ' || to_char(NEW.zeljeno_vreme, 'HH24:MI') || ' više nema slobodnih mesta.';
                 v_data := jsonb_build_object('type', 'seat_request_rejected', 'id', NEW.id, 'grad', NEW.grad);
             END IF;
         END IF;
@@ -86,7 +82,7 @@ BEGIN
         END IF;
     END IF;
 
-    -- ⛔ NE MIJENJATI: Za manual → obavijesti admina (Bojan)
+    -- Za manual → obavijesti admina (Bojan)
     IF NEW.status = 'manual' THEN
         SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
         INTO v_tokens
@@ -98,8 +94,26 @@ BEGIN
             PERFORM notify_push(
                 v_tokens,
                 '🔔 Novi zahtev (' || v_grad_display || ')',
-                v_putnik_ime || ' traži mesto za ' || NEW.zeljeno_vreme,
+                v_putnik_ime || ' traži mesto za ' || to_char(NEW.zeljeno_vreme, 'HH24:MI'),
                 jsonb_build_object('type', 'seat_request_manual', 'id', NEW.id, 'grad', NEW.grad)
+            );
+        END IF;
+    END IF;
+
+    -- Za otkazano → obavijesti sve vozače
+    IF NEW.status = 'otkazano' THEN
+        SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
+        INTO v_tokens
+        FROM push_tokens
+        WHERE user_id IN (SELECT ime FROM vozaci);
+
+        IF v_tokens IS NOT NULL AND jsonb_array_length(v_tokens) > 0 THEN
+            SELECT putnik_ime INTO v_putnik_ime FROM registrovani_putnici WHERE id = NEW.putnik_id;
+            PERFORM notify_push(
+                v_tokens,
+                '🚫 Otkazivanje (' || v_grad_display || ')',
+                COALESCE(v_putnik_ime, 'Putnik') || ' otkazao vožnju za ' || to_char(NEW.zeljeno_vreme, 'HH24:MI') || ' (' || to_char(NEW.datum, 'DD.MM.') || ')',
+                jsonb_build_object('type', 'seat_request_otkazano', 'id', NEW.id, 'grad', NEW.grad)
             );
         END IF;
     END IF;
