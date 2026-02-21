@@ -168,15 +168,8 @@ class TimePickerCell extends StatelessWidget {
     if (dayName == null) return false;
     if (dayDate == null) return false;
 
-    // 2️⃣ OSNOVNA LOGIKA (vreme/dan)
     // Zaključaj ako je dan pre danas (prošlost)
     if (dayDate.isBefore(todayOnly)) {
-      return true;
-    }
-
-    // 🔒 Zaključaj danas posle 05:00 - nova nedelja počinje u subotu 02:00
-    // Putnik može menjati polazak samo do 05:00 ujutru tekućeg dana
-    if (dayDate.isAtSameMomentAs(todayOnly) && now.hour >= 5) {
       return true;
     }
 

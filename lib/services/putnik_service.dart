@@ -26,6 +26,10 @@ class PutnikService {
       'adresa_bc:adresa_bela_crkva_id(naziv), '
       'adresa_vs:adresa_vrsac_id(naziv)';
 
+  // Obuhvata i join ka adrese tabeli za custom_adresa_id -> naziv
+  static const String seatRequestSelectFields =
+      '*, registrovani_putnici!inner($registrovaniFields), adrese:custom_adresa_id(naziv)';
+
   static final Map<String, StreamController<List<Putnik>>> _streams = {};
   static final Map<String, List<Putnik>> _lastValues = {};
   static final Map<String, _StreamParams> _streamParams = {};
@@ -106,19 +110,21 @@ class PutnikService {
     try {
       final todayDate = isoDate.split('T')[0];
 
-      final reqs = await supabase
-          .from('seat_requests')
-          .select('*, registrovani_putnici!inner($registrovaniFields)')
-          .eq('datum', todayDate)
-          .inFilter('status',
-              ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden']);
+      final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {'p_datum': todayDate});
 
-      // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
-      final logData = await VoznjeLogService.getPickedUpLogData(datumStr: todayDate);
-      _enrichWithLogData(reqs as List, logData);
+      final putnikIds = (reqs as List).map((r) => r['putnik_id'].toString()).toSet().toList();
+      final registrovani = putnikIds.isNotEmpty
+          ? await supabase.from('registrovani_putnici').select(registrovaniFields).inFilter('id', putnikIds)
+          : [];
+      final registrovaniMap = {for (var r in registrovani) r['id'].toString(): r};
 
-      return (reqs as List)
-          .map((r) => Putnik.fromSeatRequest(r as Map<String, dynamic>))
+      return reqs.map((r) {
+        final map = _rpcToPutnikMap(r as Map<String, dynamic>);
+        final rp = registrovaniMap[r['putnik_id']?.toString()];
+        if (rp != null) map['registrovani_putnici'] = rp;
+        return map;
+      })
+          .map((r) => Putnik.fromSeatRequest(r))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
     } catch (e) {
@@ -127,34 +133,56 @@ class PutnikService {
     }
   }
 
+  /// Konvertuje RPC rezultat u format koji Putnik.fromSeatRequest() razumije
+  Map<String, dynamic> _rpcToPutnikMap(Map<String, dynamic> row) {
+    final map = Map<String, dynamic>.from(row);
+    // Enrichment polja iz loga
+    map['pokupljen_iz_loga'] = row['je_pokupljen'] == true;
+    map['otkazano_iz_loga'] = row['je_otkazan_iz_loga'] == true;
+    map['placeno_iz_loga'] = row['je_placen'] == true;
+    if (row['iznos_placanja'] != null) map['cena'] = row['iznos_placanja'];
+    if (row['vozac_ime'] != null) map['naplatioVozac'] = row['vozac_ime'];
+    if (row['log_created_at'] != null) map['processed_at'] ??= row['log_created_at'];
+    if (row['je_otkazan_iz_loga'] == true && map['status'] != 'otkazano') {
+      map['status'] = 'otkazano';
+    }
+    return map;
+  }
+
   Future<void> _doFetchForStream(
       String key, String? isoDate, String? grad, String? vreme, StreamController<List<Putnik>> controller) async {
     try {
       final todayDate = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
 
-      var query = supabase
-          .from('seat_requests')
-          .select('*, registrovani_putnici!inner($registrovaniFields)')
-          .eq('datum', todayDate)
-          .inFilter('status',
-              ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden']);
+      final gradNorm = grad == null
+          ? null
+          : (grad.toLowerCase() == 'vrsac' || grad.toLowerCase() == 'vršac' || grad.toLowerCase() == 'vs'
+              ? 'vs'
+              : 'bc');
+      final vremeNorm = vreme != null ? '${GradAdresaValidator.normalizeTime(vreme)}:00' : null;
 
-      if (grad != null) {
-        query = query.ilike('grad', grad.toLowerCase() == 'vrsac' || grad.toLowerCase() == 'vršac' ? 'vs' : 'bc');
-      }
+      final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {
+        'p_datum': todayDate,
+        if (gradNorm != null) 'p_grad': gradNorm,
+        if (vremeNorm != null) 'p_vreme': vremeNorm,
+      });
 
-      if (vreme != null) {
-        query = query.eq('zeljeno_vreme', '${GradAdresaValidator.normalizeTime(vreme)}:00');
-      }
+      // Dohvati registrovani_putnici join podatke
+      final putnikIds = (reqs as List).map((r) => r['putnik_id'].toString()).toSet().toList();
+      final registrovani = putnikIds.isNotEmpty
+          ? await supabase.from('registrovani_putnici').select(registrovaniFields).inFilter('id', putnikIds)
+          : [];
+      final registrovaniMap = {for (var r in registrovani) r['id'].toString(): r};
 
-      final reqs = await query;
+      final enriched = (reqs as List).map((r) {
+        final map = _rpcToPutnikMap(r as Map<String, dynamic>);
+        final rp = registrovaniMap[r['putnik_id']?.toString()];
+        if (rp != null) map['registrovani_putnici'] = rp;
+        return map;
+      }).toList();
 
-      // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
-      final logData = await VoznjeLogService.getPickedUpLogData(datumStr: todayDate);
-      _enrichWithLogData(reqs as List, logData);
-
-      final results = (reqs as List)
-          .map((r) => Putnik.fromSeatRequest(r as Map<String, dynamic>))
+      final results = enriched
+          .map((r) => Putnik.fromSeatRequest(r))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
 
@@ -238,25 +266,27 @@ class PutnikService {
   Future<Putnik?> getPutnikByName(String ime, {String? grad}) async {
     final todayStr = DateTime.now().toIso8601String().split('T')[0];
 
-    // 🆕 SSOT: Prvo proveri u seat_requests za danas
-    final seatReq = await supabase
-        .from('seat_requests')
-        .select('*, registrovani_putnici!inner($registrovaniFields)')
-        .eq('registrovani_putnici.putnik_ime', ime)
-        .eq('datum', todayStr)
+    final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {'p_datum': todayStr});
+    // Filtriraj po imenu kroz registrovani_putnici join
+    // Dohvati putnik_id po imenu
+    final rpRes = await supabase
+        .from('registrovani_putnici')
+        .select('id')
+        .eq('putnik_ime', ime)
         .maybeSingle();
+    if (rpRes == null) return null;
+    final putnikId = rpRes['id'].toString();
 
-    if (seatReq != null) {
-      final todayDate = DateTime.now().toIso8601String().split('T')[0];
-      final logData = await VoznjeLogService.getPickedUpLogData(datumStr: todayDate);
-      final data = Map<String, dynamic>.from(seatReq as Map);
-      _enrichWithLogData([data], logData);
-      return Putnik.fromSeatRequest(data);
+    final match = (reqs as List).cast<Map<String, dynamic>>().where((r) => r['putnik_id']?.toString() == putnikId).firstOrNull;
+    if (match != null) {
+      final rp = await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', putnikId).maybeSingle();
+      final map = _rpcToPutnikMap(match);
+      if (rp != null) map['registrovani_putnici'] = rp;
+      return Putnik.fromSeatRequest(map);
     }
 
     // Fallback na profil ako nema današnjeg zahteva
-    final res =
-        await supabase.from('registrovani_putnici').select(registrovaniFields).eq('putnik_ime', ime).maybeSingle();
+    final res = await supabase.from('registrovani_putnici').select(registrovaniFields).eq('putnik_ime', ime).maybeSingle();
     if (res == null) return null;
     return Putnik.fromRegistrovaniPutnici(res);
   }
@@ -265,19 +295,14 @@ class PutnikService {
     try {
       final todayStr = DateTime.now().toIso8601String().split('T')[0];
 
-      // 🆕 SSOT: Prvo proveri u seat_requests za danas
-      final seatReq = await supabase
-          .from('seat_requests')
-          .select('*, registrovani_putnici!inner($registrovaniFields)')
-          .eq('putnik_id', id)
-          .eq('datum', todayStr)
-          .maybeSingle();
+      final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {'p_datum': todayStr});
+      final match = (reqs as List).cast<Map<String, dynamic>>().where((r) => r['putnik_id']?.toString() == id.toString()).firstOrNull;
 
-      if (seatReq != null) {
-        final logData = await VoznjeLogService.getPickedUpLogData(datumStr: todayStr);
-        final data = Map<String, dynamic>.from(seatReq);
-        _enrichWithLogData([data], logData);
-        return Putnik.fromSeatRequest(data);
+      if (match != null) {
+        final rp = await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', id).maybeSingle();
+        final map = _rpcToPutnikMap(match);
+        if (rp != null) map['registrovani_putnici'] = rp;
+        return Putnik.fromSeatRequest(map);
       }
 
       final res = await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', id).limit(1);
@@ -292,21 +317,26 @@ class PutnikService {
     try {
       final String danasStr = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
 
-      // 🔄 RELACIONALNI FETCH: Dohvati iz seat_requests za ove putnike i datum
-      final res = await supabase
-          .from('seat_requests')
-          .select('*, registrovani_putnici!inner($registrovaniFields)')
-          .inFilter('putnik_id', ids.map((id) => id.toString()).toList())
-          .eq('datum', danasStr)
-          .inFilter('status',
-              ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden']);
+      final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {'p_datum': danasStr});
 
-      // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
-      final logData = await VoznjeLogService.getPickedUpLogData(datumStr: danasStr);
-      _enrichWithLogData(res as List, logData);
+      final idStrings = ids.map((id) => id.toString()).toSet();
+      final filtered = (reqs as List)
+          .where((r) => idStrings.contains(r['putnik_id']?.toString()))
+          .toList();
 
-      return (res as List)
-          .map((row) => Putnik.fromSeatRequest(row as Map<String, dynamic>))
+      final putnikIds = filtered.map((r) => r['putnik_id'].toString()).toSet().toList();
+      final registrovani = putnikIds.isNotEmpty
+          ? await supabase.from('registrovani_putnici').select(registrovaniFields).inFilter('id', putnikIds)
+          : [];
+      final registrovaniMap = {for (var r in registrovani) r['id'].toString(): r};
+
+      return filtered.map((r) {
+        final map = _rpcToPutnikMap(r as Map<String, dynamic>);
+        final rp = registrovaniMap[r['putnik_id']?.toString()];
+        if (rp != null) map['registrovani_putnici'] = rp;
+        return map;
+      })
+          .map((r) => Putnik.fromSeatRequest(r))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
     } catch (e) {
@@ -319,19 +349,21 @@ class PutnikService {
     try {
       final String danasStr = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
 
-      // 🔄 RELACIONALNI FETCH: Dohvati SVE aktivne zahteve za datum
-      final res = await supabase
-          .from('seat_requests')
-          .select('*, registrovani_putnici!inner($registrovaniFields)')
-          .eq('datum', danasStr)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
+      final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {'p_datum': danasStr});
 
-      // 🔄 DOHVATI STATUSE IZ VOZNJE_LOG (Nova arhitektura)
-      final logDataAll = await VoznjeLogService.getPickedUpLogData(datumStr: danasStr);
-      _enrichWithLogData(res as List, logDataAll);
+      final putnikIds = (reqs as List).map((r) => r['putnik_id'].toString()).toSet().toList();
+      final registrovani = putnikIds.isNotEmpty
+          ? await supabase.from('registrovani_putnici').select(registrovaniFields).inFilter('id', putnikIds)
+          : [];
+      final registrovaniMap = {for (var r in registrovani) r['id'].toString(): r};
 
-      return (res as List)
-          .map((row) => Putnik.fromSeatRequest(row as Map<String, dynamic>))
+      return reqs.map((r) {
+        final map = _rpcToPutnikMap(r as Map<String, dynamic>);
+        final rp = registrovaniMap[r['putnik_id']?.toString()];
+        if (rp != null) map['registrovani_putnici'] = rp;
+        return map;
+      })
+          .map((r) => Putnik.fromSeatRequest(r))
           .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
           .toList();
     } catch (e) {
@@ -379,7 +411,6 @@ class PutnikService {
       grad: putnik.grad,
       brojMesta: putnik.brojMesta,
       status: 'confirmed', // Vozač ga je dodao ručno
-      customAdresa: putnik.adresa,
       customAdresaId: putnik.adresaId,
     );
   }
@@ -754,7 +785,6 @@ class PutnikService {
       'status': 'confirmed',
       'processed_at': DateTime.now().toUtc().toIso8601String(),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
-      'vozac_id': vozacId,
     });
 
     if (requestId != null && requestId.isNotEmpty) {
@@ -779,77 +809,6 @@ class PutnikService {
     );
   }
 
-  Future<void> dodelPutnikaVozacuZaPravac(
-    String id,
-    String? vozac,
-    String? pravac, {
-    String? vreme,
-    String? selectedDan,
-    String? requestId, // 🆕 Dodato za precizno mapiranje
-  }) async {
-    // 1. Get driver UUID
-    String? vozacUuid;
-    if (vozac != null && vozac != '_NONE_') {
-      vozacUuid = await VozacMappingService.getVozacUuid(vozac);
-    }
-
-    // 2. Determine the date
-    final dateStr = app_date_utils.DateUtils.getIsoDateForDay(selectedDan ?? 'Ponedeljak');
-
-    // 3. Normalize grad
-    final isVrsac = (pravac?.toLowerCase().contains('vr') ?? false) || (pravac?.toLowerCase() == 'vs');
-    final gradKey = isVrsac ? 'vs' : 'bc';
-    final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
-
-    // 4. Update query
-    var query = supabase.from('seat_requests').update({
-      'vozac_id': vozacUuid,
-      'status': 'confirmed',
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    });
-
-    // PRIORITET 1: Ako imamo requestId, to je najsigurnije
-    if (requestId != null && requestId.isNotEmpty) {
-      query = query.eq('id', requestId);
-    } else {
-      // PRIORITET 2: Match po setu parametara
-      query = query.match({
-        'putnik_id': id,
-        'datum': dateStr,
-      }).inFilter('grad', gradVariants);
-
-      // Ako je prosleđeno vreme, filtriraj i po njemu
-      if (vreme != null && vreme.isNotEmpty) {
-        final normVreme = GradAdresaValidator.normalizeTime(vreme);
-        query = query.eq('zeljeno_vreme', '$normVreme:00');
-      }
-    }
-
-    final result = await query.select();
-
-    if (result.isEmpty && requestId == null) {
-      // Fallback: pokusaj bez vremena i bez gornje-donje crte (pokušaj samo putnik+datum+grad)
-      final fallbackResult = await supabase
-          .from('seat_requests')
-          .update({
-            'vozac_id': vozacUuid,
-            'status': 'confirmed',
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .match({
-            'putnik_id': id,
-            'datum': dateStr,
-          })
-          .inFilter('grad', gradVariants)
-          .select();
-
-      if (fallbackResult.isEmpty) {
-        throw Exception(
-            'Putnik nije pronađen u seat_requests tabeli za datum $dateStr, grad $gradKey ${vreme != null ? "i vreme $vreme" : ""}');
-      }
-    }
-  }
-
   Future<void> prebacijPutnikaVozacu(String id, String? vozac) async {
     String? vozacUuid;
     if (vozac != null) {
@@ -858,69 +817,6 @@ class PutnikService {
     await supabase
         .from('registrovani_putnici')
         .update({'vozac_id': vozacUuid, 'updated_at': DateTime.now().toUtc().toIso8601String()}).eq('id', id);
-  }
-
-  /// 🔄 POMOĆNA METODA: Obogaćuje podatke iz seat_requests informacijama iz voznje_log
-  void _enrichWithLogData(List<dynamic> reqs, Map<String, Map<String, dynamic>> logData) {
-    for (var r in reqs) {
-      final data = r as Map<String, dynamic>;
-      final putnikId = data['putnik_id']?.toString();
-      if (putnikId == null) continue;
-
-      final gradRaw = data['grad']?.toString();
-      // ✅ FIX: Normalizuj grad na 'vs'/'bc' skraćenice za konzistentan match sa logData
-      final grad = GradAdresaValidator.isVrsac(gradRaw)
-          ? 'vs'
-          : GradAdresaValidator.isBelaCrkva(gradRaw)
-              ? 'bc'
-              : gradRaw?.toLowerCase();
-
-      final vremeRaw = (data['dodeljeno_vreme'] ?? data['zeljeno_vreme'])?.toString();
-
-      // ✅ FIX: Koristi centralizovanu normalizaciju vremena (HH:mm format)
-      final normVreme = GradAdresaValidator.normalizeTime(vremeRaw);
-
-      // Pokušavamo da nađemo precizan match (putnik + grad + vreme)
-      String compositeKey = "$putnikId|$grad|$normVreme";
-      Map<String, dynamic>? match;
-
-      if (logData.containsKey(compositeKey)) {
-        match = logData[compositeKey];
-      }
-
-      if (match != null) {
-        final List tipovi = match['tipovi'] ?? [match['tip']];
-
-        if (tipovi.contains('voznja')) {
-          data['pokupljen_iz_loga'] = true;
-          debugPrint('✅ [_enrichWithLogData] Putnik $putnikId - pokupljen_iz_loga = true');
-        }
-        if (tipovi.contains('otkazivanje')) {
-          data['status'] = 'otkazano';
-          data['otkazano_iz_loga'] = true;
-          debugPrint('✅ [_enrichWithLogData] Putnik $putnikId - otkazano_iz_loga = true');
-        }
-        if (tipovi.contains('uplata') || tipovi.contains('uplata_dnevna')) {
-          data['placeno_iz_loga'] = true;
-          // ✅ NOVO: Popuni iznos i vozač ime za prikaz u kartici putnika
-          data['cena'] = match['iznos'];
-          data['naplatioVozac'] = match['vozac_ime'];
-          debugPrint(
-              '✅ [_enrichWithLogData] Putnik $putnikId - placeno_iz_loga = true, cena=${match['iznos']}, naplatioVozac=${match['vozac_ime']}');
-        }
-
-        // Ako vozač nije definisan u seat_request, uzmi ga iz loga
-        if (data['vozac_id'] == null) {
-          data['vozac_id'] = match['vozac_id'];
-        }
-        // Vreme akcije iz loga ima prioritet
-        data['processed_at'] = match['created_at'] ?? data['processed_at'];
-      } else {
-        data['pokupljen_iz_loga'] = false;
-        data['otkazano_iz_loga'] = false;
-        data['placeno_iz_loga'] = false;
-      }
-    }
   }
 
   /// 🚫 GLOBALNO UKLONI POLAZAK: Postavlja 'bez_polaska' status za sve putnike u datom terminu

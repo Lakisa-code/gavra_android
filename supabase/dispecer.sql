@@ -228,7 +228,8 @@ BEGIN
                 'grad', s.grad,
                 'datum', s.datum::text,
                 'ime_putnika', rp.putnik_ime,
-                'alternatives', s.alternatives
+                'alternative_vreme_1', s.alternative_vreme_1::text,
+                'alternative_vreme_2', s.alternative_vreme_2::text
             ) INTO current_req_data
             FROM seat_requests s
             JOIN registrovani_putnici rp ON s.putnik_id = rp.id
@@ -437,7 +438,35 @@ SELECT cron.schedule(
 );
 
 -- ==========================================
--- 8. PODSETNIK RADNICIMA: Subota 10:00 - push notifikacija radnicima koji nisu zakazali
+-- 8. ČIŠĆENJE STARIH SEAT_REQUESTS: Nedeljno brisanje redova starijih od 30 dana
+-- Historija je u voznje_log - seat_requests je operativna tabela
+-- ==========================================
+CREATE OR REPLACE FUNCTION ocisti_stare_seat_requests()
+RETURNS jsonb AS $$
+DECLARE
+    v_obrisano integer;
+BEGIN
+    DELETE FROM seat_requests
+    WHERE datum < CURRENT_DATE - INTERVAL '30 days';
+
+    GET DIAGNOSTICS v_obrisano = ROW_COUNT;
+
+    RETURN jsonb_build_object(
+        'obrisano', v_obrisano,
+        'vreme', now()
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+-- CRON JOB: Čišćenje svake nedjelje u 03:00 UTC (04:00 srpskog)
+SELECT cron.schedule(
+    'ciscenje-seat-requests',
+    '0 3 * * 0',
+    $$ SELECT ocisti_stare_seat_requests() $$
+);
+
+-- ==========================================
+-- 9. PODSETNIK RADNICIMA: Subota 10:00 - push notifikacija radnicima koji nisu zakazali
 -- ==========================================
 CREATE OR REPLACE FUNCTION posalji_podsetnik_radnicima()
 RETURNS jsonb AS $$

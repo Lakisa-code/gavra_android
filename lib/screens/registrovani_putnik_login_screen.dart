@@ -472,16 +472,9 @@ class _RegistrovaniPutnikLoginScreenState
       }
 
       // 📱 Registruj push token za notifikacije
-      if (putnikId != null) {
+        if (putnikId != null) {
         await PutnikPushService.registerPutnikToken(putnikId);
-        // 📝 LOG PRIJAVE
-        await VoznjeLogService.logGeneric(
-          tip: 'prijava',
-          putnikId: putnikId,
-        );
-      }
-
-      // 🔐 Ponudi biometrijsku prijavu ako je dostupna i nije već uključena
+      }      // 🔐 Ponudi biometrijsku prijavu ako je dostupna i nije već uključena
       if (showBiometricPrompt &&
           _biometricAvailable &&
           !_biometricEnabled &&

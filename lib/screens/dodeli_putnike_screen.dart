@@ -8,6 +8,7 @@ import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/kapacitet_service.dart';
 import '../services/putnik_service.dart';
+import '../services/putnik_vozac_dodela_service.dart'; // • Per-putnik individualno dodeljivanje
 import '../services/theme_manager.dart';
 import '../services/vreme_vozac_service.dart'; // • Per-vreme dodeljivanje
 import '../utils/date_utils.dart' as app_date_utils;
@@ -437,20 +438,28 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     if (selected != null && selected != currentVozac && putnik.id != null) {
       try {
-        // • Ako je izabrano "Bez vozača", postavi null
+        // • Ako je izabrano "Bez vozača", ukloni individualnu dodelu
         final noviVozac = selected == '_NONE_' ? null : selected;
         final pravac = _currentPlaceKratica; // 'bc' ili 'vs'
-        final dan = _currentDayKratica; // 'pon', 'uto', itd.
+        final targetDatum = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
 
-        // • Sačuvaj per-pravac per-vreme (Ažurira vozac_id u seat_requests)
-        await _putnikService.dodelPutnikaVozacuZaPravac(
-          putnik.id!,
-          noviVozac,
-          pravac,
-          vreme: _selectedVreme, // • Prosleđivanje vremena
-          selectedDan: dan,
-          requestId: putnik.requestId, // 🆕 Precizno mapiranje preko requestId
-        );
+        // • Sačuvaj per-putnik individualnu dodelu (putnik_vozac_dodela tabela)
+        final dodelaService = PutnikVozacDodelaService();
+        if (noviVozac == null) {
+          await dodelaService.ukloniDodelu(
+            putnikId: putnik.id!,
+            datum: targetDatum,
+            grad: pravac,
+          );
+        } else {
+          await dodelaService.dodelVozaca(
+            putnikId: putnik.id!,
+            vozacIme: noviVozac,
+            datum: targetDatum,
+            grad: pravac,
+            vreme: _selectedVreme,
+          );
+        }
 
         if (mounted) {
           final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
@@ -1106,14 +1115,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           continue;
         }
 
-        // • Koristi per-pravac per-vreme dodeljivanje
-        await _putnikService.dodelPutnikaVozacuZaPravac(
-          p.id!,
-          noviVozac,
-          pravac,
-          vreme: _selectedVreme, // • Prosleđivanje vremena
-          selectedDan: dan,
-          requestId: p.requestId,
+        // • Koristi per-putnik individualnu dodelu (putnik_vozac_dodela tabela)
+        final targetDatum = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
+        await PutnikVozacDodelaService().dodelVozaca(
+          putnikId: p.id!,
+          vozacIme: noviVozac,
+          datum: targetDatum,
+          grad: pravac,
+          vreme: _selectedVreme,
         );
         uspesno++;
         // Čekaj između operacija da se baza ažurira

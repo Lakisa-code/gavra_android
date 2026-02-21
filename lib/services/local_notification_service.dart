@@ -2,12 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../screens/home_screen.dart';
-import '../supabase_client.dart';
 import 'notification_navigation_service.dart';
 import 'realtime_notification_service.dart';
 import 'seat_request_service.dart';
@@ -18,9 +18,13 @@ import 'wake_lock_service.dart';
 void notificationTapBackground(NotificationResponse notificationResponse) async {
   // 1. Inicijalizuj Supabase jer smo u background isolate-u
   try {
+    // U background isolate-u ConfigService nije dostupan, učitaj direktno iz .env
+    await dotenv.load(fileName: '.env');
+    final url = dotenv.env['SUPABASE_URL'] ?? '';
+    final anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
     await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
+      url: url,
+      anonKey: anonKey,
     );
   } catch (e) {
     // Već inicijalizovano ili greška

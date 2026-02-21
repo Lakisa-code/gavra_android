@@ -273,7 +273,8 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
                               ),
                             ],
                           ),
-                          if (zahtev.alternatives != null && zahtev.alternatives!.isNotEmpty) ...[
+                          if ((zahtev.alternativeVreme1 != null && zahtev.alternativeVreme1!.isNotEmpty) ||
+                              (zahtev.alternativeVreme2 != null && zahtev.alternativeVreme2!.isNotEmpty)) ...[
                             const SizedBox(height: 8),
                             Row(
                               children: [
@@ -281,7 +282,10 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Alternative: ${zahtev.alternatives!.join(", ")}',
+                                    'Alternative: ${[
+                                      zahtev.alternativeVreme1,
+                                      zahtev.alternativeVreme2
+                                    ].where((v) => v != null && v.isNotEmpty).join(", ")}',
                                     style: TextStyle(
                                       color: Colors.cyan.shade200,
                                       fontSize: 14,

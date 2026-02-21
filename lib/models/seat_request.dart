@@ -11,12 +11,9 @@ class SeatRequest {
   final DateTime? updatedAt;
   final DateTime? processedAt;
   final int priority;
-  final String? batchId;
-  final List<dynamic>? alternatives;
-  final int changesCount;
+  final String? alternativeVreme1;
+  final String? alternativeVreme2;
   final int brojMesta;
-  final String? vozacId;
-  final String? customAdresa;
   final String? customAdresaId;
 
   // Polja iz join-a (opciono)
@@ -36,12 +33,9 @@ class SeatRequest {
     this.updatedAt,
     this.processedAt,
     this.priority = 1,
-    this.batchId,
-    this.alternatives,
-    this.changesCount = 0,
+    this.alternativeVreme1,
+    this.alternativeVreme2,
     this.brojMesta = 1,
-    this.vozacId,
-    this.customAdresa,
     this.customAdresaId,
     this.putnikIme,
     this.brojTelefona,
@@ -64,12 +58,9 @@ class SeatRequest {
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
       processedAt: json['processed_at'] != null ? DateTime.parse(json['processed_at'] as String) : null,
       priority: json['priority'] as int? ?? 1,
-      batchId: json['batch_id'] as String?,
-      alternatives: json['alternatives'] != null ? json['alternatives'] as List<dynamic> : null,
-      changesCount: json['changes_count'] as int? ?? 0,
+      alternativeVreme1: json['alternative_vreme_1'] as String?,
+      alternativeVreme2: json['alternative_vreme_2'] as String?,
       brojMesta: json['broj_mesta'] as int? ?? 1,
-      vozacId: json['vozac_id'] as String?,
-      customAdresa: json['custom_adresa'] as String?,
       customAdresaId: json['custom_adresa_id'] as String?,
       putnikIme: putnikData?['putnik_ime'] ?? json['putnik_ime'] as String?,
       brojTelefona: putnikData?['broj_telefona'] ?? json['broj_telefona'] as String?,
@@ -90,12 +81,9 @@ class SeatRequest {
       'updated_at': updatedAt?.toIso8601String(),
       'processed_at': processedAt?.toIso8601String(),
       'priority': priority,
-      'batch_id': batchId,
-      'alternatives': alternatives,
-      'changes_count': changesCount,
+      'alternative_vreme_1': alternativeVreme1,
+      'alternative_vreme_2': alternativeVreme2,
       'broj_mesta': brojMesta,
-      'vozac_id': vozacId,
-      'custom_adresa': customAdresa,
       'custom_adresa_id': customAdresaId,
       if (putnikIme != null) 'putnik_ime': putnikIme,
       if (brojTelefona != null) 'broj_telefona': brojTelefona,
@@ -115,12 +103,9 @@ class SeatRequest {
     DateTime? updatedAt,
     DateTime? processedAt,
     int? priority,
-    String? batchId,
-    List<dynamic>? alternatives,
-    int? changesCount,
+    String? alternativeVreme1,
+    String? alternativeVreme2,
     int? brojMesta,
-    String? vozacId,
-    String? customAdresa,
     String? customAdresaId,
     String? putnikIme,
     String? brojTelefona,
@@ -138,12 +123,9 @@ class SeatRequest {
       updatedAt: updatedAt ?? this.updatedAt,
       processedAt: processedAt ?? this.processedAt,
       priority: priority ?? this.priority,
-      batchId: batchId ?? this.batchId,
-      alternatives: alternatives ?? this.alternatives,
-      changesCount: changesCount ?? this.changesCount,
+      alternativeVreme1: alternativeVreme1 ?? this.alternativeVreme1,
+      alternativeVreme2: alternativeVreme2 ?? this.alternativeVreme2,
       brojMesta: brojMesta ?? this.brojMesta,
-      vozacId: vozacId ?? this.vozacId,
-      customAdresa: customAdresa ?? this.customAdresa,
       customAdresaId: customAdresaId ?? this.customAdresaId,
       putnikIme: putnikIme ?? this.putnikIme,
       brojTelefona: brojTelefona ?? this.brojTelefona,

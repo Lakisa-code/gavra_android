@@ -819,7 +819,6 @@ class VoznjeLogService {
     double iznos = 0,
     int brojMesta = 1,
     String? detalji,
-    Map<String, dynamic>? meta,
     int? satiPrePolaska,
     String? tipPlacanja,
     String? status,
@@ -831,14 +830,11 @@ class VoznjeLogService {
       final now = DateTime.now();
       final datumStr = datum ?? now.toIso8601String().split('T')[0];
 
-      // ✅ NOVO: Koristimo dedicirane kolone umesto meta JSONB
+      // ✅ Koristimo dedicirane kolone umesto meta JSONB
       final String? gradKod = grad != null ? (GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc') : null;
       final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
-      // Zadržavamo dodatne meta podatke ako ih ima (za edge cases)
-      final Map<String, dynamic>? finalMeta = (meta != null && meta.isNotEmpty) ? meta : null;
-
-      // ✅ NOVO: Dohvati vozac_ime direktno iz baze (garantovano)
+      // ✅ Dohvati vozac_ime direktno iz baze (garantovano)
       String? vozacIme;
       if (vozacId != null && vozacId.isNotEmpty) {
         try {
@@ -860,7 +856,6 @@ class VoznjeLogService {
         'detalji': detalji,
         'grad': gradKod,
         'vreme_polaska': vremeNormalizovano,
-        'meta': finalMeta,
         'placeni_mesec': now.month,
         'placena_godina': now.year,
         'sati_pre_polaska': satiPrePolaska,
@@ -886,7 +881,8 @@ class VoznjeLogService {
       putnikId: putnikId,
       detalji: '$status ($tipPutnika): $dan u $vreme ($grad)',
       status: status,
-      meta: {'dan': dan.toLowerCase(), 'grad': grad.toLowerCase(), 'vreme': vreme},
+      grad: grad,
+      vreme: vreme,
     );
   }
 
@@ -904,7 +900,8 @@ class VoznjeLogService {
       tip: 'potvrda_zakazivanja',
       putnikId: putnikId,
       detalji: '$detalji$typeStr: $dan u $vreme ($grad)',
-      meta: {'dan': dan.toLowerCase(), 'grad': grad.toLowerCase(), 'vreme': vreme},
+      grad: grad,
+      vreme: vreme,
     );
   }
 
@@ -912,9 +909,8 @@ class VoznjeLogService {
   static Future<void> logGreska({
     String? putnikId, // 🔧 Može biti null za nove putnike koji nisu još sačuvani
     required String greska,
-    Map<String, dynamic>? meta,
   }) async {
-    return logGeneric(tip: 'greska_zahteva', putnikId: putnikId, detalji: 'Greška: $greska', meta: meta);
+    return logGeneric(tip: 'greska_aplikacije', putnikId: putnikId, detalji: 'Greška: $greska');
   }
 
   /// Dohvata nedavne logove (poslednjih 100)

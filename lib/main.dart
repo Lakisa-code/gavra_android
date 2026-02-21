@@ -17,6 +17,7 @@ import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (na
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
+import 'services/putnik_vozac_dodela_service.dart'; // 🚗 Per-putnik individualna dodela vozača
 import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/slobodna_mesta_service.dart';
@@ -187,6 +188,11 @@ Future<void> _initAppServices() async {
 
   // Sync inicijalizacija
   VremeVozacService().loadAllVremeVozac();
+
+  // 🚗 Individualna dodela vozača po putniku - učitaj za danas + realtime
+  final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+  unawaited(PutnikVozacDodelaService().loadZaDatum(todayStr));
+  PutnikVozacDodelaService().setupRealtimeListener();
 
   // 🚗 Initialize VozacService stream JEDNOM - pokrenuti stream sa listen() da počne emisija
   VozacService().streamAllVozaci().listen((_) {

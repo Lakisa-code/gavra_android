@@ -13,16 +13,18 @@
 //
 // 💡 РЕШЕЊЕ: Користи REST API и Web Dashboard уместо database GUI tools
 
-// Use compile-time environment variables (set via --dart-define)
-// to avoid committing secrets into source control.
+// 🔐 Supabase credentials — loaded from .env file via ConfigService
+// Fallback to compile-time --dart-define if running in background isolate
+// where ConfigService/dotenv may not be available.
+//
+// Priority:
+//   1. ConfigService (dotenv .env file) — main app
+//   2. String.fromEnvironment (--dart-define) — CI/build pipeline
+//   3. Empty string (will throw at Supabase.initialize)
 const String supabaseUrl =
     String.fromEnvironment('SUPABASE_URL', defaultValue: '');
 const String supabaseAnonKey =
     String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
-
-// Service role key (admin) MUST NOT be committed. Provide it at build time
-// using --dart-define=SUPABASE_SERVICE_ROLE_KEY=your-service-key OR via
-// CI/Server environment secrets. Default is empty to ensure it isn't leaked.
 const String supabaseServiceRoleKey =
     String.fromEnvironment('SUPABASE_SERVICE_ROLE_KEY', defaultValue: '');
 

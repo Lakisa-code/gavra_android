@@ -39,8 +39,7 @@ bool get isSupabaseReady {
 /// 'zimski' = zimski raspored
 /// 'letnji' = letnji raspored
 /// 'praznici' = praznični raspored
-final ValueNotifier<String> navBarTypeNotifier =
-    ValueNotifier<String>('letnji');
+final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('letnji');
 
 /// Helper za dobijanje trenutnog tipa nav bara
 String get currentNavBarType => navBarTypeNotifier.value;
@@ -87,3 +86,20 @@ int getCurrentHour() {
 /// Centralizovano upravljanje svim kredencijalima i konfiguracijom
 /// Koristi se u celoj aplikaciji za pristup kredencijalima
 final ConfigService configService = ConfigService();
+
+/// 🔄 UPDATE INFO - informacije o dostupnom update-u
+/// null = nema update-a, ili još nije provereno
+class UpdateInfo {
+  final String latestVersion;
+  final String storeUrl;
+  final bool isForced; // true = korisnik mora da ažurira, false = opciono
+
+  const UpdateInfo({
+    required this.latestVersion,
+    required this.storeUrl,
+    required this.isForced,
+  });
+}
+
+/// Notifier koji se puni u AppSettingsService nakon provere verzije
+final ValueNotifier<UpdateInfo?> updateInfoNotifier = ValueNotifier<UpdateInfo?>(null);

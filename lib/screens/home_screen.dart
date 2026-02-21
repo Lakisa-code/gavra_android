@@ -13,6 +13,7 @@ import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/admin_security_service.dart';
 import '../services/adresa_supabase_service.dart';
+import '../services/app_settings_service.dart'; // 🔄 Update check
 import '../services/auth_manager.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/firebase_service.dart';
@@ -163,6 +164,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // 🚐 Učitaj cache za dodeljene vozače terminima
     VremeVozacService().loadAllVremeVozac();
+
+    // 🔄 Slušaj update notifikacije i prikaži dijalog
+    updateInfoNotifier.addListener(_onUpdateInfo);
+    // Provjeri odmah ako je update već detektovan
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onUpdateInfo());
   }
 
   /// 🤖 POKREĆE DIGITALNOG DISPEČERA
@@ -2763,6 +2769,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // Silently ignore
     }
 
+    // 🔄 Update listener cleanup
+    updateInfoNotifier.removeListener(_onUpdateInfo);
+
     // No overlay cleanup needed currently
 
     // 🧹 SAFE DISPOSAL ValueNotifier-a
@@ -2772,6 +2781,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // Silently ignore
     }
     super.dispose();
+  }
+
+  /// 🔄 Pokreće se kada updateInfoNotifier dobije novu vrednost
+  void _onUpdateInfo() {
+    final info = updateInfoNotifier.value;
+    if (info == null || !mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: !info.isForced,
+      builder: (ctx) => PopScope(
+        canPop: !info.isForced,
+        child: AlertDialog(
+          title: Text(info.isForced ? '⚠️ Obavezno ažuriranje' : '🔄 Dostupna nova verzija'),
+          content: Text(
+            info.isForced
+                ? 'Ova verzija aplikacije više nije podržana.\nMolimo ažurirajte na verziju ${info.latestVersion} da biste nastavili sa korišćenjem.'
+                : 'Dostupna je nova verzija ${info.latestVersion}.\nPreporučujemo da ažurirate aplikaciju.',
+          ),
+          actions: [
+            if (!info.isForced)
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Kasnije'),
+              ),
+            ElevatedButton(
+              onPressed: () {
+                AppSettingsService.openStore();
+                if (!info.isForced) Navigator.of(ctx).pop();
+              },
+              child: const Text('Ažuriraj'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -1,4 +1,9 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../globals.dart';
 import '../services/realtime/realtime_manager.dart';
@@ -16,8 +21,7 @@ class AppSettingsService {
     await _loadSettings();
 
     // Slušaj promene u realtime
-    _subscription =
-        RealtimeManager.instance.subscribe('app_settings').listen((payload) {
+    _subscription = RealtimeManager.instance.subscribe('app_settings').listen((payload) {
       // Na svaku promenu, ponovo učitaj podešavanja
       _loadSettings();
     });
@@ -28,30 +32,105 @@ class AppSettingsService {
     try {
       final response = await supabase
           .from('app_settings')
-          .select('nav_bar_type')
+          .select('nav_bar_type, min_version, latest_version, store_url_android, store_url_huawei, store_url_ios')
           .eq('id', 'global')
           .single();
 
       final navBarType = response['nav_bar_type'] as String? ?? 'letnji';
       navBarTypeNotifier.value = navBarType;
       praznicniModNotifier.value = navBarType == 'praznici';
+
+      // 🔄 Provjeri verziju u pozadini (ne blokira)
+      _checkForUpdates(
+        minVersion: response['min_version'] as String?,
+        latestVersion: response['latest_version'] as String?,
+        storeUrlAndroid: response['store_url_android'] as String?,
+        storeUrlHuawei: response['store_url_huawei'] as String?,
+        storeUrlIos: response['store_url_ios'] as String?,
+      );
     } catch (e) {
       // Ako nema reda, ostavi default vrednosti
     }
   }
 
+  /// Poredi verzije i puni updateInfoNotifier
+  static Future<void> _checkForUpdates({
+    required String? minVersion,
+    required String? latestVersion,
+    required String? storeUrlAndroid,
+    required String? storeUrlHuawei,
+    required String? storeUrlIos,
+  }) async {
+    if (latestVersion == null || latestVersion.isEmpty) return;
+
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final current = _parseVersion(info.version);
+      final latest = _parseVersion(latestVersion);
+      final min = minVersion != null && minVersion.isNotEmpty ? _parseVersion(minVersion) : null;
+
+      // Odaberi store URL prema platformi
+      final storeUrl = Platform.isIOS
+          ? (storeUrlIos ?? '')
+          : Platform.isAndroid
+              ? (storeUrlAndroid ?? '')
+              : (storeUrlHuawei ?? '');
+
+      if (storeUrl.isEmpty) return;
+
+      final isForced = min != null && _isOlderThan(current, min);
+      final hasUpdate = _isOlderThan(current, latest);
+
+      if (hasUpdate || isForced) {
+        updateInfoNotifier.value = UpdateInfo(
+          latestVersion: latestVersion,
+          storeUrl: storeUrl,
+          isForced: isForced,
+        );
+      } else {
+        updateInfoNotifier.value = null;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AppSettings] Version check failed: $e');
+    }
+  }
+
+  /// Parsira "6.0.61" u listu integera [6, 0, 61]
+  static List<int> _parseVersion(String version) {
+    return version.split('.').map((p) => int.tryParse(p.trim()) ?? 0).toList();
+  }
+
+  /// Vraća true ako je [a] starija verzija od [b]
+  static bool _isOlderThan(List<int> a, List<int> b) {
+    final len = a.length > b.length ? a.length : b.length;
+    for (int i = 0; i < len; i++) {
+      final av = i < a.length ? a[i] : 0;
+      final bv = i < b.length ? b[i] : 0;
+      if (av < bv) return true;
+      if (av > bv) return false;
+    }
+    return false;
+  }
+
+  /// Otvori store za update
+  static Future<void> openStore() async {
+    final info = updateInfoNotifier.value;
+    if (info == null) return;
+    final uri = Uri.parse(info.storeUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   /// Postavi nav_bar_type (samo admin može)
   static Future<void> setNavBarType(String type) async {
-    await supabase.from('app_settings').update({
-      'nav_bar_type': type,
-      'updated_at': DateTime.now().toIso8601String()
-    }).eq('id', 'global');
+    await supabase
+        .from('app_settings')
+        .update({'nav_bar_type': type, 'updated_at': DateTime.now().toIso8601String()}).eq('id', 'global');
 
     // 📝 LOG U DNEVNIK
     try {
-      await VoznjeLogService.logGeneric(
-          tip: 'admin_akcija',
-          detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
+      await VoznjeLogService.logGeneric(tip: 'admin_akcija', detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
     } catch (_) {}
   }
 

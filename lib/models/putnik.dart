@@ -1,5 +1,6 @@
 import '../constants/day_constants.dart';
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
+import '../services/putnik_vozac_dodela_service.dart'; // Za per-putnik individualno dodeljivanje
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
 import '../utils/registrovani_helpers.dart';
@@ -75,7 +76,6 @@ class Putnik {
     this.brojMesta = 1, // ?? Broj rezervisanih mesta (default 1)
     this.tipPutnika, // ?? Tip putnika: radnik, ucenik, dnevni
     this.otkazanZaPolazak = false, // ?? Da li je otkazan za ovaj specificni polazak (grad)
-    this.vozacId, // 🆕 UUID vozača iz seat_requests
     this.requestId, // 🆕 ID konkretnog seat_request zapisa
   });
 
@@ -119,7 +119,6 @@ class Putnik {
       brojTelefona: map['broj_telefona'] as String?,
       brojMesta: (map['broj_mesta'] as int?) ?? 1,
       tipPutnika: tipPutnika,
-      vozacId: map['vozac_id'] as String?,
     );
   }
 
@@ -153,7 +152,6 @@ class Putnik {
   final int brojMesta; // ?? Broj rezervisanih mesta
   final String? tipPutnika; // ?? Tip putnika: radnik, ucenik, dnevni
   final bool otkazanZaPolazak; // ?? Da li je otkazan za ovaj polazak
-  final String? vozacId; // 🆕 UUID vozača iz seat_requests
   final String? requestId; // 🆕 ID konkretnog seat_request-a
 
   factory Putnik.fromSeatRequest(Map<String, dynamic> req, {Map<String, dynamic>? profile}) {
@@ -190,26 +188,32 @@ class Putnik {
       finalStatus = profileStatus;
     }
 
-    // 🆕 Odredi dodeljenog vozača sa prioritetom:
-    // 1) Per-putnik (vozac_id iz seat_requests tabele - NAJVIŠI PRIORITET)
-    // 2) Per-vreme (iz vreme_vozac tabele - svi putnici na tom terminu)
+    // Odredi dodeljenog vozača — PRIORITET 1: per-putnik (putnik_vozac_dodela), PRIORITET 2: per-vreme (vreme_vozac)
     String? dodeljenVozacFinal;
     try {
-      // Prvo proveri individualnu dodelu (najviši prioritet)
-      final perPutnik = VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']);
-      if (perPutnik != null && perPutnik.isNotEmpty && perPutnik != 'Nedodeljen') {
+      final putnikId = (p['id'] ?? req['putnik_id'])?.toString();
+      final gradKey = (gRaw == 'vs' || gRaw.contains('vrš') || gRaw.contains('vrs')) ? 'vs' : 'bc';
+
+      // PRIORITET 1: Individualna dodela iz putnik_vozac_dodela
+      final perPutnik = putnikId != null
+          ? PutnikVozacDodelaService().getVozacZaPutnikaSync(
+              putnikId: putnikId,
+              datum: datumStr,
+              grad: gradKey,
+            )
+          : null;
+
+      if (perPutnik != null && perPutnik.isNotEmpty) {
         dodeljenVozacFinal = perPutnik;
       } else {
-        // Ako nema individualne dodele, proveri vreme vozač
+        // PRIORITET 2: Globalna dodela iz vreme_vozac
         final danKratica = _getDanNedeljeKratica(DateTime.parse(datumStr).weekday);
         final perVreme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
         if (perVreme != null && perVreme.isNotEmpty) {
           dodeljenVozacFinal = _getVozacIme(perVreme);
         }
       }
-    } catch (_) {
-      dodeljenVozacFinal = VozacMappingService.getVozacImeWithFallbackSync(req['vozac_id']);
-    }
+    } catch (_) {}
 
     return Putnik(
       id: p['id'] ?? req['putnik_id'],
@@ -224,7 +228,7 @@ class Putnik {
       tipPutnika: tip,
       mesecnaKarta: !isDnevni,
       brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
-      adresa: req['custom_adresa'] ??
+      adresa: (req['adrese'] as Map?)?['naziv'] ??
           (grad == 'Vršac'
               ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
               : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv'])),
@@ -233,11 +237,10 @@ class Putnik {
       statusVreme: p['updated_at'],
       vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
       vremePokupljenja: req['processed_at'] != null ? DateTime.parse(req['processed_at']).toLocal() : null,
-      pokupioVozac: VozacMappingService.getNameFromUuidOrNameSync(req['vozac_id']),
+      pokupioVozac: null,
       naplatioVozac: req['naplatioVozac'], // ✅ NOVO: Ime vozača koji je naplatio
       cena: req['cena']?.toDouble(), // ✅ NOVO: Iznos plaćanja iz voznje_log
       obrisan: false,
-      vozacId: req['vozac_id'],
       dodeljenVozac: dodeljenVozacFinal,
       requestId: req['id']?.toString(), // ✅ DODATO: ID seat_request-a
     );
@@ -328,11 +331,11 @@ class Putnik {
   // ? NOVI GETTER: Da li je putnik uopšte dodeljen nekom vozaču (za listu PutnikList)
   bool get jeDodeljenVozacu => dodeljenVozac != null && dodeljenVozac!.isNotEmpty;
 
-  // ? FIX: Citaj UUID vozaža iz seat_requests (nova arhitektura)
-  String? get vozacUuid => vozacId ?? (dodeljenVozac != null && dodeljenVozac!.isNotEmpty ? dodeljenVozac : null);
+  // Vozac UUID iz dodeljenVozac (via vreme_vozac)
+  String? get vozacUuid => dodeljenVozac != null && dodeljenVozac!.isNotEmpty ? dodeljenVozac : null;
 
-  // ? FIX: Citaj ime vozača iz seat_requests ili registrovani_putnici
-  String? get vozacIme => naplatioVozac ?? _getVozacIme(vozacId);
+  // Ime vozača
+  String? get vozacIme => naplatioVozac ?? dodeljenVozac;
 
   // ⚠️ NAPOMENA: Sve metode koje su koristile polasci_po_danu su UKLONJENE.
   // Koristi se Putnik.fromSeatRequest za kreiranje objekata iz baze.
@@ -478,7 +481,6 @@ class Putnik {
     int? brojMesta,
     String? tipPutnika,
     bool? otkazanZaPolazak,
-    String? vozacId,
     String? requestId,
   }) {
     return Putnik(
@@ -511,7 +513,6 @@ class Putnik {
       brojMesta: brojMesta ?? this.brojMesta,
       tipPutnika: tipPutnika ?? this.tipPutnika,
       otkazanZaPolazak: otkazanZaPolazak ?? this.otkazanZaPolazak,
-      vozacId: vozacId ?? this.vozacId,
       requestId: requestId ?? this.requestId,
     );
   }

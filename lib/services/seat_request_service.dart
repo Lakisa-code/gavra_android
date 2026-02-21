@@ -21,7 +21,6 @@ class SeatRequestService {
     String status = 'pending',
     int priority = 1,
     String? fixedDate, // 📅 Opciono: Tačan datum ako nije potreban proračun sutrašnjice
-    String? customAdresa, // 🏠 Custom adresa samo za danas
     String? customAdresaId, // 🏠 ID custom adrese za brži geocoding
   }) async {
     try {
@@ -51,7 +50,6 @@ class SeatRequestService {
         'status': status,
         'broj_mesta': brojMesta,
         'priority': priority,
-        'custom_adresa': customAdresa,
         'custom_adresa_id': customAdresaId,
       });
       debugPrint('✅ [SeatRequestService] Inserted for $gradKey $normVreme on $dan (Datum: $datumStr)');

@@ -1694,12 +1694,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       try {
         await VoznjeLogService.logGreska(
           putnikId: widget.existingPutnik?.id, // Može biti null za nove
-          greska: e.toString(),
-          meta: {
-            'context': 'RegistrovaniPutnikDialog_save',
-            'ime': _imeController.text,
-            'tip': _tip,
-          },
+          greska: '[$_tip | ${_imeController.text}] ${e.toString()}',
         );
       } catch (e) {
         debugPrint('⚠️ Error logging user action: $e');
