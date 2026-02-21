@@ -186,19 +186,21 @@ BEGIN
     -- Pronađi sve koji čekaju obradu prema pravilima čekanja
     -- Koristi get_cekanje_pravilo() da odredi vreme čekanja za svaki tip/grad
     FOR v_req IN 
-        SELECT sr.id, sr.grad, sr.datum, sr.created_at, rp.tip
+        SELECT sr.id, sr.grad, sr.datum, sr.updated_at, rp.tip
         FROM seat_requests sr
         JOIN registrovani_putnici rp ON sr.putnik_id = rp.id
         WHERE sr.status = 'pending' 
           AND lower(rp.tip) != 'dnevni' -- Dnevni putnici ne idu kroz auto-obradu
     LOOP
         -- Proveri pravilo čekanja za ovaj zahtev
+        -- VAŽNO: Koristimo updated_at (ne created_at) da bi reset vremena radio
+        -- kad putnik promijeni termin - čekanje kreće od posljednje izmjene
         SELECT * INTO cekanje_pravilo 
         FROM get_cekanje_pravilo(
             v_req.tip, 
             v_req.grad, 
             v_req.datum, 
-            v_req.created_at
+            v_req.updated_at
         );
         
         -- Ako je vreme isteklo, obradi zahtev
@@ -208,15 +210,15 @@ BEGIN
             (lower(v_req.tip) = 'ucenik' 
              AND upper(v_req.grad) = 'BC' 
              AND v_req.datum = (CURRENT_DATE + 1)
-             AND EXTRACT(HOUR FROM v_req.created_at) >= 16
+             AND EXTRACT(HOUR FROM v_req.updated_at) >= 16
              AND EXTRACT(HOUR FROM now()) >= 20)
             OR
             -- Svi ostali: proveri da li je vreme čekanja isteklo
-            ((EXTRACT(EPOCH FROM (now() - v_req.created_at)) / 60) >= cekanje_pravilo.minuta_cekanja
+            ((EXTRACT(EPOCH FROM (now() - v_req.updated_at)) / 60) >= cekanje_pravilo.minuta_cekanja
              AND NOT (lower(v_req.tip) = 'ucenik' 
                       AND upper(v_req.grad) = 'BC' 
                       AND v_req.datum = (CURRENT_DATE + 1)
-                      AND EXTRACT(HOUR FROM v_req.created_at) >= 16))
+                      AND EXTRACT(HOUR FROM v_req.updated_at) >= 16))
         ) THEN
             PERFORM obradi_seat_request(v_req.id);
             
