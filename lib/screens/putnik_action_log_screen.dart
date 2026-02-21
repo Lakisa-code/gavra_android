@@ -54,8 +54,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
       if (!mounted) return;
       setState(() {});
       // Učitaj zahtjeve kad se klikne na "Zahtjevi" tab
-      if (_tabController!.index == _actionTypes.indexOf('zahtevi') &&
-          !_tabController!.indexIsChanging) {
+      if (_tabController!.index == _actionTypes.indexOf('zahtevi') && !_tabController!.indexIsChanging) {
         _loadSeatRequests();
       }
     });
