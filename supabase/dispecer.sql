@@ -376,11 +376,13 @@ BEGIN
     -- Postavi sve aktivne seat_requests na bez_polaska
     -- Aktivni = status je pending, manual, approved, confirmed
     -- Ne diraj: already bez_polaska, otkazano, cancelled, rejected, hidden
+    -- ⛔ NE MIJENJATI: godisnji i bolovanje se NE resetuju - putnik ostaje na odsustvu narednu nedelju
     UPDATE seat_requests
     SET 
         status = 'bez_polaska',
         updated_at = now()
-    WHERE status IN ('pending', 'manual', 'approved', 'confirmed');
+    WHERE status IN ('pending', 'manual', 'approved', 'confirmed')
+      AND status NOT IN ('godisnji', 'bolovanje');
 
     GET DIAGNOSTICS v_updated = ROW_COUNT;
 
