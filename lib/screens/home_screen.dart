@@ -2039,6 +2039,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             final odgovarajuceVreme =
                 GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
             // 🔧 FIX: Dopusti otkazane putnike - PutnikList će ih sortirati na dno sa crvenom bojom
+            // Isključi bez_polaska, hidden, cancelled - admin ih je eksplicitno uklonio
             final prikazi = imaVreme &&
                 imaGrad &&
                 imaDan &&
@@ -2046,7 +2047,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 odgovarajuciGrad &&
                 odgovarajuceVreme &&
                 normalizedStatus != 'obrisan' &&
-                normalizedStatus != 'pending';
+                normalizedStatus != 'pending' &&
+                normalizedStatus != 'bez_polaska' &&
+                normalizedStatus != 'hidden' &&
+                normalizedStatus != 'cancelled';
             return prikazi;
           });
           final sviPutnici = filtered.toList();
