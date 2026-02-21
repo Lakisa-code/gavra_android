@@ -202,7 +202,6 @@ class RegistrovaniPutnik {
       'status': status,
       'obrisan': obrisan,
       'tip_prikazivanja': tipPrikazivanja,
-      'vozac_id': vozacId,
       'email': email, // 📧 Email
       'cena_po_danu': cenaPoDanu, // 🆕 Custom cena po danu
       // 🧾 Polja za račune
