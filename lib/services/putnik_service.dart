@@ -142,7 +142,9 @@ class PutnikService {
     map['otkazano_iz_loga'] = row['je_otkazan_iz_loga'] == true;
     map['placeno_iz_loga'] = row['je_placen'] == true;
     if (row['iznos_placanja'] != null) map['cena'] = row['iznos_placanja'];
-    if (row['vozac_ime'] != null) map['naplatioVozac'] = row['vozac_ime'];
+    if (row['pokupioVozac'] != null) map['pokupioVozac'] = row['pokupioVozac'];
+    if (row['naplatioVozac'] != null) map['naplatioVozac'] = row['naplatioVozac'];
+    if (row['otkazaoVozac'] != null) map['otkazaoVozac'] = row['otkazaoVozac'];
     if (row['log_created_at'] != null) map['processed_at'] ??= row['log_created_at'];
     if (row['je_otkazan_iz_loga'] == true && map['status'] != 'otkazano') {
       map['status'] = 'otkazano';

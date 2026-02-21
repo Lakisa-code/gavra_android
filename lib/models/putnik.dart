@@ -237,8 +237,9 @@ class Putnik {
       statusVreme: p['updated_at'],
       vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
       vremePokupljenja: req['processed_at'] != null ? DateTime.parse(req['processed_at']).toLocal() : null,
-      pokupioVozac: null,
-      naplatioVozac: req['naplatioVozac'], // ✅ NOVO: Ime vozača koji je naplatio
+      pokupioVozac: req['pokupioVozac'],
+      naplatioVozac: req['naplatioVozac'],
+      otkazaoVozac: req['otkazaoVozac'],
       cena: req['cena']?.toDouble(), // ✅ NOVO: Iznos plaćanja iz voznje_log
       obrisan: false,
       dodeljenVozac: dodeljenVozacFinal,

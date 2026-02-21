@@ -1205,7 +1205,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                           await PermissionService.ensureGpsForNavigation();
                                                       if (!hasPermission) {
                                                         if (mounted && context.mounted) {
-                                                          AppSnackBar.error(context, '📍 GPS dozvole su potrebne za navigaciju');
+                                                          AppSnackBar.error(
+                                                              context, '📍 GPS dozvole su potrebne za navigaciju');
                                                         }
                                                         return;
                                                       }
@@ -1237,7 +1238,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                             );
                                                           } else {
                                                             // Neuspešno - prikaži detaljniju grešku
-                                                            AppSnackBar.warning(context, '📍 Lokacija nije pronađena\nAdresa: ${_putnik.adresa}\n🔄 Pokušajte ponovo za 10 sekundi');
+                                                            AppSnackBar.warning(context,
+                                                                '📍 Lokacija nije pronađena\nAdresa: ${_putnik.adresa}\n🔄 Pokušajte ponovo za 10 sekundi');
                                                           }
                                                         }
                                                       } catch (e) {
@@ -1454,7 +1456,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Pokupljen: ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.getColorOrDefaultSync(_putnik.pokupioVozac ?? _putnik.vozac, Colors.green),
+                            color: VozacBoja.getSync(_putnik.pokupioVozac ?? _putnik.vozac),
                             fontWeight: FontWeight.bold, // Promenjeno sa w500
                           ),
                         ),
@@ -1466,7 +1468,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.getColorOrDefaultSync(_putnik.naplatioVozac, Colors.green),
+                              color: VozacBoja.getSync(_putnik.naplatioVozac),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1480,7 +1482,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             fontSize: 13,
                             color: _putnik.otkazaoVozac == 'Putnik'
                                 ? Colors.red.shade900 // Jača crvena za putnika
-                                : VozacBoja.getColorOrDefaultSync(_putnik.otkazaoVozac, Colors.red),
+                                : VozacBoja.getSync(_putnik.otkazaoVozac),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
