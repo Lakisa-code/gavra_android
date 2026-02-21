@@ -32,14 +32,19 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
   // Datum
   DateTime _selectedDate = DateTime.now();
 
+  // Seat requests
+  List<Map<String, dynamic>> _seatRequests = [];
+  bool _loadingSeatRequests = false;
+
   // Tabovi
   TabController? _tabController;
-  static const List<String> _actionTypes = ['sve', 'voznja', 'otkazivanje', 'uplata'];
+  static const List<String> _actionTypes = ['sve', 'voznja', 'otkazivanje', 'uplata', 'zahtevi'];
   static const Map<String, String> _actionLabels = {
     'sve': '📊 Sve',
     'voznja': '🚗 Vožnje',
     'otkazivanje': '❌ Otkazane',
     'uplata': '💰 Uplate',
+    'zahtevi': '📋 Zahtjevi',
   };
 
   static const Color _accentColor = Color(0xFF5C6BC0); // indigo
@@ -48,6 +53,9 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
   void initState() {
     super.initState();
     _tabController = TabController(length: _actionTypes.length, vsync: this);
+    _tabController!.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadSviPutnici();
   }
 
@@ -88,6 +96,28 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     }).toList();
   }
 
+  /// Učitaj seat_requests za izabranog putnika i datum
+  Future<void> _loadSeatRequests() async {
+    if (_selectedPutnikId == null) return;
+    setState(() => _loadingSeatRequests = true);
+    try {
+      final datumStr = _selectedDate.toIso8601String().split('T')[0];
+      final response = await supabase
+          .from('seat_requests')
+          .select('id, grad, datum, zeljeno_vreme, dodeljeno_vreme, status, created_at, broj_mesta, priority, cancelled_by')
+          .eq('putnik_id', _selectedPutnikId!)
+          .eq('datum', datumStr)
+          .order('created_at', ascending: false);
+      setState(() {
+        _seatRequests = List<Map<String, dynamic>>.from(response as List);
+        _loadingSeatRequests = false;
+      });
+    } catch (e) {
+      setState(() => _loadingSeatRequests = false);
+      debugPrint('❌ [PutnikLog] Greška pri učitavanju zahtjeva: $e');
+    }
+  }
+
   /// Otvori date picker
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
@@ -109,6 +139,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     );
     if (picked != null && picked != _selectedDate) {
       setState(() => _selectedDate = picked);
+      _loadSeatRequests();
     }
   }
 
@@ -324,6 +355,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
                                     _searchController.clear();
                                   });
                                   FocusScope.of(context).unfocus();
+                                  _loadSeatRequests();
                                 },
                               );
                             },
@@ -379,7 +411,10 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
                   // Dugme za resetovanje datuma na danas
                   IconButton(
                     icon: Icon(Icons.today, color: _accentColor),
-                    onPressed: () => setState(() => _selectedDate = DateTime.now()),
+                    onPressed: () {
+                      setState(() => _selectedDate = DateTime.now());
+                      _loadSeatRequests();
+                    },
                     tooltip: 'Danas',
                   ),
                   // Dugme za promjenu putnika
@@ -422,9 +457,11 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
                 ),
               ),
 
-            // ── LISTA AKCIJA ───────────────────────────────────────
+            // ── LISTA AKCIJA / ZAHTJEVI ────────────────────────────
             Expanded(
-              child: _buildAkcijeList(),
+              child: (_tabController != null && _actionTypes[_tabController!.index] == 'zahtevi')
+                  ? _buildZahteviList()
+                  : _buildAkcijeList(),
             ),
           ],
 
@@ -531,6 +568,305 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
           },
         );
       },
+    );
+  }
+
+  /// Boja za status zahtjeva
+  Color _colorForStatus(String? status) {
+    switch (status) {
+      case 'approved':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.redAccent;
+      case 'cancelled':
+        return Colors.grey;
+      case 'manual':
+        return Colors.blueAccent;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Ikona za status
+  IconData _iconForStatus(String? status) {
+    switch (status) {
+      case 'approved':
+        return Icons.check_circle;
+      case 'pending':
+        return Icons.hourglass_empty;
+      case 'rejected':
+        return Icons.cancel;
+      case 'cancelled':
+        return Icons.block;
+      case 'manual':
+        return Icons.edit_note;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  /// Label za status
+  String _labelForStatus(String? status) {
+    switch (status) {
+      case 'approved':
+        return '✅ Odobreno';
+      case 'pending':
+        return '⏳ Na čekanju';
+      case 'rejected':
+        return '❌ Odbijeno';
+      case 'cancelled':
+        return '🚫 Otkazano';
+      case 'manual':
+        return '✏️ Ručno';
+      default:
+        return status ?? 'Nepoznato';
+    }
+  }
+
+  /// Formatiraj grad
+  String _formatGrad(String? grad) {
+    if (grad == null) return '—';
+    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vr')) return 'Vršac';
+    if (grad.toLowerCase() == 'bc' || grad.toLowerCase().contains('be')) return 'Bela Crkva';
+    return grad;
+  }
+
+  /// Gradi listu zahtjeva (seat_requests)
+  Widget _buildZahteviList() {
+    if (_loadingSeatRequests) {
+      return const Center(child: CircularProgressIndicator(color: _accentColor));
+    }
+
+    if (_seatRequests.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_seat_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.25),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nema zahtjeva za izabrani datum',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () {
+                _loadSeatRequests();
+              },
+              icon: const Icon(Icons.refresh, size: 16, color: _accentColor),
+              label: const Text('Osvježi', style: TextStyle(color: _accentColor)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadSeatRequests,
+      color: _accentColor,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _seatRequests.length,
+        itemBuilder: (context, index) {
+          return _buildSeatRequestCard(_seatRequests[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSeatRequestCard(Map<String, dynamic> req) {
+    final status = req['status'] as String?;
+    final statusColor = _colorForStatus(status);
+    final grad = _formatGrad(req['grad'] as String?);
+    final zeljenoVreme = req['zeljeno_vreme'] as String? ?? '';
+    final dodeljenovVreme = req['dodeljeno_vreme'] as String?;
+    final brojMesta = req['broj_mesta'] as int? ?? 1;
+    final priority = req['priority'] as int? ?? 0;
+    final cancelledBy = req['cancelled_by'] as String?;
+    final createdAt = req['created_at'] != null
+        ? DateTime.tryParse(req['created_at'] as String)?.toLocal()
+        : null;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Theme.of(context).cardColor.withOpacity(0.9),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: statusColor.withOpacity(0.5), width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status ikona
+            Column(
+              children: [
+                if (createdAt != null)
+                  Container(
+                    width: 52,
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: statusColor.withOpacity(0.5), width: 1),
+                    ),
+                    child: Text(
+                      DateFormat('HH:mm').format(createdAt),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                Icon(
+                  _iconForStatus(status),
+                  size: 20,
+                  color: statusColor,
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+
+            // Detalji
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Status label
+                  Text(
+                    _labelForStatus(status),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Grad
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 13,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        grad,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                  ),
+
+                  // Željeno vreme
+                  if (zeljenoVreme.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 13,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Željeno: $zeljenoVreme',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Dodijeljeno vreme
+                  if (dodeljenovVreme != null && dodeljenovVreme.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle_outline,
+                            size: 13,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Dodijeljeno: $dodeljenovVreme',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Broj mjesta + prioritet
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.event_seat,
+                          size: 13,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Mjesta: $brojMesta',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                        ),
+                        if (priority > 0) ...[  
+                          const SizedBox(width: 8),
+                          Icon(Icons.star, size: 12, color: Colors.amber),
+                          const SizedBox(width: 2),
+                          Text(
+                            'P$priority',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.amber,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // Otkazao
+                  if (cancelledBy != null && cancelledBy.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'Otkazao: $cancelledBy',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.redAccent.withOpacity(0.7),
+                              fontStyle: FontStyle.italic,
+                            ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
