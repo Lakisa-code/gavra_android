@@ -159,8 +159,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final datumStr = req['datum']?.toString() ?? '';
       final datum = DateTime.tryParse(datumStr);
       if (datum == null || datum.weekday != targetWeekday) return true; // zadrži
-      final grad = req['grad']?.toString().toUpperCase() ?? '';
-      final normalizedGrad = grad.startsWith('V') ? 'VS' : 'BC';
+      final grad = req['grad']?.toString() ?? '';
+      final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
       final targetGrad = isBC ? 'BC' : 'VS';
       if (normalizedGrad == targetGrad) return false; // ukloni
       return true;
@@ -349,8 +349,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         }
 
         // Normalizovano poređenje grada (BC/VS)
-        final grad = req['grad']?.toString().toUpperCase() ?? '';
-        final normalizedGrad = grad.startsWith('V') ? 'VS' : 'BC';
+        final grad = req['grad']?.toString() ?? '';
+        final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
         final targetGrad = isBC ? 'BC' : 'VS';
 
         if (normalizedGrad == targetGrad) {
@@ -382,8 +382,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         if (status == 'obrisan') continue;
 
         // Normalizovano poređenje grada (BC/VS)
-        final grad = req['grad']?.toString().toUpperCase() ?? '';
-        final normalizedGrad = grad.startsWith('V') ? 'VS' : 'BC';
+        final grad = req['grad']?.toString() ?? '';
+        final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
         final targetGrad = isBC ? 'BC' : 'VS';
 
         if (normalizedGrad == targetGrad) {

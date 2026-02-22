@@ -723,7 +723,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }
 
     try {
-      final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
+      final smer = _selectedGrad.toLowerCase().contains('bela') ? 'BC_VS' : 'VS_BC';
 
       // Konvertuj koordinate: Map<Putnik, Position> -> Map<String, Position>
       Map<String, Position>? coordsByName;
