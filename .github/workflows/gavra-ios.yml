@@ -42,12 +42,13 @@ jobs:
           APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APPSTORE_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
+          CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
         run: |
           app-store-connect fetch-signing-files \
-            com.gavra013.gavra_android \
+            com.gavra013.gavra013ios \
             --type IOS_APP_STORE \
             --create \
-            --certificate-key @env:APP_STORE_CONNECT_PRIVATE_KEY
+            --certificate-key @env:CERTIFICATE_PRIVATE_KEY
 
       - name: Add certificates to keychain
         run: |
@@ -84,5 +85,5 @@ jobs:
       - name: ✅ Upload complete
         run: |
           echo "🎉 Successfully built and uploaded to TestFlight!"
-          echo "  - Bundle ID: com.gavra013.gavra_android"
+          echo "  - Bundle ID: com.gavra013.gavra013ios"
           echo "  - Version: $VERSION ($BUILD)"
