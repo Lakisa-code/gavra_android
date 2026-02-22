@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../globals.dart';
+import '../utils/grad_adresa_validator.dart';
 import 'openrouteservice.dart';
 import 'permission_service.dart';
 
@@ -71,7 +72,7 @@ class DriverLocationService {
 
     _currentVozacId = vozacId;
     _currentVozacIme = vozacIme;
-    _currentGrad = grad;
+    _currentGrad = GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
     _currentVremePolaska = vremePolaska;
     _currentSmer = smer;
     _currentPutniciEta = putniciEta != null ? Map.from(putniciEta) : null;
