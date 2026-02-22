@@ -61,6 +61,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // 📍 OPTIMIZACIJA RUTE - kopirano iz DanasScreen
   bool _isRouteOptimized = false;
   List<Putnik> _optimizedRoute = [];
+  List<Putnik> _mojiPutnici = []; // Cache za _buildOptimizeButton (iz glavnog streama)
   final bool _isLoading = false;
   bool _isOptimizing = false; // ⏳ Loading state specifično za optimizaciju rute
 
@@ -365,15 +366,14 @@ class _VozacScreenState extends State<VozacScreen> {
     final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
     final sveziPutnici = await putnikService.getPutniciByIds(ids, targetDan: targetDan);
 
-    // ?? UJEDNACENO SA DANAS_SCREEN: Razdvoji pokupljene/otkazane/tude od preostalih
+    // Razdvoji pokupljene/otkazane od preostalih
+    // Ekran je vec filtriran po vozacu - nema potrebe za dodeljenVozac filterom
     final pokupljeniIOtkazani = sveziPutnici.where((p) {
-      final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
-      return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || p.jeBezPolaska || jeTudji;
+      return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || p.jeBezPolaska;
     }).toList();
 
     final preostaliPutnici = sveziPutnici.where((p) {
-      final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
-      return !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !p.jeBezPolaska && !jeTudji;
+      return !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !p.jeBezPolaska;
     }).toList();
 
     if (preostaliPutnici.isEmpty) {
@@ -543,19 +543,17 @@ class _VozacScreenState extends State<VozacScreen> {
     _isReoptimizing = true;
 
     try {
-      // ?? Razdvoji pokupljene/otkazane/tude od aktivnih putnika
+      // Razdvoji pokupljene/otkazane od aktivnih putnika
+      // Ekran je vec filtriran po vozacu - nema potrebe za dodeljenVozac filterom
       final pokupljeniIOtkazani = allPassengers.where((p) {
-        final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
-        return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || p.jeBezPolaska || jeTudji;
+        return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo || p.jeBezPolaska;
       }).toList();
 
       // Filtriraj samo AKTIVNE putnike sa validnim adresama za optimizaciju
       final filtriraniPutnici = allPassengers.where((p) {
         final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
             (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
-        // ?? Iskljuci pokupljene, otkazane i tude putnike
-        final jeTudji = p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver;
-        final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !p.jeBezPolaska && !jeTudji;
+        final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !p.jeBezPolaska;
         return hasValidAddress && isActive;
       }).toList();
 
@@ -648,17 +646,14 @@ class _VozacScreenState extends State<VozacScreen> {
     }
 
     // Filter putnika sa validnim adresama i aktivnim statusom
+    // Ekran je vec filtriran po vozacu - nema potrebe za dodeljenVozac filterom ovde
     final filtriraniPutnici = putnici.where((p) {
       // Iskljuci otkazane putnike
       if (p.jeOtkazan || p.jeBezPolaska) return false;
       // Iskljuci vec pokupljene putnike
       if (p.jePokupljen) return false;
-      // Iskljuci odsutne putnike (bolovanje/godi�nji)
+      // Iskljuci odsutne putnike (bolovanje/godisnji)
       if (p.jeOdsustvo) return false;
-      // ?? Iskljuci tude putnike (dodeljeni drugom vozacu)
-      if (p.dodeljenVozac != null && p.dodeljenVozac!.isNotEmpty && p.dodeljenVozac != _currentDriver) {
-        return false;
-      }
       // Proveri validnu adresu
       final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
           (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
@@ -746,138 +741,67 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  // ?? KOMPAKTNO DUGME ZA GPS TRACKING
-  // ? TOGGLE: Pokrece ili zaustavlja GPS tracking u pozadini
-  Widget _buildOptimizeButton() {
-    return StreamBuilder<List<Putnik>>(
-      // ? Koristi isti stream kao ostatak screen-a
-      stream: _putnikService.streamPutnici(),
-      builder: (context, snapshot) {
-        // Loading state
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            height: 30,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _getBorderColor(Colors.grey)),
-            ),
-            child: const Center(
-              child: SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              ),
-            ),
-          );
-        }
+  // DUGME ZA GPS TRACKING / OPTIMIZACIJU
+  // Prima listu putnika direktno iz glavnog streama - nema duplog streama
+  Widget _buildOptimizeButton(List<Putnik> mojiAktivniPutnici) {
+    final normFilterTime = GradAdresaValidator.normalizeTime(_selectedVreme);
+    final filtriraniPutnici = mojiAktivniPutnici.where((p) {
+      final pTime = GradAdresaValidator.normalizeTime(p.polazak);
+      if (pTime != normFilterTime) return false;
+      if (p.jeOtkazan || p.jeBezPolaska || p.jePokupljen || p.jeOdsustvo) return false;
+      if (!TextUtils.isStatusActive(p.status)) return false;
+      return true;
+    }).toList();
 
-        // Error state
-        if (snapshot.hasError) {
-          return Container(
-            height: 30,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _getBorderColor(Colors.red)),
-            ),
-            child: const Center(
-              child: Text(
-                '!',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-              ),
-            ),
-          );
-        }
+    final bool isDriverValid = _currentDriver != null && VozacCache.isValidIme(_currentDriver);
+    final bool canPress = !_isOptimizing && !_isLoading && isDriverValid;
 
-        // ?? Filtriraj putnike po gradu i vremenu
-        final sviPutnici = snapshot.data ?? [];
+    final baseColor = _isGpsTracking ? Colors.orange : (_isRouteOptimized ? Colors.green : Colors.white);
 
-        // ?? REALTIME SYNC: A�uriraj statuse u optimizovanoj ruti
-        if (_isRouteOptimized && sviPutnici.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _syncOptimizedRouteWithStream(sviPutnici);
-          });
-        }
-
-        final normFilterTime = GradAdresaValidator.normalizeTime(_selectedVreme);
-        final filtriraniPutnici = sviPutnici.where((p) {
-          // Vreme filter
-          final pTime = GradAdresaValidator.normalizeTime(p.polazak);
-          if (pTime != normFilterTime) return false;
-
-          // Grad filter
-          final isRegistrovaniPutnik = p.mesecnaKarta == true;
-          bool gradMatch;
-          if (isRegistrovaniPutnik) {
-            gradMatch = p.grad == _selectedGrad;
-          } else {
-            gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
-          }
-          if (!gradMatch) return false;
-
-          // Status filter - samo aktivni
-          if (!TextUtils.isStatusActive(p.status)) return false;
-
-          // ?? Boja filter - samo bele kartice (nepokupljeni)
-          if (p.jePokupljen) return false;
-
-          return true;
-        }).toList();
-
-        final bool isDriverValid = _currentDriver != null && VozacCache.isValidIme(_currentDriver);
-        final bool canPress = !_isOptimizing && !_isLoading && isDriverValid;
-
-        final baseColor = _isGpsTracking ? Colors.orange : (_isRouteOptimized ? Colors.green : Colors.white);
-
-        return InkWell(
-          onTap: canPress
-              ? () {
-                  if (_isGpsTracking) {
-                    _stopGpsTracking();
-                  } else if (_isRouteOptimized) {
-                    _startGpsTracking();
-                  } else {
-                    _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: false);
-                  }
-                }
-              : null,
-          borderRadius: BorderRadius.circular(8),
-          child: Opacity(
-            opacity: 1.0,
-            child: Container(
-              height: 30,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: baseColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _getBorderColor(baseColor)),
-              ),
-              child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: _isOptimizing
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(
-                          _isGpsTracking ? 'STOP' : 'START',
-                          style: TextStyle(
-                            color: baseColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        ),
-                ),
-              ),
+    return InkWell(
+      onTap: canPress
+          ? () {
+              if (_isGpsTracking) {
+                _stopGpsTracking();
+              } else if (_isRouteOptimized) {
+                _startGpsTracking();
+              } else {
+                _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: false);
+              }
+            }
+          : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Opacity(
+        opacity: 1.0,
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: baseColor.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _getBorderColor(baseColor)),
+          ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: _isOptimizing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      _isGpsTracking ? 'STOP' : 'START',
+                      style: TextStyle(
+                        color: baseColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -1101,7 +1025,7 @@ class _VozacScreenState extends State<VozacScreen> {
                   Row(
                     children: [
                       // ?? RUTA DUGME
-                      Expanded(child: _buildOptimizeButton()),
+                      Expanded(child: _buildOptimizeButton(_mojiPutnici)),
                       const SizedBox(width: 4),
                       // 🗺️ NAV DUGME
                       Expanded(child: _buildMapsButton()),
@@ -1168,7 +1092,12 @@ class _VozacScreenState extends State<VozacScreen> {
                     return false;
                   }).toList();
 
-                  // ? CLIENT-SIDE FILTER za grad i vreme - kao u DanasScreen
+                  // Cache za Start dugme (izvan StreamBuilder konteksta)
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && _mojiPutnici != mojiPutnici) {
+                      setState(() => _mojiPutnici = mojiPutnici);
+                    }
+                  });
                   final filteredByGradVreme = mojiPutnici.where((p) {
                     // Filter po gradu
                     final gradMatch =
