@@ -43,11 +43,20 @@ class SlobodnaMestaService {
   static final StreamController<Map<String, dynamic>> _projectedStatsController =
       StreamController<Map<String, dynamic>>.broadcast();
 
+  /// Pretvara ISO datum u skraćenicu dana ('pon', 'uto', itd.)
+  static String _isoDateToDayAbbr(String isoDate) {
+    final date = DateTime.tryParse(isoDate);
+    if (date == null) return 'pon';
+    const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    return dani[(date.weekday - 1).clamp(0, 6)];
+  }
+
   /// Izračunaj broj zauzetih mesta za određeni grad/vreme/datum
   static int _countPutniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
       {String? excludePutnikId}) {
     final normalizedGrad = GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
     final targetVreme = GradAdresaValidator.normalizeTime(vreme);
+    final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
     for (final p in putnici) {
@@ -74,7 +83,7 @@ class SlobodnaMestaService {
 
       if ((normalizedGrad == 'BC' && jeBC) || (normalizedGrad == 'VS' && jeVS)) {
         // Brojimo sve putnike za ovaj grad
-        count += p.brojMesta;
+        count += p.brojMesta.toInt();
       }
     }
 
@@ -111,52 +120,84 @@ class SlobodnaMestaService {
       final jeVS = GradAdresaValidator.isVrsac(p.grad);
 
       if ((normalizedGrad == 'BC' && jeBC) || (normalizedGrad == 'VS' && jeVS)) {
-        count += p.brojMesta;
+        count += p.brojMesta.toInt();
       }
     }
 
     return count;
   }
-      final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludeId);
 
-      result['BC']!.add(
-        SlobodnaMesta(
-          grad = 'BC',
-          vreme = vreme,
-          maxMesta = maxMesta,
-          zauzetaMesta = zauzeto,
-          aktivan = true,
-          uceniciCount = ucenici,
-        ),
-      );
+  /// Dohvati slobodna mesta po gradu za određeni datum
+  static Future<Map<String, List<SlobodnaMesta>>> getSlobodnaMesta({String? datum, String? excludeId}) async {
+    final isoDate = datum ?? DateTime.now().toIso8601String().split('T')[0];
+    final excludePutnikId = excludeId;
+
+    final result = <String, List<SlobodnaMesta>>{
+      'BC': [],
+      'VS': [],
+    };
+
+    try {
+      final putnici = await _putnikService.getPutniciByDayIso(isoDate);
+      final kapacitet = await KapacitetService.getKapacitet();
+
+      // Bela Crkva
+      final bcKapaciteti = kapacitet['BC'] ?? {};
+      final bcVremenaSorted = bcKapaciteti.keys.toList()..sort();
+
+      for (final vreme in bcVremenaSorted) {
+        final maxMesta = bcKapaciteti[vreme] ?? 8;
+        final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludePutnikId);
+        final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludePutnikId);
+
+        result['BC']!.add(
+          SlobodnaMesta(
+            grad: 'BC',
+            vreme: vreme,
+            maxMesta: maxMesta,
+            zauzetaMesta: zauzeto,
+            aktivan: true,
+            uceniciCount: ucenici,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ getSlobodnaMesta BC error: $e');
     }
 
-    // Vršac - Koristi SVA vremena iz kapaciteta
-    final vsKapaciteti = kapacitet['VS'] ?? {};
-    final vsVremenaSorted = vsKapaciteti.keys.toList()..sort();
+    try {
+      final putnici = await _putnikService.getPutniciByDayIso(isoDate);
+      final kapacitet = await KapacitetService.getKapacitet();
 
-    for (final vreme in vsVremenaSorted) {
-      final maxMesta = vsKapaciteti[vreme] ?? 8;
-      final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludeId);
-      final ucenici = _countUceniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludeId);
+      // Vrsac - Koristi SVA vremena iz kapaciteta
+      final vsKapaciteti = kapacitet['VS'] ?? {};
+      final vsVremenaSorted = vsKapaciteti.keys.toList()..sort();
 
-      result['VS']!.add(
-        SlobodnaMesta(
-          grad: 'VS',
-          vreme: vreme,
-          maxMesta: maxMesta,
-          zauzetaMesta: zauzeto,
-          aktivan: true,
-          uceniciCount: ucenici,
-        ),
-      );
+      for (final vreme in vsVremenaSorted) {
+        final maxMesta = vsKapaciteti[vreme] ?? 8;
+        final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludePutnikId);
+        final ucenici = _countUceniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludePutnikId);
+
+        result['VS']!.add(
+          SlobodnaMesta(
+            grad: 'VS',
+            vreme: vreme,
+            maxMesta: maxMesta,
+            zauzetaMesta: zauzeto,
+            aktivan: true,
+            uceniciCount: ucenici,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ getSlobodnaMesta VS error: $e');
     }
 
     return result;
   }
 
   /// Proveri da li ima slobodnih mesta za određeni polazak
-  Future<bool> imaSlobodnihMesta(String grad, String vreme,
+  static Future<bool> imaSlobodnihMesta(String grad, String vreme,
       {String? datum, String? tipPutnika, int brojMesta = 1, String? excludeId}) async {
     // 📦 POŠILJKE: Ne zauzimaju mesto, pa uvek ima "mesta" za njih
     if (tipPutnika == 'posiljka') {
@@ -186,7 +227,7 @@ class SlobodnaMestaService {
   }
 
   /// Promeni vreme polaska za putnika koristeci RPC funkciju update_putnik_polazak_v2
-  Future<Map<String, dynamic>> promeniVremePutnika({
+  static Future<Map<String, dynamic>> promeniVremePutnika({
     required String putnikId,
     required String novoVreme,
     required String grad, // 'BC' ili 'VS'
@@ -218,7 +259,7 @@ class SlobodnaMestaService {
   }
 
   /// Pronađi najbliže alternativno vreme za određeni grad i datum
-  Future<String?> nadjiAlternativnoVreme(
+  static Future<String?> nadjiAlternativnoVreme(
     String grad, {
     required String datum,
     required String zeljenoVreme,
@@ -251,7 +292,7 @@ class SlobodnaMestaService {
 
   /// 🎓 Broji koliko je učenika "krenulo u školu" (imalo jutarnji polazak iz BC) za dati dan
   /// Ovo je ključno za VS logiku povratka - znamo koliko ih OČEKUJEMO nazad.
-  Future<int> getBrojUcenikaKojiSuOtisliUSkolu(String dan) async {
+  static Future<int> getBrojUcenikaKojiSuOtisliUSkolu(String dan) async {
     try {
       final isoDate = _getIsoDateForDay(dan);
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
@@ -271,7 +312,7 @@ class SlobodnaMestaService {
   }
 
   /// 🎓 Broji koliko učenika ima UPISAN POVRATAK (VS) za dati dan (bilo confirmed ili pending)
-  Future<int> getBrojUcenikaKojiSeVracaju(String dan) async {
+  static Future<int> getBrojUcenikaKojiSeVracaju(String dan) async {
     try {
       final isoDate = _getIsoDateForDay(dan);
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
@@ -291,7 +332,7 @@ class SlobodnaMestaService {
   }
 
   /// Pomoćna funkcija za dobijanje datuma iz skraćenice dana
-  String _getIsoDateForDay(String danAbbr) {
+  static String _getIsoDateForDay(String danAbbr) {
     final sada = DateTime.now();
     const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
     final targetWeekday = daniMap[danAbbr.toLowerCase()] ?? 1;
@@ -303,7 +344,7 @@ class SlobodnaMestaService {
   }
 
   /// Izračunava projektovano opterećenje za grad i vreme
-  Future<Map<String, dynamic>> getProjectedOccupancyStats() async {
+  static Future<Map<String, dynamic>> getProjectedOccupancyStats() async {
     try {
       final stats = await getSlobodnaMesta();
 
@@ -329,7 +370,7 @@ class SlobodnaMestaService {
   }
 
   /// Dohvati broj slobodnih mesta za određeni grad i vreme (Vršac)
-  Future<int> getOccupiedSeatsVs(String dan, String vreme) async {
+  static Future<int> getOccupiedSeatsVs(String dan, String vreme) async {
     try {
       final isoDate = _getIsoDateForDay(dan);
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
@@ -350,7 +391,7 @@ class SlobodnaMestaService {
   }
 
   /// 🆕 Dohvati broj zauzetih mesta za BC za dati dan i vreme
-  Future<int> getOccupiedSeatsBc(String dan, String vreme) async {
+  static Future<int> getOccupiedSeatsBc(String dan, String vreme) async {
     try {
       final isoDate = _getIsoDateForDay(dan);
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
@@ -371,7 +412,7 @@ class SlobodnaMestaService {
   }
 
   /// 🧹 Čisti realtime subscriptions
-  void dispose() {
+  static void dispose() {
     _projectedStatsSubscription?.cancel();
     _projectedStatsSubscription = null;
     _kapacitetStatsSubscription?.cancel();
