@@ -4,7 +4,7 @@
 
 | Vreme | Šta se dešava |
 |-------|---------------|
-| **Subota 00:00** | `sedmicni-reset-polazaka` — setuje sve seat_requests na `bez_polaska` |
+| **Subota 01:00** | `sedmicni-reset-polazaka` — setuje sve seat_requests na `bez_polaska` |
 | **Subota 01:00** | ⛔ **BRISANJE** — `ciscenje-seat-requests` fizički briše seat_requests starije od 30 dana |
 | **Subota 02:00** | ✅ **TIME PICKER SE OTKLJUČAVA** — putnici mogu da prave nove zahteve za narednu sedmicu |
 
