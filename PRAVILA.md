@@ -10,8 +10,13 @@
 
 ### ⚠️ VAŽNO ZA RAZVOJ
 - seat_requests **POSTOJE** cijelu sedmicu — ne brišu se do subote 01:00
-- Time picker se **ZAKLJUČAVA** automatski čim nastupi vreme polaska tog dana (npr. pon 07:00 → zaključano u pon u 07:00)
-- Time picker se **OTKLJUČAVA** za narednu sedmicu u subotu u 02:00
+- Time picker se **ZAKLJUČAVA** po ćeliji — svaka ćelija se zaključava čim nastupi njeno vreme:
+  - Pon 05:00 → zaključava se u pon u 05:00
+  - Pon 06:00 → zaključava se u pon u 06:00
+  - Pon 07:00 → zaključava se u pon u 07:00
+  - Uto 05:00 → zaključava se u uto u 05:00
+  - ... itd. za svaki dan i vreme
+- Time picker se **OTKLJUČAVA** za narednu sedmicu u **subotu u 02:00** — tada svi dani/vremena postaju ponovo dostupni
 - Admin uvek može da kreira termine ručno bez obzira na zaključanost
 - Čišćenje starih seat_requests: **SUBOTA 01:00** (ne nedjelja, ne drugi dan)
 - Nemoj kreirati logiku koja briše seat_requests van ovog rasporeda
