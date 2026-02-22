@@ -9,14 +9,7 @@
     <key>uploadSymbols</key>
     <true/>
     <key>signingStyle</key>
-    <string>manual</string>
-    <key>signingCertificate</key>
-    <string>iPhone Distribution</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.gavra013.gavra_android</key>
-        <string>com_gavra013_gavra_android_appstore</string>
-    </dict>
+    <string>automatic</string>
     <key>destination</key>
     <string>upload</string>
 </dict>
