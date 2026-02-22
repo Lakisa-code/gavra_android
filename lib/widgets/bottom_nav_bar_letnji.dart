@@ -77,7 +77,7 @@ class _BottomNavBarLetnjiState extends State<BottomNavBarLetnji> {
           curve: Curves.easeInOut,
         );
       }
-    } else if (widget.selectedGrad == 'Vršac') {
+    } else if (widget.selectedGrad == 'Vrsac') {
       final index = vsVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _vsScrollController.hasClients) {
         final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
@@ -152,7 +152,7 @@ class _BottomNavBarLetnjiState extends State<BottomNavBarLetnji> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: _PolazakRow(
                     label: 'VS',
-                    grad: 'Vršac',
+                    grad: 'Vrsac',
                     vremena: vsVremena,
                     selectedGrad: widget.selectedGrad,
                     selectedVreme: widget.selectedVreme,

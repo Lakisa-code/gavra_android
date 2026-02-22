@@ -96,7 +96,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   Future<void> _loadAdreseFromDatabase() async {
     try {
       final adreseBC = await AdresaSupabaseService.getAdreseZaGrad('Bela Crkva');
-      final adreseVS = await AdresaSupabaseService.getAdreseZaGrad('Vršac');
+      final adreseVS = await AdresaSupabaseService.getAdreseZaGrad('Vrsac');
 
       if (mounted) {
         setState(() {

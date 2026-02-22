@@ -177,12 +177,8 @@ class VoznjeLogService {
         final tip = l['tip']?.toString();
 
         // ✅ NOVO: Čitamo iz dedicated kolona umesto meta JSONB
-        final gradRaw = l['grad']?.toString().toLowerCase();
-        final grad = GradAdresaValidator.isVrsac(gradRaw)
-            ? 'vs'
-            : GradAdresaValidator.isBelaCrkva(gradRaw)
-                ? 'bc'
-                : gradRaw;
+        final gradRaw = l['grad']?.toString();
+        final grad = gradRaw != null ? GradAdresaValidator.normalizeGrad(gradRaw) : gradRaw;
         final vreme = l['vreme_polaska']?.toString();
 
         String key = pid;
@@ -236,7 +232,7 @@ class VoznjeLogService {
 
       if (grad != null) {
         // ✅ NOVO: Koristi dedicirane kolone umesto meta JSONB
-        final gradKey = GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc';
+        final gradKey = GradAdresaValidator.normalizeGrad(grad);
         query = query.eq('grad', gradKey);
       }
       if (vreme != null) {
@@ -459,10 +455,10 @@ class VoznjeLogService {
     String? vreme,
   }) async {
     // ✅ NOVO: Koristimo dedicirane kolone umesto meta JSONB
-    final String? gradKod = grad != null ? (GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc') : null;
+    final String? gradKod = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
     final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
-    // ✅ NOVO: Dohvati vozac_ime direktno iz baze (garantovano)
+    // Dohvati vozac_ime direktno iz baze (garantovano)
     String? vozacIme;
     if (vozacId != null && vozacId.isNotEmpty) {
       try {
@@ -831,7 +827,7 @@ class VoznjeLogService {
       final datumStr = datum ?? now.toIso8601String().split('T')[0];
 
       // ✅ Koristimo dedicirane kolone umesto meta JSONB
-      final String? gradKod = grad != null ? (GradAdresaValidator.isVrsac(grad) ? 'vs' : 'bc') : null;
+      final String? gradKod = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
       final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
       // Dohvati vozac_ime iz cache-a (bez async DB query)

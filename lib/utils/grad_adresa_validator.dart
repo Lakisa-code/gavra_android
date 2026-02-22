@@ -87,21 +87,17 @@ class GradAdresaValidator {
     final normalizedPutnikGrad = normalizeString(putnikGrad);
 
     // AKO GRAD PRIPADA DOZVOLJENIM OPŠTINAMA, DOZVOLI BILO KOJU ADRESU
-    final gradBelongs = naseljaOpstineBelaCrkva
-            .any((naselje) => normalizedPutnikGrad.contains(naselje)) ||
-        naseljaOpstineVrsac
-            .any((naselje) => normalizedPutnikGrad.contains(naselje));
+    final gradBelongs = naseljaOpstineBelaCrkva.any((naselje) => normalizedPutnikGrad.contains(naselje)) ||
+        naseljaOpstineVrsac.any((naselje) => normalizedPutnikGrad.contains(naselje));
 
     if (gradBelongs) {
       return true; // Dozvoli bilo koju adresu u validnim opštinama
     }
 
     // PROVERI DA LI ADRESA SADRŽI POZNATA NASELJA (fallback)
-    final belongsToBelaCrkva = naseljaOpstineBelaCrkva
-        .any((naselje) => normalizedAdresa.contains(naselje));
+    final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedAdresa.contains(naselje));
 
-    final belongsToVrsac = naseljaOpstineVrsac
-        .any((naselje) => normalizedAdresa.contains(naselje));
+    final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedAdresa.contains(naselje));
 
     // Dozvoli ako pripada bilo kojoj opštini
     return belongsToBelaCrkva || belongsToVrsac;
@@ -119,19 +115,17 @@ class GradAdresaValidator {
     final normalizedGrad = normalizeString(grad);
 
     // Proveri da li grad pripada opštini Bela Crkva
-    final belongsToBelaCrkva = naseljaOpstineBelaCrkva
-        .any((naselje) => normalizedGrad.contains(naselje));
+    final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedGrad.contains(naselje));
 
     // Proveri da li grad pripada opštini Vršac
-    final belongsToVrsac =
-        naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
+    final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
 
     if (belongsToBelaCrkva) {
       return isAdresaInAllowedCity(adresa, 'Bela Crkva');
     }
 
     if (belongsToVrsac) {
-      return isAdresaInAllowedCity(adresa, 'Vršac');
+      return isAdresaInAllowedCity(adresa, 'Vrsac');
     }
 
     return false; // Ako grad nije iz dozvoljenih opština, odbaci
@@ -146,10 +140,8 @@ class GradAdresaValidator {
     final normalizedGrad = normalizeString(grad);
 
     // Proveri da li pripada dozvoljenim opštinama (Bela Crkva ili Vršac)
-    final belongsToBelaCrkva = naseljaOpstineBelaCrkva
-        .any((naselje) => normalizedGrad.contains(naselje));
-    final belongsToVrsac =
-        naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
+    final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedGrad.contains(naselje));
+    final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
 
     // Blokiraj ako NE pripada dozvoljenim opštinama
     return !(belongsToBelaCrkva || belongsToVrsac);

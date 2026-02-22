@@ -79,7 +79,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
           curve: Curves.easeInOut,
         );
       }
-    } else if (widget.selectedGrad == 'Vršac') {
+    } else if (widget.selectedGrad == 'Vrsac') {
       final index = vsVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _vsScrollController.hasClients) {
         final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
@@ -152,7 +152,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
                   vremena: vsVremena,
                   selectedGrad: widget.selectedGrad,
                   selectedVreme: widget.selectedVreme,
-                  grad: 'Vršac',
+                  grad: 'Vrsac',
                   onPolazakChanged: widget.onPolazakChanged,
                   getPutnikCount: widget.getPutnikCount,
                   getKapacitet: widget.getKapacitet,
