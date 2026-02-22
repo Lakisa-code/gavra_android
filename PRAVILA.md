@@ -49,15 +49,37 @@ Ništa više, ništa manje.
 
 ---
 
-## TABELA seat_requests
+## DVE TABELE — DVE ULOGE — NIKAD SE NE MEŠAJU
 
-Jedan red = jedan putnik, jedan dan, jedan grad, jedno vreme.
+### seat_requests — OPERATIVNA TABELA
+- Sadrži **tekuće stanje** vožnji
+- Menja se svakodnevno: kreiranje, otkazivanje, pokupljen, plaćen
+- **SME da se briše/menja** — to je njena svrha
+- Jedan red = jedan putnik, jedan dan, jedan grad, jedno vreme
 
 ```
 putnik_id | datum | grad | zeljeno_vreme | status
 ```
 
 Svaka operacija mora da filtrira po **sva četiri polja**.
+
+### voznje_log — STATISTIKA / ARHIVA
+- Sadrži **trajni zapis** svega što se desilo
+- **NIKAD SE NE BRIŠE, NIKAD SE NE MENJA**
+- Samo INSERT — nikad UPDATE, nikad DELETE
+- Kada se vožnja obriše iz seat_requests → voznje_log ostaje netaknut
+- Kada se putnik otkaže → log ostaje
+- Kada se status promeni → log ostaje
+
+```
+putnik_id | datum | grad | vreme | tip | vozac_ime | iznos | ...
+```
+
+### ⛔ ZABRANJENO
+- Brisati redove iz `voznje_log`
+- Menjati redove u `voznje_log`
+- Koristiti `voznje_log` kao operativni izvor podataka za prikaz
+- Brisati `seat_requests` zbog statistike (za to postoji `voznje_log`)
 
 ---
 
