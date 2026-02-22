@@ -1,0 +1,12 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Sync certificates and profiles via Match"
+  lane :sync_signing do
+    match(
+      type: "appstore",
+      readonly: true,
+      app_identifier: "com.gavra013.gavra_android"
+    )
+  end
+end
