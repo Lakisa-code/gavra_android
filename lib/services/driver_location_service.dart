@@ -97,15 +97,20 @@ class DriverLocationService {
     _etaTimer?.cancel();
     _positionSubscription?.cancel();
 
-    if (_isTracking && _currentVozacId != null) {
+    // Uvijek pokušaj update bez obzira na _isTracking flag
+    if (_currentVozacId != null) {
       try {
+        debugPrint('🛑 [DriverLocation] Stopping tracking for vozac: $_currentVozacId');
         await supabase.from('vozac_lokacije').update({
           'aktivan': false,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('vozac_id', _currentVozacId!);
+        debugPrint('✅ [DriverLocation] aktivan=false upisano u DB');
       } catch (e) {
         debugPrint('❌ [DriverLocation] Stop error: $e');
       }
+    } else {
+      debugPrint('⚠️ [DriverLocation] stopTracking pozvan ali _currentVozacId je null');
     }
 
     _isTracking = false;

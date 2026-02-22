@@ -579,7 +579,7 @@ class _VozacScreenState extends State<VozacScreen> {
       onTap: canPress
           ? () {
               if (_isGpsTracking) {
-                _stopGpsTracking();
+                _stopGpsTracking(); // async, fire-and-forget je OK ovdje jer je UI odmah
               } else if (_isRouteOptimized) {
                 _startGpsTracking();
               } else {
@@ -766,8 +766,8 @@ class _VozacScreenState extends State<VozacScreen> {
   }
 
   // ZAUSTAVI GPS TRACKING
-  void _stopGpsTracking() {
-    DriverLocationService.instance.stopTracking();
+  Future<void> _stopGpsTracking() async {
+    await DriverLocationService.instance.stopTracking();
 
     if (mounted) {
       setState(() {

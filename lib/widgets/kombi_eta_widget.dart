@@ -85,32 +85,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       final filteredList = list.where((driver) {
         final driverGrad = driver['grad'] as String? ?? '';
-        final driverVreme = driver['vreme_polaska'] as String?;
-        final updatedAtStr = driver['updated_at'] as String?;
-
-        // 1. Provera grada
-        if (_normalizeGrad(driverGrad) != normalizedGrad) return false;
-
-        // 🛑 STALE CHECK: Ako zapis nije ažuriran u poslednjih 30 minuta, ignoriši ga!
-        // Ovo rešava problem "zombija" vozača koji nisu odjavljeni (putnici_eta ostaje zapamćen)
-        if (updatedAtStr != null) {
-          final updatedAt = DateTime.tryParse(updatedAtStr);
-          if (updatedAt != null) {
-            final diff = DateTime.now().difference(updatedAt).inMinutes.abs();
-            if (diff > 30) return false; // Stariji od 30 min -> SIGURNO zombi
-          }
-        }
-
-        // STALE CHECK je dovoljna zastita od zombi vozaca
-
-        // 3. SANITY CHECK za automatsku detekciju (kada putnik nema target vreme)
-        // Ako je vozač AKTIVAN i STALE CHECK je prošao (updated_at < 30min), prikaži ga bez vremenskog filtera
-        // Vremenski filter je samo za slučaj kada vozač nije aktivan (zombi detekcija po vremenu)
-        if (driverVreme == null) return false;
-
-        // STALE CHECK je već odradio posao - ako je updated_at svježi, vozač je aktivan
-        // Samo prihvati ga (ne filtriramo po vremenu polaska jer STALE CHECK pokriva zombie slučaj)
-        return true;
+        // Filtriraj samo po gradu - aktivan=true je već u query
+        return _normalizeGrad(driverGrad) == normalizedGrad;
       }).toList();
 
       if (filteredList.isEmpty) {
