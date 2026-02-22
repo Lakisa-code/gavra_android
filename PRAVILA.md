@@ -96,7 +96,7 @@ Svaka operacija mora da filtrira po **sva četiri polja**.
 - Kada se vožnja obriše iz seat_requests → voznje_log ostaje netaknut
 - Kada se putnik otkaže → log ostaje
 - Kada se status promeni → log ostaje
-- Čuva i **termine** (datum, grad, vreme_polaska, dan_u_nedelji) — za rekonstrukciju istorije čak i kad seat_requests budu obrisani
+- Čuva i **termine** (datum, grad, vreme_polaska, dan_u_nedelji) — ali **samo za vožnje koje su se desile** (pokupljen/otkazan/plaćen), ne za sve zakazane termine
 
 ```
 putnik_id | datum | grad | vreme_polaska | dan_u_nedelji | tip | vozac_ime | iznos | ...
