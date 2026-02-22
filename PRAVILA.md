@@ -10,7 +10,9 @@
 
 ### ⚠️ VAŽNO ZA RAZVOJ
 - seat_requests **POSTOJE** cijelu sedmicu — ne brišu se do subote 01:00
-- Time picker je **ZAKLJUČAN** za putnike prije subote 02:00 — admin/vozač može ručno kreirati termine
+- Time picker se **ZAKLJUČAVA** automatski čim nastupi vreme polaska tog dana (npr. pon 07:00 → zaključano u pon u 07:00)
+- Time picker se **OTKLJUČAVA** za narednu sedmicu u subotu u 02:00
+- Admin uvek može da kreira termine ručno bez obzira na zaključanost
 - Čišćenje starih seat_requests: **SUBOTA 01:00** (ne nedjelja, ne drugi dan)
 - Nemoj kreirati logiku koja briše seat_requests van ovog rasporeda
 
