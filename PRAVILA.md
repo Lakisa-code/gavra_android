@@ -1,5 +1,23 @@
 # ⛔ PRAVILA — NIKAD NE KRŠITI
 
+## SEDMIČNI CIKLUS — AUTOMATSKE OPERACIJE
+
+| Vreme | Šta se dešava |
+|-------|---------------|
+| **Subota 00:00** | `sedmicni-reset-polazaka` — setuje sve seat_requests na `bez_polaska` |
+| **Subota 01:00** | ⛔ **BRISANJE** — seat_requests se fizički brišu (stari zapisi) |
+| **Subota 02:00** | ✅ **TIME PICKER SE OTKLJUČAVA** — putnici mogu da prave nove zahteve za narednu sedmicu |
+| **Nedjelja 03:00** | `ciscenje-seat-requests` — briše zapise starije od 30 dana |
+
+### ⚠️ VAŽNO ZA RAZVOJ
+- Nemoj kreirati logiku koja pretpostavlja da seat_requests postoje pre subote 02:00
+- Nemoj kreirati logiku koja brise seat_requests van ovog rasporeda
+- Ručno kreirani termini (admin) moraju preživeti sedmični reset — **ne smeju se brisati automatski**
+
+---
+
+
+
 ## OSNOVNO PRAVILO APLIKACIJE
 
 Svaka operacija je vezana za tačno:

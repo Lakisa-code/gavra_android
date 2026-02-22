@@ -503,7 +503,8 @@ class PutnikService {
         final gradKey = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
         final vremeKey = vreme != null ? '${GradAdresaValidator.normalizeTime(vreme)}:00' : null;
         if (gradKey == null || vremeKey == null) {
-          debugPrint('⛔ [oznaciPokupljen] Nedostaje grad ili vreme — ne mogu da označim pokupljenim bez DAN+GRAD+VREME!');
+          debugPrint(
+              '⛔ [oznaciPokupljen] Nedostaje grad ili vreme — ne mogu da označim pokupljenim bez DAN+GRAD+VREME!');
         } else {
           await supabase
               .from('seat_requests')
@@ -517,7 +518,8 @@ class PutnikService {
               .eq('datum', targetDatum)
               .eq('grad', gradKey)
               .eq('zeljeno_vreme', vremeKey);
-          debugPrint('✅ [oznaciPokupljen] seat_requests status=pokupljen (datum=$targetDatum, grad=$gradKey, vreme=$vremeKey)');
+          debugPrint(
+              '✅ [oznaciPokupljen] seat_requests status=pokupljen (datum=$targetDatum, grad=$gradKey, vreme=$vremeKey)');
         }
       }
     } catch (e) {
@@ -812,7 +814,8 @@ class PutnikService {
 
       // ⛔ ZABRANJENO: fallback bez vremena narušava DAN+GRAD+VREME pravilo
       // Ako nije pronađen termin po zeljeno_vreme ni dodeljeno_vreme — logujemo grešku, NE diramo ništa
-      debugPrint('⛔ [PutnikService] otkaziPutnika: nije pronađen termin za datum=$dateStr, grad=$gradKey, vreme=$normalizedTime — NE diram druge termine!');
+      debugPrint(
+          '⛔ [PutnikService] otkaziPutnika: nije pronađen termin za datum=$dateStr, grad=$gradKey, vreme=$normalizedTime — NE diram druge termine!');
     } catch (e) {
       debugPrint('❌ [PutnikService] otkaziPutnika ERROR: $e');
       rethrow;
