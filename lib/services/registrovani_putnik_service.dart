@@ -580,6 +580,20 @@ class RegistrovaniPutnikService {
               'broj_mesta': brojMesta,
             });
             debugPrint('✅ Kreiran seat_request: $targetDateStr, $normalizedGrad, $vremeStr');
+            // 📝 Logiraj zakazani termin u voznje_log
+            try {
+              await VoznjeLogService.logGeneric(
+                tip: 'zakazano',
+                putnikId: putnikId,
+                datum: targetDateStr,
+                grad: normalizedGrad,
+                vreme: vremeStr,
+                brojMesta: brojMesta,
+                status: 'confirmed',
+              );
+            } catch (e) {
+              debugPrint('⚠️ [_syncSeatRequestsWithTemplate] logGeneric zakazano greška: $e');
+            }
           } else {
             // AŽURIRAJ postojeći ako se vreme promenilo ILI ako je bio otkazan/pokupljen
             final existingVreme = existing['zeljeno_vreme']?.toString().substring(0, 5);
