@@ -1776,7 +1776,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'datum_kraja_meseca': kraj.toIso8601String().split('T')[0],
       // Eksplicitno postavi adrese (uključujući null za brisanje)
       'adresa_bela_crkva_id': _adresaBelaCrkvaId,
-      'adresa_Vrsac_id': _adresaVrsacId,
+      'adresa_vrsac_id': _adresaVrsacId,
       // Cena po danu (custom ili null za default)
       'cena_po_danu': _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
       // Email

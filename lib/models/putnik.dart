@@ -231,9 +231,9 @@ class Putnik {
       brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
       adresa: (req['adrese'] as Map?)?['naziv'] ??
           (grad == 'Vrsac'
-              ? (p['adresa_vs']?['naziv'] ?? p['adresa_Vrsac_naziv'])
+              ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
               : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv'])),
-      adresaId: req['custom_adresa_id'] ?? (grad == 'Vrsac' ? p['adresa_Vrsac_id'] : p['adresa_bela_crkva_id']),
+      adresaId: req['custom_adresa_id'] ?? (grad == 'Vrsac' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id']),
       brojTelefona: p['broj_telefona'],
       statusVreme: p['updated_at'],
       vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
@@ -412,7 +412,7 @@ class Putnik {
     if (grad.toLowerCase().contains('bela')) {
       return map['adresa_bela_crkva_id'] as String?;
     } else {
-      return map['adresa_Vrsac_id'] as String?;
+      return map['adresa_vrsac_id'] as String?;
     }
   }
 

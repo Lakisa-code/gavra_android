@@ -149,7 +149,7 @@ class RegistrovaniPutnik {
       tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
       adresaBelaCrkvaId: map['adresa_bela_crkva_id'] as String?,
-      adresaVrsacId: map['adresa_Vrsac_id'] as String?,
+      adresaVrsacId: map['adresa_vrsac_id'] as String?,
       datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
           ? DateTime.parse(map['datum_pocetka_meseca'] as String)
           : DateTime(DateTime.now().year, DateTime.now().month),
@@ -193,7 +193,7 @@ class RegistrovaniPutnik {
       'tip': tip,
       'tip_skole': tipSkole,
       'adresa_bela_crkva_id': adresaBelaCrkvaId,
-      'adresa_Vrsac_id': adresaVrsacId,
+      'adresa_vrsac_id': adresaVrsacId,
       'datum_pocetka_meseca': datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
       'created_at': createdAt.toUtc().toIso8601String(),
