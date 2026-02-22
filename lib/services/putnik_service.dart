@@ -148,7 +148,10 @@ class PutnikService {
     map['pokupljen_iz_loga'] = row['je_pokupljen'] == true;
     map['otkazano_iz_loga'] = row['je_otkazan_iz_loga'] == true;
     map['placeno_iz_loga'] = row['je_placen'] == true;
-    if (row['iznos_placanja'] != null) map['cena'] = row['iznos_placanja'];
+    if (row['iznos_placanja'] != null) {
+      final raw = row['iznos_placanja'];
+      map['cena'] = raw is num ? raw.toDouble() : double.tryParse(raw.toString()) ?? 0.0;
+    }
     if (row['pokupioVozac'] != null) map['pokupioVozac'] = row['pokupioVozac'];
     if (row['naplatioVozac'] != null) map['naplatioVozac'] = row['naplatioVozac'];
     if (row['otkazaoVozac'] != null) map['otkazaoVozac'] = row['otkazaoVozac'];
