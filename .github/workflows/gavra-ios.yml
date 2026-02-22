@@ -59,6 +59,22 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
+      - name: Fix iOS deployment target in Podfile
+        run: |
+          sed -i '' 's/# platform :ios/platform :ios/' ios/Podfile || true
+          # Ensure platform line exists with 13.0
+          if ! grep -q "^platform :ios" ios/Podfile; then
+            sed -i '' '1s/^/platform :ios, '\''13.0'\''\n/' ios/Podfile
+          fi
+          head -3 ios/Podfile
+
+      - name: Install CocoaPods with iOS 13 deployment target
+        run: |
+          cd ios
+          pod install --repo-update
+        env:
+          IPHONEOS_DEPLOYMENT_TARGET: '13.0'
+
       - name: Set Xcode code signing settings
         run: |
           xcode-project use-profiles
