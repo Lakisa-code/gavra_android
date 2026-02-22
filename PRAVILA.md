@@ -96,7 +96,11 @@ Svaka operacija mora da filtrira po **sva četiri polja**.
 - Kada se vožnja obriše iz seat_requests → voznje_log ostaje netaknut
 - Kada se putnik otkaže → log ostaje
 - Kada se status promeni → log ostaje
-- Čuva i **termine** (datum, grad, vreme_polaska, dan_u_nedelji) — ali **samo za vožnje koje su se desile** (pokupljen/otkazan/plaćen), ne za sve zakazane termine
+- Čuva i **termine** (datum, grad, vreme_polaska, dan_u_nedelji):
+  - `tip='zakazano'` — svaki put kad se kreira seat_request
+  - `tip='voznja'` — kad je putnik pokupljen
+  - `tip='otkazivanje'` — kad je putnik otkazan
+  - `tip='uplata_dnevna'`/`'uplata_mesecna'` — kad je putnik platio
 
 ```
 putnik_id | datum | grad | vreme_polaska | dan_u_nedelji | tip | vozac_ime | iznos | ...

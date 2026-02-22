@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../models/seat_request.dart';
 import '../utils/grad_adresa_validator.dart';
+import 'voznje_log_service.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (seat_requests tabela)
 class SeatRequestService {
@@ -54,6 +55,17 @@ class SeatRequestService {
         'custom_adresa_id': customAdresaId,
       });
       debugPrint('✅ [SeatRequestService] Inserted for $gradKey $normVreme on $dan (Datum: $datumStr)');
+
+      // 📝 LOG: Zabilježi zakazanu vožnju u voznje_log (trajni zapis)
+      await VoznjeLogService.logGeneric(
+        tip: 'zakazano',
+        putnikId: putnikId,
+        datum: datumStr,
+        grad: gradKey,
+        vreme: normVreme,
+        brojMesta: brojMesta,
+        status: status,
+      );
     } catch (e) {
       debugPrint('❌ [SeatRequestService] Error inserting seat request: $e');
     }
