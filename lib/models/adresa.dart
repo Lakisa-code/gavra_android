@@ -21,20 +21,25 @@ class Adresa {
         updatedAt = updatedAt ?? DateTime.now();
 
   factory Adresa.fromMap(Map<String, dynamic> map) {
+    // Normalizuj grad: 'Vršac'/'VS'/'vs' → 'Vrsac', 'BC'/'bc'/'Bela crkva' → 'Bela Crkva'
+    String? _normalizeGrad(String? g) {
+      if (g == null) return null;
+      final l = g.toLowerCase();
+      if (l.contains('vrs') || l.contains('vr') || l == 'vs') return 'Vrsac';
+      if (l.contains('bela') || l == 'bc') return 'Bela Crkva';
+      return g;
+    }
+
     return Adresa(
       id: map['id'] as String,
       naziv: map['naziv'] as String,
       ulica: map['ulica'] as String?,
       broj: map['broj'] as String?,
-      grad: map['grad'] as String?,
+      grad: _normalizeGrad(map['grad'] as String?),
       gpsLat: map['gps_lat'] as double?, // Direct column
       gpsLng: map['gps_lng'] as double?, // Direct column
-      createdAt: map['created_at'] != null
-          ? DateTime.parse(map['created_at'] as String)
-          : DateTime.now(),
-      updatedAt: map['updated_at'] != null
-          ? DateTime.parse(map['updated_at'] as String)
-          : DateTime.now(),
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : DateTime.now(),
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
     );
   }
 
@@ -73,8 +78,7 @@ class Adresa {
   final DateTime updatedAt;
 
   // Legacy properties for backward compatibility
-  dynamic get koordinate =>
-      gpsLat != null && gpsLng != null ? {'lat': gpsLat, 'lng': gpsLng} : null;
+  dynamic get koordinate => gpsLat != null && gpsLng != null ? {'lat': gpsLat, 'lng': gpsLng} : null;
 
   // Virtuelna polja za latitude/longitude iz direktnih kolona
   double? get latitude => gpsLat;
@@ -114,9 +118,7 @@ class Adresa {
     final double dLon = _toRadians(lon2 - lon1);
 
     final double a = math.pow(math.sin(dLat / 2), 2) +
-        math.cos(_toRadians(lat1)) *
-            math.cos(_toRadians(lat2)) *
-            math.pow(math.sin(dLon / 2), 2);
+        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) * math.pow(math.sin(dLon / 2), 2);
 
     final double c = 2 * math.asin(math.sqrt(a));
     return earthRadius * c;
@@ -204,12 +206,7 @@ class Adresa {
 
   /// Comprehensive validation combining all rules
   bool get isCompletelyValid {
-    return naziv.isNotEmpty &&
-        isValidUlica &&
-        isValidBroj &&
-        isValidGrad &&
-        isValidPostanskiBroj &&
-        isInServiceArea;
+    return naziv.isNotEmpty && isValidUlica && isValidBroj && isValidGrad && isValidPostanskiBroj && isInServiceArea;
   }
 
   /// Get validation error messages
@@ -228,8 +225,7 @@ class Adresa {
       errors.add('Broj nije valjan (format: 1, 12a, 5/3, 15-17)');
     }
     if (!isValidGrad) {
-      errors
-          .add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vrsac opštine)');
+      errors.add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vrsac opštine)');
     }
     if (hasValidCoordinates && !areCoordinatesValidForSerbia) {
       errors.add('Koordinate nisu validne za Srbiju');
@@ -285,9 +281,7 @@ class Adresa {
     ];
 
     final belongsToBelaCrkva = belaCrkvaSettlements.any(
-      (settlement) =>
-          normalizedGrad.contains(settlement) ||
-          settlement.contains(normalizedGrad),
+      (settlement) => normalizedGrad.contains(settlement) || settlement.contains(normalizedGrad),
     );
 
     if (belongsToBelaCrkva) return 'Bela Crkva';
@@ -362,9 +356,7 @@ class Adresa {
     return text
         .split(' ')
         .map(
-          (word) => word.isNotEmpty
-              ? word[0].toUpperCase() + word.substring(1).toLowerCase()
-              : word,
+          (word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : word,
         )
         .join(' ');
   }
