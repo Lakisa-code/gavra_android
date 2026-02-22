@@ -731,16 +731,13 @@ class _VozacScreenState extends State<VozacScreen> {
       // Izvuci redosled imena putnika
       final putniciRedosled = _optimizedRoute.map((p) => p.ime).toList();
 
-      // Izracunaj ETA za putnike ako vec nisu dostupni
-      Map<String, int>? putniciEta;
-
       await DriverLocationService.instance.startTracking(
         vozacId: _currentDriver!,
         vozacIme: _currentDriver!,
         grad: _selectedGrad,
         vremePolaska: _selectedVreme,
         smer: smer,
-        putniciEta: putniciEta,
+        putniciEta: _putniciEta,
         putniciCoordinates: coordsByName,
         putniciRedosled: putniciRedosled,
         onAllPassengersPickedUp: () {
@@ -794,9 +791,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
       // ETA za ovog putnika (po imenu)
       final etaMinuta = _putniciEta?[putnik.ime];
-      final etaTekst = etaMinuta != null
-          ? 'Dolazak za oko $etaMinuta min.'
-          : 'Vozač je krenuo po vas!';
+      final etaTekst = etaMinuta != null ? 'Dolazak za oko $etaMinuta min.' : 'Vozač je krenuo po vas!';
 
       await RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,

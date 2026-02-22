@@ -77,10 +77,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       var query = supabase.from('vozac_lokacije').select().eq('aktivan', true);
 
-      if (widget.vremePolaska != null) {
-        query = query.eq('vreme_polaska', widget.vremePolaska!);
-      }
-
       final data = await query;
 
       if (!mounted) return;
@@ -105,26 +101,22 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           }
         }
 
-        // 2. Ako tražimo specifično vreme (npr. putnik bira 05:00), ignoriši ako vozač nije ažuran
-        if (widget.vremePolaska != null) return true;
+        // 2. Ako tražimo specifično vreme (npr. putnik bira 05:00), matchuj HH:MM prefix
+        if (widget.vremePolaska != null) {
+          final targetVreme = widget.vremePolaska!; // "08:00"
+          final driverVremeTrimmed =
+              (driverVreme ?? '').length >= 5 ? driverVreme!.substring(0, 5) : (driverVreme ?? '');
+          if (driverVremeTrimmed != targetVreme) return false;
+          return true;
+        }
 
         // 3. SANITY CHECK za automatsku detekciju (kada putnik nema target vreme)
+        // Ako je vozač AKTIVAN i STALE CHECK je prošao (updated_at < 30min), prikaži ga bez vremenskog filtera
+        // Vremenski filter je samo za slučaj kada vozač nije aktivan (zombi detekcija po vremenu)
         if (driverVreme == null) return false;
 
-        final now = DateTime.now();
-        final parts = driverVreme.split(':');
-        if (parts.length != 2) return false;
-
-        final h = int.tryParse(parts[0]) ?? 0;
-        final m = int.tryParse(parts[1]) ?? 0;
-
-        int diffInMinutes = (h * 60 + m) - (now.hour * 60 + now.minute);
-
-        if (diffInMinutes > 720) diffInMinutes -= 1440;
-        if (diffInMinutes < -720) diffInMinutes += 1440;
-
-        if (diffInMinutes < -180 || diffInMinutes > 240) return false;
-
+        // STALE CHECK je već odradio posao - ako je updated_at svježi, vozač je aktivan
+        // Samo prihvati ga (ne filtriramo po vremenu polaska jer STALE CHECK pokriva zombie slučaj)
         return true;
       }).toList();
 
@@ -180,9 +172,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           }
         }
       }
-
-      // // DEBUG: Štampaj šta je pronađeno
-      // debugPrint('🚐 KombiEtaWidget: putnikIme=${widget.putnikIme}, eta=$eta, putniciEta=$putniciEta');
 
       setState(() {
         _isActive = true;

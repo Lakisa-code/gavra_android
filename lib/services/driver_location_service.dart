@@ -225,7 +225,7 @@ class DriverLocationService {
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
     } catch (e) {
-      // Error sending location
+      debugPrint('❌ [DriverLocation] _sendCurrentLocation greška: $e');
     }
   }
 
