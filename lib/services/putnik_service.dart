@@ -499,18 +499,26 @@ class PutnikService {
         }).eq('id', requestId);
         debugPrint('✅ [oznaciPokupljen] seat_requests status=pokupljen (requestId=$requestId)');
       } else {
-        // Fallback: match po putnik_id + datum
-        await supabase
-            .from('seat_requests')
-            .update({
-              'status': 'pokupljen',
-              'updated_at': DateTime.now().toUtc().toIso8601String(),
-              'processed_at': DateTime.now().toUtc().toIso8601String(),
-              if (driver != null) 'pokupljeno_by': driver,
-            })
-            .eq('putnik_id', id.toString())
-            .eq('datum', targetDatum);
-        debugPrint('✅ [oznaciPokupljen] seat_requests status=pokupljen (fallback datum=$targetDatum)');
+        // Fallback: match po putnik_id + datum + grad + vreme (PRAVILO: DAN+GRAD+VREME)
+        final gradKey = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
+        final vremeKey = vreme != null ? '${GradAdresaValidator.normalizeTime(vreme)}:00' : null;
+        if (gradKey == null || vremeKey == null) {
+          debugPrint('⛔ [oznaciPokupljen] Nedostaje grad ili vreme — ne mogu da označim pokupljenim bez DAN+GRAD+VREME!');
+        } else {
+          await supabase
+              .from('seat_requests')
+              .update({
+                'status': 'pokupljen',
+                'updated_at': DateTime.now().toUtc().toIso8601String(),
+                'processed_at': DateTime.now().toUtc().toIso8601String(),
+                if (driver != null) 'pokupljeno_by': driver,
+              })
+              .eq('putnik_id', id.toString())
+              .eq('datum', targetDatum)
+              .eq('grad', gradKey)
+              .eq('zeljeno_vreme', vremeKey);
+          debugPrint('✅ [oznaciPokupljen] seat_requests status=pokupljen (datum=$targetDatum, grad=$gradKey, vreme=$vremeKey)');
+        }
       }
     } catch (e) {
       debugPrint('⚠️ [oznaciPokupljen] Greška pri update seat_requests: $e');
@@ -802,23 +810,9 @@ class PutnikService {
         }
       }
 
-      // Zadnji fallback: bez vremena
-      final withoutTime = await supabase
-          .from('seat_requests')
-          .update({
-            'status': status,
-            'processed_at': DateTime.now().toUtc().toIso8601String(),
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-            if (driver != null) 'cancelled_by': driver,
-          })
-          .match({
-            'putnik_id': id.toString(),
-            'datum': dateStr,
-          })
-          .eq('grad', gradKey)
-          .select();
-
-      debugPrint('🛑 [PutnikService] otkaziPutnika SUCCESS (fallback): ${withoutTime.length} rows');
+      // ⛔ ZABRANJENO: fallback bez vremena narušava DAN+GRAD+VREME pravilo
+      // Ako nije pronađen termin po zeljeno_vreme ni dodeljeno_vreme — logujemo grešku, NE diramo ništa
+      debugPrint('⛔ [PutnikService] otkaziPutnika: nije pronađen termin za datum=$dateStr, grad=$gradKey, vreme=$normalizedTime — NE diram druge termine!');
     } catch (e) {
       debugPrint('❌ [PutnikService] otkaziPutnika ERROR: $e');
       rethrow;

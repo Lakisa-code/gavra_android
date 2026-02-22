@@ -259,22 +259,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   // - Job #5: resolve-pending-20h-ucenici (u 20:00)
   // - Job #6: cleanup-expired-pending (svakih 5 minuta)
 
-  /// 🧹 Očisti stare pending zahteve iz seat_requests tabele
-  /// Briše zahteve starije od 1 dana
+  /// 🧹 UKLONJENO: Brisanje seat_requests je zabranjeno iz klijentskog koda!
+  /// Pravilo: seat_requests je operativna tabela — briše je samo DB cron (ciscenje-seat-requests).
+  /// Videti PRAVILA.md
   Future<void> _cleanupOldSeatRequests() async {
-    try {
-      final yesterday = DateTime.now().subtract(const Duration(days: 1)).toUtc().toIso8601String();
-      final oldRequests = await supabase.from('seat_requests').select('id').lt('created_at', yesterday);
-
-      if (oldRequests.isNotEmpty) {
-        debugPrint('🧹 [Cleanup] Brisanje ${oldRequests.length} starih zahteva...');
-
-        // Briši stare zahteve
-        await supabase.from('seat_requests').delete().lt('created_at', yesterday);
-      }
-    } catch (e) {
-      debugPrint('❌ [Cleanup] Greška: $e');
-    }
+    // NE RADI NIŠTA — brisanje seat_requests nije dozvoljeno iz aplikacije
+    debugPrint('⛔ [Cleanup] _cleanupOldSeatRequests je onemogućen - videti PRAVILA.md');
   }
 
   /// 🔧 Helperi za sigurno parsiranje brojeva iz Supabase-a (koji mogu biti String)
