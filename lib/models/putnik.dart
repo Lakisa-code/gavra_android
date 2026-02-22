@@ -1,6 +1,7 @@
 ﻿import '../constants/day_constants.dart';
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/vreme_vozac_service.dart'; // Za per-putnik i per-vreme dodeljivanje vozaca
+import '../utils/grad_adresa_validator.dart'; // Za normalizaciju grada u fromSeatRequest
 import '../utils/registrovani_helpers.dart';
 import '../utils/vozac_cache.dart'; // DODATO za UUID<->ime konverziju
 
@@ -211,8 +212,10 @@ class Putnik {
         dodeljenVozacFinal = perPutnik;
       } else {
         // PRIORITET 2: Globalna dodela iz vreme_vozac (putnik_id IS NULL)
+        // Cache ključ je 'Bela Crkva|vreme|dan' — normalizuj grad na puni naziv
         final danKratica = _getDanNedeljeKratica(DateTime.parse(datumStr).weekday);
-        final perVreme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
+        final gradZaGlobalni = GradAdresaValidator.isVrsac(grad) ? 'Vrsac' : 'Bela Crkva';
+        final perVreme = VremeVozacService().getVozacZaVremeSync(gradZaGlobalni, vreme, danKratica);
         if (perVreme != null && perVreme.isNotEmpty) {
           dodeljenVozacFinal = _getVozacIme(perVreme);
         }

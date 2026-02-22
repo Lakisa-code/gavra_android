@@ -225,6 +225,8 @@ class VremeVozacService {
     String? vozacId,
   }) async {
     final normalizedVreme = _normalizeTime(vreme) ?? vreme;
+    // Uvek normalizuj grad u 'BC'/'VS' — konzistentno sa DB i loadPutnikDodele cache ključem
+    final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
     final vozacIdFinal = vozacIme == 'Nedodeljen' ? null : (vozacId ?? VozacCache.getUuidByIme(vozacIme));
 
     try {
@@ -233,7 +235,7 @@ class VremeVozacService {
           .select('id')
           .eq('putnik_id', putnikId)
           .eq('datum', datum)
-          .eq('grad', grad)
+          .eq('grad', normalizedGrad)
           .eq('vreme', normalizedVreme)
           .maybeSingle();
 
@@ -247,7 +249,7 @@ class VremeVozacService {
         await _supabase.from('vreme_vozac').insert({
           'putnik_id': putnikId,
           'datum': datum,
-          'grad': grad,
+          'grad': normalizedGrad,
           'vreme': normalizedVreme,
           'dan': '_',
           'vozac_ime': vozacIme,
@@ -256,8 +258,8 @@ class VremeVozacService {
         });
       }
 
-      // Ažuriraj cache odmah — ključ uključuje grad i vreme da bi BC 7:00 i VS 10:00 bili odvojeni
-      final key = '$putnikId|$datum|$grad|$normalizedVreme';
+      // Ažuriraj cache odmah — ključ uključuje grad i vreme da bi BC i VS bili odvojeni
+      final key = '$putnikId|$datum|$normalizedGrad|$normalizedVreme';
       _putnikCache[key] = vozacIme;
 
       _changesController.add(null);
@@ -273,9 +275,10 @@ class VremeVozacService {
     String? grad,
     String? vreme,
   }) async {
+    final normalizedGrad = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
     try {
       var query = _supabase.from('vreme_vozac').delete().eq('putnik_id', putnikId).eq('datum', datum);
-      if (grad != null) query = query.eq('grad', grad);
+      if (normalizedGrad != null) query = query.eq('grad', normalizedGrad);
       if (vreme != null) {
         final normalizedVreme = _normalizeTime(vreme) ?? vreme;
         query = query.eq('vreme', normalizedVreme);
@@ -283,9 +286,9 @@ class VremeVozacService {
       await query;
 
       // Ukloni iz cache-a — ako je dat grad/vreme, ukloni tačan ključ, inače sve za taj datum
-      if (grad != null && vreme != null) {
+      if (normalizedGrad != null && vreme != null) {
         final normalizedVreme = _normalizeTime(vreme) ?? vreme;
-        _putnikCache.remove('$putnikId|$datum|$grad|$normalizedVreme');
+        _putnikCache.remove('$putnikId|$datum|$normalizedGrad|$normalizedVreme');
       } else {
         _putnikCache.removeWhere((key, _) => key.startsWith('$putnikId|$datum'));
       }
@@ -302,7 +305,8 @@ class VremeVozacService {
   String? getVozacZaPutnikSync(String putnikId, String datum, {String? grad, String? vreme}) {
     if (grad != null && vreme != null) {
       final normalizedVreme = _normalizeTime(vreme) ?? vreme;
-      final key = '$putnikId|$datum|$grad|$normalizedVreme';
+      final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
+      final key = '$putnikId|$datum|$normalizedGrad|$normalizedVreme';
       return _putnikCache[key];
     }
     // Fallback: star ključ bez grad/vreme (backward compat)
@@ -379,11 +383,17 @@ class VremeVozacService {
         if (vozacId != null) _uuidCache[key] = vozacId;
       }
 
-      // Individualne dodele - osvezi za danas i sutra
+      // Individualne dodele - osvezi za danas, sutra i radni datum (ponedeljak vikendom)
       final today = DateTime.now().toIso8601String().substring(0, 10);
       final tomorrow = DateTime.now().add(const Duration(days: 1)).toIso8601String().substring(0, 10);
-      await loadPutnikDodele(today);
-      await loadPutnikDodele(tomorrow);
+      // Radni datum: vikendom = naredni ponedeljak
+      final weekday = DateTime.now().weekday;
+      final daysToMonday = weekday == DateTime.saturday ? 2 : (weekday == DateTime.sunday ? 1 : 0);
+      final workingDate = daysToMonday > 0
+          ? DateTime.now().add(Duration(days: daysToMonday)).toIso8601String().substring(0, 10)
+          : today;
+      final datesToLoad = {today, tomorrow, workingDate};
+      await Future.wait(datesToLoad.map((d) => loadPutnikDodele(d)));
     } catch (e) {
       // ignore
     }

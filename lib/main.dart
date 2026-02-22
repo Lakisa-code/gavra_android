@@ -185,13 +185,13 @@ Future<void> _initAppServices() async {
   // Sync inicijalizacija
   VremeVozacService().loadAllVremeVozac();
 
-  // 🚗 Individualna dodela vozača po putniku - učitaj za danas + radni datum
+  // 🚗 Individualna dodela vozača po putniku - učitaj za danas + sutra + radni datum
   final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+  final tomorrowStr = DateTime.now().add(const Duration(days: 1)).toIso8601String().substring(0, 10);
   final workingDateStr = PutnikHelpers.getWorkingDateIso();
-  unawaited(VremeVozacService().loadPutnikDodele(todayStr));
-  // Vikendom radni datum je ponedeljak - učitaj i taj datum
-  if (workingDateStr != todayStr) {
-    unawaited(VremeVozacService().loadPutnikDodele(workingDateStr));
+  final datesToPreload = {todayStr, tomorrowStr, workingDateStr};
+  for (final d in datesToPreload) {
+    unawaited(VremeVozacService().loadPutnikDodele(d));
   }
 
   // 🚗 Initialize VozacService stream JEDNOM - pokrenuti stream sa listen() da počne emisija
