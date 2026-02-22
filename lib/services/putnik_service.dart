@@ -202,10 +202,24 @@ class PutnikService {
         return map;
       }).toList();
 
-      final results = enriched
-          .map((r) => Putnik.fromSeatRequest(r))
-          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
-          .toList();
+      final allMapped = enriched.map((r) => Putnik.fromSeatRequest(r)).toList();
+
+      // 🐛 DEBUG: Prikaži placeno/je_placen za sve putnike
+      for (final r in enriched) {
+        final p = allMapped.firstWhere(
+          (p) => p.requestId == r['id']?.toString(),
+          orElse: () => allMapped.isNotEmpty ? allMapped.first : Putnik(ime: '?', grad: '?', polazak: '?', dan: '?'),
+        );
+        debugPrint(
+          '💰 [DEBUG] ime=${r['registrovani_putnici']?['putnik_ime'] ?? '?'} '
+          'status=${r['status']} je_placen=${r['je_placen']} '
+          'iznos=${r['iznos_placanja']} cena=${r['cena']} '
+          'placeno=${p.placeno} dan=${p.dan}',
+        );
+      }
+
+      final results =
+          allMapped.where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled').toList();
 
       debugPrint(
           '🔍 [_doFetchForStream] Stream key=$key, datum=$todayDate, grad=$grad, vreme=$vreme → ${results.length} putnika');
