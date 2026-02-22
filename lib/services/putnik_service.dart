@@ -143,7 +143,8 @@ class PutnikService {
   /// Konvertuje RPC rezultat u format koji Putnik.fromSeatRequest() razumije
   Map<String, dynamic> _rpcToPutnikMap(Map<String, dynamic> row) {
     final map = Map<String, dynamic>.from(row);
-    // Enrichment polja iz loga
+    // seat_requests je izvor istine za operativno stanje
+    // je_pokupljen i je_otkazan_iz_loga sada dolaze direktno iz seat_requests.status (via RPC)
     map['pokupljen_iz_loga'] = row['je_pokupljen'] == true;
     map['otkazano_iz_loga'] = row['je_otkazan_iz_loga'] == true;
     map['placeno_iz_loga'] = row['je_placen'] == true;
@@ -151,13 +152,11 @@ class PutnikService {
     if (row['pokupioVozac'] != null) map['pokupioVozac'] = row['pokupioVozac'];
     if (row['naplatioVozac'] != null) map['naplatioVozac'] = row['naplatioVozac'];
     if (row['otkazaoVozac'] != null) map['otkazaoVozac'] = row['otkazaoVozac'];
-    // ✅ FIX: processed_at setuj SAMO ako je ovaj request zaista pokupljen
-    // log_created_at može da pripada drugom request-u istog putnika (race condition)
-    if (row['je_pokupljen'] == true && row['log_created_at'] != null) {
+    if (row['log_created_at'] != null) {
       map['processed_at'] ??= row['log_created_at'];
     }
-    // Ne override-uj 'bez_polaska' - admin je eksplicitno uklonio polazak, ima prioritet nad logom
-    if (row['je_otkazan_iz_loga'] == true && map['status'] != 'otkazano' && map['status'] != 'bez_polaska') {
+    // 'cancelled' normalizuj na 'otkazano' za konzistentnost u Flutter modelu
+    if (map['status'] == 'cancelled') {
       map['status'] = 'otkazano';
     }
     return map;
@@ -820,9 +819,6 @@ class PutnikService {
     final danasStr = DateTime.now().toIso8601String().split('T')[0];
     final dateStr = selectedDan != null ? app_date_utils.DateUtils.getIsoDateForDay(selectedDan) : danasStr;
 
-    final isVrsac = (grad?.toLowerCase().contains('vr') ?? false) || (grad?.toLowerCase() == 'vs');
-    final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
-
     // ✅ DIREKTAN QUERY: Dohvati vozac_id iz baze umesto VozacMappingService
     String? vozacId;
     if (driver != null) {
@@ -837,24 +833,8 @@ class PutnikService {
       debugPrint('⚠️ [oznaciPlaceno] driver je NULL!');
     }
 
-    // Ažuriraj seat_requests
-    var query = supabase.from('seat_requests').update({
-      'status': 'confirmed',
-      'processed_at': DateTime.now().toUtc().toIso8601String(),
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    });
-
-    if (requestId != null && requestId.isNotEmpty) {
-      query = query.eq('id', requestId);
-    } else {
-      query = query.match({
-        'putnik_id': id,
-        'datum': dateStr,
-      }).inFilter('grad', gradVariants);
-    }
-
-    await query;
-
+    // 💰 Plaćanje se evidentira SAMO u voznje_log (izvor istine za finansije)
+    // seat_requests.status se NE mijenja - 'pokupljen' ostaje 'pokupljen', 'confirmed' ostaje 'confirmed'
     // Dodaj u voznje_log preko servisa (sa gradom i vremenom za preciznost)
     await VoznjeLogService.dodajUplatu(
       putnikId: id.toString(),

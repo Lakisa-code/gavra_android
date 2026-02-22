@@ -250,13 +250,10 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     if (widget.putnikId == null) return;
 
     try {
-      final todayDate = DateTime.now().toIso8601String().split('T')[0];
-
       final response = await supabase
           .from('seat_requests')
           .select('status, updated_at')
           .eq('putnik_id', widget.putnikId!)
-          .eq('datum', todayDate)
           .eq('status', 'pokupljen')
           .order('updated_at', ascending: false)
           .limit(1)
