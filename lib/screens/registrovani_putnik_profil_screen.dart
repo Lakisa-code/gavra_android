@@ -870,7 +870,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   // 🌤️ DIJALOG ZA DETALJNU VREMENSKU PROGNOZU
   void _showWeatherDialog(String grad, WeatherData? data) {
-    final gradPun = grad == 'BC' ? 'Bela Crkva' : 'Vršac';
+    final gradPun = grad == 'BC' ? 'Bela Crkva' : 'Vrsac';
 
     showDialog<void>(
       context: context,
@@ -1488,7 +1488,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         final danKratica = daniNedelje[danIndex];
         final gradRaw = (req['grad'] ?? '').toString().toLowerCase();
         // Normalizuj grad na 'bc' ili 'vs'
-        final grad = (gradRaw == 'vs' || gradRaw.contains('vr') || gradRaw.contains('vršac')) ? 'vs' : 'bc';
+        final grad = (gradRaw == 'vs' || gradRaw.contains('vr')) ? 'vs' : 'bc';
         final status = req['status'] as String?;
         final vreme = (req['zeljeno_vreme'] ?? '').toString();
 
@@ -1624,16 +1624,15 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     if (novoVreme == null) {
       try {
         // Pronađi aktivan seat_request za ovaj dan i grad da dobijemo requestId i vreme
-        final gradKey = tipGrad.startsWith('bc') ? 'bc' : 'vs';
+        final gradKey = tipGrad.startsWith('bc') ? 'BC' : 'VS';
         final datum = app_date_utils.DateUtils.getIsoDateForDay(dan);
-        final gradVariants = gradKey == 'vs' ? ['vs', 'VS', 'Vršac', 'Vrsac'] : ['bc', 'BC', 'Bela Crkva'];
 
         final existing = await supabase
             .from('seat_requests')
             .select('id, zeljeno_vreme')
             .eq('putnik_id', putnikId)
             .eq('datum', datum)
-            .inFilter('grad', gradVariants)
+            .eq('grad', gradKey)
             .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']).maybeSingle();
 
         await PutnikService().otkaziPutnika(
@@ -1674,7 +1673,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       await supabase.rpc('update_putnik_polazak_v2', params: {
         'p_id': putnikId,
         'p_dan': dan,
-        'p_grad': tipGrad,
+        'p_grad': tipGrad.startsWith('bc') ? 'BC' : 'VS',
         'p_vreme': normalizedVreme,
         'p_status': rpcStatus,
       });

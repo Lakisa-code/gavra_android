@@ -109,7 +109,7 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
                 final ime = zahtev.putnikIme ?? 'Nepoznat putnik';
                 final telefon = zahtev.brojTelefona ?? 'Nema telefona';
                 final tip = zahtev.tipPutnika ?? 'dnevni';
-                final grad = zahtev.grad == 'BC' ? 'Bela Crkva' : 'Vršac';
+                final grad = zahtev.grad == 'BC' ? 'Bela Crkva' : 'Vrsac';
                 final datum = zahtev.datum != null
                     ? "${zahtev.datum!.year}-${zahtev.datum!.month.toString().padLeft(2, '0')}-${zahtev.datum!.day.toString().padLeft(2, '0')}"
                     : '';

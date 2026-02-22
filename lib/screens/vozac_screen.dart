@@ -153,7 +153,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
   List<String> get _sviPolasci {
     final bcList = _bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = _vsVremena.map((v) => '$v Vršac').toList();
+    final vsList = _vsVremena.map((v) => '$v Vrsac').toList();
     return [...bcList, ...vsList];
   }
 
@@ -390,7 +390,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: preostaliPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrsac',
       );
 
       if (result.success && result.optimizedPutnici != null) {
@@ -489,7 +489,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: filtriraniPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrsac',
       );
 
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
@@ -816,7 +816,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final result = await SmartNavigationService.startMultiProviderNavigation(
         context: context,
         putnici: _optimizedRoute,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrsac',
       );
 
       if (result.success) {
@@ -925,7 +925,7 @@ class _VozacScreenState extends State<VozacScreen> {
                         p.dodeljenVozac != _currentDriver;
 
                     if (!isAssignedToOther) {
-                      final pGradCanonical = GradAdresaValidator.isVrsac(p.grad) ? 'Vršac' : 'Bela Crkva';
+                      final pGradCanonical = GradAdresaValidator.isVrsac(p.grad) ? 'Vrsac' : 'Bela Crkva';
                       final globalniVozac = VremeVozacService().getVozacZaVremeSync(
                         pGradCanonical,
                         p.polazak,
@@ -1059,7 +1059,7 @@ class _VozacScreenState extends State<VozacScreen> {
             final assignedBcTimes =
                 dodeljenaVremena.where((v) => v['grad'] == 'Bela Crkva').map((v) => v['vreme']!).toList();
             final assignedVsTimes =
-                dodeljenaVremena.where((v) => v['grad'] == 'Vršac').map((v) => v['vreme']!).toList();
+                dodeljenaVremena.where((v) => v['grad'] == 'Vrsac').map((v) => v['vreme']!).toList();
 
             // Prikaži samo dodeljena vremena
             final bcVremenaToShow = assignedBcTimes.toList()..sort();
@@ -1273,7 +1273,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final gradLower = p.grad.toLowerCase();
       if (gradLower.contains('bela crkva') || gradLower == 'bc') {
         putnikSmerovi[id]!.add('bc');
-      } else if (gradLower.contains('vršac') || gradLower.contains('vrsac') || gradLower == 'vs') {
+      } else if (gradLower.contains('vrsac') || gradLower == 'vs') {
         putnikSmerovi[id]!.add('vs');
       }
     }

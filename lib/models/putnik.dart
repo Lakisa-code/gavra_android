@@ -96,7 +96,7 @@ class Putnik {
   // NOVI: Factory za registrovani_putnici tabelu (PROFIL PUTNIKA)
   factory Putnik.fromRegistrovaniPutnici(Map<String, dynamic> map) {
     final grad = _determineGradFromRegistrovani(map);
-    final place = grad.toLowerCase().contains('vr') || grad.contains('Vršac') ? 'vs' : 'bc';
+    final place = grad.toLowerCase().contains('vr') || grad.contains('Vrsac') ? 'VS' : 'BC';
 
     // ⚠️ SSOT: Ne čitamo polazak iz profila, on mora doći iz seat_requests
     final polazakRaw = null; // Ignorišemo legacy fallbacks
@@ -165,7 +165,7 @@ class Putnik {
 
     final datumStr = (req['datum']?.toString() ?? '').split('T')[0];
     final gRaw = req['grad']?.toString().toLowerCase() ?? '';
-    final grad = (gRaw == 'vs' || gRaw.contains('vrš') || gRaw.contains('vrs')) ? 'Vršac' : 'Bela Crkva';
+    final grad = (gRaw == 'vs' || gRaw.contains('vrš') || gRaw.contains('vrs')) ? 'Vrsac' : 'Bela Crkva';
 
     // ✅ PRIORITET: Dodeljeno vreme (ako je vozač pomerio termin), inače željeno
     final vremeRaw = (req['dodeljeno_vreme'] ?? req['zeljeno_vreme'])?.toString() ?? '';

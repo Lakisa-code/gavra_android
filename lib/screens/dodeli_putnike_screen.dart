@@ -251,8 +251,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  /// • Vraća kraticu pravca: 'bc' za Bela Crkva, 'vs' za Vršac
-  String get _currentPlaceKratica => _selectedGrad == 'Bela Crkva' ? 'bc' : 'vs';
+  /// • Vraća kraticu pravca: 'BC' za Bela Crkva, 'VS' za Vršac
+  String get _currentPlaceKratica => _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
 
   /// • Vraća kraticu dana: 'pon', 'uto', itd.
   String get _currentDayKratica {

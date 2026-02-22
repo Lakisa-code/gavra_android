@@ -588,8 +588,7 @@ class PutnikService {
 
     final gradKey = GradAdresaValidator.normalizeGrad(finalGrad);
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
-    debugPrint(
-        '🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, grad=$gradKey, time=$normalizedTime');
+    debugPrint('🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, grad=$gradKey, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {
@@ -726,8 +725,7 @@ class PutnikService {
 
     final gradKey = GradAdresaValidator.normalizeGrad(finalGrad);
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
-    debugPrint(
-        '🛑 [PutnikService] otkaziPutnika (fallback): dateStr=$dateStr, grad=$gradKey, time=$normalizedTime');
+    debugPrint('🛑 [PutnikService] otkaziPutnika (fallback): dateStr=$dateStr, grad=$gradKey, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {

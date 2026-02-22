@@ -641,7 +641,7 @@ class LocalNotificationService {
           .inFilter('status', ['approved', 'confirmed', 'pending', 'manual']).maybeSingle();
 
       if (seatRequest != null) {
-        final grad = (seatRequest['grad']?.toString().toLowerCase() == 'vs') ? 'Vršac' : 'Bela Crkva';
+        final grad = (seatRequest['grad']?.toString().toLowerCase() == 'vs') ? 'Vrsac' : 'Bela Crkva';
         final zeljenoVremeStr = seatRequest['zeljeno_vreme']?.toString() ?? '';
         final polazak = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : null;
 
@@ -719,7 +719,7 @@ class LocalNotificationService {
           putnikId: putnikId,
           dan: dan,
           vreme: termin,
-          grad: 'bc',
+          grad: 'BC',
           tipPutnika: userType,
           detalji: 'Prihvaćen alternativni termin BC (Preko notifikacije)',
         );
@@ -777,7 +777,7 @@ class LocalNotificationService {
           putnikId: putnikId,
           dan: dan,
           vreme: termin,
-          grad: 'vs',
+          grad: 'VS',
           tipPutnika: userType,
           detalji: 'Prihvaćen alternativni termin VS (Preko notifikacije)',
         );

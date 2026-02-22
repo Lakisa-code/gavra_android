@@ -156,8 +156,8 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     String grad = meta?['grad']?.toString() ?? '';
     String vreme = meta?['vreme']?.toString() ?? '';
 
-    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vršac')) {
-      grad = 'Vršac';
+    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vrsac')) {
+      grad = 'Vrsac';
     } else if (grad.toLowerCase() == 'bc' || grad.toLowerCase().contains('bela')) {
       grad = 'Bela Crkva';
     }
@@ -620,7 +620,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
   /// Formatiraj grad
   String _formatGrad(String? grad) {
     if (grad == null) return '—';
-    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vr')) return 'Vršac';
+    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vr')) return 'Vrsac';
     if (grad.toLowerCase() == 'bc' || grad.toLowerCase().contains('be')) return 'Bela Crkva';
     return grad;
   }

@@ -108,7 +108,7 @@ class RouteConfig {
         grad.toLowerCase().contains('vrš');
 
     final sezona = letnji ? 'letnji' : 'zimski';
-    final gradCode = isBc ? 'bc' : 'vs';
+    final gradCode = isBc ? 'BC' : 'VS';
 
     try {
       // Učitaj iz baze

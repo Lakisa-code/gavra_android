@@ -130,8 +130,8 @@ class _VozacActionLogScreenState extends State<VozacActionLogScreen> with Single
     String vreme = meta?['vreme']?.toString() ?? '';
 
     // Formatuj grad
-    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vršac')) {
-      grad = 'Vršac';
+    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vrsac')) {
+      grad = 'Vrsac';
     } else if (grad.toLowerCase() == 'bc' || grad.toLowerCase().contains('bela')) {
       grad = 'Bela Crkva';
     }
