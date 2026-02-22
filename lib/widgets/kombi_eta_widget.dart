@@ -43,7 +43,8 @@ enum _WidgetFaza {
 
 class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   StreamSubscription? _subscription;
-  StreamSubscription? _putnikSubscription; // 🆕 Za praćenje promena u registrovani_putnici
+  StreamSubscription? _putnikSubscription;
+  Timer? _pollingTimer;
   int? _etaMinutes;
   bool _isLoading = true;
   bool _isActive = false; // Vozač je aktivan (šalje lokaciju)
@@ -62,6 +63,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _subscription?.cancel();
     _putnikSubscription?.cancel();
     RealtimeManager.instance.unsubscribe('vozac_lokacije');
@@ -249,7 +251,9 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   void _startListening() {
     _loadGpsData();
-    _loadPokupljenjeIzBaze(); // 🆕 Učitaj status pokupljenja iz baze
+    _loadPokupljenjeIzBaze();
+    // Polling svakih 30s kao fallback ako realtime zakaže
+    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadGpsData());
     _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen(
       (payload) {
         _loadGpsData();
