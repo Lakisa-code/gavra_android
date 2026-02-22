@@ -159,10 +159,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final datumStr = req['datum']?.toString() ?? '';
       final datum = DateTime.tryParse(datumStr);
       if (datum == null || datum.weekday != targetWeekday) return true; // zadrži
-      final grad = req['grad']?.toString().toLowerCase() ?? '';
-      final matchesBC = isBC && (grad == 'bc' || grad == 'bela crkva');
-      final matchesVS = !isBC && (grad == 'vs' || grad == 'vršac');
-      if (matchesBC || matchesVS) return false; // ukloni
+      final grad = req['grad']?.toString().toUpperCase() ?? '';
+      final normalizedGrad = grad.startsWith('V') ? 'VS' : 'BC';
+      final targetGrad = isBC ? 'BC' : 'VS';
+      if (normalizedGrad == targetGrad) return false; // ukloni
       return true;
     }).toList();
 
@@ -215,24 +215,25 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
             // SINHRONIZACIJA KONTROLERA: Prikaži ono što je u seat_requests za tekuću nedelju
             for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-              final bcOver = _getOverrideForDay(dan, true);
-              if (bcOver != null && bcOver['zeljeno_vreme'] != null) {
+              // Koristimo _getAnyOverrideForDay da uhvatimo i bez_polaska zapise
+              final bcOver = _getAnyOverrideForDay(dan, true);
+              if (bcOver != null) {
                 final status = bcOver['status']?.toString().toLowerCase();
                 if (status == 'bez_polaska' || status == 'hidden' || status == 'cancelled') {
                   _polazakBcControllers[dan]!.clear();
-                } else {
+                } else if (bcOver['zeljeno_vreme'] != null) {
                   // Prikaži vreme i za 'otkazano' da admin može promijeniti
                   _polazakBcControllers[dan]!.text =
                       GradAdresaValidator.normalizeTime(bcOver['zeljeno_vreme'].toString());
                 }
               }
 
-              final vsOver = _getOverrideForDay(dan, false);
-              if (vsOver != null && vsOver['zeljeno_vreme'] != null) {
+              final vsOver = _getAnyOverrideForDay(dan, false);
+              if (vsOver != null) {
                 final status = vsOver['status']?.toString().toLowerCase();
                 if (status == 'bez_polaska' || status == 'hidden' || status == 'cancelled') {
                   _polazakVsControllers[dan]!.clear();
-                } else {
+                } else if (vsOver['zeljeno_vreme'] != null) {
                   // Prikaži vreme i za 'otkazano' da admin može promijeniti
                   _polazakVsControllers[dan]!.text =
                       GradAdresaValidator.normalizeTime(vsOver['zeljeno_vreme'].toString());
@@ -327,20 +328,17 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   /// Privatni helper za dobijanje override-a za dan i smer
+  /// Preskače bez_polaska, hidden, cancelled, obrisan — koristi se za prikaz statusa
   Map<String, dynamic>? _getOverrideForDay(String day, bool isBC) {
     try {
-      // POJEDNOSTAVLJENO: Pretraži seat_requests direktno po danu u nedelji
-      // bez komplikovanog računanja offset-a
       final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet'];
       final targetWeekday = dayNames.indexOf(day.toLowerCase()) + 1;
       if (targetWeekday < 1) return null;
 
-      // Pretraži sve učitane seat_requests i nađi prvi koji odgovara
       for (final req in _weeklyOverrides) {
         final datumStr = req['datum']?.toString() ?? '';
         if (datumStr.isEmpty) continue;
 
-        // Parsuj datum i proveri da li je ispravan dan u nedelji
         final datum = DateTime.tryParse(datumStr);
         if (datum == null || datum.weekday != targetWeekday) continue;
 
@@ -350,17 +348,50 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           continue;
         }
 
-        // Proveri grad (podržava i VS/BC i Vršac/Bela Crkva i vs/bc)
-        final grad = req['grad']?.toString().toLowerCase() ?? '';
-        final matchesBC = isBC && (grad == 'bc' || grad == 'bela crkva');
-        final matchesVS = !isBC && (grad == 'vs' || grad == 'vršac');
+        // Normalizovano poređenje grada (BC/VS)
+        final grad = req['grad']?.toString().toUpperCase() ?? '';
+        final normalizedGrad = grad.startsWith('V') ? 'VS' : 'BC';
+        final targetGrad = isBC ? 'BC' : 'VS';
 
-        if (matchesBC || matchesVS) {
+        if (normalizedGrad == targetGrad) {
           return req;
         }
       }
     } catch (e) {
       debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška u _getOverrideForDay: $e');
+    }
+    return null;
+  }
+
+  /// Helper koji vraća override uključujući bez_polaska — koristi se za sinhronizaciju kontrolera
+  Map<String, dynamic>? _getAnyOverrideForDay(String day, bool isBC) {
+    try {
+      final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet'];
+      final targetWeekday = dayNames.indexOf(day.toLowerCase()) + 1;
+      if (targetWeekday < 1) return null;
+
+      for (final req in _weeklyOverrides) {
+        final datumStr = req['datum']?.toString() ?? '';
+        if (datumStr.isEmpty) continue;
+
+        final datum = DateTime.tryParse(datumStr);
+        if (datum == null || datum.weekday != targetWeekday) continue;
+
+        // Preskoči samo obrisan
+        final status = req['status']?.toString().toLowerCase() ?? '';
+        if (status == 'obrisan') continue;
+
+        // Normalizovano poređenje grada (BC/VS)
+        final grad = req['grad']?.toString().toUpperCase() ?? '';
+        final normalizedGrad = grad.startsWith('V') ? 'VS' : 'BC';
+        final targetGrad = isBC ? 'BC' : 'VS';
+
+        if (normalizedGrad == targetGrad) {
+          return req;
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [RegistrovaniPutnikDialog] Greška u _getAnyOverrideForDay: $e');
     }
     return null;
   }

@@ -555,18 +555,19 @@ class RegistrovaniPutnikService {
       for (final gradCode in ['bc', 'vs']) {
         final vremeRaw = danData[gradCode];
         final vremeStr = vremeRaw?.toString();
+        // Uvek koristimo 'BC' ili 'VS' — DB trigger garantuje normalizaciju
         final normalizedGrad = gradCode == 'bc' ? 'BC' : 'VS';
-        final gradVariants = gradCode == 'bc' ? ['BC', 'bc', 'Bela Crkva'] : ['VS', 'vs', 'Vršac', 'Vrsac'];
 
         if (vremeStr != null && vremeStr.isNotEmpty && vremeStr != 'null') {
           // IMA VREME → kreiraj ili ažuriraj seat_request
           final existing = await _supabase
               .from('seat_requests')
-              .select('id, zeljeno_vreme')
+              .select('id, zeljeno_vreme, status')
               .eq('putnik_id', putnikId)
               .eq('datum', targetDateStr)
-              .inFilter('grad', gradVariants)
-              .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano']).maybeSingle();
+              .eq('grad', normalizedGrad)
+              .inFilter(
+                  'status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'pokupljen']).maybeSingle();
 
           if (existing == null) {
             // KREIRAJ NOVI seat_request
@@ -580,10 +581,10 @@ class RegistrovaniPutnikService {
             });
             debugPrint('✅ Kreiran seat_request: $targetDateStr, $normalizedGrad, $vremeStr');
           } else {
-            // AŽURIRAJ postojeći ako se vreme promenilo ILI ako je bio otkazan
+            // AŽURIRAJ postojeći ako se vreme promenilo ILI ako je bio otkazan/pokupljen
             final existingVreme = existing['zeljeno_vreme']?.toString().substring(0, 5);
             final existingStatus = existing['status']?.toString();
-            if (existingVreme != vremeStr || existingStatus == 'otkazano') {
+            if (existingVreme != vremeStr || existingStatus == 'otkazano' || existingStatus == 'pokupljen') {
               await _supabase.from('seat_requests').update({
                 'zeljeno_vreme': '$vremeStr:00',
                 'status': 'confirmed',
@@ -593,8 +594,7 @@ class RegistrovaniPutnikService {
             }
           }
         } else {
-          // PRAZNO VREME (bez polaska) → postavi bez_polaska na postojeći seat_request
-          // Uključuje i 'otkazano' da admin može resetovati otkazane termine
+          // PRAZNO VREME → postavi bez_polaska na postojeći seat_request
           await _supabase
               .from('seat_requests')
               .update({
@@ -603,8 +603,8 @@ class RegistrovaniPutnikService {
               })
               .eq('putnik_id', putnikId)
               .eq('datum', targetDateStr)
-              .inFilter('grad', gradVariants)
-              .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano']);
+              .eq('grad', normalizedGrad)
+              .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'pokupljen']);
           debugPrint('🚫 Bez polaska: $targetDateStr, $normalizedGrad');
         }
       }
