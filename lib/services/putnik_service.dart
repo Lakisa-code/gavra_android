@@ -167,11 +167,7 @@ class PutnikService {
     try {
       final todayDate = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
 
-      final gradNorm = grad == null
-          ? null
-          : (grad.toLowerCase() == 'vrsac' || grad.toLowerCase() == 'vršac' || grad.toLowerCase() == 'vs'
-              ? 'vs'
-              : 'bc');
+      final gradNorm = grad == null ? null : GradAdresaValidator.normalizeGrad(grad).toLowerCase();
       final vremeNorm = vreme != null ? '${GradAdresaValidator.normalizeTime(vreme)}:00' : null;
 
       final reqs = await supabase.rpc('get_putnoci_sa_statusom', params: {
@@ -590,12 +586,10 @@ class PutnikService {
             ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
             : DateTime.now().toIso8601String().split('T')[0]);
 
-    final isVrsac = (finalGrad?.toLowerCase().contains('vr') ?? false) || (finalGrad?.toLowerCase() == 'vs');
-    final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
-
+    final gradKey = GradAdresaValidator.normalizeGrad(finalGrad);
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
     debugPrint(
-        '🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, gradVariants=$gradVariants, time=$normalizedTime');
+        '🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, grad=$gradKey, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {
@@ -611,7 +605,7 @@ class PutnikService {
               'putnik_id': id.toString(),
               'datum': dateStr,
             })
-            .inFilter('grad', gradVariants)
+            .eq('grad', gradKey)
             .eq('zeljeno_vreme', '$normalizedTime:00')
             .select();
 
@@ -632,7 +626,7 @@ class PutnikService {
               'putnik_id': id.toString(),
               'datum': dateStr,
             })
-            .inFilter('grad', gradVariants)
+            .eq('grad', gradKey)
             .eq('dodeljeno_vreme', '$normalizedTime:00')
             .select();
 
@@ -654,7 +648,7 @@ class PutnikService {
             'putnik_id': id.toString(),
             'datum': dateStr,
           })
-          .inFilter('grad', gradVariants)
+          .eq('grad', gradKey)
           .select();
 
       debugPrint('🗑️ [PutnikService] ukloniPolazak (fallback): updated ${res.length} rows');
@@ -730,12 +724,10 @@ class PutnikService {
             ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
             : DateTime.now().toIso8601String().split('T')[0]);
 
-    final isVrsac = (finalGrad?.toLowerCase().contains('vr') ?? false) || (finalGrad?.toLowerCase() == 'vs');
-    final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
-
+    final gradKey = GradAdresaValidator.normalizeGrad(finalGrad);
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
     debugPrint(
-        '🛑 [PutnikService] otkaziPutnika (fallback): dateStr=$dateStr, gradVariants=$gradVariants, time=$normalizedTime');
+        '🛑 [PutnikService] otkaziPutnika (fallback): dateStr=$dateStr, grad=$gradKey, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {
@@ -752,7 +744,7 @@ class PutnikService {
               'putnik_id': id.toString(),
               'datum': dateStr,
             })
-            .inFilter('grad', gradVariants)
+            .eq('grad', gradKey)
             .eq('zeljeno_vreme', '$normalizedTime:00')
             .select();
 
@@ -774,7 +766,7 @@ class PutnikService {
               'putnik_id': id.toString(),
               'datum': dateStr,
             })
-            .inFilter('grad', gradVariants)
+            .eq('grad', gradKey)
             .eq('dodeljeno_vreme', '$normalizedTime:00')
             .select();
 
@@ -797,7 +789,7 @@ class PutnikService {
             'putnik_id': id.toString(),
             'datum': dateStr,
           })
-          .inFilter('grad', gradVariants)
+          .eq('grad', gradKey)
           .select();
 
       debugPrint('🛑 [PutnikService] otkaziPutnika SUCCESS (fallback): ${withoutTime.length} rows');
@@ -863,8 +855,7 @@ class PutnikService {
     required String vreme,
   }) async {
     try {
-      final isVrsac = (grad.toLowerCase().contains('vr')) || (grad.toLowerCase() == 'vs');
-      final gradVariants = isVrsac ? ['vs', 'VS', 'Vršac', 'Vrsac', 'VRŠAC'] : ['bc', 'BC', 'Bela Crkva', 'BELA CRKVA'];
+      final gradKey = GradAdresaValidator.normalizeGrad(grad);
 
       var query = supabase.from('seat_requests').update({
         'status': 'bez_polaska',
@@ -872,7 +863,7 @@ class PutnikService {
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).match({
         'datum': datum,
-      }).inFilter('grad', gradVariants);
+      }).eq('grad', gradKey);
 
       if (vreme.isNotEmpty) {
         query = query.eq('zeljeno_vreme', '${GradAdresaValidator.normalizeTime(vreme)}:00');

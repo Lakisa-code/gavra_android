@@ -27,18 +27,16 @@ class SeatRequestService {
       final datum = fixedDate != null ? DateTime.parse(fixedDate) : getNextDateForDay(DateTime.now(), dan);
       final datumStr = datum.toIso8601String().split('T')[0];
 
-      // ✅ FIX: Normalizacija grada (bc/vs) i vremena (05:00) za konzistentnost
-      final gradKey = (grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+      // Normalizacija grada → uvek 'BC' ili 'VS' (DB trigger garantuje isto)
+      final gradKey = GradAdresaValidator.normalizeGrad(grad);
       final normVreme = GradAdresaValidator.normalizeTime(vreme);
 
-      // 🛡️ PROVERA: Da li već postoji aktivan zahtev za OVAJ GRAD/DATUM?
-      // ✅ FIX: Uklanjamo proveru vremena da bi ostalo samo POSLEDNJE dodato vreme za taj grad
-      // Uključen i status 'confirmed' u listu za otkazivanje da se izbegnu duplikati
+      // Otkaži postojeće aktivne zahteve za isti grad/datum pre novog inserta
       await _supabase
           .from('seat_requests')
           .update({'status': 'cancelled'})
           .eq('putnik_id', putnikId)
-          .inFilter('grad', [gradKey, gradKey == 'bc' ? 'Bela Crkva' : 'Vršac', gradKey.toUpperCase()])
+          .eq('grad', gradKey)
           .eq('datum', datumStr)
           .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
@@ -160,15 +158,15 @@ class SeatRequestService {
     required String datum,
   }) async {
     try {
-      final gradKey = (grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs') ? 'vs' : 'bc';
+      final gradKey = GradAdresaValidator.normalizeGrad(grad);
       final nowStr = DateTime.now().toUtc().toIso8601String();
 
-      // 🛡️ OTKAŽI POSTOJEĆE: Osiguraj da ostane samo ovaj (last one wins)
+      // Otkaži postojeće aktivne zahteve za isti grad/datum
       await _supabase
           .from('seat_requests')
           .update({'status': 'cancelled'})
           .eq('putnik_id', putnikId)
-          .inFilter('grad', [gradKey, gradKey == 'bc' ? 'Bela Crkva' : 'Vršac', gradKey.toUpperCase()])
+          .eq('grad', gradKey)
           .eq('datum', datum)
           .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 

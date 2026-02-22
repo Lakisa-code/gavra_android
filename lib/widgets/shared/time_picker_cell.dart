@@ -335,7 +335,7 @@ class TimePickerCell extends StatelessWidget {
     }
 
     // Učitaj vremena iz RouteService
-    final gradCode = isBC ? 'bc' : 'vs';
+    final gradCode = isBC ? 'BC' : 'VS';
 
     // Učitaj vremena iz RouteService za sve korisnike (admin i putnici)
     // RouteService sada automatski vraća ispravna vremena iz RouteConfig-a

@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../globals.dart';
 import '../services/realtime/realtime_manager.dart';
+import '../utils/grad_adresa_validator.dart';
 
 /// Widget koji prikazuje ETA dolaska kombija sa 4 faze:
 /// 1. 30 min pre polaska: "Vozač će uskoro krenuti"
@@ -73,7 +74,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   Future<void> _loadGpsData() async {
     try {
-      final normalizedGrad = _normalizeGrad(widget.grad);
+      final normalizedGrad = GradAdresaValidator.normalizeGrad(widget.grad);
 
       var query = supabase.from('vozac_lokacije').select().eq('aktivan', true);
 
@@ -86,7 +87,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       final filteredList = list.where((driver) {
         final driverGrad = driver['grad'] as String? ?? '';
         // Filtriraj samo po gradu - aktivan=true je već u query
-        return _normalizeGrad(driverGrad) == normalizedGrad;
+        return GradAdresaValidator.normalizeGrad(driverGrad) == normalizedGrad;
       }).toList();
 
       if (filteredList.isEmpty) {
@@ -168,16 +169,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         });
       }
     }
-  }
-
-  String _normalizeGrad(String grad) {
-    final lower = grad.toLowerCase();
-    if (lower.contains('bela') || lower == 'bc') {
-      return 'BC';
-    } else if (lower.contains('vršac') || lower.contains('vrsac') || lower == 'vs') {
-      return 'VS';
-    }
-    return grad.toUpperCase();
   }
 
   /// 🔓 Zatraži dozvole za GPS

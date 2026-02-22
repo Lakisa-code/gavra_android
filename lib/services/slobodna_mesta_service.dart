@@ -46,10 +46,7 @@ class SlobodnaMestaService {
   /// Izračunaj broj zauzetih mesta za određeni grad/vreme/datum
   static int _countPutniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
       {String? excludePutnikId}) {
-    final normalizedGrad = grad.toLowerCase();
-    final targetDayAbbr = _isoDateToDayAbbr(isoDate);
-
-    // 🛡️ NORMALIZUJ TARGET VREME (iz baze kapaciteta može biti npr. "6:00")
+    final normalizedGrad = GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
     final targetVreme = GradAdresaValidator.normalizeTime(vreme);
 
     int count = 0;
@@ -75,8 +72,8 @@ class SlobodnaMestaService {
       final jeBC = GradAdresaValidator.isBelaCrkva(p.grad);
       final jeVS = GradAdresaValidator.isVrsac(p.grad);
 
-      if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
-        // ✅ NOVO: Brojimo sve putnike bez obzira na grad (BC i VS sada rade isto)
+      if ((normalizedGrad == 'BC' && jeBC) || (normalizedGrad == 'VS' && jeVS)) {
+        // Brojimo sve putnike za ovaj grad
         count += p.brojMesta;
       }
     }
@@ -86,7 +83,7 @@ class SlobodnaMestaService {
 
   static int _countUceniciZaPolazak(List<Putnik> putnici, String grad, String vreme, String isoDate,
       {String? excludePutnikId}) {
-    final normalizedGrad = grad.toLowerCase();
+    final normalizedGrad = GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
@@ -95,7 +92,7 @@ class SlobodnaMestaService {
         continue;
       }
 
-      // 🔧 Isti filteri kao za putnike (bez otkazanih, itd)
+      // Isti filteri kao za putnike (bez otkazanih, itd)
       if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
       // Filter: SAMO UČENICI
@@ -113,44 +110,13 @@ class SlobodnaMestaService {
       final jeBC = GradAdresaValidator.isBelaCrkva(p.grad);
       final jeVS = GradAdresaValidator.isVrsac(p.grad);
 
-      if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
+      if ((normalizedGrad == 'BC' && jeBC) || (normalizedGrad == 'VS' && jeVS)) {
         count += p.brojMesta;
       }
     }
 
     return count;
   }
-
-  /// Konvertuj ISO datum u skraćenicu dana
-  static String _isoDateToDayAbbr(String isoDate) {
-    try {
-      final date = DateTime.parse(isoDate);
-      const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
-      return dani[date.weekday - 1];
-    } catch (e) {
-      return 'pon';
-    }
-  }
-
-  /// Jednokratno dohvatanje slobodnih mesta
-  static Future<Map<String, List<SlobodnaMesta>>> getSlobodnaMesta({String? datum, String? excludeId}) async {
-    final isoDate = datum ?? DateTime.now().toIso8601String().split('T')[0];
-
-    // Dohvati kapacitet
-    final kapacitet = await KapacitetService.getKapacitet();
-
-    // Dohvati putnike - KORISTI getPutniciByDayIso koji proverava uklonjeni_termini i otkazivanja
-    final putnici = await _putnikService.getPutniciByDayIso(isoDate);
-
-    final result = <String, List<SlobodnaMesta>>{'BC': [], 'VS': []};
-
-    // Bela Crkva - Koristi SVA vremena iz kapaciteta (ne samo sezonska) za validaciju
-    final bcKapaciteti = kapacitet['BC'] ?? {};
-    final bcVremenaSorted = bcKapaciteti.keys.toList()..sort();
-
-    for (final vreme in bcVremenaSorted) {
-      final maxMesta = bcKapaciteti[vreme] ?? 8;
-      final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludeId);
       final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludeId);
 
       result['BC']!.add(
