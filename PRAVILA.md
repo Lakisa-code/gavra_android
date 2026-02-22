@@ -17,6 +17,7 @@
   - Uto 05:00 → zaključava se u uto u 05:00
   - ... itd. za svaki dan i vreme
 - Time picker se **OTKLJUČAVA** za narednu sedmicu u **subotu u 02:00** — tada svi dani/vremena postaju ponovo dostupni
+- **Nedjelja** se ponaša isto kao subota >= 02:00 — aktivna sedmica je uvek **naredna**
 - Admin uvek može da kreira termine ručno bez obzira na zaključanost
 - Čišćenje starih seat_requests: **SUBOTA 01:00** (ne nedjelja, ne drugi dan)
 - Nemoj kreirati logiku koja briše seat_requests van ovog rasporeda
