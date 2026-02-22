@@ -1155,9 +1155,9 @@ class _AdminScreenState extends State<AdminScreen> {
             final allPutnici = snapshot.data!;
             final filteredPutnici = allPutnici.where((putnik) {
               // 🕒 FILTER PO DANU - Samo po danu nedelje
-              // Filtriraj po odabranom danu
-              final shortDayName = _getShortDayName(_selectedDan);
-              return putnik.dan == shortDayName;
+              // Filtriraj po odabranom danu - case insensitive
+              final shortDayName = _getShortDayName(_selectedDan).toLowerCase();
+              return putnik.dan.toLowerCase() == shortDayName;
             }).toList();
             // 💰 DUŽNICI - putnici sa PLAVOM KARTICOM (nisu mesecni tip) koji nisu platili
             final filteredDuznici = filteredPutnici.where((putnik) {
