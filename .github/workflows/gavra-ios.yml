@@ -25,7 +25,7 @@ jobs:
           cache: true
 
       - name: Install Codemagic CLI tools
-        run: pip3 install codemagic-cli-tools
+        run: pip3 install codemagic-cli-tools --break-system-packages
 
       - name: Create .env file
         run: |
