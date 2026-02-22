@@ -189,11 +189,23 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final putnikId = _putnikData['id']?.toString();
       if (putnikId == null) return;
 
+      // Nađi ponedeljak aktivne nedelje (sub>=02:00 ili ned → sledeća nedelja)
+      final now = DateTime.now();
+      final jeNovaNedelja = (now.weekday == 6 && now.hour >= 2) || now.weekday == 7;
+      late DateTime monday;
+      if (jeNovaNedelja) {
+        final daysToMonday = 8 - now.weekday;
+        monday = DateTime(now.year, now.month, now.day).add(Duration(days: daysToMonday));
+      } else {
+        monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+      }
+      final mondayStr = monday.toIso8601String().split('T')[0];
+
       final res = await supabase
           .from('seat_requests')
           .select()
           .eq('putnik_id', putnikId)
-          .gte('datum', DateTime.now().subtract(const Duration(days: 1)).toIso8601String())
+          .gte('datum', mondayStr)
           .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
 
       if (mounted) {

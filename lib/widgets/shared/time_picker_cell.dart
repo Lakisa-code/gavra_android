@@ -43,138 +43,95 @@ class TimePickerCell extends StatelessWidget {
     this.isAdmin = false,
   });
 
-  /// 🆕 Da li je nova radna nedelja već počela (subota posle 02:00)
-  /// Nova nedelja = subota >= 02:00, raspored se resetuje za sledeću pon-pet
-  bool get _jeNovaNedelja {
-    final now = DateTime.now();
-    // Subota (weekday == 6) posle 02:00
-    return now.weekday == 6 && now.hour >= 2;
-  }
+  // ─────────────────────────────────────────────────────────────────
+  // CENTRALNA LOGIKA ZAKLJUČAVANJA
+  //
+  // Pravilo: ćelija je zaključana ako je trenutno vreme >= vreme polaska
+  //          za taj dan u AKTIVNOJ nedelji.
+  //
+  // Aktivna nedelja:
+  //   - sub >= 02:00 ili ned → pon-pet su u SLEDEĆOJ kalendarskoj nedelji
+  //   - inače               → pon-pet su u TEKUĆOJ kalendarskoj nedelji
+  //
+  // Jedna metoda (_resolvePolazakDateTime) vraća tačan DateTime polaska.
+  // Sve ostale metode koriste samo nju.
+  // ─────────────────────────────────────────────────────────────────
 
-  /// Vraća DateTime za određeni dan u tekućoj/sledećoj nedelji
-  DateTime? _getDateForDay() {
+  /// Vraća tačan DateTime polaska za ovaj widget (dan + vreme).
+  /// Ako [vreme] nije prosleđen, koristi [value].
+  /// Vraća null ako dayName ili vreme nisu dostupni/parsabilni.
+  DateTime? _resolvePolazakDateTime({String? vreme}) {
+    final v = vreme ?? value;
     if (dayName == null) return null;
 
     final now = DateTime.now();
-    final todayWeekday = now.weekday;
 
-    const daniMap = {
-      'pon': 1,
-      'uto': 2,
-      'sre': 3,
-      'cet': 4,
-      'pet': 5,
-      'sub': 6,
-      'ned': 7,
-    };
-
+    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
     final targetWeekday = daniMap[dayName!.toLowerCase()];
     if (targetWeekday == null) return null;
 
-    // 🆕 NOVA NEDELJA: subota posle 02:00 → svi radni dani (pon-pet) su u sledećoj nedelji
-    if (_jeNovaNedelja) {
-      // Referentni dan je sledeći ponedeljak
-      // Koliko dana do sledećeg ponedeljka od danas (subote)
-      final daysToNextMonday = 8 - todayWeekday; // subota(6) → 2 dana do pon
-      final nextMonday = DateTime(now.year, now.month, now.day).add(Duration(days: daysToNextMonday));
-      // Offset od ponedeljka (0=pon, 1=uto, ...)
-      final offsetFromMonday = targetWeekday - 1;
-      return nextMonday.add(Duration(days: offsetFromMonday));
+    // Aktivna nedelja: sub >= 02:00 ili ned → sledeća nedelja
+    final jeNovaNedelja = (now.weekday == 6 && now.hour >= 2) || now.weekday == 7;
+
+    // Nađi ponedeljak aktivne nedelje
+    late DateTime monday;
+    if (jeNovaNedelja) {
+      // Sledeći ponedeljak
+      final daysToMonday = 8 - now.weekday; // sub(6)→2, ned(7)→1
+      monday = DateTime(now.year, now.month, now.day).add(Duration(days: daysToMonday));
+    } else {
+      // Ponedeljak tekuće nedelje
+      monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
     }
 
-    // INAČE: prošli dani u tekućoj nedelji ostaju u prošlosti (negativan diff)
-    final diff = targetWeekday - todayWeekday;
-    return DateTime(now.year, now.month, now.day).add(Duration(days: diff));
+    final dayDate = monday.add(Duration(days: targetWeekday - 1));
+
+    // Ako nema vremena, vraćamo samo datum (bez sata) — za isLocked provjeru
+    if (v == null || v.isEmpty) return dayDate;
+
+    try {
+      final parts = v.split(':');
+      if (parts.length < 2) return dayDate;
+      final h = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      return DateTime(dayDate.year, dayDate.month, dayDate.day, h, m);
+    } catch (_) {
+      return dayDate;
+    }
   }
 
-  /// Da li je vreme za ovaj dan već prošlo (ne može se menjati, samo otkazati)
-  bool _isTimePassed() {
-    if (value == null || value!.isEmpty || dayName == null) return false;
+  /// Ćelija je zaključana ako je vreme polaska nastupilo (now >= polazak).
+  /// Bez vrednosti vremena: zaključano ako je dan u prošlosti.
+  bool get isLocked {
+    if (tipPutnika == 'posiljka') return false;
+    if (dayName == null) return false;
+
+    final polazak = _resolvePolazakDateTime();
+    if (polazak == null) return false;
 
     final now = DateTime.now();
-    final dayDate = _getDateForDay();
-    if (dayDate == null) return false;
 
-    // Ako je dan u prošlosti - vreme je prošlo
-    final todayOnly = DateTime(now.year, now.month, now.day);
-    if (dayDate.isBefore(todayOnly)) return true;
-
-    // Ako je današnji dan - proveri da li je vreme prošlo
-    if (dayDate.isAtSameMomentAs(todayOnly)) {
-      try {
-        final timeParts = value!.split(':');
-        if (timeParts.length == 2) {
-          final hour = int.parse(timeParts[0]);
-          final minute = int.parse(timeParts[1]);
-          final scheduledTime = DateTime(now.year, now.month, now.day, hour, minute);
-
-          // 🆕 LOCK 10 MINUTA PRE POLASKA
-          final lockTime = scheduledTime.subtract(const Duration(minutes: 10));
-
-          // Ako je trenutno vreme >= lockTime - blokiran
-          return now.isAtSameMomentAs(lockTime) || now.isAfter(lockTime);
-        }
-      } catch (e) {
-        debugPrint('⚠️ [TimePickerCell] Greška pri parsiranju vremena: $e');
-      }
+    if (value == null || value!.isEmpty) {
+      // Nema zakazanog vremena — zaključano samo ako je dan prošao
+      final dayOnly = DateTime(polazak.year, polazak.month, polazak.day);
+      final todayOnly = DateTime(now.year, now.month, now.day);
+      return dayOnly.isBefore(todayOnly);
     }
-    return false;
+
+    // Ima zakazano vreme — zaključano čim nastupi vreme polaska
+    return now.isAtSameMomentAs(polazak) || now.isAfter(polazak);
   }
 
-  /// ✅ Nova metoda: Proveri da li je POJEDINAČNO VREME prošlo (za time picker dialog)
+  /// Da li je vreme polaska (value) nastupilo — alias za isLocked kada ima vrednost.
+  bool _isTimePassed() => isLocked;
+
+  /// Da li je specifično vreme u listi pickera već prošlo.
   bool _isSpecificTimePassed(String vreme) {
     if (dayName == null) return false;
-
+    final polazak = _resolvePolazakDateTime(vreme: vreme);
+    if (polazak == null) return false;
     final now = DateTime.now();
-    final dayDate = _getDateForDay();
-    if (dayDate == null) return false;
-
-    // Ako je dan u prošlosti - vreme je prošlo
-    final todayOnly = DateTime(now.year, now.month, now.day);
-    if (dayDate.isBefore(todayOnly)) return true;
-
-    // Ako je današnji dan - proveri da li je vreme prošlo
-    if (dayDate.isAtSameMomentAs(todayOnly)) {
-      try {
-        final timeParts = vreme.split(':');
-        if (timeParts.length >= 2) {
-          final hour = int.parse(timeParts[0]);
-          final minute = int.parse(timeParts[1]);
-
-          // ČIM PROĐE VREME - ZAKLJUČAJ GA!
-          if (now.hour > hour || (now.hour == hour && now.minute >= minute)) {
-            return true; // Vreme je prošlo
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ [TimePickerCell] Greška pri parsiranju vremena: $e');
-      }
-    }
-
-    return false; // Vreme još nije prošlo
-  }
-
-  /// Da li je dan zaključan (prošao ili danas posle 18:00)
-  /// 🆕 Za dnevne putnike: zaključano ako admin nije omogućio zakazivanje, a ako jeste, SAMO tekući dan
-  bool get isLocked {
-    final now = DateTime.now();
-    final todayOnly = DateTime(now.year, now.month, now.day);
-    final dayDate = _getDateForDay();
-
-    // 🆕 POŠILJKE - Mogu se zakazivati uvek, ne zauzimaju mesto i ne podležu blokadama
-    if (tipPutnika == 'posiljka') {
-      return false;
-    }
-
-    if (dayName == null) return false;
-    if (dayDate == null) return false;
-
-    // Zaključaj ako je dan pre danas (prošlost)
-    if (dayDate.isBefore(todayOnly)) {
-      return true;
-    }
-
-    return false;
+    return now.isAtSameMomentAs(polazak) || now.isAfter(polazak);
   }
 
   @override
@@ -184,7 +141,7 @@ class TimePickerCell extends StatelessWidget {
     final isRejected = status == 'rejected';
     final isApproved = status == 'approved';
     final isConfirmed = status == 'confirmed';
-    final locked = isLocked;
+    final locked = isAdmin ? false : isLocked;
 
     // debugPrint(
     //     '🎨 [TimePickerCell] value=$value, status=$status, isPending=$isPending, dayName=$dayName, locked=$locked, isCancelled=$isCancelled');
@@ -236,6 +193,12 @@ class TimePickerCell extends StatelessWidget {
         // Omogućavamo otkazanim terminima da se ponovo aktiviraju ukoliko vreme nije prošlo
         if (isCancelled && _isTimePassed() && !isAdmin) return;
 
+        // 🔒 VREME POLASKA JE NASTUPILO - zaključano do subote 02:00
+        if (_isTimePassed() && !isAdmin) {
+          AppSnackBar.warning(context, '🔒 Vreme polaska je nastupilo. Izmene nisu moguće do subote.');
+          return;
+        }
+
         final now = DateTime.now();
 
         // 🛡️ PROVERA PLAĆANJA I PORUKE (User requirement) - UKLONJENO
@@ -257,20 +220,14 @@ class TimePickerCell extends StatelessWidget {
 
         // 🆕 EKSPLICITNA PORUKA DNEVNIM PUTNICIMA AKO JE ZAKLJUČANO
         if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && isLocked && !isAdmin) {
-          final now = DateTime.now();
-          final todayOnly = DateTime(now.year, now.month, now.day);
-          final dayDate = _getDateForDay();
-
-          if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly)) {
-            AppSnackBar.blocked(context,
-                'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌');
-          }
+          AppSnackBar.blocked(context,
+              'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌');
           return;
         }
 
         if (locked && !isAdmin) {
           final msg = hasTime
-              ? '🔒 Vaš polazak je zakazan. Izmene više nisu moguće.'
+              ? '🔒 Vreme polaska je nastupilo. Izmene nisu moguće do subote.'
               : '🔒 Zakazivanje za ovo vreme je prošlo. Od subote kreće novi ciklus.';
           AppSnackBar.warning(context, msg);
           return;
@@ -281,11 +238,14 @@ class TimePickerCell extends StatelessWidget {
           final now = DateTime.now();
           final todayOnly = DateTime(now.year, now.month, now.day);
           final tomorrowOnly = todayOnly.add(const Duration(days: 1));
-          final dayDate = _getDateForDay();
-          if (dayDate != null && !dayDate.isAtSameMomentAs(todayOnly) && !dayDate.isAtSameMomentAs(tomorrowOnly)) {
-            AppSnackBar.blocked(context,
-                'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌');
-            return;
+          final dayDate = _resolvePolazakDateTime();
+          if (dayDate != null) {
+            final dayOnly = DateTime(dayDate.year, dayDate.month, dayDate.day);
+            if (!dayOnly.isAtSameMomentAs(todayOnly) && !dayOnly.isAtSameMomentAs(tomorrowOnly)) {
+              AppSnackBar.blocked(context,
+                  'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌');
+              return;
+            }
           }
         }
 

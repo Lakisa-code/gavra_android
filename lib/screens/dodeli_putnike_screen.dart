@@ -96,15 +96,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     super.initState();
     _selectedDay = _getTodayName();
     _setupRealtimeListener();
-    _loadVremeVozacCache(); // 🆕 Učitaj vreme-vozac mapiranja
     _setupStream();
-  }
-
-  Future<void> _loadVremeVozacCache() async {
-    await VremeVozacService().loadAllVremeVozac();
-    if (mounted) {
-      setState(() {}); // Osvezi UI nakon ucitavanja cache-a
-    }
   }
 
   void _setupRealtimeListener() {
@@ -138,7 +130,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     return app_date_utils.DateUtils.getTodayFullName();
   }
 
-  void _setupStream() {
+  Future<void> _setupStream() async {
     // • Zatvori stari stream ako postoji
     _putnikSubscription?.cancel();
 
@@ -149,76 +141,88 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     setState(() => _isLoading = true);
 
+    // • Učitaj oba cache-a za selektovani datum PRIJE nego što stream kreira Putnik objekte
+    await Future.wait([
+      PutnikVozacDodelaService().loadZaDatum(isoDate),
+      VremeVozacService().loadAllVremeVozac(),
+    ]);
+
     // Stream bez filtera za vreme/grad - da imamo sve putnike za count
     _putnikSubscription = _putnikService
         .streamKombinovaniPutniciFiltered(
       isoDate: isoDate,
     )
-        .listen((putnici) {
-      if (mounted) {
-        final danAbbrev = app_date_utils.DateUtils.getDayAbbreviation(_selectedDay);
+        .listen((putnici) async {
+      // • Svaki put kad stream emituje, osvezi cache da bi dodeljenVozac bio tačan
+      // (štiti od race condition-a gde stari Putnik objekti nose pogrešnog vozača)
+      await Future.wait([
+        PutnikVozacDodelaService().loadZaDatum(isoDate),
+        VremeVozacService().loadAllVremeVozac(),
+      ]);
+      if (!mounted) return;
 
-        // Sacuvaj sve putnike za dan (za BottomNavBar count)
-        _allPutnici = putnici.where((p) {
-          final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(danAbbrev.toLowerCase());
-          return dayMatch;
-        }).toList();
+      final danAbbrev = app_date_utils.DateUtils.getDayAbbreviation(_selectedDay);
 
-        // • Filtriraj za prikaz po vremenu i gradu
-        final filtered = _allPutnici.where((p) {
-          final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
-          final vremeMatch = pVreme == normalizedVreme;
-          final gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
-          return vremeMatch && gradMatch;
-        }).toList();
+      // Sacuvaj sve putnike za dan (za BottomNavBar count)
+      _allPutnici = putnici.where((p) {
+        final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(danAbbrev.toLowerCase());
+        return dayMatch;
+      }).toList();
 
-        // • Ukloni duplikate po putnik ID (ako isti putnik ima više unosa)
-        final seenIds = <String>{};
-        final deduplicated = <Putnik>[];
-        for (final p in filtered) {
-          // Koristi requestId ako postoji, inače fallback na p.id
-          final uniqueId = p.requestId ?? p.id;
-          if (uniqueId != null && !seenIds.contains(uniqueId)) {
-            seenIds.add(uniqueId);
-            deduplicated.add(p);
-          } else if (uniqueId == null) {
-            // Ako nema ni requestId ni ID, dodaj svakako (ne bi trebalo da se desi)
-            deduplicated.add(p);
-          }
+      // • Filtriraj za prikaz po vremenu i gradu
+      final filtered = _allPutnici.where((p) {
+        final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
+        final vremeMatch = pVreme == normalizedVreme;
+        final gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
+        return vremeMatch && gradMatch;
+      }).toList();
+
+      // • Ukloni duplikate po putnik ID (ako isti putnik ima više unosa)
+      final seenIds = <String>{};
+      final deduplicated = <Putnik>[];
+      for (final p in filtered) {
+        // Koristi requestId ako postoji, inače fallback na p.id
+        final uniqueId = p.requestId ?? p.id;
+        if (uniqueId != null && !seenIds.contains(uniqueId)) {
+          seenIds.add(uniqueId);
+          deduplicated.add(p);
+        } else if (uniqueId == null) {
+          // Ako nema ni requestId ni ID, dodaj svakako (ne bi trebalo da se desi)
+          deduplicated.add(p);
+        }
+      }
+
+      // • Sortiraj po redosledu: Nedodeljeni > Bojan > Ostali vozači
+      deduplicated.sort((a, b) {
+        // Prvo po statusu (da aktivni budu gore, otkazani i odsustvo dole)
+        int getStatusPriority(Putnik p) {
+          if (p.jeOdsustvo) return 3; // žuti na dno
+          if (p.jeOtkazan) return 2; // crveni iznad žutih
+          return 0; // aktivni na vrh
         }
 
-        // • Sortiraj po redosledu: Nedodeljeni > Bojan > Ostali vozači
-        deduplicated.sort((a, b) {
-          // Prvo po statusu (da aktivni budu gore, otkazani i odsustvo dole)
-          int getStatusPriority(Putnik p) {
-            if (p.jeOdsustvo) return 3; // žuti na dno
-            if (p.jeOtkazan) return 2; // crveni iznad žutih
-            return 0; // aktivni na vrh
-          }
+        final statusCompare = getStatusPriority(a).compareTo(getStatusPriority(b));
+        if (statusCompare != 0) return statusCompare;
 
-          final statusCompare = getStatusPriority(a).compareTo(getStatusPriority(b));
-          if (statusCompare != 0) return statusCompare;
+        // Zatim po vozacu: Nedodeljeni=0, Bojan=1, ostali=2
+        int getVozacPriority(Putnik p) {
+          final vozac = p.dodeljenVozac ?? 'Nedodeljen';
+          if (vozac == 'Nedodeljen' || vozac.isEmpty) return 0;
+          if (vozac == 'Bojan') return 1;
+          return 2;
+        }
 
-          // Zatim po vozacu: Nedodeljeni=0, Bojan=1, ostali=2
-          int getVozacPriority(Putnik p) {
-            final vozac = p.dodeljenVozac ?? 'Nedodeljen';
-            if (vozac == 'Nedodeljen' || vozac.isEmpty) return 0;
-            if (vozac == 'Bojan') return 1;
-            return 2;
-          }
+        final vozacCompare = getVozacPriority(a).compareTo(getVozacPriority(b));
+        if (vozacCompare != 0) return vozacCompare;
 
-          final vozacCompare = getVozacPriority(a).compareTo(getVozacPriority(b));
-          if (vozacCompare != 0) return vozacCompare;
+        // Unutar iste grupe vozaca - alfabetski po imenu putnika
+        return a.ime.toLowerCase().compareTo(b.ime.toLowerCase());
+      });
 
-          // Unutar iste grupe vozaca - alfabetski po imenu putnika
-          return a.ime.toLowerCase().compareTo(b.ime.toLowerCase());
-        });
-
-        setState(() {
-          _putnici = deduplicated;
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _putnici = deduplicated;
+        _isLoading = false;
+      });
     });
   }
 
@@ -446,21 +450,16 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
         // • Sačuvaj per-putnik individualnu dodelu (putnik_vozac_dodela tabela)
         final dodelaService = PutnikVozacDodelaService();
-        if (noviVozac == null) {
-          await dodelaService.ukloniDodelu(
-            putnikId: putnik.id!,
-            datum: targetDatum,
-            grad: pravac,
-          );
-        } else {
-          await dodelaService.dodelVozaca(
-            putnikId: putnik.id!,
-            vozacIme: noviVozac,
-            datum: targetDatum,
-            grad: pravac,
-            vreme: _selectedVreme,
-          );
-        }
+        // Uvek upsertujemo zapis (čak i za "Nedodeljen") da override-ujemo globalnu vreme_vozac dodelu
+        debugPrint(
+            '🔧 [DodelPutnik] selected=$selected noviVozac=$noviVozac putnik=${putnik.ime} datum=$targetDatum grad=$pravac vreme=$_selectedVreme');
+        await dodelaService.dodelVozaca(
+          putnikId: putnik.id!,
+          vozacIme: noviVozac ?? 'Nedodeljen',
+          datum: targetDatum,
+          grad: pravac,
+          vreme: _selectedVreme,
+        );
 
         if (mounted) {
           final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';

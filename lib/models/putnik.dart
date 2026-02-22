@@ -1,9 +1,9 @@
 import '../constants/day_constants.dart';
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/putnik_vozac_dodela_service.dart'; // Za per-putnik individualno dodeljivanje
-import '../utils/vozac_cache.dart'; // DODATO za UUID<->ime konverziju
 import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
 import '../utils/registrovani_helpers.dart';
+import '../utils/vozac_cache.dart'; // DODATO za UUID<->ime konverziju
 
 // Enum za statuse putnika
 enum PutnikStatus { otkazano, pokupljen, bolovanje, godisnji }
@@ -209,7 +209,10 @@ class Putnik {
             )
           : null;
 
-      if (perPutnik != null && perPutnik.isNotEmpty) {
+      if (perPutnik == 'Nedodeljen') {
+        // Eksplicitno uklonjen sa vozača — ignorišemo globalnu vreme_vozac dodelu
+        dodeljenVozacFinal = null;
+      } else if (perPutnik != null && perPutnik.isNotEmpty) {
         dodeljenVozacFinal = perPutnik;
       } else {
         // PRIORITET 2: Globalna dodela iz vreme_vozac

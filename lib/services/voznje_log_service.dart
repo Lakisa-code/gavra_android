@@ -616,11 +616,10 @@ class VoznjeLogService {
 
         if (iznos <= 0) continue;
 
-        // Konvertuj UUID u ime vozača sa fallback-om
-        String vozacIme = vozacId ?? '';
-        if (vozacId != null && vozacId.isNotEmpty) {
-          // Prvo pokušaj iz mapiranja
-          vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
+        // Konvertuj UUID u ime vozača - PRVO iz vozac_ime kolone, pa iz cache-a
+        String vozacIme = record['vozac_ime'] as String? ?? '';
+        if (vozacIme.isEmpty && vozacId != null && vozacId.isNotEmpty) {
+          vozacIme = VozacCache.getImeByUuid(vozacId) ?? '';
         }
         if (vozacIme.isEmpty) continue;
 
@@ -739,10 +738,10 @@ class VoznjeLogService {
 
         final vozacId = record['vozac_id'] as String?;
 
-        // Konvertuj UUID u ime vozača
-        String vozacIme = vozacId ?? '';
-        if (vozacId != null && vozacId.isNotEmpty) {
-          vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
+        // Konvertuj UUID u ime vozača - PRVO iz vozac_ime kolone, pa iz cache-a
+        String vozacIme = record['vozac_ime'] as String? ?? '';
+        if (vozacIme.isEmpty && vozacId != null && vozacId.isNotEmpty) {
+          vozacIme = VozacCache.getImeByUuid(vozacId) ?? '';
         }
         if (vozacIme.isEmpty) continue;
 
