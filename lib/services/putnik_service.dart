@@ -469,6 +469,7 @@ class PutnikService {
           'status': 'pokupljen',
           'updated_at': DateTime.now().toUtc().toIso8601String(),
           'processed_at': DateTime.now().toUtc().toIso8601String(),
+          if (driver != null) 'pokupljeno_by': driver,
         }).eq('id', requestId);
         debugPrint('✅ [oznaciPokupljen] seat_requests status=pokupljen (requestId=$requestId)');
       } else {
@@ -479,6 +480,7 @@ class PutnikService {
               'status': 'pokupljen',
               'updated_at': DateTime.now().toUtc().toIso8601String(),
               'processed_at': DateTime.now().toUtc().toIso8601String(),
+              if (driver != null) 'pokupljeno_by': driver,
             })
             .eq('putnik_id', id.toString())
             .eq('datum', targetDatum);
