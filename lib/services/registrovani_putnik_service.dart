@@ -594,18 +594,12 @@ class RegistrovaniPutnikService {
             }
           }
         } else {
-          // PRAZNO VREME → postavi bez_polaska na postojeći seat_request
-          await _supabase
-              .from('seat_requests')
-              .update({
-                'status': 'bez_polaska',
-                'updated_at': DateTime.now().toUtc().toIso8601String(),
-              })
-              .eq('putnik_id', putnikId)
-              .eq('datum', targetDateStr)
-              .eq('grad', normalizedGrad)
-              .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'pokupljen']);
-          debugPrint('🚫 Bez polaska: $targetDateStr, $normalizedGrad');
+          // PRAZNO VREME → NE DIRAJ postojeće termine!
+          // Pravilo: operacije su vezane za tačno DAN+GRAD+VREME.
+          // Ako admin nije uneo vreme, ne sme se postavljati bez_polaska na
+          // termine koje putnik već ima. Samo eksplicitna izmena vremena sme
+          // da promeni status seat_requesta.
+          debugPrint('⏭️ Prazno vreme za $targetDateStr $normalizedGrad — preskačem, ne diram postojeće termine');
         }
       }
     }
