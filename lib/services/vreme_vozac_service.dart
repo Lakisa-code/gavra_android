@@ -3,6 +3,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_cache.dart';
 
 /// 🚐 VREME VOZAC SERVICE
@@ -191,7 +192,8 @@ class VremeVozacService {
       _cache.clear();
       _uuidCache.clear();
       for (final row in response) {
-        final grad = row['grad'] as String;
+        final gradRaw = row['grad'] as String;
+        final grad = GradAdresaValidator.isVrsac(gradRaw) ? 'Vrsac' : 'Bela Crkva';
         final vreme = row['vreme'] as String;
         final dan = row['dan'] as String;
         final vozacIme = row['vozac_ime'] as String?;
@@ -340,7 +342,8 @@ class VremeVozacService {
       _cache.clear();
       _uuidCache.clear();
       for (final row in response) {
-        final grad = row['grad'] as String;
+        final gradRaw = row['grad'] as String;
+        final grad = GradAdresaValidator.isVrsac(gradRaw) ? 'Vrsac' : 'Bela Crkva';
         final vreme = row['vreme'] as String;
         final dan = row['dan'] as String;
         final vozacIme = row['vozac_ime'] as String?;
