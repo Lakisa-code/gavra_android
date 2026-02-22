@@ -52,7 +52,7 @@ class GradAdresaValidator {
   // Reduced — only include the villages that should be treated as Vrsac
   // Intentionally exclude Pavliš / Malo Središte / Veliko Središte and similar
   static const List<String> naseljaOpstineVrsac = [
-    'Vrsac',
+    'vrsac',
     'straza',
     'potporanj',
   ];
