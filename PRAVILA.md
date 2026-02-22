@@ -9,7 +9,8 @@
 | **Subota 02:00** | ✅ **TIME PICKER SE OTKLJUČAVA** — putnici mogu da prave nove zahteve za narednu sedmicu |
 
 ### ⚠️ VAŽNO ZA RAZVOJ
-- Nemoj kreirati logiku koja pretpostavlja da seat_requests postoje pre subote 02:00
+- seat_requests **POSTOJE** cijelu sedmicu — ne brišu se do subote 01:00
+- Novi zahtevi se **NE MOGU KREIRATI** prije subote 02:00 (time picker je zaključan)
 - Čišćenje starih seat_requests: **SUBOTA 01:00** (ne nedjelja, ne drugi dan)
 - Nemoj kreirati logiku koja briše seat_requests van ovog rasporeda
 
