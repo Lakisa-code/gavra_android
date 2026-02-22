@@ -5,7 +5,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../config/route_config.dart';
 import '../constants/day_constants.dart';
 import '../globals.dart';
 import '../helpers/putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
@@ -20,7 +19,6 @@ import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/registrovani_helpers.dart';
-import '../utils/schedule_utils.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 import '../widgets/shared/time_picker_cell.dart';
 
@@ -62,7 +60,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   // ignore: unused_field
   double? _putnikLng;
   // ignore: unused_field
-  String? _sledeciPolazak;
   // ignore: unused_field
   String _smerTure = 'BC_VS';
   String? _sledecaVoznjaInfo; // 🆕 Format: "Ponedeljak, 7:00 BC"
@@ -408,13 +405,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         debugPrint('❌ [Adrese] Greška: $e');
       }
 
-      // 🚐 GPS Tracking
-      final vremenaPolazaka = await RouteConfig.getVremenaPolazaka(
-        grad: grad,
-        letnji: !isZimski(now),
-      );
-      final sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute);
-
       // 💰 Istorija plaćanja - poslednjih 6 meseci
       final istorija = await _loadIstorijuPlacanja(putnikId);
 
@@ -521,7 +511,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           _adresaVS = adresaVsNaziv;
           _putnikLat = putnikLat;
           _putnikLng = putnikLng;
-          _sledeciPolazak = sledeciPolazak;
           _smerTure = (grad == 'BC' || grad == 'Bela Crkva') ? 'BC_VS' : 'VS_BC';
           _sledecaVoznjaInfo = _izracunajSledecuVoznju();
           _isLoading = false;
@@ -531,32 +520,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       debugPrint('❌ [_loadStatistike] Finalna greška: $e');
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  /// 🕐 Nađi sledeći polazak na osnovu trenutnog vremena
-  /// Vraća polazak od 30 min PRE termina. Widget sam upravlja nestajanjem nakon pokupljenja.
-  String? _getNextPolazak(List<String> vremena, int currentHour, int currentMinute) {
-    final currentMinutes = currentHour * 60 + currentMinute;
-
-    for (final vreme in vremena) {
-      final parts = vreme.split(':');
-      if (parts.length != 2) continue;
-
-      final hour = int.tryParse(parts[0]) ?? 0;
-      final minute = int.tryParse(parts[1]) ?? 0;
-      final polazakMinutes = hour * 60 + minute;
-
-      // Prozor za praćenje: 30 min pre polaska do 120 min posle (fallback)
-      // Widget sam nestaje 60 min nakon pokupljenja ili kad vozač završi turu
-      final windowStart = polazakMinutes - 30; // 30 min pre polaska
-      final windowEnd = polazakMinutes + 120; // 120 min posle polaska (safety fallback)
-
-      if (currentMinutes >= windowStart && currentMinutes <= windowEnd) {
-        return vreme;
-      }
-    }
-
-    return null; // Nema polazaka u aktivnom prozoru
   }
 
   /// 🆕 Izračunaj sledeću zakazanu vožnju putnika
@@ -1361,9 +1324,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                     KombiEtaWidget(
                       putnikIme: fullName,
                       grad: grad,
-                      vremePolaska: _sledeciPolazak,
                       sledecaVoznja: _sledecaVoznjaInfo,
-                      putnikId: _putnikData['id']?.toString(), // 🆕 Za čitanje pokupljenja iz baze
+                      putnikId: _putnikData['id']?.toString(),
                     ),
 
                     // ─────────── Divider ───────────

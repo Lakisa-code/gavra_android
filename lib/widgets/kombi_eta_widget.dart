@@ -17,16 +17,14 @@ class KombiEtaWidget extends StatefulWidget {
     super.key,
     required this.putnikIme,
     required this.grad,
-    this.vremePolaska,
     this.sledecaVoznja,
-    this.putnikId, // 🆕 ID putnika za čitanje iz baze
+    this.putnikId,
   });
 
   final String putnikIme;
   final String grad;
-  final String? vremePolaska;
   final String? sledecaVoznja;
-  final String? putnikId; // 🆕 UUID putnika
+  final String? putnikId;
 
   @override
   State<KombiEtaWidget> createState() => _KombiEtaWidgetState();
@@ -103,14 +101,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           }
         }
 
-        // 2. Ako tražimo specifično vreme (npr. putnik bira 05:00), matchuj HH:MM prefix
-        if (widget.vremePolaska != null) {
-          final targetVreme = widget.vremePolaska!; // "08:00"
-          final driverVremeTrimmed =
-              (driverVreme ?? '').length >= 5 ? driverVreme!.substring(0, 5) : (driverVreme ?? '');
-          if (driverVremeTrimmed != targetVreme) return false;
-          return true;
-        }
+        // STALE CHECK je dovoljna zastita od zombi vozaca
 
         // 3. SANITY CHECK za automatsku detekciju (kada putnik nema target vreme)
         // Ako je vozač AKTIVAN i STALE CHECK je prošao (updated_at < 30min), prikaži ga bez vremenskog filtera
