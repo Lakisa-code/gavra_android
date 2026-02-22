@@ -18,6 +18,7 @@ import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
+import '../utils/grad_adresa_validator.dart';
 import '../utils/registrovani_helpers.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 import '../widgets/shared/time_picker_cell.dart';
@@ -384,7 +385,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaBcId).maybeSingle();
           if (bcResponse != null) {
             adresaBcNaziv = bcResponse['naziv'] as String?;
-            if (grad == 'BC' && bcResponse['gps_lat'] != null && bcResponse['gps_lng'] != null) {
+            if (GradAdresaValidator.isBelaCrkva(grad) &&
+                bcResponse['gps_lat'] != null &&
+                bcResponse['gps_lng'] != null) {
               putnikLat = _toDouble(bcResponse['gps_lat']);
               putnikLng = _toDouble(bcResponse['gps_lng']);
             }
@@ -395,7 +398,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaVsId).maybeSingle();
           if (vsResponse != null) {
             adresaVsNaziv = vsResponse['naziv'] as String?;
-            if (grad == 'VS' && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {
+            if (GradAdresaValidator.isVrsac(grad) && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {
               putnikLat = _toDouble(vsResponse['gps_lat']);
               putnikLng = _toDouble(vsResponse['gps_lng']);
             }
@@ -554,7 +557,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           final polazakH = polazakParts.isNotEmpty ? (int.tryParse(polazakParts[0]) ?? 0) : 0;
           final polazakM = polazakParts.length > 1 ? (int.tryParse(polazakParts[1]) ?? 0) : 0;
           final polazak = '$polazakH:${polazakM.toString().padLeft(2, '0')}';
-          final grad = (req['grad'] ?? '').toString().toUpperCase();
+          final gradRaw = (req['grad'] ?? '').toString();
+          final grad = GradAdresaValidator.isVrsac(gradRaw) ? 'Vrsac' : 'Bela Crkva';
           final status = req['status'] as String?;
 
           if (polazak.isEmpty || status == 'otkazano') continue;
