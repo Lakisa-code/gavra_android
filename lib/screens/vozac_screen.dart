@@ -62,6 +62,7 @@ class _VozacScreenState extends State<VozacScreen> {
   bool _isRouteOptimized = false;
   List<Putnik> _optimizedRoute = [];
   List<Putnik> _mojiPutnici = []; // Cache za _buildOptimizeButton (iz glavnog streama)
+  Map<String, int>? _putniciEta; // ETA po imenu putnika (minuti) nakon optimizacije
   final bool _isLoading = false;
   bool _isOptimizing = false; // ⏳ Loading state specifično za optimizaciju rute
 
@@ -505,6 +506,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _isListReordered = true;
             _currentPassengerIndex = 0;
             _isOptimizing = false;
+            _putniciEta = result.putniciEta; // Sacuvaj ETA za notifikacije
           });
         }
 
@@ -757,7 +759,8 @@ class _VozacScreenState extends State<VozacScreen> {
         AppSnackBar.success(context, '📍 GPS tracking pokrenut! Putnici dobijaju realtime lokaciju.');
       }
 
-      // ?? PO�ALJI PUSH NOTIFIKACIJE PUTNICIMA - bez ETA
+      // Pošalji push notifikacije putnicima - vozač krenuo + ETA
+      _sendVozacKrenulNotifikacije();
     } catch (e) {
       if (mounted) {
         AppSnackBar.error(context, '❌ Greška pri pokretanju GPS trackinga: $e');
@@ -765,7 +768,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  // ?? ZAUSTAVI GPS TRACKING
+  // ZAUSTAVI GPS TRACKING
   void _stopGpsTracking() {
     DriverLocationService.instance.stopTracking();
 
@@ -775,6 +778,38 @@ class _VozacScreenState extends State<VozacScreen> {
         _navigationStatus = '';
       });
       AppSnackBar.warning(context, '📍 GPS tracking zaustavljen');
+    }
+  }
+
+  /// 📲 Pošalji push notifikacije putnicima kada vozač startuje rutu
+  Future<void> _sendVozacKrenulNotifikacije() async {
+    if (_optimizedRoute.isEmpty || _currentDriver == null) return;
+
+    for (final putnik in _optimizedRoute) {
+      final putnikId = putnik.id?.toString();
+      if (putnikId == null) continue;
+
+      // Ako putnik nema ID ili je već pokupljen/otkazan, preskoči
+      if (putnik.jePokupljen || putnik.jeOtkazan || putnik.jeOdsustvo || putnik.jeBezPolaska) continue;
+
+      // ETA za ovog putnika (po imenu)
+      final etaMinuta = _putniciEta?[putnik.ime];
+      final etaTekst = etaMinuta != null
+          ? 'Dolazak za oko $etaMinuta min.'
+          : 'Vozač je krenuo po vas!';
+
+      await RealtimeNotificationService.sendNotificationToPutnik(
+        putnikId: putnikId,
+        title: '🚌 $_currentDriver kreće!',
+        body: etaTekst,
+        data: {
+          'type': 'vozac_krenuo',
+          'vozac': _currentDriver!,
+          'eta_minuta': etaMinuta?.toString() ?? '',
+          'grad': _selectedGrad,
+          'vreme': _selectedVreme,
+        },
+      );
     }
   }
 
