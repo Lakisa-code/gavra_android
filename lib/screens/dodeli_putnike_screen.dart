@@ -8,9 +8,8 @@ import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/kapacitet_service.dart';
 import '../services/putnik_service.dart';
-import '../services/putnik_vozac_dodela_service.dart'; // • Per-putnik individualno dodeljivanje
 import '../services/theme_manager.dart';
-import '../services/vreme_vozac_service.dart'; // • Per-vreme dodeljivanje
+import '../services/vreme_vozac_service.dart'; // • Per-putnik i per-vreme dodeljivanje
 import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
@@ -104,11 +103,12 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     // PutnikService već ima realtime listener-e i automatski osvežava stream
     // Samo slušamo stream iz PutnikService-a
 
-    // VremeVozacService listener - samo za AppBar naslov
+    // VremeVozacService listener - osvezi i AppBar i listu putnika
+    // (onChanges emituje i za termin dodele i za individualne dodele po putniku)
     _vremeVozacSubscription?.cancel();
     _vremeVozacSubscription = VremeVozacService().onChanges.listen((_) {
       if (mounted) {
-        setState(() {}); // Osvezi AppBar naslov kada se promeni vreme_vozac
+        _setupStream(skipCacheReload: true); // Cache je već ažuriran u servisu
       }
     });
   }
@@ -130,7 +130,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     return app_date_utils.DateUtils.getTodayFullName();
   }
 
-  Future<void> _setupStream() async {
+  Future<void> _setupStream({bool skipCacheReload = false}) async {
     // • Zatvori stari stream ako postoji
     _putnikSubscription?.cancel();
 
@@ -141,11 +141,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
     setState(() => _isLoading = true);
 
-    // • Učitaj oba cache-a za selektovani datum PRIJE nego što stream kreira Putnik objekte
-    await Future.wait([
-      PutnikVozacDodelaService().loadZaDatum(isoDate),
-      VremeVozacService().loadAllVremeVozac(),
-    ]);
+    // • Učitaj cache samo pri prvoj inicijalizaciji ili promjeni dana/grada
+    // • skipCacheReload=true kad se poziva zbog individualne dodele - cache je već ažuriran
+    if (!skipCacheReload) {
+      await Future.wait([
+        VremeVozacService().loadPutnikDodele(isoDate),
+        VremeVozacService().loadAllVremeVozac(),
+      ]);
+    }
 
     // Stream bez filtera za vreme/grad - da imamo sve putnike za count
     _putnikSubscription = _putnikService
@@ -153,12 +156,9 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       isoDate: isoDate,
     )
         .listen((putnici) async {
-      // • Svaki put kad stream emituje, osvezi cache da bi dodeljenVozac bio tačan
-      // (štiti od race condition-a gde stari Putnik objekti nose pogrešnog vozača)
-      await Future.wait([
-        PutnikVozacDodelaService().loadZaDatum(isoDate),
-        VremeVozacService().loadAllVremeVozac(),
-      ]);
+      // • NE učitavamo cache ovde - cache je već ažuriran u dodelVozacaPutniku()
+      // Učitavamo ga samo na početku _setupStream() jednom.
+      // Pozivanje loadPutnikDodele ovde bi prepisalo cache starim DB podacima (race condition).
       if (!mounted) return;
 
       final danAbbrev = app_date_utils.DateUtils.getDayAbbreviation(_selectedDay);
@@ -448,17 +448,16 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         final pravac = _currentPlaceKratica; // 'bc' ili 'vs'
         final targetDatum = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
 
-        // • Sačuvaj per-putnik individualnu dodelu (putnik_vozac_dodela tabela)
-        final dodelaService = PutnikVozacDodelaService();
+        // • Sačuvaj per-putnik individualnu dodelu u vreme_vozac (putnik_id IS NOT NULL)
         // Uvek upsertujemo zapis (čak i za "Nedodeljen") da override-ujemo globalnu vreme_vozac dodelu
         debugPrint(
-            '🔧 [DodelPutnik] selected=$selected noviVozac=$noviVozac putnik=${putnik.ime} datum=$targetDatum grad=$pravac vreme=$_selectedVreme');
-        await dodelaService.dodelVozaca(
-          putnikId: putnik.id!,
-          vozacIme: noviVozac ?? 'Nedodeljen',
+            '🔧 [DodelPutnik] selected=$selected noviVozac=$noviVozac putnik=${putnik.ime} datum=$targetDatum vreme=$_selectedVreme');
+        await VremeVozacService().dodelVozacaPutniku(
+          putnikId: putnik.id!.toString(),
           datum: targetDatum,
-          grad: pravac,
+          grad: _currentPlaceKratica,
           vreme: _selectedVreme,
+          vozacIme: noviVozac ?? 'Nedodeljen',
         );
 
         if (mounted) {
@@ -469,8 +468,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
             AppSnackBar.success(context, '✓ ${putnik.ime} → $noviVozac ($pravacLabel)');
           }
 
-          // Osvezi UI odmah
-          _setupStream();
+          // Osvezi UI odmah - cache je vec azuriran u dodelVozacaPutniku()
+          _setupStream(skipCacheReload: true);
         }
       } catch (e) {
         if (mounted) {
@@ -1090,14 +1089,14 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
           continue;
         }
 
-        // • Koristi per-putnik individualnu dodelu (putnik_vozac_dodela tabela)
+        // • Koristi per-putnik individualnu dodelu u vreme_vozac
         final targetDatum = app_date_utils.DateUtils.getIsoDateForDay(_selectedDay);
-        await PutnikVozacDodelaService().dodelVozaca(
-          putnikId: p.id!,
-          vozacIme: noviVozac,
+        await VremeVozacService().dodelVozacaPutniku(
+          putnikId: p.id!.toString(),
           datum: targetDatum,
           grad: pravac,
           vreme: _selectedVreme,
+          vozacIme: noviVozac,
         );
         uspesno++;
         // Čekaj između operacija da se baza ažurira

@@ -11,6 +11,7 @@ import '../utils/vozac_cache.dart';
 import 'realtime/realtime_manager.dart';
 import 'seat_request_service.dart';
 import 'voznje_log_service.dart';
+import 'vreme_vozac_service.dart';
 
 class _StreamParams {
   _StreamParams({this.isoDate, this.grad, this.vreme});
@@ -38,6 +39,7 @@ class PutnikService {
   static StreamSubscription? _globalSeatRequestsListener;
   static StreamSubscription? _globalVoznjeLogListener;
   static StreamSubscription? _globalRegistrovaniListener;
+  static StreamSubscription? _globalVremeVozacListener;
 
   static void closeStream({String? isoDate, String? grad, String? vreme}) {
     final key = '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
@@ -52,9 +54,11 @@ class PutnikService {
       _globalSeatRequestsListener?.cancel();
       _globalVoznjeLogListener?.cancel();
       _globalRegistrovaniListener?.cancel();
+      _globalVremeVozacListener?.cancel();
       _globalSeatRequestsListener = null;
       _globalVoznjeLogListener = null;
       _globalRegistrovaniListener = null;
+      _globalVremeVozacListener = null;
       debugPrint('🛑 [PutnikService] Svi streamovi zatvoreni - globalni listener-i otkazani');
     }
   }
@@ -88,9 +92,11 @@ class PutnikService {
         _globalSeatRequestsListener?.cancel();
         _globalVoznjeLogListener?.cancel();
         _globalRegistrovaniListener?.cancel();
+        _globalVremeVozacListener?.cancel();
         _globalSeatRequestsListener = null;
         _globalVoznjeLogListener = null;
         _globalRegistrovaniListener = null;
+        _globalVremeVozacListener = null;
         debugPrint('🛑 [PutnikService] Svi streamovi zatvoreni - globalni listener-i otkazani');
       }
     };
@@ -145,7 +151,11 @@ class PutnikService {
     if (row['pokupioVozac'] != null) map['pokupioVozac'] = row['pokupioVozac'];
     if (row['naplatioVozac'] != null) map['naplatioVozac'] = row['naplatioVozac'];
     if (row['otkazaoVozac'] != null) map['otkazaoVozac'] = row['otkazaoVozac'];
-    if (row['log_created_at'] != null) map['processed_at'] ??= row['log_created_at'];
+    // ✅ FIX: processed_at setuj SAMO ako je ovaj request zaista pokupljen
+    // log_created_at može da pripada drugom request-u istog putnika (race condition)
+    if (row['je_pokupljen'] == true && row['log_created_at'] != null) {
+      map['processed_at'] ??= row['log_created_at'];
+    }
     // Ne override-uj 'bez_polaska' - admin je eksplicitno uklonio polazak, ima prioritet nad logom
     if (row['je_otkazan_iz_loga'] == true && map['status'] != 'otkazano' && map['status'] != 'bez_polaska') {
       map['status'] = 'otkazano';
@@ -233,6 +243,17 @@ class PutnikService {
         _refreshAllActiveStreams();
       });
       debugPrint('✅ [PutnikService] Globalni registrovani_putnici listener kreiran');
+    }
+
+    // Listener za vreme_vozac (individualne i termin dodele vozača)
+    if (_globalVremeVozacListener == null) {
+      _globalVremeVozacListener = RealtimeManager.instance.subscribe('vreme_vozac').listen((payload) async {
+        debugPrint('🔄 [PutnikService] GLOBAL realtime UPDATE (vreme_vozac): ${payload.eventType}');
+        // Refresh cache pa onda streamove da dodeljenVozac bude ažuran
+        await VremeVozacService().refreshCacheFromDatabase();
+        _refreshAllActiveStreams();
+      });
+      debugPrint('✅ [PutnikService] Globalni vreme_vozac listener kreiran');
     }
   }
 

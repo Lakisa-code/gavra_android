@@ -6,8 +6,9 @@ import '../globals.dart';
 import '../utils/vozac_cache.dart';
 
 /// 🚐 VREME VOZAC SERVICE
-/// Servis za dodeljivanje vozača celom vremenu/terminu
-/// Npr: BC 18:00 ponedeljak -> Voja (svi putnici na tom terminu idu sa Vojom)
+/// Servis za dodeljivanje vozača:
+///   1. Ceo termin: grad + vreme + dan → vozac (putnik_id IS NULL)
+///   2. Individualni putnik: putnik_id + datum → vozac (putnik_id IS NOT NULL)
 class VremeVozacService {
   // Singleton pattern
   static final VremeVozacService _instance = VremeVozacService._internal();
@@ -17,11 +18,15 @@ class VremeVozacService {
   // Supabase client
   SupabaseClient get _supabase => supabase;
 
-  // Cache za sync pristup
+  // Cache za sync pristup - TERMIN dodele: 'grad|vreme|dan' -> vozac_ime
   final Map<String, String> _cache = {};
 
   // Cache za vozac_id (grad|vreme|dan -> uuid)
   final Map<String, String> _uuidCache = {};
+
+  // Cache za INDIVIDUALNE dodele: 'putnikId|datum' -> vozac_ime
+  // Specijalna vrednost 'Nedodeljen' znači da je eksplicitno uklonjen sa svih vozača
+  final Map<String, String> _putnikCache = {};
 
   // Stream controller za obaveštavanje o promenama
   final _changesController = StreamController<void>.broadcast();
@@ -76,15 +81,33 @@ class VremeVozacService {
     final vozacId = VozacCache.getUuidByIme(vozacIme);
 
     try {
-      // Upsert - ako postoji ažuriraj, ako ne postoji dodaj
-      await supabase.from('vreme_vozac').upsert({
-        'grad': grad,
-        'vreme': normalizedVreme,
-        'dan': dan,
-        'vozac_ime': vozacIme,
-        'vozac_id': vozacId,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'grad,vreme,dan');
+      // Update postojećeg reda, ili insert ako ne postoji
+      // Koristimo upsert na primary key (id) putem select+update/insert
+      final existing = await supabase
+          .from('vreme_vozac')
+          .select('id')
+          .eq('grad', grad)
+          .eq('vreme', normalizedVreme)
+          .eq('dan', dan)
+          .isFilter('putnik_id', null)
+          .maybeSingle();
+
+      if (existing != null) {
+        await supabase.from('vreme_vozac').update({
+          'vozac_ime': vozacIme,
+          'vozac_id': vozacId,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', existing['id']);
+      } else {
+        await supabase.from('vreme_vozac').insert({
+          'grad': grad,
+          'vreme': normalizedVreme,
+          'dan': dan,
+          'vozac_ime': vozacIme,
+          'vozac_id': vozacId,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      }
 
       // Ažuriraj cache
       final key = '$grad|$normalizedVreme|$dan';
@@ -160,7 +183,11 @@ class VremeVozacService {
   /// 🔄 Učitaj sve vreme-vozač mapiranja (SYNC verzija)
   Future<void> loadAllVremeVozac() async {
     try {
-      final response = await _supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime, vozac_id');
+      // Učitaj termin dodele (putnik_id IS NULL)
+      final response = await _supabase
+          .from('vreme_vozac')
+          .select('grad, vreme, dan, vozac_ime, vozac_id')
+          .isFilter('putnik_id', null);
       _cache.clear();
       _uuidCache.clear();
       for (final row in response) {
@@ -181,6 +208,106 @@ class VremeVozacService {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // INDIVIDUALNE DODELE PO PUTNIKU
+  // ─────────────────────────────────────────────────────────────
+
+  /// 👤 Dodeli vozača konkretnom putniku za određeni datum
+  /// [grad] i [vreme] čuvamo za referencu (isti termin)
+  Future<void> dodelVozacaPutniku({
+    required String putnikId,
+    required String datum, // ISO 'yyyy-MM-dd'
+    required String grad,
+    required String vreme,
+    required String vozacIme, // 'Nedodeljen' = eksplicitno ukloni
+    String? vozacId,
+  }) async {
+    final normalizedVreme = _normalizeTime(vreme) ?? vreme;
+    final vozacIdFinal = vozacIme == 'Nedodeljen' ? null : (vozacId ?? VozacCache.getUuidByIme(vozacIme));
+
+    try {
+      final existing =
+          await _supabase.from('vreme_vozac').select('id').eq('putnik_id', putnikId).eq('datum', datum).maybeSingle();
+
+      if (existing != null) {
+        await _supabase.from('vreme_vozac').update({
+          'vozac_ime': vozacIme,
+          'vozac_id': vozacIdFinal,
+          'grad': grad,
+          'vreme': normalizedVreme,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', existing['id']);
+      } else {
+        await _supabase.from('vreme_vozac').insert({
+          'putnik_id': putnikId,
+          'datum': datum,
+          'grad': grad,
+          'vreme': normalizedVreme,
+          'dan': '_',
+          'vozac_ime': vozacIme,
+          'vozac_id': vozacIdFinal,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      }
+
+      // Ažuriraj cache odmah
+      final key = '$putnikId|$datum';
+      _putnikCache[key] = vozacIme;
+
+      _changesController.add(null);
+    } catch (e) {
+      throw Exception('Greška pri individualnoj dodeli vozača: $e');
+    }
+  }
+
+  /// 👤 Ukloni individualnu dodelu vozača za putnika (briše red iz tabele)
+  Future<void> ukloniDodelaPutnika({
+    required String putnikId,
+    required String datum,
+  }) async {
+    try {
+      await _supabase.from('vreme_vozac').delete().eq('putnik_id', putnikId).eq('datum', datum);
+
+      final key = '$putnikId|$datum';
+      _putnikCache.remove(key);
+
+      _changesController.add(null);
+    } catch (e) {
+      throw Exception('Greška pri uklanjanju individualne dodele: $e');
+    }
+  }
+
+  /// 👤 Dobij dodeljenog vozača za konkretnog putnika (SYNC iz cache-a)
+  /// Vraća ime vozača, 'Nedodeljen' ili null (nema unosa)
+  String? getVozacZaPutnikSync(String putnikId, String datum) {
+    final key = '$putnikId|$datum';
+    return _putnikCache[key];
+  }
+
+  /// 🔄 Učitaj individualne dodele za određeni datum u cache
+  Future<void> loadPutnikDodele(String datum) async {
+    try {
+      final response = await _supabase
+          .from('vreme_vozac')
+          .select('putnik_id, vozac_ime')
+          .eq('datum', datum)
+          .not('putnik_id', 'is', null);
+
+      // Ukloni stare unose za taj datum iz cache-a
+      _putnikCache.removeWhere((key, _) => key.endsWith('|$datum'));
+
+      for (final row in response) {
+        final pId = row['putnik_id']?.toString();
+        final ime = row['vozac_ime']?.toString() ?? '';
+        if (pId != null && ime.isNotEmpty) {
+          _putnikCache['$pId|$datum'] = ime;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   /// 📡 Postavi realtime listener na vreme_vozac tabelu
   void _setupRealtimeListener() {
     _realtimeChannel = _supabase.channel('public:vreme_vozac');
@@ -194,7 +321,7 @@ class VremeVozacService {
             // Refresh cache kada se bilo šta promijeni u tabeli
             print('📡 VremeVozacService: Detektovana promjena, osvežavam cache...');
             // NE pozivaj loadAllVremeVozac() jer bi to pokrenulo listener ponovo
-            await _refreshCacheFromDatabase();
+            await refreshCacheFromDatabase();
             // Obavesti slušaoce o promjeni
             _changesController.add(null);
           },
@@ -203,9 +330,13 @@ class VremeVozacService {
   }
 
   /// 🔄 Osvěži cache iz baze bez pokretanja novog listener-a
-  Future<void> _refreshCacheFromDatabase() async {
+  Future<void> refreshCacheFromDatabase() async {
     try {
-      final response = await _supabase.from('vreme_vozac').select('grad, vreme, dan, vozac_ime, vozac_id');
+      // Termin dodele
+      final response = await _supabase
+          .from('vreme_vozac')
+          .select('grad, vreme, dan, vozac_ime, vozac_id')
+          .isFilter('putnik_id', null);
       _cache.clear();
       _uuidCache.clear();
       for (final row in response) {
@@ -218,6 +349,12 @@ class VremeVozacService {
         if (vozacIme != null) _cache[key] = vozacIme;
         if (vozacId != null) _uuidCache[key] = vozacId;
       }
+
+      // Individualne dodele - osvezi za danas i sutra
+      final today = DateTime.now().toIso8601String().substring(0, 10);
+      final tomorrow = DateTime.now().add(const Duration(days: 1)).toIso8601String().substring(0, 10);
+      await loadPutnikDodele(today);
+      await loadPutnikDodele(tomorrow);
     } catch (e) {
       // ignore
     }

@@ -1,7 +1,6 @@
 import '../constants/day_constants.dart';
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
-import '../services/putnik_vozac_dodela_service.dart'; // Za per-putnik individualno dodeljivanje
-import '../services/vreme_vozac_service.dart'; // ?? Za per-vreme dodeljivanje vozaca
+import '../services/vreme_vozac_service.dart'; // Za per-putnik i per-vreme dodeljivanje vozaca
 import '../utils/registrovani_helpers.dart';
 import '../utils/vozac_cache.dart'; // DODATO za UUID<->ime konverziju
 
@@ -194,20 +193,13 @@ class Putnik {
       finalStatus = profileStatus;
     }
 
-    // Odredi dodeljenog vozača — PRIORITET 1: per-putnik (putnik_vozac_dodela), PRIORITET 2: per-vreme (vreme_vozac)
+    // Odredi dodeljenog vozača — PRIORITET 1: per-putnik (vreme_vozac po putnik_id), PRIORITET 2: per-vreme (vreme_vozac po terminu)
     String? dodeljenVozacFinal;
     try {
       final putnikId = (p['id'] ?? req['putnik_id'])?.toString();
-      final gradKey = (gRaw == 'vs' || gRaw.contains('vrš') || gRaw.contains('vrs')) ? 'vs' : 'bc';
 
-      // PRIORITET 1: Individualna dodela iz putnik_vozac_dodela
-      final perPutnik = putnikId != null
-          ? PutnikVozacDodelaService().getVozacZaPutnikaSync(
-              putnikId: putnikId,
-              datum: datumStr,
-              grad: gradKey,
-            )
-          : null;
+      // PRIORITET 1: Individualna dodela iz vreme_vozac (putnik_id IS NOT NULL)
+      final perPutnik = putnikId != null ? VremeVozacService().getVozacZaPutnikSync(putnikId, datumStr) : null;
 
       if (perPutnik == 'Nedodeljen') {
         // Eksplicitno uklonjen sa vozača — ignorišemo globalnu vreme_vozac dodelu
@@ -215,7 +207,7 @@ class Putnik {
       } else if (perPutnik != null && perPutnik.isNotEmpty) {
         dodeljenVozacFinal = perPutnik;
       } else {
-        // PRIORITET 2: Globalna dodela iz vreme_vozac
+        // PRIORITET 2: Globalna dodela iz vreme_vozac (putnik_id IS NULL)
         final danKratica = _getDanNedeljeKratica(DateTime.parse(datumStr).weekday);
         final perVreme = VremeVozacService().getVozacZaVremeSync(grad, vreme, danKratica);
         if (perVreme != null && perVreme.isNotEmpty) {

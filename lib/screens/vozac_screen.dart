@@ -13,7 +13,6 @@ import '../services/firebase_service.dart'; // 👤 Za vozača
 import '../services/kapacitet_service.dart'; // 🎫 Za broj mesta
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
 import '../services/putnik_service.dart';
-import '../services/putnik_vozac_dodela_service.dart'; // 👤 Za individualne dodele putnika
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
 import '../services/smart_navigation_service.dart';
@@ -192,8 +191,8 @@ class _VozacScreenState extends State<VozacScreen> {
     });
 
     // 5. 👤 Slušaj individualne dodele putnika - kada admin dodeli putnika direktno vozacu
-    _putnikVozacSubscription = PutnikVozacDodelaService().onChanges.listen((_) {
-      // Osvezi stream putnika jer dodeljenVozac zavisi od putnik_vozac_dodela cache-a
+    _putnikVozacSubscription = VremeVozacService().onChanges.listen((_) {
+      // Osvezi stream putnika jer dodeljenVozac zavisi od vreme_vozac putnik cache-a
       _putnikService.refreshAllActiveStreams();
       if (mounted) setState(() {});
     });

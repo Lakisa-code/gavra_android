@@ -17,7 +17,6 @@ import 'services/app_settings_service.dart'; // 🔧 Podešavanja aplikacije (na
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/kapacitet_service.dart'; // 🎫 Realtime kapacitet
-import 'services/putnik_vozac_dodela_service.dart'; // 🚗 Per-putnik individualna dodela vozača
 import 'services/realtime/realtime_manager.dart'; // 🎯 Centralizovani realtime manager
 import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/slobodna_mesta_service.dart';
@@ -28,6 +27,7 @@ import 'services/voznje_log_service.dart';
 import 'services/vreme_vozac_service.dart'; // 🚐 Per-vreme dodeljivanje vozača
 import 'services/weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
+import 'utils/putnik_helpers.dart'; // 📅 Za getWorkingDateIso
 import 'utils/vozac_cache.dart'; // 🎯 Jedinstven vozač cache
 
 // 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
@@ -185,10 +185,14 @@ Future<void> _initAppServices() async {
   // Sync inicijalizacija
   VremeVozacService().loadAllVremeVozac();
 
-  // 🚗 Individualna dodela vozača po putniku - učitaj za danas + realtime
+  // 🚗 Individualna dodela vozača po putniku - učitaj za danas + radni datum
   final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-  unawaited(PutnikVozacDodelaService().loadZaDatum(todayStr));
-  PutnikVozacDodelaService().setupRealtimeListener();
+  final workingDateStr = PutnikHelpers.getWorkingDateIso();
+  unawaited(VremeVozacService().loadPutnikDodele(todayStr));
+  // Vikendom radni datum je ponedeljak - učitaj i taj datum
+  if (workingDateStr != todayStr) {
+    unawaited(VremeVozacService().loadPutnikDodele(workingDateStr));
+  }
 
   // 🚗 Initialize VozacService stream JEDNOM - pokrenuti stream sa listen() da počne emisija
   VozacService().streamAllVozaci().listen((_) {
