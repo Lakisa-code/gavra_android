@@ -105,8 +105,17 @@ class PutnikService {
 
   Stream<List<Putnik>> streamPutnici() {
     // 🆕 REDIREKCIJA NA IZVOR ISTINE (seat_requests)
-    // Koristi samo datum (YYYY-MM-DD) za ključ, ne puni ISO sa vremenom
-    final todayDate = DateTime.now().toIso8601String().split('T')[0];
+    // Vikendom (subota/nedelja) koristi naredni ponedeljak
+    final today = DateTime.now();
+    final DateTime workingDate;
+    if (today.weekday == DateTime.saturday) {
+      workingDate = today.add(const Duration(days: 2));
+    } else if (today.weekday == DateTime.sunday) {
+      workingDate = today.add(const Duration(days: 1));
+    } else {
+      workingDate = today;
+    }
+    final todayDate = workingDate.toIso8601String().split('T')[0];
     return streamKombinovaniPutniciFiltered(isoDate: todayDate);
   }
 
