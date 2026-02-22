@@ -96,7 +96,7 @@ class Putnik {
   // NOVI: Factory za registrovani_putnici tabelu (PROFIL PUTNIKA)
   factory Putnik.fromRegistrovaniPutnici(Map<String, dynamic> map) {
     final grad = _determineGradFromRegistrovani(map);
-    final place = grad.toLowerCase().contains('vr') || grad.contains('Vrsac') ? 'VS' : 'BC';
+    final place = grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs' ? 'VS' : 'BC';
 
     // ⚠️ SSOT: Ne čitamo polazak iz profila, on mora doći iz seat_requests
     final polazakRaw = null; // Ignorišemo legacy fallbacks

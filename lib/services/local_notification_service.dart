@@ -641,7 +641,8 @@ class LocalNotificationService {
           .inFilter('status', ['approved', 'confirmed', 'pending', 'manual']).maybeSingle();
 
       if (seatRequest != null) {
-        final grad = (seatRequest['grad']?.toString().toLowerCase() == 'vs') ? 'Vrsac' : 'Bela Crkva';
+        final gradRaw = seatRequest['grad']?.toString().toLowerCase() ?? '';
+        final grad = (gradRaw == 'vs' || gradRaw.contains('vrs') || gradRaw.contains('vr')) ? 'Vrsac' : 'Bela Crkva';
         final zeljenoVremeStr = seatRequest['zeljeno_vreme']?.toString() ?? '';
         final polazak = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : null;
 
