@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/foundation.dart';
@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // 📝 DINAMIČKA LISTA POLAZAKA za BottomNavBar
   List<String> get _sviPolasci {
     final bcList = bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = vsVremena.map((v) => '$v Vršac').toList();
+    final vsList = vsVremena.map((v) => '$v Vrsac').toList();
     return [...bcList, ...vsList];
   }
 
@@ -770,7 +770,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       controller: opisController,
                       decoration: const InputDecoration(
                         labelText: 'Opis usluge *',
-                        hintText: 'npr. Prevoz Beograd-Vršac',
+                        hintText: 'npr. Prevoz Beograd-Vrsac',
                         prefixIcon: Icon(Icons.description),
                       ),
                     ),
@@ -950,7 +950,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       );
 
-      // 🚪 Izvrši logout
+      // 🚪 IzVrsi logout
       try {
         await AuthManager.logout(context);
       } catch (e) {
@@ -1693,7 +1693,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           brojMesta: brojMesta, // 🆕 Prosleđujemo broj rezervisanih mesta
                                         );
 
-                                        // Duplikat provera se vrši u PutnikService.dodajPutnika()
+                                        // Duplikat provera se Vrsi u PutnikService.dodajPutnika()
                                         await _putnikService.dodajPutnika(
                                           putnik,
                                           skipKapacitetCheck: AdminSecurityService.isAdmin(_currentDriver),
@@ -2080,7 +2080,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           );
 
           // 🔄 UKLONJEN DUPLI SORT - PutnikList sada sortira konzistentno sa VozacScreen
-          // Sortiranje se vrši u PutnikList widgetu sa istom logikom za sva tri ekrana
+          // Sortiranje se Vrsi u PutnikList widgetu sa istom logikom za sva tri ekrana
           final putniciZaPrikaz = sviPutniciBezDuplikata;
 
           // Funkcija za brojanje putnika po gradu, vremenu i danu

@@ -1,8 +1,8 @@
-import 'text_utils.dart';
+﻿import 'text_utils.dart';
 import 'time_validator.dart';
 
 /// UTIL ZA VALIDACIJU GRADOVA I ADRESA
-/// Ograničava aplikaciju na opštine Bela Crkva i Vršac
+/// Ograničava aplikaciju na opštine Bela Crkva i Vrsac
 class GradAdresaValidator {
   /// ✅ PROVERI DA LI JE GRAD BELA CRKVA (ili BC skraćenica)
   static bool isBelaCrkva(String? grad) {
@@ -11,15 +11,15 @@ class GradAdresaValidator {
     return normalized.contains('bela') || normalized == 'bc';
   }
 
-  /// ✅ PROVERI DA LI JE GRAD VRŠAC (ili VS skraćenica)
+  /// ✅ PROVERI DA LI JE GRAD Vrsac (ili VS skraćenica)
   static bool isVrsac(String? grad) {
     if (grad == null || grad.trim().isEmpty) return false;
     final normalized = normalizeString(grad);
-    return normalized.contains('vrsac') || normalized == 'vs';
+    return normalized.contains('Vrsac') || normalized == 'vs';
   }
 
   /// JEDNOSTAVNO GRAD POREĐENJE - samo 2 glavna grada
-  /// LOGIKA: Bela Crkva ili Vršac - filtrira po gradu putnika
+  /// LOGIKA: Bela Crkva ili Vrsac - filtrira po gradu putnika
   static bool isGradMatch(
     String? putnikGrad,
     String? putnikAdresa,
@@ -30,7 +30,7 @@ class GradAdresaValidator {
       return true; // Putnik je iz Bele Crkve i selektovana je Bela Crkva
     }
     if (isVrsac(selectedGrad) && isVrsac(putnikGrad)) {
-      return true; // Putnik je iz Vršca i selektovan je Vršac
+      return true; // Putnik je iz Vrsca i selektovan je Vrsac
     }
 
     return false; // Gradovi se ne poklapaju
@@ -48,11 +48,11 @@ class GradAdresaValidator {
     'vracev gaj',
   ];
 
-  /// NASELJA I ADRESE OPŠTINE VRŠAC
-  // Reduced — only include the villages that should be treated as Vršac
+  /// NASELJA I ADRESE OPŠTINE Vrsac
+  // Reduced — only include the villages that should be treated as Vrsac
   // Intentionally exclude Pavliš / Malo Središte / Veliko Središte and similar
   static const List<String> naseljaOpstineVrsac = [
-    'vrsac',
+    'Vrsac',
     'straza',
     'potporanj',
   ];
@@ -69,7 +69,7 @@ class GradAdresaValidator {
 
     // Dodatne specifične zamene za ovaj validator
     normalized = normalized
-        .replaceAll('vrsac', 'vrsac') // već normalizovano
+        .replaceAll('Vrsac', 'Vrsac') // već normalizovano
         .replaceAll('cetvrtak', 'cetvrtak') // već normalizovano
         .replaceAll('cet', 'cet') // već normalizovano
         .replaceAll('posta', 'posta'); // već normalizovano
@@ -77,7 +77,7 @@ class GradAdresaValidator {
     return normalized;
   }
 
-  /// PROVERI DA LI JE ADRESA U DOZVOLJENIM OPŠTINAMA (Bela Crkva ili Vršac)
+  /// PROVERI DA LI JE ADRESA U DOZVOLJENIM OPŠTINAMA (Bela Crkva ili Vrsac)
   static bool isAdresaInAllowedCity(String? adresa, String? putnikGrad) {
     if (adresa == null || adresa.trim().isEmpty) {
       return false; // Adresa je OBAVEZNA - ne dozvoljavamo putnike bez adrese
@@ -117,7 +117,7 @@ class GradAdresaValidator {
     // Proveri da li grad pripada opštini Bela Crkva
     final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedGrad.contains(naselje));
 
-    // Proveri da li grad pripada opštini Vršac
+    // Proveri da li grad pripada opštini Vrsac
     final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
 
     if (belongsToBelaCrkva) {
@@ -139,7 +139,7 @@ class GradAdresaValidator {
 
     final normalizedGrad = normalizeString(grad);
 
-    // Proveri da li pripada dozvoljenim opštinama (Bela Crkva ili Vršac)
+    // Proveri da li pripada dozvoljenim opštinama (Bela Crkva ili Vrsac)
     final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedGrad.contains(naselje));
     final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
 

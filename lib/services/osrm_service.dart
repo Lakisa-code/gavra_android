@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -50,7 +50,7 @@ class OsrmService {
         return OsrmResult.error('Nema putnika sa validnim koordinatama');
       }
 
-      // 🎯 Dodaj krajnju destinaciju ako je zadata (Vršac ili Bela Crkva)
+      // 🎯 Dodaj krajnju destinaciju ako je zadata (Vrsac ili Bela Crkva)
       final hasEndDestination = endDestination != null;
       if (hasEndDestination) {
         coordsList

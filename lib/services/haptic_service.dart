@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
 
@@ -41,7 +41,7 @@ class HapticService {
     }
   }
 
-  /// 🔔 Success feedback - kad se nešto uspešno završi
+  /// 🔔 Success feedback - kad se nešto uspešno zaVrsi
   static void success() {
     try {
       HapticFeedback.lightImpact();

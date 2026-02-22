@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+﻿// ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
 
@@ -58,7 +58,7 @@ class _PutnikCardState extends State<PutnikCard> {
   bool _isLongPressActive = false;
   bool _isProcessing = false; // ⏳ Sprečava duple klikove tokom procesiranja
 
-  // 🔒 GLOBALNI LOCK - blokira SVE kartice dok jedan putnik nije završen u bazi
+  // 🔒 GLOBALNI LOCK - blokira SVE kartice dok jedan putnik nije zaVrsen u bazi
   static bool _globalProcessingLock = false;
 
   @override
@@ -1389,6 +1389,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                       // Vozaci: direktno otkazivanje | Admini: popup sa opcijama
                                       if (!_putnik.jeOtkazan &&
                                           (_putnik.mesecnaKarta == true ||
+                                              _putnik.isDnevniTip ||
                                               (_putnik.vremePokupljenja == null &&
                                                   (_putnik.iznosPlacanja == null || _putnik.iznosPlacanja == 0))))
                                         GestureDetector(
@@ -1912,7 +1913,7 @@ class _PutnikCardState extends State<PutnikCard> {
     if (adresa == null || adresa.isEmpty || adresa == 'Adresa nije definisana') return null;
 
     try {
-      // Koristi UnifiedGeocodingService koji ima savršenu logiku (Baza -> API)
+      // Koristi UnifiedGeocodingService koji ima saVrsenu logiku (Baza -> API)
       final result = await UnifiedGeocodingService.getCoordinatesForPutnici(
         [_putnik],
         saveToDatabase: true, // Automatski sačuvaj u bazu ako nađeš preko API-ja

@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:uuid/uuid.dart';
 
@@ -147,20 +147,20 @@ class Adresa {
     return numberPattern.hasMatch(broj!.trim());
   }
 
-  /// Validate city name (restricted to Bela Crkva and Vršac municipalities)
+  /// Validate city name (restricted to Bela Crkva and Vrsac municipalities)
   bool get isValidGrad {
     if (grad == null || grad!.trim().isEmpty) return true; // Now optional
 
     // Koristi centralizovanu normalizaciju iz TextUtils
     final normalizedGrad = TextUtils.normalizeText(grad!);
 
-    // Allowed municipalities: Bela Crkva and Vršac
+    // Allowed municipalities: Bela Crkva and Vrsac
     const allowedCities = [
       // Bela Crkva municipality
       'bela crkva', 'kaluđerovo', 'jasenovo', 'centa', 'grebenac',
       'kuscica', 'krustica', 'dupljaja', 'velika greda', 'dobricevo',
-      // Vršac municipality
-      'vrsac', 'malo srediste', 'veliko srediste', 'mesic', 'pavlis',
+      // Vrsac municipality
+      'Vrsac', 'malo srediste', 'veliko srediste', 'mesic', 'pavlis',
       'ritisevo', 'straza', 'uljma', 'vojvodinci', 'zagajica',
       'gudurica', 'kustilj', 'marcovac', 'potporanj', 'socica',
     ];
@@ -189,11 +189,11 @@ class Adresa {
     return validLatitude && validLongitude;
   }
 
-  /// Check if address is in service area (Bela Crkva/Vršac region)
+  /// Check if address is in service area (Bela Crkva/Vrsac region)
   bool get isInServiceArea {
     if (!hasValidCoordinates) return isValidGrad; // Fallback to city validation
 
-    // Service area approximate bounds for Bela Crkva and Vršac region
+    // Service area approximate bounds for Bela Crkva and Vrsac region
     // Latitude: 44.8 to 45.5
     // Longitude: 20.8 to 21.8
     final inServiceLatitude = latitude! >= 44.8 && latitude! <= 45.5;
@@ -229,13 +229,13 @@ class Adresa {
     }
     if (!isValidGrad) {
       errors
-          .add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vršac opštine)');
+          .add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vrsac opštine)');
     }
     if (hasValidCoordinates && !areCoordinatesValidForSerbia) {
       errors.add('Koordinate nisu validne za Srbiju');
     }
     if (!isInServiceArea) {
-      errors.add('Adresa nije u servisnoj oblasti (Bela Crkva/Vršac region)');
+      errors.add('Adresa nije u servisnoj oblasti (Bela Crkva/Vrsac region)');
     }
 
     return errors;
@@ -291,7 +291,7 @@ class Adresa {
     );
 
     if (belongsToBelaCrkva) return 'Bela Crkva';
-    return 'Vršac'; // Default for all other valid addresses
+    return 'Vrsac'; // Default for all other valid addresses
   }
 
   /// Get priority score for sorting (important locations first)

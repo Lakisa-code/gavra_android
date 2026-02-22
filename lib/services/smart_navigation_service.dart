@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../config/route_config.dart';
@@ -23,14 +23,14 @@ class SmartNavigationService {
   ///
   /// LOGIKA VOŽNJE:
   /// - BC polazak (ujutru): Putnici su u BC, vozač ih pokuplja i vozi u VS
-  ///   -> endDestination = Vršac (gde ih vozi)
+  ///   -> endDestination = Vrsac (gde ih vozi)
   /// - VS polazak (popodne): Putnici su u VS, vozač ih pokuplja i vraća u BC
   ///   -> endDestination = Bela Crkva (gde ih vraća)
   ///
   /// Dakle: endDestination je SUPROTNI grad od startCity
   static Position? _getEndDestination(String startCity) {
     if (GradAdresaValidator.isBelaCrkva(startCity)) {
-      // Putnici kreću IZ Bele Crkve -> vozač ih vozi U Vršac
+      // Putnici kreću IZ Bele Crkve -> vozač ih vozi U Vrsac
       return Position(
         latitude: RouteConfig.vrsacLat,
         longitude: RouteConfig.vrsacLng,
@@ -46,7 +46,7 @@ class SmartNavigationService {
     }
 
     if (GradAdresaValidator.isVrsac(startCity)) {
-      // Putnici kreću IZ Vršca -> vozač ih vozi U Belu Crkvu
+      // Putnici kreću IZ Vrsca -> vozač ih vozi U Belu Crkvu
       return Position(
         latitude: RouteConfig.belaCrkvaLat,
         longitude: RouteConfig.belaCrkvaLng,

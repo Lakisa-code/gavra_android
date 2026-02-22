@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -271,7 +271,7 @@ class HereWeGoNavigationService {
         final shouldContinue = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text('Segment $currentSegment/${segments.length} završen'),
+            title: Text('Segment $currentSegment/${segments.length} zaVrsen'),
             content: Text(
               'Pokupljeno: ${launchedPutnici.length} putnika\n'
               'Preostalo: $remainingCount putnika\n\n'
@@ -280,7 +280,7 @@ class HereWeGoNavigationService {
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Završi')),
+                  child: const Text('ZaVrsi')),
               ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   child: const Text('Nastavi')),
@@ -290,7 +290,7 @@ class HereWeGoNavigationService {
 
         if (shouldContinue != true) {
           return HereWeGoNavResult.partial(
-            message: 'Navigacija završena posle segmenta $currentSegment',
+            message: 'Navigacija zaVrsena posle segmenta $currentSegment',
             launchedPutnici: launchedPutnici,
             remainingPutnici:
                 segments.skip(currentSegment).expand((s) => s).toList(),

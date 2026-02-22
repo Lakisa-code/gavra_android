@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../config/route_config.dart'; // 🕐 RASPORED VREMENA
@@ -338,7 +338,7 @@ class _AdminScreenState extends State<AdminScreen> {
               DropdownButtonFormField<String>(
                 value: selectedGrad,
                 decoration: const InputDecoration(labelText: 'Grad'),
-                items: ['Bela Crkva', 'Vršac'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                items: ['Bela Crkva', 'Vrsac'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
                 onChanged: (val) {
                   if (val != null) setDialogState(() => selectedGrad = val);
                 },

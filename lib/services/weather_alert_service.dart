@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -40,9 +40,9 @@ class WeatherAlertService {
         alerts.addAll(bcAlerts);
       }
 
-      // Proveri Vršac
+      // Proveri Vrsac
       if (vsWeather != null) {
-        final vsAlerts = _checkForDangerousWeather(vsWeather, 'Vršac');
+        final vsAlerts = _checkForDangerousWeather(vsWeather, 'Vrsac');
         alerts.addAll(vsAlerts);
       }
 

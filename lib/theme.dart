@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -311,10 +311,10 @@ const LinearGradient tripleBlueFashionGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF0575E6), // Electric Blue Shine - završetak
+    Color(0xFF0575E6), // Electric Blue Shine - zaVrsetak
     Color(0xFF1E3A78), // Blue Ice Metallic - početak
     Color(0xFF4F7CAC), // Blue Ice Metallic - sredina
-    Color(0xFFA8D8E8), // Blue Ice Metallic - završetak
+    Color(0xFFA8D8E8), // Blue Ice Metallic - zaVrsetak
     Color(0xFF12D8FA), // Neon Blue Glow - sredina
   ],
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
@@ -384,7 +384,7 @@ const ColorScheme passionateRoseColorScheme = ColorScheme(
   tertiaryContainer: Color(0xFFFFE4E1), // Misty Rose
   onTertiaryContainer: Color(0xFF8B0000),
 
-  // Svetle površine
+  // Svetle poVrsine
   surface: Color(0xFFFFF8F9), // Skoro bela sa pink odsjajem
   onSurface: Color(0xFF1A1A1A),
   surfaceContainerHighest: Color(0xFFFFE4E1), // Misty Rose
@@ -421,7 +421,7 @@ const ColorScheme darkPinkColorScheme = ColorScheme(
   tertiaryContainer: Color(0xFFFFB6C1), // Baby pink
   onTertiaryContainer: Color(0xFF1A0A14),
 
-  // Tamne površine
+  // Tamne poVrsine
   surface: Color(0xFF1A0A14), // Skoro crna
   onSurface: Colors.white,
   surfaceContainerHighest: Color(0xFF2D1F2D),

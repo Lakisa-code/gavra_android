@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -360,9 +360,9 @@ class PrintingService {
 
   static String _odredjiRelaciju(String grad, String vreme) {
     if (GradAdresaValidator.isBelaCrkva(grad)) {
-      return 'Bela Crkva - Vršac';
+      return 'Bela Crkva - Vrsac';
     } else if (GradAdresaValidator.isVrsac(grad)) {
-      return 'Vršac - Bela Crkva';
+      return 'Vrsac - Bela Crkva';
     }
     return '$grad - ______';
   }

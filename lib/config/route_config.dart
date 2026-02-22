@@ -1,4 +1,4 @@
-import 'package:gavra_android/services/route_service.dart';
+﻿import 'package:gavra_android/services/route_service.dart';
 
 /// 🚐 Route Configuration
 ///
@@ -44,7 +44,7 @@ class RouteConfig {
     '15:00',
   ];
 
-  // 🌆 VRŠAC - Zimski raspored (oktobar-mart) - FALLBACK
+  // 🌆 Vrsac - Zimski raspored (oktobar-mart) - FALLBACK
   static const List<String> vsVremenaZimski = [
     '06:00',
     '07:00',
@@ -59,7 +59,7 @@ class RouteConfig {
     '19:00',
   ];
 
-  // 🌆 VRŠAC - Letnji raspored (april-septembar) - FALLBACK
+  // 🌆 Vrsac - Letnji raspored (april-septembar) - FALLBACK
   static const List<String> vsVremenaLetnji = [
     '06:00',
     '07:00',
@@ -73,7 +73,7 @@ class RouteConfig {
     '18:00',
   ];
 
-  // 🌆 VRŠAC - Praznični raspored - FALLBACK
+  // 🌆 Vrsac - Praznični raspored - FALLBACK
   static const List<String> vsVremenaPraznici = [
     '06:00',
     '07:00',
@@ -102,10 +102,8 @@ class RouteConfig {
     required String grad,
     required bool letnji,
   }) async {
-    final isBc = grad.toLowerCase().contains('bela') ||
-        grad.toLowerCase().contains('bc');
-    final isVs = grad.toLowerCase().contains('vrs') ||
-        grad.toLowerCase().contains('vrš');
+    final isBc = grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc');
+    final isVs = grad.toLowerCase().contains('vrs') || grad.toLowerCase().contains('Vrs');
 
     final sezona = letnji ? 'letnji' : 'zimski';
     final gradCode = isBc ? 'BC' : 'VS';

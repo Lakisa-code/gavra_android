@@ -1,4 +1,4 @@
-import '../constants/day_constants.dart';
+﻿import '../constants/day_constants.dart';
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/vreme_vozac_service.dart'; // Za per-putnik i per-vreme dodeljivanje vozaca
 import '../utils/registrovani_helpers.dart';
@@ -76,7 +76,7 @@ class Putnik {
     this.tipPutnika, // ?? Tip putnika: radnik, ucenik, dnevni
     this.otkazanZaPolazak = false, // ?? Da li je otkazan za ovaj specificni polazak (grad)
     this.requestId, // 🆕 ID konkretnog seat_request zapisa
-    this.pokupioVozacId, // UUID vozača koji je pokupljanje izvršio
+    this.pokupioVozacId, // UUID vozača koji je pokupljanje izVrsio
     this.naplatioVozacId, // UUID vozača koji je naplatio
     this.otkazaoVozacId, // UUID vozača koji je otkazao
   });
@@ -139,7 +139,7 @@ class Putnik {
   final double? cena; // ? STANDARDIZOVANO: cena umesto iznosPlacanja
   double? get iznosPlacanja => cena; // BACKWARD COMPATIBILITY
   final String? naplatioVozac;
-  final String? pokupioVozac; // NOVO - vozac koji je pokupljanje izvršio
+  final String? pokupioVozac; // NOVO - vozac koji je pokupljanje izVrsio
   final String? dodeljenVozac;
   final String? vozac;
   final String grad;
@@ -155,7 +155,7 @@ class Putnik {
   final String? tipPutnika; // ?? Tip putnika: radnik, ucenik, dnevni
   final bool otkazanZaPolazak; // ?? Da li je otkazan za ovaj polazak
   final String? requestId; // 🆕 ID konkretnog seat_request-a
-  final String? pokupioVozacId; // UUID vozača koji je pokupljanje izvršio
+  final String? pokupioVozacId; // UUID vozača koji je pokupljanje izVrsio
   final String? naplatioVozacId; // UUID vozača koji je naplatio
   final String? otkazaoVozacId; // UUID vozača koji je otkazao
 
@@ -165,7 +165,7 @@ class Putnik {
 
     final datumStr = (req['datum']?.toString() ?? '').split('T')[0];
     final gRaw = req['grad']?.toString().toLowerCase() ?? '';
-    final grad = (gRaw == 'vs' || gRaw.contains('vrš') || gRaw.contains('vrs')) ? 'Vrsac' : 'Bela Crkva';
+    final grad = (gRaw == 'vs' || gRaw.contains('Vrs') || gRaw.contains('vrs')) ? 'Vrsac' : 'Bela Crkva';
 
     // ✅ PRIORITET: Dodeljeno vreme (ako je vozač pomerio termin), inače željeno
     final vremeRaw = (req['dodeljeno_vreme'] ?? req['zeljeno_vreme'])?.toString() ?? '';
@@ -230,10 +230,10 @@ class Putnik {
       mesecnaKarta: !isDnevni,
       brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
       adresa: (req['adrese'] as Map?)?['naziv'] ??
-          (grad == 'Vršac'
-              ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
+          (grad == 'Vrsac'
+              ? (p['adresa_vs']?['naziv'] ?? p['adresa_Vrsac_naziv'])
               : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv'])),
-      adresaId: req['custom_adresa_id'] ?? (grad == 'Vršac' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id']),
+      adresaId: req['custom_adresa_id'] ?? (grad == 'Vrsac' ? p['adresa_Vrsac_id'] : p['adresa_bela_crkva_id']),
       brojTelefona: p['broj_telefona'],
       statusVreme: p['updated_at'],
       vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
@@ -360,15 +360,15 @@ class Putnik {
       return 'Bela Crkva';
     }
 
-    // Ako ima VS polazak danas, putnik putuje IZ Vršac (pokupljaš ga tamo)
+    // Ako ima VS polazak danas, putnik putuje IZ Vrsac (pokupljaš ga tamo)
     if (vsPolazak != null && vsPolazak.toString().isNotEmpty) {
-      return 'Vršac';
+      return 'Vrsac';
     }
 
     // Fallback: proveri da li ima VS adresu u JOIN-u
     final adresaVsObj = map['adresa_vs'] as Map<String, dynamic>?;
     if (adresaVsObj != null && adresaVsObj['naziv'] != null) {
-      return 'Vršac';
+      return 'Vrsac';
     }
 
     return 'Bela Crkva';
@@ -398,12 +398,12 @@ class Putnik {
 
     // ? FIX: Koristi grad parametar za odredivanje ispravne adrese
     // Ako je grad Bela Crkva, koristi BC adresu (gde pokupljaš putnika)
-    // Ako je grad Vršac, koristi VS adresu
+    // Ako je grad Vrsac, koristi VS adresu
     if (grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc')) {
       return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
     }
 
-    // Za Vršac ili bilo koji drugi grad, koristi VS adresu
+    // Za Vrsac ili bilo koji drugi grad, koristi VS adresu
     return adresaVS ?? adresaBC ?? 'Adresa nije definisana';
   }
 
@@ -412,7 +412,7 @@ class Putnik {
     if (grad.toLowerCase().contains('bela')) {
       return map['adresa_bela_crkva_id'] as String?;
     } else {
-      return map['adresa_vrsac_id'] as String?;
+      return map['adresa_Vrsac_id'] as String?;
     }
   }
 

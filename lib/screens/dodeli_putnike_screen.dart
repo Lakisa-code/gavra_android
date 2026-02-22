@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -86,7 +86,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   // • Svi polasci za BottomNavBar
   List<String> get _sviPolasci {
     final bcList = bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = vsVremena.map((v) => '$v Vršac').toList();
+    final vsList = vsVremena.map((v) => '$v Vrsac').toList();
     return [...bcList, ...vsList];
   }
 
@@ -251,7 +251,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  /// • Vraća kraticu pravca: 'BC' za Bela Crkva, 'VS' za Vršac
+  /// • Vraća kraticu pravca: 'BC' za Bela Crkva, 'VS' za Vrsac
   String get _currentPlaceKratica => _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
 
   /// • Vraća kraticu dana: 'pon', 'uto', itd.
@@ -1106,7 +1106,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       }
     }
 
-    // Čekaj da se sve operacije završe pre nego što osvežiš stream
+    // Čekaj da se sve operacije zaVrse pre nego što osvežiš stream
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (mounted) {
@@ -1179,7 +1179,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       }
     }
 
-    // Čekaj da se sve operacije završe pre nego što osvežiš stream
+    // Čekaj da se sve operacije zaVrse pre nego što osvežiš stream
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (mounted) {

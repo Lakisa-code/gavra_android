@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -79,7 +79,7 @@ class HuaweiPushService {
     // 🛡️ Ako je inicijalizacija u toku, sačekaj
     if (_initializing) {
       debugPrint('📱 [HuaweiPush] Initialization already in progress...');
-      // Čekaj do 5 sekundi da se završi tekuća inicijalizacija
+      // Čekaj do 5 sekundi da se zaVrsi tekuća inicijalizacija
       for (int i = 0; i < 50; i++) {
         await Future.delayed(const Duration(milliseconds: 100));
         if (_initialized) return null;

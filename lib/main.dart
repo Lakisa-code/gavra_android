@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -69,7 +69,7 @@ void main() async {
     // Možeš dodati fallback ili crash app ako je kritično
   }
 
-  // 🔐 DOVRŠI KONFIGURACIJU - učitaj preostale kredencijale iz Vault-a
+  // 🔐 DOVrsI KONFIGURACIJU - učitaj preostale kredencijale iz Vault-a
   // try {
   //   await configService.initializeVaultCredentials();
   // } catch (e) {
@@ -261,7 +261,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // 🎨 Inicijalizuj ThemeManager
       await ThemeManager().initialize();
 
-      // Inicijalizacija završena
+      // Inicijalizacija zaVrsena
     } catch (_) {
       // Init error - silent
     }

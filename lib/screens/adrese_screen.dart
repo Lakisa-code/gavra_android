@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../globals.dart';
 import '../models/adresa.dart';
@@ -173,7 +173,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
         final isLoading = snapshot.connectionState == ConnectionState.waiting && adrese.isEmpty;
 
         final belaCrkvaCount = adrese.where((a) => a.grad == 'Bela Crkva').length;
-        final vrsacCount = adrese.where((a) => a.grad == 'Vršac' || a.grad == 'Vrsac').length;
+        final vrsacCount = adrese.where((a) => a.grad == 'Vrsac' || a.grad == 'VS').length;
         final filteredAdrese = _getFilteredAdrese(adrese);
 
         return Scaffold(
@@ -207,7 +207,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
                           children: [
                             _buildStatCard('Ukupno', adrese.length.toString(), Colors.blue),
                             _buildStatCard('B. Crkva', belaCrkvaCount.toString(), Colors.green),
-                            _buildStatCard('Vršac', vrsacCount.toString(), Colors.orange),
+                            _buildStatCard('Vrsac', vrsacCount.toString(), Colors.orange),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -254,7 +254,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
                             const SizedBox(width: 8),
                             _buildFilterChip('Bela Crkva', _filterGrad == 'Bela Crkva'),
                             const SizedBox(width: 8),
-                            _buildFilterChip('Vršac', _filterGrad == 'Vršac'),
+                            _buildFilterChip('Vrsac', _filterGrad == 'Vrsac'),
                           ],
                         ),
                       ],
@@ -469,7 +469,7 @@ class _AdresaDialogState extends State<_AdresaDialog> {
             DropdownButtonFormField<String>(
               value: _selectedGrad.isNotEmpty ? _selectedGrad : null,
               decoration: const InputDecoration(labelText: 'Grad *'),
-              items: ['Bela Crkva', 'Vršac'].map((grad) {
+              items: ['Bela Crkva', 'Vrsac'].map((grad) {
                 return DropdownMenuItem(value: grad, child: Text(grad));
               }).toList(),
               onChanged: (value) {

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -317,7 +317,7 @@ class SlobodnaMestaService {
       final isoDate = _getIsoDateForDay(dan);
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
 
-      // Svi učenici koji idu IZ Vršca (povratak)
+      // Svi učenici koji idu IZ Vrsca (povratak)
       int count = 0;
       for (final p in putnici) {
         if (p.tipPutnika == 'ucenik' && GradAdresaValidator.isVrsac(p.grad)) {
@@ -369,7 +369,7 @@ class SlobodnaMestaService {
     }
   }
 
-  /// Dohvati broj slobodnih mesta za određeni grad i vreme (Vršac)
+  /// Dohvati broj slobodnih mesta za određeni grad i vreme (Vrsac)
   static Future<int> getOccupiedSeatsVs(String dan, String vreme) async {
     try {
       final isoDate = _getIsoDateForDay(dan);

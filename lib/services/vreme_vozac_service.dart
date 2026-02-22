@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -36,7 +36,7 @@ class VremeVozacService {
   RealtimeChannel? _realtimeChannel;
 
   /// 🔍 Dobij vozača za specifično vreme
-  /// [grad] - 'Bela Crkva' ili 'Vršac'
+  /// [grad] - 'Bela Crkva' ili 'Vrsac'
   /// [vreme] - '18:00', '5:00', itd.
   /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
   /// Vraća ime vozača ili null ako nije dodeljen
@@ -61,7 +61,7 @@ class VremeVozacService {
   }
 
   /// ✏️ Dodeli vozača celom vremenu
-  /// [grad] - 'Bela Crkva' ili 'Vršac'
+  /// [grad] - 'Bela Crkva' ili 'Vrsac'
   /// [vreme] - '18:00', '5:00', itd.
   /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
   /// [vozacIme] - 'Voja', 'Bilevski', 'Goran'
@@ -144,7 +144,7 @@ class VremeVozacService {
   }
 
   /// 🔍 Dobij vozača za specifično vreme (SYNC verzija)
-  /// [grad] - 'Bela Crkva' ili 'Vršac'
+  /// [grad] - 'Bela Crkva' ili 'Vrsac'
   /// [vreme] - '18:00', '5:00', itd.
   /// [dan] - 'pon', 'uto', 'sre', 'cet', 'pet'
   /// Vraća ime vozača ili null ako nije dodeljen

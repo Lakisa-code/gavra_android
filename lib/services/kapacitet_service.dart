@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -34,7 +34,7 @@ class KapacitetService {
     }
   }
 
-  /// Vremena polazaka za Vršac (prema navBarType)
+  /// Vremena polazaka za Vrsac (prema navBarType)
   static List<String> get vsVremena {
     final navType = navBarTypeNotifier.value;
     if (navType == 'praznici') {

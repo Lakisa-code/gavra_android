@@ -1,4 +1,4 @@
-import 'package:flutter/gestures.dart';
+﻿import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -1009,12 +1009,12 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             },
           ),
           const SizedBox(height: 12),
-          // DROPDOWN ZA VRŠAC
+          // DROPDOWN ZA Vrsac
           DropdownButtonFormField<String>(
             key: ValueKey('vs_$_adresaVrsacId'),
             value: _adreseVrsac.any((a) => a['id'] == _adresaVrsacId) ? _adresaVrsacId : null,
             decoration: InputDecoration(
-              labelText: 'Adresa Vršac',
+              labelText: 'Adresa Vrsac',
               prefixIcon: const Icon(Icons.location_city),
               filled: true,
               fillColor: Colors.white,
@@ -1776,7 +1776,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'datum_kraja_meseca': kraj.toIso8601String().split('T')[0],
       // Eksplicitno postavi adrese (uključujući null za brisanje)
       'adresa_bela_crkva_id': _adresaBelaCrkvaId,
-      'adresa_vrsac_id': _adresaVrsacId,
+      'adresa_Vrsac_id': _adresaVrsacId,
       // Cena po danu (custom ili null za default)
       'cena_po_danu': _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
       // Email

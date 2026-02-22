@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -80,7 +80,7 @@ class WeatherService {
   // Koordinate gradova
   static const Map<String, Map<String, double>> _gradKoordinate = {
     'BC': {'lat': 44.8989, 'lon': 21.4181}, // Bela Crkva
-    'VS': {'lat': 45.1167, 'lon': 21.3036}, // Vršac
+    'VS': {'lat': 45.1167, 'lon': 21.3036}, // Vrsac
   };
 
   // Stream controlleri za real-time temperature

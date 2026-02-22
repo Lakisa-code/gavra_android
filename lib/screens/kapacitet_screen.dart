@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../services/kapacitet_service.dart';
 import '../services/theme_manager.dart';
@@ -352,7 +352,7 @@ class _KapacitetScreenState extends State<KapacitetScreen>
             unselectedLabelColor: Colors.white54,
             tabs: const [
               Tab(text: 'Bela Crkva'),
-              Tab(text: 'Vršac'),
+              Tab(text: 'Vrsac'),
             ],
           ),
         ),

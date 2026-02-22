@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -208,7 +208,7 @@ class RealtimeNotificationService {
   }
 
   static Future<void> initialize() async {
-    // Inicijalizacija se vrši u FirebaseService
+    // Inicijalizacija se Vrsi u FirebaseService
   }
 
   static bool _foregroundListenerRegistered = false;

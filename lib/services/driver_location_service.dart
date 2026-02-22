@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
@@ -137,7 +137,7 @@ class DriverLocationService {
     // 🆕 Check if all finished
     final activeCount = _currentPutniciEta!.values.where((v) => v >= 0).length;
     if (activeCount == 0 && _isTracking) {
-      debugPrint('✅ Svi putnici završeni (ETA update) - zaustavljam tracking');
+      debugPrint('✅ Svi putnici zaVrseni (ETA update) - zaustavljam tracking');
       _onAllPassengersPickedUp?.call();
       stopTracking();
     }

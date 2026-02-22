@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -161,10 +161,10 @@ class GeocodingService {
   static bool _isCityBlocked(String grad) {
     final normalizedGrad = grad.toLowerCase().trim();
 
-    // ✅ DOZVOLJENI GRADOVI: SAMO Bela Crkva i Vršac opštine
+    // ✅ DOZVOLJENI GRADOVI: SAMO Bela Crkva i Vrsac opštine
     final allowedCities = [
-      // VRŠAC OPŠTINA
-      'vrsac', 'vršac', 'straza', 'straža', 'vojvodinci', 'potporanj', 'oresac',
+      // Vrsac OPŠTINA
+      'Vrsac', 'Vrsac', 'straza', 'straža', 'vojvodinci', 'potporanj', 'oresac',
       'orešac',
       // BELA CRKVA OPŠTINA
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',

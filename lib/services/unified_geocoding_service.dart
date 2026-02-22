@@ -1,4 +1,4 @@
-/// UNIFIED GEOCODING SERVICE
+﻿/// UNIFIED GEOCODING SERVICE
 /// Centralizovani servis za geocoding sa:
 /// - Paralelnim fetch-om koordinata
 /// - Prioritetnim redosledom (Baza → Memory → Disk → API)
@@ -236,7 +236,7 @@ class UnifiedGeocodingService {
     }
   }
 
-  /// Izvršava taskove sekvencijalno sa pauzom između zahteva
+  /// IzVrsava taskove sekvencijalno sa pauzom između zahteva
   static Future<List<GeocodingResult>> _executeWithRateLimit(
     List<Future<GeocodingResult> Function()> tasks, {
     required Duration delay,

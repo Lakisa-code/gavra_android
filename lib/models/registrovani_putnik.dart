@@ -1,4 +1,4 @@
-import '../services/adresa_supabase_service.dart';
+﻿import '../services/adresa_supabase_service.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
 class RegistrovaniPutnik {
@@ -69,7 +69,7 @@ class RegistrovaniPutnik {
   /// UUID reference za adresu u Beloj Crkvi
   final String? adresaBelaCrkvaId;
 
-  /// UUID reference za adresu u Vršcu
+  /// UUID reference za adresu u Vrscu
   final String? adresaVrsacId;
 
   /// Datum početka meseca
@@ -149,7 +149,7 @@ class RegistrovaniPutnik {
       tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
       adresaBelaCrkvaId: map['adresa_bela_crkva_id'] as String?,
-      adresaVrsacId: map['adresa_vrsac_id'] as String?,
+      adresaVrsacId: map['adresa_Vrsac_id'] as String?,
       datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
           ? DateTime.parse(map['datum_pocetka_meseca'] as String)
           : DateTime(DateTime.now().year, DateTime.now().month),
@@ -167,7 +167,7 @@ class RegistrovaniPutnik {
           (map['adresa_bc'] is Map ? (map['adresa_bc'] as Map)['naziv'] as String? : null) ??
           (map['adresa_vs'] is Map ? (map['adresa_vs'] as Map)['naziv'] as String? : null),
       grad: map['grad'] as String? ??
-          (map['adresa_bc'] is Map ? 'Bela Crkva' : (map['adresa_vs'] is Map ? 'Vršac' : null)),
+          (map['adresa_bc'] is Map ? 'Bela Crkva' : (map['adresa_vs'] is Map ? 'Vrsac' : null)),
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
       cenaPoDanu: _parseNum(map['cena_po_danu'])?.toDouble(), // 🆕 Custom cena po danu
@@ -193,7 +193,7 @@ class RegistrovaniPutnik {
       'tip': tip,
       'tip_skole': tipSkole,
       'adresa_bela_crkva_id': adresaBelaCrkvaId,
-      'adresa_vrsac_id': adresaVrsacId,
+      'adresa_Vrsac_id': adresaVrsacId,
       'datum_pocetka_meseca': datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
       'created_at': createdAt.toUtc().toIso8601String(),
@@ -299,7 +299,7 @@ class RegistrovaniPutnik {
     return await AdresaSupabaseService.getNazivAdreseByUuid(adresaBelaCrkvaId);
   }
 
-  /// Dobija naziv adrese za Vršac
+  /// Dobija naziv adrese za Vrsac
   Future<String?> getAdresaVrsacNaziv() async {
     if (adresaVrsacId == null) return null;
     return await AdresaSupabaseService.getNazivAdreseByUuid(adresaVrsacId);

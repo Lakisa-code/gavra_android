@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -423,7 +423,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
     }
   }
 
-  /// Pomoćna funkcija za izvršavanje logina nakon uspešne identifikacije
+  /// Pomoćna funkcija za izVrsavanje logina nakon uspešne identifikacije
   Future<void> _performLogin(
     Map<String, dynamic> response,
     String telefon,
