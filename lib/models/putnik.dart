@@ -199,7 +199,10 @@ class Putnik {
       final putnikId = (p['id'] ?? req['putnik_id'])?.toString();
 
       // PRIORITET 1: Individualna dodela iz vreme_vozac (putnik_id IS NOT NULL)
-      final perPutnik = putnikId != null ? VremeVozacService().getVozacZaPutnikSync(putnikId, datumStr) : null;
+      // Prosleđujemo grad i vreme da bi BC 7:00 i VS 10:00 bili odvojeni cache ključevi
+      final perPutnik = putnikId != null
+          ? VremeVozacService().getVozacZaPutnikSync(putnikId, datumStr, grad: grad, vreme: vreme)
+          : null;
 
       if (perPutnik == 'Nedodeljen') {
         // Eksplicitno uklonjen sa vozača — ignorišemo globalnu vreme_vozac dodelu

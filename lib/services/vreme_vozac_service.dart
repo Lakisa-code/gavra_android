@@ -228,15 +228,19 @@ class VremeVozacService {
     final vozacIdFinal = vozacIme == 'Nedodeljen' ? null : (vozacId ?? VozacCache.getUuidByIme(vozacIme));
 
     try {
-      final existing =
-          await _supabase.from('vreme_vozac').select('id').eq('putnik_id', putnikId).eq('datum', datum).maybeSingle();
+      final existing = await _supabase
+          .from('vreme_vozac')
+          .select('id')
+          .eq('putnik_id', putnikId)
+          .eq('datum', datum)
+          .eq('grad', grad)
+          .eq('vreme', normalizedVreme)
+          .maybeSingle();
 
       if (existing != null) {
         await _supabase.from('vreme_vozac').update({
           'vozac_ime': vozacIme,
           'vozac_id': vozacIdFinal,
-          'grad': grad,
-          'vreme': normalizedVreme,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         }).eq('id', existing['id']);
       } else {
@@ -252,8 +256,8 @@ class VremeVozacService {
         });
       }
 
-      // Ažuriraj cache odmah
-      final key = '$putnikId|$datum';
+      // Ažuriraj cache odmah — ključ uključuje grad i vreme da bi BC 7:00 i VS 10:00 bili odvojeni
+      final key = '$putnikId|$datum|$grad|$normalizedVreme';
       _putnikCache[key] = vozacIme;
 
       _changesController.add(null);
@@ -266,12 +270,25 @@ class VremeVozacService {
   Future<void> ukloniDodelaPutnika({
     required String putnikId,
     required String datum,
+    String? grad,
+    String? vreme,
   }) async {
     try {
-      await _supabase.from('vreme_vozac').delete().eq('putnik_id', putnikId).eq('datum', datum);
+      var query = _supabase.from('vreme_vozac').delete().eq('putnik_id', putnikId).eq('datum', datum);
+      if (grad != null) query = query.eq('grad', grad);
+      if (vreme != null) {
+        final normalizedVreme = _normalizeTime(vreme) ?? vreme;
+        query = query.eq('vreme', normalizedVreme);
+      }
+      await query;
 
-      final key = '$putnikId|$datum';
-      _putnikCache.remove(key);
+      // Ukloni iz cache-a — ako je dat grad/vreme, ukloni tačan ključ, inače sve za taj datum
+      if (grad != null && vreme != null) {
+        final normalizedVreme = _normalizeTime(vreme) ?? vreme;
+        _putnikCache.remove('$putnikId|$datum|$grad|$normalizedVreme');
+      } else {
+        _putnikCache.removeWhere((key, _) => key.startsWith('$putnikId|$datum'));
+      }
 
       _changesController.add(null);
     } catch (e) {
@@ -280,10 +297,16 @@ class VremeVozacService {
   }
 
   /// 👤 Dobij dodeljenog vozača za konkretnog putnika (SYNC iz cache-a)
+  /// [grad] i [vreme] su obavezni da bi se razlikovale dodele za BC 7:00 vs VS 10:00
   /// Vraća ime vozača, 'Nedodeljen' ili null (nema unosa)
-  String? getVozacZaPutnikSync(String putnikId, String datum) {
-    final key = '$putnikId|$datum';
-    return _putnikCache[key];
+  String? getVozacZaPutnikSync(String putnikId, String datum, {String? grad, String? vreme}) {
+    if (grad != null && vreme != null) {
+      final normalizedVreme = _normalizeTime(vreme) ?? vreme;
+      final key = '$putnikId|$datum|$grad|$normalizedVreme';
+      return _putnikCache[key];
+    }
+    // Fallback: star ključ bez grad/vreme (backward compat)
+    return _putnikCache['$putnikId|$datum'];
   }
 
   /// 🔄 Učitaj individualne dodele za određeni datum u cache
@@ -291,18 +314,21 @@ class VremeVozacService {
     try {
       final response = await _supabase
           .from('vreme_vozac')
-          .select('putnik_id, vozac_ime')
+          .select('putnik_id, vozac_ime, grad, vreme')
           .eq('datum', datum)
           .not('putnik_id', 'is', null);
 
-      // Ukloni stare unose za taj datum iz cache-a
-      _putnikCache.removeWhere((key, _) => key.endsWith('|$datum'));
+      // Ukloni stare unose za taj datum iz cache-a (svi ključi koji sadrže |datum|)
+      _putnikCache.removeWhere((key, _) => key.contains('|$datum|') || key.endsWith('|$datum'));
 
       for (final row in response) {
         final pId = row['putnik_id']?.toString();
         final ime = row['vozac_ime']?.toString() ?? '';
-        if (pId != null && ime.isNotEmpty) {
-          _putnikCache['$pId|$datum'] = ime;
+        final grad = row['grad']?.toString() ?? '';
+        final vremeRaw = row['vreme']?.toString() ?? '';
+        final vreme = _normalizeTime(vremeRaw) ?? vremeRaw;
+        if (pId != null && ime.isNotEmpty && grad.isNotEmpty && vreme.isNotEmpty) {
+          _putnikCache['$pId|$datum|$grad|$vreme'] = ime;
         }
       }
     } catch (e) {
