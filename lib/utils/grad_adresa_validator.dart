@@ -14,8 +14,8 @@ class GradAdresaValidator {
   /// ✅ PROVERI DA LI JE GRAD Vrsac (ili VS skraćenica)
   static bool isVrsac(String? grad) {
     if (grad == null || grad.trim().isEmpty) return false;
-    final normalized = normalizeString(grad);
-    return normalized.contains('Vrsac') || normalized == 'vs';
+    final normalized = normalizeString(grad); // uvek lowercase
+    return normalized.contains('vrsac') || normalized.contains('vr') || normalized == 'vs';
   }
 
   /// JEDNOSTAVNO GRAD POREĐENJE - samo 2 glavna grada

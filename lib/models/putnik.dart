@@ -165,7 +165,7 @@ class Putnik {
 
     final datumStr = (req['datum']?.toString() ?? '').split('T')[0];
     final gRaw = req['grad']?.toString().toLowerCase() ?? '';
-    final grad = (gRaw == 'vs' || gRaw.contains('Vrs') || gRaw.contains('vrs')) ? 'Vrsac' : 'Bela Crkva';
+    final grad = (gRaw == 'vs' || gRaw.contains('vrs') || gRaw.contains('vr')) ? 'Vrsac' : 'Bela Crkva';
 
     // ✅ PRIORITET: Dodeljeno vreme (ako je vozač pomerio termin), inače željeno
     final vremeRaw = (req['dodeljeno_vreme'] ?? req['zeljeno_vreme'])?.toString() ?? '';
