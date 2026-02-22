@@ -858,8 +858,8 @@ class VoznjeLogService {
         'tip_placanja': tipPlacanja,
         'status': status,
       });
-    } catch (e) {
-      debugPrint('❌ Greška pri logovanju akcije ($tip): $e');
+    } catch (e, stack) {
+      debugPrint('❌ Greška pri logovanju akcije ($tip): $e\n$stack');
     }
   }
 

@@ -855,8 +855,9 @@ class _PutnikCardState extends State<PutnikCard> {
         true,
         grad: _putnik.grad,
         vreme: _putnik.polazak,
-        driver: widget.currentDriver, // 🆕 Prosledi vozača
-        datum: _putnik.datum, // 🆕 Prosledi originalni datum vožnje
+        driver: widget.currentDriver,
+        datum: _putnik.datum,
+        requestId: _putnik.requestId,
       );
 
       if (mounted) {

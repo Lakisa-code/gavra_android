@@ -145,12 +145,15 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       setState(() {
         _isActive = true;
         _vozacStartovaoRutu = hasEtaData;
-        // Postavi vreme pokupljenja ako je ETA -1 (pokupljen) i još nije setovano
+        // ETA == -1 znači vozač je označio putnika kao pokupljenog
         if (eta == -1 && _vremePokupljenja == null) {
           _vremePokupljenja = DateTime.now();
+          _jePokupljenIzBaze = true;
         }
-        if (eta != null && eta != -1) {
+        // Resetuj samo ako vozač eksplicitno ima novu pozitivnu ETA
+        if (eta != null && eta >= 0) {
           _vremePokupljenja = null;
+          _jePokupljenIzBaze = false;
         }
         _etaMinutes = eta;
         _vozacIme = vozacIme;
@@ -244,7 +247,11 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   /// 🆕 Učitaj vreme pokupljenja DIREKTNO iz baze (voznje_log)
   Future<void> _loadPokupljenjeIzBaze() async {
-    if (widget.putnikId == null) return;
+    if (widget.putnikId == null) {
+      debugPrint('⚠️ [KombiEta] putnikId je null - preskačem voznje_log query');
+      return;
+    }
+    debugPrint('🔍 [KombiEta] Čitam voznje_log za putnikId=${widget.putnikId}');
 
     try {
       final now = DateTime.now();
@@ -287,13 +294,13 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   /// 🆕 Odredi trenutnu fazu widgeta
   _WidgetFaza _getCurrentFaza() {
-    // 🆕 PRIORITET 1: Ako je pokupljen IZ BAZE (vozač pritisnuo long press) - to je ISTINA!
-    if (_jePokupljenIzBaze && _vremePokupljenja != null) {
+    // PRIORITET 1: Pokupljen - iz baze ILI iz ETA==-1 signala od vozača
+    if ((_jePokupljenIzBaze || _etaMinutes == -1) && _vremePokupljenja != null) {
       final minutesSincePokupljenje = DateTime.now().difference(_vremePokupljenja!).inMinutes;
       if (minutesSincePokupljenje <= 60) {
-        return _WidgetFaza.pokupljen; // Faza 3: Prikazuj "Pokupljeni ste" 60 min
+        return _WidgetFaza.pokupljen;
       } else {
-        return _WidgetFaza.sledecaVoznja; // Faza 4: Prikazuj sledeću vožnju
+        return _WidgetFaza.sledecaVoznja;
       }
     }
 
@@ -379,9 +386,9 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         if (_vremePokupljenja != null) {
           final h = _vremePokupljenja!.hour.toString().padLeft(2, '0');
           final m = _vremePokupljenja!.minute.toString().padLeft(2, '0');
-          message = 'U $h:$m - Uživajte u vožnji!';
+          message = 'u $h:$m • Želimo ugodnu vožnju! 🚐';
         } else {
-          message = 'Uživajte u vožnji!';
+          message = 'Želimo ugodnu vožnju! 🚐';
         }
         baseColor = Colors.green.shade600;
         icon = Icons.check_circle;

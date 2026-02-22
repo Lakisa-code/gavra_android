@@ -381,7 +381,7 @@ BEGIN
     SET 
         status = 'bez_polaska',
         updated_at = now()
-    WHERE status IN ('pending', 'manual', 'approved', 'confirmed')
+    WHERE status IN ('pending', 'manual', 'approved', 'confirmed', 'pokupljen', 'otkazano')
       AND status NOT IN ('godisnji', 'bolovanje');
 
     GET DIAGNOSTICS v_updated = ROW_COUNT;

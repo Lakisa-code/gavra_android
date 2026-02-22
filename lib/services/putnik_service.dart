@@ -448,7 +448,7 @@ class PutnikService {
   }
 
   Future<void> oznaciPokupljen(dynamic id, bool value,
-      {String? grad, String? vreme, String? driver, String? datum}) async {
+      {String? grad, String? vreme, String? driver, String? datum, String? requestId}) async {
     if (_isDuplicateAction('pickup_$id')) return;
     if (!value) {
       return; // 🚫 "Undo" funkcija uklonjena - ne dozvoljavamo poništavanje pokupljenja
@@ -467,8 +467,33 @@ class PutnikService {
       }
     }
 
-    // ✅ OZNAČI KAO POKUPLJEN (Samo u vozač_log, po zahtevu korisnika)
-    // Proveri da li već postoji unos za ovog putnika za ovaj datum/grad/vreme
+    // 1. Označi status='pokupljen' u seat_requests (operativno stanje)
+    try {
+      if (requestId != null && requestId.isNotEmpty) {
+        await supabase.from('seat_requests').update({
+          'status': 'pokupljen',
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+          'processed_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', requestId);
+        debugPrint('✅ [oznaciPokupljen] seat_requests status=pokupljen (requestId=$requestId)');
+      } else {
+        // Fallback: match po putnik_id + datum
+        await supabase
+            .from('seat_requests')
+            .update({
+              'status': 'pokupljen',
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+              'processed_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('putnik_id', id.toString())
+            .eq('datum', targetDatum);
+        debugPrint('✅ [oznaciPokupljen] seat_requests status=pokupljen (fallback datum=$targetDatum)');
+      }
+    } catch (e) {
+      debugPrint('⚠️ [oznaciPokupljen] Greška pri update seat_requests: $e');
+    }
+
+    // 2. Upiši u voznje_log (TRAJNI ZAPIS ZA STATISTIKU - nikad se ne briše)
     final existing = await VoznjeLogService.getLogEntry(
       putnikId: id.toString(),
       datum: targetDatum,
@@ -478,7 +503,6 @@ class PutnikService {
     );
 
     if (existing == null) {
-      // Nema postojećeg unosa, upiši novi preko servisa
       await VoznjeLogService.logGeneric(
         tip: 'voznja',
         putnikId: id.toString(),
