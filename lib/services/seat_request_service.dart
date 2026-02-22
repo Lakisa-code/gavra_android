@@ -31,10 +31,13 @@ class SeatRequestService {
       final gradKey = GradAdresaValidator.normalizeGrad(grad);
       final normVreme = GradAdresaValidator.normalizeTime(vreme);
 
-      // Otkaži postojeće aktivne zahteve za isti grad/datum pre novog inserta
+      // Obriši postojeće aktivne zahteve za isti grad/datum pre novog inserta.
+      // DELETE (ne 'cancelled') jer je ovo zamena termina - ne otkazivanje!
+      // 'cancelled' se normalizuje u 'otkazano' u Flutter modelu i lažno bi
+      // prikazivalo putnika kao otkazanog i brojalo kao otkazivanje u statistici.
       await _supabase
           .from('seat_requests')
-          .update({'status': 'cancelled'})
+          .delete()
           .eq('putnik_id', putnikId)
           .eq('grad', gradKey)
           .eq('datum', datumStr)
