@@ -164,7 +164,7 @@ class GeocodingService {
     // ✅ DOZVOLJENI GRADOVI: SAMO Bela Crkva i Vrsac opštine
     final allowedCities = [
       // Vrsac OPŠTINA
-      'Vrsac', 'Vrsac', 'straza', 'straža', 'vojvodinci', 'potporanj', 'oresac',
+      'vrsac', 'straza', 'straža', 'vojvodinci', 'potporanj', 'oresac',
       'orešac',
       // BELA CRKVA OPŠTINA
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',

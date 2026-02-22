@@ -160,7 +160,7 @@ class Adresa {
       'bela crkva', 'kaluđerovo', 'jasenovo', 'centa', 'grebenac',
       'kuscica', 'krustica', 'dupljaja', 'velika greda', 'dobricevo',
       // Vrsac municipality
-      'Vrsac', 'malo srediste', 'veliko srediste', 'mesic', 'pavlis',
+      'vrsac', 'malo srediste', 'veliko srediste', 'mesic', 'pavlis',
       'ritisevo', 'straza', 'uljma', 'vojvodinci', 'zagajica',
       'gudurica', 'kustilj', 'marcovac', 'potporanj', 'socica',
     ];
