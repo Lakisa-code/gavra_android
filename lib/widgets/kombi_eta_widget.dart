@@ -66,7 +66,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     _putnikSubscription?.cancel();
     RealtimeManager.instance.unsubscribe('vozac_lokacije');
     if (widget.putnikId != null) {
-      RealtimeManager.instance.unsubscribe('registrovani_putnici');
+      RealtimeManager.instance.unsubscribe('seat_requests');
     }
     super.dispose();
   }
@@ -232,54 +232,46 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         debugPrint('🔴 [KombiEtaWidget] vozac_lokacije stream error: $error');
       },
     );
-    // 🆕 Prati promene u registrovani_putnici tabeli (kada vozač pokupi putnika)
+    // Prati promene u seat_requests (pokupljen/bez_polaska reset)
     if (widget.putnikId != null) {
-      _putnikSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen(
+      _putnikSubscription = RealtimeManager.instance.subscribe('seat_requests').listen(
         (payload) {
           _loadPokupljenjeIzBaze();
         },
         onError: (error) {
-          debugPrint('🔴 [KombiEtaWidget] registrovani_putnici stream error: $error');
+          debugPrint('🔴 [KombiEtaWidget] seat_requests stream error: $error');
         },
       );
     }
   }
 
-  /// 🆕 Učitaj vreme pokupljenja DIREKTNO iz baze (voznje_log)
+  /// Čita status pokupljenja iz seat_requests (jedini izvor istine)
   Future<void> _loadPokupljenjeIzBaze() async {
-    if (widget.putnikId == null) {
-      debugPrint('⚠️ [KombiEta] putnikId je null - preskačem voznje_log query');
-      return;
-    }
-    debugPrint('🔍 [KombiEta] Čitam voznje_log za putnikId=${widget.putnikId}');
+    if (widget.putnikId == null) return;
 
     try {
-      final now = DateTime.now();
-      final todayDate = now.toIso8601String().split('T')[0];
+      final todayDate = DateTime.now().toIso8601String().split('T')[0];
 
       final response = await supabase
-          .from('voznje_log')
-          .select('created_at')
+          .from('seat_requests')
+          .select('status, updated_at')
           .eq('putnik_id', widget.putnikId!)
           .eq('datum', todayDate)
-          .eq('tip', 'voznja')
-          .order('created_at', ascending: false)
+          .eq('status', 'pokupljen')
+          .order('updated_at', ascending: false)
           .limit(1)
           .maybeSingle();
 
-      if (!mounted || response == null) return;
+      if (!mounted) return;
 
-      final createdAt = response['created_at'] as String?;
-      if (createdAt != null && createdAt.isNotEmpty) {
-        final parsedTime = DateTime.tryParse(createdAt);
-        if (parsedTime != null) {
-          setState(() {
-            _vremePokupljenja = parsedTime.toLocal();
-            _jePokupljenIzBaze = true;
-          });
-        }
+      if (response != null) {
+        final updatedAt = response['updated_at'] as String?;
+        final parsedTime = updatedAt != null ? DateTime.tryParse(updatedAt) : null;
+        setState(() {
+          _jePokupljenIzBaze = true;
+          _vremePokupljenja = parsedTime?.toLocal() ?? DateTime.now();
+        });
       } else {
-        // Ako nije pokupljen u bazi, resetuj flag (bitno za realtime update)
         if (_jePokupljenIzBaze) {
           setState(() {
             _jePokupljenIzBaze = false;
@@ -288,7 +280,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Greška pri učitavanju pokupljenja: $e');
+      debugPrint('⚠️ [KombiEta] Greška pri čitanju seat_requests: $e');
     }
   }
 
