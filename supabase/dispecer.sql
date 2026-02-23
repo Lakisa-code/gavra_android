@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION public.get_putnoci_sa_statusom(
   p_vreme time without time zone DEFAULT NULL::time without time zone
 )
 RETURNS TABLE(
-  id uuid, putnik_id uuid, grad text, datum date,
+  id uuid, putnik_id uuid, grad text, datum date, dan text,
   zeljeno_vreme time without time zone, dodeljeno_vreme time without time zone,
   status text, created_at timestamp with time zone, updated_at timestamp with time zone,
   processed_at timestamp with time zone, priority integer, broj_mesta integer,
@@ -44,6 +44,7 @@ BEGIN
     sr.putnik_id,
     sr.grad,
     p_datum AS datum,
+    sr.dan,
     sr.zeljeno_vreme,
     sr.dodeljeno_vreme,
     sr.status,

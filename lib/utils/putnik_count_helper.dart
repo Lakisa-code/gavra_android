@@ -33,10 +33,8 @@ class PutnikCountHelper {
       // jer za Nav Bar želimo da vidimo punu fizičku popunjenost vozila.
       if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
-      // Provera dana
-      final dayMatch = p.datum != null
-          ? p.datum == targetDateIso
-          : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+      // Provera dana — koristimo sr.dan (kratica: pon, uto...) jer datum nije pouzdano polje
+      final dayMatch = p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
       if (!dayMatch) continue;
 
       final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
