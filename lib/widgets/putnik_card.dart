@@ -1928,24 +1928,49 @@ class _PutnikCardState extends State<PutnikCard> {
     return null;
   }
 
-  // 🚀 OTKRIJ NAVIGACIJU (Google Maps / Waze / Apple Maps)
+  // 🚀 NAVIGACIJA — samo HERE WeGo
   Future<void> _otvoriNavigaciju(Position position) async {
     final lat = position.latitude;
     final lng = position.longitude;
 
-    // Google Maps URL (najpouzdaniji za sve platforme)
-    final googleMapsUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
-
-    // Apple Maps URL (fallback za iOS)
-    final appleMapsUrl = Uri.parse('http://maps.apple.com/?daddr=$lat,$lng');
+    // HERE WeGo native URL scheme
+    final hereUrl = Uri.parse('here-route://mylocation/$lat,$lng/now');
 
     try {
-      if (await canLaunchUrl(googleMapsUrl)) {
-        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
-      } else if (await canLaunchUrl(appleMapsUrl)) {
-        await launchUrl(appleMapsUrl, mode: LaunchMode.externalApplication);
+      if (await canLaunchUrl(hereUrl)) {
+        await launchUrl(hereUrl, mode: LaunchMode.externalApplication);
       } else {
-        throw 'Ne mogu da otvorim aplikaciju za navigaciju';
+        // HERE WeGo nije instaliran — prikaži dialog
+        if (mounted) {
+          showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('HERE WeGo nije instaliran'),
+              content: const Text(
+                'Da biste koristili navigaciju, potrebno je da instalirate HERE WeGo aplikaciju iz Google Play prodavnice.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Otkaži'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    final playUrl = Uri.parse('market://details?id=com.here.app.maps');
+                    final playWebUrl = Uri.parse('https://play.google.com/store/apps/details?id=com.here.app.maps');
+                    if (await canLaunchUrl(playUrl)) {
+                      await launchUrl(playUrl, mode: LaunchMode.externalApplication);
+                    } else {
+                      await launchUrl(playWebUrl, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: const Text('Instaliraj'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Greška pri otvaranju navigacije: $e');
