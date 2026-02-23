@@ -164,7 +164,8 @@ class Putnik {
     // Ako je profil join-ovan u samom requestu (Supabase .select('*, registrovani_putnici(...)'))
     final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
 
-    final datumStr = (req['datum']?.toString() ?? '').split('T')[0];
+    final danStr = (req['dan']?.toString() ?? '').toLowerCase();
+    final datumStr = _getIsoDateForDan(danStr); // Potrebno za VremeVozacService cache
     final gRaw = req['grad']?.toString().toLowerCase() ?? '';
     final grad = (gRaw == 'vs' || gRaw.contains('vrs') || gRaw.contains('vr')) ? 'Vrsac' : 'Bela Crkva';
 
@@ -213,7 +214,10 @@ class Putnik {
       } else {
         // PRIORITET 2: Globalna dodela iz vreme_vozac (putnik_id IS NULL)
         // Cache ključ je 'Bela Crkva|vreme|dan' — normalizuj grad na puni naziv
-        final danKratica = _getDanNedeljeKratica(DateTime.parse(datumStr).weekday);
+        // danStr je već kratica (pon, uto...) direktno iz seat_requests.dan kolone
+        final danKratica = danStr.isNotEmpty
+            ? danStr
+            : (datumStr.isNotEmpty ? _getDanNedeljeKratica(DateTime.parse(datumStr).weekday) : '');
         final gradZaGlobalni = GradAdresaValidator.isVrsac(grad) ? 'Vrsac' : 'Bela Crkva';
         final perVreme = VremeVozacService().getVozacZaVremeSync(gradZaGlobalni, vreme, danKratica);
         if (perVreme != null && perVreme.isNotEmpty) {
@@ -226,7 +230,7 @@ class Putnik {
       id: p['id'] ?? req['putnik_id'],
       ime: p['putnik_ime'] ?? p['ime'] ?? '',
       polazak: vreme,
-      dan: _getDayNameFromIso(datumStr),
+      dan: danStr.isNotEmpty ? danStr : _getDayNameFromIso(datumStr),
       grad: grad,
       status: finalStatus,
       pokupljen: isPickedUp, // ✅ Redizajnirano: Gleda status ili voznje_log flag
@@ -263,6 +267,29 @@ class Putnik {
       // ✅ FIX: Vrati KRATICU (pet) umesto punog imena (Petak) - zbog client-side filtera
       final index = DayConstants.weekdayToIndex(dt.weekday);
       return DayConstants.dayAbbreviations[index];
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// Izračunava ISO datum (yyyy-MM-dd) za danu kraticu dana (pon, uto...)
+  /// Traži od danas pa unaprijed (max 7 dana) sljedeći taj dan u sedmici
+  static String _getIsoDateForDan(String danKratica) {
+    if (danKratica.isEmpty) return '';
+    try {
+      final abbrs = DayConstants.dayAbbreviations;
+      final idx = abbrs.indexWhere((a) => a.toLowerCase() == danKratica.toLowerCase());
+      if (idx < 0) return '';
+      // DayConstants: 0=pon(1), 1=uto(2), ... 4=pet(5), weekday je 1-7 (1=Mon)
+      final targetWeekday = idx + 1; // 1=Monday...5=Friday
+      final now = DateTime.now();
+      for (int i = 0; i < 7; i++) {
+        final d = now.add(Duration(days: i));
+        if (d.weekday == targetWeekday) {
+          return d.toIso8601String().split('T')[0];
+        }
+      }
+      return '';
     } catch (_) {
       return '';
     }

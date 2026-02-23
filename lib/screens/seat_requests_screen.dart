@@ -110,9 +110,7 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
                 final telefon = zahtev.brojTelefona ?? 'Nema telefona';
                 final tip = zahtev.tipPutnika ?? 'dnevni';
                 final grad = zahtev.grad == 'BC' ? 'Bela Crkva' : 'Vrsac';
-                final datum = zahtev.datum != null
-                    ? "${zahtev.datum!.year}-${zahtev.datum!.month.toString().padLeft(2, '0')}-${zahtev.datum!.day.toString().padLeft(2, '0')}"
-                    : '';
+                final dan = zahtev.dan ?? '';
                 final vreme = zahtev.zeljenoVreme ?? '';
                 final id = zahtev.id;
 
@@ -306,7 +304,7 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
                               const Icon(Icons.calendar_month, size: 20, color: Colors.amber),
                               const SizedBox(width: 12),
                               Text(
-                                '$datum ($vreme)',
+                                '$dan ($vreme)',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,

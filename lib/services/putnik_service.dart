@@ -492,9 +492,14 @@ class PutnikService {
         // Fallback: match po putnik_id + datum + grad + vreme (PRAVILO: DAN+GRAD+VREME)
         final gradKey = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
         final vremeKey = vreme != null ? '${GradAdresaValidator.normalizeTime(vreme)}:00' : null;
-        if (gradKey == null || vremeKey == null) {
-          debugPrint(
-              '⛔ [oznaciPokupljen] Nedostaje grad ili vreme — ne mogu da označim pokupljenim bez DAN+GRAD+VREME!');
+        String? danKey;
+        try {
+          final dt = DateTime.parse(targetDatum);
+          const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          danKey = dani[dt.weekday - 1];
+        } catch (_) {}
+        if (gradKey == null || vremeKey == null || danKey == null) {
+          debugPrint('⛔ [oznaciPokupljen] Nedostaje grad, vreme ili dan — ne mogu da označim pokupljenim!');
         } else {
           await supabase
               .from('seat_requests')
@@ -505,11 +510,11 @@ class PutnikService {
                 if (driver != null) 'pokupljeno_by': driver,
               })
               .eq('putnik_id', id.toString())
-              .eq('datum', targetDatum)
+              .eq('dan', danKey)
               .eq('grad', gradKey)
               .eq('zeljeno_vreme', vremeKey);
           debugPrint(
-              '✅ [oznaciPokupljen] seat_requests status=pokupljen (datum=$targetDatum, grad=$gradKey, vreme=$vremeKey)');
+              '✅ [oznaciPokupljen] seat_requests status=pokupljen (dan=$danKey, grad=$gradKey, vreme=$vremeKey)');
         }
       }
     } catch (e) {
@@ -550,14 +555,17 @@ class PutnikService {
 
       // 2. Ako je na bolovanju/godišnjem, otkaži sve pending seat_requests za DANAS i SUTRA
       if (status == 'bolovanje' || status == 'godisnji') {
-        final danas = DateTime.now().toIso8601String().split('T')[0];
-        final sutra = DateTime.now().add(const Duration(days: 1)).toIso8601String().split('T')[0];
+        final danasDay = DateTime.now().weekday;
+        final sutraDay = DateTime.now().add(const Duration(days: 1)).weekday;
+        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        final danasKratica = dani[danasDay - 1];
+        final sutraKratica = dani[sutraDay - 1];
 
         await supabase
             .from('seat_requests')
             .update({'status': 'cancelled', 'updated_at': nowToString()})
             .eq('putnik_id', putnikId)
-            .inFilter('datum', [danas, sutra])
+            .inFilter('dan', [danasKratica, sutraKratica])
             .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
         debugPrint('🏖️ [PutnikService] Otkazane vožnje za putnika $putnikId (status: $status)');
@@ -609,18 +617,29 @@ class PutnikService {
     final finalVreme = selectedVreme ?? vreme;
     final finalGrad = selectedGrad ?? grad;
 
-    final dateStr = datum ??
-        (finalDan != null
-            ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
-            : DateTime.now().toIso8601String().split('T')[0]);
+    String danKey;
+    if (finalDan != null && finalDan.isNotEmpty) {
+      danKey = finalDan.toLowerCase();
+    } else if (datum != null) {
+      try {
+        final dt = DateTime.parse(datum);
+        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        danKey = dani[dt.weekday - 1];
+      } catch (_) {
+        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        danKey = dani[DateTime.now().weekday - 1];
+      }
+    } else {
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      danKey = dani[DateTime.now().weekday - 1];
+    }
 
     final gradKey = GradAdresaValidator.normalizeGrad(finalGrad);
     final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
-    debugPrint('🗑️ [PutnikService] ukloniPolazak (fallback): dateStr=$dateStr, grad=$gradKey, time=$normalizedTime');
+    debugPrint('🗑️ [PutnikService] ukloniPolazak (fallback): dan=$danKey, grad=$gradKey, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {
-        // Pokušaj sa zeljeno_vreme
         var res = await supabase
             .from('seat_requests')
             .update({
@@ -628,10 +647,7 @@ class PutnikService {
               'processed_at': DateTime.now().toUtc().toIso8601String(),
               'updated_at': DateTime.now().toUtc().toIso8601String(),
             })
-            .match({
-              'putnik_id': id.toString(),
-              'datum': dateStr,
-            })
+            .match({'putnik_id': id.toString(), 'dan': danKey})
             .eq('grad', gradKey)
             .eq('zeljeno_vreme', '$normalizedTime:00')
             .select();
@@ -641,7 +657,6 @@ class PutnikService {
           return;
         }
 
-        // Pokušaj sa dodeljeno_vreme
         res = await supabase
             .from('seat_requests')
             .update({
@@ -649,10 +664,7 @@ class PutnikService {
               'processed_at': DateTime.now().toUtc().toIso8601String(),
               'updated_at': DateTime.now().toUtc().toIso8601String(),
             })
-            .match({
-              'putnik_id': id.toString(),
-              'datum': dateStr,
-            })
+            .match({'putnik_id': id.toString(), 'dan': danKey})
             .eq('grad', gradKey)
             .eq('dodeljeno_vreme', '$normalizedTime:00')
             .select();
@@ -663,7 +675,6 @@ class PutnikService {
         }
       }
 
-      // Zadnji fallback: match bez vremena
       final res = await supabase
           .from('seat_requests')
           .update({
@@ -671,10 +682,7 @@ class PutnikService {
             'processed_at': DateTime.now().toUtc().toIso8601String(),
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
-          .match({
-            'putnik_id': id.toString(),
-            'datum': dateStr,
-          })
+          .match({'putnik_id': id.toString(), 'dan': danKey})
           .eq('grad', gradKey)
           .select();
 
@@ -742,22 +750,33 @@ class PutnikService {
       }
     }
 
-    final finalDan = selectedDan;
-    final finalVreme = selectedVreme ?? vreme;
-    final finalGrad = selectedGrad ?? grad;
+    final finalDan2 = selectedDan;
+    final finalVreme2 = selectedVreme ?? vreme;
+    final finalGrad2 = selectedGrad ?? grad;
 
-    final dateStr = datum ??
-        (finalDan != null
-            ? app_date_utils.DateUtils.getIsoDateForDay(finalDan)
-            : DateTime.now().toIso8601String().split('T')[0]);
+    String danKey2;
+    if (finalDan2 != null && finalDan2.isNotEmpty) {
+      danKey2 = finalDan2.toLowerCase();
+    } else if (datum != null) {
+      try {
+        final dt = DateTime.parse(datum);
+        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        danKey2 = dani[dt.weekday - 1];
+      } catch (_) {
+        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        danKey2 = dani[DateTime.now().weekday - 1];
+      }
+    } else {
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      danKey2 = dani[DateTime.now().weekday - 1];
+    }
 
-    final gradKey = GradAdresaValidator.normalizeGrad(finalGrad);
-    final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
-    debugPrint('🛑 [PutnikService] otkaziPutnika (fallback): dateStr=$dateStr, grad=$gradKey, time=$normalizedTime');
+    final gradKey = GradAdresaValidator.normalizeGrad(finalGrad2);
+    final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme2);
+    debugPrint('🛑 [PutnikService] otkaziPutnika (fallback): dan=$danKey2, grad=$gradKey, time=$normalizedTime');
 
     try {
       if (normalizedTime.isNotEmpty) {
-        // Pokušaj sa zeljeno_vreme
         var res = await supabase
             .from('seat_requests')
             .update({
@@ -766,10 +785,7 @@ class PutnikService {
               'updated_at': DateTime.now().toUtc().toIso8601String(),
               if (driver != null) 'cancelled_by': driver,
             })
-            .match({
-              'putnik_id': id.toString(),
-              'datum': dateStr,
-            })
+            .match({'putnik_id': id.toString(), 'dan': danKey2})
             .eq('grad', gradKey)
             .eq('zeljeno_vreme', '$normalizedTime:00')
             .select();
@@ -779,7 +795,6 @@ class PutnikService {
           return;
         }
 
-        // Pokušaj sa dodeljeno_vreme
         res = await supabase
             .from('seat_requests')
             .update({
@@ -788,10 +803,7 @@ class PutnikService {
               'updated_at': DateTime.now().toUtc().toIso8601String(),
               if (driver != null) 'cancelled_by': driver,
             })
-            .match({
-              'putnik_id': id.toString(),
-              'datum': dateStr,
-            })
+            .match({'putnik_id': id.toString(), 'dan': danKey2})
             .eq('grad', gradKey)
             .eq('dodeljeno_vreme', '$normalizedTime:00')
             .select();
@@ -805,7 +817,7 @@ class PutnikService {
       // ⛔ ZABRANJENO: fallback bez vremena narušava DAN+GRAD+VREME pravilo
       // Ako nije pronađen termin po zeljeno_vreme ni dodeljeno_vreme — logujemo grešku, NE diramo ništa
       debugPrint(
-          '⛔ [PutnikService] otkaziPutnika: nije pronađen termin za datum=$dateStr, grad=$gradKey, vreme=$normalizedTime — NE diram druge termine!');
+          '⛔ [PutnikService] otkaziPutnika: nije pronađen termin za dan=$danKey2, grad=$gradKey, vreme=$normalizedTime — NE diram druge termine!');
     } catch (e) {
       debugPrint('❌ [PutnikService] otkaziPutnika ERROR: $e');
       rethrow;
@@ -864,7 +876,7 @@ class PutnikService {
 
   /// 🚫 GLOBALNO UKLONI POLAZAK: Postavlja 'bez_polaska' status za sve putnike u datom terminu
   Future<int> globalniBezPolaska({
-    required String datum,
+    required String dan,
     required String grad,
     required String vreme,
   }) async {
@@ -876,7 +888,7 @@ class PutnikService {
         'processed_at': DateTime.now().toUtc().toIso8601String(),
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).match({
-        'datum': datum,
+        'dan': dan.toLowerCase(),
       }).eq('grad', gradKey);
 
       if (vreme.isNotEmpty) {

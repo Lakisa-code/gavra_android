@@ -3,7 +3,7 @@ class SeatRequest {
   final String id;
   final String? putnikId;
   final String? grad;
-  final DateTime? datum;
+  final String? dan;
   final String? zeljenoVreme;
   final String? dodeljenoVreme;
   final String status;
@@ -25,7 +25,7 @@ class SeatRequest {
     required this.id,
     this.putnikId,
     this.grad,
-    this.datum,
+    this.dan,
     this.zeljenoVreme,
     this.dodeljenoVreme,
     this.status = 'pending',
@@ -50,7 +50,7 @@ class SeatRequest {
       id: json['id'] as String,
       putnikId: json['putnik_id'] as String?,
       grad: json['grad'] as String?,
-      datum: json['datum'] != null ? DateTime.parse(json['datum'] as String) : null,
+      dan: json['dan'] as String?,
       zeljenoVreme: json['zeljeno_vreme'] as String?,
       dodeljenoVreme: json['dodeljeno_vreme'] as String?,
       status: json['status'] as String? ?? 'pending',
@@ -73,7 +73,7 @@ class SeatRequest {
       'id': id,
       'putnik_id': putnikId,
       'grad': grad,
-      'datum': datum?.toIso8601String().split('T')[0],
+      'dan': dan,
       'zeljeno_vreme': zeljenoVreme,
       'dodeljeno_vreme': dodeljenoVreme,
       'status': status,
@@ -95,7 +95,7 @@ class SeatRequest {
     String? id,
     String? putnikId,
     String? grad,
-    DateTime? datum,
+    String? dan,
     String? zeljenoVreme,
     String? dodeljenoVreme,
     String? status,
@@ -115,7 +115,7 @@ class SeatRequest {
       id: id ?? this.id,
       putnikId: putnikId ?? this.putnikId,
       grad: grad ?? this.grad,
-      datum: datum ?? this.datum,
+      dan: dan ?? this.dan,
       zeljenoVreme: zeljenoVreme ?? this.zeljenoVreme,
       dodeljenoVreme: dodeljenoVreme ?? this.dodeljenoVreme,
       status: status ?? this.status,

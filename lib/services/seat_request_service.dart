@@ -21,42 +21,36 @@ class SeatRequestService {
     int brojMesta = 1,
     String status = 'pending',
     int priority = 1,
-    String? fixedDate, // 📅 Opciono: Tačan datum ako nije potreban proračun sutrašnjice
     String? customAdresaId, // 🏠 ID custom adrese za brži geocoding
   }) async {
     try {
-      final datum = fixedDate != null ? DateTime.parse(fixedDate) : getNextDateForDay(DateTime.now(), dan);
-      final datumStr = datum.toIso8601String().split('T')[0];
-
-      // Normalizacija grada → uvek 'BC' ili 'VS' (DB trigger garantuje isto)
       final gradKey = GradAdresaValidator.normalizeGrad(grad);
       final normVreme = GradAdresaValidator.normalizeTime(vreme);
+      final danKey = dan.toLowerCase();
 
-      // Obriši postojeće aktivne zahteve za isti grad/datum pre novog inserta.
-      // DELETE (ne 'cancelled') jer je ovo zamena termina - ne otkazivanje!
-      // 'cancelled' se normalizuje u 'otkazano' u Flutter modelu i lažno bi
-      // prikazivalo putnika kao otkazanog i brojalo kao otkazivanje u statistici.
+      // Obriši postojeće aktivne zahteve za isti putnik+grad+dan (trajni ključ).
       await _supabase
           .from('seat_requests')
           .delete()
           .eq('putnik_id', putnikId)
           .eq('grad', gradKey)
-          .eq('datum', datumStr)
+          .eq('dan', danKey)
           .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
       await _supabase.from('seat_requests').insert({
         'putnik_id': putnikId,
         'grad': gradKey,
-        'datum': datumStr,
+        'dan': danKey,
         'zeljeno_vreme': '$normVreme:00',
         'status': status,
         'broj_mesta': brojMesta,
         'priority': priority,
         'custom_adresa_id': customAdresaId,
       });
-      debugPrint('✅ [SeatRequestService] Inserted for $gradKey $normVreme on $dan (Datum: $datumStr)');
+      debugPrint('✅ [SeatRequestService] Inserted for $gradKey $normVreme on $danKey');
 
-      // 📝 LOG: Zabilježi zakazanu vožnju u voznje_log (trajni zapis)
+      // 📝 LOG: Zablježi zakazanu vožnju u voznje_log (trajni zapis)
+      final datumStr = getIsoDateForDan(danKey);
       await VoznjeLogService.logGeneric(
         tip: 'zakazano',
         putnikId: putnikId,
@@ -170,19 +164,20 @@ class SeatRequestService {
     required String putnikId,
     required String novoVreme,
     required String grad,
-    required String datum,
+    required String dan,
   }) async {
     try {
       final gradKey = GradAdresaValidator.normalizeGrad(grad);
+      final danKey = dan.toLowerCase();
       final nowStr = DateTime.now().toUtc().toIso8601String();
 
-      // Otkaži postojeće aktivne zahteve za isti grad/datum
+      // Otkaži postojeće aktivne zahteve za isti grad+dan
       await _supabase
           .from('seat_requests')
           .update({'status': 'cancelled'})
           .eq('putnik_id', putnikId)
           .eq('grad', gradKey)
-          .eq('datum', datum)
+          .eq('dan', danKey)
           .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
 
       if (requestId != null && requestId.isNotEmpty) {
@@ -195,7 +190,7 @@ class SeatRequestService {
         await _supabase.from('seat_requests').insert({
           'putnik_id': putnikId,
           'grad': gradKey,
-          'datum': datum,
+          'dan': danKey,
           'zeljeno_vreme': novoVreme,
           'status': 'approved',
           'processed_at': nowStr,
@@ -208,21 +203,23 @@ class SeatRequestService {
     }
   }
 
-  /// Pomoćna funkcija za dobijanje skraćenice dana
-  static String getDanKratica(DateTime date) {
-    const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
-    return dani[date.weekday - 1];
+  /// 📅 Helper: Daje ISO datum za dan u tekućoj sedmici (za voznje_log)
+  static String getIsoDateForDan(String danKratica) {
+    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
+    final targetWeekday = daniMap[danKratica.toLowerCase()] ?? 1;
+    final now = DateTime.now();
+    int daysToAdd = targetWeekday - now.weekday;
+    if (daysToAdd < 0) daysToAdd += 7;
+    return now.add(Duration(days: daysToAdd)).toIso8601String().split('T')[0];
   }
 
-  /// 📅 Helper: Računa sledeći datum za dati dan u nedelji
+  /// 📅 Helper: Ostaje zbog backward-compat poziva izvana
   static DateTime getNextDateForDay(DateTime fromDate, String danKratica) {
     const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
     final targetWeekday = daniMap[danKratica.toLowerCase()] ?? 1;
     final currentWeekday = fromDate.weekday;
-
     int daysToAdd = targetWeekday - currentWeekday;
     if (daysToAdd < 0) daysToAdd += 7;
-
     return fromDate.add(Duration(days: daysToAdd));
   }
 }

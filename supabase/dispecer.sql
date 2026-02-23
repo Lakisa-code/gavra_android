@@ -45,7 +45,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION get_cekanje_pravilo(
     p_tip text,
     p_grad text,
-    p_datum date,
+    p_dan text,
     p_created_at timestamptz
 ) RETURNS TABLE(
     minuta_cekanja integer,
@@ -54,9 +54,8 @@ CREATE OR REPLACE FUNCTION get_cekanje_pravilo(
 BEGIN
     -- BC PRAVILA
     IF upper(p_grad) = 'BC' THEN
-        -- ⛔ BC Učenik (za sutra, pre 16h): 5 min, BEZ provere kapaciteta - garantovano mesto
-        IF lower(p_tip) = 'ucenik' 
-           AND p_datum = (CURRENT_DATE + 1)
+        -- ⛔ BC Učenik (pre 16h): 5 min, BEZ provere kapaciteta - garantovano mesto
+        IF lower(p_tip) = 'ucenik'
            AND EXTRACT(HOUR FROM p_created_at) < 16
         THEN
             RETURN QUERY SELECT 5, false;
@@ -64,8 +63,7 @@ BEGIN
         ELSIF lower(p_tip) = 'radnik' THEN
             RETURN QUERY SELECT 5, true;
         -- ⛔ BC Učenik (posle 16h): čeka do 20h, SA proverom kapaciteta
-        ELSIF lower(p_tip) = 'ucenik' 
-              AND p_datum = (CURRENT_DATE + 1)
+        ELSIF lower(p_tip) = 'ucenik'
               AND EXTRACT(HOUR FROM p_created_at) >= 16
         THEN
             RETURN QUERY SELECT 0, true; -- Specijalni slučaj, obrađuje se u 20h
@@ -101,7 +99,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 2. POMOĆNA FUNKCIJA: Provera slobodnih mesta
-CREATE OR REPLACE FUNCTION proveri_slobodna_mesta(target_grad text, target_vreme time, target_datum date)
+CREATE OR REPLACE FUNCTION proveri_slobodna_mesta(target_grad text, target_vreme time, target_dan text)
 RETURNS integer AS $$
 DECLARE
     max_mesta_val integer;
@@ -114,11 +112,10 @@ BEGIN
     
     IF max_mesta_val IS NULL THEN max_mesta_val := 8; END IF;
 
-    -- 2. Prebroj putnike koji već ZAUZIMAJU mesto kod dispečera u tabeli SEAT_REQUESTS
-    -- Računamo one koji su PENDING (čekaju obradu), MANUAL (čekaju admina) ili APPROVED/CONFIRMED
+    -- 2. Prebroj putnike koji već ZAUZIMAJU mesto (seat_requests po dan+grad+vreme)
     SELECT COALESCE(SUM(sr.broj_mesta), 0) INTO zauzeto_val
     FROM seat_requests sr
-    WHERE sr.datum = target_datum
+    WHERE sr.dan = lower(target_dan)
       AND sr.grad = UPPER(target_grad)
       AND sr.zeljeno_vreme::time = target_vreme
       AND sr.status IN ('pending', 'manual', 'approved', 'confirmed');
@@ -146,16 +143,15 @@ BEGIN
     SELECT * INTO putnik_record FROM registrovani_putnici r WHERE r.id = req_record.putnik_id;
     IF NOT FOUND THEN RETURN; END IF;
 
-    -- 2. PROVERA KAPACITETA prema pravilima (poziva se get_cekanje_pravilo)
-    -- BC učenici (pre 16h za sutra) NE PROVERAVAJU kapacitet - garantovano mesto
+    -- 2. PROVERA KAPACITETA prema pravilima
+    -- BC učenici (pre 16h) NE PROVERAVAJU kapacitet - garantovano mesto
     IF lower(putnik_record.tip) = 'ucenik' 
        AND upper(req_record.grad) = 'BC' 
-       AND req_record.datum = (CURRENT_DATE + 1)
        AND EXTRACT(HOUR FROM req_record.created_at) < 16
     THEN
         ima_mesta := true;
     ELSE
-        slobodno_mesta := proveri_slobodna_mesta(req_record.grad, req_record.zeljeno_vreme, req_record.datum);
+        slobodno_mesta := proveri_slobodna_mesta(req_record.grad, req_record.zeljeno_vreme, req_record.dan);
         ima_mesta := (slobodno_mesta >= req_record.broj_mesta);
     END IF;
 
@@ -170,7 +166,7 @@ BEGIN
         FROM kapacitet_polazaka 
         WHERE grad = UPPER(req_record.grad) 
           AND aktivan = true 
-          AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.datum) >= req_record.broj_mesta
+          AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.dan) >= req_record.broj_mesta
           AND vreme < req_record.zeljeno_vreme
         ORDER BY vreme DESC
         LIMIT 1;
@@ -180,7 +176,7 @@ BEGIN
         FROM kapacitet_polazaka 
         WHERE grad = UPPER(req_record.grad) 
           AND aktivan = true 
-          AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.datum) >= req_record.broj_mesta
+          AND proveri_slobodna_mesta(req_record.grad, vreme, req_record.dan) >= req_record.broj_mesta
           AND vreme > req_record.zeljeno_vreme
         ORDER BY vreme ASC
         LIMIT 1;
@@ -209,7 +205,7 @@ BEGIN
     -- Pronađi sve koji čekaju obradu prema pravilima čekanja
     -- Koristi get_cekanje_pravilo() da odredi vreme čekanja za svaki tip/grad
     FOR v_req IN 
-        SELECT sr.id, sr.grad, sr.datum, sr.updated_at, rp.tip
+        SELECT sr.id, sr.grad, sr.dan, sr.updated_at, rp.tip
         FROM seat_requests sr
         JOIN registrovani_putnici rp ON sr.putnik_id = rp.id
         WHERE sr.status = 'pending' 
@@ -222,7 +218,7 @@ BEGIN
         FROM get_cekanje_pravilo(
             v_req.tip, 
             v_req.grad, 
-            v_req.datum, 
+            v_req.dan, 
             v_req.updated_at
         );
         
@@ -232,7 +228,6 @@ BEGIN
             -- BC učenik posle 16h: obrađuje se u 20h
             (lower(v_req.tip) = 'ucenik' 
              AND upper(v_req.grad) = 'BC' 
-             AND v_req.datum = (CURRENT_DATE + 1)
              AND EXTRACT(HOUR FROM v_req.updated_at) >= 16
              AND EXTRACT(HOUR FROM now()) >= 20)
             OR
@@ -240,7 +235,6 @@ BEGIN
             ((EXTRACT(EPOCH FROM (now() - v_req.updated_at)) / 60) >= cekanje_pravilo.minuta_cekanja
              AND NOT (lower(v_req.tip) = 'ucenik' 
                       AND upper(v_req.grad) = 'BC' 
-                      AND v_req.datum = (CURRENT_DATE + 1)
                       AND EXTRACT(HOUR FROM v_req.updated_at) >= 16))
         ) THEN
             PERFORM obradi_seat_request(v_req.id);
@@ -251,7 +245,7 @@ BEGIN
                 'zeljeno_vreme', s.zeljeno_vreme::text,
                 'status', s.status,
                 'grad', s.grad,
-                'datum', s.datum::text,
+                'dan', s.dan,
                 'ime_putnika', rp.putnik_ime,
                 'alternative_vreme_1', s.alternative_vreme_1::text,
                 'alternative_vreme_2', s.alternative_vreme_2::text
@@ -283,7 +277,7 @@ CREATE OR REPLACE FUNCTION update_putnik_polazak_v2(
     p_otkazao_vozac TEXT DEFAULT NULL
 ) RETURNS void AS $$
 DECLARE
-    target_date date;
+    dan_clean text;
     grad_clean text;
     final_status text;
     existing_id uuid;
@@ -292,22 +286,14 @@ DECLARE
 BEGIN
     -- 0. Dohvati tip putnika
     SELECT tip INTO putnik_tip FROM registrovani_putnici WHERE id = p_id;
-    
-    -- 1. Odredi datum za p_dan (npr 'pon')
-    -- Tražimo sledeći datum koji odgovara krativci dana, uključujući i danas ako još nije prošao
-    SELECT d INTO target_date
-    FROM (
-        SELECT CURRENT_DATE + i as d
-        FROM generate_series(0, 7) i
-    ) dates
-    WHERE get_dan_kratica(d) = lower(p_dan)
-    LIMIT 1;
+
+    -- 1. Normalizuj dan (npr 'pon', 'PON', 'Pon' → 'pon')
+    dan_clean := lower(p_dan);
 
     -- 2. Očisti grad (bc2 -> BC, vs2 -> VS)
     grad_clean := UPPER(replace(p_grad, '2', ''));
 
     -- 3. Odredi status
-    -- Ako je dnevni putnik -> automatski 'manual' (admin obrađuje)
     IF lower(putnik_tip) = 'dnevni' THEN
         final_status := 'manual';
     ELSE
@@ -322,11 +308,10 @@ BEGIN
     SELECT broj_mesta INTO p_broj_mesta FROM registrovani_putnici WHERE id = p_id;
     IF p_broj_mesta IS NULL THEN p_broj_mesta := 1; END IF;
 
-    -- 5. UPSERT u seat_requests za taj datum i putnika
-    -- Prvo proveri da li već postoji zahtev za taj datum i taj smer (grad)
+    -- 5. UPSERT u seat_requests po putnik_id + dan + grad (trajni ključ)
     SELECT id INTO existing_id 
     FROM seat_requests 
-    WHERE putnik_id = p_id AND datum = target_date AND grad = grad_clean;
+    WHERE putnik_id = p_id AND dan = dan_clean AND grad = grad_clean;
 
     IF existing_id IS NOT NULL THEN
         UPDATE seat_requests 
@@ -338,12 +323,12 @@ BEGIN
             updated_at = now()
         WHERE id = existing_id;
     ELSE
-        INSERT INTO seat_requests (putnik_id, grad, zeljeno_vreme, datum, status, broj_mesta, created_at, updated_at)
+        INSERT INTO seat_requests (putnik_id, grad, zeljeno_vreme, dan, status, broj_mesta, created_at, updated_at)
         VALUES (
             p_id, 
             grad_clean, 
             CASE WHEN p_vreme IS NULL OR p_vreme = '' OR p_vreme = 'null' THEN NULL ELSE p_vreme::time END, 
-            target_date, 
+            dan_clean, 
             final_status, 
             p_broj_mesta, 
             now(), 
@@ -393,6 +378,7 @@ BEGIN
               WHERE sr2.putnik_id = rp.id
                 AND sr2.status IN ('pending', 'manual', 'approved', 'confirmed')
           )
+
     LOOP
         SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
         INTO v_tokens

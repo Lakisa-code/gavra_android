@@ -365,10 +365,8 @@ class _AdminScreenState extends State<AdminScreen> {
                   : () async {
                       setDialogState(() => isProcessing = true);
 
-                      final dateStr = app_date_utils.DateUtils.getIsoDateForDay(selectedDan);
-
                       final count = await _putnikService.globalniBezPolaska(
-                        datum: dateStr,
+                        dan: selectedDan,
                         grad: selectedGrad,
                         vreme: selectedVreme,
                       );

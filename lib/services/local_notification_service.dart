@@ -166,7 +166,7 @@ class LocalNotificationService {
               zeljenoVreme: data['vreme']?.toString() ?? '',
               putnikId: data['putnik_id']?.toString() ?? '',
               grad: data['grad']?.toString() ?? 'BC',
-              datum: data['datum']?.toString() ?? '',
+              dan: data['dan']?.toString() ?? '',
               alternatives: parsedAlts,
               body: body,
             );
@@ -353,7 +353,7 @@ class LocalNotificationService {
               zeljenoVreme: data['vreme']?.toString() ?? '',
               putnikId: data['putnik_id']?.toString() ?? '',
               grad: data['grad']?.toString() ?? 'BC',
-              datum: data['datum']?.toString() ?? '',
+              dan: data['dan']?.toString() ?? '',
               alternatives: parsedAlts,
               body: body,
             );
@@ -697,16 +697,12 @@ class LocalNotificationService {
 
       if (putnikId == null || dan == null || termin.isEmpty) return;
 
-      // 📅 Izračunaj datum (obično sutra ili sledeći radni dan)
-      final targetDate = SeatRequestService.getNextDateForDay(DateTime.now(), dan);
-      final datumStr = targetDate.toIso8601String().split('T')[0];
-
       // 🚀 PRIHVATI ALTERNATIVU - Ažurira seat_requests tabelu
       await SeatRequestService.acceptAlternative(
         putnikId: putnikId,
         novoVreme: termin,
         grad: 'BC',
-        datum: datumStr,
+        dan: dan,
       );
 
       // Dohvati tip korisnika za precizan log
@@ -755,16 +751,12 @@ class LocalNotificationService {
 
       if (putnikId == null || dan == null || termin.isEmpty) return;
 
-      // 📅 Izračunaj datum
-      final targetDate = SeatRequestService.getNextDateForDay(DateTime.now(), dan);
-      final datumStr = targetDate.toIso8601String().split('T')[0];
-
       // 🚀 PRIHVATI ALTERNATIVU - Ažurira seat_requests tabelu
       await SeatRequestService.acceptAlternative(
         putnikId: putnikId,
         novoVreme: termin,
         grad: 'VS',
-        datum: datumStr,
+        dan: dan,
       );
 
       // Dohvati tip korisnika za precizan log
@@ -804,7 +796,7 @@ class LocalNotificationService {
     required String zeljenoVreme,
     required String putnikId,
     required String grad,
-    required String datum,
+    required String dan,
     required List<String> alternatives,
     required String body,
   }) async {
@@ -815,7 +807,7 @@ class LocalNotificationService {
         'putnik_id': putnikId,
         'grad': grad,
         'zeljenoVreme': zeljenoVreme,
-        'datum': datum,
+        'dan': dan,
         'alternatives': alternatives,
       });
 
@@ -874,10 +866,10 @@ class LocalNotificationService {
       final requestId = data['id']?.toString();
       final putnikId = data['putnik_id']?.toString();
       final grad = data['grad']?.toString() ?? 'BC';
-      final datum = data['datum']?.toString();
+      final dan = data['dan']?.toString();
 
-      if (putnikId == null || datum == null) {
-        debugPrint('❌ [SeatRequestAlternative] Nedostaje putnik_id ili datum u payload-u');
+      if (putnikId == null || dan == null) {
+        debugPrint('❌ [SeatRequestAlternative] Nedostaje putnik_id ili dan u payload-u');
         return;
       }
 
@@ -889,11 +881,11 @@ class LocalNotificationService {
         putnikId: putnikId,
         novoVreme: selectedTime,
         grad: grad,
-        datum: datum,
+        dan: dan,
       );
 
       if (success) {
-        debugPrint('✅ [SeatRequestAlternative] Prihvaćeno: $selectedTime ($grad, $datum)');
+        debugPrint('✅ [SeatRequestAlternative] Prihvaćeno: $selectedTime ($grad, $dan)');
       } else {
         debugPrint('❌ [SeatRequestAlternative] Nije uspelo prihvatanje alternative');
       }
