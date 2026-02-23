@@ -17,6 +17,7 @@ class DugoviScreen extends StatefulWidget {
 class _DugoviScreenState extends State<DugoviScreen> {
   // 🔍 SEARCH & FILTERING (bez RxDart)
   final TextEditingController _searchController = TextEditingController();
+  final _putnikService = PutnikService();
 
   final String _selectedFilter = 'svi'; // 'svi', 'veliki_dug', 'mali_dug'
   final String _sortBy = 'vreme'; // 'iznos', 'vreme', 'ime', 'vozac' - default: najnoviji gore
@@ -116,7 +117,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Putnik>>(
-      stream: PutnikService().streamKombinovaniPutniciFiltered(
+      stream: _putnikService.streamKombinovaniPutniciFiltered(
         isoDate: PutnikHelpers.getWorkingDateIso(),
       ),
       builder: (context, snapshot) {

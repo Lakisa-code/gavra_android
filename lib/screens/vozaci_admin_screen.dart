@@ -40,22 +40,11 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
     const Color(0xFF9C27B0), // tamno ljubičasta
   ];
 
-  // Kešuiraj stream da se ne kreira novi svaki put
-  late final VozacService _vozacService;
-  late Future<List<Vozac>> _vozaciFuture;
+  final VozacService _vozacService = VozacService();
 
   @override
   void initState() {
     super.initState();
-    // Inicijalizuj service i učitaj vozače sa timeout-om
-    _vozacService = VozacService();
-    _vozaciFuture = _vozacService.getAllVozaci().timeout(
-      const Duration(seconds: 5),
-      onTimeout: () {
-        debugPrint('⏱️ [VozaciAdminScreen] getAllVozaci timeout');
-        return [];
-      },
-    );
   }
 
   @override
@@ -82,14 +71,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
     try {
       final vozacService = VozacService();
       await vozacService.addVozac(noviVozac);
-      // Osvježi listu vozača
       if (!mounted) return;
-      setState(() {
-        _vozaciFuture = _vozacService.getAllVozaci().timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => [],
-            );
-      });
       AppSnackBar.info(context, 'Vozač dodan');
     } catch (e) {
       if (!mounted) return;
@@ -171,13 +153,6 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
             await _vozacService.updateVozac(updatedVozac);
             if (!mounted) return;
             Navigator.pop(context);
-            // Osvježi listu
-            setState(() {
-              _vozaciFuture = _vozacService.getAllVozaci().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () => [],
-                  );
-            });
             AppSnackBar.info(context, 'Vozač ažuriran');
           } catch (e) {
             if (!mounted) return;
@@ -362,10 +337,10 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
             ],
           ),
         ),
-        body: FutureBuilder<List<Vozac>>(
-          future: _vozaciFuture,
+        body: StreamBuilder<List<Vozac>>(
+          stream: _vozacService.streamAllVozaci(),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
 

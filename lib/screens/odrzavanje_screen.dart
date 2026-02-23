@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -17,6 +19,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
   List<Vozilo> _vozila = [];
   bool _isLoading = true;
   Vozilo? _selectedVozilo;
+  StreamSubscription? _vozilaSubscription;
 
   final _formatBroja = NumberFormat('#,###', 'sr');
 
@@ -24,7 +27,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
   void initState() {
     super.initState();
     // Realtime osvežavanje vozila
-    VozilaService.streamVozila().listen((vozila) {
+    _vozilaSubscription = VozilaService.streamVozila().listen((vozila) {
       setState(() {
         _vozila = vozila;
         _isLoading = false;
@@ -56,6 +59,12 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
         );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _vozilaSubscription?.cancel();
+    super.dispose();
   }
 
   void _selectVozilo(Vozilo? vozilo) {
