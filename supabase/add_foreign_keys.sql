@@ -43,7 +43,7 @@ ON UPDATE CASCADE;
 CREATE INDEX IF NOT EXISTS idx_seat_requests_putnik_id ON seat_requests(putnik_id);
 CREATE INDEX IF NOT EXISTS idx_seat_requests_vozac_id ON seat_requests(vozac_id);
 CREATE INDEX IF NOT EXISTS idx_seat_requests_custom_adresa_id ON seat_requests(custom_adresa_id);
-CREATE INDEX IF NOT EXISTS idx_seat_requests_datum ON seat_requests(datum);
+CREATE INDEX IF NOT EXISTS idx_seat_requests_dan ON seat_requests(dan);
 CREATE INDEX IF NOT EXISTS idx_seat_requests_status ON seat_requests(status);
 
 -- Foreign Keys
