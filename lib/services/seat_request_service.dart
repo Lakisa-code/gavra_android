@@ -28,26 +28,50 @@ class SeatRequestService {
       final normVreme = GradAdresaValidator.normalizeTime(vreme);
       final danKey = dan.toLowerCase();
 
-      // Obriši postojeće aktivne zahteve za isti putnik+grad+dan (trajni ključ).
-      await _supabase
+      // Provjeri da li postoji 'confirmed' termin za isti putnik+grad+dan.
+      // ⚠️ NIKAD ne brišemo 'confirmed' status — to je trajni nedeljni termin.
+      // Confirmed se briše samo eksplicitno kroz otkazivanje u profilu putnika.
+      final existingConfirmed = await _supabase
           .from('seat_requests')
-          .delete()
+          .select('id')
           .eq('putnik_id', putnikId)
           .eq('grad', gradKey)
           .eq('dan', danKey)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+          .eq('status', 'confirmed')
+          .limit(1);
 
-      await _supabase.from('seat_requests').insert({
-        'putnik_id': putnikId,
-        'grad': gradKey,
-        'dan': danKey,
-        'zeljeno_vreme': '$normVreme:00',
-        'status': status,
-        'broj_mesta': brojMesta,
-        'priority': priority,
-        'custom_adresa_id': customAdresaId,
-      });
-      debugPrint('✅ [SeatRequestService] Inserted for $gradKey $normVreme on $danKey');
+      if (existingConfirmed.isNotEmpty) {
+        // Ažuriraj postojeći confirmed termin umjesto brisanja+kreiranja
+        await _supabase.from('seat_requests').update({
+          'zeljeno_vreme': '$normVreme:00',
+          'broj_mesta': brojMesta,
+          'priority': priority,
+          'custom_adresa_id': customAdresaId,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', existingConfirmed.first['id']);
+        debugPrint('✅ [SeatRequestService] Updated confirmed for $gradKey $normVreme on $danKey');
+      } else {
+        // Obriši samo privremene zahteve (pending/manual/approved), nikad confirmed
+        await _supabase
+            .from('seat_requests')
+            .delete()
+            .eq('putnik_id', putnikId)
+            .eq('grad', gradKey)
+            .eq('dan', danKey)
+            .inFilter('status', ['pending', 'manual', 'approved']);
+
+        await _supabase.from('seat_requests').insert({
+          'putnik_id': putnikId,
+          'grad': gradKey,
+          'dan': danKey,
+          'zeljeno_vreme': '$normVreme:00',
+          'status': status,
+          'broj_mesta': brojMesta,
+          'priority': priority,
+          'custom_adresa_id': customAdresaId,
+        });
+        debugPrint('✅ [SeatRequestService] Inserted for $gradKey $normVreme on $danKey');
+      }
 
       // 📝 LOG: Zablježi zakazanu vožnju u voznje_log (trajni zapis)
       final datumStr = getIsoDateForDan(danKey);
