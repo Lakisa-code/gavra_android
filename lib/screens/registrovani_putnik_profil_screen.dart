@@ -235,6 +235,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           _putnikData = Map<String, dynamic>.from(response);
           _isLoading = false;
         });
+        _loadStatistike(); // 🔄 Ponovo izračunaj statistike sa svežim podacima (npr. nova cena)
       }
     } catch (e) {
       debugPrint('❌ [_refreshPutnikData] Greška: $e');
