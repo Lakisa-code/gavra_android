@@ -64,7 +64,7 @@ BEGIN
                     'type', 'seat_request_alternatives',
                     'id', NEW.id,
                     'grad', NEW.grad,
-                    'datum', to_char(NEW.datum, 'YYYY-MM-DD'),
+                    'dan', NEW.dan,
                     'vreme', to_char(NEW.zeljeno_vreme, 'HH24:MI'),
                     'putnik_id', NEW.putnik_id,
                     'alternative_1', to_char(NEW.alternative_vreme_1, 'HH24:MI'),
@@ -113,7 +113,8 @@ BEGIN
             PERFORM notify_push(
                 v_tokens,
                 '🚫 Otkazivanje (' || v_grad_display || ')',
-                COALESCE(v_putnik_ime, 'Putnik') || ' otkazao vožnju za ' || to_char(NEW.zeljeno_vreme, 'HH24:MI') || ' (' || to_char(NEW.datum, 'DD.MM.') || ')',
+                -- ✅ NEW.datum → NEW.dan (seat_requests.datum je dropovan)
+                COALESCE(v_putnik_ime, 'Putnik') || ' otkazao vožnju za ' || to_char(NEW.zeljeno_vreme, 'HH24:MI') || ' (' || UPPER(NEW.dan) || ')',
                 jsonb_build_object('type', 'seat_request_otkazano', 'id', NEW.id, 'grad', NEW.grad)
             );
         END IF;
