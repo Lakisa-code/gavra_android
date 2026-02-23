@@ -446,6 +446,7 @@ class VoznjeLogService {
     required DateTime datum,
     required double iznos,
     String? vozacId,
+    String? vozacImeParam, // ✅ direktan fallback ako UUID lookup ne uspe
     int? placeniMesec,
     int? placenaGodina,
     String tipUplate = 'uplata',
@@ -461,13 +462,25 @@ class VoznjeLogService {
     // Dohvati vozac_ime direktno iz baze (garantovano)
     String? vozacIme;
     if (vozacId != null && vozacId.isNotEmpty) {
-      try {
-        final vozacData = await _supabase.from('vozaci').select('ime').eq('id', vozacId).maybeSingle();
-        vozacIme = vozacData?['ime'] as String?;
-        debugPrint('💰 [dodajUplatu] vozacId=$vozacId → vozac_ime=$vozacIme');
-      } catch (e) {
-        debugPrint('⚠️ Greška pri dohvatanju vozac_ime: $e');
+      // Prvo pokušaj iz lokalnog cache-a (brže, bez mrežnog zahteva)
+      vozacIme = VozacCache.getImeByUuid(vozacId);
+      // Ako nije u cache-u, dohvati iz baze
+      if (vozacIme == null || vozacIme.isEmpty) {
+        try {
+          final vozacData = await _supabase.from('vozaci').select('ime').eq('id', vozacId).maybeSingle();
+          vozacIme = vozacData?['ime'] as String?;
+          debugPrint('💰 [dodajUplatu] vozacId=$vozacId → vozac_ime=$vozacIme');
+        } catch (e) {
+          debugPrint('⚠️ Greška pri dohvatanju vozac_ime: $e');
+        }
       }
+      // ✅ Poslednji fallback: direktno prosleđeno ime
+      if ((vozacIme == null || vozacIme.isEmpty) && vozacImeParam != null && vozacImeParam.isNotEmpty) {
+        vozacIme = vozacImeParam;
+      }
+    } else if (vozacImeParam != null && vozacImeParam.isNotEmpty) {
+      vozacIme = vozacImeParam;
+      debugPrint('⚠️ [dodajUplatu] vozacId NULL, koristim vozacImeParam=$vozacIme');
     } else {
       debugPrint('⚠️ [dodajUplatu] vozacId je NULL ili prazan!');
     }
@@ -613,9 +626,10 @@ class VoznjeLogService {
         if (iznos <= 0) continue;
 
         // Konvertuj UUID u ime vozača - PRVO iz vozac_ime kolone, pa iz cache-a
+        // ✅ FIX: nikad ne preskačemo uplatu ako postoji vozac_id — koristimo UUID kao fallback ključ
         String vozacIme = record['vozac_ime'] as String? ?? '';
         if (vozacIme.isEmpty && vozacId != null && vozacId.isNotEmpty) {
-          vozacIme = VozacCache.getImeByUuid(vozacId) ?? '';
+          vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
         }
         if (vozacIme.isEmpty) continue;
 

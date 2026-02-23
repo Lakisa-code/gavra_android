@@ -846,6 +846,7 @@ class PutnikService {
       datum: DateTime.parse(dateStr),
       iznos: iznos.toDouble(),
       vozacId: vozacId,
+      vozacImeParam: driver, // ✅ fallback: direktno ime vozača ako UUID lookup ne uspe
       grad: grad,
       vreme: selectedVreme,
     );
