@@ -153,14 +153,14 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     _loadPokupljenjeIzBaze();
     _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadGpsData());
     _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen(
-      (payload) => _loadGpsData(),
-      onError: (_) {},
-    );
+          (payload) => _loadGpsData(),
+          onError: (_) {},
+        );
     if (widget.putnikId != null) {
       _putnikSubscription = RealtimeManager.instance.subscribe('seat_requests').listen(
-        (payload) => _loadPokupljenjeIzBaze(),
-        onError: (_) {},
-      );
+            (payload) => _loadPokupljenjeIzBaze(),
+            onError: (_) {},
+          );
     }
   }
 
@@ -200,19 +200,30 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     }
   }
 
+  // Faza 1 — uvek vidljiv default info widget
+  Widget _buildFaza1() {
+    return _buildContainer(
+      Colors.white,
+      icon: Icons.directions_bus,
+      title: '🚐 PRAĆENJE KOMBIJA',
+      message: 'Ovde će biti prikazano vreme dolaska kombija kada vozač krene',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Dok se učitava — prikaži Fazu 1 sa spinnerom (ne prazan container)
     if (_isLoading) {
       return _buildContainer(
         Colors.white,
         icon: Icons.directions_bus,
         title: '🚐 PRAĆENJE KOMBIJA',
-        message: '...',
+        message: '',
         isLoading: true,
       );
     }
 
-    // Pokupljen — prikaži poruku pa se gasi
+    // Pokupljen — prikaži zelenu potvrdu max 60 min, pa nazad na Fazu 1
     if (_jePokupljenIzBaze && _vremePokupljenja != null) {
       final minutesSince = DateTime.now().difference(_vremePokupljenja!).inMinutes;
       if (minutesSince <= 60) {
@@ -225,11 +236,11 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           message: 'u $h:$m • Želimo ugodnu vožnju! 🚐',
         );
       }
-      // Prošlo > 60 min — gasi se
-      return const SizedBox.shrink();
+      // Prošlo > 60 min od pokupljenja — nazad na Fazu 1
+      return _buildFaza1();
     }
 
-    // Vozač aktivan i ima ETA za ovog putnika
+    // Faza 2 — Vozač aktivan i ima ETA za ovog putnika
     if (_isActive && _etaMinutes != null && _etaMinutes! >= 0) {
       return _buildContainer(
         Colors.blue.shade700,
@@ -241,7 +252,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       );
     }
 
-    // Vozač aktivan ali nema ETA još
+    // Faza 2 — Vozač aktivan ali ETA još nije izračunat
     if (_isActive) {
       return _buildContainer(
         Colors.white,
@@ -251,13 +262,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       );
     }
 
-    // Podrazumevano — nema aktivnog vozača
-    return _buildContainer(
-      Colors.white,
-      icon: Icons.directions_bus,
-      title: '🚐 PRAĆENJE KOMBIJA',
-      message: 'Ovde će biti prikazano vreme dolaska kombija kada vozač krene',
-    );
+    // Faza 1 — nema aktivnog vozača
+    return _buildFaza1();
   }
 
   Widget _buildContainer(

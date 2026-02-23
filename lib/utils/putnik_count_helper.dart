@@ -47,11 +47,9 @@ class PutnikCountHelper {
       // Za prikaz na Nav Bar-u BROJIMO SVE PUTNIKE (uključujući đake u BC)
       // jer vozač mora da vidi koliko ljudi fizički ima u vozilu.
       if (jeBelaCrkva) {
-        brojPutnikaBC[normVreme] =
-            (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
+        brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
       } else if (jeVrsac) {
-        brojPutnikaVS[normVreme] =
-            (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;
+        brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;
       }
     }
 
