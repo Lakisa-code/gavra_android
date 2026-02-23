@@ -560,6 +560,26 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
   }
 
+  /// Vraća vreme polaska za DANAS (npr. '7:00') iz aktivnih zahteva, ili null
+  String? _getVremeZaDanas() {
+    try {
+      if (_activeSeatRequests.isEmpty) return null;
+      const daniOrder = ['pon', 'uto', 'sre', 'cet', 'pet'];
+      final now = DateTime.now();
+      if (now.weekday > 5) return null; // vikend
+      final danasKratica = daniOrder[now.weekday - 1];
+      final req = _activeSeatRequests.where((r) {
+        if ((r['dan'] as String?)?.toLowerCase() != danasKratica) return false;
+        final status = r['status'] as String?;
+        return status != 'otkazano' && status != 'cancelled';
+      }).firstOrNull;
+      if (req == null) return null;
+      return (req['zeljeno_vreme'] ?? '').toString().trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 💰 Učitaj istoriju plaćanja - od 1. januara tekuće godine
   /// 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
   Future<List<Map<String, dynamic>>> _loadIstorijuPlacanja(String putnikId) async {
@@ -1311,6 +1331,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                       grad: grad,
                       sledecaVoznja: _sledecaVoznjaInfo,
                       putnikId: _putnikData['id']?.toString(),
+                      vreme: _getVremeZaDanas(), // 🆕 Filter po terminu polaska
                     ),
 
                     // ─────────── Divider ───────────

@@ -20,12 +20,14 @@ class KombiEtaWidget extends StatefulWidget {
     required this.grad,
     this.sledecaVoznja,
     this.putnikId,
+    this.vreme, // 🆕 npr. '7:00' - za filter vozaca po terminu
   });
 
   final String putnikIme;
   final String grad;
   final String? sledecaVoznja;
   final String? putnikId;
+  final String? vreme; // 🆕 Termin polaska putnika
 
   @override
   State<KombiEtaWidget> createState() => _KombiEtaWidgetState();
@@ -84,10 +86,19 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       final list = data as List<dynamic>;
 
+      final normVreme = widget.vreme != null
+          ? GradAdresaValidator.normalizeTime(widget.vreme!)
+          : null;
+
       final filteredList = list.where((driver) {
         final driverGrad = driver['grad'] as String? ?? '';
-        // Filtriraj samo po gradu - aktivan=true je već u query
-        return GradAdresaValidator.normalizeGrad(driverGrad) == normalizedGrad;
+        if (GradAdresaValidator.normalizeGrad(driverGrad) != normalizedGrad) return false;
+        // 🆕 Filtriraj po terminu polaska ako je poznat
+        if (normVreme != null) {
+          final driverVreme = driver['vreme_polaska'] as String? ?? '';
+          if (GradAdresaValidator.normalizeTime(driverVreme) != normVreme) return false;
+        }
+        return true;
       }).toList();
 
       if (filteredList.isEmpty) {
@@ -241,11 +252,15 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     if (widget.putnikId == null) return;
 
     try {
+      // 🆕 Filtriraj po danasnji dan (kratica: 'pon', 'uto'...)
+      final danasKratica = _getDanasDanKratica();
+
       final response = await supabase
           .from('seat_requests')
           .select('status, updated_at')
           .eq('putnik_id', widget.putnikId!)
           .eq('status', 'pokupljen')
+          .eq('dan', danasKratica)
           .order('updated_at', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -270,6 +285,12 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     } catch (e) {
       debugPrint('⚠️ [KombiEta] Greška pri čitanju seat_requests: $e');
     }
+  }
+
+  /// Vraća kraticu danasnjeg dana (pon, uto, sre, cet, pet, sub, ned)
+  String _getDanasDanKratica() {
+    const dani = ['ned', 'pon', 'uto', 'sre', 'cet', 'pet', 'sub'];
+    return dani[DateTime.now().weekday % 7];
   }
 
   /// 🆕 Odredi trenutnu fazu widgeta
