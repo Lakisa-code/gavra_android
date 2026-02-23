@@ -244,6 +244,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- CLEANUP: Ukloni staru overloaded verziju sa datum parametrom (migracija datum->dan)
+DROP FUNCTION IF EXISTS proveri_slobodna_mesta(text, time, date);
+
 -- 2. POMOĆNA FUNKCIJA: Provera slobodnih mesta
 CREATE OR REPLACE FUNCTION proveri_slobodna_mesta(target_grad text, target_vreme time, target_dan text)
 RETURNS integer AS $$
