@@ -165,10 +165,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
       final danAbbrev = app_date_utils.DateUtils.getDayAbbreviation(_selectedDay);
 
       // Sacuvaj sve putnike za dan (za BottomNavBar count)
-      _allPutnici = putnici.where((p) {
-        final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(danAbbrev.toLowerCase());
-        return dayMatch;
-      }).toList();
+      // Filtriraj po dan kraticama (seat_requests nema datum kolonu)
+      _allPutnici = putnici.where((p) => p.dan.toLowerCase().contains(danAbbrev.toLowerCase())).toList();
 
       // • Filtriraj za prikaz po vremenu i gradu
       final filtered = _allPutnici.where((p) {

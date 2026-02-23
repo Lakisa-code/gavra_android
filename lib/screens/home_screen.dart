@@ -2008,9 +2008,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
           // Additional client-side filtering like danas_screen
           Iterable<Putnik> filtered = allPutnici.where((p) {
-            // Dan u nedelji filter za mesečne putnike
-            final dayMatch =
-                p.datum != null ? p.datum == targetDateIso : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+            // Filtriraj po dan kraticama — seat_requests nema datum, samo dan TEXT
+            final dayMatch = p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
 
             return dayMatch;
           });

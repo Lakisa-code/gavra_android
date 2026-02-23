@@ -69,9 +69,8 @@ class SlobodnaMestaService {
       // Ne računa: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
       if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
-      // Proveri datum/dan
-      final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
-      if (!dayMatch) continue;
+      // Filtriraj po dan kraticama (seat_requests nema datum kolonu)
+      if (!p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase())) continue;
 
       // Proveri vreme - OBA MORAJU BITI NORMALIZOVANA
       final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
@@ -107,9 +106,8 @@ class SlobodnaMestaService {
       // Filter: SAMO UČENICI
       if (p.tipPutnika != 'ucenik') continue;
 
-      // Proveri datum/dan
-      final dayMatch = p.datum != null ? p.datum == isoDate : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
-      if (!dayMatch) continue;
+      // Filtriraj po dan kraticama (seat_requests nema datum kolonu)
+      if (!p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase())) continue;
 
       // Proveri vreme
       final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
