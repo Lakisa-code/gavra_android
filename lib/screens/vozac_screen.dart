@@ -174,21 +174,17 @@ class _VozacScreenState extends State<VozacScreen> {
     _initializeNotifications();
     _initializeGpsTracking();
 
-    // 4. 🕒 Slušaj promene dodeljenih vremena - kada admin dodeli/ukloni vreme, refresh UI
+    // 4. 🕒 Slušaj promene dodeljenih vremena I individualnih dodela - jedan listener radi oba posla
     _vremeVozacSubscription = VremeVozacService().onChanges.listen((_) {
       if (mounted) {
+        // Osvezi stream putnika jer dodeljenVozac zavisi od vreme_vozac putnik cache-a
+        _putnikService.refreshAllActiveStreams();
         setState(() {});
         // Ponovo izaberi najbliži polazak jer se raspored promenio
         _selectClosestDeparture();
       }
     });
-
-    // 5. 👤 Slušaj individualne dodele putnika - kada admin dodeli putnika direktno vozacu
-    _putnikVozacSubscription = VremeVozacService().onChanges.listen((_) {
-      // Osvezi stream putnika jer dodeljenVozac zavisi od vreme_vozac putnik cache-a
-      _putnikService.refreshAllActiveStreams();
-      if (mounted) setState(() {});
-    });
+    // _putnikVozacSubscription uklonjen - bio je duplikat istog listenera
   }
 
   // 🕒 UCITAJ VREME VOZAC PODATKE
@@ -275,6 +271,9 @@ class _VozacScreenState extends State<VozacScreen> {
   String _isoDateToDayAbbr(String isoDate) {
     try {
       final date = DateTime.parse(isoDate);
+      // Guard: vikend (6/7) vraća 'pon' — _getWorkingDateIso() uvek vraća radni dan,
+      // ali za slučaj direktnog prosleđivanja vikend datuma nema IndexError
+      if (date.weekday > 5) return 'pon';
       const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
       return dani[date.weekday - 1];
     } catch (e) {
@@ -352,11 +351,10 @@ class _VozacScreenState extends State<VozacScreen> {
   Future<void> _reoptimizeAfterStatusChange() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
-    // ?? BATCH DOHVATI SVE�E PODATKE IZ BAZE - efikasnije od pojedinacnih poziva
-    final putnikService = PutnikService();
+    // ?? BATCH DOHVATI SVEŽE PODATKE IZ BAZE - efikasnije od pojedinacnih poziva
     final ids = _optimizedRoute.where((p) => p.id != null).map((p) => p.id!).toList();
     final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
-    final sveziPutnici = await putnikService.getPutniciByIds(ids, targetDan: targetDan);
+    final sveziPutnici = await _putnikService.getPutniciByIds(ids, targetDan: targetDan);
 
     // Razdvoji pokupljene/otkazane od preostalih
     // Ekran je vec filtriran po vozacu - nema potrebe za dodeljenVozac filterom
@@ -938,8 +936,13 @@ class _VozacScreenState extends State<VozacScreen> {
                   }).toList();
 
                   // Cache za Start dugme (izvan StreamBuilder konteksta)
+                  // Koristimo ID listu za poređenje da sprečimo beskonačni rebuild
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && _mojiPutnici != mojiPutnici) {
+                    if (!mounted) return;
+                    final noviIds = mojiPutnici.map((p) => p.id).toList();
+                    final stariIds = _mojiPutnici.map((p) => p.id).toList();
+                    if (noviIds.length != stariIds.length ||
+                        !noviIds.every((id) => stariIds.contains(id))) {
                       setState(() => _mojiPutnici = mojiPutnici);
                     }
                   });
@@ -1288,7 +1291,8 @@ class _VozacScreenState extends State<VozacScreen> {
       if (smerovi.contains('bc') && smerovi.contains('vs')) {
         saObaSmera++;
       } else {
-        final p = sviPutnici.firstWhere((element) => element.id == id);
+        final p = sviPutnici.firstWhere((element) => element.id == id, orElse: () => sviPutnici.first);
+        if (p.id != id) return; // putnik nije pronađen, preskoči
         final grad = smerovi.contains('bc') ? 'BC' : 'VS';
         samoJedanSmerImena.add('${p.ime} ($grad)');
       }
