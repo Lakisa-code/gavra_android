@@ -165,7 +165,12 @@ class Putnik {
     final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
 
     final danStr = (req['dan']?.toString() ?? '').toLowerCase();
-    final datumStr = _getIsoDateForDan(danStr); // Potrebno za VremeVozacService cache
+    // ✅ PRIORITET: datum iz RPC-a (p_datum = danas) — ne računaj iz dana jer ide u budućnost
+    // Fallback: _getIsoDateForDan samo ako RPC nije vratio datum (direktni seat_requests query)
+    final rpcDatum = req['datum']?.toString();
+    final datumStr = (rpcDatum != null && rpcDatum.isNotEmpty)
+        ? rpcDatum.split('T')[0] // ISO: "2026-02-23T00:00:00" → "2026-02-23"
+        : _getIsoDateForDan(danStr);
     final gRaw = req['grad']?.toString().toLowerCase() ?? '';
     final grad = (gRaw == 'vs' || gRaw.contains('vrs') || gRaw.contains('vr')) ? 'Vrsac' : 'Bela Crkva';
 
