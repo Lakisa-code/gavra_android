@@ -151,14 +151,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   /// Uklanja lokalni override iz _weeklyOverrides za dati dan/smer
   /// da se status cell-a odmah ažurira u UI bez čekanja na bazu
   void _removeLocalOverride(String dan, {required bool isBC}) {
-    final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet'];
-    final targetWeekday = dayNames.indexOf(dan.toLowerCase()) + 1;
-    if (targetWeekday < 1) return;
+    final targetDanKratica = dan.toLowerCase();
 
     final updated = _weeklyOverrides.where((req) {
-      final datumStr = req['datum']?.toString() ?? '';
-      final datum = DateTime.tryParse(datumStr);
-      if (datum == null || datum.weekday != targetWeekday) return true; // zadrži
+      final reqDan = req['dan']?.toString().toLowerCase() ?? '';
+      if (reqDan != targetDanKratica) return true; // zadrži
       final grad = req['grad']?.toString() ?? '';
       final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
       final targetGrad = isBC ? 'BC' : 'VS';
@@ -331,16 +328,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   /// Preskače bez_polaska, hidden, cancelled, obrisan — koristi se za prikaz statusa
   Map<String, dynamic>? _getOverrideForDay(String day, bool isBC) {
     try {
-      final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet'];
-      final targetWeekday = dayNames.indexOf(day.toLowerCase()) + 1;
-      if (targetWeekday < 1) return null;
+      final targetDan = day.toLowerCase();
 
       for (final req in _weeklyOverrides) {
-        final datumStr = req['datum']?.toString() ?? '';
-        if (datumStr.isEmpty) continue;
-
-        final datum = DateTime.tryParse(datumStr);
-        if (datum == null || datum.weekday != targetWeekday) continue;
+        final reqDan = req['dan']?.toString().toLowerCase() ?? '';
+        if (reqDan != targetDan) continue;
 
         // Preskoči cancelled, bez_polaska, hidden, obrisan
         final status = req['status']?.toString().toLowerCase() ?? '';
@@ -366,16 +358,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   /// Helper koji vraća override uključujući bez_polaska — koristi se za sinhronizaciju kontrolera
   Map<String, dynamic>? _getAnyOverrideForDay(String day, bool isBC) {
     try {
-      final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet'];
-      final targetWeekday = dayNames.indexOf(day.toLowerCase()) + 1;
-      if (targetWeekday < 1) return null;
+      final targetDan = day.toLowerCase();
 
       for (final req in _weeklyOverrides) {
-        final datumStr = req['datum']?.toString() ?? '';
-        if (datumStr.isEmpty) continue;
-
-        final datum = DateTime.tryParse(datumStr);
-        if (datum == null || datum.weekday != targetWeekday) continue;
+        final reqDan = req['dan']?.toString().toLowerCase() ?? '';
+        if (reqDan != targetDan) continue;
 
         // Preskoči samo obrisan
         final status = req['status']?.toString().toLowerCase() ?? '';

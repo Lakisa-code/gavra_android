@@ -72,19 +72,14 @@ class RegistrovaniPutnikService {
     return RegistrovaniPutnik.fromMap(response);
   }
 
-  /// Dohvata sve zahteve za sedište (seat_requests) za putnika u narednih 7 dana
+  /// Dohvata sve zahteve za sedište (seat_requests) za putnika (radni dani)
+  /// seat_requests.datum je DROPOVAN — filtrira po dan kraticama (pon, uto, sre, cet, pet)
   Future<List<Map<String, dynamic>>> getWeeklySeatRequests(String putnikId) async {
-    final now = DateTime.now();
-    final todayStr = DateTime(now.year, now.month, now.day).toIso8601String().split('T')[0];
-    final nextWeekStr = now.add(const Duration(days: 7)).toIso8601String().split('T')[0];
+    const radniDani = ['pon', 'uto', 'sre', 'cet', 'pet'];
 
     try {
-      final response = await _supabase
-          .from('seat_requests')
-          .select()
-          .eq('putnik_id', putnikId)
-          .gte('datum', todayStr)
-          .lte('datum', nextWeekStr);
+      final response =
+          await _supabase.from('seat_requests').select().eq('putnik_id', putnikId).inFilter('dan', radniDani);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {

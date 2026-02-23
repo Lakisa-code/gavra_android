@@ -315,17 +315,19 @@ class VremeVozacService {
     return _putnikCache['$putnikId|$normalizedDan'];
   }
 
-  /// 🔄 Učitaj individualne dodele za određeni datum u cache
-  Future<void> loadPutnikDodele(String datum) async {
+  /// 🔄 Učitaj individualne dodele za određeni dan u cache
+  /// [dan] - kratica dana: pon, uto, sre, cet, pet
+  /// vreme_vozac.datum je DROPOVAN — query koristi dan kolonu
+  Future<void> loadPutnikDodele(String dan) async {
     try {
       final response = await _supabase
           .from('vreme_vozac')
           .select('putnik_id, vozac_ime, grad, vreme')
-          .eq('datum', datum)
+          .eq('dan', dan)
           .not('putnik_id', 'is', null);
 
-      // Ukloni stare unose za taj datum iz cache-a (svi ključi koji sadrže |datum|)
-      _putnikCache.removeWhere((key, _) => key.contains('|$datum|') || key.endsWith('|$datum'));
+      // Ukloni stare unose za taj dan iz cache-a (svi ključevi koji sadrže |dan|)
+      _putnikCache.removeWhere((key, _) => key.contains('|$dan|') || key.endsWith('|$dan'));
 
       for (final row in response) {
         final pId = row['putnik_id']?.toString();
@@ -334,7 +336,7 @@ class VremeVozacService {
         final vremeRaw = row['vreme']?.toString() ?? '';
         final vreme = _normalizeTime(vremeRaw) ?? vremeRaw;
         if (pId != null && ime.isNotEmpty && grad.isNotEmpty && vreme.isNotEmpty) {
-          _putnikCache['$pId|$datum|$grad|$vreme'] = ime;
+          _putnikCache['$pId|$dan|$grad|$vreme'] = ime;
         }
       }
     } catch (e) {
