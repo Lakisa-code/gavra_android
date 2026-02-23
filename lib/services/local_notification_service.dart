@@ -617,7 +617,10 @@ class LocalNotificationService {
     String putnikIme,
   ) async {
     try {
-      final danas = DateTime.now().toIso8601String().split('T')[0];
+      final danas = DateTime.now();
+      // seat_requests nema datum kolonu — filtrira se po 'dan' kraticama
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final danKratica = dani[danas.weekday - 1];
 
       // Prvo nađi putnika po imenu
       final putnikResult = await supabase
@@ -637,7 +640,7 @@ class LocalNotificationService {
           .from('seat_requests')
           .select('grad, zeljeno_vreme')
           .eq('putnik_id', putnikId)
-          .eq('datum', danas)
+          .eq('dan', danKratica)
           .inFilter('status', ['approved', 'confirmed', 'pending', 'manual']).maybeSingle();
 
       if (seatRequest != null) {
