@@ -605,8 +605,7 @@ class RegistrovaniPutnikService {
                   'status': 'confirmed',
                   'updated_at': DateTime.now().toUtc().toIso8601String(),
                 }).eq('id', existing['id']);
-                debugPrint(
-                    '✅ Ažuriran seat_request: $danKratica, $normalizedGrad, $vremeStr (bio: $existingStatus)');
+                debugPrint('✅ Ažuriran seat_request: $danKratica, $normalizedGrad, $vremeStr (bio: $existingStatus)');
               }
             }
           } else {
@@ -701,6 +700,7 @@ class RegistrovaniPutnikService {
         datum: DateTime.now(),
         iznos: iznos,
         vozacId: validVozacId,
+        vozacImeParam: vozacIme, // ✅ fallback: ako UUID lookup ne uspe, ime se upisuje direktno
         placeniMesec: pocetakMeseca.month,
         placenaGodina: pocetakMeseca.year,
         tipUplate: 'uplata_mesecna',
