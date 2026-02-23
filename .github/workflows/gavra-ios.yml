@@ -61,19 +61,19 @@ jobs:
 
       - name: Fix iOS deployment target in Podfile
         run: |
-          # Ensure deployment target is 14.0 (required by firebase_core 12.8+)
-          sed -i '' "s/platform :ios, '[0-9.]*/platform :ios, '14.0/g" ios/Podfile || true
+          # Ensure deployment target is 15.0 (required by firebase_core 12.8+)
+          sed -i '' "s/platform :ios, '[0-9.]*/platform :ios, '15.0/g" ios/Podfile || true
           if ! grep -q "^platform :ios" ios/Podfile; then
-            sed -i '' '1s/^/platform :ios, '\''14.0'\''\n/' ios/Podfile
+            sed -i '' '1s/^/platform :ios, '\''15.0'\''\n/' ios/Podfile
           fi
           head -3 ios/Podfile
 
-      - name: Install CocoaPods with iOS 14 deployment target
+      - name: Install CocoaPods with iOS 15 deployment target
         run: |
           cd ios
           pod install --repo-update
         env:
-          IPHONEOS_DEPLOYMENT_TARGET: '14.0'
+          IPHONEOS_DEPLOYMENT_TARGET: '15.0'
 
       - name: Set Xcode code signing settings
         run: |
