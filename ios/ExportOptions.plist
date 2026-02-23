@@ -4,6 +4,8 @@
 <dict>
     <key>method</key>
     <string>app-store</string>
+    <key>teamID</key>
+    <string>F8PUBNR3Q9</string>
     <key>uploadBitcode</key>
     <false/>
     <key>uploadSymbols</key>
