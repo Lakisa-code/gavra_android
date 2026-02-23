@@ -941,8 +941,7 @@ class _VozacScreenState extends State<VozacScreen> {
                     if (!mounted) return;
                     final noviIds = mojiPutnici.map((p) => p.id).toList();
                     final stariIds = _mojiPutnici.map((p) => p.id).toList();
-                    if (noviIds.length != stariIds.length ||
-                        !noviIds.every((id) => stariIds.contains(id))) {
+                    if (noviIds.length != stariIds.length || !noviIds.every((id) => stariIds.contains(id))) {
                       setState(() => _mojiPutnici = mojiPutnici);
                     }
                   });
@@ -1263,6 +1262,9 @@ class _VozacScreenState extends State<VozacScreen> {
       // ISKLJUCUJEMO: otkazano, bez_polaska, odsustvo, obrisan, posiljke
       if (p.jeOtkazan || p.jeBezPolaska || p.jeOdsustvo || p.obrisan) continue;
       if (p.tipPutnika == 'posiljka') continue;
+
+      // SAMO UCENICI za kocku Povratak
+      if (p.tipPutnika != 'ucenik') continue;
 
       // DODATNA PROVERA: eksplicitno preskoci 'otkazano', 'cancelled', 'bez_polaska' status
       final statusLower = p.status?.toLowerCase() ?? '';
