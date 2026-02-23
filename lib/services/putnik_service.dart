@@ -833,8 +833,9 @@ class PutnikService {
     String? selectedDan,
     String? requestId, // 🆕 Dodato
   }) async {
-    final danasStr = DateTime.now().toIso8601String().split('T')[0];
-    final dateStr = selectedDan != null ? app_date_utils.DateUtils.getIsoDateForDay(selectedDan) : danasStr;
+    // ✅ Uvek koristi DANAŠNJI datum za uplatu — naplata se vrši u realnom vremenu,
+    // ne za budući dan na koji se selectedDan odnosi u seat_requests
+    final dateStr = DateTime.now().toIso8601String().split('T')[0];
 
     // ✅ DIREKTAN QUERY: Dohvati vozac_id iz baze umesto VozacMappingService
     String? vozacId;

@@ -838,7 +838,7 @@ class VoznjeLogService {
   }) async {
     try {
       final now = DateTime.now();
-      final datumStr = datum ?? now.toIso8601String().split('T')[0];
+      final datumStr = (datum != null && datum.isNotEmpty) ? datum : now.toIso8601String().split('T')[0];
 
       // ✅ Koristimo dedicirane kolone umesto meta JSONB
       final String? gradKod = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
