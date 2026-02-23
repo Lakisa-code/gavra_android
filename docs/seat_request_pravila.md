@@ -261,12 +261,12 @@ putnikId|datum|grad|vreme
 
 | Kada | Šta | Ko |
 |------|-----|----|
-| Subota 01:00 | Fizičko brisanje seat_requests starijih od 30 dana | `ciscenje-seat-requests` cron |
 | Subota 02:00 | Time picker se otključava za narednu sedmicu | Automatski |
 | Svaki dan | Ćelija se zaključava kad nastupi njeno vreme | Frontend logika |
 
-### ⛔ UKINUTO (ne postoji više):
-- `sedmicni-reset-polazaka` — **OBRISANO**, ne vraćati
+### ⛔ UKINUTO (ne vraćati):
+- `sedmicni-reset-polazaka` — **OBRISANO**
+- `ciscenje-seat-requests` — **OBRISANO** (novi zahtevi prepisuju stare za aktivnu sedmicu; prošli redovi su istorijski i ne utiču na performanse)
 
 ---
 

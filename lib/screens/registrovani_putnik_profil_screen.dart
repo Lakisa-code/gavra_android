@@ -260,7 +260,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   // - Job #6: cleanup-expired-pending (svakih 5 minuta)
 
   /// 🧹 UKLONJENO: Brisanje seat_requests je zabranjeno iz klijentskog koda!
-  /// Pravilo: seat_requests je operativna tabela — briše je samo DB cron (ciscenje-seat-requests).
+  /// Pravilo: seat_requests je operativna tabela — stari redovi ostaju kao istorija (cron uklonjen).
   /// Videti PRAVILA.md
   Future<void> _cleanupOldSeatRequests() async {
     // NE RADI NIŠTA — brisanje seat_requests nije dozvoljeno iz aplikacije

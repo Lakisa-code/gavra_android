@@ -367,29 +367,9 @@ $$ LANGUAGE plpgsql;
 -- 7. ČIŠĆENJE STARIH SEAT_REQUESTS: Nedeljno brisanje redova starijih od 30 dana
 -- Historija je u voznje_log - seat_requests je operativna tabela
 -- ==========================================
-CREATE OR REPLACE FUNCTION ocisti_stare_seat_requests()
-RETURNS jsonb AS $$
-DECLARE
-    v_obrisano integer;
-BEGIN
-    DELETE FROM seat_requests
-    WHERE datum < CURRENT_DATE - INTERVAL '30 days';
-
-    GET DIAGNOSTICS v_obrisano = ROW_COUNT;
-
-    RETURN jsonb_build_object(
-        'obrisano', v_obrisano,
-        'vreme', now()
-    );
-END;
-$$ LANGUAGE plpgsql;
-
--- CRON JOB: Čišćenje svake nedjelje u 03:00 UTC (04:00 srpskog)
-SELECT cron.schedule(
-    'ciscenje-seat-requests',
-    '0 3 * * 0',
-    $$ SELECT ocisti_stare_seat_requests() $$
-);
+-- ⛔ UKLONJENO (2026-02-23): ocisti_stare_seat_requests + cron 'ciscenje-seat-requests'
+-- Razlog: novi zahtevi prepisuju stare za aktivnu sedmicu, a prošli redovi
+-- su istorijski i ne utiču na performanse. Brisanje nije potrebno.
 
 -- ==========================================
 -- 9. PODSETNIK RADNICIMA: Subota 10:00 - push notifikacija radnicima koji nisu zakazali
