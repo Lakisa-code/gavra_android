@@ -55,6 +55,8 @@ jobs:
           keychain initialize
           keychain add-certificates
           keychain use-login
+          echo "=== Installed certificates ==="
+          security find-identity -v -p codesigning
 
       - name: Get Flutter dependencies
         run: flutter pub get
