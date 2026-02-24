@@ -93,8 +93,10 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
         run: |
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
+          echo "Found IPA: $IPA_PATH"
           app-store-connect publish \
-            --path "build/ios/ipa/gavra_android.ipa" \
+            --path "$IPA_PATH" \
             --testflight \
             --max-build-processing-wait 0
 
