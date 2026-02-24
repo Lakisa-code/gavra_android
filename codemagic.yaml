@@ -10,10 +10,10 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.gavra013.gavra013ios
+        bundle_identifier: com.gavra013.gavraAndroid
       flutter: stable
       vars:
-        BUNDLE_ID: "com.gavra013.gavra013ios"
+        BUNDLE_ID: "com.gavra013.gavraAndroid"
         XCODE_SCHEME: "Runner"
 
     scripts:
