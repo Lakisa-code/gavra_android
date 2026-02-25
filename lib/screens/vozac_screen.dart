@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; // 🛰️ Za GPS poziciju
+import 'package:supabase_flutter/supabase_flutter.dart'; // Za PostgresChangePayload
 
 import '../config/route_config.dart';
 import '../globals.dart';
@@ -13,11 +14,13 @@ import '../services/firebase_service.dart'; // 👤 Za vozača
 import '../services/kapacitet_service.dart'; // 🎫 Za broj mesta
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
 import '../services/putnik_service.dart';
+import '../services/realtime/realtime_manager.dart'; // 🔴 Za realtime raspored
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
+import '../services/vozac_putnik_service.dart';
 import '../services/vozac_raspored_service.dart';
 import '../utils/app_snack_bar.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
@@ -52,9 +55,11 @@ class _VozacScreenState extends State<VozacScreen> {
 
   StreamSubscription<Position>? _driverPositionSubscription;
   StreamSubscription<Map<String, dynamic>>? _notificationSubscription; // ⚡ ZA AUTOMATSKI POPIS
+  StreamSubscription<PostgresChangePayload>? _rasporedRealtimeSub; // 🔴 Realtime raspored
+  StreamSubscription<PostgresChangePayload>? _overrideRealtimeSub; // 🔴 Realtime overrides
 
   String _selectedGrad = 'BC';
-  String _selectedVreme = '05:00'; // ✅ VRAĆENO NA 05:00 (konzistentno sa RouteConfig)
+  String _selectedVreme = ''; // Će biti postavljen u _selectClosestDeparture()
 
   // 📍 OPTIMIZACIJA RUTE - kopirano iz DanasScreen
   bool _isRouteOptimized = false;
@@ -67,21 +72,34 @@ class _VozacScreenState extends State<VozacScreen> {
   /// 📅 HELPER: Vraća radni datum - vikendom vraća naredni ponedeljak
   String _getWorkingDateIso() => PutnikHelpers.getWorkingDateIso();
 
-  /// 🕒 HELPER: Dobij dodeljena vremena za trenutnog vozača iz liste svih putnika
-  List<Map<String, String>> _getDodeljenaVremena({List<Putnik>? sviPutnici}) {
+  /// 🕒 HELPER: Dobij dodeljena vremena za trenutnog vozača.
+  ///
+  /// Kombinuje dva izvora:
+  /// 1. [_rasporedCache] — termini dodeljeni vozaču (vozac_raspored), prikazuju se čak i prazni
+  /// 2. [sviPutnici] — vremena iz putnika koji su već filtrirani za ovog vozača
+  List<Map<String, String>> _rasporedVozaca({List<Putnik>? sviPutnici}) {
     if (_currentDriver == null) return [];
 
     final dodeljena = <Map<String, String>>[];
+    final currentVozacId = VozacCache.getUuidByIme(_currentDriver ?? '');
+    final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
 
-    // Skupi sva vremena iz liste putnika
+    // Izvor 1: termini iz raspored cache-a za ovog vozača i današnji dan
+    for (final r in _rasporedCache) {
+      if (r.dan != targetDan) continue;
+      final isVozacov = (currentVozacId != null && r.vozacId == currentVozacId) || r.vozac == _currentDriver;
+      if (!isVozacov) continue;
+      final postoji = dodeljena.any((v) => v['grad'] == r.grad && v['vreme'] == r.vreme);
+      if (!postoji) dodeljena.add({'grad': r.grad, 'vreme': r.vreme});
+    }
+
+    // Izvor 2: vremena iz putnika (per-putnik override, već filtrirani za ovog vozača)
     if (sviPutnici != null) {
       for (var p in sviPutnici) {
         final pGrad = p.grad;
         final pPolazak = p.polazak;
-        bool postoji = dodeljena.any((v) => v['grad'] == pGrad && v['vreme'] == pPolazak);
-        if (!postoji) {
-          dodeljena.add({'grad': pGrad, 'vreme': pPolazak});
-        }
+        final postoji = dodeljena.any((v) => v['grad'] == pGrad && v['vreme'] == pPolazak);
+        if (!postoji) dodeljena.add({'grad': pGrad, 'vreme': pPolazak});
       }
     }
 
@@ -93,8 +111,11 @@ class _VozacScreenState extends State<VozacScreen> {
 
   String? _currentDriver; // 👤 Trenutni vozač
 
-  // 🗓️ VOZAC RASPORED - filter koji putnici su moji
+  // 🗓️ VOZAC RASPORED - per-termin filter
   List<VozacRasporedEntry> _rasporedCache = [];
+
+  // 👤 VOZAC PUTNIK - per-putnik override filter
+  List<VozacPutnikEntry> _putnikOverridesCache = [];
 
   // Status varijable
   bool _isListReordered = false;
@@ -141,8 +162,9 @@ class _VozacScreenState extends State<VozacScreen> {
     // 1. Inicijalizuj vozača (ovo će takođe pozvati _selectClosestDeparture)
     await _initializeCurrentDriver();
 
-    // 2. Učitaj raspored vozača
+    // 2. Učitaj raspored vozača + subscribe na realtime promjene
     _loadRaspored();
+    _subscribeRealtime();
 
     // 3. Ostalo
     _initializeNotifications();
@@ -150,8 +172,31 @@ class _VozacScreenState extends State<VozacScreen> {
   }
 
   Future<void> _loadRaspored() async {
-    final data = await VozacRasporedService().loadAll();
-    if (mounted) setState(() => _rasporedCache = data);
+    final rasporedData = await VozacRasporedService().loadAll();
+    final overridesData = await VozacPutnikService().loadAll();
+    if (mounted) {
+      setState(() {
+        _rasporedCache = rasporedData;
+        _putnikOverridesCache = overridesData;
+      });
+    }
+  }
+
+  /// 🔴 Realtime: prati vozac_raspored i vozac_putnik i osvježava lokalne cache-ove
+  void _subscribeRealtime() {
+    _rasporedRealtimeSub?.cancel();
+    _rasporedRealtimeSub = RealtimeManager.instance.subscribe('vozac_raspored').listen((_) {
+      final entries =
+          RealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
+      if (mounted) setState(() => _rasporedCache = entries);
+    });
+
+    _overrideRealtimeSub?.cancel();
+    _overrideRealtimeSub = RealtimeManager.instance.subscribe('vozac_putnik').listen((_) {
+      final entries =
+          RealtimeManager.instance.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
+      if (mounted) setState(() => _putnikOverridesCache = entries);
+    });
   }
 
   // 🛰️ GPS TRACKING INICIJALIZACIJA
@@ -170,6 +215,8 @@ class _VozacScreenState extends State<VozacScreen> {
   void dispose() {
     _driverPositionSubscription?.cancel();
     _notificationSubscription?.cancel(); // ⚡ CLEANUP
+    _rasporedRealtimeSub?.cancel(); // 🔴 Realtime raspored
+    _overrideRealtimeSub?.cancel(); // 🔴 Realtime overrides
     super.dispose();
   }
 
@@ -260,7 +307,7 @@ class _VozacScreenState extends State<VozacScreen> {
     int minDifference = 9999;
 
     // Uzmi samo dodeljena vremena za ovog vozača
-    final dodeljenaVremena = _getDodeljenaVremena();
+    final dodeljenaVremena = _rasporedVozaca();
     if (dodeljenaVremena.isEmpty) return;
 
     for (final v in dodeljenaVremena) {
@@ -685,7 +732,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final putniciRedosled = _optimizedRoute.map((p) => p.ime).toList();
 
       await DriverLocationService.instance.startTracking(
-        vozacId: _currentDriver!,
+        vozacId: VozacCache.getUuidByIme(_currentDriver!) ?? _currentDriver!,
         vozacIme: _currentDriver!,
         grad: _selectedGrad,
         vremePolaska: _selectedVreme,
@@ -848,7 +895,8 @@ class _VozacScreenState extends State<VozacScreen> {
             : StreamBuilder<List<Putnik>>(
                 stream: _putnikService.streamKombinovaniPutniciFiltered(
                   isoDate: _getWorkingDateIso(),
-                  // ? BEZ FILTERA - filtriraj client-side
+                  vozacId: VozacCache.getUuidByIme(_currentDriver ?? ''),
+                  // 📉 EGRESS OPT: RPC filtrira server-side po vozaču
                 ),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -862,15 +910,18 @@ class _VozacScreenState extends State<VozacScreen> {
                     );
                   }
 
-                  // Prikazuj putnike - filtriraj po vozac_raspored ako ima unosa
+                  // Prikazuj putnike - filtriraj po vozac_putnik (override) + vozac_raspored (termin)
                   final sviPutnici = snapshot.data ?? [];
                   final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
+                  final currentVozacId = VozacCache.getUuidByIme(_currentDriver ?? '');
                   final mojiPutnici = _currentDriver == null
                       ? sviPutnici
-                      : VozacRasporedService.filterPutniciZaVozaca<Putnik>(
+                      : VozacPutnikService.filterKombinovan<Putnik>(
                           sviPutnici: sviPutnici,
                           vozac: _currentDriver!,
+                          vozacId: currentVozacId,
                           targetDan: targetDan,
+                          overrides: _putnikOverridesCache,
                           raspored: _rasporedCache,
                           getId: (p) => p.id?.toString() ?? '',
                           getGrad: (p) => p.grad,
@@ -1003,18 +1054,31 @@ class _VozacScreenState extends State<VozacScreen> {
         bottomNavigationBar: StreamBuilder<List<Putnik>>(
           stream: _putnikService.streamKombinovaniPutniciFiltered(
             isoDate: _getWorkingDateIso(),
+            vozacId: VozacCache.getUuidByIme(_currentDriver ?? ''),
+            // 📉 EGRESS OPT: RPC filtrira server-side po vozaču
           ),
           builder: (context, snapshot) {
             final allPutnici = snapshot.data ?? <Putnik>[];
 
-            // ?? FILTER: Svi putnici koje je admin dodelio ovom vozacu za izabrani dan
-            final mojiPutnici = allPutnici.where((p) {
-              return p.dodeljenVozac == _currentDriver;
-            }).toList();
+            // FILTER: vozac_putnik (override) + vozac_raspored (termin)
+            final targetDayAbbr = _isoDateToDayAbbr(_getWorkingDateIso());
+            final currentVozacId2 = VozacCache.getUuidByIme(_currentDriver ?? '');
+            final mojiPutnici = _currentDriver == null
+                ? allPutnici
+                : VozacPutnikService.filterKombinovan<Putnik>(
+                    sviPutnici: allPutnici,
+                    vozac: _currentDriver!,
+                    vozacId: currentVozacId2,
+                    targetDan: targetDayAbbr,
+                    overrides: _putnikOverridesCache,
+                    raspored: _rasporedCache,
+                    getId: (p) => p.id?.toString() ?? '',
+                    getGrad: (p) => p.grad,
+                    getPolazak: (p) => p.polazak,
+                  );
 
             // ?? REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
             final targetDateIso = _getWorkingDateIso();
-            final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
             final countHelper = PutnikCountHelper.fromPutnici(
               putnici: mojiPutnici,
               targetDateIso: targetDateIso,
@@ -1031,18 +1095,13 @@ class _VozacScreenState extends State<VozacScreen> {
             }
 
             // ?? FILTER VREMENA: Samo dodeljena vremena za ovog vozača
-            final dodeljenaVremena = _getDodeljenaVremena(sviPutnici: allPutnici);
+            final dodeljenaVremena = _rasporedVozaca(sviPutnici: mojiPutnici);
             final assignedBcTimes = dodeljenaVremena.where((v) => v['grad'] == 'BC').map((v) => v['vreme']!).toList();
             final assignedVsTimes = dodeljenaVremena.where((v) => v['grad'] == 'VS').map((v) => v['vreme']!).toList();
 
             // Prikaži samo dodeljena vremena
             final bcVremenaToShow = assignedBcTimes.toList()..sort();
             final vsVremenaToShow = assignedVsTimes.toList()..sort();
-
-            // 🚫 SAKRIJ CEO BOTTOM BAR AKO NEMA VOŽNJI
-            if (bcVremenaToShow.isEmpty && vsVremenaToShow.isEmpty) {
-              return const SizedBox.shrink();
-            }
 
             // Helper funkcija za kreiranje nav bar-a
             Widget buildNavBar(String navType) {
@@ -1055,6 +1114,8 @@ class _VozacScreenState extends State<VozacScreen> {
                     getPutnikCount: getPutnikCount,
                     getKapacitet: getKapacitet,
                     onPolazakChanged: _onPolazakChanged,
+                    bcVremena: bcVremenaToShow,
+                    vsVremena: vsVremenaToShow,
                   );
                 case 'zimski':
                   return BottomNavBarZimski(
