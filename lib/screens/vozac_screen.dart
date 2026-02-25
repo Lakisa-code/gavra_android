@@ -117,6 +117,10 @@ class _VozacScreenState extends State<VozacScreen> {
   // 👤 VOZAC PUTNIK - per-putnik override filter
   List<VozacPutnikEntry> _putnikOverridesCache = [];
 
+  // 📉 EGRESS OPT: Cache za nav bar — puni se u body StreamBuilder-u, nav bar čita odavde
+  // Eliminisan dupli stream koji je učitavao 156 putnika 2× na svaki event
+  List<Putnik> _navBarPutnici = [];
+
   // Status varijable
   bool _isListReordered = false;
   bool _isGpsTracking = false; // 🛰️ GPS tracking status
@@ -937,6 +941,10 @@ class _VozacScreenState extends State<VozacScreen> {
                     if (noviIds.length != stariIds.length || !noviIds.every((id) => stariIds.contains(id))) {
                       setState(() => _mojiPutnici = mojiPutnici);
                     }
+                    // 📉 EGRESS OPT: Ažuriraj nav bar cache — eliminisan dupli stream
+                    if (_navBarPutnici != mojiPutnici) {
+                      _navBarPutnici = mojiPutnici;
+                    }
                   });
                   final filteredByGradVreme = mojiPutnici.where((p) {
                     // Filter po gradu
@@ -1050,105 +1058,73 @@ class _VozacScreenState extends State<VozacScreen> {
                   );
                 },
               ),
-        // ?? BOTTOM NAV BAR
-        bottomNavigationBar: StreamBuilder<List<Putnik>>(
-          stream: _putnikService.streamKombinovaniPutniciFiltered(
-            isoDate: _getWorkingDateIso(),
-            vozacId: VozacCache.getUuidByIme(_currentDriver ?? ''),
-            // 📉 EGRESS OPT: RPC filtrira server-side po vozaču
-          ),
-          builder: (context, snapshot) {
-            final allPutnici = snapshot.data ?? <Putnik>[];
-
-            // FILTER: vozac_putnik (override) + vozac_raspored (termin)
-            final targetDayAbbr = _isoDateToDayAbbr(_getWorkingDateIso());
-            final currentVozacId2 = VozacCache.getUuidByIme(_currentDriver ?? '');
-            final mojiPutnici = _currentDriver == null
-                ? allPutnici
-                : VozacPutnikService.filterKombinovan<Putnik>(
-                    sviPutnici: allPutnici,
-                    vozac: _currentDriver!,
-                    vozacId: currentVozacId2,
-                    targetDan: targetDayAbbr,
-                    overrides: _putnikOverridesCache,
-                    raspored: _rasporedCache,
-                    getId: (p) => p.id?.toString() ?? '',
-                    getGrad: (p) => p.grad,
-                    getPolazak: (p) => p.polazak,
-                  );
-
-            // ?? REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
-            final targetDateIso = _getWorkingDateIso();
-            final countHelper = PutnikCountHelper.fromPutnici(
-              putnici: mojiPutnici,
-              targetDateIso: targetDateIso,
-              targetDayAbbr: targetDayAbbr,
-            );
-
-            int getPutnikCount(String grad, String vreme) {
-              return countHelper.getCount(grad, vreme);
-            }
-
-            // ?? KAPACITET: Broj mesta za svaki polazak (real-time od admina)
-            int getKapacitet(String grad, String vreme) {
-              return KapacitetService.getKapacitetSync(grad, vreme);
-            }
-
-            // ?? FILTER VREMENA: Samo dodeljena vremena za ovog vozača
-            final dodeljenaVremena = _rasporedVozaca(sviPutnici: mojiPutnici);
-            final assignedBcTimes = dodeljenaVremena.where((v) => v['grad'] == 'BC').map((v) => v['vreme']!).toList();
-            final assignedVsTimes = dodeljenaVremena.where((v) => v['grad'] == 'VS').map((v) => v['vreme']!).toList();
-
-            // Prikaži samo dodeljena vremena
-            final bcVremenaToShow = assignedBcTimes.toList()..sort();
-            final vsVremenaToShow = assignedVsTimes.toList()..sort();
-
-            // Helper funkcija za kreiranje nav bar-a
-            Widget buildNavBar(String navType) {
-              switch (navType) {
-                case 'praznici':
-                  return BottomNavBarPraznici(
-                    sviPolasci: _sviPolasci,
-                    selectedGrad: _selectedGrad,
-                    selectedVreme: _selectedVreme,
-                    getPutnikCount: getPutnikCount,
-                    getKapacitet: getKapacitet,
-                    onPolazakChanged: _onPolazakChanged,
-                    bcVremena: bcVremenaToShow,
-                    vsVremena: vsVremenaToShow,
-                  );
-                case 'zimski':
-                  return BottomNavBarZimski(
-                    sviPolasci: _sviPolasci,
-                    selectedGrad: _selectedGrad,
-                    selectedVreme: _selectedVreme,
-                    getPutnikCount: getPutnikCount,
-                    getKapacitet: getKapacitet,
-                    onPolazakChanged: _onPolazakChanged,
-                    bcVremena: bcVremenaToShow,
-                    vsVremena: vsVremenaToShow,
-                  );
-                default: // 'letnji' ili nepoznato
-                  return BottomNavBarLetnji(
-                    sviPolasci: _sviPolasci,
-                    selectedGrad: _selectedGrad,
-                    selectedVreme: _selectedVreme,
-                    getPutnikCount: getPutnikCount,
-                    getKapacitet: getKapacitet,
-                    onPolazakChanged: _onPolazakChanged,
-                    bcVremena: bcVremenaToShow,
-                    vsVremena: vsVremenaToShow,
-                  );
-              }
-            }
-
-            return ValueListenableBuilder<String>(
-              valueListenable: navBarTypeNotifier,
-              builder: (context, navType, _) => buildNavBar(navType),
-            );
-          },
-        ),
+        // 📉 EGRESS OPT: Nav bar direktno čita iz _navBarPutnici (puni se u body streamu)
+        // Nema duplog stream poziva — eliminisan 2× učitavanjem 156 putnika
+        bottomNavigationBar: _buildNavBar(),
       ),
+    );
+  }
+
+  // 📉 EGRESS OPT: Nav bar bez sopstvenog StreamBuilder-a — koristi _navBarPutnici
+  // koji se ažurira iz body StreamBuilder-a (jedan stream za cijeli ekran)
+  Widget _buildNavBar() {
+    final targetDayAbbr = _isoDateToDayAbbr(_getWorkingDateIso());
+    final targetDateIso = _getWorkingDateIso();
+
+    final countHelper = PutnikCountHelper.fromPutnici(
+      putnici: _navBarPutnici,
+      targetDateIso: targetDateIso,
+      targetDayAbbr: targetDayAbbr,
+    );
+
+    int getPutnikCount(String grad, String vreme) => countHelper.getCount(grad, vreme);
+    int getKapacitet(String grad, String vreme) => KapacitetService.getKapacitetSync(grad, vreme);
+
+    final dodeljenaVremena = _rasporedVozaca(sviPutnici: _navBarPutnici);
+    final bcVremenaToShow = (dodeljenaVremena.where((v) => v['grad'] == 'BC').map((v) => v['vreme']!).toList()..sort());
+    final vsVremenaToShow = (dodeljenaVremena.where((v) => v['grad'] == 'VS').map((v) => v['vreme']!).toList()..sort());
+
+    Widget buildForType(String navType) {
+      switch (navType) {
+        case 'praznici':
+          return BottomNavBarPraznici(
+            sviPolasci: _sviPolasci,
+            selectedGrad: _selectedGrad,
+            selectedVreme: _selectedVreme,
+            getPutnikCount: getPutnikCount,
+            getKapacitet: getKapacitet,
+            onPolazakChanged: _onPolazakChanged,
+            bcVremena: bcVremenaToShow,
+            vsVremena: vsVremenaToShow,
+          );
+        case 'zimski':
+          return BottomNavBarZimski(
+            sviPolasci: _sviPolasci,
+            selectedGrad: _selectedGrad,
+            selectedVreme: _selectedVreme,
+            getPutnikCount: getPutnikCount,
+            getKapacitet: getKapacitet,
+            onPolazakChanged: _onPolazakChanged,
+            bcVremena: bcVremenaToShow,
+            vsVremena: vsVremenaToShow,
+          );
+        default:
+          return BottomNavBarLetnji(
+            sviPolasci: _sviPolasci,
+            selectedGrad: _selectedGrad,
+            selectedVreme: _selectedVreme,
+            getPutnikCount: getPutnikCount,
+            getKapacitet: getKapacitet,
+            onPolazakChanged: _onPolazakChanged,
+            bcVremena: bcVremenaToShow,
+            vsVremena: vsVremenaToShow,
+          );
+      }
+    }
+
+    return ValueListenableBuilder<String>(
+      valueListenable: navBarTypeNotifier,
+      builder: (context, navType, _) => buildForType(navType),
     );
   }
 
