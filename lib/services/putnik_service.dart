@@ -17,13 +17,12 @@ class _StreamParams {
   final String? isoDate;
   final String? grad;
   final String? vreme;
-  final String? vozacId; // 📉 EGRESS OPT: UUID vozača za server-side filter
+  final String? vozacId;
 }
 
 class PutnikService {
   SupabaseClient get supabase => globals_file.supabase;
 
-  // 📉 EGRESS OPT: Samo kolone koje Putnik/RegistrovaniPutnik.fromMap() zaista koristi
   static const String registrovaniFields =
       'id, putnik_ime, broj_telefona, broj_telefona_2, broj_telefona_oca, broj_telefona_majke, '
       'tip, tip_skole, adresa_bela_crkva_id, adresa_vrsac_id, '
@@ -45,7 +44,6 @@ class PutnikService {
   static StreamSubscription? _globalVozacPutnikListener;
   static StreamSubscription? _globalVozacRasporedListener;
 
-  // 📉 EGRESS OPT: Debounce timer — sprječava seriju fetch-ova na burst realtime evente
   static Timer? _refreshDebounceTimer;
 
   String _streamKey({String? isoDate, String? grad, String? vreme, String? vozacId}) =>
@@ -151,16 +149,7 @@ class PutnikService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 🔧 CACHE-BASED JOIN — replicira RPC logiku u Dart-u (0 DB upita)
-  // ---------------------------------------------------------------------------
-
-  /// Gradi Putnik objekat iz 3 cache redova — zamjena za RPC `get_putnoci_sa_statusom`.
-  /// Prima:
-  ///   [srRow]   — red iz seat_requests cache-a
-  ///   [vlRows]  — svi voznje_log redovi za ovog putnika za taj dan
-  ///   [rp]      — red iz registrovani_putnici cache-a (null ako nije pronađen)
-  ///   [isoDate] — datum za koji gradimo putnika ('yyyy-MM-dd')
+  /// Gradi Putnik objekat iz cache redova.
   static Putnik _buildPutnik(
     Map<String, dynamic> srRow,
     List<Map<String, dynamic>> vlRows,
@@ -170,7 +159,7 @@ class PutnikService {
     final srGrad = (srRow['grad'] ?? '').toString().toUpperCase();
     final srVreme = (srRow['dodeljeno_vreme'] ?? srRow['zeljeno_vreme'])?.toString();
 
-    // Filtriraj voznje_log samo za isti grad i vreme (replicira RPC WHERE logiku)
+    // Filtriraj voznje_log samo za isti grad i vreme
     List<Map<String, dynamic>> matchedVl = vlRows.where((vl) {
       final vlGrad = (vl['grad'] ?? '').toString().toUpperCase();
       final vlVreme = vl['vreme_polaska']?.toString();
@@ -277,8 +266,7 @@ class PutnikService {
 
   /// Fetcha i filtrira putnike za zadani datum/grad/vreme/vozacId.
   /// Koristi cache za danas, DB upit za ostale datume.
-  Future<List<Putnik>> _fetchPutnici(
-      {String? isoDate, String? grad, String? vreme, String? vozacId}) async {
+  Future<List<Putnik>> _fetchPutnici({String? isoDate, String? grad, String? vreme, String? vozacId}) async {
     final todayDate = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
     final rm = RealtimeManager.instance;
 
@@ -301,14 +289,12 @@ class PutnikService {
       }
       if (vozacId != null) {
         final putnikId = p.id?.toString() ?? '';
-        final override =
-            rm.vozacPutnikCache.values.where((vp) => vp['putnik_id']?.toString() == putnikId).firstOrNull;
+        final override = rm.vozacPutnikCache.values.where((vp) => vp['putnik_id']?.toString() == putnikId).firstOrNull;
         if (override != null) return override['vozac_id']?.toString() == vozacId;
         final rasporedZaTermin = rm.rasporedCache.values
             .where((vr) =>
                 vr['dan']?.toString() == danKratica &&
-                vr['grad']?.toString().toUpperCase() ==
-                    GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() &&
+                vr['grad']?.toString().toUpperCase() == GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() &&
                 vr['vreme']?.toString() == GradAdresaValidator.normalizeTime(p.polazak))
             .toList();
         if (rasporedZaTermin.isEmpty) return true;
@@ -328,83 +314,37 @@ class PutnikService {
       String key, String? isoDate, String? grad, String? vreme, StreamController<List<Putnik>> controller) {
     // 🌐 SETUP GLOBALNIH SHARED LISTENER-A (samo ako već nisu kreirani)
 
-    // Listener za seat_requests — ⚡ ažuriraj cache + patch putnika (0 DB upita)
+    // Listener za seat_requests — ažuriraj cache + debounce refresh
     if (_globalSeatRequestsListener == null) {
       _globalSeatRequestsListener = RealtimeManager.instance.subscribe('seat_requests').listen((payload) {
         final record = payload.newRecord;
-        final putnikId = record['putnik_id']?.toString();
-        final recGrad = record['grad']?.toString();
-        final recDan = record['dan']?.toString();
-        final recVreme = (record['dodeljeno_vreme'] ?? record['zeljeno_vreme'])?.toString();
-
-        debugPrint(
-            '⚡ [PutnikService] seat_requests event: putnik=$putnikId, grad=$recGrad, dan=$recDan, vreme=$recVreme');
-
-        // 1. Ažuriraj srCache direktno iz payloada
+        debugPrint('⚡ [PutnikService] seat_requests event: putnik=${record['putnik_id']}');
         RealtimeManager.instance.updateSrCache(record);
-
-        if (putnikId != null && recGrad != null && recDan != null) {
-          _patchPutnikInMatchingStreams(
-            putnikId: putnikId,
-            grad: recGrad,
-            dan: recDan,
-            vreme: recVreme,
-          );
-        } else {
-          debugPrint('⚠️ [PutnikService] seat_requests payload nepotpun, fallback na full refresh');
-          _debouncedRefreshAllStreams();
-        }
+        _debouncedRefreshAllStreams();
       });
-      debugPrint('✅ [PutnikService] Globalni seat_requests listener kreiran (cache+patch mode)');
+      debugPrint('✅ [PutnikService] Globalni seat_requests listener kreiran');
     }
 
-    // Listener za voznje_log — ⚡ ažuriraj cache + patch putnika (0 DB upita)
+    // Listener za voznje_log — ažuriraj cache + debounce refresh
     if (_globalVoznjeLogListener == null) {
       _globalVoznjeLogListener = RealtimeManager.instance.subscribe('voznje_log').listen((payload) {
         final record = payload.newRecord;
-        final putnikId = record['putnik_id']?.toString();
-        final recDatum = record['datum']?.toString();
-        final recGrad = record['grad']?.toString();
-        final recVreme = record['vreme_polaska']?.toString();
-
-        debugPrint(
-            '⚡ [PutnikService] voznje_log event: putnik=$putnikId, datum=$recDatum, grad=$recGrad, vreme=$recVreme');
-
-        // 1. Ažuriraj vlCache direktno iz payloada
+        debugPrint('⚡ [PutnikService] voznje_log event: putnik=${record['putnik_id']}');
         RealtimeManager.instance.updateVlCache(record);
-
-        if (putnikId != null && recDatum != null) {
-          _patchPutnikByIdInStreams(
-            putnikId: putnikId,
-            isoDate: recDatum.split('T')[0],
-            grad: recGrad,
-            vreme: recVreme,
-          );
-        } else {
-          debugPrint('⚠️ [PutnikService] voznje_log payload nepotpun, fallback na full refresh');
-          _debouncedRefreshAllStreams();
-        }
+        _debouncedRefreshAllStreams();
       });
-      debugPrint('✅ [PutnikService] Globalni voznje_log listener kreiran (cache+patch mode)');
+      debugPrint('✅ [PutnikService] Globalni voznje_log listener kreiran');
     }
 
-    // Listener za registrovani_putnici — ažuriraj rpCache + patch stream
+    // Listener za registrovani_putnici — ažuriraj rpCache + debounce refresh
     if (_globalRegistrovaniListener == null) {
       _globalRegistrovaniListener = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
         final record = payload.newRecord;
         debugPrint('🔄 [PutnikService] registrovani_putnici event: ${payload.eventType}');
-        // 1. Ažuriraj rpCache direktno iz payloada
         RealtimeManager.instance.updateRpCache(record);
-        // 2. Refresh streamova za ovog putnika
-        final putnikId = record['id']?.toString();
-        if (putnikId != null) {
-          final today = DateTime.now().toIso8601String().split('T')[0];
-          _patchPutnikByIdInStreams(putnikId: putnikId, isoDate: today);
-        } else {
-          _debouncedRefreshAllStreams();
-        }
+        _debouncedRefreshAllStreams();
       });
-      debugPrint('✅ [PutnikService] Globalni registrovani_putnici listener kreiran (cache+patch mode)');
+      debugPrint('✅ [PutnikService] Globalni registrovani_putnici listener kreiran');
     }
 
     // Listener za vozac_putnik — kada se doda/promijeni/briše override, refresh svih streamova
@@ -426,158 +366,7 @@ class PutnikService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // ⚡ PATCH METODE — osvježavaju samo jednog putnika u cache-u
-  // ---------------------------------------------------------------------------
-
-  /// Konvertuje tekstualni naziv dana u ISO datum (na osnovu najbližeg dana u
-  /// aktivnim streamovima koji odgovaraju tom danu u sedmici).
-  /// Ako `dan` već izgleda kao ISO datum (yyyy-mm-dd), vraća ga direktno.
-  static String? _danToIsoDate(String dan, Iterable<String?> activeIsoDates) {
-    // Ako je već ISO datum format
-    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dan)) return dan;
-
-    // Mapa naziva dana na weekday broj (Dart: Mon=1, Sun=7)
-    // Podržava i kratice (pon/uto...) koje baza/realtime koristi I pune nazive
-    const danMap = {
-      // Kratice iz seat_requests.dan kolone (realtime payload)
-      'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7,
-      // Puni nazivi (fallback)
-      'ponedeljak': 1, 'utorak': 2, 'sreda': 3, 'cetvrtak': 4,
-      'petak': 5, 'subota': 6, 'nedelja': 7,
-    };
-    final targetWeekday = danMap[dan.toLowerCase()];
-    if (targetWeekday == null) return null;
-
-    // Traži u aktivnim stream datumima koji odgovara ovom danu
-    for (final iso in activeIsoDates) {
-      if (iso == null || iso.isEmpty) continue;
-      try {
-        final dt = DateTime.parse(iso);
-        if (dt.weekday == targetWeekday) return iso;
-      } catch (_) {}
-    }
-    return null;
-  }
-
-  /// ⚡ Fetcha jednog putnika i patchi ga u svim matchujućim streamovima.
-  /// Koristi se za `seat_requests` realtime evente.
-  Future<void> _patchPutnikInMatchingStreams({
-    required String putnikId,
-    required String grad,
-    required String dan,
-    String? vreme,
-  }) async {
-    // Pronađi ISO datum na osnovu 'dan' polja i aktivnih streamova
-    final activeIsoDates = _streamParams.values.map((p) => p.isoDate);
-    final isoDate = _danToIsoDate(dan, activeIsoDates);
-
-    if (isoDate == null) {
-      debugPrint('⚠️ [PutnikService] Ne mogu konvertovati dan="$dan" u ISO datum, fallback full refresh');
-      _debouncedRefreshAllStreams();
-      return;
-    }
-
-    await _patchPutnikByIdInStreams(putnikId: putnikId, isoDate: isoDate, grad: grad, vreme: vreme);
-  }
-
-  /// ⚡ Patchi jednog putnika u svim streamovima direktno iz cache-a (0 DB upita).
-  /// Koristi se za seat_requests i voznje_log realtime evente.
-  Future<void> _patchPutnikByIdInStreams({
-    required String putnikId,
-    required String isoDate,
-    String? grad,
-    String? vreme,
-  }) async {
-    // Pronađi seat_request iz cache-a za ovog putnika
-    Putnik? svjezPutnik;
-    try {
-      final rm = RealtimeManager.instance;
-
-      // Nađi seat_request red za ovog putnika iz srCache
-      final srRow = rm.srCache.values.where((r) => r['putnik_id']?.toString() == putnikId).firstOrNull;
-
-      if (srRow != null) {
-        // Sve voznje_log redove za ovog putnika (za tekući dan)
-        final vlRows = rm.vlCache.values.where((r) => r['putnik_id']?.toString() == putnikId).toList();
-
-        // Profil iz rpCache
-        final rp = rm.rpCache[putnikId];
-
-        // JOIN u Dart-u — 0 DB upita
-        svjezPutnik = _buildPutnik(srRow, vlRows, rp, isoDate);
-      }
-    } catch (e) {
-      debugPrint('⚠️ [PutnikService] Patch cache error za putnik=$putnikId: $e, fallback full refresh');
-      _debouncedRefreshAllStreams();
-      return;
-    }
-
-    // Patchi u svim matchujućim aktivnim streamovima
-    int patchedCount = 0;
-    for (final entry in _streams.entries) {
-      final key = entry.key;
-      final controller = entry.value;
-      if (controller.isClosed) continue;
-
-      final params = _streamParams[key];
-      if (params == null) continue;
-
-      // Match kriteriji: isti datum i grad (ako je grad zadan)
-      final keyDate = (params.isoDate ?? '').split('T')[0];
-      if (keyDate != isoDate) continue;
-      if (grad != null) {
-        final gradNorm = GradAdresaValidator.normalizeGrad(grad).toLowerCase();
-        final paramsGrad = params.grad != null ? GradAdresaValidator.normalizeGrad(params.grad!).toLowerCase() : null;
-        if (paramsGrad != null && paramsGrad != gradNorm) continue;
-      }
-      // vreme filter: ako stream ima specifičan vreme, provjeri matchuje li
-      if (vreme != null && params.vreme != null) {
-        final vremeNorm = '${GradAdresaValidator.normalizeTime(vreme)}:00';
-        final paramsVremeNorm = '${GradAdresaValidator.normalizeTime(params.vreme!)}:00';
-        if (vremeNorm != paramsVremeNorm) continue;
-      }
-
-      final current = List<Putnik>.from(_lastValues[key] ?? []);
-
-      if (svjezPutnik == null ||
-          svjezPutnik.status == 'bez_polaska' ||
-          svjezPutnik.status == 'cancelled' ||
-          svjezPutnik.status == 'otkazano') {
-        // Putnik treba biti uklonjen iz liste
-        final before = current.length;
-        current.removeWhere((p) => p.id?.toString() == putnikId);
-        if (current.length != before) {
-          _lastValues[key] = current;
-          controller.add(current);
-          debugPrint('⚡ [PutnikService] PATCH uklonjen putnik=$putnikId iz stream=$key');
-          patchedCount++;
-        }
-      } else {
-        // Dodaj ili zamijeni putnika
-        final idx = current.indexWhere((p) => p.id?.toString() == putnikId);
-        if (idx >= 0) {
-          current[idx] = svjezPutnik;
-          debugPrint(
-              '⚡ [PutnikService] PATCH zamijenjen putnik=$putnikId u stream=$key (status=${svjezPutnik.status})');
-        } else {
-          current.add(svjezPutnik);
-          debugPrint(
-              '⚡ [PutnikService] PATCH dodan novi putnik=$putnikId u stream=$key (status=${svjezPutnik.status})');
-        }
-        _lastValues[key] = current;
-        controller.add(current);
-        patchedCount++;
-      }
-    }
-
-    if (patchedCount == 0) {
-      debugPrint('⚡ [PutnikService] PATCH putnik=$putnikId nije našao matching stream (datum=$isoDate, grad=$grad)');
-    }
-  }
-
-  /// 📉 EGRESS OPT: Debounce — čeka 600ms od zadnjeg eventa pa tek onda refreshuje
-  /// Sprječava N×fetch kad korisnik brzo označi više putnika ili dođe burst eventa
+  /// Debounce — čeka 600ms od zadnjeg eventa pa refreshuje sve aktivne streamove
   void _debouncedRefreshAllStreams() {
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(const Duration(milliseconds: 600), () {
@@ -660,20 +449,8 @@ class PutnikService {
     try {
       final String danasStr = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
       final idStrings = ids.map((id) => id.toString()).toSet();
-      final rm = RealtimeManager.instance;
-
-      return rm.srCache.values
-          .where((sr) => idStrings.contains(sr['putnik_id']?.toString()))
-          .map((sr) {
-            final putnikId = sr['putnik_id']?.toString();
-            final vlRows = putnikId != null
-                ? rm.vlCache.values.where((vl) => vl['putnik_id']?.toString() == putnikId).toList()
-                : <Map<String, dynamic>>[];
-            final rp = putnikId != null ? rm.rpCache[putnikId] : null;
-            return _buildPutnik(sr, vlRows, rp, danasStr);
-          })
-          .where((p) => p.status != 'bez_polaska' && p.status != 'cancelled')
-          .toList();
+      final svi = await getPutniciByDayIso(danasStr);
+      return svi.where((p) => idStrings.contains(p.id?.toString())).toList();
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error in getPutniciByIds: $e');
       return [];
@@ -683,19 +460,7 @@ class PutnikService {
   Future<List<Putnik>> getAllPutnici({String? targetDay, String? isoDate}) async {
     try {
       final String danasStr = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
-      final rm = RealtimeManager.instance;
-
-      return rm.srCache.values
-          .map((sr) {
-            final putnikId = sr['putnik_id']?.toString();
-            final vlRows = putnikId != null
-                ? rm.vlCache.values.where((vl) => vl['putnik_id']?.toString() == putnikId).toList()
-                : <Map<String, dynamic>>[];
-            final rp = putnikId != null ? rm.rpCache[putnikId] : null;
-            return _buildPutnik(sr, vlRows, rp, danasStr);
-          })
-          .where((p) => p.status != 'bez_polaska' && p.status != 'cancelled')
-          .toList();
+      return await getPutniciByDayIso(danasStr);
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error in getAllPutnici: $e');
       return [];
