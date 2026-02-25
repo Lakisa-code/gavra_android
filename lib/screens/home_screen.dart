@@ -23,8 +23,10 @@ import '../services/local_notification_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/racun_service.dart';
+import '../services/realtime/realtime_manager.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart';
+import '../services/vozac_raspored_service.dart';
 import '../services/seat_request_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
@@ -2655,6 +2657,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   /// Helper metoda za kreiranje bottom nav bar-a prema tipu
+  /// 🎨 Boja vozača za termin (za bottom nav bar border)
+  Color? _getVozacColorForTermin(String grad, String vreme) {
+    final dan = _getDayAbbreviation(_selectedDay);
+    final entry = RealtimeManager.instance.rasporedCache.values
+        .map((row) => VozacRasporedEntry.fromMap(row))
+        .where((r) => r.dan == dan && r.grad == grad && r.vreme == vreme)
+        .firstOrNull;
+    if (entry == null) return null;
+    return VozacCache.getColor(entry.vozacId ?? entry.vozac);
+  }
+
   Widget _buildBottomNavBar(String navType, int Function(String, String) getPutnikCount) {
     void onChanged(String grad, String vreme) {
       if (mounted) {
@@ -2676,6 +2689,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
           showVozacBoja: true,
+          getVozacColor: _getVozacColorForTermin,
         );
       case 'zimski':
         return BottomNavBarZimski(
@@ -2687,6 +2701,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
           showVozacBoja: true,
+          getVozacColor: _getVozacColorForTermin,
         );
       default: // 'letnji' ili nepoznato
         return BottomNavBarLetnji(
@@ -2698,6 +2713,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
           showVozacBoja: true,
+          getVozacColor: _getVozacColorForTermin,
         );
     }
   }
