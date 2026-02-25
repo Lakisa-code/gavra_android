@@ -61,14 +61,14 @@ class PutnikService {
           if (!controller.isClosed) controller.add(_lastValues[key]!);
         });
       } else {
-        _doFetchForStream(key, isoDate, grad, vreme, controller, vozacId: vozacId);
+        _fetchAndEmit(key, isoDate, grad, vreme, controller, vozacId: vozacId);
       }
       return controller.stream;
     }
     final controller = StreamController<List<Putnik>>.broadcast();
     _streams[key] = controller;
     _streamParams[key] = _StreamParams(isoDate: isoDate, grad: grad, vreme: vreme, vozacId: vozacId);
-    _doFetchForStream(key, isoDate, grad, vreme, controller, vozacId: vozacId);
+    _fetchAndEmit(key, isoDate, grad, vreme, controller, vozacId: vozacId);
     controller.onCancel = () {
       _streams.remove(key);
       _lastValues.remove(key);
@@ -260,72 +260,62 @@ class PutnikService {
     return Putnik.fromSeatRequest(map);
   }
 
-  Future<void> _doFetchForStream(
+  /// Fetcha putnike i emituje u controller. Jezgro stream logike.
+  Future<void> _fetchAndEmit(
       String key, String? isoDate, String? grad, String? vreme, StreamController<List<Putnik>> controller,
       {String? vozacId}) async {
     try {
-      final todayDate = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
-      final rm = RealtimeManager.instance;
-
-      // Čekaj cache ako nije još inicijalizovan (race condition pri startu)
-      if (!rm.isInitialized) {
-        await Future.delayed(const Duration(milliseconds: 300));
-      }
-
-      // 📥 Učitaj sve putnike za traženi datum (cache za danas, DB za ostale)
-      final sviPutnici = await getPutniciByDayIso(todayDate);
-
-      final gradNorm = grad == null ? null : GradAdresaValidator.normalizeGrad(grad).toUpperCase();
-      final vremeNorm = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
-      final danKratica = _isoToDanKratica(todayDate);
-
-      // Filtriraj po grad/vreme/vozacId
-      final results = sviPutnici.where((p) {
-        // Grad filter
-        if (gradNorm != null) {
-          final pGrad = GradAdresaValidator.normalizeGrad(p.grad).toUpperCase();
-          if (pGrad != gradNorm) return false;
-        }
-        // Vreme filter
-        if (vremeNorm != null) {
-          final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
-          if (pVreme != vremeNorm) return false;
-        }
-        // vozacId filter — per-putnik override + per-termin raspored
-        if (vozacId != null) {
-          final putnikId = p.id?.toString() ?? '';
-          // 1. Per-putnik override
-          final override = rm.vozacPutnikCache.values
-              .where((vp) => vp['putnik_id']?.toString() == putnikId)
-              .firstOrNull;
-          if (override != null) {
-            return override['vozac_id']?.toString() == vozacId;
-          }
-          // 2. Per-termin raspored
-          final rasporedZaTermin = rm.rasporedCache.values
-              .where((vr) =>
-                  vr['dan']?.toString() == danKratica &&
-                  vr['grad']?.toString().toUpperCase() ==
-                      GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() &&
-                  vr['vreme']?.toString() ==
-                      GradAdresaValidator.normalizeTime(p.polazak))
-              .toList();
-          if (rasporedZaTermin.isEmpty) return true; // nema termina → vidljivo svima
-          return rasporedZaTermin.any((vr) => vr['vozac_id']?.toString() == vozacId);
-        }
-        return true;
-      }).toList();
-
-      debugPrint(
-          '🔍 [_doFetchForStream] key=$key, datum=$todayDate, grad=$gradNorm, vreme=$vremeNorm → ${results.length} putnika');
-
+      final results = await _fetchPutnici(isoDate: isoDate, grad: grad, vreme: vreme, vozacId: vozacId);
       _lastValues[key] = results;
       if (!controller.isClosed) controller.add(results);
       _setupRealtimeRefresh(key, isoDate, grad, vreme, controller);
     } catch (e) {
-      debugPrint('⚠️ [PutnikService] Error in stream fetch: $e');
+      debugPrint('\u26a0\ufe0f [PutnikService] Error in stream fetch: $e');
       if (!controller.isClosed) controller.add([]);
     }
+  }
+
+  /// Fetcha i filtrira putnike za zadani datum/grad/vreme/vozacId.
+  /// Koristi cache za danas, DB upit za ostale datume.
+  Future<List<Putnik>> _fetchPutnici(
+      {String? isoDate, String? grad, String? vreme, String? vozacId}) async {
+    final todayDate = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
+    final rm = RealtimeManager.instance;
+
+    if (!rm.isInitialized) {
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    final sviPutnici = await getPutniciByDayIso(todayDate);
+
+    final gradNorm = grad == null ? null : GradAdresaValidator.normalizeGrad(grad).toUpperCase();
+    final vremeNorm = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
+    final danKratica = _isoToDanKratica(todayDate);
+
+    return sviPutnici.where((p) {
+      if (gradNorm != null) {
+        if (GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() != gradNorm) return false;
+      }
+      if (vremeNorm != null) {
+        if (GradAdresaValidator.normalizeTime(p.polazak) != vremeNorm) return false;
+      }
+      if (vozacId != null) {
+        final putnikId = p.id?.toString() ?? '';
+        final override =
+            rm.vozacPutnikCache.values.where((vp) => vp['putnik_id']?.toString() == putnikId).firstOrNull;
+        if (override != null) return override['vozac_id']?.toString() == vozacId;
+        final rasporedZaTermin = rm.rasporedCache.values
+            .where((vr) =>
+                vr['dan']?.toString() == danKratica &&
+                vr['grad']?.toString().toUpperCase() ==
+                    GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() &&
+                vr['vreme']?.toString() == GradAdresaValidator.normalizeTime(p.polazak))
+            .toList();
+        if (rasporedZaTermin.isEmpty) return true;
+        return rasporedZaTermin.any((vr) => vr['vozac_id']?.toString() == vozacId);
+      }
+      return true;
+    }).toList();
   }
 
   /// Konvertuje ISO datum u kraticu dana ('pon', 'uto', ...)
@@ -603,9 +593,7 @@ class PutnikService {
       final controller = entry.value;
       final params = _streamParams[key];
       if (params != null && !controller.isClosed) {
-        debugPrint(
-            '🔄 [PutnikService] Refreshujem stream: isoDate=${params.isoDate}, grad=${params.grad}, vreme=${params.vreme}, vozacId=${params.vozacId}');
-        _doFetchForStream(key, params.isoDate, params.grad, params.vreme, controller, vozacId: params.vozacId);
+        _fetchAndEmit(key, params.isoDate, params.grad, params.vreme, controller, vozacId: params.vozacId);
       }
     }
   }
