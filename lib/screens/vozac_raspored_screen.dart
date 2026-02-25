@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/route_config.dart';
 import '../constants/day_constants.dart';
+import '../globals.dart';
 import '../services/theme_manager.dart';
 import '../services/vozac_raspored_service.dart';
 import '../services/vozac_service.dart';
@@ -58,7 +59,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   }
 
   List<String> _vremeOptionsForGrad(String grad) {
-    final navType = ThemeManager().currentNavBarType;
+    final navType = navBarTypeNotifier.value;
     if (grad == 'BC') {
       if (navType == 'praznici') return RouteConfig.bcVremenaPraznici;
       if (navType == 'zimski') return RouteConfig.bcVremenaZimski;
@@ -70,20 +71,15 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     }
   }
 
-  List<VozacRasporedEntry> get _terminiZaDan =>
-      _raspored.where((r) => r.dan == _selectedDan).toList();
+  List<VozacRasporedEntry> get _terminiZaDan => _raspored.where((r) => r.dan == _selectedDan).toList();
 
-  String get _selectedDanLabel =>
-      DayConstants.dayNamesInternal[DayConstants.dayAbbreviations.indexOf(_selectedDan)];
+  String get _selectedDanLabel => DayConstants.dayNamesInternal[DayConstants.dayAbbreviations.indexOf(_selectedDan)];
 
   Future<void> _dodaj() async {
     if (_selVozac == null || _selVreme.isEmpty) return;
 
-    final exists = _raspored.any((r) =>
-        r.dan == _selectedDan &&
-        r.grad == _selGrad &&
-        r.vreme == _selVreme &&
-        r.vozac == _selVozac);
+    final exists = _raspored
+        .any((r) => r.dan == _selectedDan && r.grad == _selGrad && r.vreme == _selVreme && r.vozac == _selVozac);
     if (exists) {
       if (mounted) AppSnackBar.error(context, '⚠️ Već postoji: $_selVozac — $_selGrad $_selVreme');
       return;
@@ -138,9 +134,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                     _buildDanSelector(),
                     const SizedBox(height: 4),
                     Expanded(
-                      child: _terminiZaDan.isEmpty
-                          ? _buildPraznaLista()
-                          : _buildTerminiLista(),
+                      child: _terminiZaDan.isEmpty ? _buildPraznaLista() : _buildTerminiLista(),
                     ),
                     _buildAddBar(),
                   ],
@@ -169,9 +163,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? Colors.white.withOpacity(0.18)
-                      : Colors.white.withOpacity(0.06),
+                  color: selected ? Colors.white.withOpacity(0.18) : Colors.white.withOpacity(0.06),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: selected ? Colors.white : Colors.white.withOpacity(0.15),
@@ -198,8 +190,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                         ),
                         child: Text(
                           '$count',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -219,19 +210,16 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.calendar_today_outlined,
-              size: 56, color: Colors.white.withOpacity(0.25)),
+          Icon(Icons.calendar_today_outlined, size: 56, color: Colors.white.withOpacity(0.25)),
           const SizedBox(height: 14),
           Text(
             'Nema rasporeda za $_selectedDanLabel',
-            style:
-                TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 15),
+            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 15),
           ),
           const SizedBox(height: 6),
           Text(
             'Svi vozači vide sve putnike.',
-            style:
-                TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+            style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
           ),
         ],
       ),
@@ -282,26 +270,18 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                   decoration: BoxDecoration(
-                    color: isBC
-                        ? Colors.blue.withOpacity(0.3)
-                        : Colors.green.withOpacity(0.3),
+                    color: isBC ? Colors.blue.withOpacity(0.3) : Colors.green.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     entries.first.grad,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   entries.first.vreme,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 17),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
                 ),
                 const Spacer(),
                 Text(
@@ -329,20 +309,14 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
             backgroundColor: boja.withOpacity(0.85),
             child: Text(
               r.vozac.substring(0, 1).toUpperCase(),
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               r.vozac,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
             ),
           ),
           GestureDetector(
@@ -353,8 +327,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                 color: Colors.red.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.remove_circle_outline,
-                  color: Colors.red.withOpacity(0.8), size: 20),
+              child: Icon(Icons.remove_circle_outline, color: Colors.red.withOpacity(0.8), size: 20),
             ),
           ),
         ],
@@ -365,14 +338,12 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   // ── ADD BAR ─────────────────────────────────────────────────────────────────
   Widget _buildAddBar() {
     final vremeOpts = _vremeOptionsForGrad(_selGrad);
-    final validVreme =
-        vremeOpts.contains(_selVreme) ? _selVreme : (vremeOpts.isNotEmpty ? vremeOpts.first : null);
+    final validVreme = vremeOpts.contains(_selVreme) ? _selVreme : (vremeOpts.isNotEmpty ? vremeOpts.first : null);
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.3),
-        border: Border(
-            top: BorderSide(color: Colors.white.withOpacity(0.13), width: 1.5)),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.13), width: 1.5)),
       ),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
       child: Column(
@@ -381,10 +352,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
         children: [
           Text(
             'Dodaj za $_selectedDanLabel:',
-            style: const TextStyle(
-                color: Colors.white60,
-                fontSize: 12,
-                fontWeight: FontWeight.w500),
+            style: const TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
           Row(
@@ -461,9 +429,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
             margin: const EdgeInsets.only(right: 4),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: isSel
-                  ? Colors.blue.withOpacity(0.45)
-                  : Colors.white.withOpacity(0.08),
+              color: isSel ? Colors.blue.withOpacity(0.45) : Colors.white.withOpacity(0.08),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isSel ? Colors.blue : Colors.white.withOpacity(0.2),
@@ -503,16 +469,13 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
           value: value,
           dropdownColor: const Color(0xFF1A2340),
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down,
-              color: Colors.white54, size: 18),
-          hint: Text(hint,
-              style: const TextStyle(color: Colors.white38, fontSize: 13)),
+          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white54, size: 18),
+          hint: Text(hint, style: const TextStyle(color: Colors.white38, fontSize: 13)),
           style: const TextStyle(color: Colors.white, fontSize: 14),
           items: items
               .map((v) => DropdownMenuItem(
                     value: v,
-                    child:
-                        Text(v, style: const TextStyle(color: Colors.white)),
+                    child: Text(v, style: const TextStyle(color: Colors.white)),
                   ))
               .toList(),
           onChanged: onChanged,
