@@ -22,8 +22,8 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   List<String> _vozaci = [];
   bool _isLoading = true;
 
-  // Za dodavanje novog
-  String _selDan = 'pon';
+  // Za dodavanje novog (koristimo kratice kao vrednosti: 'pon','uto',...)
+  String _selDan = DayConstants.dayAbbreviations.first;
   String _selGrad = 'BC';
   String _selVreme = '07:00';
   String? _selVozac;
@@ -105,30 +105,25 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Dodaj raspored',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16)),
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          // DAN
+                          // DAN (vrednosti su kratice, label puni nazivi)
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: _selDan,
                               dropdownColor: Colors.blueGrey[800],
                               style: const TextStyle(color: Colors.white),
                               decoration: _inputDecor('Dan'),
-                              items: DayConstants.dayNamesInternal
-                                  .map((d) => DropdownMenuItem(
-                                        value: d,
-                                        child: Text(d,
-                                            style: const TextStyle(
-                                                color: Colors.white)),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _selDan = v!),
+                              items: List.generate(DayConstants.dayAbbreviations.length, (i) {
+                                return DropdownMenuItem(
+                                  value: DayConstants.dayAbbreviations[i],
+                                  child: Text(DayConstants.dayNamesInternal[i],
+                                      style: const TextStyle(color: Colors.white)),
+                                );
+                              }),
+                              onChanged: (v) => setState(() => _selDan = v!),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -140,15 +135,9 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                               style: const TextStyle(color: Colors.white),
                               decoration: _inputDecor('Grad'),
                               items: ['BC', 'VS']
-                                  .map((g) => DropdownMenuItem(
-                                        value: g,
-                                        child: Text(g,
-                                            style: const TextStyle(
-                                                color: Colors.white)),
-                                      ))
+                                  .map((g) => DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(color: Colors.white))))
                                   .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _selGrad = v!),
+                              onChanged: (v) => setState(() => _selGrad = v!),
                             ),
                           ),
                         ],
@@ -159,22 +148,17 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                           // VREME
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _vremeOptions.contains(_selVreme)
-                                  ? _selVreme
-                                  : _vremeOptions.first,
+                              value: _vremeOptions.contains(_selVreme) ? _selVreme : _vremeOptions.first,
                               dropdownColor: Colors.blueGrey[800],
                               style: const TextStyle(color: Colors.white),
                               decoration: _inputDecor('Vreme'),
                               items: _vremeOptions
                                   .map((v) => DropdownMenuItem(
                                         value: v,
-                                        child: Text(v,
-                                            style: const TextStyle(
-                                                color: Colors.white)),
+                                        child: Text(v, style: const TextStyle(color: Colors.white)),
                                       ))
                                   .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _selVreme = v!),
+                              onChanged: (v) => setState(() => _selVreme = v!),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -188,13 +172,10 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                               items: _vozaci
                                   .map((v) => DropdownMenuItem(
                                         value: v,
-                                        child: Text(v,
-                                            style: const TextStyle(
-                                                color: Colors.white)),
+                                        child: Text(v, style: const TextStyle(color: Colors.white)),
                                       ))
                                   .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _selVozac = v),
+                              onChanged: (v) => setState(() => _selVozac = v),
                             ),
                           ),
                         ],
@@ -239,24 +220,19 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                                   backgroundColor: Colors.blue.withOpacity(0.3),
                                   child: Text(
                                     r.vozac.substring(0, 1).toUpperCase(),
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                                 title: Text(
                                   '${r.vozac}  •  ${r.grad} ${r.vreme}',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                                 ),
                                 subtitle: Text(
                                   r.dan,
                                   style: const TextStyle(color: Colors.white54),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.delete_outline,
-                                      color: Colors.red),
+                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
                                   onPressed: () => _obrisi(r),
                                 ),
                               ),
@@ -282,8 +258,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       isDense: true,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
     );
   }
 }

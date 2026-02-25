@@ -30,8 +30,8 @@ import 'pin_zahtevi_screen.dart'; // 🔑 PIN ZAHTEVI
 import 'putnik_action_log_screen.dart'; // 👤 Dnevnik akcija putnika
 import 'registrovani_putnici_screen.dart';
 import 'vozac_action_log_screen.dart'; // 📋 Dnevnik akcija vozača
-import 'vozac_screen.dart';
 import 'vozac_raspored_screen.dart'; // 🗓️ Raspored vozača
+import 'vozac_screen.dart';
 import 'vozaci_admin_screen.dart'; // Admin panel za upravljanje vozačima
 
 class AdminScreen extends StatefulWidget {
