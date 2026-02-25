@@ -83,6 +83,21 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   }
 
   Future<void> _loadAll() async {
+    // Preferira RealtimeManager cache (sync, bez DB poziva) — konzistentno s vozac_screen
+    final rmRaspored = RealtimeManager.instance.rasporedCache;
+    final rmPutnik = RealtimeManager.instance.vozacPutnikCache;
+
+    if (rmRaspored.isNotEmpty || rmPutnik.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _rasporedCache = rmRaspored.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
+          _putnikOverridesCache = rmPutnik.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
+        });
+      }
+      return;
+    }
+
+    // Fallback: RealtimeManager još nije popunjen → direktan DB fetch
     final rasporedData = await _rasporedService.loadAll();
     final overridesData = await VozacPutnikService().loadAll();
     if (mounted) {
@@ -145,7 +160,12 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   /// 🚗 Naziv vozača dodijeljenog terminu
   String? _getVozacZaTermin(String grad, String vreme) {
     final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
-    return _rasporedCache.where((r) => r.dan == dan && r.grad == grad && r.vreme == vreme).firstOrNull?.vozac;
+    final entry = _rasporedCache.where((r) => r.dan == dan && r.grad == grad && r.vreme == vreme).firstOrNull;
+    if (entry == null) return null;
+    // Preferuj ime iz vozac stringa, fallback na lookup po vozacId
+    if (entry.vozac.isNotEmpty) return entry.vozac;
+    if (entry.vozacId != null) return VozacCache.getImeByUuid(entry.vozacId!);
+    return null;
   }
 
   /// 👤 Naziv vozača za override putnika (null = nema override)
@@ -461,7 +481,8 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   }
 
   Future<void> _spasiPutnikOverride(Putnik p, String vozacIme) async {
-    final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
+    // Koristi dan iz putnikovog seat_request (p.dan), ne iz _selectedDay chip-a
+    final dan = (p.dan.isNotEmpty ? p.dan : _selectedDay) ?? _getDayAbbreviation(DateTime.now());
     final success = await VozacPutnikService().set(
       putnikId: p.id?.toString() ?? '',
       vozacIme: vozacIme,

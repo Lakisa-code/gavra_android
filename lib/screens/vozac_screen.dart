@@ -101,9 +101,8 @@ class _VozacScreenState extends State<VozacScreen> {
         final pId = p.id?.toString() ?? '';
         final override = _putnikOverridesCache.where((o) => o.putnikId == pId).firstOrNull;
         if (override == null) continue; // nema override-a → "prati termin" → NE dodaj u nav bar
-        final jeOvajVozac = currentVozacIdLocal != null
-            ? override.vozacId == currentVozacIdLocal
-            : override.vozac == _currentDriver;
+        final jeOvajVozac =
+            currentVozacIdLocal != null ? override.vozacId == currentVozacIdLocal : override.vozac == _currentDriver;
         if (!jeOvajVozac) continue;
         final pGrad = p.grad;
         final pPolazak = p.polazak;
@@ -177,24 +176,12 @@ class _VozacScreenState extends State<VozacScreen> {
     // 1. Inicijalizuj vozača (ovo će takođe pozvati _selectClosestDeparture)
     await _initializeCurrentDriver();
 
-    // 2. Učitaj raspored vozača + subscribe na realtime promjene
-    _loadRaspored();
+    // 2. Subscribe na realtime promjene (sync init iz initState je dovoljan za početno stanje)
     _subscribeRealtime();
 
     // 3. Ostalo
     _initializeNotifications();
     _initializeGpsTracking();
-  }
-
-  Future<void> _loadRaspored() async {
-    final rasporedData = await VozacRasporedService().loadAll();
-    final overridesData = await VozacPutnikService().loadAll();
-    if (mounted) {
-      setState(() {
-        _rasporedCache = rasporedData;
-        _putnikOverridesCache = overridesData;
-      });
-    }
   }
 
   /// 🔴 Realtime: prati vozac_raspored i vozac_putnik i osvježava lokalne cache-ove
