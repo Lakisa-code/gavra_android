@@ -143,60 +143,125 @@ class FinansijeService {
     }
   }
 
-  /// Dohvati kompletan finansijski izveštaj (Optimizovano via RPC)
+  /// Dohvati kompletan finansijski izveštaj (direktni SQL upiti, bez RPC)
   static Future<FinansijskiIzvestaj> getIzvestaj() async {
     try {
       final now = DateTime.now();
-      final rpcResponse = await _supabase.rpc('get_full_finance_report');
-      final data = Map<String, dynamic>.from(rpcResponse);
-
-      final n = data['nedelja'];
-      final m = data['mesec'];
-      final g = data['godina'];
-      final p = data['prosla'];
-      final tPoTipuRaw = Map<String, dynamic>.from(data['troskovi_po_tipu'] ?? {});
-      final Map<String, double> troskoviPoTipu = tPoTipuRaw.map(
-        (key, value) => MapEntry(key, (value is num) ? value.toDouble() : double.tryParse(value.toString()) ?? 0),
-      );
-
-      // Potraživanja (frontend calculation for accuracy)
-      final potrazivanja = await getPotrazivanja();
-
-      // Datumi nedelje (ponedeljak - nedelja)
       final weekday = now.weekday;
       final mondayThisWeek = now.subtract(Duration(days: weekday - 1));
       final sundayThisWeek = mondayThisWeek.add(const Duration(days: 6));
 
+      // Datumi za filtre
+      final nedFrom = _fmtDate(mondayThisWeek);
+      final nedTo = _fmtDate(sundayThisWeek);
+      final mesFrom = '${now.year}-${now.month.toString().padLeft(2, '0')}-01';
+      final mesTo = '${now.year}-${now.month.toString().padLeft(2, '0')}-31';
+      final godFrom = '${now.year}-01-01';
+      final godTo = '${now.year}-12-31';
+      final proslaFrom = '${now.year - 1}-01-01';
+      final proslaTo = '${now.year - 1}-12-31';
+
+      // Paralelni upiti: voznje_log za sve periode + troskovi za mesec
+      final results = await Future.wait([
+        // 0: nedelja voznje_log
+        _supabase.from('voznje_log').select('tip, iznos').gte('datum', nedFrom).lte('datum', nedTo),
+        // 1: mesec voznje_log
+        _supabase.from('voznje_log').select('tip, iznos').gte('datum', mesFrom).lte('datum', mesTo),
+        // 2: godina voznje_log
+        _supabase.from('voznje_log').select('tip, iznos').gte('datum', godFrom).lte('datum', godTo),
+        // 3: prosla godina voznje_log
+        _supabase.from('voznje_log').select('tip, iznos').gte('datum', proslaFrom).lte('datum', proslaTo),
+        // 4: mesec troskovi (aktivan=true)
+        _supabase
+            .from('finansije_troskovi')
+            .select('tip, iznos')
+            .eq('aktivan', true)
+            .eq('mesec', now.month)
+            .eq('godina', now.year),
+        // 5: godina troskovi (aktivan=true)
+        _supabase.from('finansije_troskovi').select('iznos').eq('aktivan', true).eq('godina', now.year),
+        // 6: prosla godina troskovi
+        _supabase.from('finansije_troskovi').select('iznos').eq('aktivan', true).eq('godina', now.year - 1),
+      ]);
+
+      final nedRows = (results[0] as List).cast<Map<String, dynamic>>();
+      final mesRows = (results[1] as List).cast<Map<String, dynamic>>();
+      final godRows = (results[2] as List).cast<Map<String, dynamic>>();
+      final proslaRows = (results[3] as List).cast<Map<String, dynamic>>();
+      final mesTroskRows = (results[4] as List).cast<Map<String, dynamic>>();
+      final godTroskRows = (results[5] as List).cast<Map<String, dynamic>>();
+      final proslaTroskRows = (results[6] as List).cast<Map<String, dynamic>>();
+
+      // Agregati iz voznje_log
+      final prihodNedelja = _sumirajPrihode(nedRows);
+      final voznjiNedelja = _broji(nedRows, 'voznja');
+      final prihodMesec = _sumirajPrihode(mesRows);
+      final voznjiMesec = _broji(mesRows, 'voznja');
+      final prihodGodina = _sumirajPrihode(godRows);
+      final voznjiGodina = _broji(godRows, 'voznja');
+      final prihodProsla = _sumirajPrihode(proslaRows);
+      final voznjiProsla = _broji(proslaRows, 'voznja');
+
+      // Troškovi iz finansije_troskovi
+      final troskoviNedelja = 0.0; // troškovi nemaju dnevnu granularnost
+      final troskoviMesec = mesTroskRows.fold<double>(0, (s, r) => s + _toDouble(r['iznos']));
+      final troskoviGodina = godTroskRows.fold<double>(0, (s, r) => s + _toDouble(r['iznos']));
+      final troskoviProsla = proslaTroskRows.fold<double>(0, (s, r) => s + _toDouble(r['iznos']));
+
+      // Troškovi po tipu (za tekući mesec)
+      final Map<String, double> troskoviPoTipu = {};
+      for (final r in mesTroskRows) {
+        final tip = r['tip'] as String? ?? 'ostalo';
+        troskoviPoTipu[tip] = (troskoviPoTipu[tip] ?? 0) + _toDouble(r['iznos']);
+      }
+
+      // Potraživanja (frontend calculation)
+      final potrazivanja = await getPotrazivanja();
+
       return FinansijskiIzvestaj(
-        prihodNedelja: _toDouble(n['prihod']),
-        troskoviNedelja: _toDouble(n['troskovi']),
-        netoNedelja: _toDouble(n['prihod']) - _toDouble(n['troskovi']),
-        voznjiNedelja: n['voznje'] ?? 0,
-        prihodMesec: _toDouble(m['prihod']),
-        troskoviMesec: _toDouble(m['troskovi']),
-        netoMesec: _toDouble(m['prihod']) - _toDouble(m['troskovi']),
-        voznjiMesec: m['voznje'] ?? 0,
-        prihodGodina: _toDouble(g['prihod']),
-        troskoviGodina: _toDouble(g['troskovi']),
-        netoGodina: _toDouble(g['prihod']) - _toDouble(g['troskovi']),
-        voznjiGodina: g['voznje'] ?? 0,
-        prihodProslaGodina: _toDouble(p['prihod']),
-        troskoviProslaGodina: _toDouble(p['troskovi']),
-        netoProslaGodina: _toDouble(p['prihod']) - _toDouble(p['troskovi']),
-        voznjiProslaGodina: p['voznje'] ?? 0,
+        prihodNedelja: prihodNedelja,
+        troskoviNedelja: troskoviNedelja,
+        netoNedelja: prihodNedelja - troskoviNedelja,
+        voznjiNedelja: voznjiNedelja,
+        prihodMesec: prihodMesec,
+        troskoviMesec: troskoviMesec,
+        netoMesec: prihodMesec - troskoviMesec,
+        voznjiMesec: voznjiMesec,
+        prihodGodina: prihodGodina,
+        troskoviGodina: troskoviGodina,
+        netoGodina: prihodGodina - troskoviGodina,
+        voznjiGodina: voznjiGodina,
+        prihodProslaGodina: prihodProsla,
+        troskoviProslaGodina: troskoviProsla,
+        netoProslaGodina: prihodProsla - troskoviProsla,
+        voznjiProslaGodina: voznjiProsla,
         proslaGodina: now.year - 1,
         troskoviPoTipu: troskoviPoTipu,
-        ukupnoMesecniTroskovi: _toDouble(m['troskovi']),
+        ukupnoMesecniTroskovi: troskoviMesec,
         potrazivanja: potrazivanja,
         startNedelja: mondayThisWeek,
         endNedelja: sundayThisWeek,
       );
     } catch (e) {
-      debugPrint('❌ [Finansije] Greška pri dohvatanju RPC izveštaja: $e');
-      // Fallback na staru metodu ili prazan izvestaj
+      debugPrint('❌ [Finansije] Greška pri dohvatanju izveštaja: $e');
       return _getEmptyIzvestaj();
     }
   }
+
+  /// Sumira iznose uplata (tip IN uplata/uplata_dnevna/uplata_mesecna)
+  static double _sumirajPrihode(List<Map<String, dynamic>> rows) {
+    const prihodTipovi = {'uplata', 'uplata_dnevna', 'uplata_mesecna'};
+    return rows
+        .where((r) => prihodTipovi.contains(r['tip'] as String?))
+        .fold<double>(0, (s, r) => s + _toDouble(r['iznos']));
+  }
+
+  /// Broji redove određenog tipa
+  static int _broji(List<Map<String, dynamic>> rows, String tip) => rows.where((r) => r['tip'] == tip).length;
+
+  /// Formatiraj datum kao YYYY-MM-DD
+  static String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   static double _toDouble(dynamic val) {
     if (val == null) return 0;
@@ -231,14 +296,37 @@ class FinansijeService {
     );
   }
 
-  /// Dohvati izveštaj za specifičan period (Custom Range)
+  /// Dohvati izveštaj za specifičan period (Custom Range) — direktni SQL, bez RPC
   static Future<Map<String, dynamic>> getIzvestajZaPeriod(DateTime from, DateTime to) async {
     try {
-      final response = await _supabase.rpc('get_custom_finance_report', params: {
-        'p_from': from.toIso8601String().split('T')[0],
-        'p_to': to.toIso8601String().split('T')[0],
-      });
-      return Map<String, dynamic>.from(response);
+      final fromStr = _fmtDate(from);
+      final toStr = _fmtDate(to);
+
+      final results = await Future.wait([
+        // voznje_log za period
+        _supabase.from('voznje_log').select('tip, iznos').gte('datum', fromStr).lte('datum', toStr),
+        // troskovi za period (po mesec/godina pokrivenost — meseci koji se preklapaju)
+        _supabase
+            .from('finansije_troskovi')
+            .select('iznos')
+            .eq('aktivan', true)
+            .gte('godina', from.year)
+            .lte('godina', to.year),
+      ]);
+
+      final voznjeRows = (results[0] as List).cast<Map<String, dynamic>>();
+      final troskoviRows = (results[1] as List).cast<Map<String, dynamic>>();
+
+      final prihod = _sumirajPrihode(voznjeRows);
+      final voznje = _broji(voznjeRows, 'voznja');
+      final troskovi = troskoviRows.fold<double>(0, (s, r) => s + _toDouble(r['iznos']));
+
+      return {
+        'prihod': prihod,
+        'voznje': voznje,
+        'troskovi': troskovi,
+        'neto': prihod - troskovi,
+      };
     } catch (e) {
       debugPrint('❌ [Finansije] Greška custom report: $e');
       return {'prihod': 0, 'voznje': 0, 'troskovi': 0, 'neto': 0};

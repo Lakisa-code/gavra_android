@@ -34,19 +34,46 @@ class RacunService {
   static SupabaseClient get _supabase => supabase;
 
   /// Vraća sledeći broj računa u formatu "X/YYYY" i automatski uvećava brojač u BAZI
-  /// Atomska operacija - sprečava duplikate između vozača
+  /// Atomska operacija putem optimistic locking - sprečava duplikate između vozača
   static Future<String> _getNextBrojRacuna() async {
     final godina = DateTime.now().year;
 
     try {
-      // Pozovi PostgreSQL funkciju za atomski increment
-      final response = await _supabase.rpc(
-        'get_next_racun_broj',
-        params: {'p_godina': godina},
-      );
+      // Optimistic lock: čitaj → pokušaj atomski UPDATE sa WHERE stari_broj = pročitani
+      // Ponovi max 5 puta ako je race condition
+      for (int attempt = 0; attempt < 5; attempt++) {
+        // Čitaj trenutni broj
+        final selectResp =
+            await _supabase.from('racun_sequence').select('poslednji_broj').eq('godina', godina).maybeSingle();
 
-      final noviBroj = response as int;
-      return '$noviBroj/$godina';
+        if (selectResp == null) {
+          // Red ne postoji — kreiraj ga s brojem 1
+          await _supabase.from('racun_sequence').insert({'godina': godina, 'poslednji_broj': 1});
+          return '1/$godina';
+        }
+
+        final stari = selectResp['poslednji_broj'] as int;
+        final novi = stari + 1;
+
+        // Pokušaj UPDATE samo ako stari_broj == onaj koji smo pročitali
+        final updateResp = await _supabase
+            .from('racun_sequence')
+            .update({'poslednji_broj': novi})
+            .eq('godina', godina)
+            .eq('poslednji_broj', stari)
+            .select('poslednji_broj');
+
+        if ((updateResp as List).isNotEmpty) {
+          // UPDATE uspio — novi broj je naš
+          return '$novi/$godina';
+        }
+        // Drugi je stigao prvi — kratka pauza pa retry
+        await Future.delayed(Duration(milliseconds: 50 * (attempt + 1)));
+      }
+
+      // Fallback na timestamp ako svi retry-ovi ne uspiju
+      final timestamp = DateTime.now().millisecondsSinceEpoch % 100000;
+      return 'T$timestamp/$godina';
     } catch (e) {
       // Fallback na timestamp ako baza nije dostupna
       final timestamp = DateTime.now().millisecondsSinceEpoch % 100000;

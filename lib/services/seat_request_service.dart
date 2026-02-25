@@ -13,6 +13,11 @@ class SeatRequestService {
   static SupabaseClient get _supabase => supabase;
 
   /// 📥 INSERT U SEAT_REQUESTS TABELU ZA BACKEND OBRADU
+  ///
+  /// Semantika kolona:
+  /// - [zeljeno_vreme] = CEKAONICA / identifikator reda (putnikov zahtev)
+  /// - [dodeljeno_vreme] = STVARNI TERMIN PUTOVANJA (potvrđen od admina/vozača)
+  /// - [status]         = operativno stanje: pending|manual|approved|confirmed|pokupljen|otkazano|bez_polaska
   static Future<void> insertSeatRequest({
     required String putnikId,
     required String dan,
@@ -49,7 +54,7 @@ class SeatRequestService {
           'priority': priority,
           'custom_adresa_id': customAdresaId,
           'status': status,
-          // confirmed = odmah odobreno, dodeljeno_vreme = zeljeno_vreme
+          // dodeljeno_vreme = stvarni termin putovanja (postavlja se kad je status confirmed)
           if (status == 'confirmed' || existingStatus == 'confirmed') 'dodeljeno_vreme': '$normVreme:00',
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         }).eq('id', existingId);
@@ -61,7 +66,7 @@ class SeatRequestService {
           'grad': gradKey,
           'dan': danKey,
           'zeljeno_vreme': '$normVreme:00',
-          // dodeljeno_vreme se upisuje samo ako je status confirmed (odmah odobreno)
+          // dodeljeno_vreme = stvarni termin putovanja, upisuje se samo kad je status confirmed
           if (status == 'confirmed') 'dodeljeno_vreme': '$normVreme:00',
           'status': status,
           'broj_mesta': brojMesta,
@@ -150,18 +155,11 @@ class SeatRequestService {
   /// 🤖 POKREĆE DIGITALNOG DISPEČERA U BAZI
   static Future<int> triggerDigitalDispecer() async {
     try {
-      // Poziva funkciju koja obrađuje sve 'pending' zahteve
-      final response = await _supabase.rpc('obradi_sve_pending_zahteve');
-      return (response as List).length;
+      final response = await _supabase.rpc('dispecer_cron_obrada');
+      return (response as List?)?.length ?? 0;
     } catch (e) {
-      // Alternativni poziv ako prva funkcija ne postoji (legacy fallback)
-      try {
-        final response = await _supabase.rpc('dispecer_cron_obrada');
-        return (response as List).length;
-      } catch (e2) {
-        debugPrint('❌ [SeatRequestService] Error triggering digital dispecer: $e / $e2');
-        return 0;
-      }
+      debugPrint('❌ [SeatRequestService] Error triggering digital dispecer: $e');
+      return 0;
     }
   }
 
@@ -178,15 +176,11 @@ class SeatRequestService {
       final danKey = dan.toLowerCase();
       final nowStr = DateTime.now().toUtc().toIso8601String();
 
-      // Otkaži SAMO stari specifičan zahtev (requestId) — ne sve termine za taj dan
+      // Atomski UPDATE — direktno postavi novo vreme bez međukoraka 'cancelled'
       if (requestId != null && requestId.isNotEmpty) {
-        // Prvo otkaži stari zahtev
-        await _supabase.from('seat_requests').update({'status': 'cancelled'}).eq('id', requestId);
-
-        // Ažuriraj isti red sa novim vremenom i odmah odobri
         await _supabase.from('seat_requests').update({
-          'zeljeno_vreme': novoVreme,
-          'dodeljeno_vreme': novoVreme, // alternativa odmah odobrena
+          'zeljeno_vreme': novoVreme, // cekaonica → premestamo na novi termin
+          'dodeljeno_vreme': novoVreme, // stvarni termin putovanja → novi termin
           'status': 'approved',
           'processed_at': nowStr,
           'updated_at': nowStr,
@@ -197,8 +191,8 @@ class SeatRequestService {
           'putnik_id': putnikId,
           'grad': gradKey,
           'dan': danKey,
-          'zeljeno_vreme': novoVreme,
-          'dodeljeno_vreme': novoVreme, // alternativa odmah odobrena
+          'zeljeno_vreme': novoVreme, // cekaonica
+          'dodeljeno_vreme': novoVreme, // stvarni termin putovanja
           'status': 'approved',
           'processed_at': nowStr,
         });

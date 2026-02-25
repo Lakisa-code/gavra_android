@@ -1616,7 +1616,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         final existing = await supabase
             .from('seat_requests')
-            .select('id, zeljeno_vreme')
+            .select('id, zeljeno_vreme, dodeljeno_vreme')
             .eq('putnik_id', putnikId)
             .eq('dan', dan)
             .eq('grad', gradKey)
@@ -1630,10 +1630,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           return;
         }
 
+        // Koristiti stvarni termin (dodeljeno_vreme) ako postoji, fallback na zeljeno_vreme (cekaonica)
+        final vremeZaUklanjanje = (existing['dodeljeno_vreme'] ?? existing['zeljeno_vreme'])?.toString();
         await PutnikService().ukloniPolazak(
           putnikId,
           grad: gradKey,
-          vreme: existing['zeljeno_vreme']?.toString(),
+          vreme: vremeZaUklanjanje,
           selectedDan: dan,
           requestId: existing['id']?.toString(),
         );
@@ -1657,14 +1659,52 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     }
 
     try {
-      // 1. RPC poziv koji sada ažurira seat_requests
-      await supabase.rpc('update_putnik_polazak_v2', params: {
-        'p_id': putnikId,
-        'p_dan': dan,
-        'p_grad': tipGrad.startsWith('bc') ? 'BC' : 'VS',
-        'p_vreme': normalizedVreme,
-        'p_status': rpcStatus,
-      });
+      final gradClean = tipGrad.startsWith('bc') ? 'BC' : 'VS';
+      final danClean = dan.toLowerCase();
+
+      if (normalizedVreme.isEmpty) {
+        // Prazno vreme → cancel seat_requests za ovaj dan+grad
+        await supabase
+            .from('seat_requests')
+            .update({'status': 'cancelled', 'updated_at': DateTime.now().toIso8601String()})
+            .eq('putnik_id', putnikId)
+            .eq('dan', danClean)
+            .eq('grad', gradClean);
+      } else {
+        // Pronađi postojeći seat_request za ovaj dan+grad+vreme
+        final existing = await supabase
+            .from('seat_requests')
+            .select('id')
+            .eq('putnik_id', putnikId)
+            .eq('dan', danClean)
+            .eq('grad', gradClean)
+            .eq('zeljeno_vreme', normalizedVreme)
+            .maybeSingle();
+
+        if (existing != null) {
+          await supabase
+              .from('seat_requests')
+              .update({'status': rpcStatus, 'updated_at': DateTime.now().toIso8601String()}).eq('id', existing['id']);
+        } else {
+          // Dohvati broj_mesta iz rpCache ili baze
+          final rpRow = RealtimeManager.instance.rpCache[putnikId];
+          final brojMesta = (rpRow?['broj_mesta'] as int?) ?? 1;
+          await supabase.from('seat_requests').insert({
+            'putnik_id': putnikId,
+            'grad': gradClean,
+            'zeljeno_vreme': normalizedVreme,
+            'dan': danClean,
+            'status': rpcStatus,
+            'broj_mesta': brojMesta,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+        }
+        // Osveži updated_at na profilu
+        await supabase
+            .from('registrovani_putnici')
+            .update({'updated_at': DateTime.now().toIso8601String()}).eq('id', putnikId);
+      }
 
       // 2. Osveži podatke
       await _loadActiveRequests();
