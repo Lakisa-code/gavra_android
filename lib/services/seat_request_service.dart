@@ -166,10 +166,8 @@ class SeatRequestService {
       if (pendingRows.isEmpty) return 0;
 
       // 2. Dohvati kapacitete svih polazaka odjednom
-      final kapacitetRows = await _supabase
-          .from('kapacitet_polazaka')
-          .select('grad, vreme, max_mesta')
-          .eq('aktivan', true);
+      final kapacitetRows =
+          await _supabase.from('kapacitet_polazaka').select('grad, vreme, max_mesta').eq('aktivan', true);
 
       final Map<String, int> kapacitetMap = {};
       for (final k in kapacitetRows) {
@@ -211,31 +209,39 @@ class SeatRequestService {
         bool proveraKapaciteta;
         if (grad == 'BC') {
           if (tip == 'ucenik' && createdAt.hour < 16) {
-            minutaCekanja = 5; proveraKapaciteta = false;
+            minutaCekanja = 5;
+            proveraKapaciteta = false;
           } else if (tip == 'radnik') {
-            minutaCekanja = 5; proveraKapaciteta = true;
+            minutaCekanja = 5;
+            proveraKapaciteta = true;
           } else if (tip == 'ucenik' && createdAt.hour >= 16) {
-            minutaCekanja = 0; proveraKapaciteta = true;
+            minutaCekanja = 0;
+            proveraKapaciteta = true;
           } else if (tip == 'posiljka') {
-            minutaCekanja = 5; proveraKapaciteta = false;
+            minutaCekanja = 10;
+            proveraKapaciteta = false;
           } else {
-            minutaCekanja = 5; proveraKapaciteta = true;
+            minutaCekanja = 5;
+            proveraKapaciteta = true;
           }
         } else if (grad == 'VS') {
           if (tip == 'posiljka') {
-            minutaCekanja = 5; proveraKapaciteta = false;
+            minutaCekanja = 10;
+            proveraKapaciteta = false;
           } else {
-            minutaCekanja = 10; proveraKapaciteta = true;
+            minutaCekanja = 10;
+            proveraKapaciteta = true;
           }
         } else {
-          minutaCekanja = 5; proveraKapaciteta = true;
+          minutaCekanja = 5;
+          proveraKapaciteta = true;
         }
 
         // --- dispecer_cron_obrada uslov za obradu ---
         final minutesWaiting = now.difference(updatedAt).inSeconds / 60.0;
         final bcUcenikNocni = tip == 'ucenik' && grad == 'BC' && createdAt.hour >= 16 && now.hour >= 20;
-        final regularTimeout = minutesWaiting >= minutaCekanja &&
-            !(tip == 'ucenik' && grad == 'BC' && createdAt.hour >= 16);
+        final regularTimeout =
+            minutesWaiting >= minutaCekanja && !(tip == 'ucenik' && grad == 'BC' && createdAt.hour >= 16);
 
         if (!bcUcenikNocni && !regularTimeout) continue;
 
@@ -271,14 +277,20 @@ class SeatRequestService {
             if (v.compareTo(zeljeno) < 0) {
               final maxM = kapacitetMap['${grad}_$v'] ?? 8;
               final zau = zauzetoMap['${grad}_${v}_$dan'] ?? 0;
-              if ((maxM - zau) >= brojMesta) { alt1 = v; break; }
+              if ((maxM - zau) >= brojMesta) {
+                alt1 = v;
+                break;
+              }
             }
           }
           for (final v in svaVremena) {
             if (v.compareTo(zeljeno) > 0) {
               final maxM = kapacitetMap['${grad}_$v'] ?? 8;
               final zau = zauzetoMap['${grad}_${v}_$dan'] ?? 0;
-              if ((maxM - zau) >= brojMesta) { alt2 = v; break; }
+              if ((maxM - zau) >= brojMesta) {
+                alt2 = v;
+                break;
+              }
             }
           }
         }
