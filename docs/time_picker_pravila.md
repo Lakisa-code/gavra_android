@@ -9,7 +9,7 @@
 
 | Situacija | Ponašanje |
 |---|---|
-| Klik na cel sa statusom `pending` | Otvara se picker (nije blokiran) |
+| Klik na cel — `pending` i ADMIN | ✅ Otvara se picker (admin nije blokiran) |
 | Klik na cel — `pending` i NIJE admin | **BLOKIRANO** → „Vaš zahtev je već u obradi" |
 | Klik na cel — `rejected` i NIJE admin | **BLOKIRANO** → „Ovaj termin je popunjen" |
 | Tip putnika = `posiljka` | **NIKAD zaključano** — pošiljke se zakazuju uvek |
@@ -37,9 +37,18 @@ Admin **nema nikakvih vremenskih ograničenja**. Sve je otvoreno u svakom trenut
 > **Svaka promena koju admin napravi kroz bilo koji time picker ili ekran mora biti identična po efektu.**
 
 - Nije bitno odakle admin menja (profil putnika, dodeli putnike, home screen, admin screen) — rezultat u bazi mora biti **isti**
-- „Bez polaska" postavljen od strane admina → uvek se tretira kao **tiho brisanje** vremena (nije otkazivanje, ne upisuje se u `voznje_log` kao otkazano)
+- „Bez polaska" postavljen od strane admina → uvek se tretira kao **tiho brisanje** vremena (nije otkazivanje, **ne upisuje se u `voznje_log`** kao otkazano, status = `bez_polaska`)
 - Novo vreme postavljeno od strane admina → odmah `confirmed`, **bez zahteva**, bez pending faze
 - Promena se mora **odmah reflektovati** na svim ekranima koji prikazuju tog putnika (stream refresh)
+
+### 📍 Admin ekrani koji koriste TimePickerCell
+
+| Ekran | `isAdmin` | Null vreme (bez polaska) |
+|---|---|---|
+| `registrovani_putnik_profil_screen.dart` | ✅ `true` | `ukloniPolazak()` → `bez_polaska` |
+| `putnik_card.dart` (home screen X) | — | `ukloniPolazak()` → `bez_polaska` |
+
+> **ZABRANJENA GREŠKA**: Nikad ne pozivati `otkaziPutnika()` kada je admin kliknuo „Bez polaska". `otkaziPutnika()` je isključivo za putnike koji sami otkazuju (evidentira se u `voznje_log`).
 
 ---
 

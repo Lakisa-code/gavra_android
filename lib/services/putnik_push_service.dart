@@ -75,34 +75,4 @@ class PutnikPushService {
       return false;
     }
   }
-
-  /// Briše push token za putnika iz push_tokens tabele
-  /// Koristi unificirani PushTokenService
-  static Future<void> clearPutnikToken(dynamic putnikId) async {
-    await PushTokenService.clearToken(putnikId: putnikId?.toString());
-  }
-
-  /// Dohvata tokene za listu putnika iz push_tokens tabele
-  /// Delegira na PushTokenService.getTokensForUsers
-  static Future<Map<String, Map<String, String>>> getTokensForPutnici(
-    List<String> putnikImena,
-  ) async {
-    if (putnikImena.isEmpty) return {};
-
-    try {
-      final tokens = await PushTokenService.getTokensForUsers(putnikImena);
-
-      final result = <String, Map<String, String>>{};
-      for (final t in tokens) {
-        final ime = t['user_id'];
-        if (ime != null && ime.isNotEmpty) {
-          result[ime] = {'token': t['token']!, 'provider': t['provider']!};
-        }
-      }
-
-      return result;
-    } catch (e) {
-      return {};
-    }
-  }
 }

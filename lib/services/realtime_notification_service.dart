@@ -11,12 +11,10 @@ import 'vozac_service.dart';
 
 class RealtimeNotificationService {
   // ⚡ STREAM ZA IN-APP NOTIFIKACIJE
-  static final StreamController<Map<String, dynamic>>
-      _notificationStreamController =
+  static final StreamController<Map<String, dynamic>> _notificationStreamController =
       StreamController<Map<String, dynamic>>.broadcast();
 
-  static Stream<Map<String, dynamic>> get notificationStream =>
-      _notificationStreamController.stream;
+  static Stream<Map<String, dynamic>> get notificationStream => _notificationStreamController.stream;
 
   /// 📲 Poziva se kada stigne notifikacija dok je aplikacija u foreground-u
   static void onForegroundNotification(Map<String, dynamic> data) {
@@ -77,15 +75,9 @@ class RealtimeNotificationService {
       const adminNames = ['Bojan'];
       final vozacService = VozacService();
       final allVozaci = await vozacService.getAllVozaci();
-      final adminVozaci = allVozaci
-          .where((v) => adminNames.contains(v.ime))
-          .map((v) => v.ime)
-          .toList();
+      final adminVozaci = allVozaci.where((v) => adminNames.contains(v.ime)).map((v) => v.ime).toList();
 
-      final response = await supabase
-          .from('push_tokens')
-          .select('token, provider')
-          .inFilter('user_id', adminVozaci);
+      final response = await supabase.from('push_tokens').select('token, provider').inFilter('user_id', adminVozaci);
 
       if ((response as List).isEmpty) return;
 
@@ -103,8 +95,7 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
-      debugPrint(
-          '🔴 [RealtimeNotification.sendNotificationToAdmins] Error: $e');
+      debugPrint('🔴 [RealtimeNotification.sendNotificationToAdmins] Error: $e');
     }
   }
 
@@ -116,14 +107,10 @@ class RealtimeNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      final response = await supabase
-          .from('push_tokens')
-          .select('token, provider')
-          .eq('putnik_id', putnikId);
+      final response = await supabase.from('push_tokens').select('token, provider').eq('putnik_id', putnikId);
 
       if ((response as List).isEmpty) {
-        debugPrint(
-            '⚠️ [RealtimeNotification] Nema tokena za putnika $putnikId');
+        debugPrint('⚠️ [RealtimeNotification] Nema tokena za putnika $putnikId');
         return false;
       }
 
@@ -141,61 +128,12 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
-      debugPrint(
-          '🔴 [RealtimeNotification.sendNotificationToPutnik] Error: $e');
+      debugPrint('🔴 [RealtimeNotification.sendNotificationToPutnik] Error: $e');
       return false;
     }
   }
 
-  /// 🎯 Pošalji notifikaciju svim vozačima
-  static Future<void> sendNotificationToAllDrivers({
-    required String title,
-    required String body,
-    Map<String, dynamic>? data,
-    String? excludeSender,
-  }) async {
-    try {
-      // 🔧 FIX: Dinamičko učitavanje vozača umesto hardkodirane liste
-      final vozacService = VozacService();
-      final allVozaci = await vozacService.getAllVozaci();
-      final vozaci = allVozaci.map((v) => v.ime).toList();
-
-      final response = await supabase
-          .from('push_tokens')
-          .select('token, provider, user_id')
-          .inFilter('user_id', vozaci);
-
-      if ((response as List).isEmpty) return;
-
-      final filteredTokens = response.where((t) {
-        if (excludeSender == null) return true;
-        final userId = t['user_id'] as String?;
-        return userId?.toLowerCase() != excludeSender.toLowerCase();
-      }).toList();
-
-      if (filteredTokens.isEmpty) return;
-
-      final tokens = filteredTokens
-          .map<Map<String, dynamic>>((t) => {
-                'token': t['token'] as String,
-                'provider': t['provider'] as String,
-              })
-          .toList();
-
-      await sendPushNotification(
-        title: title,
-        body: body,
-        tokens: tokens,
-        data: data,
-      );
-    } catch (e) {
-      debugPrint(
-          '🔴 [RealtimeNotification.sendNotificationToAllDrivers] Error: $e');
-    }
-  }
-
-  static Future<void> handleInitialMessage(
-      Map<String, dynamic>? messageData) async {
+  static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
     if (messageData == null) return;
     try {
       // Emituj dogadjaj i za tap ako smo u foreground-u/background-u
@@ -218,8 +156,7 @@ class RealtimeNotificationService {
   static void listenForForegroundNotifications(BuildContext context) {
     if (_foregroundListenerRegistered) return;
     _foregroundListenerRegistered = true;
-    debugPrint(
-        'ℹ️ [RealtimeNotification] Globalni listener je već postavljen u main.dart, preskačem lokalni.');
+    debugPrint('ℹ️ [RealtimeNotification] Globalni listener je već postavljen u main.dart, preskačem lokalni.');
   }
 
   static Future<void> subscribeToDriverTopics(String? driverId) async {
@@ -227,8 +164,7 @@ class RealtimeNotificationService {
     try {
       if (Firebase.apps.isEmpty) return;
       final messaging = FirebaseMessaging.instance;
-      await messaging
-          .subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
+      await messaging.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
       await messaging.subscribeToTopic('gavra_all_drivers');
     } catch (e) {
       debugPrint('🔴 [RealtimeNotification.subscribeToDriverTopics] Error: $e');
@@ -248,14 +184,12 @@ class RealtimeNotificationService {
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
-      debugPrint(
-          '🔴 [RealtimeNotification.requestNotificationPermissions] Error: $e');
+      debugPrint('🔴 [RealtimeNotification.requestNotificationPermissions] Error: $e');
       return false;
     }
   }
 
-  static Future<void> _handleNotificationTap(
-      Map<String, dynamic> messageData) async {
+  static Future<void> _handleNotificationTap(Map<String, dynamic> messageData) async {
     try {
       final notificationType = messageData['type'] ?? 'unknown';
 
@@ -267,16 +201,14 @@ class RealtimeNotificationService {
         return;
       }
 
-      if (notificationType == 'pin_zahtev' ||
-          notificationType == 'seat_request_manual') {
+      if (notificationType == 'pin_zahtev' || notificationType == 'seat_request_manual') {
         await NotificationNavigationService.navigateToPinZahtevi();
         return;
       }
 
       final putnikDataString = messageData['putnik'] as String?;
       if (putnikDataString != null) {
-        final Map<String, dynamic> putnikData =
-            jsonDecode(putnikDataString) as Map<String, dynamic>;
+        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
         await NotificationNavigationService.navigateToPassenger(
           type: notificationType as String,
           putnikData: putnikData,

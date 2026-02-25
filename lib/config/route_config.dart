@@ -1,9 +1,8 @@
-﻿import 'package:gavra_android/services/route_service.dart';
-
-/// 🚐 Route Configuration
+﻿/// 🚐 Route Configuration
 ///
 /// Vremena polazaka za različite rute i sezone.
 /// Koristi se u kapacitet servisu i navigacionim bar-ovima.
+library;
 
 class RouteConfig {
   // 🏙️ BELA CRKVA - Zimski raspored (oktobar-mart) - FALLBACK
@@ -95,42 +94,6 @@ class RouteConfig {
 
   // 🏠 GEOCODING KONFIGURACIJA
   static const Duration nominatimBatchDelay = Duration(milliseconds: 1000);
-
-  /// 🚐 Dobija vremena polazaka za određeni grad i sezonu
-  /// Učitava iz baze putem RouteService-a sa fallbackom na hardkodovane vrednosti
-  static Future<List<String>> getVremenaPolazaka({
-    required String grad,
-    required bool letnji,
-  }) async {
-    final isBc = grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc');
-    final isVs = grad.toLowerCase().contains('vrs') || grad.toLowerCase() == 'vs';
-
-    final sezona = letnji ? 'letnji' : 'zimski';
-    final gradCode = isBc ? 'BC' : 'VS';
-
-    try {
-      // Učitaj iz baze
-      final vremena = await RouteService.getVremenaPolazaka(
-        grad: gradCode,
-        sezona: sezona,
-      );
-
-      if (vremena.isNotEmpty) {
-        return vremena;
-      }
-    } catch (e) {
-      print('⚠️ [RouteConfig] Fallback na hardkodovane vrednosti: $e');
-    }
-
-    // Fallback na hardkodovane vrednosti
-    if (isBc) {
-      return letnji ? bcVremenaLetnji : bcVremenaZimski;
-    } else if (isVs) {
-      return letnji ? vsVremenaLetnji : vsVremenaZimski;
-    } else {
-      return letnji ? bcVremenaLetnji : bcVremenaZimski;
-    }
-  }
 
   /// ⏱️ Dobija delay za retry pokušaj (exponential backoff)
   static Duration getRetryDelay(int attempt) {

@@ -272,7 +272,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   /// 🚫 DIJALOG ZA GLOBALNO UKLANJANJE POLASKA
   void _showGlobalniBezPolaskaDialog() {
-    String selectedGrad = 'Bela Crkva';
+    String selectedGrad = 'BC';
     String selectedVreme = '05:00';
     String selectedDan = _selectedDan; // 🆕 Inicijalno uzmi trenutno izabrani dan
     bool isProcessing = false;
@@ -283,7 +283,7 @@ class _AdminScreenState extends State<AdminScreen> {
         // Dohvati vremena za izabrani grad i trenutni režim (zimski/letnji/praznici)
         final navType = navBarTypeNotifier.value;
         List<String> vremena;
-        if (selectedGrad == 'Bela Crkva') {
+        if (selectedGrad == 'BC') {
           if (navType == 'praznici')
             vremena = ['Sva vremena', ...RouteConfig.bcVremenaPraznici];
           else if (navType == 'zimski')
@@ -338,7 +338,9 @@ class _AdminScreenState extends State<AdminScreen> {
               DropdownButtonFormField<String>(
                 value: selectedGrad,
                 decoration: const InputDecoration(labelText: 'Grad'),
-                items: ['Bela Crkva', 'Vrsac'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                items: [('BC', 'Bela Crkva'), ('VS', 'Vrsac')]
+                    .map((e) => DropdownMenuItem(value: e.$1, child: Text(e.$2)))
+                    .toList(),
                 onChanged: (val) {
                   if (val != null) setDialogState(() => selectedGrad = val);
                 },
@@ -476,8 +478,6 @@ class _AdminScreenState extends State<AdminScreen> {
     final key = fullDayName.trim().toLowerCase();
     return dayMapping[key] ?? (fullDayName.isNotEmpty ? fullDayName.trim() : 'Pon');
   }
-
-  // Color _getVozacColor(String vozac) { ... } // unused
 
   @override
   Widget build(BuildContext context) {
@@ -1168,10 +1168,7 @@ class _AdminScreenState extends State<AdminScreen> {
               final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
               final pokupljen = putnik.jePokupljen;
 
-              // ✅ NOVA LOGIKA: SVI (admin i vozači) vide SVE dužnike
-              // Omogućava vozačima da naplate dugove drugih vozača
-              // Uklonjeno AdminSecurityService.canViewDriverData filtriranje
-
+              // ✅ SVI (admin i vozači) vide SVE dužnike — vozači mogu naplatiti tuđe dugove
               return nijePlatio && nijeOtkazan && pokupljen;
             }).toList();
 
@@ -1459,8 +1456,6 @@ class _AdminScreenState extends State<AdminScreen> {
       ), // Zatvaranje Scaffold
     ); // Zatvaranje Container
   }
-
-  // String _getTodayName() { ... } // unused
 
   // (Funkcija za dijalog sa du�nicima je uklonjena - sada se koristi DugoviScreen)
 }

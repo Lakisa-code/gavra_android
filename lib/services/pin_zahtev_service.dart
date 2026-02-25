@@ -13,12 +13,8 @@ class PinZahtevService {
     required String telefon,
   }) async {
     try {
-      final existing = await _supabase
-          .from('pin_zahtevi')
-          .select()
-          .eq('putnik_id', putnikId)
-          .eq('status', 'ceka')
-          .maybeSingle();
+      final existing =
+          await _supabase.from('pin_zahtevi').select().eq('putnik_id', putnikId).eq('status', 'ceka').maybeSingle();
 
       if (existing != null) {
         return true;
@@ -41,25 +37,6 @@ class PinZahtevService {
       return true;
     } catch (e) {
       return false;
-    }
-  }
-
-  static Future<List<Map<String, dynamic>>> dohvatiZahteveKojiCekaju() async {
-    try {
-      final response = await _supabase.from('pin_zahtevi').select('''
-            *,
-            registrovani_putnici (
-              id,
-              putnik_ime,
-              broj_telefona,
-              tip,
-              email
-            )
-          ''').eq('status', 'ceka').order('created_at', ascending: true);
-
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
     }
   }
 
@@ -93,8 +70,7 @@ class PinZahtevService {
 
   static Future<int> brojZahtevaKojiCekaju() async {
     try {
-      final response =
-          await _supabase.from('pin_zahtevi').select('id').eq('status', 'ceka');
+      final response = await _supabase.from('pin_zahtevi').select('id').eq('status', 'ceka');
 
       return (response as List).length;
     } catch (e) {
@@ -107,21 +83,13 @@ class PinZahtevService {
     required String pin,
   }) async {
     try {
-      final zahtev = await _supabase
-          .from('pin_zahtevi')
-          .select('putnik_id')
-          .eq('id', zahtevId)
-          .single();
+      final zahtev = await _supabase.from('pin_zahtevi').select('putnik_id').eq('id', zahtevId).single();
 
       final putnikId = zahtev['putnik_id'] as String;
 
-      await _supabase
-          .from('registrovani_putnici')
-          .update({'pin': pin}).eq('id', putnikId);
+      await _supabase.from('registrovani_putnici').update({'pin': pin}).eq('id', putnikId);
 
-      await _supabase
-          .from('pin_zahtevi')
-          .update({'status': 'odobren'}).eq('id', zahtevId);
+      await _supabase.from('pin_zahtevi').update({'status': 'odobren'}).eq('id', zahtevId);
 
       return true;
     } catch (e) {
@@ -131,9 +99,7 @@ class PinZahtevService {
 
   static Future<bool> odbijZahtev(String zahtevId) async {
     try {
-      await _supabase
-          .from('pin_zahtevi')
-          .update({'status': 'odbijen'}).eq('id', zahtevId);
+      await _supabase.from('pin_zahtevi').update({'status': 'odbijen'}).eq('id', zahtevId);
 
       return true;
     } catch (e) {
@@ -143,12 +109,8 @@ class PinZahtevService {
 
   static Future<bool> imaZahtevKojiCeka(String putnikId) async {
     try {
-      final response = await _supabase
-          .from('pin_zahtevi')
-          .select('id')
-          .eq('putnik_id', putnikId)
-          .eq('status', 'ceka')
-          .maybeSingle();
+      final response =
+          await _supabase.from('pin_zahtevi').select('id').eq('putnik_id', putnikId).eq('status', 'ceka').maybeSingle();
 
       return response != null;
     } catch (e) {
@@ -161,9 +123,7 @@ class PinZahtevService {
     required String email,
   }) async {
     try {
-      await _supabase
-          .from('registrovani_putnici')
-          .update({'email': email}).eq('id', putnikId);
+      await _supabase.from('registrovani_putnici').update({'email': email}).eq('id', putnikId);
 
       return true;
     } catch (e) {

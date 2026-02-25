@@ -11,14 +11,12 @@ class VozilaService {
   static SupabaseClient get _supabase => supabase;
 
   static StreamSubscription? _vozilaSubscription;
-  static final StreamController<List<Vozilo>> _vozilaController =
-      StreamController<List<Vozilo>>.broadcast();
+  static final StreamController<List<Vozilo>> _vozilaController = StreamController<List<Vozilo>>.broadcast();
 
   /// Dohvati sva vozila
   static Future<List<Vozilo>> getVozila() async {
     try {
-      final response =
-          await _supabase.from('vozila').select().order('registarski_broj');
+      final response = await _supabase.from('vozila').select().order('registarski_broj');
       return (response as List).map((row) => Vozilo.fromJson(row)).toList();
     } catch (e) {
       return [];
@@ -28,8 +26,7 @@ class VozilaService {
   /// Stream vozila sa realtime osvežavanjem
   static Stream<List<Vozilo>> streamVozila() {
     if (_vozilaSubscription == null) {
-      _vozilaSubscription =
-          RealtimeManager.instance.subscribe('vozila').listen((payload) {
+      _vozilaSubscription = RealtimeManager.instance.subscribe('vozila').listen((payload) {
         _refreshVozilaStream();
       });
       // Inicijalno učitavanje
@@ -52,20 +49,8 @@ class VozilaService {
     _vozilaController.close();
   }
 
-  /// Dohvati jedno vozilo
-  static Future<Vozilo?> getVozilo(String id) async {
-    try {
-      final response =
-          await _supabase.from('vozila').select().eq('id', id).single();
-      return Vozilo.fromJson(response);
-    } catch (e) {
-      return null;
-    }
-  }
-
   /// Ažuriraj kolsku knjigu vozila
-  static Future<bool> updateKolskaKnjiga(
-      String id, Map<String, dynamic> podaci) async {
+  static Future<bool> updateKolskaKnjiga(String id, Map<String, dynamic> podaci) async {
     try {
       await _supabase.from('vozila').update(podaci).eq('id', id);
       return true;
@@ -74,32 +59,10 @@ class VozilaService {
     }
   }
 
-  /// Dohvati vozila kojima ističe registracija (u narednih X dana)
-  static Future<List<Vozilo>> getVozilaIstekRegistracije(
-      {int dana = 30}) async {
-    try {
-      final now = DateTime.now();
-      final zaXDana = now.add(Duration(days: dana));
-
-      final response = await _supabase
-          .from('vozila')
-          .select()
-          .not('registracija_vazi_do', 'is', null)
-          .lte('registracija_vazi_do', zaXDana.toIso8601String().split('T')[0])
-          .order('registracija_vazi_do');
-
-      return (response as List).map((row) => Vozilo.fromJson(row)).toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
   /// Ažuriraj broj mesta vozila
   static Future<bool> updateBrojMesta(String id, int brojMesta) async {
     try {
-      await _supabase
-          .from('vozila')
-          .update({'broj_mesta': brojMesta}).eq('id', id);
+      await _supabase.from('vozila').update({'broj_mesta': brojMesta}).eq('id', id);
       return true;
     } catch (e) {
       return false;
@@ -131,137 +94,6 @@ class VozilaService {
       return true;
     } catch (e) {
       return false;
-    }
-  }
-
-  /// Dohvati istoriju servisa za vozilo
-  static Future<List<IstorijaSevisa>> getIstorijuServisa(String voziloId,
-      {String? tip}) async {
-    try {
-      var query =
-          _supabase.from('vozila_istorija').select().eq('vozilo_id', voziloId);
-
-      if (tip != null) {
-        query = query.eq('tip', tip);
-      }
-
-      final response = await query.order('datum', ascending: false);
-      return (response as List)
-          .map((row) => IstorijaSevisa.fromJson(row))
-          .toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  /// Obriši zapis iz istorije
-  static Future<bool> deleteIstorijuServisa(String id) async {
-    try {
-      await _supabase.from('vozila_istorija').delete().eq('id', id);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-}
-
-/// Model za istoriju servisa
-class IstorijaSevisa {
-  final String id;
-  final String voziloId;
-  final String tip;
-  final DateTime? datum;
-  final int? km;
-  final String? opis;
-  final double? cena;
-  final String? pozicija;
-  final DateTime createdAt;
-
-  IstorijaSevisa({
-    required this.id,
-    required this.voziloId,
-    required this.tip,
-    this.datum,
-    this.km,
-    this.opis,
-    this.cena,
-    this.pozicija,
-    required this.createdAt,
-  });
-
-  factory IstorijaSevisa.fromJson(Map<String, dynamic> json) {
-    return IstorijaSevisa(
-      id: json['id']?.toString() ?? '',
-      voziloId: json['vozilo_id']?.toString() ?? '',
-      tip: json['tip'] as String? ?? '',
-      datum: json['datum'] != null
-          ? DateTime.tryParse(json['datum'].toString())
-          : null,
-      km: json['km'] as int?,
-      opis: json['opis'] as String?,
-      cena: json['cena'] != null ? (json['cena'] as num).toDouble() : null,
-      pozicija: json['pozicija'] as String?,
-      createdAt: DateTime.parse(json['created_at'].toString()).toLocal(),
-    );
-  }
-
-  /// Ikona za tip
-  String get ikona {
-    switch (tip) {
-      case 'mali_servis':
-        return '🔧';
-      case 'veliki_servis':
-        return '🛠️';
-      case 'alternator':
-        return '⚡';
-      case 'gume_prednje':
-        return '🛞';
-      case 'gume_zadnje':
-        return '🛞';
-      case 'akumulator':
-        return '🔋';
-      case 'plocice':
-        return '🛑';
-      case 'plocice_prednje':
-        return '🛑';
-      case 'plocice_zadnje':
-        return '🛑';
-      case 'trap':
-        return '🔩';
-      case 'registracija':
-        return '📋';
-      default:
-        return '📝';
-    }
-  }
-
-  /// Naziv tipa
-  String get tipNaziv {
-    switch (tip) {
-      case 'mali_servis':
-        return 'Mali servis';
-      case 'veliki_servis':
-        return 'Veliki servis';
-      case 'alternator':
-        return 'Alternator';
-      case 'gume_prednje':
-        return 'Gume prednje';
-      case 'gume_zadnje':
-        return 'Gume zadnje';
-      case 'akumulator':
-        return 'Akumulator';
-      case 'plocice':
-        return 'Pločice';
-      case 'plocice_prednje':
-        return 'Pločice prednje';
-      case 'plocice_zadnje':
-        return 'Pločice zadnje';
-      case 'trap':
-        return 'Trap';
-      case 'registracija':
-        return 'Registracija';
-      default:
-        return 'Ostalo';
     }
   }
 }

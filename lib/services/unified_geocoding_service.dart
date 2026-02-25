@@ -55,8 +55,7 @@ class UnifiedGeocodingService {
   }) async {
     final Map<Putnik, Position> coordinates = {};
 
-    final putniciSaAdresama =
-        putnici.where((p) => _hasValidAddress(p)).toList();
+    final putniciSaAdresama = putnici.where((p) => _hasValidAddress(p)).toList();
 
     if (putniciSaAdresama.isEmpty) {
       return coordinates;
@@ -170,8 +169,7 @@ class UnifiedGeocodingService {
     if (putnik.adresa == null || putnik.adresa!.trim().isEmpty) {
       return false;
     }
-    if (putnik.adresa!.toLowerCase().trim() ==
-        putnik.grad.toLowerCase().trim()) {
+    if (putnik.adresa!.toLowerCase().trim() == putnik.grad.toLowerCase().trim()) {
       return false;
     }
     return true;
@@ -251,9 +249,7 @@ class UnifiedGeocodingService {
     const maxConcurrent = 5; // Max istovremenih geocoding poziva
     final List<GeocodingResult> allResults = [];
 
-    for (int batchStart = 0;
-        batchStart < tasks.length;
-        batchStart += maxConcurrent) {
+    for (int batchStart = 0; batchStart < tasks.length; batchStart += maxConcurrent) {
       final batchEnd = (batchStart + maxConcurrent).clamp(0, tasks.length);
       final batch = tasks.sublist(batchStart, batchEnd);
 
@@ -265,8 +261,7 @@ class UnifiedGeocodingService {
       allResults.addAll(batchResults);
 
       // Dodaj delay između batch-eva, ali samo ako ima nominatim poziva
-      final hasNominatimInBatch =
-          batchResults.any((r) => r.source == 'nominatim');
+      final hasNominatimInBatch = batchResults.any((r) => r.source == 'nominatim');
       if (hasNominatimInBatch && batchEnd < tasks.length) {
         await Future.delayed(delay);
       }
@@ -277,34 +272,4 @@ class UnifiedGeocodingService {
 
   // ═══════════════════════════════════════════════════════════════════════
   // STATISTIKE I DEBUG
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// Generiši statistiku geocodinga
-  static Map<String, int> generateStats(List<GeocodingResult> results) {
-    final stats = <String, int>{
-      'total': results.length,
-      'success': 0,
-      'failed': 0,
-      'from_database': 0,
-      'from_nominatim': 0,
-    };
-
-    for (final result in results) {
-      if (result.success) {
-        stats['success'] = stats['success']! + 1;
-        switch (result.source) {
-          case 'database':
-            stats['from_database'] = stats['from_database']! + 1;
-            break;
-          case 'nominatim':
-            stats['from_nominatim'] = stats['from_nominatim']! + 1;
-            break;
-        }
-      } else {
-        stats['failed'] = stats['failed']! + 1;
-      }
-    }
-
-    return stats;
-  }
 }

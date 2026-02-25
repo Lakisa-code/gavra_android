@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../globals.dart';
 import '../models/voznje_log.dart';
 import '../theme.dart';
+import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_cache.dart';
 
 /// 📋 DNEVNIK AKCIJA VOZAČA
@@ -129,12 +130,7 @@ class _VozacActionLogScreenState extends State<VozacActionLogScreen> with Single
     String grad = meta?['grad']?.toString() ?? '';
     String vreme = meta?['vreme']?.toString() ?? '';
 
-    // Formatuj grad
-    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vrsac')) {
-      grad = 'Vrsac';
-    } else if (grad.toLowerCase() == 'bc' || grad.toLowerCase().contains('bela')) {
-      grad = 'Bela Crkva';
-    }
+    grad = GradAdresaValidator.normalizeGrad(grad);
 
     return {'grad': grad, 'vreme': vreme};
   }

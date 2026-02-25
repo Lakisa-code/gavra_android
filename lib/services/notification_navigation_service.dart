@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -82,17 +80,13 @@ class NotificationNavigationService {
             title: Row(
               children: [
                 Icon(
-                  type == 'novi_putnik'
-                      ? Icons.person_add
-                      : Icons.person_remove,
+                  type == 'novi_putnik' ? Icons.person_add : Icons.person_remove,
                   color: type == 'novi_putnik' ? Colors.green : Colors.red,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    type == 'novi_putnik'
-                        ? 'Novi putnik dodat'
-                        : 'Putnik otkazan',
+                    type == 'novi_putnik' ? 'Novi putnik dodat' : 'Putnik otkazan',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -211,46 +205,5 @@ class NotificationNavigationService {
         );
       },
     );
-  }
-
-  static Map<String, dynamic>? parseNotificationPayload(String? payload) {
-    if (payload == null || payload.isEmpty) return null;
-
-    try {
-      final decoded = jsonDecode(payload);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
-      }
-      return null;
-    } catch (e) {
-      return _parseStringPayload(payload);
-    }
-  }
-
-  static Map<String, dynamic>? _parseStringPayload(String payload) {
-    try {
-      final typeMatch = RegExp(r'type:\s*([^,}]+)').firstMatch(payload);
-      final putnikMatch = RegExp(r'putnik:\s*(\{[^}]+\})').firstMatch(payload);
-
-      if (typeMatch != null && putnikMatch != null) {
-        final type = typeMatch.group(1)?.trim();
-        final putnikStr = putnikMatch.group(1)?.trim();
-
-        if (type != null && putnikStr != null) {
-          try {
-            final putnikData = jsonDecode(putnikStr);
-            return {
-              'type': type,
-              'putnik': putnikData,
-            };
-          } catch (e) {
-            // 🔇 Ignore
-          }
-        }
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
   }
 }

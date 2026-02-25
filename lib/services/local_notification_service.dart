@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../screens/home_screen.dart';
 import '../utils/app_snack_bar.dart';
+import '../utils/grad_adresa_validator.dart';
 import 'notification_navigation_service.dart';
 import 'realtime_notification_service.dart';
 import 'seat_request_service.dart';
@@ -223,102 +224,6 @@ class LocalNotificationService {
     } catch (e) {
       // 🔓 Oslobodi lock i u slučaju greške
       _processingLocks.remove(dedupeKey);
-    }
-  }
-
-  /// 🎫 Prikazuje notifikaciju sa alternativnim BC terminima
-  /// Jedna notifikacija sa opcijama: alternativni termini ili čekanje
-  static Future<void> showBcAlternativeNotification({
-    required String zeljeniTermin,
-    required String putnikId,
-    required String dan,
-    required Map<String, dynamic> polasci,
-    String? terminPre,
-    String? terminPosle,
-  }) async {
-    try {
-      // Kreiraj payload sa svim podacima
-      final payload = jsonEncode({
-        'type': 'bc_alternativa',
-        'putnikId': putnikId,
-        'dan': dan,
-        'zeljeniTermin': zeljeniTermin,
-        'polasci': polasci,
-      });
-
-      // Kreiraj listu akcija
-      final actions = <AndroidNotificationAction>[];
-
-      // Dodaj alternativne termine ako postoje
-      if (terminPre != null) {
-        actions.add(AndroidNotificationAction(
-          'prihvati_$terminPre',
-          '✅ $terminPre',
-          showsUserInterface: true,
-        ));
-      }
-
-      if (terminPosle != null) {
-        actions.add(AndroidNotificationAction(
-          'prihvati_$terminPosle',
-          '✅ $terminPosle',
-          showsUserInterface: true,
-        ));
-      }
-
-      // Dodaj opciju za odustajanje
-      actions.add(const AndroidNotificationAction(
-        'odustani',
-        '❌ Odustani',
-        cancelNotification: true,
-      ));
-
-      // Kreiraj body text
-      String bodyText;
-      if (terminPre != null || terminPosle != null) {
-        final altTermini = [if (terminPre != null) terminPre, if (terminPosle != null) terminPosle];
-        bodyText =
-            'Trenutno nema slobodnih mesta za $zeljeniTermin. Ali ne brinite, imamo mesta u ovim terminima: ${altTermini.join(", ")}';
-      } else {
-        bodyText =
-            'Trenutno nema slobodnih mesta za $zeljeniTermin. Nažalost, nemamo dostupnih polazaka u blizini tog vremena. ❌';
-      }
-
-      await flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        '🕐 Izaberite termin',
-        bodyText,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'gavra_push_v2',
-            'Gavra Push Notifikacije',
-            channelDescription: 'Kanal za push notifikacije sa zvukom i vibracijom',
-            importance: Importance.max,
-            priority: Priority.high,
-            playSound: true,
-            enableLights: true,
-            enableVibration: true,
-            vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
-            category: AndroidNotificationCategory.message,
-            visibility: NotificationVisibility.public,
-            // 🔔 KRITIČNO: Full-screen intent za lock screen (Android 10+)
-            fullScreenIntent: true,
-            // 🔔 Dodatne opcije za garantovano prikazivanje
-            channelShowBadge: true,
-            onlyAlertOnce: false,
-            autoCancel: true,
-            ongoing: false,
-            styleInformation: BigTextStyleInformation(
-              bodyText,
-              contentTitle: '🕐 Izaberite termin',
-            ),
-            actions: actions,
-          ),
-        ),
-        payload: payload,
-      );
-    } catch (e) {
-      // 🔇 Ignore
     }
   }
 
@@ -597,20 +502,6 @@ class LocalNotificationService {
     }
   }
 
-  static Future<void> showNotification({
-    required String title,
-    required String body,
-  }) async {
-    await showRealtimeNotification(
-      title: title,
-      body: body,
-    );
-  }
-
-  static Future<void> cancelAllNotifications() async {
-    await flutterLocalNotificationsPlugin.cancelAll();
-  }
-
   /// 🔍 FETCH PUTNIK DATA FROM DATABASE BY NAME
   /// 🔄 NOVO: Koristi seat_requests kao izvor istine za termine
   static Future<Map<String, dynamic>?> _fetchPutnikFromDatabase(
@@ -644,8 +535,8 @@ class LocalNotificationService {
           .inFilter('status', ['approved', 'confirmed', 'pending', 'manual']).maybeSingle();
 
       if (seatRequest != null) {
-        final gradRaw = seatRequest['grad']?.toString().toLowerCase() ?? '';
-        final grad = (gradRaw == 'vs' || gradRaw.contains('vrs') || gradRaw.contains('vr')) ? 'Vrsac' : 'Bela Crkva';
+        final gradRaw = seatRequest['grad']?.toString() ?? '';
+        final grad = GradAdresaValidator.normalizeGrad(gradRaw);
         final zeljenoVremeStr = seatRequest['zeljeno_vreme']?.toString() ?? '';
         final polazak = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : null;
 

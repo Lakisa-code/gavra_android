@@ -26,6 +26,7 @@ class TimePickerCell extends StatelessWidget {
   final String? tipPrikazivanja; // 🆕 Režim prikaza: standard, DNEVNI
   final DateTime? datumKrajaMeseca; // 🆕 Datum do kog je plaćeno
   final bool isAdmin; // 🆕 Da li je admin (može da menja sve)
+  final Future<void> Function()? onBezPolaska; // 🆕 Callback za "Bez polaska" akciju (admin)
 
   const TimePickerCell({
     super.key,
@@ -41,6 +42,7 @@ class TimePickerCell extends StatelessWidget {
     this.tipPrikazivanja,
     this.datumKrajaMeseca,
     this.isAdmin = false,
+    this.onBezPolaska,
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -143,9 +145,6 @@ class TimePickerCell extends StatelessWidget {
     final isConfirmed = status == 'confirmed';
     final locked = isAdmin ? false : isLocked;
 
-    // debugPrint(
-    //     '🎨 [TimePickerCell] value=$value, status=$status, isPending=$isPending, dayName=$dayName, locked=$locked, isCancelled=$isCancelled');
-
     // Boje za različite statuse
     Color borderColor = Colors.grey.shade300;
     Color bgColor = Colors.white;
@@ -204,8 +203,10 @@ class TimePickerCell extends StatelessWidget {
         // 🛡️ PROVERA PLAĆANJA I PORUKE (User requirement) - UKLONJENO
 
         // 🚫 BLOKADA ZA PENDING STATUS - čeka se odgovor (sprečavanje spama)
-        if (isPending && !isAdmin) {
-          AppSnackBar.warning(context, '⏳ Vaš zahtev je već u obradi. Molimo sačekajte odgovor.');
+        // ⚠️ GRANULARNA BLOKADA: Blokira se samo ISTO vreme (dan+grad+vreme) koje je pending
+        // Putnik može imati više različitih termina za isti dan, svaki se obrađuje nezavisno
+        if (isPending && hasTime && !isAdmin) {
+          AppSnackBar.warning(context, '⏳ Vaš zahtev za ovo vreme je već u obradi. Molimo sačekajte odgovor.');
           return;
         }
 
@@ -433,17 +434,22 @@ class TimePickerCell extends StatelessWidget {
                             : null,
                         onTap: () async {
                           if (value != null && value!.isNotEmpty) {
-                            onChanged(null);
-                            if (isAdmin) {
-                              AppSnackBar.info(context, 'Vreme polaska je obrisano.');
+                            // Admin koristi callback koji postavlja status 'bez_polaska' u bazi
+                            if (isAdmin && onBezPolaska != null) {
+                              Navigator.of(dialogContext).pop();
+                              await onBezPolaska!();
                             } else {
+                              // Putnik: poziva onChanged(null) što će roditelj da obradi
+                              // Roditelj će pozvati PutnikService().otkaziPutnika() sa statusom 'otkazano'
+                              Navigator.of(dialogContext).pop();
+                              onChanged(null);
                               AppSnackBar.warning(context, 'Vožnja otkazana. Evidentirano kao otkazivanje.');
                             }
                           } else {
                             AppSnackBar.info(context, 'Vreme polaska je već prazno.');
-                          }
-                          if (dialogContext.mounted) {
-                            Navigator.of(dialogContext).pop();
+                            if (dialogContext.mounted) {
+                              Navigator.of(dialogContext).pop();
+                            }
                           }
                         },
                       ),

@@ -54,26 +54,6 @@ class VoznjeLog {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'putnik_id': putnikId,
-      'datum': datum?.toIso8601String().split('T')[0],
-      'tip': tip,
-      'iznos': iznos,
-      'vozac_id': vozacId,
-      'created_at': createdAt?.toIso8601String(),
-      'placeni_mesec': placeniMesec,
-      'placena_godina': placenaGodina,
-      'sati_pre_polaska': satiPrePolaska,
-      'broj_mesta': brojMesta,
-      'detalji': detalji,
-      'meta': meta,
-      'tip_placanja': tipPlacanja,
-      'status': status,
-    };
-  }
-
   VoznjeLog copyWith({
     String? id,
     String? putnikId,

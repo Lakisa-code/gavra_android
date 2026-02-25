@@ -919,7 +919,8 @@ class _PutnikCardState extends State<PutnikCard> {
     }
 
     // 🎨 BOJE KARTICE - koristi CardColorHelper sa pročišćenim vozačem
-    final BoxDecoration cardDecoration = CardColorHelper.getCardDecorationWithDriver(
+    final _colorHelper = CardColorHelper();
+    final BoxDecoration cardDecoration = _colorHelper.getCardDecorationWithDriver(
       _putnik,
       widget.currentDriver, // Ko gleda
     );
@@ -932,17 +933,17 @@ class _PutnikCardState extends State<PutnikCard> {
     // Jednostavnije: Privremeni putnik za kalkulaciju boja
     final displayPutnik = _putnik.copyWith(dodeljenVozac: displayDodeljenVozac);
 
-    final BoxDecoration finalDecoration = CardColorHelper.getCardDecorationWithDriver(
+    final BoxDecoration finalDecoration = _colorHelper.getCardDecorationWithDriver(
       displayPutnik,
       widget.currentDriver,
     );
-    final Color textColor = CardColorHelper.getTextColorWithDriver(
+    final Color textColor = _colorHelper.getTextColorWithDriver(
       displayPutnik,
       widget.currentDriver,
       context,
       successPrimary: Theme.of(context).colorScheme.successPrimary,
     );
-    final Color secondaryTextColor = CardColorHelper.getSecondaryTextColorWithDriver(
+    final Color secondaryTextColor = _colorHelper.getSecondaryTextColorWithDriver(
       displayPutnik,
       widget.currentDriver,
     );
@@ -1804,6 +1805,8 @@ class _PutnikCardState extends State<PutnikCard> {
           setState(() {
             _putnik = _putnik.copyWith(status: 'bez_polaska');
           });
+          // Pozovi callback da parent zna da se lista promenila
+          widget.onChanged?.call();
         }
       } catch (e) {
         if (mounted) {
@@ -1899,6 +1902,8 @@ class _PutnikCardState extends State<PutnikCard> {
             _putnik = _putnik.copyWith(status: 'otkazano');
           });
           AppSnackBar.error(context, 'Putnik označen kao otkazan.');
+          // Pozovi callback da parent zna da se lista promenila
+          widget.onChanged?.call();
         }
       } catch (e) {
         if (mounted) {

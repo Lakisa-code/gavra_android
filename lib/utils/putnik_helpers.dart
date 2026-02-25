@@ -45,38 +45,8 @@ class PutnikHelpers {
 
   /// 🗺️ Da li putnik treba da bude uključen u OPTIMIZACIJU RUTE
   ///
-  /// Uključuje samo aktivne putnike koji nisu pokupljeni
-  static bool shouldIncludeInRouteOptimization(Putnik p) {
-    // Mora da se računa u mesta
-    if (!shouldCountInSeats(p)) return false;
-
-    // Već pokupljeni se ne računaju u optimizaciju
-    if (p.jePokupljen) return false;
-
-    return true;
-  }
-
-  /// 📊 Filtrira listu putnika za BROJANJE mesta
-  ///
-  /// Vraća samo putnike koji se računaju u zauzeta mesta
-  static List<Putnik> filterForSeatCounting(List<Putnik> putnici) {
-    return putnici.where(shouldCountInSeats).toList();
-  }
-
-  /// 🔢 Računa ukupan broj ZAUZETIH MESTA iz liste putnika
-  ///
-  /// Uzima u obzir brojMesta svakog putnika i filtrira neaktivne
-  static int countTotalSeats(List<Putnik> putnici) {
-    return filterForSeatCounting(putnici).fold(0, (sum, p) => sum + p.brojMesta);
-  }
-
-  /// 📅 HELPER: Vraća trenutni datum
-  static DateTime getWorkingDateTime() {
-    return DateTime.now();
-  }
-
   /// 📅 HELPER: Vraća radni ISO datum (yyyy-MM-dd)
   static String getWorkingDateIso() {
-    return getWorkingDateTime().toIso8601String().split('T')[0];
+    return DateTime.now().toIso8601String().split('T')[0];
   }
 }

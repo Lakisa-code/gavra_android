@@ -55,7 +55,7 @@ class _VozacScreenState extends State<VozacScreen> {
   StreamSubscription<void>? _vremeVozacSubscription; // 🕒 ZA PROMENE DODELJENIH VREMENA
   StreamSubscription<void>? _putnikVozacSubscription; // 👤 ZA PROMENE INDIVIDUALNIH DODELA PUTNIKA
 
-  String _selectedGrad = 'Bela Crkva';
+  String _selectedGrad = 'BC';
   String _selectedVreme = '05:00'; // ✅ VRAĆENO NA 05:00 (konzistentno sa RouteConfig)
 
   // 📍 OPTIMIZACIJA RUTE - kopirano iz DanasScreen
@@ -121,8 +121,6 @@ class _VozacScreenState extends State<VozacScreen> {
   String? _currentDriver; // 👤 Trenutni vozač
 
   // Status varijable
-  String _navigationStatus = ''; // ignore: unused_field
-  int _currentPassengerIndex = 0; // ignore: unused_field
   bool _isListReordered = false;
   bool _isGpsTracking = false; // 🛰️ GPS tracking status
 
@@ -152,8 +150,8 @@ class _VozacScreenState extends State<VozacScreen> {
   }
 
   List<String> get _sviPolasci {
-    final bcList = _bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = _vsVremena.map((v) => '$v Vrsac').toList();
+    final bcList = _bcVremena.map((v) => '$v BC').toList();
+    final vsList = _vsVremena.map((v) => '$v VS').toList();
     return [...bcList, ...vsList];
   }
 
@@ -374,7 +372,6 @@ class _VozacScreenState extends State<VozacScreen> {
       if (mounted) {
         setState(() {
           _optimizedRoute = pokupljeniIOtkazani; // ? ZADR�I pokupljene u listi
-          _currentPassengerIndex = 0;
         });
         AppSnackBar.success(context, '✅ Svi putnici su pokupljeni!');
       }
@@ -385,7 +382,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: preostaliPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrsac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'VS',
       );
 
       if (result.success && result.optimizedPutnici != null) {
@@ -393,7 +390,6 @@ class _VozacScreenState extends State<VozacScreen> {
           setState(() {
             // ? KOMBINUJ: optimizovani preostali + pokupljeni/otkazani na kraju
             _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
-            _currentPassengerIndex = 0;
           });
 
           // 🛠️ REALTIME FIX: Ažuriraj ETA (uklanja pokupljene sa mape)
@@ -442,7 +438,6 @@ class _VozacScreenState extends State<VozacScreen> {
           _optimizedRoute = List<Putnik>.from(putnici);
           _isRouteOptimized = true;
           _isListReordered = true;
-          _currentPassengerIndex = 0;
           _isOptimizing = false;
         });
       }
@@ -484,7 +479,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: filtriraniPutnici,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrsac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'VS',
       );
 
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
@@ -499,7 +494,6 @@ class _VozacScreenState extends State<VozacScreen> {
             _optimizedRoute = finalRoute; // Preskoceni + optimizovani
             _isRouteOptimized = true;
             _isListReordered = true;
-            _currentPassengerIndex = 0;
             _isOptimizing = false;
             _putniciEta = result.putniciEta; // Sacuvaj ETA za notifikacije
           });
@@ -741,7 +735,6 @@ class _VozacScreenState extends State<VozacScreen> {
           if (mounted) {
             setState(() {
               _isGpsTracking = false;
-              _navigationStatus = '';
             });
             AppSnackBar.success(context, '✅ Svi putnici pokupljeni! Tracking automatski zaustavljen.');
           }
@@ -769,7 +762,6 @@ class _VozacScreenState extends State<VozacScreen> {
     if (mounted) {
       setState(() {
         _isGpsTracking = false;
-        _navigationStatus = '';
       });
       AppSnackBar.warning(context, '📍 GPS tracking zaustavljen');
     }
@@ -813,7 +805,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final result = await SmartNavigationService.startMultiProviderNavigation(
         context: context,
         putnici: _optimizedRoute,
-        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vrsac',
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'VS',
       );
 
       if (result.success) {
@@ -922,9 +914,8 @@ class _VozacScreenState extends State<VozacScreen> {
                         p.dodeljenVozac != _currentDriver;
 
                     if (!isAssignedToOther) {
-                      final pGradCanonical = GradAdresaValidator.isVrsac(p.grad) ? 'Vrsac' : 'Bela Crkva';
                       final globalniVozac = VremeVozacService().getVozacZaVremeSync(
-                        pGradCanonical,
+                        p.grad,
                         p.polazak,
                         targetDayAbbr,
                       );
@@ -965,18 +956,50 @@ class _VozacScreenState extends State<VozacScreen> {
                   List<Putnik> putnici = filteredByGradVreme;
 
                   if (_isRouteOptimized && _optimizedRoute.isNotEmpty) {
-                    // Sortiraj filteredByGradVreme prema redosledu u _optimizedRoute
-                    final optimizedOrder = <dynamic, int>{};
+                    // Proveri da li se lista značajno promenila (novi ili izbrisani putnici)
+                    final trenutniIds = filteredByGradVreme.map((p) => p.id).toSet();
+                    final optimizedIds = _optimizedRoute.map((p) => p.id).toSet();
 
-                    for (int i = 0; i < _optimizedRoute.length; i++) {
-                      optimizedOrder[_optimizedRoute[i].id] = i;
+                    // Broj belih putnika (nepokupljenih) u obe liste
+                    final trenutniBeli = filteredByGradVreme
+                        .where((p) => !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !p.jeBezPolaska)
+                        .map((p) => p.id)
+                        .toSet();
+                    final optimizedBeli = _optimizedRoute
+                        .where((p) => !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo && !p.jeBezPolaska)
+                        .map((p) => p.id)
+                        .toSet();
+
+                    // Ako ima novih belih putnika ili su izbrisani beli putnici, resetuj optimizaciju
+                    final imaNoviPutnik = trenutniBeli.difference(optimizedBeli).isNotEmpty;
+                    final imaIzbrisan = optimizedBeli.difference(trenutniBeli).isNotEmpty;
+
+                    if (imaNoviPutnik || imaIzbrisan) {
+                      // Lista se promenila - resetuj optimizaciju
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        setState(() {
+                          _isRouteOptimized = false;
+                          _isListReordered = false;
+                          _optimizedRoute = [];
+                        });
+                      });
+                      // Koristi nesortirane putnike za ovaj frame
+                      putnici = filteredByGradVreme;
+                    } else {
+                      // Lista je ista - primeni optimizovani redosled
+                      final optimizedOrder = <dynamic, int>{};
+
+                      for (int i = 0; i < _optimizedRoute.length; i++) {
+                        optimizedOrder[_optimizedRoute[i].id] = i;
+                      }
+
+                      putnici.sort((a, b) {
+                        final aIndex = optimizedOrder[a.id] ?? 999;
+                        final bIndex = optimizedOrder[b.id] ?? 999;
+                        return aIndex.compareTo(bIndex);
+                      });
                     }
-
-                    putnici.sort((a, b) {
-                      final aIndex = optimizedOrder[a.id] ?? 999;
-                      final bIndex = optimizedOrder[b.id] ?? 999;
-                      return aIndex.compareTo(bIndex);
-                    });
                   }
 
                   return Column(
@@ -1057,10 +1080,8 @@ class _VozacScreenState extends State<VozacScreen> {
 
             // ?? FILTER VREMENA: Samo dodeljena vremena za ovog vozača
             final dodeljenaVremena = _getDodeljenaVremena(sviPutnici: allPutnici);
-            final assignedBcTimes =
-                dodeljenaVremena.where((v) => v['grad'] == 'Bela Crkva').map((v) => v['vreme']!).toList();
-            final assignedVsTimes =
-                dodeljenaVremena.where((v) => v['grad'] == 'Vrsac').map((v) => v['vreme']!).toList();
+            final assignedBcTimes = dodeljenaVremena.where((v) => v['grad'] == 'BC').map((v) => v['vreme']!).toList();
+            final assignedVsTimes = dodeljenaVremena.where((v) => v['grad'] == 'VS').map((v) => v['vreme']!).toList();
 
             // Prikaži samo dodeljena vremena
             final bcVremenaToShow = assignedBcTimes.toList()..sort();
@@ -1274,10 +1295,9 @@ class _VozacScreenState extends State<VozacScreen> {
 
       putnikSmerovi.putIfAbsent(id, () => <String>{});
 
-      final gradLower = p.grad.toLowerCase();
-      if (gradLower.contains('bela crkva') || gradLower == 'bc') {
+      if (p.grad == 'BC') {
         putnikSmerovi[id]!.add('bc');
-      } else if (gradLower.contains('vrsac') || gradLower == 'vs') {
+      } else {
         putnikSmerovi[id]!.add('vs');
       }
     }

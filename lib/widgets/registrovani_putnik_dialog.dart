@@ -95,8 +95,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   /// Učitaj odobrene adrese iz baze
   Future<void> _loadAdreseFromDatabase() async {
     try {
-      final adreseBC = await AdresaSupabaseService.getAdreseZaGrad('Bela Crkva');
-      final adreseVS = await AdresaSupabaseService.getAdreseZaGrad('Vrsac');
+      final adreseBC = await AdresaSupabaseService.getAdreseZaGrad('BC');
+      final adreseVS = await AdresaSupabaseService.getAdreseZaGrad('VS');
 
       if (mounted) {
         setState(() {
@@ -157,9 +157,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       final reqDan = req['dan']?.toString().toLowerCase() ?? '';
       if (reqDan != targetDanKratica) return true; // zadrži
       final grad = req['grad']?.toString() ?? '';
-      final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
       final targetGrad = isBC ? 'BC' : 'VS';
-      if (normalizedGrad == targetGrad) return false; // ukloni
+      if (grad == targetGrad) return false; // ukloni
       return true;
     }).toList();
 
@@ -173,8 +172,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   void _loadDataFromExistingPutnik() async {
     if (widget.isEditing) {
       final putnik = widget.existingPutnik!;
-
-      // UKLONJENO: Fetch raw polasci_po_danu - kolona je obrisana
 
       // Load basic info
       _imeController.text = putnik.putnikIme;
@@ -216,10 +213,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
               final bcOver = _getAnyOverrideForDay(dan, true);
               if (bcOver != null) {
                 final status = bcOver['status']?.toString().toLowerCase();
-                if (status == 'bez_polaska' || status == 'hidden' || status == 'cancelled') {
+                if (status == 'bez_polaska' || status == 'cancelled' || status == 'otkazano' || status == 'pokupljen') {
+                  // Otkazani/pokupljeni termini se NE prikazuju kao aktivni
                   _polazakBcControllers[dan]!.clear();
                 } else if (bcOver['zeljeno_vreme'] != null) {
-                  // Prikaži vreme i za 'otkazano' da admin može promijeniti
                   _polazakBcControllers[dan]!.text =
                       GradAdresaValidator.normalizeTime(bcOver['zeljeno_vreme'].toString());
                 }
@@ -228,10 +225,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
               final vsOver = _getAnyOverrideForDay(dan, false);
               if (vsOver != null) {
                 final status = vsOver['status']?.toString().toLowerCase();
-                if (status == 'bez_polaska' || status == 'hidden' || status == 'cancelled') {
+                if (status == 'bez_polaska' || status == 'cancelled' || status == 'otkazano' || status == 'pokupljen') {
+                  // Otkazani/pokupljeni termini se NE prikazuju kao aktivni
                   _polazakVsControllers[dan]!.clear();
                 } else if (vsOver['zeljeno_vreme'] != null) {
-                  // Prikaži vreme i za 'otkazano' da admin može promijeniti
                   _polazakVsControllers[dan]!.text =
                       GradAdresaValidator.normalizeTime(vsOver['zeljeno_vreme'].toString());
                 }
@@ -325,7 +322,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   /// Privatni helper za dobijanje override-a za dan i smer
-  /// Preskače bez_polaska, hidden, cancelled, obrisan — koristi se za prikaz statusa
+  /// Preskače bez_polaska, cancelled, obrisan — koristi se za prikaz statusa
   Map<String, dynamic>? _getOverrideForDay(String day, bool isBC) {
     try {
       final targetDan = day.toLowerCase();
@@ -334,18 +331,17 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         final reqDan = req['dan']?.toString().toLowerCase() ?? '';
         if (reqDan != targetDan) continue;
 
-        // Preskoči cancelled, bez_polaska, hidden, obrisan
+        // Preskoči cancelled, bez_polaska, obrisan
         final status = req['status']?.toString().toLowerCase() ?? '';
-        if (status == 'cancelled' || status == 'bez_polaska' || status == 'hidden' || status == 'obrisan') {
+        if (status == 'cancelled' || status == 'bez_polaska' || status == 'obrisan') {
           continue;
         }
 
-        // Normalizovano poređenje grada (BC/VS)
+        // Poređenje grada (BC/VS)
         final grad = req['grad']?.toString() ?? '';
-        final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
         final targetGrad = isBC ? 'BC' : 'VS';
 
-        if (normalizedGrad == targetGrad) {
+        if (grad == targetGrad) {
           return req;
         }
       }
@@ -368,12 +364,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         final status = req['status']?.toString().toLowerCase() ?? '';
         if (status == 'obrisan') continue;
 
-        // Normalizovano poređenje grada (BC/VS)
+        // Poređenje grada (BC/VS)
         final grad = req['grad']?.toString() ?? '';
-        final normalizedGrad = GradAdresaValidator.normalizeGrad(grad);
         final targetGrad = isBC ? 'BC' : 'VS';
 
-        if (normalizedGrad == targetGrad) {
+        if (grad == targetGrad) {
           return req;
         }
       }

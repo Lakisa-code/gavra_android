@@ -2,6 +2,12 @@ name: gavra google alpha
 
 on:
   workflow_dispatch:
+    inputs:
+      update_supabase:
+        description: 'Update version in Supabase app_settings?'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build-and-release:
@@ -191,3 +197,21 @@ jobs:
           echo "  1. Review in Google Play Console"
           echo "  2. Notify testers about new build"
           echo "  3. Monitor feedback and crashes"
+
+      - name: 🔄 Update version in Supabase (optional)
+        if: ${{ github.event.inputs.update_supabase != 'false' }}
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # Install dependencies for auto-update script
+          npm install js-yaml @supabase/supabase-js
+          
+          # Run auto-update script (uses --force to use pubspec version)
+          node auto-update-version.js --force
+          
+          echo ""
+          echo "✅ Supabase app_settings updated with version ${{ env.VERSION }}"
+          echo "🔔 All users will receive update notification in real-time!"
+        continue-on-error: true

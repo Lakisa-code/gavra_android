@@ -17,8 +17,6 @@ import '../services/theme_manager.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
-import '../utils/date_utils.dart' as app_date_utils;
-import '../utils/grad_adresa_validator.dart';
 import '../utils/registrovani_helpers.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 import '../widgets/shared/time_picker_cell.dart';
@@ -42,8 +40,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   int _brojVoznji = 0;
   int _brojOtkazivanja = 0;
-  // ignore: unused_field
-  double _dugovanje = 0.0;
   List<Map<String, dynamic>> _istorijaPl = [];
 
   // 📊 Statistike - detaljno po zapisima iz dnevnika
@@ -55,14 +51,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   String? _adresaBC; // BC adresa
   String? _adresaVS; // VS adresa
 
-  // 🚐 GPS Tracking - više se ne koristi direktno, ETA se čita iz KombiEtaWidget
-  // ignore: unused_field
-  double? _putnikLat;
-  // ignore: unused_field
-  double? _putnikLng;
-  // ignore: unused_field
-  // ignore: unused_field
-  String _smerTure = 'BC_VS';
   String? _sledecaVoznjaInfo; // 🆕 Format: "Ponedeljak, 7:00 BC"
 
   // 🎯 Realtime subscription za status promene
@@ -195,7 +183,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           .select()
           .eq('putnik_id', putnikId)
           .inFilter('dan', radniDani)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled']);
+          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska']);
 
       if (mounted) {
         setState(() {
@@ -367,9 +355,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaBcId).maybeSingle();
           if (bcResponse != null) {
             adresaBcNaziv = bcResponse['naziv'] as String?;
-            if (GradAdresaValidator.isBelaCrkva(grad) &&
-                bcResponse['gps_lat'] != null &&
-                bcResponse['gps_lng'] != null) {
+            if (grad == 'BC' && bcResponse['gps_lat'] != null && bcResponse['gps_lng'] != null) {
               putnikLat = _toDouble(bcResponse['gps_lat']);
               putnikLng = _toDouble(bcResponse['gps_lng']);
             }
@@ -380,7 +366,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
               await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaVsId).maybeSingle();
           if (vsResponse != null) {
             adresaVsNaziv = vsResponse['naziv'] as String?;
-            if (GradAdresaValidator.isVrsac(grad) && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {
+            if (grad == 'VS' && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {
               putnikLat = _toDouble(vsResponse['gps_lat']);
               putnikLng = _toDouble(vsResponse['gps_lng']);
             }
@@ -482,7 +468,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         setState(() {
           _brojVoznji = brojVoznjiTotal;
           _brojOtkazivanja = brojOtkazivanjaTotal;
-          _dugovanje = zaduzenje;
           _istorijaPl = istorija;
           _voznjeDetaljno.clear();
           _voznjeDetaljno.addAll(voznjeDetaljnoMap);
@@ -494,9 +479,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           _cenaPoVoznji = cenaPoVoznji;
           _adresaBC = adresaBcNaziv;
           _adresaVS = adresaVsNaziv;
-          _putnikLat = putnikLat;
-          _putnikLng = putnikLng;
-          _smerTure = (grad == 'BC' || grad == 'Bela Crkva') ? 'BC_VS' : 'VS_BC';
           _sledecaVoznjaInfo = _izracunajSledecuVoznju();
           _isLoading = false;
         });
@@ -537,7 +519,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
         if (req == null) continue;
 
-        final polazakRaw = (req['zeljeno_vreme'] ?? '').toString().trim();
+        final polazakRaw = (req['dodeljeno_vreme'] ?? '').toString().trim();
         final polazakParts = polazakRaw.split(':');
         final polazakH = polazakParts.isNotEmpty ? (int.tryParse(polazakParts[0]) ?? 0) : 0;
         final polazakM = polazakParts.length > 1 ? (int.tryParse(polazakParts[1]) ?? 0) : 0;
@@ -551,7 +533,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         }
 
         final gradRaw = (req['grad'] ?? '').toString();
-        final grad = GradAdresaValidator.isVrsac(gradRaw) ? 'Vrsac' : 'Bela Crkva';
+        final grad = gradRaw.isEmpty ? 'BC' : gradRaw;
         final danNaziv = daniPuniNaziv[danKratica] ?? danKratica;
         return '$danNaziv $grad - $polazak';
       }
@@ -575,7 +557,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         return status != 'otkazano' && status != 'cancelled';
       }).firstOrNull;
       if (req == null) return null;
-      return (req['zeljeno_vreme'] ?? '').toString().trim();
+      return (req['dodeljeno_vreme'] ?? '').toString().trim();
     } catch (_) {
       return null;
     }
@@ -876,8 +858,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   // 🌤️ DIJALOG ZA DETALJNU VREMENSKU PROGNOZU
   void _showWeatherDialog(String grad, WeatherData? data) {
-    final gradPun = grad == 'BC' ? 'Bela Crkva' : 'Vrsac';
-
     showDialog<void>(
       context: context,
       builder: (context) => Dialog(
@@ -904,7 +884,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                   children: [
                     Expanded(
                       child: Text(
-                        '🌤️ Vreme - $gradPun',
+                        '🌤️ Vreme - $grad',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
@@ -1064,12 +1044,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final lastName = nameParts.length > 1 ? nameParts.last : '';
 
     final telefon = _putnikData['broj_telefona'] as String? ?? '-';
-    // ignore: unused_local_variable
     final grad = _putnikData['grad'] as String? ?? 'BC';
     final tip = _putnikData['tip'] as String? ?? 'radnik';
     final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
-    // ignore: unused_local_variable
-    final aktivan = _putnikData['aktivan'] as bool? ?? true;
 
     return Container(
       decoration: BoxDecoration(gradient: ThemeManager().currentGradient),
@@ -1491,7 +1468,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         // Normalizuj grad na 'bc' ili 'vs'
         final grad = (gradRaw == 'vs' || gradRaw.contains('vr')) ? 'vs' : 'bc';
         final status = req['status'] as String?;
-        final vreme = (req['zeljeno_vreme'] ?? '').toString();
+        // Normalizuj na HH:MM (baza vraća '12:00:00', TimePickerCell očekuje '12:00')
+        final vremeRaw = (req['dodeljeno_vreme'] ?? req['zeljeno_vreme'] ?? '').toString();
+        final vreme = vremeRaw.length >= 5 ? vremeRaw.substring(0, 5) : vremeRaw;
 
         final existing = polasci[danKratica]!;
 
@@ -1501,6 +1480,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           existing['${grad}_status'] = status == 'bez_polaska' ? 'bez_polaska' : 'otkazano';
           existing['${grad}_otkazano'] = status != 'bez_polaska';
           existing['${grad}_otkazano_vreme'] = vreme;
+          // ✅ bez_polaska: čuvamo vreme u grad ključu da TimePickerCell može prikazati
+          // dugme "Bez polaska" kao aktivan izbor (value != null → onChanged se može pozvati)
+          if (status == 'bez_polaska' && vreme.isNotEmpty) {
+            existing[grad] = vreme;
+          }
         } else {
           // Aktivan zahtjev — uvijek pregazuje otkazano
           existing[grad] = vreme;
@@ -1586,6 +1570,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         isCancelled: bcOtkazano,
                         tipPutnika: tip.toString(),
                         tipPrikazivanja: tipPrikazivanja,
+                        isAdmin: true,
                         onChanged: (newValue) => _updatePolazak(dan, 'bc', newValue),
                       ),
                     ),
@@ -1600,6 +1585,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         isCancelled: vsOtkazano,
                         tipPutnika: tip.toString(),
                         tipPrikazivanja: tipPrikazivanja,
+                        isAdmin: true,
                         onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
                       ),
                     ),
@@ -1621,12 +1607,10 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final tipPutnika = (_putnikData['tip'] ?? '').toString().toLowerCase();
     final jeDnevni = tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka');
 
-    // 🚫 BEZ POLASKA od strane putnika → otkazana vožnja (upisuje se u voznje_log)
+    // 🚫 BEZ POLASKA (admin) → status = bez_polaska, bez logovanja u voznje_log
     if (novoVreme == null) {
       try {
-        // Pronađi aktivan seat_request za ovaj dan i grad da dobijemo requestId i vreme
         final gradKey = tipGrad.startsWith('bc') ? 'BC' : 'VS';
-        final datum = app_date_utils.DateUtils.getIsoDateForDay(dan);
 
         final existing = await supabase
             .from('seat_requests')
@@ -1634,29 +1618,30 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             .eq('putnik_id', putnikId)
             .eq('dan', dan)
             .eq('grad', gradKey)
-            .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']).maybeSingle();
+            .inFilter('status', ['pending', 'manual', 'approved', 'confirmed', 'bez_polaska'])
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
 
-        await PutnikService().otkaziPutnika(
+        if (existing == null) {
+          if (mounted) AppSnackBar.info(context, 'Nema polaska za ovaj dan.');
+          return;
+        }
+
+        await PutnikService().ukloniPolazak(
           putnikId,
-          'Putnik', // putnik sam otkazuje - loguje se kao 'Putnik'
           grad: gradKey,
-          vreme: existing?['zeljeno_vreme']?.toString(),
+          vreme: existing['zeljeno_vreme']?.toString(),
           selectedDan: dan,
-          datum: datum,
-          requestId: existing?['id']?.toString(),
-          status: 'otkazano',
+          requestId: existing['id']?.toString(),
         );
 
         await _loadActiveRequests();
         await _refreshPutnikData();
-
-        if (mounted) {
-          AppSnackBar.warning(context, 'Vožnja otkazana. Evidentirano kao otkazivanje.');
-        }
       } catch (e) {
-        debugPrint('❌ Greška u _updatePolazak (otkazivanje): $e');
+        debugPrint('❌ Greška u _updatePolazak (bez_polaska): $e');
         if (mounted) {
-          AppSnackBar.error(context, 'Greška pri otkazivanju.');
+          AppSnackBar.error(context, 'Greška pri uklanjanju polaska.');
         }
       }
       return;
@@ -1684,7 +1669,8 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       await _refreshPutnikData();
 
       if (mounted) {
-        AppSnackBar.success(context, 'Vaš zahtev je uspešno primljen.');
+        AppSnackBar.success(
+            context, 'Polazak ažuriran: $dan ${tipGrad.startsWith('bc') ? 'BC' : 'VS'} $normalizedVreme.');
       }
     } catch (e) {
       debugPrint('❌ Greška u _updatePolazak: $e');

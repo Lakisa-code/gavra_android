@@ -34,7 +34,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   // Filteri - identicno kao HomeScreen
   String _selectedDay = 'Ponedeljak';
-  String _selectedGrad = 'Bela Crkva';
+  String _selectedGrad = 'BC';
   String _selectedVreme = '05:00';
 
   // Stream subscriptions
@@ -85,8 +85,8 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
 
   // • Svi polasci za BottomNavBar
   List<String> get _sviPolasci {
-    final bcList = bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = vsVremena.map((v) => '$v Vrsac').toList();
+    final bcList = bcVremena.map((v) => '$v BC').toList();
+    final vsList = vsVremena.map((v) => '$v VS').toList();
     return [...bcList, ...vsList];
   }
 
@@ -251,7 +251,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   }
 
   /// • Vraća kraticu pravca: 'BC' za Bela Crkva, 'VS' za Vrsac
-  String get _currentPlaceKratica => _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
+  String get _currentPlaceKratica => _selectedGrad;
 
   /// • Vraća kraticu dana: 'pon', 'uto', itd.
   String get _currentDayKratica {
@@ -263,7 +263,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   Future<void> _showVozacPicker(Putnik putnik) async {
     final vozaci = VozacCache.imenaVozaca;
     final currentVozac = putnik.dodeljenVozac ?? 'Nedodeljen';
-    final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
+    final pravacLabel = _selectedGrad;
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -459,7 +459,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         );
 
         if (mounted) {
-          final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
+          final pravacLabel = _selectedGrad;
           if (noviVozac == null) {
             AppSnackBar.info(context, '✓ ${putnik.ime} uklonjen sa vozača ($pravacLabel)');
           } else {
@@ -492,7 +492,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
         ) ??
         'Nije dodeljeno';
 
-    final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
+    final pravacLabel = _selectedGrad;
     final vremeLabel = '$pravacLabel $_selectedVreme';
 
     final selected = await showModalBottomSheet<String>(
@@ -1042,7 +1042,7 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     if (_selectedPutnici.isEmpty) return;
 
     final count = _selectedPutnici.length;
-    final pravacLabel = _selectedGrad == 'Bela Crkva' ? 'BC' : 'VS';
+    final pravacLabel = _selectedGrad;
 
     final confirmed = await showDialog<bool>(
       context: context,

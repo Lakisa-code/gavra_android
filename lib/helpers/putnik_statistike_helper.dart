@@ -877,21 +877,6 @@ class PutnikStatistikeHelper {
     }
   }
 
-  /// 📊 DOHVATI ISTORIJU UPLATA
-  static Future<List<Map<String, dynamic>>> getUplateHistory(String putnikId) async {
-    try {
-      final response = await supabase
-          .from('voznje_log')
-          .select()
-          .eq('putnik_id', putnikId)
-          .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna']).order('created_at', ascending: false);
-
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
   /// 🏥 DOHVATI MEDICINSKU POMOĆ LOGS - dodato kao fensi opcija
   static Map<String, dynamic> _emptyStats() {
     return {

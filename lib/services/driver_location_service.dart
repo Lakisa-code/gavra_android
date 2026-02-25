@@ -171,23 +171,6 @@ class DriverLocationService {
     }
   }
 
-  /// 🆕 Označi putnika kao pokupljenог (ETA = -1)
-  /// Automatski zaustavlja tracking ako su svi pokupljeni
-  Future<void> removePassenger(String putnikIme) async {
-    if (_currentPutniciEta == null) return;
-
-    _currentPutniciEta![putnikIme] = -1;
-
-    // 🔄 Odmah pošalji ažurirani status u Supabase
-    await _sendCurrentLocation();
-
-    final aktivniPutnici = _currentPutniciEta!.values.where((v) => v >= 0).length;
-    if (aktivniPutnici == 0) {
-      _onAllPassengersPickedUp?.call();
-      stopTracking();
-    }
-  }
-
   /// Proveri i zatraži dozvole za lokaciju - CENTRALIZOVANO
   /// Forsiraj slanje trenutne lokacije (npr. kada se pokupi putnik)
   Future<void> forceLocationUpdate({Position? knownPosition}) async {
@@ -232,46 +215,6 @@ class DriverLocationService {
       }, onConflict: 'vozac_id');
     } catch (e) {
       debugPrint('❌ [DriverLocation] _sendCurrentLocation greška: $e');
-    }
-  }
-
-  /// Dohvati sve aktivne vozače (za screening)
-  static Future<List<Map<String, dynamic>>> getAktivniVozaci() async {
-    try {
-      var query = supabase.from('vozac_lokacije').select().eq('aktivan', true);
-
-      final response = await query;
-      return response;
-    } catch (e) {
-      return [];
-    }
-  }
-
-  /// Dohvati aktivnu lokaciju vozača (za putnika)
-  static Future<Map<String, dynamic>?> getActiveDriverLocation({
-    required String grad,
-    String? vremePolaska,
-    String? smer,
-  }) async {
-    try {
-      var query = supabase
-          .from('vozac_lokacije')
-          .select()
-          .eq('aktivan', true) // ✅ Filtrira samo aktivne vozače
-          .eq('grad', grad);
-
-      if (vremePolaska != null) {
-        query = query.eq('vreme_polaska', vremePolaska);
-      }
-
-      if (smer != null) {
-        query = query.eq('smer', smer);
-      }
-
-      final response = await query.maybeSingle();
-      return response;
-    } catch (e) {
-      return null;
     }
   }
 }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../globals.dart';
 import '../models/voznje_log.dart';
 import '../theme.dart';
+import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_cache.dart';
 
 /// 👤 DNEVNIK AKCIJA PUTNIKA
@@ -155,11 +156,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     String grad = meta?['grad']?.toString() ?? '';
     String vreme = meta?['vreme']?.toString() ?? '';
 
-    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vrsac')) {
-      grad = 'Vrsac';
-    } else if (grad.toLowerCase() == 'bc' || grad.toLowerCase().contains('bela')) {
-      grad = 'Bela Crkva';
-    }
+    grad = GradAdresaValidator.normalizeGrad(grad);
     return {'grad': grad, 'vreme': vreme};
   }
 
@@ -619,9 +616,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
   /// Formatiraj grad
   String _formatGrad(String? grad) {
     if (grad == null) return '—';
-    if (grad.toLowerCase() == 'vs' || grad.toLowerCase().contains('vr')) return 'Vrsac';
-    if (grad.toLowerCase() == 'bc' || grad.toLowerCase().contains('be')) return 'Bela Crkva';
-    return grad;
+    return GradAdresaValidator.normalizeGrad(grad);
   }
 
   /// Gradi listu zahtjeva (seat_requests)

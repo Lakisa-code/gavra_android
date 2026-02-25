@@ -218,41 +218,6 @@ class PushTokenService {
     }
   }
 
-  /// 📊 Dohvati tokene za listu putnika (po putnik_id)
-  static Future<List<Map<String, String>>> getTokensForPutnici(List<String> putnikIds) async {
-    if (putnikIds.isEmpty) return [];
-
-    try {
-      final response = await _supabase
-          .from('push_tokens')
-          .select('putnik_id, token, provider')
-          .eq('user_type', 'putnik')
-          .inFilter('putnik_id', putnikIds);
-
-      return (response as List)
-          .map<Map<String, String>>((row) {
-            return {
-              'putnik_id': row['putnik_id']?.toString() ?? '',
-              'token': row['token'] as String? ?? '',
-              'provider': row['provider'] as String? ?? '',
-            };
-          })
-          .where((t) => t['token']!.isNotEmpty)
-          .toList();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [PushToken] Greška pri dohvatanju tokena putnika: $e');
-      }
-      return [];
-    }
-  }
-
-  /// 📊 Dohvati tokene za jednog putnika (po putnik_id)
-  /// Vraća listu jer putnik može imati više uređaja (roditelj + dete)
-  static Future<List<Map<String, String>>> getTokensForPutnik(String putnikId) async {
-    return getTokensForPutnici([putnikId]);
-  }
-
   /// 🚗 Dohvati tokene za sve vozače
   /// Koristi se za slanje vremenskih upozorenja i drugih vozačkih notifikacija
   static Future<List<Map<String, String>>> getTokensForVozaci() async {

@@ -39,16 +39,10 @@ class PutnikCountHelper {
 
       final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
 
-      // Koristi centralizovane helpere za proveru grada
-      final jeBelaCrkva = GradAdresaValidator.isBelaCrkva(p.grad);
-      final jeVrsac = GradAdresaValidator.isVrsac(p.grad);
-
-      // 🎓 BC LOGIKA (DISPLAY OVERRIDE):
-      // Za prikaz na Nav Bar-u BROJIMO SVE PUTNIKE (uključujući đake u BC)
-      // jer vozač mora da vidi koliko ljudi fizički ima u vozilu.
-      if (jeBelaCrkva) {
+      // Koristi direktno poređenje - p.grad je uvek 'BC' ili 'VS'
+      if (p.grad == 'BC') {
         brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
-      } else if (jeVrsac) {
+      } else if (p.grad == 'VS') {
         brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;
       }
     }
@@ -62,12 +56,8 @@ class PutnikCountHelper {
   /// Dohvati broj putnika za grad i vreme
   int getCount(String grad, String vreme) {
     final normVreme = GradAdresaValidator.normalizeTime(vreme);
-    if (GradAdresaValidator.isBelaCrkva(grad)) {
-      return brojPutnikaBC[normVreme] ?? 0;
-    }
-    if (GradAdresaValidator.isVrsac(grad)) {
-      return brojPutnikaVS[normVreme] ?? 0;
-    }
+    if (grad == 'BC') return brojPutnikaBC[normVreme] ?? 0;
+    if (grad == 'VS') return brojPutnikaVS[normVreme] ?? 0;
     return 0;
   }
 }

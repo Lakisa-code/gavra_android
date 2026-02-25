@@ -15,6 +15,8 @@ class SeatRequest {
   final String? alternativeVreme2;
   final int brojMesta;
   final String? customAdresaId;
+  final String? cancelledBy; // Ime vozača koji je otkazao
+  final String? pokupljenoBy; // Ime vozača koji je pokupio putnika
 
   // Polja iz join-a (opciono)
   final String? putnikIme;
@@ -37,6 +39,8 @@ class SeatRequest {
     this.alternativeVreme2,
     this.brojMesta = 1,
     this.customAdresaId,
+    this.cancelledBy,
+    this.pokupljenoBy,
     this.putnikIme,
     this.brojTelefona,
     this.tipPutnika,
@@ -62,33 +66,12 @@ class SeatRequest {
       alternativeVreme2: json['alternative_vreme_2'] as String?,
       brojMesta: json['broj_mesta'] as int? ?? 1,
       customAdresaId: json['custom_adresa_id'] as String?,
+      cancelledBy: json['cancelled_by'] as String?,
+      pokupljenoBy: json['pokupljeno_by'] as String?,
       putnikIme: putnikData?['putnik_ime'] ?? json['putnik_ime'] as String?,
       brojTelefona: putnikData?['broj_telefona'] ?? json['broj_telefona'] as String?,
-      tipPutnika: putnikData?['tip'] ?? json['tip'] as String?,
+      tipPutnika: putnikData?['tip'] ?? json['tip_putnika'] ?? json['tip'] as String?,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'putnik_id': putnikId,
-      'grad': grad,
-      'dan': dan,
-      'zeljeno_vreme': zeljenoVreme,
-      'dodeljeno_vreme': dodeljenoVreme,
-      'status': status,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
-      'processed_at': processedAt?.toIso8601String(),
-      'priority': priority,
-      'alternative_vreme_1': alternativeVreme1,
-      'alternative_vreme_2': alternativeVreme2,
-      'broj_mesta': brojMesta,
-      'custom_adresa_id': customAdresaId,
-      if (putnikIme != null) 'putnik_ime': putnikIme,
-      if (brojTelefona != null) 'broj_telefona': brojTelefona,
-      if (tipPutnika != null) 'tip': tipPutnika,
-    };
   }
 
   SeatRequest copyWith({
@@ -107,6 +90,8 @@ class SeatRequest {
     String? alternativeVreme2,
     int? brojMesta,
     String? customAdresaId,
+    String? cancelledBy,
+    String? pokupljenoBy,
     String? putnikIme,
     String? brojTelefona,
     String? tipPutnika,
@@ -127,6 +112,8 @@ class SeatRequest {
       alternativeVreme2: alternativeVreme2 ?? this.alternativeVreme2,
       brojMesta: brojMesta ?? this.brojMesta,
       customAdresaId: customAdresaId ?? this.customAdresaId,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
+      pokupljenoBy: pokupljenoBy ?? this.pokupljenoBy,
       putnikIme: putnikIme ?? this.putnikIme,
       brojTelefona: brojTelefona ?? this.brojTelefona,
       tipPutnika: tipPutnika ?? this.tipPutnika,

@@ -41,16 +41,6 @@ bool get isSupabaseReady {
 /// 'praznici' = praznični raspored
 final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('letnji');
 
-/// Helper za dobijanje trenutnog tipa nav bara
-String get currentNavBarType => navBarTypeNotifier.value;
-
-/// ❄️ ZIMSKI MOD - Proverava da li je zimski red vožnje aktivan
-/// ⚠️ AUTO REŽIM JE UKLONJEN - Koristi se isključivo vrednost iz baze (Supabase)
-bool isWinterDate(DateTime date) {
-  // Primarni izvor istine je navBarTypeNotifier (koji se puni iz app_settings tabele)
-  return navBarTypeNotifier.value == 'zimski';
-}
-
 /// ❄️ ZIMSKI MOD - Proverava da li je zimski red vožnje aktivan SADA
 bool get isWinter => navBarTypeNotifier.value == 'zimski';
 
@@ -62,25 +52,6 @@ final ValueNotifier<bool> praznicniModNotifier = ValueNotifier<bool>(false);
 
 /// Helper za proveru prazničnog moda
 bool get isPraznicniMod => praznicniModNotifier.value;
-
-/// 🧪 DEBUG: Simulirani dan u nedelji za testiranje
-/// null = koristi pravi datum, 1-7 = ponedeljak-nedelja
-/// POSTAVI NA null PRE PRODUKCIJE!
-int? debugSimulatedWeekday; // 1=pon, 2=uto, 3=sre, 4=čet, 5=pet, 6=sub, 7=ned
-
-/// 🧪 DEBUG: Simulirano vreme (sat) za testiranje
-/// null = koristi pravo vreme
-int? debugSimulatedHour;
-
-/// Helper funkcija za dobijanje trenutnog dana (sa debug override)
-int getCurrentWeekday() {
-  return debugSimulatedWeekday ?? DateTime.now().weekday;
-}
-
-/// Helper funkcija za dobijanje trenutnog sata (sa debug override)
-int getCurrentHour() {
-  return debugSimulatedHour ?? DateTime.now().hour;
-}
 
 /// 🔐 GLOBALNA INSTANCA CONFIG SERVICE
 /// Centralizovano upravljanje svim kredencijalima i konfiguracijom

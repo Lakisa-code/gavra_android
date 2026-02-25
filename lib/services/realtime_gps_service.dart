@@ -30,8 +30,7 @@ class RealtimeGpsService {
       final androidSettings = AndroidSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 100, // Ili svakih 100 metara ako brže
-        intervalDuration:
-            const Duration(seconds: 30), // Update svakih 30 sekundi
+        intervalDuration: const Duration(seconds: 30), // Update svakih 30 sekundi
       );
 
       // Pokreni tracking
@@ -59,38 +58,6 @@ class RealtimeGpsService {
   static Future<void> stopTracking() async {
     await _positionSubscription?.cancel();
     _positionSubscription = null;
-  }
-
-  /// 📍 GET CURRENT POSITION (one-time)
-  static Future<Position> getCurrentPosition() async {
-    try {
-      return await Geolocator.getCurrentPosition(
-          // desiredAccuracy: deprecated, use settings parameter
-          );
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// 📏 CALCULATE DISTANCE TO DESTINATION
-  static double calculateDistance(Position from, double toLat, double toLng) {
-    return Geolocator.distanceBetween(
-          from.latitude,
-          from.longitude,
-          toLat,
-          toLng,
-        ) /
-        1000; // Convert to kilometers
-  }
-
-  /// 🧭 CALCULATE BEARING TO DESTINATION
-  static double calculateBearing(Position from, double toLat, double toLng) {
-    return Geolocator.bearingBetween(
-      from.latitude,
-      from.longitude,
-      toLat,
-      toLng,
-    );
   }
 
   /// 🛑 DISPOSE RESOURCES

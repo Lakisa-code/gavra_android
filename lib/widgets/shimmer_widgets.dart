@@ -112,40 +112,6 @@ class ShimmerWidgets {
     );
   }
 
-  /// Shimmer za liste
-  static Widget listItemShimmer(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-      highlightColor: Theme.of(context).colorScheme.surface,
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-        title: Container(
-          height: 16,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        subtitle: Container(
-          height: 12,
-          width: 100,
-          margin: const EdgeInsets.only(top: 4),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-      ),
-    );
-  }
-
   /// Shimmer za cele liste putnika
   static Widget putnikListShimmer({int itemCount = 5}) {
     return ListView.builder(
@@ -193,35 +159,6 @@ class ShimmerWidgets {
           ],
         ),
       ),
-    );
-  }
-
-  /// 💎 Custom shimmer wrapper
-  static Widget shimmerWrapper({
-    required BuildContext context,
-    required Widget child,
-    Color? baseColor,
-    Color? highlightColor,
-  }) {
-    return Shimmer.fromColors(
-      baseColor:
-          baseColor ?? Theme.of(context).colorScheme.surfaceContainerHighest,
-      highlightColor: highlightColor ?? Theme.of(context).colorScheme.surface,
-      child: child,
-    );
-  }
-}
-
-/// Shimmer Loading State Manager
-class ShimmerState {
-  static Widget buildShimmerOrContent({
-    required bool isLoading,
-    required Widget content,
-    required Widget shimmer,
-  }) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: isLoading ? shimmer : content,
     );
   }
 }

@@ -67,7 +67,7 @@ class _BottomNavBarLetnjiState extends State<BottomNavBarLetnji> {
     final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaLetnji;
     final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaLetnji;
 
-    if (widget.selectedGrad == 'Bela Crkva') {
+    if (widget.selectedGrad == 'BC') {
       final index = bcVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _bcScrollController.hasClients) {
         final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
@@ -77,7 +77,7 @@ class _BottomNavBarLetnjiState extends State<BottomNavBarLetnji> {
           curve: Curves.easeInOut,
         );
       }
-    } else if (widget.selectedGrad == 'Vrsac') {
+    } else if (widget.selectedGrad == 'VS') {
       final index = vsVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _vsScrollController.hasClients) {
         final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
@@ -136,7 +136,7 @@ class _BottomNavBarLetnjiState extends State<BottomNavBarLetnji> {
                   vremena: bcVremena,
                   selectedGrad: widget.selectedGrad,
                   selectedVreme: widget.selectedVreme,
-                  grad: 'Bela Crkva',
+                  grad: 'BC',
                   onPolazakChanged: widget.onPolazakChanged,
                   getPutnikCount: widget.getPutnikCount,
                   getKapacitet: widget.getKapacitet,
@@ -152,7 +152,7 @@ class _BottomNavBarLetnjiState extends State<BottomNavBarLetnji> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: _PolazakRow(
                     label: 'VS',
-                    grad: 'Vrsac',
+                    grad: 'VS',
                     vremena: vsVremena,
                     selectedGrad: widget.selectedGrad,
                     selectedVreme: widget.selectedVreme,

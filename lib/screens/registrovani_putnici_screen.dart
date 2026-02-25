@@ -15,7 +15,6 @@ import '../utils/app_snack_bar.dart';
 import '../utils/vozac_cache.dart';
 import '../widgets/pin_dialog.dart';
 import '../widgets/registrovani_putnik_dialog.dart';
-import 'registrovani_putnik_profil_screen.dart';
 
 // 🔌 HELPER EXTENSION za Set poredenje
 extension SetExtensions<T> on Set<T> {
@@ -35,7 +34,6 @@ class RegistrovaniPutniciScreen extends StatefulWidget {
 class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni'
-  String _paymentFilter = 'svi'; // 'svi', 'platili', 'nisu_platili'
 
   // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon cuvanja
   int _streamRefreshKey = 0;
@@ -56,16 +54,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   late TextEditingController _brojTelefonaController;
   late TextEditingController _brojTelefonaOcaController;
   late TextEditingController _brojTelefonaMajkeController;
-  late TextEditingController _adresaBelaCrkvaController;
-  late TextEditingController _adresaVrsacController;
-
-  // Departure time controllers for new passenger (map-based per day)
-  final Map<String, TextEditingController> _polazakBcControllers = {};
-  final Map<String, TextEditingController> _polazakVsControllers = {};
-
-  // Time input controllers for new passenger
-  final Map<String, TextEditingController> _vremenaBcControllers = {};
-  final Map<String, TextEditingController> _vremenaVsControllers = {};
 
   // Services
   final List<StreamSubscription> _subscriptions = [];
@@ -94,19 +82,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     _brojTelefonaController = TextEditingController();
     _brojTelefonaOcaController = TextEditingController();
     _brojTelefonaMajkeController = TextEditingController();
-    _adresaBelaCrkvaController = TextEditingController();
-    _adresaVrsacController = TextEditingController();
-
-    // Initialize departure time controllers (map-based)
-    const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
-    for (final dan in dani) {
-      _polazakBcControllers[dan] = TextEditingController();
-      _polazakVsControllers[dan] = TextEditingController();
-    }
-    for (final dan in dani) {
-      _vremenaBcControllers[dan] = TextEditingController();
-      _vremenaVsControllers[dan] = TextEditingController();
-    }
   }
 
   // ⚙️ OPTIMIZACIJA: Inicijalizacija debounced search i error handling
@@ -139,16 +114,12 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     });
   }
 
-  // 🚀 BATCH UCITAVANJE - sve tri operacije odjednom za optimalne performanse
-  /// Učitaj stvarna plaćanja, adrese i plaćene mesece odjednom korišćenjem Future.wait()
+  // 🚀 BATCH UCITAVANJE
   Future<void> _ucitajSvePodatke(List<RegistrovaniPutnik> putnici) async {
     if (putnici.isEmpty) return;
 
     try {
-      // Pokreni preostale operacije paralelno
-      await Future.wait([
-        _ucitajStvarnaPlacanja(putnici),
-      ]);
+      await _ucitajStvarnaPlacanja(putnici);
     } catch (e) {
       debugPrint('🔴 [RegistrovaniPutnici._ucitajSvePodatke] Error: $e');
     }
@@ -252,22 +223,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   void dispose() {
     // Cleanup debounce timer
     _paymentUpdateDebounceTimer?.cancel();
-
-    // SAFE DISPOSAL ValueNotifier-a
-    try {
-      if (mounted) {
-        // No additional disposals needed
-      }
-    } catch (e) {
-      // Warning disposing ValueNotifiers
-    }
-
-    // OPTIMIZACIJA: Cleanup resources
-    try {
-      _connectionSubscription?.cancel();
-    } catch (e) {
-      // Warning disposing streams
-    }
+    _connectionSubscription?.cancel();
 
     // COMPREHENSIVE TEXTCONTROLLER CLEANUP
     try {
@@ -277,28 +233,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       _brojTelefonaController.dispose();
       _brojTelefonaOcaController.dispose();
       _brojTelefonaMajkeController.dispose();
-      _adresaBelaCrkvaController.dispose();
-      _adresaVrsacController.dispose();
-
-      // CRITICAL FIX: Dispose ALL time controllers
-      for (final controller in _vremenaBcControllers.values) {
-        controller.dispose();
-      }
-      for (final controller in _vremenaVsControllers.values) {
-        controller.dispose();
-      }
-
-      // Dispose departure time controllers
-      for (final c in _polazakBcControllers.values) {
-        c.dispose();
-      }
-      for (final c in _polazakVsControllers.values) {
-        c.dispose();
-      }
 
       _subscriptions.forEach((subscription) => subscription.cancel());
     } catch (e) {
-      // Warning disposing controllers
+      // ignore controller dispose errors
     }
 
     super.dispose();
@@ -328,8 +266,12 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       }).toList();
     }
 
-    // ?? BINARYBITCH SORTING BLADE: A Ž (Serbian alphabet)
-    filtered.sort((a, b) => a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase()));
+    // ?? BINARYBITCH SORTING BLADE: A Ž (Serbian alphabet), neaktivni na dno
+    filtered.sort((a, b) {
+      // Neaktivni uvek idu na kraj
+      if (a.aktivan != b.aktivan) return a.aktivan ? -1 : 1;
+      return a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase());
+    });
 
     return filtered;
   }
@@ -777,412 +719,395 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     // Sada prikazujemo sve dane koji imaju bar jedan polazak (BC i/ili VS)
     final List<String> _daniOrder = ['pon', 'uto', 'sre', 'cet', 'pet'];
 
+    final bool neaktivan = !putnik.aktivan && !bolovanje;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 4,
+      elevation: neaktivan ? 1 : 4,
       shadowColor: Colors.black26,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: bolovanje
-              ? LinearGradient(
-                  colors: [Colors.amber[50]!, Colors.orange[50]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : LinearGradient(
-                  colors: [Colors.white, Colors.grey[50]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-          border: Border.all(
-            color: bolovanje ? Colors.orange[200]! : Colors.grey[200]!,
+      child: Opacity(
+        opacity: neaktivan ? 0.55 : 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: bolovanje
+                ? LinearGradient(
+                    colors: [Colors.amber[50]!, Colors.orange[50]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : neaktivan
+                    ? LinearGradient(
+                        colors: [Colors.grey[200]!, Colors.grey[300]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : LinearGradient(
+                        colors: [Colors.white, Colors.grey[50]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+            border: Border.all(
+              color: bolovanje
+                  ? Colors.orange[200]!
+                  : neaktivan
+                      ? Colors.grey[400]!
+                      : Colors.grey[200]!,
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ?? HEADER - Ime, broj i aktivnost switch
-              Row(
-                children: [
-                  // Redni broj i ime
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Text(
-                          '$redniBroj.',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            putnik.putnikIme,
-                            style: TextStyle(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ?? HEADER - Ime, broj i aktivnost switch
+                Row(
+                  children: [
+                    // Redni broj i ime
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Text(
+                            '$redniBroj.',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: bolovanje ? Colors.orange : null,
+                              color: Colors.grey,
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              putnik.putnikIme,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: bolovanje ? Colors.orange : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Switch za aktivnost ili bolovanje
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          bolovanje ? 'BOLUJE' : (putnik.aktivan ? 'AKTIVAN' : 'PAUZIRAN'),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: bolovanje ? Colors.orange : (putnik.aktivan ? Colors.green : Colors.grey),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Switch(
+                          value: putnik.aktivan,
+                          onChanged: bolovanje ? null : (value) => _toggleAktivnost(putnik),
+                          thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.green;
+                            }
+                            return Colors.grey;
+                          }),
+                          trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.green.shade200;
+                            }
+                            return Colors.grey.shade300;
+                          }),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ],
                     ),
-                  ),
-                  // Switch za aktivnost ili bolovanje
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        bolovanje ? 'BOLUJE' : (putnik.aktivan ? 'AKTIVAN' : 'PAUZIRAN'),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: bolovanje ? Colors.orange : (putnik.aktivan ? Colors.green : Colors.grey),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // ?? OSNOVNE INFORMACIJE - tip, telefon, škola, statistike u jednom redu
+                Row(
+                  children: [
+                    // Tip putnika
+                    Expanded(
+                      flex: 2,
+                      child: Row(
+                        children: [
+                          Icon(
+                            putnik.tip == 'radnik'
+                                ? Icons.engineering
+                                : putnik.tip == 'dnevni'
+                                    ? Icons.today
+                                    : Icons.school,
+                            size: 16,
+                            color: putnik.tip == 'radnik'
+                                ? Colors.blue.shade600
+                                : putnik.tip == 'dnevni'
+                                    ? Colors.orange.shade600
+                                    : Colors.green.shade600,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            putnik.tip.toUpperCase(),
+                            style: TextStyle(
+                              color: putnik.tip == 'radnik'
+                                  ? Colors.blue.shade700
+                                  : putnik.tip == 'dnevni'
+                                      ? Colors.orange.shade700
+                                      : Colors.green.shade700,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Telefon - prikaže broj dostupnih kontakata
+                    if (putnik.brojTelefona != null ||
+                        putnik.brojTelefonaOca != null ||
+                        putnik.brojTelefonaMajke != null)
+                      Expanded(
+                        flex: 3,
+                        child: Row(
+                          children: [
+                            // Ikone za dostupne kontakte
+                            if (putnik.brojTelefona != null)
+                              Icon(
+                                Icons.person,
+                                size: 14,
+                                color: Colors.green.shade600,
+                              ),
+                            if (putnik.brojTelefonaOca != null)
+                              Icon(
+                                Icons.man,
+                                size: 14,
+                                color: Colors.blue.shade600,
+                              ),
+                            if (putnik.brojTelefonaMajke != null)
+                              Icon(
+                                Icons.woman,
+                                size: 14,
+                                color: Colors.pink.shade600,
+                              ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${_prebrojKontakte(putnik)} kontakt${_prebrojKontakte(putnik) == 1 ? '' : 'a'}',
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Tip škole/ustanova (ako postoji)
+                    if (putnik.tipSkole != null)
+                      Expanded(
+                        flex: 3,
+                        child: Row(
+                          children: [
+                            Icon(
+                              putnik.tip == 'ucenik' ? Icons.school_outlined : Icons.business_outlined,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                putnik.tipSkole!,
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+
+                // ??? PLACANJE I STATISTIKE - jednaki elementi u redu
+
+                Row(
+                  children: [
+                    // ?? DUGME ZA PLACANJE
+                    Expanded(
+                      child: _buildCompactActionButton(
+                        onPressed: () => _prikaziPlacanje(putnik),
+                        icon: (_stvarnaPlacanja[putnik.id] ?? 0) > 0
+                            ? Icons.check_circle_outline
+                            : Icons.payments_outlined,
+                        label: (_stvarnaPlacanja[putnik.id] ?? 0) > 0
+                            ? '${(_stvarnaPlacanja[putnik.id]!).toStringAsFixed(0)} RSD'
+                            : 'Plati',
+                        color: (_stvarnaPlacanja[putnik.id] ?? 0) > 0 ? Colors.green : Colors.purple,
+                      ),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    // ?? DUGME ZA DETALJE
+                    Expanded(
+                      child: _buildCompactActionButton(
+                        onPressed: () => _prikaziDetaljneStatistike(putnik),
+                        icon: Icons.analytics_outlined,
+                        label: 'Detalji',
+                        color: Colors.blue,
+                      ),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    // ?? BROJAC PUTOVANJA
+                    Expanded(
+                      child: Container(
+                        height: 28,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.green.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.trending_up,
+                              size: 14,
+                              color: Colors.green.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            StreamBuilder<int>(
+                              stream: Stream.fromFuture(
+                                  RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id)),
+                              builder: (context, snapshot) => Text(
+                                '${snapshot.data ?? 0}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.green.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    // ? BROJAC OTKAZIVANJA
+                    Expanded(
+                      child: Container(
+                        height: 28,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.red.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.cancel_outlined,
+                              size: 14,
+                              color: Colors.red.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            StreamBuilder<int>(
+                              stream: Stream.fromFuture(
+                                  RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id)),
+                              builder: (context, snapshot) => Text(
+                                '${snapshot.data ?? 0}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.red.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // ??? ACTION BUTTONS - samo najvažnije
+                Row(
+                  children: [
+                    // Pozovi (ako ima bilo koji telefon)
+                    if (putnik.brojTelefona != null ||
+                        putnik.brojTelefonaOca != null ||
+                        putnik.brojTelefonaMajke != null) ...[
+                      Expanded(
+                        child: _buildCompactActionButton(
+                          onPressed: () => _pokaziKontaktOpcije(putnik),
+                          icon: Icons.phone,
+                          label: 'Pozovi',
+                          color: Colors.green,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Switch(
-                        value: putnik.aktivan,
-                        onChanged: bolovanje ? null : (value) => _toggleAktivnost(putnik),
-                        thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
-                          if (states.contains(WidgetState.selected)) {
-                            return Colors.green;
-                          }
-                          return Colors.grey;
-                        }),
-                        trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
-                          if (states.contains(WidgetState.selected)) {
-                            return Colors.green.shade200;
-                          }
-                          return Colors.grey.shade300;
-                        }),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
                     ],
-                  ),
-                ],
-              ),
 
-              const SizedBox(height: 12),
-
-              // ?? OSNOVNE INFORMACIJE - tip, telefon, škola, statistike u jednom redu
-              Row(
-                children: [
-                  // Tip putnika
-                  Expanded(
-                    flex: 2,
-                    child: Row(
-                      children: [
-                        Icon(
-                          putnik.tip == 'radnik'
-                              ? Icons.engineering
-                              : putnik.tip == 'dnevni'
-                                  ? Icons.today
-                                  : Icons.school,
-                          size: 16,
-                          color: putnik.tip == 'radnik'
-                              ? Colors.blue.shade600
-                              : putnik.tip == 'dnevni'
-                                  ? Colors.orange.shade600
-                                  : Colors.green.shade600,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          putnik.tip.toUpperCase(),
-                          style: TextStyle(
-                            color: putnik.tip == 'radnik'
-                                ? Colors.blue.shade700
-                                : putnik.tip == 'dnevni'
-                                    ? Colors.orange.shade700
-                                    : Colors.green.shade700,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Telefon - prikaže broj dostupnih kontakata
-                  if (putnik.brojTelefona != null || putnik.brojTelefonaOca != null || putnik.brojTelefonaMajke != null)
-                    Expanded(
-                      flex: 3,
-                      child: Row(
-                        children: [
-                          // Ikone za dostupne kontakte
-                          if (putnik.brojTelefona != null)
-                            Icon(
-                              Icons.person,
-                              size: 14,
-                              color: Colors.green.shade600,
-                            ),
-                          if (putnik.brojTelefonaOca != null)
-                            Icon(
-                              Icons.man,
-                              size: 14,
-                              color: Colors.blue.shade600,
-                            ),
-                          if (putnik.brojTelefonaMajke != null)
-                            Icon(
-                              Icons.woman,
-                              size: 14,
-                              color: Colors.pink.shade600,
-                            ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${_prebrojKontakte(putnik)} kontakt${_prebrojKontakte(putnik) == 1 ? '' : 'a'}',
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // Tip škole/ustanova (ako postoji)
-                  if (putnik.tipSkole != null)
-                    Expanded(
-                      flex: 3,
-                      child: Row(
-                        children: [
-                          Icon(
-                            putnik.tip == 'ucenik' ? Icons.school_outlined : Icons.business_outlined,
-                            size: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              putnik.tipSkole!,
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 12,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-
-              // ?? ADRESE - BC i VS
-              if (putnik.adresaBelaCrkvaId != null || putnik.adresaVrsacId != null)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Address display removed
-                    ],
-                  ),
-                ),
-
-              // Raspored termina je uklonjen jer se sada koristi isključivo tabela seat_requests
-              // koji su vezani za konkretne datume, a ne fiksno za profil putnika.
-              // UKLONJENO: Radni dani prikaz - informacija se nalazi u seat_requests
-
-              // ??? PLACANJE I STATISTIKE - jednaki elementi u redu
-
-              Row(
-                children: [
-                  // ?? DUGME ZA PLACANJE
-                  Expanded(
-                    child: _buildCompactActionButton(
-                      onPressed: () => _prikaziPlacanje(putnik),
-                      icon:
-                          (_stvarnaPlacanja[putnik.id] ?? 0) > 0 ? Icons.check_circle_outline : Icons.payments_outlined,
-                      label: (_stvarnaPlacanja[putnik.id] ?? 0) > 0
-                          ? '${(_stvarnaPlacanja[putnik.id]!).toStringAsFixed(0)} RSD'
-                          : 'Plati',
-                      color: (_stvarnaPlacanja[putnik.id] ?? 0) > 0 ? Colors.green : Colors.purple,
-                    ),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  // ?? DUGME ZA DETALJE
-                  Expanded(
-                    child: _buildCompactActionButton(
-                      onPressed: () => _prikaziDetaljneStatistike(putnik),
-                      icon: Icons.analytics_outlined,
-                      label: 'Detalji',
-                      color: Colors.blue,
-                    ),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  // ?? BROJAC PUTOVANJA
-                  Expanded(
-                    child: Container(
-                      height: 28,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: Colors.green.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.trending_up,
-                            size: 14,
-                            color: Colors.green.shade700,
-                          ),
-                          const SizedBox(width: 4),
-                          StreamBuilder<int>(
-                            stream: Stream.fromFuture(
-                                RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(putnik.id)),
-                            builder: (context, snapshot) => Text(
-                              '${snapshot.data ?? 0}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  // ? BROJAC OTKAZIVANJA
-                  Expanded(
-                    child: Container(
-                      height: 28,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: Colors.red.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.cancel_outlined,
-                            size: 14,
-                            color: Colors.red.shade700,
-                          ),
-                          const SizedBox(width: 4),
-                          StreamBuilder<int>(
-                            stream: Stream.fromFuture(
-                                RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(putnik.id)),
-                            builder: (context, snapshot) => Text(
-                              '${snapshot.data ?? 0}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.red.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // ??? ACTION BUTTONS - samo najvažnije
-              Row(
-                children: [
-                  // Pozovi (ako ima bilo koji telefon)
-                  if (putnik.brojTelefona != null ||
-                      putnik.brojTelefonaOca != null ||
-                      putnik.brojTelefonaMajke != null) ...[
+                    // Uredi
                     Expanded(
                       child: _buildCompactActionButton(
-                        onPressed: () => _pokaziKontaktOpcije(putnik),
-                        icon: Icons.phone,
-                        label: 'Pozovi',
-                        color: Colors.green,
+                        onPressed: () => _editPutnik(putnik),
+                        icon: Icons.edit_outlined,
+                        label: 'Uredi',
+                        color: Colors.blue,
                       ),
                     ),
+
                     const SizedBox(width: 6),
-                  ],
 
-                  // Uredi
-                  Expanded(
-                    child: _buildCompactActionButton(
-                      onPressed: () => _editPutnik(putnik),
-                      icon: Icons.edit_outlined,
-                      label: 'Uredi',
-                      color: Colors.blue,
-                    ),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  // 👤 Profil
-                  Expanded(
-                    child: _buildCompactActionButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => RegistrovaniPutnikProfilScreen(
-                            putnikData: putnik.toMap(),
-                          ),
-                        ),
+                    // ?? PIN
+                    Expanded(
+                      child: _buildCompactActionButton(
+                        onPressed: () => _showPinDialog(putnik),
+                        icon: Icons.lock_outline,
+                        label: 'PIN',
+                        color: Colors.amber,
                       ),
-                      icon: Icons.person_outline,
-                      label: 'Profil',
-                      color: Colors.purple,
                     ),
-                  ),
 
-                  const SizedBox(width: 6),
+                    const SizedBox(width: 6),
 
-                  // ?? PIN
-                  Expanded(
-                    child: _buildCompactActionButton(
-                      onPressed: () => _showPinDialog(putnik),
-                      icon: Icons.lock_outline,
-                      label: 'PIN',
-                      color: Colors.amber,
+                    // Obriši
+                    Expanded(
+                      child: _buildCompactActionButton(
+                        onPressed: () => _obrisiPutnika(putnik),
+                        icon: Icons.delete_outline,
+                        label: 'Obriši',
+                        color: Colors.red,
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  // Obriši
-                  Expanded(
-                    child: _buildCompactActionButton(
-                      onPressed: () => _obrisiPutnika(putnik),
-                      icon: Icons.delete_outline,
-                      label: 'Obriši',
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1268,7 +1193,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
               _streamRefreshKey++;
               // ?? RESET FILTERA: Kada se sačuva putnik, očisti filtere da se svi vide
               _selectedFilter = 'svi';
-              _paymentFilter = 'svi';
               _searchController.clear();
             });
           }
@@ -1301,7 +1225,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
             setState(() {
               // ?? RESET FILTERA: Kada se doda novi putnik, očisti filtere da se svi vide
               _selectedFilter = 'svi';
-              _paymentFilter = 'svi';
               _searchController.clear();
             });
           }
@@ -1309,8 +1232,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       ),
     );
   }
-
-  /// ?? SACUVAJ VREME POLASKA U ISTORIJU ZA AUTOCOMPLETEthere to reduce duplication)
 
   void _obrisiPutnika(RegistrovaniPutnik putnik) async {
     // Pokaži potvrdu za brisanje
@@ -1353,10 +1274,11 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('• Putnik će biti označen kao obrisan'),
-                  const Text('• Postojeća istorija putovanja se čuva'),
-                  const Text('• Istorija vožnji ostaje u voznje_log'),
-                  const Text('• Možete kasnije ponovo aktivirati putnika'),
+                  const Text('• Putnik će biti TRAJNO obrisan iz baze'),
+                  const Text('• Sve vožnje i statistike se brišu'),
+                  const Text('• Svi zahtevi za sedišta se brišu'),
+                  const Text('• Ova akcija je NEPOVRATNA!',
+                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -1527,9 +1449,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
   // ?? PRIKAZ DIJALOGA ZA PLACANJE
   Future<void> _prikaziPlacanje(RegistrovaniPutnik putnik) async {
-    // Payment history not pre-loaded
-
-    // ??? Proveri da li je widget još uvek mountovan nakon async operacije
     if (!mounted) return;
 
     final TextEditingController iznosController = TextEditingController();
@@ -1744,18 +1663,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                             }
                           },
                           items: _getMonthOptions().map<DropdownMenuItem<String>>((String value) {
-                            // Proveri da li je mesec placen
-                            final bool isPlacen = _isMonthPaid(value, putnik);
-
                             return DropdownMenuItem<String>(
                               value: value,
-                              child: Text(
-                                value,
-                                style: TextStyle(
-                                  color: isPlacen ? Colors.green[700] : null,
-                                  fontWeight: isPlacen ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
+                              child: Text(value),
                             );
                           }).toList(),
                         ),
@@ -1908,24 +1818,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     return options;
   }
 
-  // ?? PROVERI DA LI JE MESEC PLACEN
-  bool _isMonthPaid(String monthYear, RegistrovaniPutnik putnik) {
-    // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
-    final parts = monthYear.split(' ');
-    if (parts.length != 2) return false;
-
-    final monthName = parts[0];
-    final year = int.tryParse(parts[1]);
-    if (year == null) return false;
-
-    final monthNumber = _getMonthNumber(monthName);
-    if (monthNumber == 0) return false;
-
-    // Simplified to return false
-    // Would need to fetch payment data directly from database
-    return false;
-  }
-
   // ?? HELPER: DOBIJ BROJ MESECA IZ IMENA
   int _getMonthNumber(String monthName) {
     const months = [
@@ -1990,8 +1882,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       'godina': year,
     };
   }
-
-  // UKLONJENO: Unused funkcije za stari UI (linije 2041-2439)
 
   Future<String> _getCurrentDriverName() async {
     final prefs = await SharedPreferences.getInstance();

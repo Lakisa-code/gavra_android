@@ -1,296 +1,206 @@
-# 🪑 SEAT_REQUEST PRAVILA — ZAUVEK ZACEMENTIRANO
+# Seat Requests — Pravila i Analiza
 
-> **Ovo je jedini izvor istine za seat_requests logiku.**
-> Svaki developer, svaki AI asistent, svaki refactor mora poštovati ovo.
-
----
-
-## 1. ŠTA JE seat_requests
-
-**Operativna tabela** — tekuće stanje vožnji za tekuću sedmicu.
-
-```
-putnik_id | datum | grad | zeljeno_vreme | status
-```
-
-- Jedan red = jedan putnik + jedan datum + jedan grad + jedno vreme
-- **SME** da se briše i menja — to je njena svrha
-- Čisti se subotom u 01:00 (redovi stariji od 30 dana)
-- **NIJE** izvor za statistiku — za to postoji `voznje_log`
+> ⛔ **Zabranjeno je menjati bilo koji kod vezan za seat_requests bez eksplicitnog odobrenja vlasnika projekta.**
 
 ---
 
-## 2. STATUSI — KOMPLETAN SPISAK
+## 1. Šta je `seat_requests`?
 
-| Status | Ko ga setuje | Šta znači | Zauzima mesto? |
-|--------|-------------|-----------|----------------|
-| `pending` | Putnik (app) | Zahtev primljen, čeka dispečera | ✅ DA |
-| `manual` | Putnik (app) | Dnevni putnik — admin obrađuje ručno | ✅ DA |
-| `approved` | Dispečer / Admin | Odobreno, mesto zauzeto | ✅ DA |
-| `confirmed` | Admin / Sync | Potvrđeno od admina ili sinhronizovano iz profila | ✅ DA |
-| `pokupljen` | Vozač (app) | Putnik je fizički ušao u kombi | ✅ DA |
-| `rejected` | Dispečer | Odbijeno — nema mesta, ponuđene alternative | ❌ NE |
-| `otkazano` | Putnik / Vozač / Admin | Putnik otkazao vožnju — upisuje se u voznje_log | ❌ NE |
-| `cancelled` | Sistem | Sistem poništio (npr. novo vreme izabrano) | ❌ NE |
-| `bez_polaska` | Admin | Admin uklonio polazak (neutralno, NE upisuje se u log) | ❌ NE |
+Operativna tabela. Svaki red = jedan nedeljni termin jednog putnika.
 
-### Koji statusi ZAUZIMAJU MESTO (kapacitet):
-```dart
-['pending', 'manual', 'approved', 'confirmed']
-// NE: pokupljen, rejected, otkazano, cancelled, bez_polaska
-```
+**Jedinstveni ključ:** `putnik_id + grad + dan + zeljeno_vreme`  
+➠️ **NOVI PRINCIP (25.02.2026):** Putnik **može** imati više različitih termina za **isti dan i grad**.  
+Primer: Putnik može zakazati 07:00 i 15:00 za BC u ponedeljak — svaki zahtev se obrađuje **posebno**.  
 
-### Koji statusi su AKTIVNI (putnik se vozi):
-```dart
-['pending', 'manual', 'approved', 'confirmed', 'pokupljen']
-```
-
-### Koji statusi su OTKAZANI:
-```dart
-['otkazano', 'cancelled', 'rejected', 'bez_polaska']
-```
+Nije istorijska tabela — istorija se čuva u `voznje_log`.  
+Stari redovi se **ne brišu automatski** (cron za brisanje je uklonjen 2026-02-23).
 
 ---
 
-## 3. ŽIVOTNI TOK STATUSA
+## 2. Kolone tabele
 
-```
-                    ┌─────────────────────────────────┐
-                    │          PUTNIK PRAVI ZAHTEV     │
-                    └─────────────────┬───────────────┘
-                                      │
-                    ┌─────────────────▼───────────────┐
-                    │  status = 'pending'              │
-                    │  (mesečni/učenik/radnik)         │
-                    └──────┬──────────────┬────────────┘
-                           │              │
-              dispečer     │              │  nema mesta
-              odobri        │              │
-                    ┌──────▼───┐    ┌─────▼──────────┐
-                    │ approved │    │    rejected     │
-                    └──────────┘    │ + alternative   │
-                                    └─────────────────┘
-            ─────────────────────────────────────────────
-                    ┌─────────────────────────────────┐
-                    │  DNEVNI PUTNIK (tip='dnevni')    │
-                    └─────────────────┬───────────────┘
-                                      │
-                    ┌─────────────────▼───────────────┐
-                    │  status = 'manual'               │
-                    │  (admin odobrava ručno)          │
-                    └──────────────────────────────────┘
-            ─────────────────────────────────────────────
-                    ┌─────────────────────────────────┐
-                    │  ADMIN / SYNC IZ PROFILA         │
-                    └─────────────────┬───────────────┘
-                                      │
-                    ┌─────────────────▼───────────────┐
-                    │  status = 'confirmed'            │
-                    │  (direktno, bez dispečera)       │
-                    └──────────────────────────────────┘
-            ─────────────────────────────────────────────
-            IZ BILO KOG AKTIVNOG STATUSA:
+| Kolona | Tip | Opis |
+|---|---|---|
+| `id` | uuid | PK |
+| `putnik_id` | uuid FK → `registrovani_putnici` | Ko je putnik (CASCADE DELETE) |
+| `grad` | text | `'BC'` ili `'VS'` (uvek uppercase) |
+| `dan` | text | Kratica dana: `pon`, `uto`, `sre`, `cet`, `pet`, `sub`, `ned` (uvek lowercase) |
+| `zeljeno_vreme` | time | Vreme koje je putnik zatražio |
+| `dodeljeno_vreme` | time | Vreme koje je stvarno dodeljeno (NULL dok nije odobreno) |
+| `status` | text | Videti sekciju 3 |
+| `priority` | integer | Default 1; >1 = prioritetni putnik (prikazuje se badge u UI) |
+| `broj_mesta` | integer | Default 1; koliko mesta zauzima ovaj putnik |
+| `alternative_vreme_1` | time | Slobodan termin PRE željenog (popunjava dispecer pri rejection) |
+| `alternative_vreme_2` | time | Slobodan termin POSLE željenog (popunjava dispecer pri rejection) |
+| `custom_adresa_id` | uuid FK → `adrese` | Custom adresa (SET NULL on delete) |
+| `tip_putnika` | text | Kopija `tip` iz `registrovani_putnici` — automatski se kopira triggerom `trg_sync_tip_putnika` |
+| `pokupljeno_by` | text | Ime vozača koji je označio putnika kao pokupljenog |
+| `cancelled_by` | text | Ime vozača koji je otkazao vožnju |
+| `created_at` | timestamptz | Kada je zahtev kreiran |
+| `updated_at` | timestamptz | Poslednja izmena |
+| `processed_at` | timestamptz | Kada je dispecer obradio zahtev |
 
-            approved / confirmed / pokupljen
-                    │
-                    ├──── vozač klikne "Pokupljen" ──► status = 'pokupljen'
-                    │
-                    ├──── putnik/vozač/admin otkaže ──► status = 'otkazano'
-                    │                                    + INSERT u voznje_log tip='otkazivanje'
-                    │
-                    └──── admin klikne "Bez polaska" ──► status = 'bez_polaska'
-                                                          (NE upisuje se u log)
-```
+> **Napomena:** `vozac_id` (UUID FK) **NE postoji** u `seat_requests` — čuva se **SAMO u `voznje_log`** audit tabeli (vidi sekciju Arhitektura).  
+> U operacionoj tabeli dovoljni su `pokupljeno_by` i `cancelled_by` (text imena) za prikaz.
 
 ---
 
-## 4. ZLATNO PRAVILO — SVAKA OPERACIJA MORA IMATI
+## 3. Statusi
 
-```
-putnik_id + datum + grad + zeljeno_vreme
-```
-
-**Nema izuzetaka.** Ako nedostaje grad ili vreme → operacija se ne radi.
-
-### ✅ Ispravno:
-```dart
-supabase.from('seat_requests')
-  .update({'status': 'pokupljen'})
-  .eq('putnik_id', id)
-  .eq('datum', datum)
-  .eq('grad', grad)          // ← OBAVEZNO
-  .eq('zeljeno_vreme', vreme) // ← OBAVEZNO
-```
-
-### ❌ Zabranjeno:
-```dart
-// BEZ GRADA I VREMENA — dira SVE termine tog dana
-supabase.from('seat_requests')
-  .update({'status': 'pokupljen'})
-  .eq('putnik_id', id)
-  .eq('datum', datum)
-```
+| Status | Značenje | Ko postavlja |
+|---|---|---|
+| `pending` | Čeka obradu od strane digitalnog dispečera. Za `tip = 'dnevni'` — dispecer preskače, admin odobrava ručno. | Flutter app (`insertSeatRequest`) |
+| `approved` | Odobren od dispečera ili admina | Dispecer SQL / `approveRequest()` / `acceptAlternative()` |
+| `confirmed` | Admin je uneo vreme za putnika u "Uredi" dijalogu — odmah odobren bez čekanja | `_syncSeatRequestsWithTemplate` (poziva se automatski nakon čuvanja u "Uredi") |
+| `rejected` | Odbijen — termin pun | Dispecer SQL (`obradi_seat_request`) |
+| `otkazano` | Putnik otkazao vožnju | Vozač iz app-a (`putnik_service.dart`) |
+| `cancelled` | Sistemski otkazano (npr. prihvatanje alternative) | `acceptAlternative()` u Dart kodu |
+| `pokupljen` | Vozač potvrdio da je putnik ukrcan | Vozač iz app-a |
+| `bez_polaska` | Putnik nema polazak (deaktiviran, ili eksplicitno) | `toggleAktivnost()` / admin |
 
 ---
 
-## 5. PRIORITET MATCHINGA (redosled pokušaja)
+## 4. Pravila čekanja (zacementirana 21.02.2026)
 
-Svaka operacija (pokupljen, otkazano, plaćanje) mora pratiti ovaj redosled:
+Važe za auto-obradu u `dispecer_cron_obrada()` → `get_cekanje_pravilo()`.
 
-```
-1. requestId (UUID) — PRIORITET 1, najtačniji
-2. putnik_id + datum + grad + zeljeno_vreme — PRIORITET 2
-3. Ako ni to ne nađe → logiraj grešku, NE radi fallback bez vremena
-```
+| Grad | Tip putnika | Čekanje | Provjera kapaciteta |
+|---|---|---|---|
+| BC | radnik | 5 min | DA |
+| BC | učenik (zahtev poslat **pre** 16:00) | 5 min | **NE** — garantovano mesto |
+| BC | učenik (zahtev poslat **posle** 16:00) | čeka do 20:00h | DA |
+| BC | pošiljka | 5 min | **NE** (ne zauzima mesto) |
+| BC | ostalo (default) | 5 min | DA |
+| VS | radnik | 10 min | DA |
+| VS | učenik | 10 min | DA |
+| VS | pošiljka | 5 min | **NE** (ne zauzima mesto) |
+| VS | ostalo (default) | 10 min | DA |
+| **dnevni** | *svi gradovi* | **NIKAD auto-obrada** | — → ostaje `pending`, admin odobrava ručno |
 
-### ⛔ ZABRANJENO: fallback bez vremena
-```dart
-// NIKAD OVO:
-if (requestId == null) {
-  supabase.from('seat_requests')
-    .update({...})
-    .eq('putnik_id', id)
-    .eq('datum', datum)
-    // ← bez .eq('grad') i .eq('zeljeno_vreme') — ZABRANJENO
-}
-```
+> **Napomena:** Vreme čekanja meri se od `updated_at` reda (svaki novi zahtev ili promena termina resetuje `updated_at` i čekanje kreće iznova).  
 
----
-
-## 6. KADA SE UPISUJE U voznje_log
-
-| Operacija | Upisuje se? | tip u logu |
-|-----------|-------------|------------|
-| Putnik pokupljen | ✅ DA | `'voznja'` |
-| Putnik otkazan | ✅ DA | `'otkazivanje'` |
-| Putnik platio (dnevni) | ✅ DA | `'uplata_dnevna'` |
-| Putnik platio (mesečni) | ✅ DA | `'uplata_mesecna'` |
-| Bez polaska | ❌ NE | — |
-| cancelled (sistem) | ❌ NE | — |
-| Termin zakazan | ✅ DA | `'zakazano'` |
-
-### ⚠️ VAŽNO: voznje_log se NIKAD ne briše, NIKAD ne menja — samo INSERT
+> **UI blokada (25.02.2026):** Blokira se ponovni klik **samo na ISTO** `dan+grad+vreme` dok je status `pending` — prikazuje se poruka *"⏳ Vaš zahtev za ovo vreme je već u obradi. Molimo sačekajte odgovor."*  
+> **Putnik MOŽE** imati više različitih termina za **isti dan** (npr. PON BC 05:00 + PON BC 18:00) — svaki se obrađuje **nezavisno**.  
+> Blokada je u `time_picker_cell.dart`: `if (isPending && hasTime && !isAdmin) return;`  
+> Admin nije blokiran.
 
 ---
 
-## 7. SYNC IZ PROFILA (_syncSeatRequestsWithTemplate)
+## 5. Kapacitet
 
-Kada admin menja profil putnika (vreme, grad), sync funkcija kreira/ažurira seat_requests.
+Funkcija `proveri_slobodna_mesta(grad, vreme, dan)`:
+- Uzima `max_mesta` iz tabele `kapacitet_polazaka` (default 8 ako nema zapisa).
+- Od toga oduzima `SUM(broj_mesta)` svih aktivnih zahteva za isti `dan + grad + zeljeno_vreme` sa statusima: `pending`, `manual`, `approved`, `confirmed`.
+- Vraća slobodan broj mesta.
 
-### Pravila synca:
-- Ako je **vreme prazno** u formi → **preskoči, ne diraj ništa**
-- Ako postoji seat_request sa statusom `otkazano` ili `pokupljen` → **ne ažuriraj**
-- Ako postoji i status je isti i vreme je isto → **ne diraj**
-- Ako ne postoji → **INSERT sa status='confirmed'**
-- Ako postoji sa drugačijim vremenom → **UPDATE zeljeno_vreme + status='confirmed'**
+---
 
-### ⛔ ZABRANJENO u syncu:
-```dart
-// NIKAD postavljati bez_polaska kada je vreme prazno
-if (vreme.isEmpty) {
-  await supabase.from('seat_requests')
-    .update({'status': 'bez_polaska'}) // ← ZABRANJENO
-}
+## 6. Logika upisivanja (Flutter `insertSeatRequest`)
+
+1. Normalizuje `grad` (uppercase) i `vreme`.
+2. **UPSERT po `putnik+grad+dan+VREME`** — svaki termin je **nezavisan**:
+   - Ako postoji zahtev za **isti** `putnik+grad+dan+vreme` → ažurira se (status, broj_mesta, priority, custom_adresa_id).
+   - Ako ne postoji → kreira se **novi** red (ne briše druge termine za taj dan).
+   - `confirmed` status se čuva ako već postoji, ili se postavlja ako je eksplicitno proslijeđen.
+3. Loguje u `voznje_log` tip `'zakazano'`.
+
+**Promjena (25.02.2026):** Prije ove izmjene, upisivanje novog termina je **brisalo SVE** termine za `putnik+grad+dan`.  
+Sada se **čuva više termina** za isti dan, svaki se obrađuje posebno.
+
+---
+
+## 7. Logika `_syncSeatRequestsWithTemplate` (sinhronizacija iz "Uredi")
+
+Poziva se automatski kada admin sačuva izmene u "Uredi putnika" dijalogu.
+
+- Ako ima vreme za `dan+grad` → kreira ili ažurira zahtev sa statusom `confirmed`.
+- Ako je vreme prazno → **ne dira** postojeće termine (ne briše, ne postavlja `bez_polaska`).
+
+---
+
+## 8. Prihvatanje alternative (`acceptAlternative`)
+
+Kada putnik prihvati alternativni termin (iz push notifikacije):
+
+1. Otkaže se **samo originalni zahtev** (requestId) → status `cancelled`.
+2. Isti red se **ažurira** sa: `zeljeno_vreme = novo vreme`, `dodeljeno_vreme = novo vreme`, `status = approved`. **Nema čekanja — putnik je odmah aktivan.**
+3. **Ostali termini** (ako ih ima) za isti dan **ostaju netaknuti**.
+
+**Promjena (25.02.2026):** Prije ove izmjene, prihvatanje alternative je **otkazivalo SVE** termine za `putnik+grad+dan`.  
+Sada se otkazuje **samo konkretni originalni zahtev**, ostali se čuvaju.
+
+---
+
+## 9. Odobravanje i odbijanje (ručno, admin)
+
+`approveRequest(id)`:
+- Status → `approved`
+- `dodeljeno_vreme = zeljeno_vreme`
+- Puni `processed_at` i `updated_at`
+
+`rejectRequest(id)`:
+- Status → `rejected`
+- Puni `processed_at` i `updated_at`
+- Alternative **ne popunjava** ovde — popunjava ih `obradi_seat_request()` u SQL-u.
+
+---
+
+## 10. Push notifikacije (trigger `notify_seat_request_update`)
+
+Okida se na svaku promenu statusa u tabeli.
+
+| Status | Ko prima notifikaciju |
+|---|---|
+| `approved` | Putnik |
+| `rejected` (bez alternativa) | Putnik |
+| `rejected` (sa alternativama) | Putnik (sa dugmadima za izbor) |
+| `pending` (dnevni/pošiljka) | Admin (Bojan) |
+| `otkazano` | Svi vozači (osim onog koji je otkazao) |
+
+---
+
+## 11. Šta se prikazuje u `SeatRequestsScreen` (admin ekran)
+
+- Prikazuje `pending` zahteve gde je `tip_putnika = 'dnevni'` ili `tip_putnika = 'posiljka'` (realtime stream).
+- `tip_putnika` kolona u tabeli se automatski kopira triggerom `trg_sync_tip_putnika` iz `registrovani_putnici`.
+- Admin može: **ODOBRI** (`approved`) ili **ODBIJ** (`rejected`).
+
+---
+
+## 12. Indeksi na tabeli
+
+```
+idx_seat_requests_putnik_id
+idx_seat_requests_custom_adresa_id
+idx_seat_requests_dan
+idx_seat_requests_status
 ```
 
 ---
 
-## 8. KAPACITET — KO ZAUZIMA MESTO
+## 13. Arhitektura — Dve tabele
 
-Kapacitet se računa samo za:
-```sql
-status IN ('pending', 'manual', 'approved', 'confirmed')
-```
+### 📋 `seat_requests` (operaciona tabela)
+- Čuva aktivne zahteve za **tekuću nedelju**.
+- Brzo procesiranje, mali dataset.
+- **Kolone:** osnovni podaci + `pokupljeno_by`, `cancelled_by` (text imena).
+- **Nema:** `vozac_id` FK, `placeno`, `placeno_at`, `kupovina_datum`.
 
-- `pokupljen` se NE računa u kapacitet (putnik je već u kombiju, slot je slobodan za sledeći dan)
-- `rejected`, `otkazano`, `cancelled`, `bez_polaska` — ne zauzimaju
+### 🗄️ `voznje_log` (audit/istorijska tabela)
+- Trajno čuva **SVE** vožnje.
+- **Dodatne kolone:** `vozac_id` UUID FK → `vozaci`, `placeno`, `placeno_at`, `kupovina_datum`.
+- Koristi se za računovodstvo, izveštaje, punu audit trail.
 
----
-
-## 9. STATUS PRIORITET U PRIKAZU (UI)
-
-Kada isti putnik ima više zahteva (edge case), prikazuje se po ovom prioritetu:
-
-```dart
-const statusPrioritet = {
-  'bez_polaska': 0,
-  'cancelled':   1,
-  'otkazano':    2,
-  'pending':     3,
-  'manual':      4,
-  'approved':    5,
-  'confirmed':   6,
-};
-// Veći broj = prikazuje se (pregazi niži)
-```
+> **Razlog:** `seat_requests` je optimizovan za brzinu — ne treba mu FK na `vozaci` jer se ime vozača čuva u text polju.  
+> Istorijski UUID link postoji **SAMO** u `voznje_log` gde je potreban za trajne zapise i finansijske izveštaje.
 
 ---
 
-## 10. REGISTROVANI PUTNICI — PROFIL STATUS
+## 14. Ključna zabranjena pravila (ne menjati bez odobrenja)
 
-Profil putnika (`registrovani_putnici.status`) je ODVOJEN od `seat_requests.status`.
-
-| Profil status | Značenje | Utiče na seat_request? |
-|--------------|----------|------------------------|
-| `aktivan` | Normalno ide | ❌ — seat_request ima prednost |
-| `bolovanje` | Na bolovanju | ✅ — override, prikazuje se 'bolovanje' |
-| `godisnji` | Na godišnjem odmoru | ✅ — override, prikazuje se 'godišnji' |
-| `neaktivan` | Ne vozi više | ❌ — nema novih seat_requests |
-
-**Pravilo**: Ako je profil `bolovanje`/`godisnji` → to je primarna vrednost za prikaz bez obzira na seat_request status.
-
----
-
-## 11. CACHE KLJUČEVI
-
-Svaki cache koji uključuje seat_requests mora koristiti:
-
-```
-putnikId|datum|grad|vreme
-```
-
-### ❌ Zabranjeno (nedovoljno precizno):
-```dart
-'$putnikId|$datum'           // ← bez grad i vreme
-'$putnikId|$datum|$grad'     // ← bez vreme
-```
-
----
-
-## 12. ČIŠĆENJE I RESET
-
-| Kada | Šta | Ko |
-|------|-----|----|
-| Subota 02:00 | Time picker se otključava za narednu sedmicu | Automatski |
-| Svaki dan | Ćelija se zaključava kad nastupi njeno vreme | Frontend logika |
-
-### ⛔ UKINUTO (ne vraćati):
-- `sedmicni-reset-polazaka` — **OBRISANO**
-- `ciscenje-seat-requests` — **OBRISANO** (novi zahtevi prepisuju stare za aktivnu sedmicu; prošli redovi su istorijski i ne utiču na performanse)
-
----
-
-## 13. PUSH NOTIFIKACIJE ZA STATUS PROMENE
-
-| Novi status | Notifikacija putniku |
-|------------|---------------------|
-| `approved` | "✅ Mesto osigurano!" |
-| `rejected` + alternative | "⚠️ Termin pun — Izaberi alternativu" |
-| `rejected` bez alternative | "❌ Termin pun — nema slobodnih mesta" |
-| `otkazano` | (zavisi od ko je otkazao) |
-
-Trigger: `notify_seat_request_update()` u Supabase — aktivira se **samo** ako se `status` promenio.
-
----
-
-## ⛔ ZABRANJENA PONAŠANJA — KRATAK PREGLED
-
-| Zabranjeno | Zašto |
-|-----------|-------|
-| Update/delete bez `grad` i `zeljeno_vreme` | Dira sve termine tog dana |
-| Fallback bez vremena ako match ne uspe | Pokriva previše redova |
-| Postavljanje `bez_polaska` kad je vreme prazno | Briše ručno kreirane termine |
-| Korišćenje `voznje_log` za operativni prikaz | To je arhiva, ne tekuće stanje |
-| Brisanje/menjanje redova u `voznje_log` | Trajni zapis, nikad se ne dira |
-| Resetovanje svih seat_requests svakog tjedna | `sedmicni-reset` je ukinut |
-| `UPDATE` bez `WHERE id = requestId` kada je requestId poznat | Uvek koristiti ID kada ga imaš |
+1. `confirmed` status je isključivo adminova privilegija. Kada putnik promeni vreme, `confirmed` se briše i kreira se novi `pending` — ista logika kao za sve ostale statuse. Putnik ne može zadržati `confirmed` kroz `insertSeatRequest`.
+2. Pravila čekanja u `get_cekanje_pravilo()` su zacementirana od 21.02.2026.
+3. `dnevni` putnici dobijaju `pending` ali **nikad ne prolaze auto-obradu** (`dispecer_cron_obrada` ih preskače po tipu).
+4. Ako admin ne unese vreme za `dan+grad` u "Uredi" dijalogu, ne sme se dirati postojeći `seat_request`.
+5. Vreme čekanja meri se od `updated_at` reda, ne od `created_at`. Kada putnik promeni termin, `updated_at` se resetuje i čekanje kreće od početka.
+6. Kapacitet se proverava po `zeljeno_vreme` (ne `dodeljeno_vreme`).

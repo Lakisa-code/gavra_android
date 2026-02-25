@@ -94,25 +94,6 @@ class Vozac {
     return isValidIme && isValidTelefon && isValidEmail;
   }
 
-  /// Lista grešaka validacije
-  List<String> get validationErrors {
-    final errors = <String>[];
-
-    if (!isValidIme) {
-      errors.add('Ime vozača mora imati najmanje 2 karaktera');
-    }
-
-    if (!isValidTelefon) {
-      errors.add('Nevaljan format telefona');
-    }
-
-    if (!isValidEmail) {
-      errors.add('Nevaljan format email adrese');
-    }
-
-    return errors;
-  }
-
   /// Kreira kopiju vozača sa promenjenim vrednostima
   Vozac copyWith({
     String? ime,

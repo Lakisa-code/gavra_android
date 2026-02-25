@@ -13,15 +13,6 @@ class DayConstants {
     'Petak',
   ];
 
-  // 🎨 PUNI NAZIVI DANA - UI (sa dijakritikom za prikaz)
-  static const List<String> dayNamesUI = [
-    'Ponedeljak',
-    'Utorak',
-    'Sreda',
-    'Četvrtak',
-    'Petak',
-  ];
-
   // 📝 KRATICE DANA
   static const List<String> dayAbbreviations = [
     'pon',
@@ -70,14 +61,6 @@ class DayConstants {
       }
     }
     return 0; // Fallback
-  }
-
-  /// Dobij puni INTERNAL naziv po indexu
-  static String getNameByIndex(int index) {
-    if (index < 0 || index >= dayNamesInternal.length) {
-      return dayNamesInternal[0];
-    }
-    return dayNamesInternal[index];
   }
 
   /// Dobij kraticu po indexu

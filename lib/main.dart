@@ -29,16 +29,6 @@ import 'services/weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
 import 'utils/vozac_cache.dart'; // 🎯 Jedinstven vozač cache
 
-// 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
-extension ColorCompat on Color {
-  Color withValues({double? alpha, double? red, double? green, double? blue}) {
-    if (alpha != null) {
-      return withOpacity(alpha);
-    }
-    return this;
-  }
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -97,7 +87,6 @@ Future<void> _doStartupTasks() async {
 
   // 🌍 LOCALE - UTF-8 podrška za dijakritiku
   unawaited(initializeDateFormatting('sr', null));
-  // Intl.defaultLocale = 'sr_RS'; // UKLONJENO - koristi se Flutter locale
 
   // 🔥 SVE OSTALO POKRENI ISTOVREMENO (Paralelno)
   unawaited(_initPushSystems());

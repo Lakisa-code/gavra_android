@@ -24,11 +24,6 @@ class GorivoService {
     }
   }
 
-  /// Stream stanja pumpe (osvježava pri svakoj promjeni)
-  static Stream<PumpaStanje?> streamStanje() {
-    return _db.from('pumpa_punjenja').stream(primaryKey: ['id']).asyncMap((_) => getStanje());
-  }
-
   /// Ažuriraj konfiguraciju pumpe (kapacitet, alarm nivo, početno stanje)
   static Future<bool> updateConfig({
     double? kapacitet,

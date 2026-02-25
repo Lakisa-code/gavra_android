@@ -143,7 +143,7 @@ BEGIN
   FROM seat_requests sr
   LEFT JOIN adrese a ON a.id = sr.custom_adresa_id
   WHERE sr.dan = v_dan_kratica
-    AND sr.status IN ('pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'hidden', 'pokupljen')
+    AND sr.status IN ('pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'pokupljen')
     AND (p_grad IS NULL OR sr.grad ILIKE p_grad)
     AND (p_vreme IS NULL OR sr.zeljeno_vreme = p_vreme OR sr.dodeljeno_vreme = p_vreme);
 END;
@@ -338,7 +338,9 @@ BEGIN
         alternative_vreme_1 = v_alt_1,
         alternative_vreme_2 = v_alt_2,
         processed_at = now(),
-        updated_at = now()
+        updated_at = now(),
+        -- Kada se odobri zahtev, dodeljeno_vreme = zeljeno_vreme
+        dodeljeno_vreme = CASE WHEN novi_status = 'approved' THEN req_record.zeljeno_vreme ELSE dodeljeno_vreme END
     WHERE id = req_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -458,32 +460,27 @@ BEGIN
     SELECT broj_mesta INTO p_broj_mesta FROM registrovani_putnici WHERE id = p_id;
     IF p_broj_mesta IS NULL THEN p_broj_mesta := 1; END IF;
 
-    -- 5. UPSERT u seat_requests po putnik_id + dan + grad (trajni ključ)
-    SELECT id INTO existing_id 
-    FROM seat_requests 
-    WHERE putnik_id = p_id AND dan = dan_clean AND grad = grad_clean;
+    -- 5. UPSERT u seat_requests po putnik_id + dan + grad + VREME (svaki termin poseban)
+    -- ⚠️ NOVA LOGIKA: Dozvoljava višestruke zahteve za isti dan (različita vremena)
+    IF p_vreme IS NOT NULL AND p_vreme != '' AND p_vreme != 'null' THEN
+        SELECT id INTO existing_id 
+        FROM seat_requests 
+        WHERE putnik_id = p_id AND dan = dan_clean AND grad = grad_clean AND zeljeno_vreme = p_vreme::time;
 
-    IF existing_id IS NOT NULL THEN
-        UPDATE seat_requests 
-        SET zeljeno_vreme = CASE 
-                WHEN p_vreme IS NULL OR p_vreme = '' OR p_vreme = 'null' THEN zeljeno_vreme 
-                ELSE p_vreme::time 
-            END,
-            status = final_status,
-            updated_at = now()
-        WHERE id = existing_id;
+        IF existing_id IS NOT NULL THEN
+            UPDATE seat_requests 
+            SET status = final_status,
+                updated_at = now()
+            WHERE id = existing_id;
+        ELSE
+            INSERT INTO seat_requests (putnik_id, grad, zeljeno_vreme, dan, status, broj_mesta, created_at, updated_at)
+            VALUES (p_id, grad_clean, p_vreme::time, dan_clean, final_status, p_broj_mesta, now(), now());
+        END IF;
     ELSE
-        INSERT INTO seat_requests (putnik_id, grad, zeljeno_vreme, dan, status, broj_mesta, created_at, updated_at)
-        VALUES (
-            p_id, 
-            grad_clean, 
-            CASE WHEN p_vreme IS NULL OR p_vreme = '' OR p_vreme = 'null' THEN NULL ELSE p_vreme::time END, 
-            dan_clean, 
-            final_status, 
-            p_broj_mesta, 
-            now(), 
-            now()
-        );
+        -- Ako nema vreme, otkaži sve termine za taj dan+grad (fallback legacy logika)
+        UPDATE seat_requests
+        SET status = 'cancelled', updated_at = now()
+        WHERE putnik_id = p_id AND dan = dan_clean AND grad = grad_clean;
     END IF;
 
     UPDATE registrovani_putnici 

@@ -12,32 +12,6 @@ class TextUtils {
         .replaceAll('đ', 'd');
   }
 
-  /// Normalizuje tip putnika (npr. "djak" ili "student") u "ucenik".
-  ///
-  /// Centralizovana logika čini lako prilagođavanje sinonima bez menjanja
-  /// logike u više fajlova.
-  static String normalizeTip(String tip) {
-    final normalized = normalizeText(tip);
-    if (normalized.contains('ucenik')) return 'ucenik';
-    if (normalized.contains('djak') || normalized.contains('student')) {
-      return 'ucenik';
-    }
-    return normalized;
-  }
-
-  /// Poredi dva statusa uzimajući u obzir kvačice
-  /// "godišnji" == "godisnji" vraća true
-  static bool statusEquals(String status1, String status2) {
-    return normalizeText(status1) == normalizeText(status2);
-  }
-
-  /// Proverava da li status pripada određenoj kategoriji
-  static bool isStatusInCategory(String? status, List<String> category) {
-    if (status == null) return false;
-    final normalized = normalizeText(status);
-    return category.any((cat) => normalizeText(cat) == normalized);
-  }
-
   /// Kategorije statusa za lakše korišćenje
   static const List<String> bolovanjeGodisnji = [
     'bolovanje',
@@ -58,22 +32,4 @@ class TextUtils {
         !bolovanjeGodisnji.any((s) => normalizeText(s) == normalized) &&
         !neaktivni.any((s) => normalizeText(s) == normalized);
   }
-
-  /// Proverava da li putnik treba da bude VIDLJIV u listi
-  /// Uključuje bolovanje/godišnji (prikazuju se žutom bojom)
-  /// Koristi se za FILTRIRANJE liste za prikaz
-  static bool isStatusVisible(String? status) {
-    if (status == null) return true;
-    final normalized = normalizeText(status);
-
-    // Isključi samo otkazane i obrisane, ALI PRIKAŽI bolovanje/godišnji
-    return !otkazani.any((s) => normalizeText(s) == normalized) &&
-        !neaktivni.any((s) => normalizeText(s) == normalized);
-  }
-
-  /// 🆕 Proverava da li putnik treba da se RAČUNA u broju mesta
-  /// Ne računa: otkazane, bolovanje, godišnji, obrisane
-  /// KORISTI Putnik getters za potpunu proveru (iz seat_requests)
-  /// Import: import '../models/putnik.dart';
-  // NOTE: Ova funkcija je definisana u putnik_helpers.dart jer zahteva import Putnik modela
 }

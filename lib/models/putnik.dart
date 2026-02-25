@@ -1,47 +1,8 @@
 ﻿import '../constants/day_constants.dart';
 import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../services/vreme_vozac_service.dart'; // Za per-putnik i per-vreme dodeljivanje vozaca
-import '../utils/grad_adresa_validator.dart'; // Za normalizaciju grada u fromSeatRequest
 import '../utils/registrovani_helpers.dart';
 import '../utils/vozac_cache.dart'; // DODATO za UUID<->ime konverziju
-
-// Enum za statuse putnika
-enum PutnikStatus { otkazano, pokupljen, bolovanje, godisnji }
-
-// Extension za konverziju izmedu enum-a i string-a
-extension PutnikStatusExtension on PutnikStatus {
-  String get value {
-    switch (this) {
-      case PutnikStatus.otkazano:
-        return 'Otkazano';
-      case PutnikStatus.pokupljen:
-        return 'Pokupljen';
-      case PutnikStatus.bolovanje:
-        return 'Bolovanje';
-      case PutnikStatus.godisnji:
-        return 'Godišnji';
-    }
-  }
-
-  static PutnikStatus? fromString(String? status) {
-    if (status == null) return null;
-
-    switch (status.toLowerCase()) {
-      case 'otkazano':
-      case 'otkazan': // Podržava stare vrednosti
-        return PutnikStatus.otkazano;
-      case 'pokupljen':
-        return PutnikStatus.pokupljen;
-      case 'bolovanje':
-        return PutnikStatus.bolovanje;
-      case 'godišnji':
-      case 'godisnji':
-        return PutnikStatus.godisnji;
-      default:
-        return null;
-    }
-  }
-}
 
 class Putnik {
   // NOVO - originalni datum za dnevne putnike (ISO yyyy-MM-dd)
@@ -97,11 +58,8 @@ class Putnik {
   // NOVI: Factory za registrovani_putnici tabelu (PROFIL PUTNIKA)
   factory Putnik.fromRegistrovaniPutnici(Map<String, dynamic> map) {
     final grad = _determineGradFromRegistrovani(map);
-    final place = grad.toLowerCase().contains('vr') || grad.toLowerCase() == 'vs' ? 'VS' : 'BC';
 
     // ⚠️ SSOT: Ne čitamo polazak iz profila, on mora doći iz seat_requests
-    final polazakRaw = null; // Ignorišemo legacy fallbacks
-
     final tipPutnika = map['tip'] as String?;
     final isDnevni = tipPutnika == 'dnevni' || tipPutnika == 'posiljka';
 
@@ -172,7 +130,7 @@ class Putnik {
         ? rpcDatum.split('T')[0] // ISO: "2026-02-23T00:00:00" → "2026-02-23"
         : _getIsoDateForDan(danStr);
     final gRaw = req['grad']?.toString().toLowerCase() ?? '';
-    final grad = (gRaw == 'vs' || gRaw.contains('vrs') || gRaw.contains('vr')) ? 'Vrsac' : 'Bela Crkva';
+    final grad = (gRaw == 'vs' || gRaw.contains('vrs') || gRaw.contains('vr')) ? 'VS' : 'BC';
 
     // ✅ PRIORITET: Dodeljeno vreme (ako je vozač pomerio termin), inače željeno
     final vremeRaw = (req['dodeljeno_vreme'] ?? req['zeljeno_vreme'])?.toString() ?? '';
@@ -218,12 +176,12 @@ class Putnik {
         dodeljenVozacFinal = perPutnik;
       } else {
         // PRIORITET 2: Globalna dodela iz vreme_vozac (putnik_id IS NULL)
-        // Cache ključ je 'Bela Crkva|vreme|dan' — normalizuj grad na puni naziv
+        // Cache kljuc je 'BC|vreme|dan' ili 'VS|vreme|dan'
         // danStr je već kratica (pon, uto...) direktno iz seat_requests.dan kolone
         final danKratica = danStr.isNotEmpty
             ? danStr
             : (datumStr.isNotEmpty ? _getDanNedeljeKratica(DateTime.parse(datumStr).weekday) : '');
-        final gradZaGlobalni = GradAdresaValidator.isVrsac(grad) ? 'Vrsac' : 'Bela Crkva';
+        final gradZaGlobalni = grad;
         final perVreme = VremeVozacService().getVozacZaVremeSync(gradZaGlobalni, vreme, danKratica);
         if (perVreme != null && perVreme.isNotEmpty) {
           dodeljenVozacFinal = _getVozacIme(perVreme);
@@ -245,10 +203,10 @@ class Putnik {
       mesecnaKarta: !isDnevni,
       brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
       adresa: (req['adrese'] as Map?)?['naziv'] ??
-          (grad == 'Vrsac'
+          (grad == 'VS'
               ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
               : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv'])),
-      adresaId: req['custom_adresa_id'] ?? (grad == 'Vrsac' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id']),
+      adresaId: req['custom_adresa_id'] ?? (grad == 'VS' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id']),
       brojTelefona: p['broj_telefona'],
       statusVreme: p['updated_at'],
       vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
@@ -371,9 +329,6 @@ class Putnik {
     return false;
   }
 
-  // ? NOVI GETTER: Da li je putnik uopšte dodeljen nekom vozaču (za listu PutnikList)
-  bool get jeDodeljenVozacu => dodeljenVozac != null && dodeljenVozac!.isNotEmpty;
-
   // Vozac UUID iz dodeljenVozac (via vreme_vozac)
   String? get vozacUuid => dodeljenVozac != null && dodeljenVozac!.isNotEmpty ? dodeljenVozac : null;
 
@@ -395,21 +350,21 @@ class Putnik {
 
     // Ako ima BC polazak danas, putnik putuje IZ Bela Crkva (pokupljaš ga tamo)
     if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {
-      return 'Bela Crkva';
+      return 'BC';
     }
 
     // Ako ima VS polazak danas, putnik putuje IZ Vrsac (pokupljaš ga tamo)
     if (vsPolazak != null && vsPolazak.toString().isNotEmpty) {
-      return 'Vrsac';
+      return 'VS';
     }
 
     // Fallback: proveri da li ima VS adresu u JOIN-u
     final adresaVsObj = map['adresa_vs'] as Map<String, dynamic>?;
     if (adresaVsObj != null && adresaVsObj['naziv'] != null) {
-      return 'Vrsac';
+      return 'VS';
     }
 
-    return 'Bela Crkva';
+    return 'BC';
   }
 
   static String? _determineAdresaFromRegistrovani(Map<String, dynamic> map, String grad) {

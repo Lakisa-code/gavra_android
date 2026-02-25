@@ -16,13 +16,10 @@ class RouteService {
     required String grad,
     required String sezona,
   }) {
-    final isBc = grad.toLowerCase().contains('bc') ||
-        grad.toLowerCase().contains('bela');
+    final isBc = grad == 'BC';
 
     if (sezona == 'praznici') {
-      return isBc
-          ? RouteConfig.bcVremenaPraznici
-          : RouteConfig.vsVremenaPraznici;
+      return isBc ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
     } else if (sezona == 'zimski') {
       return isBc ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
     } else {

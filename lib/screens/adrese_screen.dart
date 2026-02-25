@@ -172,8 +172,8 @@ class _AdreseScreenState extends State<AdreseScreen> {
         final adrese = snapshot.data ?? [];
         final isLoading = snapshot.connectionState == ConnectionState.waiting && adrese.isEmpty;
 
-        final belaCrkvaCount = adrese.where((a) => a.grad == 'Bela Crkva').length;
-        final vrsacCount = adrese.where((a) => a.grad == 'Vrsac' || a.grad == 'VS').length;
+        final belaCrkvaCount = adrese.where((a) => a.grad == 'BC').length;
+        final vrsacCount = adrese.where((a) => a.grad == 'VS').length;
         final filteredAdrese = _getFilteredAdrese(adrese);
 
         return Scaffold(
@@ -252,9 +252,9 @@ class _AdreseScreenState extends State<AdreseScreen> {
                           children: [
                             _buildFilterChip('Svi', _filterGrad == 'Svi'),
                             const SizedBox(width: 8),
-                            _buildFilterChip('Bela Crkva', _filterGrad == 'Bela Crkva'),
+                            _buildFilterChip('Bela Crkva', _filterGrad == 'BC', value: 'BC'),
                             const SizedBox(width: 8),
-                            _buildFilterChip('Vrsac', _filterGrad == 'Vrsac'),
+                            _buildFilterChip('Vrsac', _filterGrad == 'VS', value: 'VS'),
                           ],
                         ),
                       ],
@@ -319,12 +319,12 @@ class _AdreseScreenState extends State<AdreseScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, bool selected) {
+  Widget _buildFilterChip(String label, bool selected, {String? value}) {
     return FilterChip(
       label: Text(label),
       selected: selected,
-      onSelected: (value) {
-        setState(() => _filterGrad = label);
+      onSelected: (v) {
+        setState(() => _filterGrad = value ?? label);
       },
       backgroundColor: Colors.black.withOpacity(0.3),
       selectedColor: Colors.blue.withOpacity(0.6),
@@ -352,10 +352,10 @@ class _AdreseScreenState extends State<AdreseScreen> {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: adresa.grad == 'Bela Crkva' ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+          backgroundColor: adresa.grad == 'BC' ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
           child: Icon(
             Icons.location_on,
-            color: adresa.grad == 'Bela Crkva' ? Colors.green : Colors.orange,
+            color: adresa.grad == 'BC' ? Colors.green : Colors.orange,
           ),
         ),
         title: Text(
@@ -422,7 +422,7 @@ class _AdresaDialogState extends State<_AdresaDialog> {
   late TextEditingController _brojController;
   late TextEditingController _latitudeController;
   late TextEditingController _longitudeController;
-  String _selectedGrad = 'Bela Crkva';
+  String _selectedGrad = 'BC';
 
   @override
   void initState() {
@@ -469,8 +469,8 @@ class _AdresaDialogState extends State<_AdresaDialog> {
             DropdownButtonFormField<String>(
               value: _selectedGrad.isNotEmpty ? _selectedGrad : null,
               decoration: const InputDecoration(labelText: 'Grad *'),
-              items: ['Bela Crkva', 'Vrsac'].map((grad) {
-                return DropdownMenuItem(value: grad, child: Text(grad));
+              items: [('BC', 'Bela Crkva'), ('VS', 'Vrsac')].map((e) {
+                return DropdownMenuItem(value: e.$1, child: Text(e.$2));
               }).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _selectedGrad = value);

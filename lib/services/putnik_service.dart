@@ -26,10 +26,6 @@ class PutnikService {
       'adresa_bc:adresa_bela_crkva_id(naziv), '
       'adresa_vs:adresa_vrsac_id(naziv)';
 
-  // Obuhvata i join ka adrese tabeli za custom_adresa_id -> naziv
-  static const String seatRequestSelectFields =
-      '*, registrovani_putnici!inner($registrovaniFields), adrese:custom_adresa_id(naziv)';
-
   static final Map<String, StreamController<List<Putnik>>> _streams = {};
   static final Map<String, List<Putnik>> _lastValues = {};
   static final Map<String, _StreamParams> _streamParams = {};
@@ -39,28 +35,6 @@ class PutnikService {
   static StreamSubscription? _globalVoznjeLogListener;
   static StreamSubscription? _globalRegistrovaniListener;
   static StreamSubscription? _globalVremeVozacListener;
-
-  static void closeStream({String? isoDate, String? grad, String? vreme}) {
-    final key = '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
-    final controller = _streams[key];
-    if (controller != null && !controller.isClosed) controller.close();
-    _streams.remove(key);
-    _lastValues.remove(key);
-    _streamParams.remove(key);
-
-    // ✅ Zatvori globalne listener-e ako nema više aktivnih streamova
-    if (_streams.isEmpty) {
-      _globalSeatRequestsListener?.cancel();
-      _globalVoznjeLogListener?.cancel();
-      _globalRegistrovaniListener?.cancel();
-      _globalVremeVozacListener?.cancel();
-      _globalSeatRequestsListener = null;
-      _globalVoznjeLogListener = null;
-      _globalRegistrovaniListener = null;
-      _globalVremeVozacListener = null;
-      debugPrint('🛑 [PutnikService] Svi streamovi zatvoreni - globalni listener-i otkazani');
-    }
-  }
 
   String _streamKey({String? isoDate, String? grad, String? vreme}) => '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
 
@@ -108,8 +82,6 @@ class PutnikService {
     return streamKombinovaniPutniciFiltered(isoDate: todayDate);
   }
 
-  // UKLONJENO: _mergeSeatRequests - kolona polasci_po_danu više ne postoji
-
   Future<List<Putnik>> getPutniciByDayIso(String isoDate) async {
     try {
       final todayDate = isoDate.split('T')[0];
@@ -130,7 +102,7 @@ class PutnikService {
             return map;
           })
           .map((r) => Putnik.fromSeatRequest(r))
-          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
+          .where((p) => p.status != 'bez_polaska' && p.status != 'cancelled')
           .toList();
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error fetching by day: $e');
@@ -197,8 +169,7 @@ class PutnikService {
 
       final allMapped = enriched.map((r) => Putnik.fromSeatRequest(r)).toList();
 
-      final results =
-          allMapped.where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled').toList();
+      final results = allMapped.where((p) => p.status != 'bez_polaska' && p.status != 'cancelled').toList();
 
       debugPrint(
           '🔍 [_doFetchForStream] Stream key=$key, datum=$todayDate, grad=$grad, vreme=$vreme → ${results.length} putnika');
@@ -363,7 +334,7 @@ class PutnikService {
             return map;
           })
           .map((r) => Putnik.fromSeatRequest(r))
-          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
+          .where((p) => p.status != 'bez_polaska' && p.status != 'cancelled')
           .toList();
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error in getPutniciByIds: $e');
@@ -391,25 +362,11 @@ class PutnikService {
             return map;
           })
           .map((r) => Putnik.fromSeatRequest(r))
-          .where((p) => p.status != 'bez_polaska' && p.status != 'hidden' && p.status != 'cancelled')
+          .where((p) => p.status != 'bez_polaska' && p.status != 'cancelled')
           .toList();
     } catch (e) {
       debugPrint('⚠️ [PutnikService] Error in getAllPutnici: $e');
       return [];
-    }
-  }
-
-  Future<bool> savePutnikToCorrectTable(Putnik putnik) async {
-    try {
-      final data = putnik.toRegistrovaniPutniciMap();
-      if (putnik.id != null) {
-        await supabase.from('registrovani_putnici').update(data).eq('id', putnik.id!);
-      } else {
-        await supabase.from('registrovani_putnici').insert(data);
-      }
-      return true;
-    } catch (_) {
-      return false;
     }
   }
 
@@ -440,11 +397,6 @@ class PutnikService {
       status: 'confirmed', // Vozač ga je dodao ručno
       customAdresaId: putnik.adresaId,
     );
-  }
-
-  Future<void> obrisiPutnika(dynamic id) async {
-    // Soft delete profile
-    await supabase.from('registrovani_putnici').update({'obrisan': true}).eq('id', id);
   }
 
   Future<void> oznaciPokupljen(dynamic id, bool value,
@@ -852,16 +804,6 @@ class PutnikService {
       grad: grad,
       vreme: selectedVreme,
     );
-  }
-
-  Future<void> prebacijPutnikaVozacu(String id, String? vozac) async {
-    String? vozacUuid;
-    if (vozac != null) {
-      vozacUuid = VozacCache.getUuidByIme(vozac);
-    }
-    await supabase
-        .from('registrovani_putnici')
-        .update({'vozac_id': vozacUuid, 'updated_at': DateTime.now().toUtc().toIso8601String()}).eq('id', id);
   }
 
   /// 🚫 GLOBALNO UKLONI POLAZAK: Postavlja 'bez_polaska' status za sve putnike u datom terminu

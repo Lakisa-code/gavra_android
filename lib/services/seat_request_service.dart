@@ -28,49 +28,47 @@ class SeatRequestService {
       final normVreme = GradAdresaValidator.normalizeTime(vreme);
       final danKey = dan.toLowerCase();
 
-      // Provjeri da li postoji 'confirmed' termin za isti putnik+grad+dan.
-      // ⚠️ NIKAD ne brišemo 'confirmed' status — to je trajni nedeljni termin.
-      // Confirmed se briše samo eksplicitno kroz otkazivanje u profilu putnika.
-      final existingConfirmed = await _supabase
+      // Provjeri da li postoji postojeći zahtev za SPECIFIČAN termin (putnik+grad+dan+VREME).
+      // ⚠️ Svaki termin je NEZAVISAN — putnik može imati više različitih vremena za isti dan.
+      final existingRequest = await _supabase
           .from('seat_requests')
-          .select('id')
+          .select('id, status')
           .eq('putnik_id', putnikId)
           .eq('grad', gradKey)
           .eq('dan', danKey)
-          .eq('status', 'confirmed')
+          .eq('zeljeno_vreme', '$normVreme:00')
           .limit(1);
 
-      if (existingConfirmed.isNotEmpty) {
-        // Ažuriraj postojeći confirmed termin umjesto brisanja+kreiranja
+      if (existingRequest.isNotEmpty) {
+        final existingId = existingRequest.first['id'];
+        final existingStatus = existingRequest.first['status'];
+
+        // Ažuriraj postojeći zahtev za OVAJ specifičan termin
         await _supabase.from('seat_requests').update({
-          'zeljeno_vreme': '$normVreme:00',
           'broj_mesta': brojMesta,
           'priority': priority,
           'custom_adresa_id': customAdresaId,
+          'status': status,
+          // confirmed = odmah odobreno, dodeljeno_vreme = zeljeno_vreme
+          if (status == 'confirmed' || existingStatus == 'confirmed') 'dodeljeno_vreme': '$normVreme:00',
           'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('id', existingConfirmed.first['id']);
-        debugPrint('✅ [SeatRequestService] Updated confirmed for $gradKey $normVreme on $danKey');
+        }).eq('id', existingId);
+        debugPrint('✅ [SeatRequestService] Updated existing request for $gradKey $normVreme on $danKey');
       } else {
-        // Obriši samo privremene zahteve (pending/manual/approved), nikad confirmed
-        await _supabase
-            .from('seat_requests')
-            .delete()
-            .eq('putnik_id', putnikId)
-            .eq('grad', gradKey)
-            .eq('dan', danKey)
-            .inFilter('status', ['pending', 'manual', 'approved']);
-
+        // Kreiraj NOVI zahtev za ovaj specifičan termin (ne briše ostale termine)
         await _supabase.from('seat_requests').insert({
           'putnik_id': putnikId,
           'grad': gradKey,
           'dan': danKey,
           'zeljeno_vreme': '$normVreme:00',
+          // dodeljeno_vreme se upisuje samo ako je status confirmed (odmah odobreno)
+          if (status == 'confirmed') 'dodeljeno_vreme': '$normVreme:00',
           'status': status,
           'broj_mesta': brojMesta,
           'priority': priority,
           'custom_adresa_id': customAdresaId,
         });
-        debugPrint('✅ [SeatRequestService] Inserted for $gradKey $normVreme on $danKey');
+        debugPrint('✅ [SeatRequestService] Inserted NEW request for $gradKey $normVreme on $danKey');
       }
 
       // 📝 LOG: Zablježi zakazanu vožnju u voznje_log (trajni zapis)
@@ -89,41 +87,22 @@ class SeatRequestService {
     }
   }
 
-  /// Dohvata aktivne zahteve
-  static Future<List<SeatRequest>> getActiveRequests() async {
-    try {
-      final response = await _supabase.from('seat_requests').select().order('created_at', ascending: false);
-      return (response as List).map((json) => SeatRequest.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('❌ [SeatRequestService] Error getting active requests: $e');
-      return [];
-    }
-  }
-
-  /// Dohvata aktivne zahteve sa statusom 'manual' za admina
-  /// Vraća listu mapa jer sadrži podatke iz join-a (registrovani_putnici)
-  static Future<List<Map<String, dynamic>>> getManualRequests() async {
-    try {
-      final response = await _supabase
-          .from('seat_requests')
-          .select('*, registrovani_putnici(putnik_ime, broj_telefona)')
-          .eq('status', 'manual')
-          .order('created_at', ascending: false);
-
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      debugPrint('❌ [SeatRequestService] Error getting manual requests: $e');
-      return [];
-    }
-  }
-
-  /// Odobrava zahtev
+  /// Odobrava zahtev — kopira zeljeno_vreme u dodeljeno_vreme
   static Future<bool> approveRequest(String id) async {
     try {
+      final nowStr = DateTime.now().toUtc().toIso8601String();
+
+      // 1. Dohvati zeljeno_vreme za ovaj zahtev
+      final row = await _supabase.from('seat_requests').select('zeljeno_vreme').eq('id', id).single();
+
+      final zeljenoVreme = row['zeljeno_vreme'];
+
+      // 2. Odobri i upisi dodeljeno_vreme = zeljeno_vreme
       await _supabase.from('seat_requests').update({
         'status': 'approved',
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-        'processed_at': DateTime.now().toUtc().toIso8601String(),
+        'dodeljeno_vreme': zeljenoVreme, // kopira zeljeno_vreme u dodeljeno_vreme
+        'updated_at': nowStr,
+        'processed_at': nowStr,
       }).eq('id', id);
 
       return true;
@@ -149,19 +128,25 @@ class SeatRequestService {
     }
   }
 
-  /// Stream za manual zahteve (realtime)
+  /// Stream za zahteve koji čekaju ručnu obradu admina (dnevni putnici sa pending statusom)
   static Stream<List<SeatRequest>> streamManualRequests() {
     return _supabase
         .from('seat_requests')
         .stream(primaryKey: ['id'])
-        .eq('status', 'manual')
+        .eq('status', 'pending')
         .order('created_at', ascending: false)
-        .map((data) => data.map((json) => SeatRequest.fromJson(json)).toList());
+        .map((data) => data
+            .map((json) => SeatRequest.fromJson(json))
+            .where((r) => r.tipPutnika == 'dnevni' || r.tipPutnika == 'posiljka')
+            .toList());
   }
 
-  /// 🔢 Stream za broj manual zahteva (za bedž na Home ekranu)
+  /// 🔢 Stream za broj zahteva koji čekaju ručnu obradu (za bedž na Home ekranu)
   static Stream<int> streamManualRequestCount() {
-    return _supabase.from('seat_requests').stream(primaryKey: ['id']).eq('status', 'manual').map((list) => list.length);
+    return _supabase.from('seat_requests').stream(primaryKey: ['id']).eq('status', 'pending').map((list) => list
+        .map((json) => SeatRequest.fromJson(json))
+        .where((r) => r.tipPutnika == 'dnevni' || r.tipPutnika == 'posiljka')
+        .length);
   }
 
   /// 🤖 POKREĆE DIGITALNOG DISPEČERA U BAZI
@@ -195,27 +180,27 @@ class SeatRequestService {
       final danKey = dan.toLowerCase();
       final nowStr = DateTime.now().toUtc().toIso8601String();
 
-      // Otkaži postojeće aktivne zahteve za isti grad+dan
-      await _supabase
-          .from('seat_requests')
-          .update({'status': 'cancelled'})
-          .eq('putnik_id', putnikId)
-          .eq('grad', gradKey)
-          .eq('dan', danKey)
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
-
+      // Otkaži SAMO stari specifičan zahtev (requestId) — ne sve termine za taj dan
       if (requestId != null && requestId.isNotEmpty) {
+        // Prvo otkaži stari zahtev
+        await _supabase.from('seat_requests').update({'status': 'cancelled'}).eq('id', requestId);
+
+        // Ažuriraj isti red sa novim vremenom i odmah odobri
         await _supabase.from('seat_requests').update({
           'zeljeno_vreme': novoVreme,
+          'dodeljeno_vreme': novoVreme, // alternativa odmah odobrena
           'status': 'approved',
           'processed_at': nowStr,
+          'updated_at': nowStr,
         }).eq('id', requestId);
       } else {
+        // Ako nema requestId, kreiraj novi zahtev (fallback)
         await _supabase.from('seat_requests').insert({
           'putnik_id': putnikId,
           'grad': gradKey,
           'dan': danKey,
           'zeljeno_vreme': novoVreme,
+          'dodeljeno_vreme': novoVreme, // alternativa odmah odobrena
           'status': 'approved',
           'processed_at': nowStr,
         });
@@ -235,15 +220,5 @@ class SeatRequestService {
     int daysToAdd = targetWeekday - now.weekday;
     if (daysToAdd < 0) daysToAdd += 7;
     return now.add(Duration(days: daysToAdd)).toIso8601String().split('T')[0];
-  }
-
-  /// 📅 Helper: Ostaje zbog backward-compat poziva izvana
-  static DateTime getNextDateForDay(DateTime fromDate, String danKratica) {
-    const daniMap = {'pon': 1, 'uto': 2, 'sre': 3, 'cet': 4, 'pet': 5, 'sub': 6, 'ned': 7};
-    final targetWeekday = daniMap[danKratica.toLowerCase()] ?? 1;
-    final currentWeekday = fromDate.weekday;
-    int daysToAdd = targetWeekday - currentWeekday;
-    if (daysToAdd < 0) daysToAdd += 7;
-    return fromDate.add(Duration(days: daysToAdd));
   }
 }

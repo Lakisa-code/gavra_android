@@ -38,8 +38,6 @@ class RegistrovaniPutnik {
     this.firmaZiro,
     this.firmaAdresa,
     this.brojMesta = 1, // 🆕 Broj rezervisanih mesta
-    // Uklonjeno: ime, prezime, datumPocetka, datumKraja - duplikati
-    // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
   });
 
   /// Identifikator putnika
@@ -166,8 +164,7 @@ class RegistrovaniPutnik {
       adresa: map['adresa'] as String? ??
           (map['adresa_bc'] is Map ? (map['adresa_bc'] as Map)['naziv'] as String? : null) ??
           (map['adresa_vs'] is Map ? (map['adresa_vs'] as Map)['naziv'] as String? : null),
-      grad: map['grad'] as String? ??
-          (map['adresa_bc'] is Map ? 'Bela Crkva' : (map['adresa_vs'] is Map ? 'Vrsac' : null)),
+      grad: map['grad'] as String? ?? (map['adresa_bc'] is Map ? 'BC' : (map['adresa_vs'] is Map ? 'VS' : null)),
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
       cenaPoDanu: _parseNum(map['cena_po_danu'])?.toDouble(), // 🆕 Custom cena po danu
@@ -211,9 +208,7 @@ class RegistrovaniPutnik {
       'firma_mb': firmaMb,
       'firma_ziro': firmaZiro,
       'firma_adresa': firmaAdresa,
-      'broj_mesta': brojMesta, // 🆕 Sačuvaj broj mesta
-      // UKLONJENO iz baze: ukupna_cena_meseca, cena, broj_putovanja, broj_otkazivanja,
-      // vreme_placanja, pokupljen, placeno - sada u voznje_log
+      'broj_mesta': brojMesta,
     };
 
     // Dodaj id samo ako nije prazan i NIJE fallback-uuid (za UPDATE operacije)
@@ -226,8 +221,6 @@ class RegistrovaniPutnik {
   }
 
   String get punoIme => putnikIme;
-
-  // UKLONJENO: jePlacen, iznosPlacanja, stvarniIznosPlacanja - sada se računa iz voznje_log
 
   /// copyWith metoda za kreiranje kopije sa izmenjenim poljima
   RegistrovaniPutnik copyWith({

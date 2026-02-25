@@ -12,14 +12,8 @@ import 'services/theme_manager.dart';
 // 1. AUTOMATSKI - Svi Text widget-i u app-u koriste srpsku dijakritiku
 //    textTheme: createSerbianTextTheme() - već primenjeno u temi
 //
-// 2. RUČNO - SerbianText.serbian() za posebne slučajeve:
-//    SerbianText.serbian('Dobar dan sa šđčćž!')
-//
-// 3. EXTENSION - Dodavanje dijakritike postojećem TextStyle-u:
+// 2. EXTENSION - Dodavanje dijakritike postojećem TextStyle-u:
 //    TextStyle().withSerbianSupport()
-//
-// 4. NORMALIZACIJA - Za tekst iz baze ili API-ja:
-//    normalizeSerbianText(tekstIzBaze)
 //
 // FONT FALLBACK-OVI:
 // - Inter (primarni)
@@ -29,17 +23,6 @@ import 'services/theme_manager.dart';
 // - sans-serif (sistemski)
 //
 // OVO OSIGURAVA da se srpska slova uvek pravilno prikazuju!
-
-/// Normalizuje tekst u NFC (Canonical Composition) format
-/// Ovo osigurava da se srpska slova pravilno prikazuju
-///
-/// ZA SRPSKU DJAKRITIKU: Srpska slova (š, đ, č, ć, ž) su već precomposed u Unicode-u,
-/// pa dodatna normalizacija nije potrebna. Font fallback-ovi u temi rešavaju prikaz.
-String normalizeSerbianText(String text) {
-  // Srpska dijakritika je već u NFC formatu, pa vraćamo tekst nepromenjen
-  // Ako bude potrebe za drugim jezicima sa kombinovanim karakterima, dodati normalizaciju
-  return text;
-}
 
 /// Globalni TextStyle sa srpskom dijakritikom
 class SerbianTextStyle {
@@ -107,48 +90,6 @@ class SerbianTextStyle {
       );
 }
 
-// 🎨 Extension za Text widget sa automatskom dijakritikom
-extension SerbianText on Text {
-  /// Kreira Text widget sa srpskom dijakritikom podrškom
-  static Text serbian(
-    String data, {
-    Key? key,
-    TextStyle? style,
-    StrutStyle? strutStyle,
-    TextAlign? textAlign,
-    TextDirection? textDirection,
-    Locale? locale,
-    bool? softWrap,
-    TextOverflow? overflow,
-    double? textScaleFactor,
-    int? maxLines,
-    String? semanticsLabel,
-    TextWidthBasis? textWidthBasis,
-    TextHeightBehavior? textHeightBehavior,
-    Color? selectionColor,
-  }) {
-    return Text(
-      normalizeSerbianText(data),
-      key: key,
-      style: (style ?? SerbianTextStyle.bodyLarge()).copyWith(
-        fontFamilyFallback: SerbianTextStyle._fallbackFonts,
-      ),
-      strutStyle: strutStyle,
-      textAlign: textAlign,
-      textDirection: textDirection,
-      locale: locale ?? const Locale('sr'),
-      softWrap: softWrap,
-      overflow: overflow,
-      textScaleFactor: textScaleFactor,
-      maxLines: maxLines,
-      semanticsLabel: semanticsLabel,
-      textWidthBasis: textWidthBasis,
-      textHeightBehavior: textHeightBehavior,
-      selectionColor: selectionColor,
-    );
-  }
-}
-
 // 🎨 Extension za TextStyle sa dijakritikom
 extension SerbianTextStyleExtension on TextStyle {
   /// Dodaje srpsku dijakritiku podršku postojećem TextStyle-u
@@ -191,14 +132,6 @@ TextTheme createSerbianTextTheme() {
 }
 
 // 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
-extension ColorCompat on Color {
-  Color withValues({double? alpha, double? red, double? green, double? blue}) {
-    if (alpha != null) {
-      return withOpacity(alpha);
-    }
-    return this;
-  }
-}
 
 // 🎨 SAMO TRIPLE BLUE FASHION TEMA!
 
@@ -278,32 +211,11 @@ const ColorScheme darkSteelGreyColorScheme = ColorScheme(
 
 // 🎨 CUSTOM COLOR EXTENSIONS za dodatne boje
 extension CustomColors on ColorScheme {
-  // 👥 Učenik (student) Colors
-  Color get studentPrimary => const Color(0xFF2196F3); // Blue
-  Color get studentSecondary => const Color(0xFF42A5F5);
-  Color get studentContainer => const Color(0xFFE3F2FD);
-  Color get onStudentContainer => const Color(0xFF0D47A1);
-
-  // 💼 Worker Colors
-  Color get workerPrimary => const Color(0xFF009688); // Teal
-  Color get workerSecondary => const Color(0xFF26A69A);
-  Color get workerContainer => const Color(0xFFE0F2F1);
-  Color get onWorkerContainer => const Color(0xFF004D40);
-
   // ✅ Success Colors
   Color get successPrimary => const Color(0xFF4CAF50);
-  Color get successContainer => const Color(0xFFE8F5E8);
-  Color get onSuccessContainer => const Color(0xFF2E7D32);
-
-  // ⚠️ Warning Colors
-  Color get warningPrimary => const Color(0xFFFF9800);
-  Color get warningContainer => const Color(0xFFFFF3E0);
-  Color get onWarningContainer => const Color(0xFFE65100);
 
   // 🔴 Danger Colors
   Color get dangerPrimary => const Color(0xFFEF5350);
-  Color get dangerContainer => const Color(0xFFFFEBEE);
-  Color get onDangerContainer => const Color(0xFFC62828);
 }
 
 // ⚡ Triple Blue Fashion Gradient - 5 boja!
@@ -443,11 +355,6 @@ extension ThemeGradients on ThemeData {
   // Glassmorphism kontejner boje
   Color get glassContainer => Colors.transparent;
   Color get glassBorder => Colors.white.withOpacity(0.13);
-  BoxShadow get glassShadow => BoxShadow(
-        color: Colors.black.withOpacity(0.22),
-        blurRadius: 24,
-        offset: const Offset(0, 8),
-      );
 }
 
 // ⚡ Triple Blue Fashion Theme
@@ -459,8 +366,7 @@ final ThemeData tripleBlueFashionTheme = ThemeData(
   scaffoldBackgroundColor: const Color(0xFFF0F9FF),
   appBarTheme: AppBarTheme(
     elevation: 0,
-    backgroundColor:
-        const Color(0xFF021B79), // Originalna tamna Electric Blue boja
+    backgroundColor: const Color(0xFF021B79), // Originalna tamna Electric Blue boja
     foregroundColor: Colors.white,
     systemOverlayStyle: SystemUiOverlayStyle.light,
     titleTextStyle: SerbianTextStyle.create(

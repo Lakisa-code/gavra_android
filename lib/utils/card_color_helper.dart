@@ -87,7 +87,6 @@ class CardColorHelper {
   // 🟢 PLACENO/MESECNO - TREĆI PRIORITET
   static const Color placenoBackground = Color(0xFF388E3C);
   static const Color placenoBorder = Color(0xFF388E3C);
-  static const Color placenoText = Color(0xFF388E3C);
 
   // 🔵 POKUPLJENO NEPLACENO - ČETVRTI PRIORITET
   static const Color pokupljenoBackground = Color(0xFF7FB3D3);
@@ -107,29 +106,6 @@ class CardColorHelper {
   // ---------------------------------------------------------------------------
   // STANJE PUTNIKA
   // ---------------------------------------------------------------------------
-
-  /// Enum za stanje kartice putnika (bez provere vozaca)
-  static CardState getCardState(Putnik putnik) {
-    // Provera po prioritetu
-    if (putnik.jeOdsustvo) {
-      return CardState.odsustvo;
-    }
-    if (putnik.jeOtkazan) {
-      return CardState.otkazano;
-    }
-    if (putnik.jePokupljen) {
-      // ?? PRAVI FIX: Proveravamo `placeno` polje umesto iznosa
-      // `placeno` je true samo ako je putnik STVARNO platio
-      final bool isPlaceno = putnik.placeno == true;
-      // radnik/ucenik ? zelena, dnevni ? plava
-      final bool isMesecniTip = putnik.isMesecniTip;
-      if (isPlaceno || isMesecniTip) {
-        return CardState.placeno;
-      }
-      return CardState.pokupljeno;
-    }
-    return CardState.nepokupljeno;
-  }
 
   /// Enum za stanje kartice sa proverom vozaca (za sivu boju)
   /// [currentDriver] - ime trenutnog vozaca koji gleda listu
@@ -161,133 +137,11 @@ class CardColorHelper {
   }
 
   // ---------------------------------------------------------------------------
-  // POZADINA KARTICE
-  // ---------------------------------------------------------------------------
-
-  /// Vraca boju pozadine kartice na osnovu stanja putnika
-  static Color getBackgroundColor(Putnik putnik) {
-    final state = getCardState(putnik);
-    return _getBackgroundForState(state);
-  }
-
-  /// Vraca gradijent za karticu (ako je potrebno)
-  static Gradient? getBackgroundGradient(Putnik putnik) {
-    final state = getCardState(putnik);
-    return _getGradientForState(state);
-  }
-
-  // ---------------------------------------------------------------------------
   // BORDER KARTICE
   // ---------------------------------------------------------------------------
 
-  /// Vraca boju border-a kartice
-  static Color getBorderColor(Putnik putnik) {
-    final state = getCardState(putnik);
-    return _getBorderForState(state);
-  }
-
-  // ---------------------------------------------------------------------------
-  // SHADOW KARTICE
-  // ---------------------------------------------------------------------------
-
-  /// Vraca boju senke kartice
-  static Color getShadowColor(Putnik putnik) {
-    final state = getCardState(putnik);
-    return _getShadowForState(state);
-  }
-
-  // ---------------------------------------------------------------------------
-  // TEKST KARTICE
-  // ---------------------------------------------------------------------------
-
-  /// Vraca boju teksta za karticu
-  static Color getTextColor(Putnik putnik, BuildContext context) {
-    final state = getCardState(putnik);
-    return _getTextForState(state, Theme.of(context).colorScheme.primary);
-  }
-
-  /// Vraca boju teksta sa fallback na successPrimary iz teme
-  static Color getTextColorWithTheme(
-    Putnik putnik,
-    BuildContext context, {
-    required Color successPrimary,
-  }) {
-    final state = getCardState(putnik);
-    return _getTextForState(state, successPrimary);
-  }
-
-  // ---------------------------------------------------------------------------
-  // SEKUNDARNE BOJE (adresa, telefon, ikone)
-  // ---------------------------------------------------------------------------
-
-  /// Vraca boju za adresu/sekundarni tekst (bleda verzija glavne boje)
-  static Color getSecondaryTextColor(Putnik putnik) {
-    final state = getCardState(putnik);
-    // 🆕 Revertovano na originalno ponasanje gde su tudji putnici sivi
-    switch (state) {
-      case CardState.odsustvo:
-        return const Color(0xFFFF9800).withOpacity(0.8); // Orange[500]
-      case CardState.otkazano:
-        return const Color(0xFFE57373).withOpacity(0.8); // Red[300]
-      case CardState.placeno:
-        return const Color(0xFF4CAF50).withOpacity(0.8); // Green[500]
-      case CardState.pokupljeno:
-        return pokupljenoText.withOpacity(0.8);
-      case CardState.tudji:
-        return const Color(0xFF757575).withOpacity(0.8); // Grey[600]
-      case CardState.nepokupljeno:
-        return const Color(0xFF757575).withOpacity(0.8); // Grey[600]
-    }
-  }
-
-  /// Vraca boju za ikone akcija
-  static Color getIconColor(Putnik putnik, BuildContext context) {
-    final state = getCardState(putnik);
-    switch (state) {
-      case CardState.odsustvo:
-        return Colors.orange;
-      case CardState.otkazano:
-        return Colors.red;
-      case CardState.placeno:
-        return Colors.green;
-      case CardState.pokupljeno:
-        return Theme.of(context).colorScheme.primary;
-      case CardState.tudji:
-        return Colors.grey;
-      case CardState.nepokupljeno:
-        return Theme.of(context).colorScheme.primary;
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // KOMPLETNA DEKORACIJA
-  // ---------------------------------------------------------------------------
-
-  /// Vraca kompletnu BoxDecoration za karticu (bez provere vozaca)
-  static BoxDecoration getCardDecoration(Putnik putnik) {
-    final state = getCardState(putnik);
-    final gradient = _getGradientForState(state);
-
-    return BoxDecoration(
-      gradient: gradient,
-      color: gradient == null ? _getBackgroundForState(state) : null,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(
-        color: _getBorderForState(state),
-        width: _getBorderWidthForState(state),
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: _getShadowForState(state),
-          blurRadius: 10,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    );
-  }
-
-  /// Vraca kompletnu BoxDecoration za karticu SA proverom vozaca (za sivu boju)
-  static BoxDecoration getCardDecorationWithDriver(Putnik putnik, String currentDriver) {
+  /// Vraca BoxDecoration kartice SA proverom vozaca
+  BoxDecoration getCardDecorationWithDriver(Putnik putnik, String currentDriver) {
     final state = getCardStateWithDriver(putnik, currentDriver);
     final gradient = _getGradientForState(state);
 
@@ -310,7 +164,7 @@ class CardColorHelper {
   }
 
   /// Vraca boju teksta SA proverom vozaca
-  static Color getTextColorWithDriver(
+  Color getTextColorWithDriver(
     Putnik putnik,
     String currentDriver,
     BuildContext context, {
@@ -321,7 +175,7 @@ class CardColorHelper {
   }
 
   /// Vraca sekundarnu boju teksta SA proverom vozaca
-  static Color getSecondaryTextColorWithDriver(Putnik putnik, String currentDriver) {
+  Color getSecondaryTextColorWithDriver(Putnik putnik, String currentDriver) {
     final state = getCardStateWithDriver(putnik, currentDriver);
     return _getSecondaryTextForState(state);
   }
@@ -330,7 +184,7 @@ class CardColorHelper {
   // PRIVATNE HELPER METODE ZA STATE
   // ---------------------------------------------------------------------------
 
-  static Color _getBackgroundForState(CardState state) {
+  Color _getBackgroundForState(CardState state) {
     switch (state) {
       case CardState.odsustvo:
         return odsustvoBackground;
@@ -347,7 +201,7 @@ class CardColorHelper {
     }
   }
 
-  static Gradient? _getGradientForState(CardState state) {
+  Gradient? _getGradientForState(CardState state) {
     switch (state) {
       case CardState.odsustvo:
         return LinearGradient(
@@ -406,7 +260,7 @@ class CardColorHelper {
     }
   }
 
-  static Color _getBorderForState(CardState state) {
+  Color _getBorderForState(CardState state) {
     switch (state) {
       case CardState.odsustvo:
         return odsustueBorder.withOpacity(0.6);
@@ -423,11 +277,11 @@ class CardColorHelper {
     }
   }
 
-  static double _getBorderWidthForState(CardState state) {
+  double _getBorderWidthForState(CardState state) {
     return 1.2;
   }
 
-  static Color _getShadowForState(CardState state) {
+  Color _getShadowForState(CardState state) {
     switch (state) {
       case CardState.odsustvo:
         return odsustueBorder.withOpacity(0.2);
@@ -444,7 +298,7 @@ class CardColorHelper {
     }
   }
 
-  static Color _getTextForState(CardState state, Color successPrimary) {
+  Color _getTextForState(CardState state, Color successPrimary) {
     switch (state) {
       case CardState.odsustvo:
         return odsustvoText;
@@ -461,7 +315,7 @@ class CardColorHelper {
     }
   }
 
-  static Color _getSecondaryTextForState(CardState state) {
+  Color _getSecondaryTextForState(CardState state) {
     switch (state) {
       case CardState.odsustvo:
         return const Color(0xFFFF9800).withOpacity(0.8);
@@ -481,15 +335,4 @@ class CardColorHelper {
   // ---------------------------------------------------------------------------
   // DEBUG HELPER
   // ---------------------------------------------------------------------------
-
-  /// Debug string za stanje kartice
-  static String getStateDebugString(Putnik putnik) {
-    final state = getCardState(putnik);
-    return 'CardState: ${state.name} | '
-        'jeOdsustvo: ${putnik.jeOdsustvo} | '
-        'jeOtkazan: ${putnik.jeOtkazan} | '
-        'jePokupljen: ${putnik.jePokupljen} | '
-        'mesecnaKarta: ${putnik.mesecnaKarta} | '
-        'iznosPlacanja: ${putnik.iznosPlacanja}';
-  }
 }

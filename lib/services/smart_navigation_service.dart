@@ -162,11 +162,6 @@ class SmartNavigationService {
     }
   }
 
-  /// Proveri status navigacionih aplikacija na uređaju
-  static Future<NavigationStatus> checkNavigationStatus() async {
-    return HereWeGoNavigationService.checkNavigationStatus();
-  }
-
   // ═══════════════════════════════════════════════════════════════════════
   // HELPER FUNKCIJE
   // ═══════════════════════════════════════════════════════════════════════

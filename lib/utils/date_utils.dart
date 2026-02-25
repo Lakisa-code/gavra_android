@@ -6,17 +6,11 @@ import '../constants/day_constants.dart';
 /// u celoj aplikaciji. Svi screen-ovi treba da koriste ove funkcije
 /// umesto da implementiraju svoju logiku.
 class DateUtils {
-  /// KONVERTER DANA: Pretvara broj dana u string
-  static String weekdayToString(int weekday) {
-    return DayConstants.dayNamesLowercase[DayConstants.weekdayToIndex(weekday)];
-  }
-
   /// CENTRALNA FUNKCIJA: Konvertuj pun naziv dana u kraticu (pon, uto, sre, cet, pet, sub, ned)
   /// Podržava sve varijante: sa/bez dijakritika, uppercase/lowercase
   static String getDayAbbreviation(String fullDayName) {
     final normalized = DayConstants.normalize(fullDayName).toLowerCase();
-    return DayConstants
-        .dayAbbreviations[DayConstants.getIndexByName(normalized)];
+    return DayConstants.dayAbbreviations[DayConstants.getIndexByName(normalized)];
   }
 
   /// CENTRALNA FUNKCIJA: Konvertuj pun naziv dana u weekday broj (1=Pon, 2=Uto, ...)

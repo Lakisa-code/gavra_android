@@ -104,22 +104,6 @@ class RealtimeManager {
     }
   }
 
-  /// Forsiraj reconnect za tabelu
-  void forceReconnect(String table) {
-    _reconnectAttempts[table] = 0;
-    _closeChannel(table);
-    if (_listenerCount[table] != null && _listenerCount[table]! > 0) {
-      _createChannel(table);
-    }
-  }
-
-  /// Forsiraj reconnect za sve tabele
-  void forceReconnectAll() {
-    for (final table in _channels.keys.toList()) {
-      forceReconnect(table);
-    }
-  }
-
   /// Zatvori channel za tabelu
   void _closeChannel(String table) {
     // Otkaži pending reconnect
@@ -322,7 +306,6 @@ class RealtimeManager {
         '🚀 [RealtimeManager] Realtime sistem spreman - kanali će se kreirati on-demand za ${tablesToMonitor.length} tabela');
 
     // Ne kreiraj kanale odmah - čekaj subscribe() pozive
-    // debugPrint('✅ [RealtimeManager] Sistem je spreman za realtime praćenje!');
   }
 
   /// Ugasi sve channel-e i očisti resurse

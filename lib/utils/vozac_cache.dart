@@ -10,13 +10,11 @@ import '../services/vozac_service.dart';
 /// Inicijalizuj jednom pri startu: `await VozacCache.initialize()`.
 ///
 /// ## API:
-/// - `VozacCache.getColorByIme(ime)` — boja po imenu, fallback = grey
 /// - `VozacCache.getColorByUuid(uuid)` — boja po UUID-u, fallback = grey
 /// - `VozacCache.getColor(imeIliUuid)` — boja po imenu ili UUID (auto-detect)
 /// - `VozacCache.getImeByUuid(uuid)` — ime po UUID-u, null ako ne postoji
 /// - `VozacCache.getUuidByIme(ime)` — UUID po imenu, null ako ne postoji
 /// - `VozacCache.isValidIme(ime)` — provjera da li je ime registrovan vozač
-/// - `VozacCache.isValidUuid(uuid)` — provjera UUID-a
 /// - `VozacCache.vozaci` — lista svih Vozac objekata
 /// - `VozacCache.imenaVozaca` — lista svih imena
 class VozacCache {
@@ -109,12 +107,6 @@ class VozacCache {
   // BOJA
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Vraća boju po imenu. Nikad ne baca exception.
-  static Color getColorByIme(String? ime, {Color fallback = Colors.grey}) {
-    if (ime == null || ime.isEmpty) return fallback;
-    return _imeToColor[ime] ?? fallback;
-  }
-
   /// Vraća boju po UUID-u. Nikad ne baca exception.
   static Color getColorByUuid(String? uuid, {Color fallback = Colors.grey}) {
     if (uuid == null || uuid.isEmpty) return fallback;
@@ -166,12 +158,6 @@ class VozacCache {
     return _imeToUuid.containsKey(ime);
   }
 
-  /// Provjera da li je UUID registrovan vozač.
-  static bool isValidUuid(String? uuid) {
-    if (uuid == null || uuid.isEmpty) return false;
-    return _uuidToIme.containsKey(uuid);
-  }
-
   // ═══════════════════════════════════════════════════════════════════════════
   // LISTE
   // ═══════════════════════════════════════════════════════════════════════════
@@ -199,22 +185,6 @@ class VozacCache {
     }
   }
 
-  /// Vraća Vozac objekat za dati UUID.
-  static Vozac? getVozacByUuid(String? uuid) {
-    if (uuid == null || uuid.isEmpty) return null;
-    try {
-      return _vozaci.firstWhere((v) => v.id == uuid);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Vraća email vozača po imenu.
-  static String? getEmailByIme(String? ime) => getVozacByIme(ime)?.email;
-
-  /// Vraća telefon vozača po imenu.
-  static String? getTelefonByIme(String? ime) => getVozacByIme(ime)?.brojTelefona;
-
   /// Vraća ime vozača za dati email (case-insensitive).
   static String? getImeByEmail(String? email) {
     if (email == null || email.isEmpty) return null;
@@ -225,39 +195,9 @@ class VozacCache {
     }
   }
 
-  /// Provjera da li email pripada datom vozaču.
-  static bool isEmailForVozac(String? email, String? ime) {
-    if (email == null || ime == null) return false;
-    return getVozacByIme(ime)?.email?.toLowerCase() == email.toLowerCase();
-  }
-
-  /// Provjera da li je email registrovan kao bilo koji vozač.
-  static bool isRegistrovanEmail(String? email) {
-    if (email == null || email.isEmpty) return false;
-    return _vozaci.any((v) => v.email?.toLowerCase() == email.toLowerCase());
-  }
-
-  /// Svi registrovani email-ovi.
-  static List<String> get sviEmails => _vozaci.where((v) => v.email != null).map((v) => v.email!).toList();
-
   // ═══════════════════════════════════════════════════════════════════════════
   // ASYNC API (direktno iz baze, za rijetke slučajeve)
   // ═══════════════════════════════════════════════════════════════════════════
-
-  /// Dohvati ime vozača po UUID-u async (direktno iz baze ako nije u cache-u).
-  static Future<String?> getImeByUuidAsync(String? uuid) async {
-    if (uuid == null || uuid.isEmpty) return null;
-    // Provjeri cache prvo
-    final fromCache = _uuidToIme[uuid];
-    if (fromCache != null) return fromCache;
-    // Fallback: direktno iz baze
-    try {
-      final vozaci = await VozacService().getAllVozaci();
-      return vozaci.firstWhere((v) => v.id == uuid).ime;
-    } catch (_) {
-      return null;
-    }
-  }
 
   /// Dohvati UUID vozača po imenu async (direktno iz baze ako nije u cache-u).
   static Future<String?> getUuidByImeAsync(String? ime) async {

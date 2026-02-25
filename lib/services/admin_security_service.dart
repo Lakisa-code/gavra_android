@@ -17,21 +17,6 @@ class AdminSecurityService {
     return isAdminUser;
   }
 
-  /// 🛡️ Proveri da li vozač može da vidi podatke drugog vozača
-  static bool canViewDriverData(String currentDriver, String targetDriver) {
-    if (currentDriver.isEmpty) {
-      return false;
-    }
-
-    // Admin može da vidi sve podatke
-    if (isAdmin(currentDriver)) {
-      return true;
-    }
-
-    // Vozač može da vidi samo svoje podatke
-    return currentDriver == targetDriver;
-  }
-
   /// 🔒 Filtriraj pazar podatke na osnovu privilegija
   static Map<String, double> filterPazarByPrivileges(
     String currentDriver,
@@ -48,8 +33,7 @@ class AdminSecurityService {
 
     // Vozač vidi samo svoj pazar
     return {
-      if (pazarData.containsKey(currentDriver))
-        currentDriver: pazarData[currentDriver]!,
+      if (pazarData.containsKey(currentDriver)) currentDriver: pazarData[currentDriver]!,
     };
   }
 
@@ -69,18 +53,5 @@ class AdminSecurityService {
 
     // Vozač vidi samo sebe
     return allDrivers.where((driver) => driver == currentDriver).toList();
-  }
-
-  /// 📊 Generiši naslov na osnovu privilegija
-  static String generateTitle(String currentDriver, String baseTitle) {
-    if (currentDriver.isEmpty) {
-      return baseTitle;
-    }
-
-    if (isAdmin(currentDriver)) {
-      return baseTitle; // Admin vidi standardni naslov
-    }
-
-    return 'Moj $baseTitle'; // Vozač vidi personalizovani naslov
   }
 }

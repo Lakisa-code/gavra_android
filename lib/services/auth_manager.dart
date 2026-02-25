@@ -274,23 +274,7 @@ class AuthManager {
     }
   }
 
-  /// 🔍 STATUS CHECKS
-
-  /// Da li je postavljan bilo koji vozač
-  static Future<bool> hasActiveDriver() async {
-    final driver = await getCurrentDriver();
-    return driver != null && driver.isNotEmpty;
-  }
-
   /// 🛠️ HELPER METHODS
-
-  static bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
-  }
-
-  /// Public helper kept for compatibility with previous Firebase API calls
-  static bool isValidEmailFormat(String email) => _isValidEmail(email);
 
   static Future<void> _saveDriverSession(String driverName) async {
     final prefs = await SharedPreferences.getInstance();
@@ -360,18 +344,6 @@ class AuthManager {
     }
 
     return null;
-  }
-
-  /// Zaboravi ovaj uređaj
-  static Future<void> forgetDevice() async {
-    final prefs = await SharedPreferences.getInstance();
-    final deviceId = await _getDeviceId();
-    final rememberedDevices = prefs.getStringList(_rememberedDevicesKey) ?? [];
-
-    // Ukloni sve entries za ovaj device ID
-    rememberedDevices.removeWhere((device) => device.startsWith('$deviceId:'));
-
-    await prefs.setStringList(_rememberedDevicesKey, rememberedDevices);
   }
 }
 

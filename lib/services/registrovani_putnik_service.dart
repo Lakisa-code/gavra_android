@@ -40,15 +40,6 @@ class RegistrovaniPutnikService {
     return response.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
   }
 
-  /// Dohvata aktivne mesečne putnike
-  Future<List<RegistrovaniPutnik>> getAktivniregistrovaniPutnici() async {
-    final response = await _supabase.from('registrovani_putnici').select('''
-          *
-        ''').eq('aktivan', true).eq('obrisan', false).eq('is_duplicate', false).order('putnik_ime');
-
-    return response.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
-  }
-
   /// Dohvata putnike kojima treba račun (treba_racun = true)
   Future<List<RegistrovaniPutnik>> getPutniciZaRacun() async {
     final response = await _supabase
@@ -115,7 +106,6 @@ class RegistrovaniPutnikService {
     // Ako već postoji aktivan controller, koristi ga
     if (_sharedController != null && !_sharedController!.isClosed) {
       // NE POVEĆAVAJ listener count - broadcast stream deli istu pretplatu
-      // debugPrint('📊 [RegistrovaniPutnikService] Reusing existing stream'); // Disabled - too spammy
 
       // Emituj poslednju vrednost novom listener-u
       if (_lastValue != null) {
@@ -577,6 +567,7 @@ class RegistrovaniPutnikService {
                 'grad': normalizedGrad,
                 'dan': danKratica,
                 'zeljeno_vreme': '$vremeStr:00',
+                'dodeljeno_vreme': '$vremeStr:00', // confirmed = odmah odobreno
                 'status': 'confirmed',
                 'broj_mesta': brojMesta,
               });
@@ -602,6 +593,7 @@ class RegistrovaniPutnikService {
               if (existingVreme != vremeStr || existingStatus == 'otkazano' || existingStatus == 'pokupljen') {
                 await _supabase.from('seat_requests').update({
                   'zeljeno_vreme': '$vremeStr:00',
+                  'dodeljeno_vreme': '$vremeStr:00', // confirmed = odmah odobreno
                   'status': 'confirmed',
                   'updated_at': DateTime.now().toUtc().toIso8601String(),
                 }).eq('id', existing['id']);
@@ -625,12 +617,25 @@ class RegistrovaniPutnikService {
   }
 
   /// Toggle aktivnost mesečnog putnika
+  /// Kada se deaktivira (aktivnost=false), sve aktivne seat_requests se postavljaju na 'bez_polaska'
   Future<bool> toggleAktivnost(String id, bool aktivnost) async {
     try {
       await _supabase.from('registrovani_putnici').update({
         'aktivan': aktivnost,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', id);
+
+      // Kada se putnik deaktivira — poništi sve buduće aktivne zahteve
+      if (!aktivnost) {
+        await _supabase
+            .from('seat_requests')
+            .update({
+              'status': 'bez_polaska',
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('putnik_id', id)
+            .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
+      }
 
       return true;
     } catch (e) {
@@ -723,24 +728,17 @@ class RegistrovaniPutnikService {
   /// Briše mesečnog putnika (soft delete)
   Future<bool> obrisiRegistrovaniPutnik(String id) async {
     try {
-      await _supabase.from('registrovani_putnici').update({
-        'obrisan': true,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', id);
+      // Trajno brisanje svih vezanih podataka
+      await _supabase.from('pin_zahtevi').delete().eq('putnik_id', id);
+      await _supabase.from('seat_requests').delete().eq('putnik_id', id);
+      await _supabase.from('voznje_log').delete().eq('putnik_id', id);
+      await _supabase.from('registrovani_putnici').delete().eq('id', id);
 
       return true;
     } catch (e) {
+      debugPrint('❌ [obrisiRegistrovaniPutnik] Greška: $e');
       return false;
     }
-  }
-
-  /// Traži mesečne putnike po imenu, prezimenu ili broju telefona
-  Future<List<RegistrovaniPutnik>> searchregistrovaniPutnici(String query) async {
-    final response = await _supabase.from('registrovani_putnici').select('''
-          *
-        ''').eq('obrisan', false).or('putnik_ime.ilike.%$query%,broj_telefona.ilike.%$query%').order('putnik_ime');
-
-    return response.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
   }
 
   /// Dohvata sva plaćanja za mesečnog putnika
@@ -817,22 +815,6 @@ class RegistrovaniPutnikService {
 
   /// Dohvata zakupljene putnike za današnji dan
   /// 🔄 POJEDNOSTAVLJENO: Koristi registrovani_putnici direktno
-  static Future<List<Map<String, dynamic>>> getZakupljenoDanas() async {
-    try {
-      final response = await supabase
-          .from('registrovani_putnici')
-          .select()
-          .eq('status', 'zakupljeno')
-          .eq('aktivan', true)
-          .eq('obrisan', false)
-          .order('putnik_ime');
-
-      return response.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e)).toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
   /// Stream za realtime ažuriranja mesečnih putnika
   /// Koristi direktan Supabase Realtime
   Stream<List<RegistrovaniPutnik>> get registrovaniPutniciStream {
@@ -882,24 +864,6 @@ class RegistrovaniPutnikService {
   }
 
   // ==================== ENHANCED CAPABILITIES ====================
-
-  /// 🔍 Dobija vozača iz poslednjeg plaćanja za mesečnog putnika
-  /// Koristi direktan Supabase stream
-  static Stream<String?> streamVozacPoslednjegPlacanja(String putnikId) {
-    return streamAktivniRegistrovaniPutnici().map((putnici) {
-      try {
-        final putnik = putnici.where((p) => p.id == putnikId).firstOrNull;
-        if (putnik == null) return null;
-        final vozacId = putnik.vozacId;
-        if (vozacId != null && vozacId.isNotEmpty) {
-          return VozacCache.getImeByUuid(vozacId);
-        }
-        return null;
-      } catch (e) {
-        return null;
-      }
-    });
-  }
 
   /// 🔥 Stream poslednjeg plaćanja za putnika (iz voznje_log)
   /// Vraća Map sa 'vozac_ime', 'datum' i 'iznos'

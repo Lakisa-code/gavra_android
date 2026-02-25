@@ -114,19 +114,33 @@ putnik_id | datum | grad | vreme_polaska | dan_u_nedelji | tip | vozac_ime | izn
 
 ---
 
-## TABELA vreme_vozac
+## TABELA vreme_vozac (globalna dodela)
 
-### Globalna dodela (za ceo termin):
-```
-grad | vreme | dan | vozac_ime    (putnik_id IS NULL)
-```
+Dodeljivanje vozača **celom terminu** (svim putnicima za to vreme).
 
-### Individualna dodela (za konkretnog putnika):
+**Struktura:**
 ```
-putnik_id | datum | grad | vreme | vozac_ime    (putnik_id IS NOT NULL)
+grad | vreme | dan | vozac_ime | vozac_id
 ```
 
-Cache ključ: `putnikId|datum|grad|vreme`
+**UNIQUE constraint:** `(grad, vreme, dan)` — samo jedan vozač po terminu.
+
+---
+
+## TABELA putnik_vozac (individualna dodela)
+
+Dodeljivanje vozača **konkretnom putniku** (override globalne dodele).
+
+**Struktura:**
+```
+putnik_id | dan | grad | vreme | vozac_ime | vozac_id
+```
+
+**UNIQUE constraint:** `(putnik_id, dan, grad, vreme)` — putnik može imati samo jednog vozača po terminu.
+
+**Cache ključ:** `putnikId|dan|grad|vreme`
+
+**Prioritet:** Individualna dodela (putnik_vozac) ima **PREDNOST** nad globalnom (vreme_vozac).
 
 ---
 

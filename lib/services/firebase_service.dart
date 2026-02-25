@@ -141,15 +141,8 @@ class FirebaseService {
         putnikId: putnikId,
       );
     } else {
-      debugPrint(
-          '⚠️ [FirebaseService] Korisnik nije ulogovan - FCM token nije registrovan na serveru');
+      debugPrint('⚠️ [FirebaseService] Korisnik nije ulogovan - FCM token nije registrovan na serveru');
     }
-  }
-
-  /// Pokušaj registrovati pending token
-  /// Delegira na PushTokenService
-  static Future<void> tryRegisterPendingToken() async {
-    await PushTokenService.tryRegisterPendingToken();
   }
 
   /// 🔒 Flag da sprečimo višestruko registrovanje FCM listenera
@@ -171,18 +164,13 @@ class FirebaseService {
         // Show a local notification when app is foreground
         try {
           // Prvo pokušaj notification payload, pa data payload
-          final title = message.notification?.title ??
-              message.data['title'] as String? ??
-              'Gavra Notification';
+          final title = message.notification?.title ?? message.data['title'] as String? ?? 'Gavra Notification';
           final body = message.notification?.body ??
               message.data['body'] as String? ??
               message.data['message'] as String? ??
               'Nova notifikacija';
           LocalNotificationService.showRealtimeNotification(
-              title: title,
-              body: body,
-              payload:
-                  message.data.isNotEmpty ? jsonEncode(message.data) : null);
+              title: title, body: body, payload: message.data.isNotEmpty ? jsonEncode(message.data) : null);
         } catch (_) {}
       },
       onError: (error) {
@@ -200,8 +188,7 @@ class FirebaseService {
         }
       },
       onError: (error) {
-        debugPrint(
-            '🔴 [FirebaseService] onMessageOpenedApp stream error: $error');
+        debugPrint('🔴 [FirebaseService] onMessageOpenedApp stream error: $error');
       },
     );
   }

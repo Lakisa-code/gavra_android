@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isLoading = true;
   // bool _isAddingPutnik = false; // previously used loading state; now handled local to dialog
   String _selectedDay = 'Ponedeljak'; // Biće postavljeno na današnji dan u initState
-  String _selectedGrad = 'Bela Crkva';
+  String _selectedGrad = 'BC';
   String _selectedVreme = '05:00'; // ✅ VRAĆENO NA 05:00 (konzistentno sa RouteConfig)
 
   // Key and overlay entry for custom days dropdown
@@ -103,8 +103,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // 📝 DINAMIČKA LISTA POLAZAKA za BottomNavBar
   List<String> get _sviPolasci {
-    final bcList = bcVremena.map((v) => '$v Bela Crkva').toList();
-    final vsList = vsVremena.map((v) => '$v Vrsac').toList();
+    final bcList = bcVremena.map((v) => '$v BC').toList();
+    final vsList = vsVremena.map((v) => '$v VS').toList();
     return [...bcList, ...vsList];
   }
 
@@ -1647,9 +1647,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // ⚠️ SAMO ZA PUTNIKE - vozači mogu dodavati bez ograničenja
                                         final isVozac = VozacCache.isValidIme(_currentDriver);
                                         if (!isVozac) {
-                                          final gradKey = _selectedGrad.toLowerCase().contains('bela') ? 'BC' : 'VS';
                                           final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
-                                            gradKey,
+                                            _selectedGrad,
                                             _selectedVreme,
                                           );
                                           if (!imaMesta) {
@@ -2038,7 +2037,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             final odgovarajuceVreme =
                 GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
             // 🔧 FIX: Dopusti otkazane putnike - PutnikList će ih sortirati na dno sa crvenom bojom
-            // Isključi bez_polaska, hidden, cancelled - admin ih je eksplicitno uklonio
+            // Isključi bez_polaska, cancelled - admin ih je eksplicitno uklonio
             final prikazi = imaVreme &&
                 imaGrad &&
                 imaDan &&
@@ -2048,7 +2047,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 normalizedStatus != 'obrisan' &&
                 normalizedStatus != 'pending' &&
                 normalizedStatus != 'bez_polaska' &&
-                normalizedStatus != 'hidden' &&
                 normalizedStatus != 'cancelled';
             return prikazi;
           });

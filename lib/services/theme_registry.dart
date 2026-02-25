@@ -46,15 +46,10 @@ class ThemeRegistry {
   };
 
   /// Vraća sve dostupne teme
-  static Map<String, ThemeDefinition> get allThemes =>
-      Map.unmodifiable(_themes);
+  static Map<String, ThemeDefinition> get allThemes => Map.unmodifiable(_themes);
 
   /// Vraća listu naziva tema za dropdown
   static List<String> get themeNames => _themes.keys.toList();
-
-  /// Vraća listu display imena tema za dropdown
-  static List<String> get themeDisplayNames =>
-      _themes.values.map((t) => t.name).toList();
 
   /// Vraća temu po ID-u
   static ThemeDefinition? getTheme(String themeId) => _themes[themeId];
@@ -73,23 +68,8 @@ class ThemeRegistry {
     );
   }
 
-  /// Registruje novu temu
-  static void registerTheme(ThemeDefinition theme) {
-    _themes[theme.id] = theme;
-  }
-
   /// Proverava da li tema postoji
   static bool hasTheme(String themeId) => _themes.containsKey(themeId);
-
-  /// Vraća ID teme po display imenu
-  static String? getThemeIdByName(String displayName) {
-    for (final entry in _themes.entries) {
-      if (entry.value.name == displayName) {
-        return entry.key;
-      }
-    }
-    return null;
-  }
 }
 
 // 🎭 Definicija teme - sve što treba za kompletnu temu

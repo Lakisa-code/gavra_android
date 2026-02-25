@@ -11,16 +11,6 @@ class RegistrovaniHelpers {
   // ⚠️ SSOT: Polasci po danu se sada čuvaju ISKLJUČIVO u seat_requests tabeli.
   // Ove metode su zadržane radi kompatibilnosti interfejsa, ali više ne koriste JSON kolone.
 
-  // Get broj mesta from raw map (usually a seat_request)
-  static int getBrojMestaForDay(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    if (rawMap.containsKey('broj_mesta') && rawMap['broj_mesta'] != null) {
-      final bm = rawMap['broj_mesta'];
-      if (bm is num) return bm.toInt();
-      if (bm is String) return int.tryParse(bm) ?? 1;
-    }
-    return 1;
-  }
-
   // Get polazak for a day and place ('bc' or 'vs') from seat_request
   static String? getPolazakForDay(
     Map<String, dynamic> rawMap,
@@ -30,44 +20,11 @@ class RegistrovaniHelpers {
   }) {
     if (rawMap.containsKey('zeljeno_vreme') && rawMap['zeljeno_vreme'] != null) {
       final gradRaw = rawMap['grad']?.toString();
-      final isVs = (place.toLowerCase() == 'vs' || place.toLowerCase() == 'vrsac');
-
-      final matches = isVs ? GradAdresaValidator.isVrsac(gradRaw) : GradAdresaValidator.isBelaCrkva(gradRaw);
+      final matches = gradRaw?.toUpperCase() == place.toUpperCase();
 
       if (matches) {
         return normalizeTime(rawMap['zeljeno_vreme'].toString());
       }
-    }
-    return null;
-  }
-
-  /// Proveri da li je putnik otkazan
-  static bool isOtkazanForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    if (rawMap.containsKey('status')) {
-      final status = rawMap['status']?.toString().toLowerCase();
-      return status == 'otkazano' || status == 'cancelled';
-    }
-    return false;
-  }
-
-  /// 🆕 Dobij vreme otkazivanja
-  static DateTime? getVremeOtkazivanjaForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    if (rawMap.containsKey('processed_at') && isOtkazanForDayAndPlace(rawMap, dayKratica, place)) {
-      return DateTime.tryParse(rawMap['processed_at'].toString())?.toLocal();
-    }
-    return null;
-  }
-
-  static String? getOtkazaoVozacForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    if (rawMap.containsKey('vozac_id') && isOtkazanForDayAndPlace(rawMap, dayKratica, place)) {
-      return rawMap['vozac_id']?.toString();
-    }
-    return null;
-  }
-
-  static String? getStatusForDayAndPlace(Map<String, dynamic> rawMap, String dayKratica, String place) {
-    if (rawMap.containsKey('status')) {
-      return rawMap['status']?.toString();
     }
     return null;
   }
@@ -118,9 +75,5 @@ class RegistrovaniHelpers {
       if (s.contains(k)) return map[k]!;
     }
     return RegistrovaniStatus.unknown;
-  }
-
-  static bool isActive(Map<String, dynamic> map) {
-    return map['is_active'] == true || map['is_active'] == 1;
   }
 }

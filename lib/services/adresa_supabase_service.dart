@@ -9,18 +9,14 @@ import 'realtime/realtime_manager.dart';
 /// 🎯 KORISTI UUID REFERENCE umesto TEXT polja
 class AdresaSupabaseService {
   static StreamSubscription? _adreseSubscription;
-  static final StreamController<List<Adresa>> _adreseController =
-      StreamController<List<Adresa>>.broadcast();
+  static final StreamController<List<Adresa>> _adreseController = StreamController<List<Adresa>>.broadcast();
   static List<Adresa> _cachedAdrese = []; // 🚀 Cache za brže učitavanje
 
   /// Dobija adresu po UUID-u
   static Future<Adresa?> getAdresaByUuid(String uuid) async {
     try {
-      final response = await supabase
-          .from('adrese')
-          .select('id, naziv, grad, gps_lat, gps_lng')
-          .eq('id', uuid)
-          .single();
+      final response =
+          await supabase.from('adrese').select('id, naziv, grad, gps_lat, gps_lng').eq('id', uuid).single();
 
       final adresa = Adresa.fromMap(response);
       return adresa;
@@ -40,11 +36,8 @@ class AdresaSupabaseService {
   /// Dobija sve adrese za određeni grad
   static Future<List<Adresa>> getAdreseZaGrad(String grad) async {
     try {
-      final response = await supabase
-          .from('adrese')
-          .select('id, naziv, grad, gps_lat, gps_lng')
-          .eq('grad', grad)
-          .order('naziv');
+      final response =
+          await supabase.from('adrese').select('id, naziv, grad, gps_lat, gps_lng').eq('grad', grad).order('naziv');
 
       return response.map((json) => Adresa.fromMap(json)).toList();
     } catch (e) {
@@ -55,11 +48,8 @@ class AdresaSupabaseService {
   /// Dobija sve adrese
   static Future<List<Adresa>> getSveAdrese() async {
     try {
-      final response = await supabase
-          .from('adrese')
-          .select('id, naziv, grad, gps_lat, gps_lng')
-          .order('grad')
-          .order('naziv');
+      final response =
+          await supabase.from('adrese').select('id, naziv, grad, gps_lat, gps_lng').order('grad').order('naziv');
       return response.map((json) => Adresa.fromMap(json)).toList();
     } catch (e) {
       return [];
@@ -79,8 +69,7 @@ class AdresaSupabaseService {
         }
       }
 
-      _adreseSubscription =
-          RealtimeManager.instance.subscribe('adrese').listen((payload) {
+      _adreseSubscription = RealtimeManager.instance.subscribe('adrese').listen((payload) {
         _refreshAdreseStream(); // Ažuriraj samo na promenu
       });
     }
@@ -96,8 +85,7 @@ class AdresaSupabaseService {
   }
 
   /// Pronađi adresu po nazivu i gradu
-  static Future<Adresa?> findAdresaByNazivAndGrad(
-      String naziv, String grad) async {
+  static Future<Adresa?> findAdresaByNazivAndGrad(String naziv, String grad) async {
     try {
       final response = await supabase
           .from('adrese')
@@ -148,8 +136,7 @@ class AdresaSupabaseService {
   }
 
   /// 🌍 Geocodira adresu i ažurira u bazi
-  static Future<Adresa?> _geocodeAndUpdateAdresa(
-      Adresa adresa, String grad) async {
+  static Future<Adresa?> _geocodeAndUpdateAdresa(Adresa adresa, String grad) async {
     try {
       final coordsString = await GeocodingService.getKoordinateZaAdresu(
         grad,
@@ -185,40 +172,8 @@ class AdresaSupabaseService {
     return null;
   }
 
-  /// Pretraži adrese po nazivu (za autocomplete)
-  static Future<List<Adresa>> searchAdrese(String query, {String? grad}) async {
-    try {
-      var queryBuilder =
-          supabase.from('adrese').select().ilike('naziv', '%$query%');
-
-      if (grad != null) {
-        queryBuilder = queryBuilder.eq('grad', grad);
-      }
-
-      final response = await queryBuilder.order('naziv').limit(20);
-
-      return response.map((json) => Adresa.fromMap(json)).toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  /// Helper metoda za dobijanje adresa u formatu za dropdown
-  static Future<List<Map<String, dynamic>>> getAdreseDropdownData(
-      String grad) async {
-    final adrese = await getAdreseZaGrad(grad);
-    return adrese
-        .map((adresa) => {
-              'id': adresa.id,
-              'naziv': adresa.naziv,
-              'displayText': adresa.displayAddress
-            })
-        .toList();
-  }
-
   /// Batch učitavanje adresa
-  static Future<Map<String, Adresa>> getAdreseByUuids(
-      List<String> uuids) async {
+  static Future<Map<String, Adresa>> getAdreseByUuids(List<String> uuids) async {
     final Map<String, Adresa> result = {};
 
     for (final uuid in uuids) {
