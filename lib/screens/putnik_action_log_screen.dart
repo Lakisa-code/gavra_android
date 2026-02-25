@@ -168,7 +168,7 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
       final response = await supabase
           .from('seat_requests')
           .select(
-              'id, grad, dan, zeljeno_vreme, dodeljeno_vreme, status, created_at, broj_mesta, priority, cancelled_by')
+              'id, grad, dan, zeljeno_vreme, dodeljeno_vreme, status, created_at, broj_mesta, priority, cancelled_by, approved_by, pokupljeno_by')
           .eq('putnik_id', _selectedPutnikId!)
           .neq('status', 'pokupljen') // ❌ Ne prikazuj pokupljene - to su završene vožnje
           .order('created_at', ascending: false);
@@ -787,7 +787,19 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     final brojMesta = req['broj_mesta'] as int? ?? 1;
     final priority = req['priority'] as int? ?? 0;
     final cancelledBy = req['cancelled_by'] as String?;
+    final approvedBy = req['approved_by'] as String?;
+    final pokupljenoBy = req['pokupljeno_by'] as String?;
     final createdAt = req['created_at'] != null ? DateTime.tryParse(req['created_at'] as String)?.toLocal() : null;
+
+    // 👤 Ko je izvršio akciju
+    String? izvrsioAkciju;
+    if (status == 'pokupljen' && pokupljenoBy != null && pokupljenoBy.isNotEmpty) {
+      izvrsioAkciju = pokupljenoBy;
+    } else if ((status == 'approved' || status == 'confirmed') && approvedBy != null && approvedBy.isNotEmpty) {
+      izvrsioAkciju = approvedBy;
+    } else if ((status == 'rejected' || status == 'otkazano') && cancelledBy != null && cancelledBy.isNotEmpty) {
+      izvrsioAkciju = cancelledBy;
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -970,6 +982,29 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
                               color: Colors.redAccent.withOpacity(0.7),
                               fontStyle: FontStyle.italic,
                             ),
+                      ),
+                    ),
+
+                  // Ko je izvršio akciju
+                  if (izvrsioAkciju != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.person_pin,
+                            size: 13,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Izvršio: $izvrsioAkciju',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.65),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
                 ],

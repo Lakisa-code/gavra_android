@@ -5,6 +5,7 @@ import '../globals.dart';
 import '../screens/home_screen.dart';
 import '../screens/pin_zahtevi_screen.dart';
 import '../screens/registrovani_putnik_profil_screen.dart';
+import '../screens/vozac_screen.dart';
 import 'putnik_service.dart';
 
 class NotificationNavigationService {
@@ -40,6 +41,23 @@ class NotificationNavigationService {
       }
     } catch (e) {
       debugPrint('❌ [NavService] Greška pri navigaciji na profil: $e');
+    }
+  }
+
+  /// 🚐 Navigiraj na Vozač Screen (za 'vozac_krenuo' notifikaciju)
+  static Future<void> navigateToVozacScreen() async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    try {
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => const VozacScreen(),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ [NavService] Greška pri navigaciji na VozacScreen: $e');
     }
   }
 

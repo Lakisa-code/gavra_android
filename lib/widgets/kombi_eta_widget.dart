@@ -54,23 +54,46 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     _subscription?.cancel();
     _putnikSubscription?.cancel();
     RealtimeManager.instance.unsubscribe('vozac_lokacije');
-    if (widget.putnikId != null) {
-      RealtimeManager.instance.unsubscribe('seat_requests');
-    }
+    // ✅ NE pozivamo unsubscribe('seat_requests') — profil ekran već drži taj
+    // channel otvoren (registrovan u _setupRealtimeListener). Dovoljno je
+    // otkazati dart StreamSubscription iznad. Bez ovog fixa _listenerCount bi
+    // pao na 1 i channel bi ostao otvoren sa dead stream-om bez slušaoca.
     super.dispose();
   }
 
+  /// 🗄️ Čita aktivne lokacije vozača iz in-memory cache-a (0 DB upita).
+  /// Cache se puni pri startu i ažurira automatski na svaki realtime event.
+  /// Fallback DB upit se radi samo ako je cache prazan (npr. odmah pri startu
+  /// pre nego što se RealtimeManager inicijalizovao).
   Future<void> _loadGpsData() async {
     try {
       final normalizedGrad = GradAdresaValidator.normalizeGrad(widget.grad);
-      final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true);
-      if (!mounted) return;
-
-      final list = data as List<dynamic>;
       final normVreme = widget.vreme != null ? GradAdresaValidator.normalizeTime(widget.vreme!) : null;
 
+      // 🚀 PRIMARNI PUT: čitaj iz lokacijeCache (0 DB upita)
+      final cacheValues = RealtimeManager.instance.lokacijeCache.values.toList();
+      List<dynamic> list;
+      if (cacheValues.isNotEmpty) {
+        // Cache je popunjen — filtriraj direktno iz memorije
+        list = cacheValues.where((row) => row['aktivan'] == true).toList();
+      } else {
+        // 🔁 FALLBACK: cache još nije popunjen (prva sekunda pri startu)
+        // Radi jedan DB upit i popuni lokacijeCache
+        debugPrint('⚠️ [KombiEta] lokacijeCache prazan — fallback DB upit');
+        final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true);
+        if (!mounted) return;
+        // Ažuriraj cache sa svežim podacima
+        for (final row in data as List<dynamic>) {
+          final id = (row as Map<String, dynamic>)['id']?.toString();
+          if (id != null) RealtimeManager.instance.lokacijeCache[id] = Map<String, dynamic>.from(row);
+        }
+        list = data;
+      }
+
+      if (!mounted) return;
+
       final filteredList = list.where((driver) {
-        final driverGrad = driver['grad'] as String? ?? '';
+        final driverGrad = (driver as Map<String, dynamic>)['grad'] as String? ?? '';
         if (GradAdresaValidator.normalizeGrad(driverGrad) != normalizedGrad) return false;
         if (normVreme != null) {
           final driverVreme = driver['vreme_polaska'] as String? ?? '';
@@ -102,26 +125,25 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       int? eta;
       if (putniciEta != null) {
-        if (putniciEta.containsKey(widget.putnikIme)) {
+        // 1️⃣ Exact match po putnikId (vozač treba da čuva ID kao ključ)
+        if (widget.putnikId != null && putniciEta.containsKey(widget.putnikId)) {
+          eta = putniciEta[widget.putnikId] as int?;
+        }
+        // 2️⃣ Exact match po imenu (stari format, vozač čuva ime kao ključ)
+        if (eta == null && putniciEta.containsKey(widget.putnikIme)) {
           eta = putniciEta[widget.putnikIme] as int?;
-        } else {
+        }
+        // 3️⃣ Case-insensitive exact match po imenu
+        if (eta == null) {
           for (final entry in putniciEta.entries) {
             if (entry.key.toLowerCase() == widget.putnikIme.toLowerCase()) {
               eta = entry.value as int?;
               break;
             }
           }
-          if (eta == null) {
-            final putnikLower = widget.putnikIme.toLowerCase();
-            for (final entry in putniciEta.entries) {
-              final keyLower = entry.key.toLowerCase();
-              if (keyLower.contains(putnikLower) || putnikLower.contains(keyLower)) {
-                eta = entry.value as int?;
-                break;
-              }
-            }
-          }
         }
+        // ❌ Fuzzy contains match uklonjen — bio nestabilan i mogao je
+        // da vrati ETA drugog putnika (npr. "Ana" bi matchovala "Anabela")
       }
 
       setState(() {
@@ -151,16 +173,26 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   void _startListening() {
     _loadGpsData();
     _loadPokupljenjeIzBaze();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadGpsData());
+    // ⏱️ Polling je sada samo fallback ako realtime padne.
+    // Realtime event → _loadGpsData() čita iz cache-a (0 DB upita).
+    // Interval produžen: 30s → 5min jer nema potrebe za čestim upitima.
+    _pollingTimer = Timer.periodic(const Duration(minutes: 5), (_) => _loadGpsData());
     _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen(
           (payload) => _loadGpsData(),
           onError: (_) {},
         );
     if (widget.putnikId != null) {
       _putnikSubscription = RealtimeManager.instance.subscribe('seat_requests').listen(
-            (payload) => _loadPokupljenjeIzBaze(),
-            onError: (_) {},
-          );
+        (payload) {
+          // ✅ Filtriraj payload — reaguj samo na promene za OVOG putnika
+          final record = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
+          final payloadPutnikId = record['putnik_id']?.toString();
+          // Ako payload ne odgovara ovom putniku — ignoriši
+          if (payloadPutnikId != null && payloadPutnikId != widget.putnikId) return;
+          _loadPokupljenjeIzBaze();
+        },
+        onError: (_) {},
+      );
     }
   }
 
@@ -169,16 +201,25 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     try {
       const dani = ['ned', 'pon', 'uto', 'sre', 'cet', 'pet', 'sub'];
       final danasKratica = dani[DateTime.now().weekday % 7];
+      final normVreme = widget.vreme != null ? GradAdresaValidator.normalizeTime(widget.vreme!) : null;
 
-      final response = await supabase
+      var query = supabase
           .from('seat_requests')
           .select('status, updated_at')
           .eq('putnik_id', widget.putnikId!)
           .eq('status', 'pokupljen')
-          .eq('dan', danasKratica)
-          .order('updated_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
+          .eq('dan', danasKratica);
+
+      // Filtriraj po gradu ako je poznat
+      if (widget.grad.isNotEmpty) {
+        query = query.eq('grad', GradAdresaValidator.normalizeGrad(widget.grad));
+      }
+      // Filtriraj po terminu polaska ako je poznat — sprečava lažni "pokupljen" iz druge vožnje
+      if (normVreme != null) {
+        query = query.eq('dodeljeno_vreme', '$normVreme:00');
+      }
+
+      final response = await query.order('updated_at', ascending: false).limit(1).maybeSingle();
 
       if (!mounted) return;
 
@@ -202,6 +243,15 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   // Faza 1 — uvek vidljiv default info widget
   Widget _buildFaza1() {
+    // ✅ Prikaži sledeću vožnju ako je poznata (umesto generičke poruke)
+    if (widget.sledecaVoznja != null && widget.sledecaVoznja!.isNotEmpty) {
+      return _buildContainer(
+        Colors.white,
+        icon: Icons.directions_bus,
+        title: '🚐 SLEDEĆA VOŽNJA',
+        message: widget.sledecaVoznja!,
+      );
+    }
     return _buildContainer(
       Colors.white,
       icon: Icons.directions_bus,

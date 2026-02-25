@@ -26,10 +26,13 @@ class RealtimeGpsService {
         throw 'GPS dozvole nisu odobrene';
       }
 
-      // Konfiguriši GPS settings - update svakih 30 sekundi (štedi bateriju i API)
+      // Konfiguriši GPS settings — update TAČNO svakih 30 sekundi.
+      // distanceFilter: 0 → ne šalje po metražu, samo po timeru.
+      // Bez ovog, vozač koji brzo vozi bi trigerovao update i pre timera
+      // što bi zajedno sa _locationTimer-om pravilo duple DB upise.
       final androidSettings = AndroidSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 100, // Ili svakih 100 metara ako brže
+        distanceFilter: 0, // Samo timer, bez metražnog triggera
         intervalDuration: const Duration(seconds: 30), // Update svakih 30 sekundi
       );
 

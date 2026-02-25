@@ -73,7 +73,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     _registerPushToken(); // 📱 Registruj push token (retry ako nije uspelo pri login-u)
     // ❌ UKLONJENO: Client-side pending resolution - sada se radi putem Supabase cron jobs
     // _checkAndResolvePendingRequests();
-    _cleanupOldSeatRequests(); // 🧹 Očisti stare seat_requests iz baze
+    // ❌ UKLONJENO: _cleanupOldSeatRequests() - metoda je bila stub koji ništa nije radio
     WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
     _setupRealtimeListener(); // 🎯 Sluša promene statusa u realtime
     _loadActiveRequests();
@@ -224,9 +224,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           _isLoading = false;
         });
         _loadStatistike(); // 🔄 Ponovo izračunaj statistike sa svežim podacima (npr. nova cena)
+      } else if (mounted) {
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       debugPrint('❌ [_refreshPutnikData] Greška: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -239,13 +242,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   // - Job #5: resolve-pending-20h-ucenici (u 20:00)
   // - Job #6: cleanup-expired-pending (svakih 5 minuta)
 
-  /// 🧹 UKLONJENO: Brisanje seat_requests je zabranjeno iz klijentskog koda!
-  /// Pravilo: seat_requests je operativna tabela — stari redovi ostaju kao istorija (cron uklonjen).
-  /// Videti PRAVILA.md
-  Future<void> _cleanupOldSeatRequests() async {
-    // NE RADI NIŠTA — brisanje seat_requests nije dozvoljeno iz aplikacije
-    debugPrint('⛔ [Cleanup] _cleanupOldSeatRequests je onemogućen - videti PRAVILA.md');
-  }
+  // ❌ _cleanupOldSeatRequests() uklonjen — metoda je bila prazan stub.
+  // Brisanje seat_requests nije dozvoljeno iz klijentskog koda (videti PRAVILA.md).
+  // Cleanup se radi server-side putem Supabase cron job-ova.
 
   /// 🔧 Helperi za sigurno parsiranje brojeva iz Supabase-a (koji mogu biti String)
   double _toDouble(dynamic v) {
@@ -1570,7 +1569,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         isCancelled: bcOtkazano,
                         tipPutnika: tip.toString(),
                         tipPrikazivanja: tipPrikazivanja,
-                        isAdmin: true,
+                        isAdmin: false,
                         onChanged: (newValue) => _updatePolazak(dan, 'bc', newValue),
                         onBezPolaska: () async => await _updatePolazak(dan, 'bc', null),
                       ),
@@ -1586,7 +1585,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                         isCancelled: vsOtkazano,
                         tipPutnika: tip.toString(),
                         tipPrikazivanja: tipPrikazivanja,
-                        isAdmin: true,
+                        isAdmin: false,
                         onChanged: (newValue) => _updatePolazak(dan, 'vs', newValue),
                         onBezPolaska: () async => await _updatePolazak(dan, 'vs', null),
                       ),
@@ -1700,10 +1699,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
             'updated_at': DateTime.now().toIso8601String(),
           });
         }
-        // Osveži updated_at na profilu
-        await supabase
-            .from('registrovani_putnici')
-            .update({'updated_at': DateTime.now().toIso8601String()}).eq('id', putnikId);
+        // ❌ UKLONJENO: update updated_at na registrovani_putnici
+        // — to je triggerovalo Realtime kaskadu (refresh profila + 5 querija)
+        // za svaku izmenu polaska. _loadActiveRequests() ispod je dovoljan.
       }
 
       // 2. Osveži podatke

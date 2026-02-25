@@ -109,12 +109,27 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     });
   }
 
-  String _getWorkingDateIso() {
+  /// Vraća ISO datum koji odgovara selektovanom danu u sedmici.
+  /// Ako je danas pon a chip je 'sre' → vraća ISO datum za srijedu ove sedmice.
+  /// Vikend → koristi sledeću radnu sedmicu.
+  String _getIsoDateForSelectedDay() {
     final now = DateTime.now();
-    if (now.weekday == DateTime.saturday || now.weekday == DateTime.sunday) {
-      return now.add(Duration(days: 8 - now.weekday)).toIso8601String().split('T').first;
-    }
-    return now.toIso8601String().split('T').first;
+    // Baza: ponedeljak ove sedmice (ili sledeće ako je vikend)
+    final int todayWeekday = now.weekday; // 1=pon ... 7=ned
+    final int daysToMonday = (todayWeekday == 6 || todayWeekday == 7)
+        ? (8 - todayWeekday) // vikend → sledeći ponedeljak
+        : (1 - todayWeekday); // radni dan → ovaj ponedeljak
+    final monday = now.add(Duration(days: daysToMonday));
+
+    const dayOffsets = {'pon': 0, 'uto': 1, 'sre': 2, 'cet': 3, 'pet': 4};
+    final offset = dayOffsets[_selectedDay ?? 'pon'] ?? 0;
+    return monday.add(Duration(days: offset)).toIso8601String().split('T').first;
+  }
+
+  /// Da li je selektovani dan u sledećoj sedmici (vikend slučaj)
+  bool get _isNextWeek {
+    final now = DateTime.now();
+    return now.weekday == DateTime.saturday || now.weekday == DateTime.sunday;
   }
 
   String _getDayAbbreviation(DateTime date) {
@@ -154,8 +169,10 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   }
 
   /// 👤 Naziv vozača za override putnika (null = nema override)
+  /// Filtrira i po selektovanom danu da ne pokazuje override drugog dana
   String? _getVozacOverrideZaPutnika(String putnikId) {
-    return _putnikOverridesCache.where((o) => o.putnikId == putnikId).firstOrNull?.vozac;
+    final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
+    return _putnikOverridesCache.where((o) => o.putnikId == putnikId && o.dan == dan).firstOrNull?.vozac;
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -505,7 +522,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   Widget build(BuildContext context) {
     return StreamBuilder<List<Putnik>>(
       stream: _putnikService.streamKombinovaniPutniciFiltered(
-        isoDate: _getWorkingDateIso(),
+        isoDate: _getIsoDateForSelectedDay(),
       ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
@@ -517,7 +534,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
 
         final countHelper = PutnikCountHelper.fromPutnici(
           putnici: allPutnici,
-          targetDateIso: _getWorkingDateIso(),
+          targetDateIso: _getIsoDateForSelectedDay(),
           targetDayAbbr: targetDay,
         );
 
@@ -529,11 +546,12 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
           }
         }
 
-        // Filtriraj po gradu i vremenu
+        // Filtriraj po gradu, vremenu i danu
         final filteredByGradVreme = allPutnici.where((p) {
           final gradMatch = _selectedGrad.isEmpty || p.grad == _selectedGrad;
           final vremeMatch = _selectedVreme.isEmpty || p.polazak == _selectedVreme;
-          return gradMatch && vremeMatch;
+          final danMatch = targetDay.isEmpty || p.dan == targetDay;
+          return gradMatch && vremeMatch && danMatch;
         }).toList();
 
         return Scaffold(
@@ -553,18 +571,21 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                   'Raspored vozača',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                // 🟡 Indikator: koliko termina ima dodjelu za selektovani dan
                 const SizedBox(width: 8),
+                // 🟡 Indikator: koliko termina ima dodjelu za selektovani dan
                 Builder(builder: (_) {
                   final count = _rasporedCache.where((r) => r.dan == targetDay).length;
-                  if (count == 0) return const SizedBox.shrink();
+                  if (count == 0 && !_isNextWeek) return const SizedBox.shrink();
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: _isNextWeek ? Colors.orange.withOpacity(0.3) : Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text('$count', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                    child: Text(
+                      _isNextWeek ? 'sledeća sedmica' : '$count',
+                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                    ),
                   );
                 }),
               ],

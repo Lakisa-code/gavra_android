@@ -93,7 +93,7 @@ class SeatRequestService {
   }
 
   /// Odobrava zahtev — kopira zeljeno_vreme u dodeljeno_vreme
-  static Future<bool> approveRequest(String id) async {
+  static Future<bool> approveRequest(String id, {String? approvedBy}) async {
     try {
       final nowStr = DateTime.now().toUtc().toIso8601String();
 
@@ -108,6 +108,7 @@ class SeatRequestService {
         'dodeljeno_vreme': zeljenoVreme, // kopira zeljeno_vreme u dodeljeno_vreme
         'updated_at': nowStr,
         'processed_at': nowStr,
+        if (approvedBy != null) 'approved_by': approvedBy,
       }).eq('id', id);
 
       return true;
@@ -118,12 +119,13 @@ class SeatRequestService {
   }
 
   /// Odbija zahtev
-  static Future<bool> rejectRequest(String id) async {
+  static Future<bool> rejectRequest(String id, {String? rejectedBy}) async {
     try {
       await _supabase.from('seat_requests').update({
         'status': 'rejected',
         'updated_at': DateTime.now().toUtc().toIso8601String(),
         'processed_at': DateTime.now().toUtc().toIso8601String(),
+        if (rejectedBy != null) 'cancelled_by': rejectedBy,
       }).eq('id', id);
 
       return true;

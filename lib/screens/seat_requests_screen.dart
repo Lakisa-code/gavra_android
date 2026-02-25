@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/seat_request.dart';
+import '../services/auth_manager.dart';
 import '../services/seat_request_service.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
@@ -365,7 +366,8 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
   Future<void> _approveZahtev(String id, SeatRequest zahtev) async {
     setState(() => _isLoading = true);
     try {
-      final success = await SeatRequestService.approveRequest(id);
+      final currentDriver = await AuthManager.getCurrentDriver();
+      final success = await SeatRequestService.approveRequest(id, approvedBy: currentDriver);
       if (success && mounted) {
         AppSnackBar.success(context, '✅ Zahtev uspešno odobren');
       }
@@ -377,7 +379,8 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
   Future<void> _rejectZahtev(String id) async {
     setState(() => _isLoading = true);
     try {
-      final success = await SeatRequestService.rejectRequest(id);
+      final currentDriver = await AuthManager.getCurrentDriver();
+      final success = await SeatRequestService.rejectRequest(id, rejectedBy: currentDriver);
       if (success && mounted) {
         AppSnackBar.error(context, '❌ Zahtev je odbijen');
       }

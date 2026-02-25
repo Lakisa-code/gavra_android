@@ -205,6 +205,8 @@ class RealtimeManager {
             .select('id, naziv, iznos, tip, aktivan, vozac_id, created_at')
             .eq('aktivan', true),
         _supabase.from('pumpa_config').select(),
+        // 🚐 vozac_lokacije — aktivne lokacije vozača (za KombiEtaWidget)
+        _supabase.from('vozac_lokacije').select().eq('aktivan', true),
       ]);
       for (final row in results[0] as List) {
         vozaciCache[row['id'].toString()] = Map<String, dynamic>.from(row);
@@ -233,6 +235,10 @@ class RealtimeManager {
       for (final row in results[8] as List) {
         pumpaConfigCache[row['id'].toString()] = Map<String, dynamic>.from(row);
       }
+      for (final row in results[9] as List) {
+        lokacijeCache[row['id'].toString()] = Map<String, dynamic>.from(row);
+      }
+      debugPrint('📦 [RealtimeManager] lokacijeCache: ${lokacijeCache.length} aktivnih lokacija');
     } catch (e) {
       debugPrint('❌ [RealtimeManager] _loadStaticCaches error: $e');
     }
