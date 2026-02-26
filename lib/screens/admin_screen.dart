@@ -28,6 +28,7 @@ import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'odrzavanje_screen.dart'; // 🚛 Kolska knjiga - vozila
 import 'pin_zahtevi_screen.dart'; // 🔑 PIN ZAHTEVI
 import 'registrovani_putnici_screen.dart';
+import 'seat_requests_log_screen.dart'; // 📋 Log svih zahteva
 import 'vozac_action_log_screen.dart'; // 📋 Dnevnik akcija vozača
 import 'vozac_raspored_screen.dart'; // 🗓️ Raspored vozača
 import 'vozac_screen.dart';
@@ -1036,6 +1037,51 @@ class _AdminScreenState extends State<AdminScreen> {
                                             child: FittedBox(
                                                 fit: BoxFit.scaleDown,
                                                 child: Text('Mesta',
+                                                    style: TextStyle(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                        shadows: [
+                                                          Shadow(
+                                                              offset: Offset(1, 1),
+                                                              blurRadius: 3,
+                                                              color: Colors.black54)
+                                                        ])))),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 4),
+                          // PETI RED - Log zahteva
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Row(
+                                children: [
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                            builder: (context) => const SeatRequestsLogScreen()),
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Colors.blue.withOpacity(0.6), width: 1.5),
+                                        ),
+                                        child: const Center(
+                                            child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text('📋 Log zahteva',
                                                     style: TextStyle(
                                                         fontWeight: FontWeight.w600,
                                                         fontSize: 14,

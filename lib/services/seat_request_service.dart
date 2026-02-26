@@ -167,6 +167,50 @@ class SeatRequestService {
     return controller.stream;
   }
 
+  /// 📋 Stream za SVE zahteve — audit/log ekran za admina
+  /// Podržava filtere: [statusFilter] lista statusa, [gradFilter] 'BC'/'VS'/null, [limit] broj zapisa
+  static Stream<List<SeatRequest>> streamSviZahtevi({
+    List<String>? statusFilter,
+    String? gradFilter,
+    int limit = 200,
+  }) {
+    final controller = StreamController<List<SeatRequest>>.broadcast();
+
+    Future<void> fetch() async {
+      try {
+        var query = _supabase
+            .from('seat_requests')
+            .select('*, registrovani_putnici(putnik_ime, broj_telefona)');
+
+        if (statusFilter != null && statusFilter.isNotEmpty) {
+          query = query.inFilter('status', statusFilter);
+        }
+        if (gradFilter != null) {
+          query = query.eq('grad', gradFilter);
+        }
+
+        final data = await query
+            .order('created_at', ascending: false)
+            .limit(limit);
+
+        if (!controller.isClosed) {
+          controller.add(data.map((json) => SeatRequest.fromJson(json)).toList());
+        }
+      } catch (e) {
+        debugPrint('❌ [SeatRequestService] streamSviZahtevi fetch error: $e');
+      }
+    }
+
+    fetch();
+    final sub = RealtimeManager.instance.subscribe('seat_requests').listen((_) => fetch());
+    controller.onCancel = () {
+      sub.cancel();
+      RealtimeManager.instance.unsubscribe('seat_requests');
+    };
+
+    return controller.stream;
+  }
+
   /// 🔢 Stream za broj zahteva koji čekaju ručnu obradu (za bedž na Home ekranu - samo dnevni)
   static Stream<int> streamManualRequestCount() {
     final controller = StreamController<int>.broadcast();

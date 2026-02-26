@@ -17,6 +17,7 @@ class SeatRequest {
   final String? customAdresaId;
   final String? cancelledBy; // Ime vozača koji je otkazao
   final String? pokupljenoBy; // Ime vozača koji je pokupio putnika
+  final String? approvedBy; // Ime vozača/admina koji je odobrio
 
   // Polja iz join-a (opciono)
   final String? putnikIme;
@@ -41,6 +42,7 @@ class SeatRequest {
     this.customAdresaId,
     this.cancelledBy,
     this.pokupljenoBy,
+    this.approvedBy,
     this.putnikIme,
     this.brojTelefona,
     this.tipPutnika,
@@ -68,6 +70,7 @@ class SeatRequest {
       customAdresaId: json['custom_adresa_id'] as String?,
       cancelledBy: json['cancelled_by'] as String?,
       pokupljenoBy: json['pokupljeno_by'] as String?,
+      approvedBy: json['approved_by'] as String?,
       putnikIme: putnikData?['putnik_ime'] ?? json['putnik_ime'] as String?,
       brojTelefona: putnikData?['broj_telefona'] ?? json['broj_telefona'] as String?,
       tipPutnika: putnikData?['tip'] ?? json['tip_putnika'] ?? json['tip'] as String?,
@@ -92,6 +95,7 @@ class SeatRequest {
     String? customAdresaId,
     String? cancelledBy,
     String? pokupljenoBy,
+    String? approvedBy,
     String? putnikIme,
     String? brojTelefona,
     String? tipPutnika,
@@ -114,6 +118,7 @@ class SeatRequest {
       customAdresaId: customAdresaId ?? this.customAdresaId,
       cancelledBy: cancelledBy ?? this.cancelledBy,
       pokupljenoBy: pokupljenoBy ?? this.pokupljenoBy,
+      approvedBy: approvedBy ?? this.approvedBy,
       putnikIme: putnikIme ?? this.putnikIme,
       brojTelefona: brojTelefona ?? this.brojTelefona,
       tipPutnika: tipPutnika ?? this.tipPutnika,
