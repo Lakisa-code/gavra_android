@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // bool _isAddingPutnik = false; // previously used loading state; now handled local to dialog
   String _selectedDay = 'Ponedeljak'; // Biće postavljeno na današnji dan u initState
   String _selectedGrad = 'BC';
-  String _selectedVreme = '05:00'; // ✅ VRAĆENO NA 05:00 (konzistentno sa RouteConfig)
+  String _selectedVreme = '05:00'; // inicijalna vrednost, overriduje se u initState
 
   // Key and overlay entry for custom days dropdown
   // (removed overlay support for now) - will use DropdownButton2 built-in overlay
@@ -107,6 +107,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final bcList = bcVremena.map((v) => '$v BC').toList();
     final vsList = vsVremena.map((v) => '$v VS').toList();
     return [...bcList, ...vsList];
+  }
+
+  /// Automatski selektuje najbliže vreme polaska za trenutni čas (BC grad).
+  void _autoSelectNajblizeVreme() {
+    final now = DateTime.now();
+    final nowMinutes = now.hour * 60 + now.minute;
+    final list = bcVremena;
+    String? najblize;
+    for (final v in list) {
+      final parts = v.split(':');
+      if (parts.length < 2) continue;
+      final vMin = (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
+      if (vMin >= nowMinutes) {
+        najblize = v;
+        break;
+      }
+    }
+    najblize ??= list.isNotEmpty ? list.last : '05:00';
+    _selectedGrad = 'BC';
+    _selectedVreme = najblize;
   }
 
   // ✅ KORISTI UTILS FUNKCIJU ZA DROPDOWN DAN
@@ -160,6 +180,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _selectedDay = _getTodayName();
+    _autoSelectNajblizeVreme();
     _initializeData();
     _setupRealtimeMonitoring(); // 🔄 Popravljeno ime metode
     _startDigitalDispecer(); // 🤖 Pokreni dispečera

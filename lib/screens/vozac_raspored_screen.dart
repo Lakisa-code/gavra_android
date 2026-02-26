@@ -68,8 +68,34 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     super.initState();
     final today = _getDayAbbreviation(DateTime.now());
     _selectedDay = (today == 'sub' || today == 'ned') ? 'pon' : today;
+    _autoSelectNajblizeVreme();
     _loadAll();
     _subscribeRealtime();
+  }
+
+  /// Automatski selektuje najbliže vreme polaska za trenutni čas.
+  /// Prioritet: prvo vreme koje je >= sada, fallback na poslednje vreme u listi.
+  void _autoSelectNajblizeVreme() {
+    final now = DateTime.now();
+    final nowMinutes = now.hour * 60 + now.minute;
+
+    // Pokušaj BC prvo (default grad)
+    final bcList = bcVremena;
+    String? najblize;
+    for (final v in bcList) {
+      final parts = v.split(':');
+      if (parts.length < 2) continue;
+      final vMinutes = int.tryParse(parts[0])! * 60 + int.tryParse(parts[1])!;
+      if (vMinutes >= nowMinutes) {
+        najblize = v;
+        break;
+      }
+    }
+    // Fallback: poslednje vreme u listi
+    najblize ??= bcList.isNotEmpty ? bcList.last : '';
+
+    _selectedGrad = 'BC';
+    _selectedVreme = najblize;
   }
 
   @override
