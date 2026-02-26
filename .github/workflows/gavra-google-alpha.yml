@@ -94,10 +94,10 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
           
           # 2. Create key.properties
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          echo "storeFile=../gavra-release-key-production.keystore" >> android/key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> key.properties
+          echo "storeFile=android/gavra-release-key-production.keystore" >> key.properties
 
           # 3. Restore Google Play JSON
           echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > android/google-service-account.json
