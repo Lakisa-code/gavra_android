@@ -82,8 +82,8 @@ BEGIN
         END IF;
     END IF;
 
-    -- Za manual → obavijesti admina (Bojan)
-    IF NEW.status = 'manual' THEN
+    -- Za pending dnevni → obavijesti admina (Bojan)
+    IF NEW.status = 'pending' AND NEW.tip_putnika = 'dnevni' THEN
         SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
         INTO v_tokens
         FROM push_tokens

@@ -173,11 +173,8 @@ class SeatRequestService {
 
     Future<void> fetch() async {
       try {
-        final data = await _supabase
-            .from('seat_requests')
-            .select('id')
-            .eq('status', 'pending')
-            .eq('tip_putnika', 'dnevni');
+        final data =
+            await _supabase.from('seat_requests').select('id').eq('status', 'pending').eq('tip_putnika', 'dnevni');
         if (!controller.isClosed) {
           controller.add((data as List).length);
         }
