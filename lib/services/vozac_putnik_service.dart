@@ -179,7 +179,7 @@ class VozacPutnikService {
       final vreme = getPolazak(p);
       final terminEntries = raspored.where((r) => r.dan == targetDan && r.grad == grad && r.vreme == vreme).toList();
 
-      if (terminEntries.isEmpty) return true; // nema unosa → vidljivo svima ✅
+      if (terminEntries.isEmpty) return false; // nema raspodele → putnik nije dodijeljen ni jednom vozaču
 
       return terminEntries.any(jeTerminVozacov);
     }).toList();
