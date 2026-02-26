@@ -208,6 +208,7 @@ class PutnikService {
     final otkazRows = matchedVl.where((vl) => vl['tip'] == 'otkazivanje').toList();
     final String? otkazaoVozac = otkazRows.isNotEmpty ? otkazRows.first['vozac_ime']?.toString() : null;
     final String? otkazaoVozacId = otkazRows.isNotEmpty ? otkazRows.first['vozac_id']?.toString() : null;
+    final String? vremeOtkazivanja = otkazRows.isNotEmpty ? otkazRows.first['created_at']?.toString() : null;
 
     // pokupioVozacId — lookup po imenu u vozaciCache
     String? pokupioVozacId;
@@ -251,6 +252,7 @@ class PutnikService {
     if (naplatioVozacId != null) map['naplatioVozacId'] = naplatioVozacId;
     if (otkazaoVozac != null) map['otkazaoVozac'] = otkazaoVozac;
     if (otkazaoVozacId != null) map['otkazaoVozacId'] = otkazaoVozacId;
+    if (vremeOtkazivanja != null) map['vreme_otkazivanja'] = vremeOtkazivanja;
     if (vremeUplate != null) map['vreme_placanja'] = vremeUplate;
     if (nazivAdrese != null) map['adrese'] = {'naziv': nazivAdrese};
     if (map['status'] == 'cancelled') map['status'] = 'otkazano';
