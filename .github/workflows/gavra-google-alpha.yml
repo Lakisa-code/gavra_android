@@ -106,6 +106,9 @@ jobs:
           mkdir -p android/app
           echo "${{ secrets.AGC_BASE64 }}" | base64 -d > android/app/agconnect-services.json
 
+          # 5. Restore .env file
+          echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
+
       - name: 🛡️ Verify Keystore (Fail Fast)
         env:
            KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
