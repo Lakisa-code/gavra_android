@@ -91,13 +91,13 @@ jobs:
       - name: Prepare secrets (Linux)
         run: |
           # 1. Restore Keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/gavra-release-key-production.keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > gavra-release-key-production.keystore
           
           # 2. Create key.properties
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> key.properties
-          echo "storeFile=android/gavra-release-key-production.keystore" >> key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=../gavra-release-key-production.keystore" >> android/key.properties
 
           # 3. Restore Google Play JSON
           echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > android/google-service-account.json
@@ -117,7 +117,7 @@ jobs:
            KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           echo "Verifying Keystore integrity..."
-          KEYSTORE_PATH="android/gavra-release-key-production.keystore"
+          KEYSTORE_PATH="gavra-release-key-production.keystore"
           if [ -f "$KEYSTORE_PATH" ]; then
             SIZE=$(stat -c%s "$KEYSTORE_PATH")
             echo "Keystore size: $SIZE bytes"
