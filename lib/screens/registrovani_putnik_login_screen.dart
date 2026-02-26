@@ -296,7 +296,9 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
           children: [
             Icon(Icons.vpn_key, color: Colors.amber),
             SizedBox(width: 8),
-            Text('PIN nije dodeljen', style: TextStyle(color: Colors.white)),
+            Expanded(
+              child: Text('PIN nije dodeljen', style: TextStyle(color: Colors.white)),
+            ),
           ],
         ),
         content: const Text(

@@ -1653,7 +1653,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final String normalizedVreme = RegistrovaniHelpers.normalizeTime(novoVreme) ?? '';
 
     // Uvek pending za dnevne putnike — tip_putnika kolona već govori sve
-    const String? rpcStatus = 'pending';
+    const String rpcStatus = 'pending';
 
     try {
       final gradClean = tipGrad.startsWith('bc') ? 'BC' : 'VS';
