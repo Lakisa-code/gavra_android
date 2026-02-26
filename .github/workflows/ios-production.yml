@@ -1,0 +1,193 @@
+name: 🍎 iOS Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit_for_review:
+        description: 'Submit for App Store review after upload?'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        default: ''
+      force_replace_review:
+        description: 'Automatically replace an existing in-review submission (use with caution)'
+        required: true
+        default: 'false'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.35.6'
+  BUNDLE_ID: 'com.gavra013.gavra013ios'
+  APP_ID: '6757114361'
+  VERSION_ID: 'a4397448-6ed5-4220-82df-1b84e1a63657'
+
+jobs:
+  build-and-submit:
+    name: 🚀 Build & Submit to App Store
+    runs-on: macos-latest
+    env:
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Install Codemagic CLI Tools
+        run: pip install codemagic-cli-tools
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Setup keychain
+        run: keychain initialize
+
+      - name: Fetch signing files
+        run: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Setup certificates
+        run: keychain add-certificates
+
+      - name: Setup code signing
+        run: xcode-project use-profiles
+
+      - name: Create ExportOptions.plist
+        run: |
+          PROVISIONING_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | xargs basename | sed 's/.mobileprovision//')
+          echo "Found Profile: $PROVISIONING_PROFILE"
+          
+          # Create plist using printf to avoid heredoc indentation issues
+          cat <<EOF > $HOME/export_options.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$PROVISIONING_PROFILE</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Get version info
+        id: version
+        run: |
+          VERSION_LINE=$(grep "^version:" pubspec.yaml)
+          VERSION_NAME=$(echo "$VERSION_LINE" | sed 's/version: \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
+          VERSION_CODE=$(echo "$VERSION_LINE" | sed 's/version: [0-9]*\.[0-9]*\.[0-9]*+\([0-9]*\)/\1/')
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "📌 Version: $VERSION_NAME ($VERSION_CODE)"
+
+      - name: Get latest build number
+        id: build_info
+        run: |
+          NEW_BUILD="${{ steps.version.outputs.VERSION_CODE }}"
+          echo "BUILD_NUMBER=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "📱 Build number: $NEW_BUILD"
+
+      - name: Update Info.plist
+        run: |
+          # Ensure Info.plist has the correct version
+          plutil -replace CFBundleShortVersionString -string "${{ steps.version.outputs.VERSION_NAME }}" ios/Runner/Info.plist
+          plutil -replace CFBundleVersion -string "${{ steps.build_info.outputs.BUILD_NUMBER }}" ios/Runner/Info.plist
+
+      - name: Build iOS App
+        run: |
+          flutter build ipa --release \
+            --build-name=${{ steps.version.outputs.VERSION_NAME }} \
+            --build-number=${{ steps.build_info.outputs.BUILD_NUMBER }} \
+            --export-options-plist=$HOME/export_options.plist
+
+      - name: Upload to App Store Connect
+        run: |
+          app-store-connect publish --path build/ios/ipa/*.ipa
+          echo "✅ Build uploaded to App Store Connect!"
+
+      - name: Wait for build processing
+        run: |
+          echo "⏳ Waiting 5 minutes for Apple to process build..."
+          sleep 300
+          echo "✅ Build should be processed now"
+
+      - name: Find and link build to version
+        id: link_build
+        run: |
+          BUILD_NUM="${{ steps.build_info.outputs.BUILD_NUMBER }}"
+          echo "🔍 Looking for build $BUILD_NUM..."
+
+          # Try to find the build
+          BUILD_ID=$(app-store-connect builds list \
+            --app-id "$APP_ID" \
+            --build-version-number "$BUILD_NUM" \
+            --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
+
+          if [ -z "$BUILD_ID" ]; then
+             echo "⏳ Build not found immediately. Waiting more..."
+             sleep 120
+             BUILD_ID=$(app-store-connect builds list \
+              --app-id "$APP_ID" \
+              --build-version-number "$BUILD_NUM" \
+              --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if data else '')" 2>/dev/null || echo "")
+          fi
+
+          if [ -n "$BUILD_ID" ]; then
+            echo "✅ Found build ID: $BUILD_ID"
+            echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
+            
+            # Link build to version
+            echo "🔗 Linking build to version (id: $VERSION_ID)..."
+            app-store-connect app-store-versions modify \
+              --id "$VERSION_ID" \
+              --build-id "$BUILD_ID" || echo "⚠️ Warning: Linking failed (maybe version string mismatch or already linked)"
+          else
+            echo "❌ Could not find build $BUILD_NUM in App Store Connect yet."
+            echo "⚠️ Proceeding without linking/submitting."
+            echo "BUILD_ID=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Submit for review (optional)
+        if: ${{ github.event.inputs.submit_for_review == 'true' }}
+        run: |
+          if [ -z "${{ steps.link_build.outputs.BUILD_ID }}" ]; then
+            echo "❌ No build ID found to submit; skipping submission."
+            exit 0
+          fi
+          echo "🚀 Submitting for App Store review..."
+          app-store-connect app-store-version-submissions create \
+            --app-store-version-id "$VERSION_ID" || {
+            echo "⚠️ Could not auto-submit. Please submit manually in App Store Connect."
+            exit 0
+          }
+          echo "🎉 Successfully submitted for App Store review!"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🎉 iOS Build Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "ver: ${{ steps.version.outputs.VERSION_NAME }} (${{ steps.build_info.outputs.BUILD_NUMBER }})" >> $GITHUB_STEP_SUMMARY
+
