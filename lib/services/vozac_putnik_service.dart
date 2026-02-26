@@ -142,8 +142,8 @@ class VozacPutnikService {
   ///      - nema unosa za termin → vidljivo svima ✅
   ///      - postoji unos → prikaži samo vozaču koji je dodeljen terminu
   ///
-  /// Ovo garantuje da putnik BEZ override-a i BEZ termin-rasporeda
-  /// bude vidljiv SVIM vozačima.
+  /// Filtrira putnike za datog vozača na osnovu termin rasporeda (vozac_raspored).
+  /// Putnik je vidljiv vozaču samo ako postoji unos u rasporedu koji ga dodjeljuje tom vozaču.
   ///
   /// [vozacId] = UUID (preferiran), [vozac] = ime (fallback)
   static List<T> filterKombinovan<T>({
@@ -151,7 +151,7 @@ class VozacPutnikService {
     required String vozac,
     required String? vozacId,
     required String targetDan,
-    required List<VozacPutnikEntry> overrides,
+    required List<VozacPutnikEntry> overrides, // zadržano radi compat, nije u upotrebi
     required List<VozacRasporedEntry> raspored,
     required String Function(T) getId,
     required String Function(T) getGrad,
@@ -164,29 +164,17 @@ class VozacPutnikService {
     }
 
     return sviPutnici.where((p) {
-      final id = getId(p);
-
-      // 1. Per-putnik override
-      final override = overrides.where((o) => o.putnikId == id).firstOrNull;
-      if (override != null) {
-        // Override postoji → UUID-first poređenje, fallback na ime
-        if (vozacId != null) return override.vozacId == vozacId;
-        return override.vozac == vozac;
-      }
-
-      // 2. Nema override-a → per-termin raspored
       final grad = getGrad(p);
       final vreme = getPolazak(p);
       final terminEntries = raspored.where((r) => r.dan == targetDan && r.grad == grad && r.vreme == vreme).toList();
 
-      if (terminEntries.isEmpty) return false; // nema raspodele → putnik nije dodijeljen ni jednom vozaču
+      if (terminEntries.isEmpty) return false; // nema raspodele → putnik nije vidljiv
 
       return terminEntries.any(jeTerminVozacov);
     }).toList();
   }
 
   /// @deprecated Koristiti [filterKombinovan] umjesto ovog.
-  /// Ostavljeno za backward compat, interno poziva filterKombinovan bez termin-filtera.
   static List<T> filterOverrides<T>({
     required List<T> sviPutnici,
     required String vozacId,
@@ -199,7 +187,7 @@ class VozacPutnikService {
     return sviPutnici.where((p) {
       final id = getId(p);
       final entry = overrides.where((o) => o.putnikId == id).firstOrNull;
-      if (entry == null) return true; // nema override-a → vidljivo
+      if (entry == null) return true;
       return entry.vozacId == vozacId || entry.vozac == vozac;
     }).toList();
   }

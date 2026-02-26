@@ -41,7 +41,6 @@ class PutnikService {
   static StreamSubscription? _globalSeatRequestsListener;
   static StreamSubscription? _globalVoznjeLogListener;
   static StreamSubscription? _globalRegistrovaniListener;
-  static StreamSubscription? _globalVozacPutnikListener;
   static StreamSubscription? _globalVozacRasporedListener;
 
   static Timer? _refreshDebounceTimer;
@@ -77,12 +76,10 @@ class PutnikService {
         _globalSeatRequestsListener?.cancel();
         _globalVoznjeLogListener?.cancel();
         _globalRegistrovaniListener?.cancel();
-        _globalVozacPutnikListener?.cancel();
         _globalVozacRasporedListener?.cancel();
         _globalSeatRequestsListener = null;
         _globalVoznjeLogListener = null;
         _globalRegistrovaniListener = null;
-        _globalVozacPutnikListener = null;
         _globalVozacRasporedListener = null;
         debugPrint('🛑 [PutnikService] Svi streamovi zatvoreni - globalni listener-i otkazani');
       }
@@ -345,15 +342,6 @@ class PutnikService {
         _debouncedRefreshAllStreams();
       });
       debugPrint('✅ [PutnikService] Globalni registrovani_putnici listener kreiran');
-    }
-
-    // Listener za vozac_putnik — kada se doda/promijeni/briše override, refresh svih streamova
-    if (_globalVozacPutnikListener == null) {
-      _globalVozacPutnikListener = RealtimeManager.instance.subscribe('vozac_putnik').listen((_) {
-        debugPrint('🔄 [PutnikService] vozac_putnik promijenjen — full stream refresh');
-        _debouncedRefreshAllStreams();
-      });
-      debugPrint('✅ [PutnikService] Globalni vozac_putnik listener kreiran');
     }
 
     // Listener za vozac_raspored — kada se doda/promijeni/briše termin, refresh svih streamova

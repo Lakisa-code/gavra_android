@@ -9,7 +9,6 @@ import '../models/putnik.dart';
 import '../services/kapacitet_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime/realtime_manager.dart';
-import '../services/vozac_putnik_service.dart';
 import '../services/vozac_raspored_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
@@ -37,11 +36,9 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   String _selectedVreme = '';
   String? _selectedDay;
   List<VozacRasporedEntry> _rasporedCache = [];
-  List<VozacPutnikEntry> _putnikOverridesCache = [];
 
   // 🔴 Realtime subscriptions
   StreamSubscription<PostgresChangePayload>? _rasporedSub;
-  StreamSubscription<PostgresChangePayload>? _putnikOverrideSub;
 
   final List<String> _days = ['pon', 'uto', 'sre', 'cet', 'pet'];
 
@@ -78,17 +75,14 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   @override
   void dispose() {
     _rasporedSub?.cancel();
-    _putnikOverrideSub?.cancel();
     super.dispose();
   }
 
   Future<void> _loadAll() async {
     final rasporedData = await _rasporedService.loadAll();
-    final overridesData = await VozacPutnikService().loadAll();
     if (mounted) {
       setState(() {
         _rasporedCache = rasporedData;
-        _putnikOverridesCache = overridesData;
       });
     }
   }
@@ -100,12 +94,6 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
       final entries =
           RealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
       if (mounted) setState(() => _rasporedCache = entries);
-    });
-
-    _putnikOverrideSub = RealtimeManager.instance.subscribe('vozac_putnik').listen((_) {
-      final entries =
-          RealtimeManager.instance.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
-      if (mounted) setState(() => _putnikOverridesCache = entries);
     });
   }
 
@@ -166,13 +154,6 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     if (entry.vozac.isNotEmpty) return entry.vozac;
     if (entry.vozacId != null) return VozacCache.getImeByUuid(entry.vozacId!);
     return null;
-  }
-
-  /// 👤 Naziv vozača za override putnika (null = nema override)
-  /// Filtrira i po selektovanom danu da ne pokazuje override drugog dana
-  String? _getVozacOverrideZaPutnika(String putnikId) {
-    final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
-    return _putnikOverridesCache.where((o) => o.putnikId == putnikId && o.dan == dan).firstOrNull?.vozac;
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -314,143 +295,6 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     );
   }
 
-  /// 👤 Bottom sheet: Dodijeli vozača putniku (vozac_putnik override)
-  Future<void> _showPutnikAssignSheet(Putnik p) async {
-    final trenutni = _getVozacOverrideZaPutnika(p.id?.toString() ?? '');
-    String? odabranVozac = trenutni;
-
-    final vozaci = VozacCache.imenaVozaca;
-    if (vozaci.isEmpty) {
-      if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozača');
-      return;
-    }
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Container(
-          decoration: BoxDecoration(
-            gradient: Theme.of(context).backgroundGradient,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
-          ),
-          padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '👤 ${p.ime}',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              Text(
-                '${p.grad} · ${p.polazak}',
-                style: const TextStyle(color: Colors.white60, fontSize: 13),
-              ),
-              const SizedBox(height: 4),
-              if (trenutni != null)
-                Text(
-                  'Trenutno: $trenutni',
-                  style: TextStyle(color: VozacCache.getColor(trenutni).withOpacity(0.9), fontSize: 13),
-                )
-              else
-                const Text('Nema override-a (prati termin)', style: TextStyle(color: Colors.white38, fontSize: 13)),
-              const SizedBox(height: 16),
-              ...vozaci.map((ime) {
-                final isSelected = odabranVozac == ime;
-                final color = VozacCache.getColor(ime);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    onTap: () => setSheetState(() => odabranVozac = isSelected ? null : ime),
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected ? color.withOpacity(0.25) : Colors.white.withOpacity(0.07),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? color : Colors.white.withOpacity(0.15),
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: color.withOpacity(0.3),
-                            child: Text(
-                              ime.isNotEmpty ? ime[0].toUpperCase() : '?',
-                              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            ime,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (isSelected) Icon(Icons.check_circle, color: color, size: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 8),
-              if (trenutni != null)
-                TextButton.icon(
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    await _ukloniPutnikOverride(p);
-                  },
-                  icon: const Icon(Icons.clear, color: Colors.redAccent, size: 18),
-                  label: const Text('Ukloni override (prati termin)', style: TextStyle(color: Colors.redAccent)),
-                ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.15),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: odabranVozac == null
-                      ? null
-                      : () async {
-                          Navigator.pop(ctx);
-                          await _spasiPutnikOverride(p, odabranVozac!);
-                        },
-                  child: const Text('Potvrdi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ═══════════════════════════════════════════════════════════════
   // BAZA OPERACIJE
   // ═══════════════════════════════════════════════════════════════
@@ -479,38 +323,6 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
       if (mounted) AppSnackBar.success(context, '🗑️ Dodjela uklonjena: $grad $vreme ($dan)');
     } catch (e) {
       if (mounted) AppSnackBar.error(context, '❌ Greška: $e');
-    }
-  }
-
-  Future<void> _spasiPutnikOverride(Putnik p, String vozacIme) async {
-    // Koristi dan iz putnikovog seat_request (p.dan), ne iz _selectedDay chip-a
-    final dan = (p.dan.isNotEmpty ? p.dan : _selectedDay) ?? _getDayAbbreviation(DateTime.now());
-    final success = await VozacPutnikService().set(
-      putnikId: p.id?.toString() ?? '',
-      vozacIme: vozacIme,
-      dan: dan,
-      grad: p.grad,
-      vreme: p.polazak,
-    );
-    await _loadAll();
-    if (mounted) {
-      if (success) {
-        AppSnackBar.success(context, '✅ ${p.ime} → $vozacIme');
-      } else {
-        AppSnackBar.error(context, '❌ Greška pri dodjeli');
-      }
-    }
-  }
-
-  Future<void> _ukloniPutnikOverride(Putnik p) async {
-    final success = await VozacPutnikService().delete(putnikId: p.id?.toString() ?? '');
-    await _loadAll();
-    if (mounted) {
-      if (success) {
-        AppSnackBar.success(context, '🗑️ Override uklonjen za ${p.ime}');
-      } else {
-        AppSnackBar.error(context, '❌ Greška');
-      }
     }
   }
 
@@ -688,13 +500,8 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                             itemCount: filteredByGradVreme.length,
                             itemBuilder: (ctx, i) {
                               final p = filteredByGradVreme[i];
-                              final override = _getVozacOverrideZaPutnika(p.id?.toString() ?? '');
-                              final overrideColor = override != null ? VozacCache.getColor(override) : null;
                               return _PutnikRasporedTile(
                                 putnik: p,
-                                overrideVozac: override,
-                                overrideColor: overrideColor,
-                                onAssign: () => _showPutnikAssignSheet(p),
                               );
                             },
                           ),
@@ -814,48 +621,27 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
 // TILE ZA PUTNIKA U RASPORED EKRANU
 // ═══════════════════════════════════════════════════════════════════
 
-/// Prikazuje jednog putnika sa indikatorom vozač overridea i dugmetom za dodjelu.
+/// Prikazuje jednog putnika u raspored ekranu.
 class _PutnikRasporedTile extends StatelessWidget {
   const _PutnikRasporedTile({
     required this.putnik,
-    required this.onAssign,
-    this.overrideVozac,
-    this.overrideColor,
   });
 
   final Putnik putnik;
-  final String? overrideVozac;
-  final Color? overrideColor;
-  final VoidCallback onAssign;
 
   @override
   Widget build(BuildContext context) {
-    final hasOverride = overrideVozac != null;
-    final borderColor = hasOverride ? overrideColor! : Colors.white12;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: hasOverride ? overrideColor!.withOpacity(0.08) : Colors.white.withOpacity(0.05),
+        color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor, width: hasOverride ? 1.5 : 1),
+        border: Border.all(color: Colors.white12, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            // Boja vozača (lijeva traka)
-            if (hasOverride)
-              Container(
-                width: 4,
-                height: 36,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
-                  color: overrideColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            // Ime putnika
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -868,40 +654,11 @@ class _PutnikRasporedTile extends StatelessWidget {
                       fontSize: 15,
                     ),
                   ),
-                  if (hasOverride)
-                    Text(
-                      '→ $overrideVozac',
-                      style: TextStyle(
-                        color: overrideColor!.withOpacity(0.85),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    )
-                  else
-                    const Text(
-                      'Prati termin',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
-                    ),
-                ],
-              ),
-            ),
-            // 👤 Dugme za dodjelu
-            GestureDetector(
-              onTap: onAssign,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: hasOverride ? overrideColor!.withOpacity(0.2) : Colors.white.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: hasOverride ? overrideColor!.withOpacity(0.5) : Colors.white24,
+                  Text(
+                    '${putnik.grad} · ${putnik.polazak}',
+                    style: const TextStyle(color: Colors.white38, fontSize: 12),
                   ),
-                ),
-                child: Icon(
-                  hasOverride ? Icons.person : Icons.person_add_outlined,
-                  color: hasOverride ? overrideColor : Colors.white54,
-                  size: 18,
-                ),
+                ],
               ),
             ),
           ],

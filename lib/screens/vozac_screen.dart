@@ -56,7 +56,6 @@ class _VozacScreenState extends State<VozacScreen> {
   StreamSubscription<Position>? _driverPositionSubscription;
   StreamSubscription<Map<String, dynamic>>? _notificationSubscription; // ⚡ ZA AUTOMATSKI POPIS
   StreamSubscription<PostgresChangePayload>? _rasporedRealtimeSub; // 🔴 Realtime raspored
-  StreamSubscription<PostgresChangePayload>? _overrideRealtimeSub; // 🔴 Realtime overrides
 
   String _selectedGrad = 'BC';
   String _selectedVreme = ''; // Će biti postavljen u _selectClosestDeparture()
@@ -93,24 +92,6 @@ class _VozacScreenState extends State<VozacScreen> {
       if (!postoji) dodeljena.add({'grad': r.grad, 'vreme': r.vreme});
     }
 
-    // Izvor 2: per-putnik override — dodaj samo termine gdje je vozač EKSPLICITNO dodijeljen
-    // (ne "prati termin" — to su putnici bez unosa u rasporedu, vidljivi svima)
-    if (sviPutnici != null) {
-      final currentVozacIdLocal = currentVozacId;
-      for (var p in sviPutnici) {
-        final pId = p.id?.toString() ?? '';
-        final override = _putnikOverridesCache.where((o) => o.putnikId == pId).firstOrNull;
-        if (override == null) continue; // nema override-a → "prati termin" → NE dodaj u nav bar
-        final jeOvajVozac =
-            currentVozacIdLocal != null ? override.vozacId == currentVozacIdLocal : override.vozac == _currentDriver;
-        if (!jeOvajVozac) continue;
-        final pGrad = p.grad;
-        final pPolazak = p.polazak;
-        final postoji = dodeljena.any((v) => v['grad'] == pGrad && v['vreme'] == pPolazak);
-        if (!postoji) dodeljena.add({'grad': pGrad, 'vreme': pPolazak});
-      }
-    }
-
     // Sortiraj po vremenu
     dodeljena.sort((a, b) => a['vreme']!.compareTo(b['vreme']!));
 
@@ -121,9 +102,6 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // 🗓️ VOZAC RASPORED - per-termin filter
   List<VozacRasporedEntry> _rasporedCache = [];
-
-  // 👤 VOZAC PUTNIK - per-putnik override filter
-  List<VozacPutnikEntry> _putnikOverridesCache = [];
 
   // Status varijable
   bool _isListReordered = false;
@@ -167,8 +145,6 @@ class _VozacScreenState extends State<VozacScreen> {
     // Sprječava race condition gdje _rasporedCache ostaje prazan → filterKombinovan vraća sve putnike
     _rasporedCache =
         RealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
-    _putnikOverridesCache =
-        RealtimeManager.instance.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
     _initAsync();
   }
 
@@ -187,11 +163,9 @@ class _VozacScreenState extends State<VozacScreen> {
 
   Future<void> _loadRaspored() async {
     final rasporedData = await VozacRasporedService().loadAll();
-    final overridesData = await VozacPutnikService().loadAll();
     if (mounted) {
       setState(() {
         _rasporedCache = rasporedData;
-        _putnikOverridesCache = overridesData;
       });
     }
   }
@@ -203,13 +177,6 @@ class _VozacScreenState extends State<VozacScreen> {
       final entries =
           RealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
       if (mounted) setState(() => _rasporedCache = entries);
-    });
-
-    _overrideRealtimeSub?.cancel();
-    _overrideRealtimeSub = RealtimeManager.instance.subscribe('vozac_putnik').listen((_) {
-      final entries =
-          RealtimeManager.instance.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
-      if (mounted) setState(() => _putnikOverridesCache = entries);
     });
   }
 
@@ -230,7 +197,6 @@ class _VozacScreenState extends State<VozacScreen> {
     _driverPositionSubscription?.cancel();
     _notificationSubscription?.cancel(); // ⚡ CLEANUP
     _rasporedRealtimeSub?.cancel(); // 🔴 Realtime raspored
-    _overrideRealtimeSub?.cancel(); // 🔴 Realtime overrides
     super.dispose();
   }
 
@@ -893,7 +859,7 @@ class _VozacScreenState extends State<VozacScreen> {
                   vozac: _currentDriver!,
                   vozacId: currentVozacId,
                   targetDan: targetDan,
-                  overrides: _putnikOverridesCache,
+                  overrides: const [],
                   raspored: _rasporedCache,
                   getId: (p) => p.id?.toString() ?? '',
                   getGrad: (p) => p.grad,
