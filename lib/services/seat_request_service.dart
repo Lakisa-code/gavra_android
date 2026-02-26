@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../models/seat_request.dart';
 import '../utils/grad_adresa_validator.dart';
+import 'realtime/realtime_manager.dart';
 import 'voznje_log_service.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (seat_requests tabela)
@@ -136,23 +137,63 @@ class SeatRequestService {
   }
 
   /// Stream za zahteve koji čekaju ručnu obradu admina (samo tip=dnevni, status=pending)
+  /// Koristi select+JOIN sa registrovani_putnici da bi dobio putnik_ime i broj_telefona
   static Stream<List<SeatRequest>> streamManualRequests() {
-    return _supabase
-        .from('seat_requests')
-        .stream(primaryKey: ['id'])
-        .eq('status', 'pending')
-        .order('created_at', ascending: false)
-        .map(
-            (data) => data.map((json) => SeatRequest.fromJson(json)).where((sr) => sr.tipPutnika == 'dnevni').toList());
+    final controller = StreamController<List<SeatRequest>>.broadcast();
+
+    Future<void> fetch() async {
+      try {
+        final data = await _supabase
+            .from('seat_requests')
+            .select('*, registrovani_putnici(putnik_ime, broj_telefona)')
+            .eq('status', 'pending')
+            .eq('tip_putnika', 'dnevni')
+            .order('created_at', ascending: false);
+        if (!controller.isClosed) {
+          controller.add(data.map((json) => SeatRequest.fromJson(json)).toList());
+        }
+      } catch (e) {
+        debugPrint('❌ [SeatRequestService] streamManualRequests fetch error: $e');
+      }
+    }
+
+    fetch();
+    final sub = RealtimeManager.instance.subscribe('seat_requests').listen((_) => fetch());
+    controller.onCancel = () {
+      sub.cancel();
+      RealtimeManager.instance.unsubscribe('seat_requests');
+    };
+
+    return controller.stream;
   }
 
   /// 🔢 Stream za broj zahteva koji čekaju ručnu obradu (za bedž na Home ekranu - samo dnevni)
   static Stream<int> streamManualRequestCount() {
-    return _supabase
-        .from('seat_requests')
-        .stream(primaryKey: ['id'])
-        .eq('status', 'pending')
-        .map((list) => list.map((json) => SeatRequest.fromJson(json)).where((sr) => sr.tipPutnika == 'dnevni').length);
+    final controller = StreamController<int>.broadcast();
+
+    Future<void> fetch() async {
+      try {
+        final data = await _supabase
+            .from('seat_requests')
+            .select('id')
+            .eq('status', 'pending')
+            .eq('tip_putnika', 'dnevni');
+        if (!controller.isClosed) {
+          controller.add((data as List).length);
+        }
+      } catch (e) {
+        debugPrint('❌ [SeatRequestService] streamManualRequestCount fetch error: $e');
+      }
+    }
+
+    fetch();
+    final sub = RealtimeManager.instance.subscribe('seat_requests').listen((_) => fetch());
+    controller.onCancel = () {
+      sub.cancel();
+      RealtimeManager.instance.unsubscribe('seat_requests');
+    };
+
+    return controller.stream;
   }
 
   /// 🤖 DIGITALNI DISPEČER — replicira dispecer_cron_obrada + obradi_seat_request SQL logiku
