@@ -702,9 +702,9 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
   String _labelForStatus(String? status) {
     switch (status) {
       case 'approved':
-        return '✅ Odobreno';
+        return '✅';
       case 'confirmed':
-        return '✓ Potvrđeno';
+        return '✅';
       case 'pending':
         return '⏳ Na čekanju';
       case 'rejected':
@@ -781,25 +781,49 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
     final status = req['status'] as String?;
     final statusColor = _colorForStatus(status);
     final grad = _formatGrad(req['grad'] as String?);
-    final dan = req['dan'] as String? ?? '';
+    final dan = (req['dan'] as String? ?? '').toUpperCase();
     final zeljenoVreme = req['zeljeno_vreme'] as String? ?? '';
     final dodeljenovVreme = req['dodeljeno_vreme'] as String?;
     final brojMesta = req['broj_mesta'] as int? ?? 1;
     final priority = req['priority'] as int? ?? 0;
     final cancelledBy = req['cancelled_by'] as String?;
     final approvedBy = req['approved_by'] as String?;
-    final pokupljenoBy = req['pokupljeno_by'] as String?;
     final createdAt = req['created_at'] != null ? DateTime.tryParse(req['created_at'] as String)?.toLocal() : null;
 
-    // 👤 Ko je izvršio akciju
-    String? izvrsioAkciju;
-    if (status == 'pokupljen' && pokupljenoBy != null && pokupljenoBy.isNotEmpty) {
-      izvrsioAkciju = pokupljenoBy;
-    } else if ((status == 'approved' || status == 'confirmed') && approvedBy != null && approvedBy.isNotEmpty) {
-      izvrsioAkciju = approvedBy;
-    } else if ((status == 'rejected' || status == 'otkazano') && cancelledBy != null && cancelledBy.isNotEmpty) {
-      izvrsioAkciju = cancelledBy;
+    // Drugi red: grad · dan · vreme
+    final gradDanVreme = [
+      if (grad.isNotEmpty) grad,
+      if (dan.isNotEmpty) dan,
+      if (zeljenoVreme.isNotEmpty &&
+          (dodeljenovVreme == null || dodeljenovVreme.isEmpty || dodeljenovVreme == zeljenoVreme))
+        zeljenoVreme
+      else if (dodeljenovVreme != null && dodeljenovVreme.isNotEmpty)
+        dodeljenovVreme,
+    ].join(' · ');
+
+    // Ko je odobrio / otkazao
+    final bool jeOdobren = status == 'approved' || status == 'confirmed';
+    final bool jeOtkazan = status == 'rejected' || status == 'otkazano' || status == 'cancelled';
+    String? akcijaTekst;
+    IconData? akcijaIkona;
+    Color? akcijaColor;
+    if (jeOtkazan && cancelledBy != null && cancelledBy.isNotEmpty) {
+      akcijaTekst = 'Otkazao: $cancelledBy';
+      akcijaIkona = Icons.person_pin;
+      akcijaColor = Colors.redAccent;
+    } else if (jeOtkazan) {
+      akcijaTekst = 'Otkazano';
+      akcijaIkona = Icons.cancel_outlined;
+      akcijaColor = Colors.redAccent;
+    } else if (jeOdobren) {
+      final odobrio = approvedBy != null && approvedBy.isNotEmpty ? approvedBy : 'Sistem';
+      akcijaTekst = 'Odobrio: $odobrio';
+      akcijaIkona = approvedBy != null && approvedBy.isNotEmpty ? Icons.person_pin : Icons.smart_toy_outlined;
+      akcijaColor = Colors.teal;
     }
+
+    // Treći red: mesta + prioritet (samo ako nije default)
+    final bool showMesta = brojMesta > 1 || priority > 0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -813,195 +837,97 @@ class _PutnikActionLogScreenState extends State<PutnikActionLogScreen> with Sing
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status ikona
+            // Leva kolona: vreme + ikona
             Column(
               children: [
-                if (createdAt != null)
-                  Container(
-                    width: 52,
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusColor.withOpacity(0.5), width: 1),
-                    ),
-                    child: Text(
-                      DateFormat('HH:mm').format(createdAt),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
+                Container(
+                  width: 52,
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: statusColor.withOpacity(0.5), width: 1),
                   ),
-                const SizedBox(height: 4),
-                Icon(
-                  _iconForStatus(status),
-                  size: 20,
-                  color: statusColor,
+                  child: Text(
+                    createdAt != null ? DateFormat('HH:mm').format(createdAt) : '--:--',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
+                const SizedBox(height: 4),
+                Icon(_iconForStatus(status), size: 18, color: statusColor),
               ],
             ),
             const SizedBox(width: 12),
 
-            // Detalji
+            // Desna kolona: info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Status label
-                  Text(
-                    _labelForStatus(status),
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Grad i Dan
+                  // Red 1: status + mesta/prioritet
                   Row(
                     children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 13,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        grad,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                        _labelForStatus(status),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
                             ),
                       ),
-                      if (dan.isNotEmpty) ...[
+                      if (showMesta) ...[
                         const SizedBox(width: 8),
-                        Icon(
-                          Icons.calendar_today,
-                          size: 11,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          dan.toUpperCase(),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                fontWeight: FontWeight.w500,
-                              ),
-                        ),
+                        Icon(Icons.event_seat,
+                            size: 13, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45)),
+                        const SizedBox(width: 3),
+                        Text('$brojMesta',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                )),
                       ],
-                    ],
-                  ),
-
-                  // Željeno vreme (zahtev putnika)
-                  if (zeljenoVreme.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.schedule,
-                            size: 13,
-                            color: Colors.orange.withOpacity(0.7),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Zahtev: $zeljenoVreme',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.orange.withOpacity(0.8),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // Dodijeljeno vreme (odobreno od dispečera/admina)
-                  if (dodeljenovVreme != null && dodeljenovVreme.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle,
-                            size: 13,
-                            color: Colors.green,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Odobreno: $dodeljenovVreme',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // Broj mjesta + prioritet
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.event_seat,
-                          size: 13,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Mjesta: $brojMesta',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                        ),
-                        if (priority > 0) ...[
-                          const SizedBox(width: 8),
-                          Icon(Icons.star, size: 12, color: Colors.amber),
-                          const SizedBox(width: 2),
-                          Text(
-                            'P$priority',
+                      if (priority > 0) ...[
+                        const SizedBox(width: 5),
+                        Icon(Icons.star, size: 12, color: Colors.amber),
+                        const SizedBox(width: 2),
+                        Text('P$priority',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: Colors.amber,
                                   fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
+                                )),
                       ],
-                    ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+
+                  // Red 2: grad · dan · vreme
+                  Row(
+                    children: [
+                      Icon(Icons.location_on,
+                          size: 13, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45)),
+                      const SizedBox(width: 4),
+                      Text(
+                        gradDanVreme,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
 
-                  // Otkazao
-                  if (cancelledBy != null && cancelledBy.isNotEmpty)
+                  // Red 3: ko je odobrio / otkazao
+                  if (akcijaTekst != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        'Otkazao: $cancelledBy',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.redAccent.withOpacity(0.7),
-                              fontStyle: FontStyle.italic,
-                            ),
-                      ),
-                    ),
-
-                  // Ko je izvršio akciju
-                  if (izvrsioAkciju != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.person_pin,
-                            size: 13,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
-                          ),
+                          Icon(akcijaIkona, size: 13, color: akcijaColor?.withOpacity(0.8)),
                           const SizedBox(width: 4),
                           Text(
-                            'Izvršio: $izvrsioAkciju',
+                            akcijaTekst,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.65),
-                                  fontStyle: FontStyle.italic,
+                                  color: akcijaColor?.withOpacity(0.9),
+                                  fontWeight: FontWeight.w500,
                                 ),
                           ),
                         ],
