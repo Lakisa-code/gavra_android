@@ -5,7 +5,7 @@ import '../globals.dart';
 /// Model za jedan red iz vozac_raspored tabele.
 ///
 /// Čuva per-termin raspored: koji vozač vozi cijeli termin (dan+grad+vreme).
-/// Per-putnik individualna dodjela čuva se u vozac_putnik tabeli (VozacPutnikService).
+/// Per-V2Putnik individualna dodjela čuva se u vozac_putnik tabeli (VozacPutnikService).
 class VozacRasporedEntry {
   final String dan;
   final String grad;
@@ -89,7 +89,7 @@ class V2VozacRasporedService {
   /// Filtrira putnike po per-termin rasporedu.
   ///
   /// Logika:
-  ///   - Ako nema unosa za termin → putnik je vidljiv svima
+  ///   - Ako nema unosa za termin → V2Putnik je vidljiv svima
   ///   - Ako postoji unos → prikaži samo vozaču koji je dodeljen tom terminu
   ///
   /// [vozacId] = UUID (preferiran), [vozac] = ime (fallback)

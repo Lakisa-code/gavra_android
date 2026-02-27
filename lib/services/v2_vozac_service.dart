@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../models/vozac.dart';
+import '../models/v2_vozac.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 
 /// Servis za upravljanje vozačima

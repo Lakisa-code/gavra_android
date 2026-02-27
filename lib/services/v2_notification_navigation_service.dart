@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../globals.dart';
-import '../screens/pin_zahtevi_screen.dart';
+import '../screens/v2_pin_zahtevi_screen.dart';
 import '../screens/v2_home_screen.dart';
 import '../screens/v2_putnik_profil_screen.dart';
 import '../screens/v2_vozac_screen.dart';
@@ -26,7 +26,7 @@ class NotificationNavigationService {
       // Učitaj podatke putnika iz cache-a
       final response = V2MasterRealtimeManager.instance.getPutnikById(putnikId);
       if (response == null) {
-        debugPrint('⚠️ [NavService] Putnik $putnikId nije u cache-u');
+        debugPrint('⚠️ [NavService] V2Putnik $putnikId nije u cache-u');
         return;
       }
 
@@ -104,7 +104,7 @@ class NotificationNavigationService {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    type == 'novi_putnik' ? 'Novi putnik dodat' : 'Putnik otkazan',
+                    type == 'novi_putnik' ? 'Novi V2Putnik dodat' : 'V2Putnik otkazan',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'services/config_service.dart'; // ðŸ” Centralizovani kredencijali
+import 'services/v2_config_service.dart'; // 🔐 Centralizovani kredencijali
 
 /// ðŸŒ GLOBALNE VARIJABLE ZA GAVRA ANDROID
 ///
@@ -13,7 +13,7 @@ import 'services/config_service.dart'; // ðŸ” Centralizovani kredencijali
 /// Koristi se u:
 /// - permission_service.dart - za prikaz dijaloga za dozvole
 /// - notification_navigation_service.dart - za navigaciju iz notifikacija
-/// - v2_v2_local_notification_service.dart - za pristup context-u u background-u
+/// - v2_local_notification_service.dart - za pristup context-u u background-u
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// Globalna instanca Supabase klijenta
@@ -74,5 +74,3 @@ class UpdateInfo {
 
 /// Notifier koji se puni u AppSettingsService nakon provere verzije
 final ValueNotifier<UpdateInfo?> updateInfoNotifier = ValueNotifier<UpdateInfo?>(null);
-
-

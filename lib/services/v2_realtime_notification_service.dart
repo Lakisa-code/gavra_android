@@ -211,7 +211,7 @@ class RealtimeNotificationService {
         return;
       }
 
-      final putnikDataString = messageData['putnik'] as String?;
+      final putnikDataString = messageData['V2Putnik'] as String?;
       if (putnikDataString != null) {
         final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
         await NotificationNavigationService.navigateToPassenger(

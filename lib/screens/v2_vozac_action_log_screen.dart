@@ -1,14 +1,14 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../globals.dart';
-import '../models/voznje_log.dart';
+import '../models/v2_statistika_istorija.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
 import '../theme.dart';
-import '../utils/grad_adresa_validator.dart';
-import '../utils/vozac_cache.dart';
+import '../utils/v2_grad_adresa_validator.dart';
+import '../utils/v2_vozac_cache.dart';
 
 /// 📋 DNEVNIK AKCIJA VOZAČA
 /// Prikazuje sve akcije vozača za određeni dan
@@ -163,7 +163,7 @@ class _VozacActionLogScreenState extends State<VozacActionLogScreen> with Single
   }
 
   /// Dohvati grad i vreme iz log zapisa (direktne kolone, fallback na meta)
-  Map<String, String> _getGradVreme(VoznjeLog log) {
+  Map<String, String> _getGradVreme(V2StatistikaIstorija log) {
     String grad = log.grad ?? log.meta?['grad']?.toString() ?? '';
     String vreme = log.vremePolaska ?? log.meta?['vreme']?.toString() ?? '';
 
@@ -173,7 +173,7 @@ class _VozacActionLogScreenState extends State<VozacActionLogScreen> with Single
   }
 
   /// Filtriraj akcije prema tipu
-  bool _matchesFilter(VoznjeLog log) {
+  bool _matchesFilter(V2StatistikaIstorija log) {
     if (_tabController == null) return true;
 
     final selectedType = _actionTypes[_tabController!.index];
@@ -330,7 +330,7 @@ class _VozacActionLogScreenState extends State<VozacActionLogScreen> with Single
                     );
                   }
 
-                  final logs = snapshot.data?.map((json) => VoznjeLog.fromJson(json)).toList() ?? [];
+                  final logs = snapshot.data?.map((json) => V2StatistikaIstorija.fromJson(json)).toList() ?? [];
 
                   // Filtriraj logs prema trenutnom tab-u
                   final filteredLogs = logs.where((log) => _matchesFilter(log)).toList();
@@ -434,7 +434,7 @@ class _VozacActionLogScreenState extends State<VozacActionLogScreen> with Single
                                         ),
                                         const SizedBox(height: 4),
 
-                                        // Putnik
+                                        // V2Putnik
                                         Text(
                                           putnikIme,
                                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(

@@ -1,27 +1,27 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../constants/day_constants.dart';
+import '../constants/v2_day_constants.dart';
 import '../globals.dart';
 import '../helpers/v2_putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
-import '../models/registrovani_putnik.dart';
+import '../models/v2_registrovani_putnik.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
-import '../services/theme_manager.dart';
 import '../services/v2_cena_obracun_service.dart';
 import '../services/v2_polasci_service.dart';
 import '../services/v2_putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/v2_putnik_service.dart';
-import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
+import '../services/v2_theme_manager.dart';
+import '../services/v2_weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
-import '../utils/app_snack_bar.dart';
-import '../widgets/shared/time_picker_cell.dart';
+import '../utils/v2_app_snack_bar.dart';
+import '../widgets/shared/v2_time_picker_cell.dart';
 import '../widgets/v2_kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 
-/// 📊 MESEČNI PUTNIK PROFIL SCREEN
+/// 📊 MESEČNI V2Putnik PROFIL SCREEN
 /// Prikazuje podatke o mesečnom putniku: raspored, vožnje, dugovanja
 class V2PutnikProfilScreen extends StatefulWidget {
   final Map<String, dynamic> putnikData;
@@ -147,7 +147,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
 
     // Koristi V2MasterRealtimeManager za centralizovanu pretplatu
     _statusSubscription = V2MasterRealtimeManager.instance.subscribe('v2_radnici').where((payload) {
-      // Filtriraj samo ako je ažuriran ovaj putnik
+      // Filtriraj samo ako je ažuriran ovaj V2Putnik
       return payload.newRecord['id'].toString() == putnikId;
     }).listen((payload) {
       debugPrint('🎯 [Realtime] Status promena detektovana za putnika $putnikId');
@@ -1241,7 +1241,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
                                               ? '💼 Radnik'
                                               : tip == 'dnevni'
                                                   ? '📅 Dnevni'
-                                                  : '👤 Putnik',
+                                                  : '👤 V2Putnik',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -1656,7 +1656,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
         return;
       }
     } else {
-      // dan + grad + zeljeno_vreme → pending (putnik šalje zahtev)
+      // dan + grad + zeljeno_vreme → pending (V2Putnik šalje zahtev)
       try {
         final rpRow = V2MasterRealtimeManager.instance.getPutnikById(putnikId);
         final brojMesta = (rpRow?['broj_mesta'] as int?) ?? 1;

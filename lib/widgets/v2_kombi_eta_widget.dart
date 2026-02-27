@@ -1,11 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
 import '../globals.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
-import '../utils/grad_adresa_validator.dart';
+import '../utils/v2_grad_adresa_validator.dart';
 
 /// Widget koji prikazuje ETA dolaska kombija.
 /// - Uvek vidljiv sa informativnom porukom

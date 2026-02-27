@@ -12,22 +12,22 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'globals.dart';
 import 'screens/v2_welcome_screen.dart';
-import 'services/firebase_service.dart';
-import 'services/gps_foreground_service.dart'; // 🛰️ Android Foreground Service za GPS tracking
-import 'services/huawei_push_service.dart';
 import 'services/realtime/v2_master_realtime_manager.dart'; // 🆕 V2 Master Realtime Manager
-import 'services/realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
-import 'services/slobodna_mesta_service.dart';
-import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/v2_adresa_supabase_service.dart';
 import 'services/v2_app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
+import 'services/v2_firebase_service.dart';
+import 'services/v2_gps_foreground_service.dart'; // 🛰️ Android Foreground Service za GPS tracking
+import 'services/v2_huawei_push_service.dart';
 import 'services/v2_kapacitet_service.dart'; // 🎫 Realtime kapacitet
+import 'services/v2_realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
+import 'services/v2_slobodna_mesta_service.dart';
 import 'services/v2_statistika_istorija_service.dart';
+import 'services/v2_theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/v2_vozac_service.dart';
 import 'services/v2_vozila_service.dart';
 import 'services/v2_weather_alert_service.dart'; // 🌤️ Vremenske uzbune
-import 'services/weather_service.dart'; // 🌤️ DODATO za cleanup
-import 'utils/vozac_cache.dart'; // 🎯 Jedinstven vozač cache
+import 'services/v2_weather_service.dart'; // 🌤️ DODATO za cleanup
+import 'utils/v2_vozac_cache.dart'; // 🎯 Jedinstven vozač cache
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

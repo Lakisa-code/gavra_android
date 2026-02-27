@@ -1,18 +1,18 @@
-import 'package:flutter/foundation.dart';
+ï»¿import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../models/voznje_log.dart';
-import '../utils/grad_adresa_validator.dart';
-import '../utils/vozac_cache.dart';
+import '../models/v2_statistika_istorija.dart';
+import '../utils/v2_grad_adresa_validator.dart';
+import '../utils/v2_vozac_cache.dart';
 
-/// Servis za upravljanje istorijom vožnji
+/// Servis za upravljanje istorijom voï¿½nji
 /// MINIMALNA tabela: putnik_id, datum, tip (voznja/otkazivanje/uplata), iznos, vozac_id
-/// ? TRAJNO REŠENJE: Sve statistike se citaju iz ove tabele
+/// ? TRAJNO REï¿½ENJE: Sve statistike se citaju iz ove tabele
 class V2StatistikaIstorijaService {
   static SupabaseClient get _supabase => supabase;
 
-  /// ?? STATISTIKE ZA POPIS - Broj vožnji, otkazivanja i uplata po vozacu za odredeni datum
+  /// ?? STATISTIKE ZA POPIS - Broj voï¿½nji, otkazivanja i uplata po vozacu za odredeni datum
   /// Vraca mapu: {voznje: X, otkazivanja: X, uplate: X, pazar: X.X}
   static Future<Map<String, dynamic>> getStatistikePoVozacu({required String vozacIme, required DateTime datum}) async {
     int voznje = 0;
@@ -49,7 +49,7 @@ class V2StatistikaIstorijaService {
             otkazivanja++;
             break;
           case 'uplata':
-            // STARI TIP PRE MIGRACIJE (sada više ne bi trebao da postoji, ali za svaki slucaj)
+            // STARI TIP PRE MIGRACIJE (sada viï¿½e ne bi trebao da postoji, ali za svaki slucaj)
             // Pretpostavljamo da je 'uplata' bila dnevna ako je iznos manji od np. 2000?
             // Ili ga brojimo u dnevne.
             naplaceniDnevni++;
@@ -66,7 +66,7 @@ class V2StatistikaIstorijaService {
         }
       }
     } catch (e) {
-      // Greška - vrati prazne statistike
+      // Greï¿½ka - vrati prazne statistike
     }
 
     return {
@@ -132,7 +132,7 @@ class V2StatistikaIstorijaService {
     // Dohvati vozac_ime direktno iz baze (garantovano)
     String? vozacIme;
     if (vozacId != null && vozacId.isNotEmpty) {
-      // Prvo pokušaj iz lokalnog cache-a (brže, bez mrežnog zahteva)
+      // Prvo pokuï¿½aj iz lokalnog cache-a (brï¿½e, bez mreï¿½nog zahteva)
       vozacIme = VozacCache.getImeByUuid(vozacId);
       // Ako nije u cache-u, dohvati iz baze
       if (vozacIme == null || vozacIme.isEmpty) {
@@ -141,7 +141,7 @@ class V2StatistikaIstorijaService {
           vozacIme = vozacData?['ime'] as String?;
           debugPrint('?? [dodajUplatu] vozacId=$vozacId ? vozac_ime=$vozacIme');
         } catch (e) {
-          debugPrint('?? Greška pri dohvatanju vozac_ime: $e');
+          debugPrint('?? Greï¿½ka pri dohvatanju vozac_ime: $e');
         }
       }
       // ? Poslednji fallback: direktno prosledeno ime
@@ -167,7 +167,7 @@ class V2StatistikaIstorijaService {
     });
   }
 
-  /// ? TRAJNO REŠENJE: Stream pazara po vozacima (realtime)
+  /// ? TRAJNO REï¿½ENJE: Stream pazara po vozacima (realtime)
   static Stream<Map<String, double>> streamPazarPoVozacima({required DateTime from, required DateTime to}) {
     final fromStr = from.toIso8601String().split('T')[0];
     final toStr = to.toIso8601String().split('T')[0];
@@ -179,7 +179,7 @@ class V2StatistikaIstorijaService {
       query = _supabase.from('v2_statistika_istorija').stream(primaryKey: ['id']).eq('datum', fromStr).limit(500);
     } else {
       // Razliciti dani - ucitaj sve i filtriraj u kodu
-      // NOTE: Supabase stream ne podržava gte/lte, trebajmo filter u map()
+      // NOTE: Supabase stream ne podrï¿½ava gte/lte, trebajmo filter u map()
       query = _supabase
           .from('v2_statistika_istorija')
           .stream(primaryKey: ['id'])
@@ -192,7 +192,7 @@ class V2StatistikaIstorijaService {
       double ukupno = 0;
 
       for (final record in records) {
-        final log = VoznjeLog.fromJson(record);
+        final log = V2StatistikaIstorija.fromJson(record);
 
         // Filtriraj po tipu i datumu
         if (log.tip != 'uplata' && log.tip != 'uplata_mesecna' && log.tip != 'uplata_dnevna' && log.tip != 'placanje') {
@@ -209,7 +209,7 @@ class V2StatistikaIstorijaService {
         if (iznos <= 0) continue;
 
         // Konvertuj UUID u ime vozaca - PRVO iz vozac_ime kolone, pa iz cache-a
-        // ? FIX: nikad ne preskacemo uplatu ako postoji vozac_id — koristimo UUID kao fallback kljuc
+        // ? FIX: nikad ne preskacemo uplatu ako postoji vozac_id ï¿½ koristimo UUID kao fallback kljuc
         String vozacIme = record['vozac_ime'] as String? ?? '';
         if (vozacIme.isEmpty && vozacId != null && vozacId.isNotEmpty) {
           vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
@@ -230,7 +230,7 @@ class V2StatistikaIstorijaService {
     required String tip,
     String? putnikId,
     String? vozacId,
-    String? vozacImeOverride, // direktno ime ako vozacId nije poznat (npr. 'Putnik', 'Admin')
+    String? vozacImeOverride, // direktno ime ako vozacId nije poznat (npr. 'V2Putnik', 'Admin')
     double iznos = 0,
     int brojMesta = 1,
     String? detalji,
@@ -268,7 +268,7 @@ class V2StatistikaIstorijaService {
         'vreme': vremeNormalizovano,
       });
     } catch (e, stack) {
-      debugPrint('? Greška pri logovanju akcije ($tip): $e\n$stack');
+      debugPrint('? Greï¿½ka pri logovanju akcije ($tip): $e\n$stack');
     }
   }
 
@@ -291,12 +291,12 @@ class V2StatistikaIstorijaService {
     );
   }
 
-  /// ? LOGOVANJE GREŠKE PRI OBRADI ZAHTEVA
+  /// ? LOGOVANJE GREï¿½KE PRI OBRADI ZAHTEVA
   static Future<void> logGreska({
-    String? putnikId, // ?? Može biti null za nove putnike koji nisu još sacuvani
+    String? putnikId, // ?? Moï¿½e biti null za nove putnike koji nisu joï¿½ sacuvani
     required String greska,
   }) async {
-    return logGeneric(tip: 'greska_aplikacije', putnikId: putnikId, detalji: 'Greška: $greska');
+    return logGeneric(tip: 'greska_aplikacije', putnikId: putnikId, detalji: 'Greï¿½ka: $greska');
   }
 
   /// ?? Cisti realtime subscription

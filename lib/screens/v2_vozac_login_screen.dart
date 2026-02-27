@@ -1,14 +1,14 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/auth_manager.dart';
-import '../services/biometric_service.dart';
-import '../services/theme_manager.dart';
+import '../services/v2_auth_manager.dart';
+import '../services/v2_biometric_service.dart';
+import '../services/v2_theme_manager.dart';
 import '../services/v2_vozac_service.dart';
-import '../utils/app_snack_bar.dart';
+import '../utils/v2_app_snack_bar.dart';
 import 'v2_home_screen.dart';
 import 'v2_vozac_screen.dart';
 

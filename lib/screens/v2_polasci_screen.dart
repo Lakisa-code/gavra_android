@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
-import '../models/seat_request.dart';
-import '../services/auth_manager.dart';
-import '../services/theme_manager.dart';
+import '../models/v2_polazak.dart';
+import '../services/v2_auth_manager.dart';
 import '../services/v2_polasci_service.dart';
+import '../services/v2_theme_manager.dart';
 import '../theme.dart';
-import '../utils/app_snack_bar.dart';
+import '../utils/v2_app_snack_bar.dart';
 
 class V2PolasciScreen extends StatefulWidget {
   const V2PolasciScreen({super.key});
@@ -73,7 +73,7 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> {
             ),
           ),
         ),
-        body: StreamBuilder<List<SeatRequest>>(
+        body: StreamBuilder<List<V2Polazak>>(
           stream: V2PolasciService.streamManualRequests(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
@@ -107,7 +107,7 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> {
               itemCount: zahtevi.length,
               itemBuilder: (context, index) {
                 final zahtev = zahtevi[index];
-                final ime = zahtev.putnikIme ?? 'Nepoznat putnik';
+                final ime = zahtev.putnikIme ?? 'Nepoznat V2Putnik';
                 final telefon = zahtev.brojTelefona ?? 'Nema telefona';
                 final tip = zahtev.tipPutnika ?? 'dnevni';
                 final grad = zahtev.grad ?? 'BC';
@@ -363,7 +363,7 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> {
     );
   }
 
-  Future<void> _approveZahtev(String id, SeatRequest zahtev) async {
+  Future<void> _approveZahtev(String id, V2Polazak zahtev) async {
     setState(() => _isLoading = true);
     try {
       final currentDriver = await AuthManager.getCurrentDriver();

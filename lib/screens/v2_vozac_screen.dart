@@ -5,36 +5,36 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; // ??? Za GPS poziciju
 import 'package:supabase_flutter/supabase_flutter.dart'; // Za PostgresChangePayload
 
-import '../config/route_config.dart';
+import '../config/v2_route_config.dart';
 import '../globals.dart';
-import '../models/putnik.dart';
-import '../services/auth_manager.dart';
-import '../services/firebase_service.dart'; // ?? Za vozaca
-import '../services/putnik_service.dart';
+import '../models/v2_putnik.dart';
 import '../services/realtime/v2_master_realtime_manager.dart'; // Za realtime raspored
-import '../services/realtime_gps_service.dart'; // ??? Za GPS tracking
-import '../services/smart_navigation_service.dart';
-import '../services/statistika_service.dart';
-import '../services/theme_manager.dart';
+import '../services/v2_auth_manager.dart';
 import '../services/v2_driver_location_service.dart'; // ?? Za ETA tracking
+import '../services/v2_firebase_service.dart'; // ?? Za vozaca
 import '../services/v2_kapacitet_service.dart'; // ?? Za broj mesta
 import '../services/v2_local_notification_service.dart'; // ?? Za lokalne notifikacije
+import '../services/v2_putnik_stream_service.dart';
+import '../services/v2_realtime_gps_service.dart'; // ??? Za GPS tracking
 import '../services/v2_realtime_notification_service.dart'; // ?? Za realtime notifikacije
+import '../services/v2_smart_navigation_service.dart';
+import '../services/v2_statistika_service.dart';
+import '../services/v2_theme_manager.dart';
 import '../services/v2_vozac_putnik_service.dart';
 import '../services/v2_vozac_raspored_service.dart';
-import '../utils/app_snack_bar.dart';
-import '../utils/grad_adresa_validator.dart'; // ??? Za validaciju gradova
-import '../utils/putnik_count_helper.dart'; // ?? Za brojanje putnika po gradu
-import '../utils/putnik_helpers.dart'; // ??? Centralizovani helperi
-import '../utils/text_utils.dart'; // ?? Za TextUtils.isStatusActive
-import '../utils/vozac_cache.dart'; // ?? Za validaciju vozaca
-import '../widgets/bottom_nav_bar_letnji.dart';
-import '../widgets/bottom_nav_bar_praznici.dart';
-import '../widgets/bottom_nav_bar_zimski.dart';
-import '../widgets/clock_ticker.dart';
-import '../widgets/putnik_list.dart';
-import '../widgets/shimmer_widgets.dart';
-import 'dugovi_screen.dart';
+import '../utils/v2_app_snack_bar.dart';
+import '../utils/v2_grad_adresa_validator.dart'; // ??? Za validaciju gradova
+import '../utils/v2_putnik_count_helper.dart'; // ?? Za brojanje putnika po gradu
+import '../utils/v2_putnik_helpers.dart'; // ??? Centralizovani helperi
+import '../utils/v2_text_utils.dart'; // ?? Za TextUtils.isStatusActive
+import '../utils/v2_vozac_cache.dart'; // ?? Za validaciju vozaca
+import '../widgets/v2_bottom_nav_bar_letnji.dart';
+import '../widgets/v2_bottom_nav_bar_praznici.dart';
+import '../widgets/v2_bottom_nav_bar_zimski.dart';
+import '../widgets/v2_clock_ticker.dart';
+import '../widgets/v2_putnik_list.dart';
+import '../widgets/v2_shimmer_widgets.dart';
+import 'v2_dugovi_screen.dart';
 import 'v2_welcome_screen.dart';
 
 /// ?? VOZAC SCREEN
@@ -51,7 +51,7 @@ class VozacScreen extends StatefulWidget {
 }
 
 class _VozacScreenState extends State<VozacScreen> {
-  final PutnikService _putnikService = PutnikService();
+  final V2PutnikStreamService _putnikService = V2PutnikStreamService();
 
   StreamSubscription<Position>? _driverPositionSubscription;
   StreamSubscription<Map<String, dynamic>>? _notificationSubscription; // ? ZA AUTOMATSKI POPIS
@@ -62,8 +62,8 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // ?? OPTIMIZACIJA RUTE - kopirano iz DanasScreen
   bool _isRouteOptimized = false;
-  List<Putnik> _optimizedRoute = [];
-  List<Putnik> _mojiPutnici = []; // Cache za _buildOptimizeButton (iz glavnog streama)
+  List<V2Putnik> _optimizedRoute = [];
+  List<V2Putnik> _mojiPutnici = []; // Cache za _buildOptimizeButton (iz glavnog streama)
   Map<String, int>? _putniciEta; // ETA po imenu putnika (minuti) nakon optimizacije
   final bool _isLoading = false;
   bool _isOptimizing = false; // ? Loading state specificno za optimizaciju rute
@@ -74,16 +74,16 @@ class _VozacScreenState extends State<VozacScreen> {
   /// ?? HELPER: Dobij dodeljena vremena za trenutnog vozaca.
   ///
   /// Kombinuje dva izvora:
-  /// 1. [_rasporedCache] — termini dodeljeni vozacu (vozac_raspored), prikazuju se cak i prazni
-  /// 2. [sviPutnici] — vremena iz putnika koji su vec filtrirani za ovog vozaca
-  List<Map<String, String>> _rasporedVozaca({List<Putnik>? sviPutnici}) {
+  /// 1. [_rasporedCache] � termini dodeljeni vozacu (vozac_raspored), prikazuju se cak i prazni
+  /// 2. [sviPutnici] � vremena iz putnika koji su vec filtrirani za ovog vozaca
+  List<Map<String, String>> _rasporedVozaca({List<V2Putnik>? sviPutnici}) {
     if (_currentDriver == null) return [];
 
     final dodeljena = <Map<String, String>>[];
     final currentVozacId = VozacCache.getUuidByIme(_currentDriver ?? '');
     final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
 
-    // Izvor 1: termini iz raspored cache-a za ovog vozaca i današnji dan
+    // Izvor 1: termini iz raspored cache-a za ovog vozaca i dana�nji dan
     for (final r in _rasporedCache) {
       if (r.dan != targetDan) continue;
       final isVozacov = (currentVozacId != null && r.vozacId == currentVozacId) || r.vozac == _currentDriver;
@@ -93,7 +93,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }
 
     // Izvor 2: termini iz individualno dodijeljenih putnika (vozac_putnik)
-    // Putnik ima termin koji nije u vozac_raspored ? dodaj termin u nav bar
+    // V2Putnik ima termin koji nije u vozac_raspored ? dodaj termin u nav bar
     if (sviPutnici != null) {
       for (final p in sviPutnici) {
         final postoji = dodeljena.any((v) => v['grad'] == p.grad && v['vreme'] == p.polazak);
@@ -112,7 +112,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // ??? VOZAC RASPORED - per-termin filter
   List<VozacRasporedEntry> _rasporedCache = [];
 
-  // ?? VOZAC PUTNIK - per-putnik individualne dodjele
+  // ?? VOZAC V2Putnik - per-V2Putnik individualne dodjele
   List<VozacPutnikEntry> _vozacPutnikCache = [];
 
   // Status varijable
@@ -153,8 +153,8 @@ class _VozacScreenState extends State<VozacScreen> {
   @override
   void initState() {
     super.initState();
-    // ⚡ ODMAH inicijalizuj iz V2MasterRealtimeManager cache-a (vec ucitan pri startu app-a)
-    // Sprjecava race condition gdje _rasporedCache ostaje prazan → filterKombinovan vraca sve putnike
+    // ? ODMAH inicijalizuj iz V2MasterRealtimeManager cache-a (vec ucitan pri startu app-a)
+    // Sprjecava race condition gdje _rasporedCache ostaje prazan ? filterKombinovan vraca sve putnike
     _rasporedCache =
         V2MasterRealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
     _initAsync();
@@ -186,7 +186,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  /// ?? Realtime: prati vozac_raspored i vozac_putnik i osvježava lokalne cache-ove
+  /// ?? Realtime: prati vozac_raspored i vozac_putnik i osvje�ava lokalne cache-ove
   void _subscribeRealtime() {
     _rasporedRealtimeSub?.cancel();
     _rasporedRealtimeSub = V2MasterRealtimeManager.instance.subscribe('v2_vozac_raspored').listen((_) {
@@ -226,7 +226,7 @@ class _VozacScreenState extends State<VozacScreen> {
     // Inicijalizuj heads-up i zvuk notifikacije
     LocalNotificationService.initialize(context);
 
-    // ? LISTEN ZA IN-APP DOGAÐAJE (Automatski Popis)
+    // ? LISTEN ZA IN-APP DOGA�AJE (Automatski Popis)
     _notificationSubscription?.cancel();
     _notificationSubscription = RealtimeNotificationService.notificationStream.listen((data) {
       if (data['type'] == 'automated_popis' && mounted) {
@@ -236,7 +236,7 @@ class _VozacScreenState extends State<VozacScreen> {
             try {
               stats = jsonDecode(stats);
             } catch (e) {
-              debugPrint('Greška pri dekodiranju statistike: $e');
+              debugPrint('Gre�ka pri dekodiranju statistike: $e');
               return;
             }
           }
@@ -270,7 +270,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
     if (mounted) {
       setState(() {});
-      // ?? Nakon što je vozac inicijalizovan, izaberi najbliži polazak
+      // ?? Nakon �to je vozac inicijalizovan, izaberi najbli�i polazak
       _selectClosestDeparture();
     }
   }
@@ -296,7 +296,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  /// ?? Bira polazak koji je najbliži trenutnom vremenu iz dodeljenih polazaka
+  /// ?? Bira polazak koji je najbli�i trenutnom vremenu iz dodeljenih polazaka
   void _selectClosestDeparture() {
     if (!mounted || _currentDriver == null) return;
 
@@ -356,7 +356,7 @@ class _VozacScreenState extends State<VozacScreen> {
   Future<void> _reoptimizeAfterStatusChange() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
-    // ?? BATCH DOHVATI SVEŽE PODATKE IZ BAZE - efikasnije od pojedinacnih poziva
+    // ?? BATCH DOHVATI SVE�E PODATKE IZ BAZE - efikasnije od pojedinacnih poziva
     final ids = _optimizedRoute.where((p) => p.id != null).map((p) => p.id!).toList();
     final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
     final sveziPutnici = await _putnikService.getPutniciByIds(ids, targetDan: targetDan);
@@ -402,7 +402,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
           });
 
-          // ??? REALTIME FIX: Ažuriraj ETA (uklanja pokupljene sa mape)
+          // ??? REALTIME FIX: A�uriraj ETA (uklanja pokupljene sa mape)
           if (V2DriverLocationService.instance.isTracking && result.putniciEta != null) {
             await V2DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
           }
@@ -410,7 +410,7 @@ class _VozacScreenState extends State<VozacScreen> {
           if (!mounted) return;
 
           final sledeci = result.optimizedPutnici!.isNotEmpty ? result.optimizedPutnici!.first.ime : 'N/A';
-          AppSnackBar.info(context, '?? Ruta ažurirana! Sledeci: $sledeci (${preostaliPutnici.length} preostalo)');
+          AppSnackBar.info(context, '?? Ruta a�urirana! Sledeci: $sledeci (${preostaliPutnici.length} preostalo)');
         }
       }
     } catch (e) {
@@ -419,11 +419,11 @@ class _VozacScreenState extends State<VozacScreen> {
   }
 
   // OPTIMIZACIJA RUTE
-  void _optimizeCurrentRoute(List<Putnik> putnici, {bool isAlreadyOptimized = false}) async {
+  void _optimizeCurrentRoute(List<V2Putnik> putnici, {bool isAlreadyOptimized = false}) async {
     // Proveri da li je ulogovan i valjan vozac
     if (_currentDriver == null || !VozacCache.isValidIme(_currentDriver)) {
       if (mounted) {
-        AppSnackBar.warning(context, 'Morate biti ulogovani i ovlašceni da biste koristili optimizaciju rute.');
+        AppSnackBar.warning(context, 'Morate biti ulogovani i ovla�ceni da biste koristili optimizaciju rute.');
       }
       return;
     }
@@ -445,7 +445,7 @@ class _VozacScreenState extends State<VozacScreen> {
       }
       if (mounted) {
         setState(() {
-          _optimizedRoute = List<Putnik>.from(putnici);
+          _optimizedRoute = List<V2Putnik>.from(putnici);
           _isRouteOptimized = true;
           _isListReordered = true;
           _isOptimizing = false;
@@ -542,7 +542,7 @@ class _VozacScreenState extends State<VozacScreen> {
             _isOptimizing = false;
             // NE postavljaj _isRouteOptimized = true jer ruta NIJE optimizovana!
           });
-          AppSnackBar.error(context, '? Optimizacija neuspešna: ${result.message}');
+          AppSnackBar.error(context, '? Optimizacija neuspe�na: ${result.message}');
         }
       }
     } catch (e) {
@@ -552,21 +552,21 @@ class _VozacScreenState extends State<VozacScreen> {
           _isRouteOptimized = false;
           _isListReordered = false;
         });
-        AppSnackBar.error(context, '? Greška pri optimizaciji: $e');
+        AppSnackBar.error(context, '? Gre�ka pri optimizaciji: $e');
       }
     }
   }
 
   // DUGME ZA GPS TRACKING / OPTIMIZACIJU
   // Prima listu putnika direktno iz glavnog streama - nema duplog streama
-  Widget _buildOptimizeButton(List<Putnik> mojiAktivniPutnici) {
+  Widget _buildOptimizeButton(List<V2Putnik> mojiAktivniPutnici) {
     final normFilterTime = GradAdresaValidator.normalizeTime(_selectedVreme);
     final filtriraniPutnici = mojiAktivniPutnici.where((p) {
       final pTime = GradAdresaValidator.normalizeTime(p.polazak);
       if (pTime != normFilterTime) return false;
       if (p.jeOtkazan || p.jeBezPolaska || p.jePokupljen || p.jeOdsustvo) return false;
       if (!TextUtils.isStatusActive(p.status)) return false;
-      // ??? Iskljuci pending putnike (još nisu obradeni)
+      // ??? Iskljuci pending putnike (jo� nisu obradeni)
       if (p.status?.toLowerCase() == 'pending') return false;
       return true;
     }).toList();
@@ -726,7 +726,7 @@ class _VozacScreenState extends State<VozacScreen> {
     try {
       final smer = _selectedGrad.toLowerCase().contains('bela') ? 'BC_VS' : 'VS_BC';
 
-      // Konvertuj koordinate: Map<Putnik, Position> -> Map<String, Position>
+      // Konvertuj koordinate: Map<V2Putnik, Position> -> Map<String, Position>
       Map<String, Position>? coordsByName;
 
       // Izvuci redosled imena putnika
@@ -756,11 +756,11 @@ class _VozacScreenState extends State<VozacScreen> {
         AppSnackBar.success(context, '?? GPS tracking pokrenut! Putnici dobijaju realtime lokaciju.');
       }
 
-      // Pošalji push notifikacije putnicima - vozac krenuo + ETA
+      // Po�alji push notifikacije putnicima - vozac krenuo + ETA
       _sendVozacKrenulNotifikacije();
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, '? Greška pri pokretanju GPS trackinga: $e');
+        AppSnackBar.error(context, '? Gre�ka pri pokretanju GPS trackinga: $e');
       }
     }
   }
@@ -777,19 +777,19 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  /// ?? Pošalji push notifikacije putnicima kada vozac startuje rutu
+  /// ?? Po�alji push notifikacije putnicima kada vozac startuje rutu
   Future<void> _sendVozacKrenulNotifikacije() async {
     if (_optimizedRoute.isEmpty || _currentDriver == null) return;
 
-    for (final putnik in _optimizedRoute) {
-      final putnikId = putnik.id?.toString();
+    for (final V2Putnik in _optimizedRoute) {
+      final putnikId = V2Putnik.id?.toString();
       if (putnikId == null) continue;
 
-      // Ako putnik nema ID ili je vec pokupljen/otkazan, preskoci
-      if (putnik.jePokupljen || putnik.jeOtkazan || putnik.jeOdsustvo || putnik.jeBezPolaska) continue;
+      // Ako V2Putnik nema ID ili je vec pokupljen/otkazan, preskoci
+      if (V2Putnik.jePokupljen || V2Putnik.jeOtkazan || V2Putnik.jeOdsustvo || V2Putnik.jeBezPolaska) continue;
 
       // ETA za ovog putnika (po imenu)
-      final etaMinuta = _putniciEta?[putnik.ime];
+      final etaMinuta = _putniciEta?[V2Putnik.ime];
       final etaTekst = etaMinuta != null ? 'Dolazak za oko $etaMinuta min.' : 'Vozac je krenuo po vas!';
 
       await RealtimeNotificationService.sendNotificationToPutnik(
@@ -829,7 +829,7 @@ class _VozacScreenState extends State<VozacScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, '? Greška pri otvaranju navigacije: $e');
+        AppSnackBar.error(context, '? Gre�ka pri otvaranju navigacije: $e');
       }
     }
   }
@@ -849,8 +849,8 @@ class _VozacScreenState extends State<VozacScreen> {
       decoration: BoxDecoration(
         gradient: ThemeManager().currentGradient,
       ),
-      child: StreamBuilder<List<Putnik>>(
-        // ?? EGRESS OPT: JEDAN stream — body i nav bar koriste iste podatke
+      child: StreamBuilder<List<V2Putnik>>(
+        // ?? EGRESS OPT: JEDAN stream � body i nav bar koriste iste podatke
         stream: _currentDriver == null
             ? const Stream.empty()
             : _putnikService.streamKombinovaniPutniciFiltered(
@@ -859,12 +859,12 @@ class _VozacScreenState extends State<VozacScreen> {
               ),
         builder: (context, snapshot) {
           // -- Zajednicki podaci za body i nav bar --------------------------
-          final sviPutnici = snapshot.data ?? <Putnik>[];
+          final sviPutnici = snapshot.data ?? <V2Putnik>[];
           final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
           final currentVozacId = VozacCache.getUuidByIme(_currentDriver ?? '');
           final mojiPutnici = _currentDriver == null
               ? sviPutnici
-              : V2VozacPutnikService.filterKombinovan<Putnik>(
+              : V2VozacPutnikService.filterKombinovan<V2Putnik>(
                   sviPutnici: sviPutnici,
                   vozac: _currentDriver!,
                   vozacId: currentVozacId,
@@ -1017,7 +1017,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
                     // ?? FIX: Uvek koristi `filteredByGradVreme` kao izvor istine (iz streama)
                     // Ako je ruta optimizovana, sortiraj po redosledu iz `_optimizedRoute`
-                    List<Putnik> putnici = filteredByGradVreme;
+                    List<V2Putnik> putnici = filteredByGradVreme;
 
                     if (_isRouteOptimized && _optimizedRoute.isNotEmpty) {
                       // Proveri da li se lista znacajno promenila (novi ili izbrisani putnici)
@@ -1231,16 +1231,16 @@ class _VozacScreenState extends State<VozacScreen> {
   }
 
   // ?? Stats row
-  Widget _buildStatsRow(List<Putnik> sviPutnici, List<Putnik> mojiPutnici) {
+  Widget _buildStatsRow(List<V2Putnik> sviPutnici, List<V2Putnik> mojiPutnici) {
     final dayStart = DateTime.parse('${_getWorkingDateIso()}T00:00:00');
     final dayEnd = DateTime.parse('${_getWorkingDateIso()}T23:59:59');
 
-    final filteredDuzniciRaw = sviPutnici.where((putnik) {
-      final nijeMesecni = !putnik.isMesecniTip;
+    final filteredDuzniciRaw = sviPutnici.where((V2Putnik) {
+      final nijeMesecni = !V2Putnik.isMesecniTip;
       if (!nijeMesecni) return false;
-      final nijePlatio = putnik.placeno != true; // ? FIX: Koristi placeno flag iz voznje_log
-      final nijeOtkazan = !putnik.jeOtkazan && !putnik.jeBezPolaska;
-      final pokupljen = putnik.jePokupljen;
+      final nijePlatio = V2Putnik.placeno != true; // ? FIX: Koristi placeno flag iz voznje_log
+      final nijeOtkazan = !V2Putnik.jeOtkazan && !V2Putnik.jeBezPolaska;
+      final pokupljen = V2Putnik.jePokupljen;
       return nijePlatio && nijeOtkazan && pokupljen;
     }).toList();
 
@@ -1253,7 +1253,7 @@ class _VozacScreenState extends State<VozacScreen> {
     }).toList();
 
     // ?? NOVI JEDNOSTAVAN BROJAC POVRATAKA
-    // Grupišemo sve polaske po putniku (ID) da vidimo ko ima BC, a ko ima i VS
+    // Grupi�emo sve polaske po putniku (ID) da vidimo ko ima BC, a ko ima i VS
     final Map<dynamic, Set<String>> putnikSmerovi = {};
 
     for (var p in sviPutnici) {
@@ -1291,7 +1291,7 @@ class _VozacScreenState extends State<VozacScreen> {
         saObaSmera++;
       } else {
         final p = sviPutnici.firstWhere((element) => element.id == id, orElse: () => sviPutnici.first);
-        if (p.id != id) return; // putnik nije pronaden, preskoci
+        if (p.id != id) return; // V2Putnik nije pronaden, preskoci
         final grad = smerovi.contains('bc') ? 'BC' : 'VS';
         samoJedanSmerImena.add('${p.ime} ($grad)');
       }
@@ -1415,18 +1415,18 @@ class _VozacScreenState extends State<VozacScreen> {
                 ),
               ),
               const Text(
-                'Automatski izveštaj (21:00h)',
+                'Automatski izve�taj (21:00h)',
                 style: TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 20),
               _buildPopisItem('Dodati putnici', '${stats['dodati_putnici'] ?? 0}', Colors.greenAccent),
               _buildPopisItem('Otkazani putnici', '${stats['otkazani_putnici'] ?? 0}', Colors.redAccent),
               _buildPopisItem('Pokupljeni putnici', '${stats['pokupljeni_putnici'] ?? 0}', Colors.blueAccent),
-              _buildPopisItem('Pošiljke', '${stats['broj_posiljki'] ?? 0}', Colors.orangeAccent),
+              _buildPopisItem('Po�iljke', '${stats['broj_posiljki'] ?? 0}', Colors.orangeAccent),
               const Divider(color: Colors.white12, height: 24),
               _buildPopisItem('Naplaceni dnevni', '${stats['naplaceni_dnevni'] ?? 0} RSD', Colors.white),
               _buildPopisItem('Naplaceni mesecni', '${stats['naplaceni_mesecni'] ?? 0} RSD', Colors.white),
-              _buildPopisItem('Broj dužnika', '${stats['broj_duznika'] ?? 0}',
+              _buildPopisItem('Broj du�nika', '${stats['broj_duznika'] ?? 0}',
                   stats['broj_duznika'] != 0 ? Colors.red : Colors.white70),
               const SizedBox(height: 16),
               Container(

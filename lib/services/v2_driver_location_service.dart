@@ -1,13 +1,13 @@
-import 'dart:async';
+ï»¿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../globals.dart';
-import '../utils/grad_adresa_validator.dart';
-import 'gps_foreground_service.dart';
-import 'openrouteservice.dart';
-import 'permission_service.dart';
+import '../utils/v2_grad_adresa_validator.dart';
+import 'v2_gps_foreground_service.dart';
+import 'v2_openrouteservice.dart';
+import 'v2_permission_service.dart';
 
 /// Servis za slanje GPS lokacije vozaca u realtime
 /// Putnici mogu pratiti lokaciju kombija dok cekaju
@@ -58,11 +58,11 @@ class V2DriverLocationService {
     List<String>? putniciRedosled,
     VoidCallback? onAllPassengersPickedUp,
   }) async {
-    // ?? REALTIME FIX: Ako je tracking vec aktivan, samo ažuriraj ETA
+    // ?? REALTIME FIX: Ako je tracking vec aktivan, samo aï¿½uriraj ETA
     if (_isTracking) {
       if (putniciEta != null) {
         _currentPutniciEta = Map.from(putniciEta);
-        // Odmah pošalji ažurirani ETA u Supabase
+        // Odmah poï¿½alji aï¿½urirani ETA u Supabase
         await _sendCurrentLocation();
       }
       return true;
@@ -86,11 +86,11 @@ class V2DriverLocationService {
 
     await _sendCurrentLocation();
 
-    // ? Lokacija (lat/lng) se šalje svake 30s putem RealtimeGpsService (bez API).
+    // ? Lokacija (lat/lng) se ï¿½alje svake 30s putem RealtimeGpsService (bez API).
     // ? ORS ETA se racuna odvojeno svake 60s.
     _etaTimer = Timer.periodic(_etaUpdateInterval, (_) => _refreshEta());
 
-    // ??? Pokreni Android Foreground Service — drži proces živ (kao Waze)
+    // ??? Pokreni Android Foreground Service ï¿½ drï¿½i proces ï¿½iv (kao Waze)
     await GpsForegroundService.startService(
       vozacIme: vozacIme,
       grad: grad,
@@ -105,10 +105,10 @@ class V2DriverLocationService {
     _etaTimer?.cancel();
     _positionSubscription?.cancel();
 
-    // ?? Zaustavi Android Foreground Service — ukloni notifikaciju iz status bara
+    // ?? Zaustavi Android Foreground Service ï¿½ ukloni notifikaciju iz status bara
     await GpsForegroundService.stopService();
 
-    // Uvijek pokušaj update bez obzira na _isTracking flag
+    // Uvijek pokuï¿½aj update bez obzira na _isTracking flag
     if (_currentVozacId != null) {
       try {
         debugPrint('?? [DriverLocation] Stopping tracking for vozac: $_currentVozacId');
@@ -137,8 +137,8 @@ class V2DriverLocationService {
     _lastPosition = null;
   }
 
-  /// ?? REALTIME FIX: Ažuriraj ETA za putnike bez ponovnog pokretanja trackinga
-  /// Poziva se nakon reoptimizacije rute kada se doda/otkaže putnik
+  /// ?? REALTIME FIX: Aï¿½uriraj ETA za putnike bez ponovnog pokretanja trackinga
+  /// Poziva se nakon reoptimizacije rute kada se doda/otkaï¿½e V2Putnik
   Future<void> updatePutniciEta(Map<String, int> newPutniciEta) async {
     if (!_isTracking) return;
 
@@ -154,8 +154,8 @@ class V2DriverLocationService {
     }
   }
 
-  /// ?? ORS ETA korekcija — poziva se svake 60s
-  /// Ako API ne odgovori — zadrži stari ETA (nema skakanja).
+  /// ?? ORS ETA korekcija ï¿½ poziva se svake 60s
+  /// Ako API ne odgovori ï¿½ zadrï¿½i stari ETA (nema skakanja).
   Future<void> _refreshEta() async {
     if (!_isTracking || _lastPosition == null) return;
     if (_putniciCoordinates == null || _putniciRedosled == null) return;
@@ -178,10 +178,10 @@ class V2DriverLocationService {
         _currentPutniciEta![entry.key] = entry.value;
       }
       debugPrint('?? [DriverLocation] ORS ETA (60s): ${result.putniciEta}');
-      // Pošalji ažurirani ETA u Supabase odmah
+      // Poï¿½alji aï¿½urirani ETA u Supabase odmah
       await _sendCurrentLocation();
 
-      // ?? Ažuriraj tekst notifikacije — prikaži sledeceg putnika i ETA
+      // ?? Aï¿½uriraj tekst notifikacije ï¿½ prikaï¿½i sledeceg putnika i ETA
       if (_putniciRedosled != null && _currentPutniciEta != null) {
         final sledeci = _putniciRedosled!.firstWhere(
           (ime) => (_currentPutniciEta![ime] ?? -1) >= 0,
@@ -190,17 +190,17 @@ class V2DriverLocationService {
         if (sledeci.isNotEmpty) {
           final eta = _currentPutniciEta![sledeci];
           GpsForegroundService.updateNotificationText(
-            'Sledeci: $sledeci — $eta min | $_currentGrad $_currentVremePolaska',
+            'Sledeci: $sledeci ï¿½ $eta min | $_currentGrad $_currentVremePolaska',
           );
         }
       }
     } else {
-      debugPrint('?? [DriverLocation] ORS ETA neuspješan — zadržan stari ETA');
+      debugPrint('?? [DriverLocation] ORS ETA neuspjeï¿½an ï¿½ zadrï¿½an stari ETA');
     }
   }
 
-  /// Proveri i zatraži dozvole za lokaciju - CENTRALIZOVANO
-  /// Forsiraj slanje trenutne lokacije (npr. kada se pokupi putnik)
+  /// Proveri i zatraï¿½i dozvole za lokaciju - CENTRALIZOVANO
+  /// Forsiraj slanje trenutne lokacije (npr. kada se pokupi V2Putnik)
   Future<void> forceLocationUpdate({Position? knownPosition}) async {
     await _sendCurrentLocation(knownPosition: knownPosition);
   }
@@ -209,12 +209,12 @@ class V2DriverLocationService {
     return await PermissionService.ensureGpsForNavigation();
   }
 
-  /// Pošalji trenutnu lokaciju u Supabase
+  /// Poï¿½alji trenutnu lokaciju u Supabase
   Future<void> _sendCurrentLocation({Position? knownPosition}) async {
     if (!_isTracking || _currentVozacId == null) return;
-    // ?? Ako je prethodni poziv još aktivan (npr. spor GPS ili DB), preskoci
+    // ?? Ako je prethodni poziv joï¿½ aktivan (npr. spor GPS ili DB), preskoci
     if (_isSending) {
-      debugPrint('?? [DriverLocation] _sendCurrentLocation preskocen — prethodni poziv još aktivan');
+      debugPrint('?? [DriverLocation] _sendCurrentLocation preskocen ï¿½ prethodni poziv joï¿½ aktivan');
       return;
     }
     _isSending = true;
@@ -248,7 +248,7 @@ class V2DriverLocationService {
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
     } catch (e) {
-      debugPrint('? [DriverLocation] _sendCurrentLocation greška: $e');
+      debugPrint('? [DriverLocation] _sendCurrentLocation greï¿½ka: $e');
     } finally {
       _isSending = false; // ?? Oslobodi lock bez obzira na ishod
     }

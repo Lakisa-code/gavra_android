@@ -20,7 +20,7 @@ class V2PushTokenService {
   ///
   /// [token] - FCM ili HMS token
   /// [provider] - 'fcm' za Firebase ili 'huawei' za HMS
-  /// [userType] - 'vozac' ili 'putnik'
+  /// [userType] - 'vozac' ili 'V2Putnik'
   /// [userId] - ime vozača ili putnika (opciono)
   /// [vozacId] - UUID vozača iz vozaci tabele (samo za vozače)
   /// [putnikId] - ID putnika iz registrovani_putnici tabele (samo za putnike)

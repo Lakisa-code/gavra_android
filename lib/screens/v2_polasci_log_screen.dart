@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../models/seat_request.dart';
-import '../services/theme_manager.dart';
+import '../models/v2_polazak.dart';
 import '../services/v2_polasci_service.dart';
+import '../services/v2_theme_manager.dart';
 import '../theme.dart';
 
 /// 📋 Audit/log ekran za SVE seat_requests — admin pregled celog toka zahteva
@@ -93,7 +93,7 @@ class _V2PolasciLogScreenState extends State<V2PolasciLogScreen> {
     return DateFormat('dd.MM. HH:mm').format(local);
   }
 
-  Stream<List<SeatRequest>> _buildStream() {
+  Stream<List<V2Polazak>> _buildStream() {
     return V2PolasciService.streamSviZahtevi(
       statusFilter: _statusFilter.isEmpty ? null : _statusFilter.toList(),
       gradFilter: _gradFilter,
@@ -145,7 +145,7 @@ class _V2PolasciLogScreenState extends State<V2PolasciLogScreen> {
           children: [
             _buildFilteri(),
             Expanded(
-              child: StreamBuilder<List<SeatRequest>>(
+              child: StreamBuilder<List<V2Polazak>>(
                 stream: _buildStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
@@ -278,7 +278,7 @@ class _V2PolasciLogScreenState extends State<V2PolasciLogScreen> {
     );
   }
 
-  Widget _buildKartica(SeatRequest z) {
+  Widget _buildKartica(V2Polazak z) {
     final boja = _statusBoja(z.status);
     final dan = _danLabels[z.dan] ?? z.dan ?? '?';
     final grad = z.grad ?? '?';

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +8,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../screens/v2_home_screen.dart';
-import '../utils/app_snack_bar.dart';
-import '../utils/grad_adresa_validator.dart';
+import '../utils/v2_app_snack_bar.dart';
+import '../utils/v2_grad_adresa_validator.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 import 'v2_notification_navigation_service.dart';
-import 'v2_realtime_notification_service.dart';
 import 'v2_polasci_service.dart';
+import 'v2_realtime_notification_service.dart';
 import 'v2_statistika_istorija_service.dart';
-import 'wake_lock_service.dart';
+import 'v2_wake_lock_service.dart';
 
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) async {
@@ -413,7 +413,7 @@ class LocalNotificationService {
             return;
           }
 
-          final putnikData = payloadData['putnik'];
+          final putnikData = payloadData['V2Putnik'];
           if (putnikData is Map<String, dynamic>) {
             putnikIme = (putnikData['ime'] ?? putnikData['name']) as String?;
             putnikGrad = putnikData['grad'] as String?;
@@ -431,7 +431,7 @@ class LocalNotificationService {
             }
           }
 
-          // 🔍 DOHVATI PUTNIK PODATKE IZ BAZE ako nisu u payload-u
+          // 🔍 DOHVATI V2Putnik PODATKE IZ BAZE ako nisu u payload-u
           if (putnikIme != null && (putnikGrad == null || putnikVreme == null)) {
             try {
               final putnikInfo = await _fetchPutnikFromDatabase(putnikIme);
@@ -468,15 +468,15 @@ class LocalNotificationService {
         IconData icon;
 
         if (notificationType == 'novi_putnik') {
-          message = '🆕 Dodat putnik: $putnikIme';
+          message = '🆕 Dodat V2Putnik: $putnikIme';
           bgColor = Colors.green;
           icon = Icons.person_add;
         } else if (notificationType == 'otkazan_putnik') {
-          message = '❌ Otkazan putnik: $putnikIme';
+          message = '❌ Otkazan V2Putnik: $putnikIme';
           bgColor = Colors.red;
           icon = Icons.person_remove;
         } else {
-          message = '📢 Putnik: $putnikIme';
+          message = '📢 V2Putnik: $putnikIme';
           bgColor = Colors.blue;
           icon = Icons.info;
         }
@@ -503,7 +503,7 @@ class LocalNotificationService {
     }
   }
 
-  /// 🔍 FETCH PUTNIK DATA FROM DATABASE BY NAME
+  /// 🔍 FETCH V2Putnik DATA FROM DATABASE BY NAME
   /// 🔄 NOVO: Koristi seat_requests kao izvor istine za termine
   static Future<Map<String, dynamic>?> _fetchPutnikFromDatabase(
     String putnikIme,
@@ -517,12 +517,8 @@ class LocalNotificationService {
       final tabele = ['v2_radnici', 'v2_ucenici', 'v2_dnevni', 'v2_posiljke'];
       String? putnikId;
       for (final tabela in tabele) {
-        final row = await supabase
-            .from(tabela)
-            .select('id')
-            .eq('ime', putnikIme)
-            .neq('status', 'neaktivan')
-            .maybeSingle();
+        final row =
+            await supabase.from(tabela).select('id').eq('ime', putnikIme).neq('status', 'neaktivan').maybeSingle();
         if (row != null) {
           putnikId = row['id'] as String;
           break;
@@ -606,7 +602,7 @@ class LocalNotificationService {
 
       // Dohvati tip korisnika iz cache-a
       final putnikData = V2MasterRealtimeManager.instance.getPutnikById(putnikId);
-      final userType = putnikData?['_tabela'] ?? 'Putnik';
+      final userType = putnikData?['_tabela'] ?? 'V2Putnik';
 
       // LOG
       try {
@@ -659,7 +655,7 @@ class LocalNotificationService {
 
       // Dohvati tip korisnika iz cache-a
       final putnikResult = V2MasterRealtimeManager.instance.getPutnikById(putnikId);
-      final userType = putnikResult?['_tabela'] ?? 'Putnik';
+      final userType = putnikResult?['_tabela'] ?? 'V2Putnik';
 
       // LOG
       try {

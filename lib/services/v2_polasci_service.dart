@@ -1,23 +1,23 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../models/seat_request.dart';
-import '../utils/grad_adresa_validator.dart';
+import '../models/v2_polazak.dart';
+import '../utils/v2_grad_adresa_validator.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (v2_polasci tabela)
 class V2PolasciService {
   static SupabaseClient get _supabase => supabase;
 
-  /// ✅ UNIFIKOVANA ULAZNA TAČKA — koriste je svi akteri (putnik, admin, vozač)
+  /// ✅ UNIFIKOVANA ULAZNA TAČKA — koriste je svi akteri (V2Putnik, admin, vozač)
   ///
   /// Model: dan + grad + zeljeno_vreme → upsert u v2_polasci
   ///
   /// - [isAdmin] = true → status='confirmed', dodeljeno_vreme=vreme odmah (vozač/admin ručno dodaje)
-  /// - [isAdmin] = false → status='pending' (putnik šalje zahtev, backend obrađuje)
+  /// - [isAdmin] = false → status='pending' (V2Putnik šalje zahtev, backend obrađuje)
   ///
   /// Nema datuma, nema sedmice, nema predviđanja.
   static Future<void> submitPolazak({
@@ -120,15 +120,15 @@ class V2PolasciService {
   }
 
   /// Stream za zahteve koji čekaju ručnu obradu admina (svi tipovi, status=pending)
-  static Stream<List<SeatRequest>> streamManualRequests() {
-    final controller = StreamController<List<SeatRequest>>.broadcast();
+  static Stream<List<V2Polazak>> streamManualRequests() {
+    final controller = StreamController<List<V2Polazak>>.broadcast();
 
     Future<void> fetch() async {
       try {
         final data =
             await _supabase.from('v2_polasci').select().eq('status', 'pending').order('created_at', ascending: false);
         if (!controller.isClosed) {
-          controller.add(data.map((json) => SeatRequest.fromJson(json)).toList());
+          controller.add(data.map((json) => V2Polazak.fromJson(json)).toList());
         }
       } catch (e) {
         debugPrint('❌ [V2PolasciService] streamManualRequests fetch error: $e');
@@ -147,12 +147,12 @@ class V2PolasciService {
 
   /// 📋 Stream za SVE zahteve — audit/log ekran za admina
   /// Podržava filtere: [statusFilter] lista statusa, [gradFilter] 'BC'/'VS'/null, [limit] broj zapisa
-  static Stream<List<SeatRequest>> streamSviZahtevi({
+  static Stream<List<V2Polazak>> streamSviZahtevi({
     List<String>? statusFilter,
     String? gradFilter,
     int limit = 200,
   }) {
-    final controller = StreamController<List<SeatRequest>>.broadcast();
+    final controller = StreamController<List<V2Polazak>>.broadcast();
 
     Future<void> fetch() async {
       try {
@@ -168,7 +168,7 @@ class V2PolasciService {
         final data = await query.order('created_at', ascending: false).limit(limit);
 
         if (!controller.isClosed) {
-          controller.add(data.map((json) => SeatRequest.fromJson(json)).toList());
+          controller.add(data.map((json) => V2Polazak.fromJson(json)).toList());
         }
       } catch (e) {
         debugPrint('❌ [V2PolasciService] streamSviZahtevi fetch error: $e');

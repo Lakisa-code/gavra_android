@@ -1,16 +1,16 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../models/registrovani_putnik.dart';
-import '../utils/vozac_cache.dart';
+import '../models/v2_registrovani_putnik.dart';
+import '../utils/v2_vozac_cache.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 import 'v2_statistika_istorija_service.dart';
 
 /// Servis za upravljanje putnicima (v2_ �ema)
-/// Agregira sve 4 putnik tabele: v2_radnici, v2_ucenici, v2_dnevni, v2_posiljke
+/// Agregira sve 4 V2Putnik tabele: v2_radnici, v2_ucenici, v2_dnevni, v2_posiljke
 class V2PutnikService {
   V2PutnikService({SupabaseClient? supabaseClient}) : _supabaseOverride = supabaseClient;
   final SupabaseClient? _supabaseOverride;
@@ -108,7 +108,7 @@ class V2PutnikService {
       if (existing != null) {
         final ime = existing['ime'] as String? ?? '?';
         final tab = existing['_tabela'] as String? ?? '?';
-        throw Exception('Putnik sa ovim brojem telefona vec postoji: $ime ($tab)');
+        throw Exception('V2Putnik sa ovim brojem telefona vec postoji: $ime ($tab)');
       }
     }
 

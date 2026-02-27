@@ -1,9 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 
-import '../models/vozac.dart';
+import '../models/v2_vozac.dart';
 import '../services/v2_vozac_service.dart';
 import '../theme.dart';
-import '../utils/app_snack_bar.dart';
+import '../utils/v2_app_snack_bar.dart';
 
 /// ðŸ‘¥ VOZAÄŒI ADMIN SCREEN - Admin panel za upravljanje vozaÄima
 /// Ovde dodajeÅ¡/briÅ¡eÅ¡ vozaÄe, emailove, Å¡ifre, telefone, boje

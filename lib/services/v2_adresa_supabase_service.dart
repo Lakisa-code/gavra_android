@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import '../globals.dart';
-import '../models/adresa.dart';
-import 'geocoding_service.dart';
+import '../models/v2_adresa.dart';
 import 'realtime/v2_master_realtime_manager.dart';
+import 'v2_geocoding_service.dart';
 
 /// Servis za rad sa normalizovanim adresama iz Supabase tabele
 /// 🎯 KORISTI UUID REFERENCE umesto TEXT polja

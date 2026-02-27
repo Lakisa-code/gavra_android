@@ -1,15 +1,14 @@
-import 'package:flutter/gestures.dart';
+﻿import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../globals.dart';
-import '../models/registrovani_putnik.dart';
+import '../models/v2_registrovani_putnik.dart';
 import '../services/v2_adresa_supabase_service.dart';
 import '../services/v2_putnik_service.dart';
 import '../services/v2_statistika_istorija_service.dart';
 import '../theme.dart';
-import '../utils/app_snack_bar.dart';
+import '../utils/v2_app_snack_bar.dart';
 
 /// UNIFIKOVANI WIDGET ZA DODAVANJE I EDITOVANJE MESECNIH PUTNIKA
 ///
@@ -115,33 +114,33 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
 
   void _loadDataFromExistingPutnik() async {
     if (widget.isEditing) {
-      final putnik = widget.existingPutnik!;
+      final V2Putnik = widget.existingPutnik!;
 
       // Load basic info
-      _imeController.text = putnik.putnikIme;
-      _tip = putnik.tip;
-      _brojMestaController.text = putnik.brojMesta.toString();
-      _tipSkoleController.text = putnik.tipSkole ?? '';
-      _brojTelefonaController.text = putnik.brojTelefona ?? '';
-      _brojTelefona2Controller.text = putnik.brojTelefona2 ?? '';
-      _brojTelefonaOcaController.text = putnik.brojTelefonaOca ?? '';
-      _brojTelefonaMajkeController.text = putnik.brojTelefonaMajke ?? '';
+      _imeController.text = V2Putnik.putnikIme;
+      _tip = V2Putnik.tip;
+      _brojMestaController.text = V2Putnik.brojMesta.toString();
+      _tipSkoleController.text = V2Putnik.tipSkole ?? '';
+      _brojTelefonaController.text = V2Putnik.brojTelefona ?? '';
+      _brojTelefona2Controller.text = V2Putnik.brojTelefona2 ?? '';
+      _brojTelefonaOcaController.text = V2Putnik.brojTelefonaOca ?? '';
+      _brojTelefonaMajkeController.text = V2Putnik.brojTelefonaMajke ?? '';
 
       // Load cena po danu
-      if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
-        _cenaPoDanuController.text = putnik.cenaPoDanu!.toStringAsFixed(0);
+      if (V2Putnik.cenaPoDanu != null && V2Putnik.cenaPoDanu! > 0) {
+        _cenaPoDanuController.text = V2Putnik.cenaPoDanu!.toStringAsFixed(0);
       }
 
       // ?? Load email
-      _emailController.text = putnik.email ?? '';
+      _emailController.text = V2Putnik.email ?? '';
 
       // ?? Load podaci za racun
-      _trebaRacun = putnik.trebaRacun;
-      _firmaNazivController.text = putnik.firmaNaziv ?? '';
-      _firmaPibController.text = putnik.firmaPib ?? '';
-      _firmaMbController.text = putnik.firmaMb ?? '';
-      _firmaZiroController.text = putnik.firmaZiro ?? '';
-      _firmaAdresaController.text = putnik.firmaAdresa ?? '';
+      _trebaRacun = V2Putnik.trebaRacun;
+      _firmaNazivController.text = V2Putnik.firmaNaziv ?? '';
+      _firmaPibController.text = V2Putnik.firmaPib ?? '';
+      _firmaMbController.text = V2Putnik.firmaMb ?? '';
+      _firmaZiroController.text = V2Putnik.firmaZiro ?? '';
+      _firmaAdresaController.text = V2Putnik.firmaAdresa ?? '';
 
       // Load addresses asynchronously
       _loadAdreseForEditovanje();
@@ -153,30 +152,30 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
 
   Future<void> _loadAdreseForEditovanje() async {
     // Load existing address names for the edit dialog using the UUIDs
-    final putnik = widget.existingPutnik;
-    if (putnik == null) return;
+    final V2Putnik = widget.existingPutnik;
+    if (V2Putnik == null) return;
 
     // Try batch fetch for both ids
     try {
       final idsToFetch = <String>[];
-      if (putnik.adresaBelaCrkvaId != null && putnik.adresaBelaCrkvaId!.isNotEmpty) {
-        idsToFetch.add(putnik.adresaBelaCrkvaId!);
+      if (V2Putnik.adresaBelaCrkvaId != null && V2Putnik.adresaBelaCrkvaId!.isNotEmpty) {
+        idsToFetch.add(V2Putnik.adresaBelaCrkvaId!);
       }
-      if (putnik.adresaVrsacId != null && putnik.adresaVrsacId!.isNotEmpty) {
-        idsToFetch.add(putnik.adresaVrsacId!);
+      if (V2Putnik.adresaVrsacId != null && V2Putnik.adresaVrsacId!.isNotEmpty) {
+        idsToFetch.add(V2Putnik.adresaVrsacId!);
       }
 
       if (idsToFetch.isNotEmpty) {
         final fetched = await V2AdresaSupabaseService.getAdreseByUuids(idsToFetch);
 
-        final bcNaziv = putnik.adresaBelaCrkvaId != null
-            ? fetched[putnik.adresaBelaCrkvaId!]?.naziv ??
-                await V2AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaBelaCrkvaId)
+        final bcNaziv = V2Putnik.adresaBelaCrkvaId != null
+            ? fetched[V2Putnik.adresaBelaCrkvaId!]?.naziv ??
+                await V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaBelaCrkvaId)
             : null;
 
-        final vsNaziv = putnik.adresaVrsacId != null
-            ? fetched[putnik.adresaVrsacId!]?.naziv ??
-                await V2AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaVrsacId)
+        final vsNaziv = V2Putnik.adresaVrsacId != null
+            ? fetched[V2Putnik.adresaVrsacId!]?.naziv ??
+                await V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaVrsacId)
             : null;
 
         if (mounted) {
@@ -184,8 +183,8 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
             _adresaBelaCrkvaController.text = bcNaziv ?? '';
             _adresaVrsacController.text = vsNaziv ?? '';
             // keep UUIDs so autocomplete selection is preserved
-            _adresaBelaCrkvaId = putnik.adresaBelaCrkvaId;
-            _adresaVrsacId = putnik.adresaVrsacId;
+            _adresaBelaCrkvaId = V2Putnik.adresaBelaCrkvaId;
+            _adresaVrsacId = V2Putnik.adresaVrsacId;
           });
         }
       } else {
@@ -597,7 +596,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: 'Email (opciono)',
-                    hintText: 'npr. putnik@email.com',
+                    hintText: 'npr. V2Putnik@email.com',
                     prefixIcon: const Icon(Icons.email),
                     filled: true,
                     fillColor: Colors.white,
@@ -1328,12 +1327,12 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       final existing = await V2PutnikService().findByTelefon(telefon);
       if (existing != null) {
         final existingId = existing['id'] as String;
-        // U edit modu preskoci ako je isti putnik
+        // U edit modu preskoci ako je isti V2Putnik
         if (widget.isEditing && widget.existingPutnik?.id == existingId) {
           return null;
         }
         final existingName = existing['ime'] as String? ?? 'Nepoznat';
-        return 'Broj telefona već koristi putnik: $existingName';
+        return 'Broj telefona već koristi V2Putnik: $existingName';
       }
     } catch (e) {
       // Ako ne mo�emo proveriti, nastavi (bolje nego blokirati)
@@ -1396,7 +1395,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         Navigator.of(context).pop();
         if (widget.onSaved != null) widget.onSaved!();
         if (parentContext.mounted) {
-          AppSnackBar.success(parentContext, '? Putnik uspe�no sacuvan!');
+          AppSnackBar.success(parentContext, '? V2Putnik uspe�no sacuvan!');
         }
       }
     } catch (e) {

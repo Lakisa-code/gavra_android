@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../globals.dart';
-import 'realtime_config.dart';
-import 'realtime_status.dart';
+import 'v2_realtime_config.dart';
+import 'v2_realtime_status.dart';
 
 /// ════════════════════════════════════════════════════════════════════════════
 /// V2MasterRealtimeManager — čist, novi singleton za v2_ tabele
@@ -280,7 +280,10 @@ class V2MasterRealtimeManager {
         _db.from('v2_adrese').select('id, naziv, grad, gps_lat, gps_lng'),
         _db.from('v2_vozac_raspored').select(),
         _db.from('v2_vozac_putnik').select(),
-        _db.from('v2_finansije_troskovi').select('id, naziv, iznos, tip, aktivan, vozac_id, created_at').eq('aktivan', true),
+        _db
+            .from('v2_finansije_troskovi')
+            .select('id, naziv, iznos, tip, aktivan, vozac_id, created_at')
+            .eq('aktivan', true),
         _db.from('v2_pumpa_config').select(),
         _db.from('v2_vozac_lokacije').select().eq('aktivan', true),
         _db.from('v2_pin_zahtevi').select(),

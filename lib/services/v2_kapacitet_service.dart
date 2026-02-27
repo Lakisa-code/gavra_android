@@ -1,11 +1,11 @@
-import 'dart:async';
+ï»¿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../config/route_config.dart';
+import '../config/v2_route_config.dart';
 import '../globals.dart';
-import '../utils/grad_adresa_validator.dart';
+import '../utils/v2_grad_adresa_validator.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 
 /// ?? Servis za upravljanje kapacitetom polazaka
@@ -13,7 +13,7 @@ import 'realtime/v2_master_realtime_manager.dart';
 class V2KapacitetService {
   static SupabaseClient get _supabase => supabase;
 
-  // ?? GLOBAL REALTIME LISTENER za automatsko ažuriranje
+  // ?? GLOBAL REALTIME LISTENER za automatsko aï¿½uriranje
   static StreamSubscription? _globalRealtimeSubscription;
 
   // ?? CACHE za kapacitet (inicijalizuje se na startup)
@@ -120,7 +120,7 @@ class V2KapacitetService {
     }
   }
 
-  /// Stream kapaciteta (realtime ažuriranje) - koristi RealtimeManager
+  /// Stream kapaciteta (realtime aï¿½uriranje) - koristi RealtimeManager
   static Stream<Map<String, Map<String, int>>> streamKapacitet() {
     final controller = StreamController<Map<String, Map<String, int>>>.broadcast();
     StreamSubscription? subscription;
@@ -165,7 +165,7 @@ class V2KapacitetService {
           .eq('vreme', vreme)
           .select();
 
-      // Ako update nije promenio ništa, uradi insert
+      // Ako update nije promenio niï¿½ta, uradi insert
       if (updateResult.isEmpty) {
         await _supabase.from('v2_kapacitet_polazaka').insert({
           'grad': grad,
@@ -212,17 +212,17 @@ class V2KapacitetService {
       _kapacitetCacheInitialized = true;
     }
 
-    // Pokreni realtime listener za ažuriranje cache-a
+    // Pokreni realtime listener za aï¿½uriranje cache-a
     startGlobalRealtimeListener();
   }
 
-  /// Ažurira cache iz baze
+  /// Aï¿½urira cache iz baze
   static Future<void> refreshKapacitetCache() async {
     try {
       final data = await getKapacitet();
       _kapacitetCache = data;
     } catch (e) {
-      // Zadrži stari cache ako fetch nije useo
+      // Zadrï¿½i stari cache ako fetch nije useo
     }
   }
 
@@ -236,7 +236,7 @@ class V2KapacitetService {
 
     // Pokreni globalni listener
     _globalRealtimeSubscription = V2MasterRealtimeManager.instance.subscribe('v2_kapacitet_polazaka').listen((payload) {
-      // Na svaku promenu, osveži cache
+      // Na svaku promenu, osveï¿½i cache
       refreshKapacitetCache();
     });
   }

@@ -1,16 +1,16 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../utils/grad_adresa_validator.dart';
-import '../utils/vozac_cache.dart';
+import '../utils/v2_grad_adresa_validator.dart';
+import '../utils/v2_vozac_cache.dart';
 import 'v2_vozac_raspored_service.dart';
 
 /// Model za jedan red iz vozac_putnik tabele.
 ///
-/// Čuva per-putnik raspored: koji vozač vozi određenog putnika
+/// Čuva per-V2Putnik raspored: koji vozač vozi određenog putnika
 /// za određeni dan/grad/vreme.
 ///
-/// Jedan putnik može imati najviše jednu aktivnu individualnu dodjelu (UNIQUE putnik_id).
+/// Jedan V2Putnik može imati najviše jednu aktivnu individualnu dodjelu (UNIQUE putnik_id).
 class VozacPutnikEntry {
   final String? id; // uuid PK, null prije inserata
   final String putnikId; // FK → registrovani_putnici.id
@@ -54,12 +54,12 @@ class VozacPutnikEntry {
       };
 }
 
-/// Servis za upravljanje per-putnik individualnom dodjelom vozača.
+/// Servis za upravljanje per-V2Putnik individualnom dodjelom vozača.
 ///
-/// Jedan putnik → jedna individualna dodjela vozača (UNIQUE putnik_id u tabeli).
+/// Jedan V2Putnik → jedna individualna dodjela vozača (UNIQUE putnik_id u tabeli).
 ///
 /// Arhitektura:
-///   vozac_putnik   — per-putnik individualna dodjela (ovaj servis)
+///   vozac_putnik   — per-V2Putnik individualna dodjela (ovaj servis)
 ///   vozac_raspored — per-termin raspored (VozacRasporedService)
 class V2VozacPutnikService {
   static final V2VozacPutnikService _instance = V2VozacPutnikService._internal();
@@ -117,7 +117,7 @@ class V2VozacPutnikService {
     }
   }
 
-  /// Briše individualnu dodjelu za putnika (putnik se vraća na termin-level vozača).
+  /// Briše individualnu dodjelu za putnika (V2Putnik se vraća na termin-level vozača).
   Future<bool> delete({required String putnikId}) async {
     try {
       await _supabase.from('v2_vozac_putnik').delete().eq('putnik_id', putnikId);
@@ -133,10 +133,10 @@ class V2VozacPutnikService {
     await _supabase.from('v2_vozac_putnik').delete().eq('vozac_id', vozacId);
   }
 
-  /// Kombinirani filter: per-putnik individualna dodjela + per-termin raspored.
+  /// Kombinirani filter: per-V2Putnik individualna dodjela + per-termin raspored.
   ///
   /// Tačan prioritet:
-  ///   1. Per-putnik individualna dodjela postoji:
+  ///   1. Per-V2Putnik individualna dodjela postoji:
   ///      - dodeljen MENI   → prikaži (ignoriši termin-raspored)
   ///      - dodeljen DRUGOM → sakrij  (ignoriši termin-raspored)
   ///   2. Nema individualne dodjele → provjeri termin-raspored:
@@ -144,7 +144,7 @@ class V2VozacPutnikService {
   ///      - postoji unos → prikaži samo vozaču koji je dodeljen terminu
   ///
   /// Filtrira putnike za datog vozača na osnovu termin rasporeda (vozac_raspored).
-  /// Putnik je vidljiv vozaču samo ako postoji unos u rasporedu koji ga dodjeljuje tom vozaču.
+  /// V2Putnik je vidljiv vozaču samo ako postoji unos u rasporedu koji ga dodjeljuje tom vozaču.
   ///
   /// [vozacId] = UUID (preferiran), [vozac] = ime (fallback)
   static List<T> filterKombinovan<T>({
@@ -176,7 +176,7 @@ class V2VozacPutnikService {
       // Normalizuj vreme za konzistentno poređenje ('07:00:00' → '07:00')
       final vreme = GradAdresaValidator.normalizeTime(getPolazak(p));
 
-      // 1. Provjeri per-putnik individualnu dodjelu
+      // 1. Provjeri per-V2Putnik individualnu dodjelu
       final putnikDodjele = individualneDodjele
           .where((e) =>
               e.putnikId == id &&
@@ -196,7 +196,7 @@ class V2VozacPutnikService {
               r.grad.toUpperCase() == grad.toUpperCase() &&
               GradAdresaValidator.normalizeTime(r.vreme) == vreme)
           .toList();
-      if (terminEntries.isEmpty) return false; // nema raspodele → putnik nije vidljiv
+      if (terminEntries.isEmpty) return false; // nema raspodele → V2Putnik nije vidljiv
       return terminEntries.any(jeTerminVozacov);
     }).toList();
   }

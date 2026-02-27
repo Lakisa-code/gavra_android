@@ -1,11 +1,11 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/v2_putnik_service.dart';
-import '../utils/app_snack_bar.dart';
+import '../utils/v2_app_snack_bar.dart';
 
 /// PIN DIALOG za mesečne putnike
 /// Prikazuje/generiše/šalje PIN kod
@@ -71,7 +71,7 @@ class _V2PinDialogState extends State<V2PinDialog> {
   /// Pošalji PIN putem SMS-a
   Future<void> _sendSms() async {
     if (widget.brojTelefona == null || widget.brojTelefona!.isEmpty) {
-      AppSnackBar.warning(context, 'Putnik nema broj telefona!');
+      AppSnackBar.warning(context, 'V2Putnik nema broj telefona!');
       return;
     }
 
@@ -232,7 +232,7 @@ class _V2PinDialogState extends State<V2PinDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Putnik nema broj telefona',
+                        'V2Putnik nema broj telefona',
                         style: TextStyle(color: Colors.orange, fontSize: 12),
                       ),
                     ),

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,7 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../utils/app_snack_bar.dart';
+import '../utils/v2_app_snack_bar.dart';
 
 /// Servis za generisanje i štampanje računa za fizička lica
 class V2RacunService {
@@ -159,7 +159,7 @@ class V2RacunService {
       final mesecStr = DateFormat('MMMM yyyy', 'sr_Latn').format(obracunskiDatum);
 
       for (final podaci in racuniPodaci) {
-        final putnik = podaci['putnik'];
+        final V2Putnik = podaci['V2Putnik'];
         final brojDana = podaci['brojDana'] as int;
         final cenaPoDanu = podaci['cenaPoDanu'] as double;
         final ukupno = podaci['ukupno'] as double;
@@ -167,12 +167,12 @@ class V2RacunService {
 
         final stranica = await _kreirajRacunZaFirmuStranicu(
           brojRacuna: brojRacuna,
-          firmaNaziv: putnik.firmaNaziv ?? putnik.putnikIme,
-          firmaPib: putnik.firmaPib ?? '',
-          firmaMb: putnik.firmaMb ?? '',
-          firmaZiro: putnik.firmaZiro ?? '',
-          firmaAdresa: putnik.firmaAdresa ?? '',
-          putnikIme: putnik.putnikIme,
+          firmaNaziv: V2Putnik.firmaNaziv ?? V2Putnik.putnikIme,
+          firmaPib: V2Putnik.firmaPib ?? '',
+          firmaMb: V2Putnik.firmaMb ?? '',
+          firmaZiro: V2Putnik.firmaZiro ?? '',
+          firmaAdresa: V2Putnik.firmaAdresa ?? '',
+          putnikIme: V2Putnik.putnikIme,
           opisUsluge: 'Prevoz putnika za $mesecStr',
           cenaPoDanu: cenaPoDanu,
           brojDana: brojDana,
@@ -294,7 +294,7 @@ class V2RacunService {
                   if (firmaMb.isNotEmpty) pw.Text('MB: $firmaMb', style: const pw.TextStyle(fontSize: 11)),
                   if (firmaZiro.isNotEmpty) pw.Text('Žiro račun: $firmaZiro', style: const pw.TextStyle(fontSize: 11)),
                   pw.SizedBox(height: 8),
-                  pw.Text('Putnik: $putnikIme', style: pw.TextStyle(fontSize: 11, fontStyle: pw.FontStyle.italic)),
+                  pw.Text('V2Putnik: $putnikIme', style: pw.TextStyle(fontSize: 11, fontStyle: pw.FontStyle.italic)),
                 ],
               ),
             ),

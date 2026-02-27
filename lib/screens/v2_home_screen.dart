@@ -6,45 +6,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import '../config/route_config.dart';
-import '../constants/day_constants.dart';
+import '../config/v2_route_config.dart';
+import '../constants/v2_day_constants.dart';
 import '../globals.dart';
-import '../models/putnik.dart';
-import '../models/registrovani_putnik.dart';
-import '../services/admin_security_service.dart';
-import '../services/auth_manager.dart';
-import '../services/firebase_service.dart';
-import '../services/haptic_service.dart';
-import '../services/printing_service.dart';
-import '../services/putnik_service.dart'; // ? VRACEN na stari servis zbog grešaka u novom
+import '../models/v2_putnik.dart';
+import '../models/v2_registrovani_putnik.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
-import '../services/slobodna_mesta_service.dart'; // ?? Provera kapaciteta
-import '../services/theme_manager.dart'; // ?? Tema sistem
+import '../services/v2_admin_security_service.dart';
 import '../services/v2_adresa_supabase_service.dart';
 import '../services/v2_app_settings_service.dart'; // ?? Update check
+import '../services/v2_auth_manager.dart';
 import '../services/v2_cena_obracun_service.dart';
+import '../services/v2_firebase_service.dart';
+import '../services/v2_haptic_service.dart';
 import '../services/v2_kapacitet_service.dart'; // ?? Kapacitet za bottom nav bar
 import '../services/v2_local_notification_service.dart';
 import '../services/v2_polasci_service.dart';
+import '../services/v2_printing_service.dart';
 import '../services/v2_putnik_service.dart';
+import '../services/v2_putnik_stream_service.dart';
 import '../services/v2_racun_service.dart';
 import '../services/v2_realtime_notification_service.dart';
+import '../services/v2_slobodna_mesta_service.dart'; // ?? Provera kapaciteta
+import '../services/v2_theme_manager.dart'; // ?? Tema sistem
 import '../services/v2_vozac_raspored_service.dart';
 import '../theme.dart'; // ?? Import za prelepe gradijente
-import '../utils/app_snack_bar.dart';
-import '../utils/date_utils.dart' as app_date_utils;
-import '../utils/grad_adresa_validator.dart'; // ??? NOVO za validaciju
-import '../utils/page_transitions.dart';
-import '../utils/putnik_count_helper.dart'; // ?? Za brojanje putnika po gradu
-import '../utils/text_utils.dart';
-import '../utils/vozac_cache.dart'; // Dodato za centralizovane boje vozaca
-import '../widgets/bottom_nav_bar_letnji.dart';
-import '../widgets/bottom_nav_bar_praznici.dart';
-import '../widgets/bottom_nav_bar_zimski.dart';
-import '../widgets/putnik_list.dart';
-import '../widgets/registracija_countdown_widget.dart';
-import '../widgets/shimmer_widgets.dart';
-import 'promena_sifre_screen.dart';
+import '../utils/v2_app_snack_bar.dart';
+import '../utils/v2_date_utils.dart' as app_date_utils;
+import '../utils/v2_grad_adresa_validator.dart'; // ??? NOVO za validaciju
+import '../utils/v2_page_transitions.dart';
+import '../utils/v2_putnik_count_helper.dart'; // ?? Za brojanje putnika po gradu
+import '../utils/v2_text_utils.dart';
+import '../utils/v2_vozac_cache.dart'; // Dodato za centralizovane boje vozaca
+import '../widgets/v2_bottom_nav_bar_letnji.dart';
+import '../widgets/v2_bottom_nav_bar_praznici.dart';
+import '../widgets/v2_bottom_nav_bar_zimski.dart';
+import '../widgets/v2_putnik_list.dart';
+import '../widgets/v2_registracija_countdown_widget.dart';
+import '../widgets/v2_shimmer_widgets.dart';
+import 'v2_promena_sifre_screen.dart';
 import 'v2_admin_screen.dart';
 import 'v2_polasci_screen.dart';
 import 'v2_vozac_screen.dart';
@@ -59,11 +59,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Logging using dlog function from logging.dart
-  final PutnikService _putnikService = PutnikService(); // ? VRACEN na stari servis zbog grešaka u novom
+  final V2PutnikStreamService _putnikService = V2PutnikStreamService();
 
   bool _isLoading = true;
   // bool _isAddingPutnik = false; // previously used loading state; now handled local to dialog
-  String _selectedDay = 'Ponedeljak'; // Bice postavljeno na današnji dan u initState
+  String _selectedDay = 'Ponedeljak'; // Bice postavljeno na dana�nji dan u initState
   String _selectedGrad = 'BC';
   String _selectedVreme = '05:00'; // inicijalna vrednost, overriduje se u initState
 
@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return [...bcList, ...vsList];
   }
 
-  /// Automatski selektuje najbliže vreme polaska za trenutni cas (BC grad).
+  /// Automatski selektuje najbli�e vreme polaska za trenutni cas (BC grad).
   void _autoSelectNajblizeVreme() {
     final now = DateTime.now();
     final nowMinutes = now.hour * 60 + now.minute;
@@ -132,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // ? KORISTI UTILS FUNKCIJU ZA DROPDOWN DAN
   String _getTodayName() {
     final today = DateTime.now();
-    // ?? FIX: Vikendom (subota=6, nedelja=7) prikaži ponedeljak jer radni dani su samo Pon-Pet
+    // ?? FIX: Vikendom (subota=6, nedelja=7) prika�i ponedeljak jer radni dani su samo Pon-Pet
     if (today.weekday == DateTime.saturday || today.weekday == DateTime.sunday) {
       return 'Ponedeljak';
     }
@@ -142,26 +142,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // target date calculation handled elsewhere
 
   // Convert selected full day name (Ponedeljak) into ISO date string for target week
-  // ?? FIX: Uvek idi u buducnost - ako je dan prošao ove nedelje, koristi sledecu nedelju
-  // Ovo je konzistentno sa Putnik._getDateForDay() koji se koristi za upis u bazu
+  // ?? FIX: Uvek idi u buducnost - ako je dan pro�ao ove nedelje, koristi sledecu nedelju
+  // Ovo je konzistentno sa V2Putnik._getDateForDay() koji se koristi za upis u bazu
   String _getTargetDateIsoFromSelectedDay(String fullDay) {
     final now = DateTime.now();
 
-    // Normalizuj dan korišcenjem DayConstants
+    // Normalizuj dan kori�cenjem DayConstants
     final normalizedDay = DayConstants.normalize(fullDay);
     final targetDayIndex = DayConstants.getIndexByName(normalizedDay);
 
     final currentDayIndex = now.weekday - 1;
 
-    // ?? FIX: Ako je odabrani dan isto što i današnji dan, koristi današnji datum
+    // ?? FIX: Ako je odabrani dan isto �to i dana�nji dan, koristi dana�nji datum
     if (targetDayIndex == currentDayIndex) {
       return now.toIso8601String().split('T')[0];
     }
 
     int daysToAdd = targetDayIndex - currentDayIndex;
 
-    // ?? UVEK U BUDUCNOST: Ako je dan vec prošao ove nedelje, idi na sledecu nedelju
-    // Ovo je konzistentno sa Putnik._getDateForDay() koji se koristi za upis u bazu
+    // ?? UVEK U BUDUCNOST: Ako je dan vec pro�ao ove nedelje, idi na sledecu nedelju
+    // Ovo je konzistentno sa V2Putnik._getDateForDay() koji se koristi za upis u bazu
     if (daysToAdd < 0) {
       daysToAdd += 7;
     }
@@ -185,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _setupRealtimeMonitoring(); // ?? Popravljeno ime metode
     _startDigitalDispecer(); // ?? Pokreni dispecera
 
-    // ?? Slušaj update notifikacije i prikaži dijalog
+    // ?? Slu�aj update notifikacije i prika�i dijalog
     updateInfoNotifier.addListener(_onUpdateInfo);
     // Provjeri odmah ako je update vec detektovan
     WidgetsBinding.instance.addPostFrameCallback((_) => _onUpdateInfo());
@@ -255,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      // Ako se dogodi greška, i dalje ukloni loading
+      // Ako se dogodi gre�ka, i dalje ukloni loading
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -286,12 +286,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _setupRealtimeListener() {
     // UKLONJEN - PutnikService vec ima realtime listener-e
-    // Ne treba dupli listener koji ništa ne radi
+    // Ne treba dupli listener koji ni�ta ne radi
     _realtimeSubscription?.cancel();
     _realtimeSubscription = null;
   }
 
-  /// ?? Bira polazak koji je najbliži trenutnom vremenu
+  /// ?? Bira polazak koji je najbli�i trenutnom vremenu
   void _selectClosestDeparture() {
     if (!mounted) return;
 
@@ -412,7 +412,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
-          // Funkcija za osvežavanje podataka kada se promeni mesec
+          // Funkcija za osve�avanje podataka kada se promeni mesec
           Future<void> osveziPodatke() async {
             final noviCounts = await CenaObracunService.prebrojJediniceMasovno(
               putnici: putnici,
@@ -492,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Racuni za štampanje',
+                                'Racuni za �tampanje',
                                 style: const TextStyle(
                                   fontSize: 20,
                                   color: Colors.white,
@@ -626,13 +626,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           Text(
-                                            '${cena.toStringAsFixed(0)} RSD × $dana dana = ${iznos.toStringAsFixed(0)} RSD',
+                                            '${cena.toStringAsFixed(0)} RSD � $dana dana = ${iznos.toStringAsFixed(0)} RSD',
                                             style: TextStyle(fontSize: 11, color: Colors.white70),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    // Dana input - fiksna širina
+                                    // Dana input - fiksna �irina
                                     SizedBox(
                                       width: 55,
                                       child: Column(
@@ -700,12 +700,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext),
-                          child: Text('Otkaži', style: TextStyle(color: Colors.white70)),
+                          child: Text('Otka�i', style: TextStyle(color: Colors.white70)),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.print),
-                          label: const Text('Štampaj sve'),
+                          label: const Text('�tampaj sve'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white.withOpacity(0.2),
                             foregroundColor: Colors.white,
@@ -719,7 +719,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 final cena = CenaObracunService.getCenaPoDanu(p);
                                 final dana = brojDana[p.id] ?? 0;
                                 racuniPodaci.add({
-                                  'putnik': p,
+                                  'V2Putnik': p,
                                   'brojDana': dana,
                                   'cenaPoDanu': cena,
                                   'ukupno': cena * dana,
@@ -836,11 +836,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Otkaži'),
+                child: const Text('Otka�i'),
               ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.print),
-                label: const Text('Štampaj'),
+                label: const Text('�tampaj'),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
                 onPressed: () async {
                   // Validacija
@@ -869,10 +869,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   // Dohvati sledeci broj racuna
                   final brojRacuna = await V2RacunService.getTrenutniBrojRacuna();
 
-                  // Proveri mounted pre korišcenja context-a
+                  // Proveri mounted pre kori�cenja context-a
                   if (!ctx.mounted) return;
 
-                  // Štampaj racun
+                  // �tampaj racun
                   await V2RacunService.stampajRacun(
                     brojRacuna: brojRacuna,
                     imePrezimeKupca: imePrezime,
@@ -894,7 +894,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _logout() async {
-    // Prikaži confirmation dialog
+    // Prika�i confirmation dialog
     final bool? shouldLogout = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -925,7 +925,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         ),
         content: Text(
-          'Da li ste sigurni da se želite odjaviti?',
+          'Da li ste sigurni da se �elite odjaviti?',
           style: TextStyle(
             color: Theme.of(dialogContext).colorScheme.onSurface.withOpacity(0.8),
             fontSize: 16,
@@ -935,7 +935,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text(
-              'Otkaži',
+              'Otka�i',
               style: TextStyle(color: Colors.grey),
             ),
           ),
@@ -956,7 +956,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
 
     if (shouldLogout == true && mounted) {
-      // ?? Prikaži loading spinner
+      // ?? Prika�i loading spinner
       if (!mounted) return;
       showDialog<void>(
         context: context,
@@ -990,17 +990,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final adresaController = TextEditingController();
     final telefonController = TextEditingController(); // ?? OPCIONO: Broj telefona
     final searchPutnikController = TextEditingController(); // ?? Za pretragu putnika
-    RegistrovaniPutnik? selectedPutnik; // ?? Izabrani putnik iz liste
+    RegistrovaniPutnik? selectedPutnik; // ?? Izabrani V2Putnik iz liste
     int brojMesta = 1; // ?? Broj rezervisanih mesta (default 1)
     bool promeniAdresuSamoDanas = false; // ?? Opcija za promenu adrese samo za danas
     String? samoDanasAdresa; // ?? Adresa samo za danas
-    String? samoDanasAdresaId; // ?? ID adrese samo za danas (za brži geocoding)
+    String? samoDanasAdresaId; // ?? ID adrese samo za danas (za br�i geocoding)
     List<Map<String, String>> dostupneAdrese = []; // ?? Lista adresa za dropdown
 
     // Povuci SVE registrovane putnike iz registrovani_putnici tabele (ucenici, radnici, dnevni)
     final lista = await V2PutnikService().getAllAktivniKaoModel();
     // ?? Filtrirana lista aktivnih putnika za brzu pretragu
-    final aktivniPutnici = lista.where((RegistrovaniPutnik putnik) => !putnik.obrisan && putnik.aktivan).toList()
+    final aktivniPutnici = lista.where((RegistrovaniPutnik V2Putnik) => !V2Putnik.obrisan && V2Putnik.aktivan).toList()
       ..sort((a, b) => a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase()));
 
     // ?? Ucitaj adrese za selektovani grad
@@ -1034,7 +1034,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Container(
               constraints: BoxConstraints(
                 maxHeight: keyboardHeight > 0
-                    ? availableHeight * 0.85 // Više prostora kad je tastatura
+                    ? availableHeight * 0.85 // Vi�e prostora kad je tastatura
                     : screenHeight * 0.7,
                 maxWidth: MediaQuery.of(dialogCtx).size.width * 0.85,
               ),
@@ -1214,7 +1214,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       .firstWhere((p) => p?.id == selectedPutnik?.id, orElse: () => null),
                                   decoration: InputDecoration(
                                     labelText: 'Izaberi putnika',
-                                    hintText: 'Pretraži i izaberi...',
+                                    hintText: 'Pretra�i i izaberi...',
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -1254,7 +1254,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             horizontal: 10,
                                             vertical: 8,
                                           ),
-                                          hintText: 'Pretraži po imenu...',
+                                          hintText: 'Pretra�i po imenu...',
                                           hintStyle: const TextStyle(fontSize: 14),
                                           prefixIcon: const Icon(Icons.search, size: 20),
                                           border: OutlineInputBorder(
@@ -1264,35 +1264,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                     ),
                                     searchMatchFn: (item, searchValue) {
-                                      final putnik = item.value;
-                                      if (putnik == null) return false;
-                                      return putnik.putnikIme.toLowerCase().contains(searchValue.toLowerCase());
+                                      final V2Putnik = item.value;
+                                      if (V2Putnik == null) return false;
+                                      return V2Putnik.putnikIme.toLowerCase().contains(searchValue.toLowerCase());
                                     },
                                   ),
                                   items: aktivniPutnici
                                       .map(
-                                        (RegistrovaniPutnik putnik) => DropdownMenuItem<RegistrovaniPutnik>(
-                                          value: putnik,
+                                        (RegistrovaniPutnik V2Putnik) => DropdownMenuItem<RegistrovaniPutnik>(
+                                          value: V2Putnik,
                                           child: Row(
                                             children: [
                                               // Ikonica tipa putnika
                                               Icon(
-                                                putnik.tip == 'radnik'
+                                                V2Putnik.tip == 'radnik'
                                                     ? Icons.engineering
-                                                    : putnik.tip == 'dnevni'
+                                                    : V2Putnik.tip == 'dnevni'
                                                         ? Icons.today
                                                         : Icons.school,
                                                 size: 18,
-                                                color: putnik.tip == 'radnik'
+                                                color: V2Putnik.tip == 'radnik'
                                                     ? Colors.blue.shade600
-                                                    : putnik.tip == 'dnevni'
+                                                    : V2Putnik.tip == 'dnevni'
                                                         ? Colors.orange.shade600
                                                         : Colors.green.shade600,
                                               ),
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
-                                                  putnik.putnikIme,
+                                                  V2Putnik.putnikIme,
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
@@ -1301,18 +1301,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         ),
                                       )
                                       .toList(),
-                                  onChanged: (RegistrovaniPutnik? putnik) async {
+                                  onChanged: (RegistrovaniPutnik? V2Putnik) async {
                                     setStateDialog(() {
-                                      selectedPutnik = putnik;
-                                      telefonController.text = putnik?.brojTelefona ?? '';
+                                      selectedPutnik = V2Putnik;
+                                      telefonController.text = V2Putnik?.brojTelefona ?? '';
                                       adresaController.text = 'Ucitavanje...';
                                     });
-                                    if (putnik != null) {
+                                    if (V2Putnik != null) {
                                       // ?? AUTO-POPUNI adresu async - SAMO za selektovani grad
-                                      final adresa = await putnik.getAdresaZaSelektovaniGrad(_selectedGrad);
+                                      final adresa = await V2Putnik.getAdresaZaSelektovaniGrad(_selectedGrad);
                                       setStateDialog(() {
                                         adresaController.text = adresa == 'Nema adresa' ? '' : adresa;
-                                        // Ocisti "samo danas" opcije kad se promeni putnik
+                                        // Ocisti "samo danas" opcije kad se promeni V2Putnik
                                         promeniAdresuSamoDanas = false;
                                         samoDanasAdresa = null;
                                         samoDanasAdresaId = null;
@@ -1588,7 +1588,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             child: TextButton(
                               onPressed: () => Navigator.pop(dialogCtx),
                               child: const Text(
-                                'Otkaži',
+                                'Otka�i',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -1639,14 +1639,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               onPressed: isDialogLoading
                                   ? null
                                   : () async {
-                                      // Validacija - mora biti odabrani putnik
+                                      // Validacija - mora biti odabrani V2Putnik
                                       if (selectedPutnik == null) {
                                         AppSnackBar.error(dialogCtx, '? Morate odabrati putnika iz liste');
                                         return;
                                       }
 
                                       if (_selectedVreme.isEmpty || _selectedGrad.isEmpty) {
-                                        AppSnackBar.error(dialogCtx, '? Greška: Nije odabrano vreme polaska');
+                                        AppSnackBar.error(dialogCtx, '? Gre�ka: Nije odabrano vreme polaska');
                                         return;
                                       }
 
@@ -1657,7 +1657,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             !VozacCache.isValidIme(_currentDriver)) {
                                           if (!dialogCtx.mounted) return;
                                           AppSnackBar.error(dialogCtx,
-                                              '? GREŠKA: Vozac "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.');
+                                              '? GRE�KA: Vozac "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.');
                                           return;
                                         }
 
@@ -1698,7 +1698,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             ? samoDanasAdresaId
                                             : null; // Stalna adresa ima adresaId u registrovani_putnici
 
-                                        final putnik = Putnik(
+                                        final V2Putnik = V2Putnik(
                                           ime: selectedPutnik!.putnikIme,
                                           polazak: _selectedVreme,
                                           grad: _selectedGrad,
@@ -1707,15 +1707,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           vremeDodavanja: DateTime.now(),
                                           dodeljenVozac: _currentDriver!, // Safe non-null assertion nakon validacije
                                           adresa: adresaZaKoristiti,
-                                          adresaId: adresaIdZaKoristiti, // ?? Za brži geocoding
+                                          adresaId: adresaIdZaKoristiti, // ?? Za br�i geocoding
                                           brojTelefona: selectedPutnik!.brojTelefona,
                                           brojMesta: brojMesta, // ?? Prosledujemo broj rezervisanih mesta
                                         );
 
                                         // Duplikat provera se Vrsi u PutnikService.dodajPutnika()
-                                        await _putnikService.dodajPutnika(putnik);
+                                        await _putnikService.dodajPutnika(V2Putnik);
 
-                                        // ?? Eksplicitan refresh stream-a da se putnik odmah prikaže
+                                        // ?? Eksplicitan refresh stream-a da se V2Putnik odmah prika�e
                                         _putnikService.refreshAllActiveStreams();
 
                                         if (!dialogCtx.mounted) return;
@@ -1731,13 +1731,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // Koristimo rootContext (home screen) - dijalog context je vec zatvoren
                                         if (mounted) {
                                           setState(() {
-                                            _selectedVreme = putnik.polazak;
+                                            _selectedVreme = V2Putnik.polazak;
                                           });
                                         }
 
                                         // ? Koristimo rootContext jer je dialog context vec pop-ovan
                                         if (rootContext.mounted) {
-                                          AppSnackBar.success(rootContext, '? Putnik je uspešno dodat');
+                                          AppSnackBar.success(rootContext, '? V2Putnik je uspe�no dodat');
                                         }
                                       } catch (e) {
                                         // ensure dialog loading is cleared
@@ -1747,7 +1747,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                         if (!dialogCtx.mounted) return;
 
-                                        AppSnackBar.error(dialogCtx, '? Greška pri dodavanju: $e');
+                                        AppSnackBar.error(dialogCtx, '? Gre�ka pri dodavanju: $e');
                                       }
                                     },
                               child: isDialogLoading
@@ -1964,7 +1964,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Filtriranje po gradu/vremenu se radi client-side za prikaz liste
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: StreamBuilder<List<Putnik>>(
+      child: StreamBuilder<List<V2Putnik>>(
         stream: _putnikService.streamKombinovaniPutniciFiltered(
           isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
           // grad i vreme NAMERNO IZOSTAVLJENI - treba nam SVA vremena za bottom nav bar
@@ -2012,10 +2012,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             );
           }
 
-          // ?? POPRAVLJENO: Prikažemo prazan UI umesto beskonacnog loading-a
+          // ?? POPRAVLJENO: Prika�emo prazan UI umesto beskonacnog loading-a
           if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
             // Umesto beskonacnog cekanja, nastavi sa praznom listom
-            // StreamBuilder ce se ažurirati kada podaci stignu
+            // StreamBuilder ce se a�urirati kada podaci stignu
           }
 
           final allPutnici = snapshot.data ?? [];
@@ -2027,8 +2027,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final targetDayAbbr = dayAbbrs[date.weekday - 1];
 
           // Additional client-side filtering like danas_screen
-          Iterable<Putnik> filtered = allPutnici.where((p) {
-            // Filtriraj po dan kraticama — seat_requests nema datum, samo dan TEXT
+          Iterable<V2Putnik> filtered = allPutnici.where((p) {
+            // Filtriraj po dan kraticama � seat_requests nema datum, samo dan TEXT
             final dayMatch = p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
 
             return dayMatch;
@@ -2041,22 +2041,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
           // Additional filters for display (applies time/grad/status and is used
           // to build the visible list). This operates on the putniciZaDan list.
-          filtered = putniciZaDan.where((putnik) {
-            final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
-            final imaVreme = putnik.polazak.toString().trim().isNotEmpty;
-            final imaGrad = putnik.grad.toString().trim().isNotEmpty;
-            final imaDan = putnik.dan.toString().trim().isNotEmpty;
+          filtered = putniciZaDan.where((V2Putnik) {
+            final normalizedStatus = TextUtils.normalizeText(V2Putnik.status ?? '');
+            final imaVreme = V2Putnik.polazak.toString().trim().isNotEmpty;
+            final imaGrad = V2Putnik.grad.toString().trim().isNotEmpty;
+            final imaDan = V2Putnik.dan.toString().trim().isNotEmpty;
             final danBaza = _selectedDay;
-            final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
+            final normalizedPutnikDan = GradAdresaValidator.normalizeString(V2Putnik.dan);
             final normalizedDanBaza = GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
             final odgovarajuciDan = normalizedPutnikDan.contains(normalizedDanBaza);
             final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
-              putnik.grad,
-              putnik.adresa,
+              V2Putnik.grad,
+              V2Putnik.adresa,
               _selectedGrad,
             );
             final odgovarajuceVreme =
-                GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
+                GradAdresaValidator.normalizeTime(V2Putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
             // ?? FIX: Dopusti otkazane putnike - PutnikList ce ih sortirati na dno sa crvenom bojom
             // Iskljuci bez_polaska, cancelled - admin ih je eksplicitno uklonio
             final prikazi = imaVreme &&
@@ -2074,7 +2074,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final sviPutnici = filtered.toList();
 
           // DEDUPLIKACIJA PO COMPOSITE KLJUCU: id + polazak + dan
-          final Map<String, Putnik> uniquePutnici = {};
+          final Map<String, V2Putnik> uniquePutnici = {};
           for (final p in sviPutnici) {
             final key = '${p.id}_${p.polazak}_${p.dan}';
             uniquePutnici[key] = p;
@@ -2083,7 +2083,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
           // ?? BROJAC PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN (deduplikovane)
           // DEDUPLICIRAJ za racunanje brojaca (id + polazak + dan)
-          final Map<String, Putnik> uniqueForCounts = {};
+          final Map<String, V2Putnik> uniqueForCounts = {};
           for (final p in putniciZaDan) {
             final key = '${p.id}_${p.polazak}_${p.dan}';
             uniqueForCounts[key] = p;
@@ -2455,7 +2455,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         const SizedBox(width: 4),
                         Expanded(
                           child: PopupMenuButton<String>(
-                            tooltip: 'Štampaj',
+                            tooltip: '�tampaj',
                             offset: const Offset(0, -150),
                             onSelected: (value) async {
                               if (value == 'spisak') {
@@ -2478,7 +2478,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   children: [
                                     Icon(Icons.list_alt, color: Colors.blue),
                                     SizedBox(width: 8),
-                                    Text('Štampaj spisak'),
+                                    Text('�tampaj spisak'),
                                   ],
                                 ),
                               ),
@@ -2529,7 +2529,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Text(
-                                        'Štampaj',
+                                        '�tampaj',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 12,
@@ -2569,7 +2569,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   children: [
                                     Icon(Icons.lock, color: Colors.amber),
                                     SizedBox(width: 8),
-                                    Text('Promeni šifru'),
+                                    Text('Promeni �ifru'),
                                   ],
                                 ),
                               ),
@@ -2777,11 +2777,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       builder: (ctx) => PopScope(
         canPop: !info.isForced,
         child: AlertDialog(
-          title: Text(info.isForced ? '?? Obavezno ažuriranje' : '?? Dostupna nova verzija'),
+          title: Text(info.isForced ? '?? Obavezno a�uriranje' : '?? Dostupna nova verzija'),
           content: Text(
             info.isForced
-                ? 'Ova verzija aplikacije više nije podržana.\nMolimo ažurirajte na verziju ${info.latestVersion} da biste nastavili sa korišcenjem.'
-                : 'Dostupna je nova verzija ${info.latestVersion}.\nPreporucujemo da ažurirate aplikaciju.',
+                ? 'Ova verzija aplikacije vi�e nije podr�ana.\nMolimo a�urirajte na verziju ${info.latestVersion} da biste nastavili sa kori�cenjem.'
+                : 'Dostupna je nova verzija ${info.latestVersion}.\nPreporucujemo da a�urirate aplikaciju.',
           ),
           actions: [
             if (!info.isForced)
@@ -2794,7 +2794,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 V2AppSettingsService.openStore();
                 if (!info.isForced) Navigator.of(ctx).pop();
               },
-              child: const Text('Ažuriraj'),
+              child: const Text('A�uriraj'),
             ),
           ],
         ),
@@ -2941,7 +2941,7 @@ class _HomeScreenButton extends StatelessWidget {
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(12),
-          // no boxShadow — keep transparent glass + border only
+          // no boxShadow � keep transparent glass + border only
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

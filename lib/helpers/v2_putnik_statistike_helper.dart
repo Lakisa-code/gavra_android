@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../globals.dart';
-import '../models/registrovani_putnik.dart';
+import '../models/v2_registrovani_putnik.dart';
 import '../services/v2_cena_obracun_service.dart';
 import '../services/v2_putnik_service.dart';
 

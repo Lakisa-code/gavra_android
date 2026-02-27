@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../models/registrovani_putnik.dart';
+import '../models/v2_registrovani_putnik.dart';
 
 /// 💰 Servis za obračun mesečne cene za putnike
 ///
@@ -14,14 +14,14 @@ class CenaObracunService {
   static SupabaseClient get _supabase => supabase;
 
   /// Dobija cenu po danu za putnika (SAMO custom cena)
-  static double getCenaPoDanu(RegistrovaniPutnik putnik) {
+  static double getCenaPoDanu(RegistrovaniPutnik V2Putnik) {
     // 1. Ako ima postavljenu custom cenu - koristi je
-    if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
-      return putnik.cenaPoDanu!;
+    if (V2Putnik.cenaPoDanu != null && V2Putnik.cenaPoDanu! > 0) {
+      return V2Putnik.cenaPoDanu!;
     }
 
-    final tipLower = putnik.tip.toLowerCase();
-    final imeLower = putnik.putnikIme.toLowerCase();
+    final tipLower = V2Putnik.tip.toLowerCase();
+    final imeLower = V2Putnik.putnikIme.toLowerCase();
 
     // 2. STROGO FIKSNE CENE samo za specijalne slučajeve
     if (tipLower == 'posiljka' && imeLower.contains('zubi')) {
@@ -39,7 +39,7 @@ class CenaObracunService {
 
   /// Izračunaj mesečnu cenu za putnika na osnovu pokupljenja
   ///
-  /// [putnik] - RegistrovaniPutnik objekat
+  /// [V2Putnik] - RegistrovaniPutnik objekat
   /// [mesec] - Mesec za koji se računa (1-12)
   /// Masovni obračun jedinica za listu putnika (optimizovano - jedan upit)
   static Future<Map<String, int>> prebrojJediniceMasovno({

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,13 +6,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../globals.dart';
 import '../helpers/v2_putnik_statistike_helper.dart';
-import '../models/registrovani_putnik.dart';
-import '../services/permission_service.dart';
+import '../models/v2_registrovani_putnik.dart';
 import '../services/v2_cena_obracun_service.dart';
+import '../services/v2_permission_service.dart';
 import '../services/v2_putnik_service.dart';
 import '../theme.dart';
-import '../utils/app_snack_bar.dart';
-import '../utils/vozac_cache.dart';
+import '../utils/v2_app_snack_bar.dart';
+import '../utils/v2_vozac_cache.dart';
 import '../widgets/v2_pin_dialog.dart';
 import '../widgets/v2_putnik_dialog.dart';
 
@@ -135,13 +135,13 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
       final Map<String, Set<String>> placeniMeseciMap = {};
 
       // Dohvati poslednje placanje za svakog putnika
-      for (final putnik in putnici) {
+      for (final V2Putnik in putnici) {
         try {
           // Učitaj sve uplate za putnika da bi se znali placeni meseci
           final allPayments = await supabase
               .from('v2_statistika_istorija')
               .select('iznos, placeni_mesec, placena_godina')
-              .eq('putnik_id', putnik.id)
+              .eq('putnik_id', V2Putnik.id)
               .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
               .not('placeni_mesec', 'is', null)
               .not('placena_godina', 'is', null);
@@ -155,27 +155,27 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
               placeniMeseci.add('$mesec-$godina');
             }
           }
-          placeniMeseciMap[putnik.id] = placeniMeseci;
+          placeniMeseciMap[V2Putnik.id] = placeniMeseci;
 
           // Poslednje placanje za iznos
           final response = await supabase
               .from('v2_statistika_istorija')
               .select('iznos')
-              .eq('putnik_id', putnik.id)
+              .eq('putnik_id', V2Putnik.id)
               .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
               .order('datum', ascending: false)
               .limit(1)
               .maybeSingle();
 
           if (response != null && response['iznos'] != null) {
-            placanja[putnik.id] = (response['iznos'] as num).toDouble();
+            placanja[V2Putnik.id] = (response['iznos'] as num).toDouble();
           } else {
             // Ako nema uplate, stavi 0
-            placanja[putnik.id] = 0.0;
+            placanja[V2Putnik.id] = 0.0;
           }
         } catch (e) {
-          placanja[putnik.id] = 0.0;
-          placeniMeseciMap[putnik.id] = {};
+          placanja[V2Putnik.id] = 0.0;
+          placeniMeseciMap[V2Putnik.id] = {};
         }
       }
       if (mounted) {
@@ -684,9 +684,9 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                       parent: BouncingScrollPhysics(),
                     ),
                     itemBuilder: (context, index) {
-                      final putnik = prikazaniPutnici[index];
+                      final V2Putnik = prikazaniPutnici[index];
                       return TweenAnimationBuilder<double>(
-                        key: ValueKey(putnik.id),
+                        key: ValueKey(V2Putnik.id),
                         duration: Duration(milliseconds: 300 + (index * 50)),
                         tween: Tween(begin: 0.0, end: 1.0),
                         curve: Curves.easeOutCubic,
@@ -699,7 +699,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                             ),
                           );
                         },
-                        child: _buildPutnikCard(putnik, index + 1),
+                        child: _buildPutnikCard(V2Putnik, index + 1),
                       );
                     },
                   );
@@ -712,14 +712,14 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     );
   }
 
-  Widget _buildPutnikCard(RegistrovaniPutnik putnik, int redniBroj) {
-    final bool bolovanje = putnik.status == 'bolovanje';
+  Widget _buildPutnikCard(RegistrovaniPutnik V2Putnik, int redniBroj) {
+    final bool bolovanje = V2Putnik.status == 'bolovanje';
     // Sačuvaj sva vremena po danima (pon -> pet) i prikaži ih na kartici.
     // Prethodna logika je prikazivala samo PRVI dan koji je imao vreme.
     // Sada prikazujemo sve dane koji imaju bar jedan polazak (BC i/ili VS)
     final List<String> _daniOrder = ['pon', 'uto', 'sre', 'cet', 'pet'];
 
-    final bool neaktivan = !putnik.aktivan && !bolovanje;
+    final bool neaktivan = !V2Putnik.aktivan && !bolovanje;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -779,7 +779,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              putnik.putnikIme,
+                              V2Putnik.putnikIme,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -795,17 +795,17 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          bolovanje ? 'BOLUJE' : (putnik.aktivan ? 'AKTIVAN' : 'PAUZIRAN'),
+                          bolovanje ? 'BOLUJE' : (V2Putnik.aktivan ? 'AKTIVAN' : 'PAUZIRAN'),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: bolovanje ? Colors.orange : (putnik.aktivan ? Colors.green : Colors.grey),
+                            color: bolovanje ? Colors.orange : (V2Putnik.aktivan ? Colors.green : Colors.grey),
                           ),
                         ),
                         const SizedBox(width: 6),
                         Switch(
-                          value: putnik.aktivan,
-                          onChanged: bolovanje ? null : (value) => _toggleAktivnost(putnik),
+                          value: V2Putnik.aktivan,
+                          onChanged: bolovanje ? null : (value) => _toggleAktivnost(V2Putnik),
                           thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
                             if (states.contains(WidgetState.selected)) {
                               return Colors.green;
@@ -836,25 +836,25 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            putnik.tip == 'radnik'
+                            V2Putnik.tip == 'radnik'
                                 ? Icons.engineering
-                                : putnik.tip == 'dnevni'
+                                : V2Putnik.tip == 'dnevni'
                                     ? Icons.today
                                     : Icons.school,
                             size: 16,
-                            color: putnik.tip == 'radnik'
+                            color: V2Putnik.tip == 'radnik'
                                 ? Colors.blue.shade600
-                                : putnik.tip == 'dnevni'
+                                : V2Putnik.tip == 'dnevni'
                                     ? Colors.orange.shade600
                                     : Colors.green.shade600,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            putnik.tip.toUpperCase(),
+                            V2Putnik.tip.toUpperCase(),
                             style: TextStyle(
-                              color: putnik.tip == 'radnik'
+                              color: V2Putnik.tip == 'radnik'
                                   ? Colors.blue.shade700
-                                  : putnik.tip == 'dnevni'
+                                  : V2Putnik.tip == 'dnevni'
                                       ? Colors.orange.shade700
                                       : Colors.green.shade700,
                               fontWeight: FontWeight.w600,
@@ -866,27 +866,27 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     ),
 
                     // Telefon - prikaže broj dostupnih kontakata
-                    if (putnik.brojTelefona != null ||
-                        putnik.brojTelefonaOca != null ||
-                        putnik.brojTelefonaMajke != null)
+                    if (V2Putnik.brojTelefona != null ||
+                        V2Putnik.brojTelefonaOca != null ||
+                        V2Putnik.brojTelefonaMajke != null)
                       Expanded(
                         flex: 3,
                         child: Row(
                           children: [
                             // Ikone za dostupne kontakte
-                            if (putnik.brojTelefona != null)
+                            if (V2Putnik.brojTelefona != null)
                               Icon(
                                 Icons.person,
                                 size: 14,
                                 color: Colors.green.shade600,
                               ),
-                            if (putnik.brojTelefonaOca != null)
+                            if (V2Putnik.brojTelefonaOca != null)
                               Icon(
                                 Icons.man,
                                 size: 14,
                                 color: Colors.blue.shade600,
                               ),
-                            if (putnik.brojTelefonaMajke != null)
+                            if (V2Putnik.brojTelefonaMajke != null)
                               Icon(
                                 Icons.woman,
                                 size: 14,
@@ -894,7 +894,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                               ),
                             const SizedBox(width: 4),
                             Text(
-                              '${_prebrojKontakte(putnik)} kontakt${_prebrojKontakte(putnik) == 1 ? '' : 'a'}',
+                              '${_prebrojKontakte(V2Putnik)} kontakt${_prebrojKontakte(V2Putnik) == 1 ? '' : 'a'}',
                               style: TextStyle(
                                 color: Colors.grey.shade700,
                                 fontWeight: FontWeight.w500,
@@ -906,20 +906,20 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                       ),
 
                     // Tip škole/ustanova (ako postoji)
-                    if (putnik.tipSkole != null)
+                    if (V2Putnik.tipSkole != null)
                       Expanded(
                         flex: 3,
                         child: Row(
                           children: [
                             Icon(
-                              putnik.tip == 'ucenik' ? Icons.school_outlined : Icons.business_outlined,
+                              V2Putnik.tip == 'ucenik' ? Icons.school_outlined : Icons.business_outlined,
                               size: 16,
                               color: Colors.grey.shade600,
                             ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                putnik.tipSkole!,
+                                V2Putnik.tipSkole!,
                                 style: TextStyle(
                                   color: Colors.grey.shade700,
                                   fontSize: 12,
@@ -940,14 +940,14 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     // ?? DUGME ZA PLACANJE
                     Expanded(
                       child: _buildCompactActionButton(
-                        onPressed: () => _prikaziPlacanje(putnik),
-                        icon: (_stvarnaPlacanja[putnik.id] ?? 0) > 0
+                        onPressed: () => _prikaziPlacanje(V2Putnik),
+                        icon: (_stvarnaPlacanja[V2Putnik.id] ?? 0) > 0
                             ? Icons.check_circle_outline
                             : Icons.payments_outlined,
-                        label: (_stvarnaPlacanja[putnik.id] ?? 0) > 0
-                            ? '${(_stvarnaPlacanja[putnik.id]!).toStringAsFixed(0)} RSD'
+                        label: (_stvarnaPlacanja[V2Putnik.id] ?? 0) > 0
+                            ? '${(_stvarnaPlacanja[V2Putnik.id]!).toStringAsFixed(0)} RSD'
                             : 'Plati',
-                        color: (_stvarnaPlacanja[putnik.id] ?? 0) > 0 ? Colors.green : Colors.purple,
+                        color: (_stvarnaPlacanja[V2Putnik.id] ?? 0) > 0 ? Colors.green : Colors.purple,
                       ),
                     ),
 
@@ -956,7 +956,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     // ?? DUGME ZA DETALJE
                     Expanded(
                       child: _buildCompactActionButton(
-                        onPressed: () => _prikaziDetaljneStatistike(putnik),
+                        onPressed: () => _prikaziDetaljneStatistike(V2Putnik),
                         icon: Icons.analytics_outlined,
                         label: 'Detalji',
                         color: Colors.blue,
@@ -990,7 +990,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                             ),
                             const SizedBox(width: 4),
                             StreamBuilder<int>(
-                              stream: Stream.fromFuture(_putnikService.izracunajBrojVoznji(putnik.id)),
+                              stream: Stream.fromFuture(_putnikService.izracunajBrojVoznji(V2Putnik.id)),
                               builder: (context, snapshot) => Text(
                                 '${snapshot.data ?? 0}',
                                 style: TextStyle(
@@ -1032,7 +1032,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                             ),
                             const SizedBox(width: 4),
                             StreamBuilder<int>(
-                              stream: Stream.fromFuture(_putnikService.izracunajBrojOtkazivanja(putnik.id)),
+                              stream: Stream.fromFuture(_putnikService.izracunajBrojOtkazivanja(V2Putnik.id)),
                               builder: (context, snapshot) => Text(
                                 '${snapshot.data ?? 0}',
                                 style: TextStyle(
@@ -1055,12 +1055,12 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                 Row(
                   children: [
                     // Pozovi (ako ima bilo koji telefon)
-                    if (putnik.brojTelefona != null ||
-                        putnik.brojTelefonaOca != null ||
-                        putnik.brojTelefonaMajke != null) ...[
+                    if (V2Putnik.brojTelefona != null ||
+                        V2Putnik.brojTelefonaOca != null ||
+                        V2Putnik.brojTelefonaMajke != null) ...[
                       Expanded(
                         child: _buildCompactActionButton(
-                          onPressed: () => _pokaziKontaktOpcije(putnik),
+                          onPressed: () => _pokaziKontaktOpcije(V2Putnik),
                           icon: Icons.phone,
                           label: 'Pozovi',
                           color: Colors.green,
@@ -1072,7 +1072,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     // Uredi
                     Expanded(
                       child: _buildCompactActionButton(
-                        onPressed: () => _editPutnik(putnik),
+                        onPressed: () => _editPutnik(V2Putnik),
                         icon: Icons.edit_outlined,
                         label: 'Uredi',
                         color: Colors.blue,
@@ -1084,7 +1084,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     // ?? PIN
                     Expanded(
                       child: _buildCompactActionButton(
-                        onPressed: () => _showPinDialog(putnik),
+                        onPressed: () => _showPinDialog(V2Putnik),
                         icon: Icons.lock_outline,
                         label: 'PIN',
                         color: Colors.amber,
@@ -1096,7 +1096,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     // Obriši
                     Expanded(
                       child: _buildCompactActionButton(
-                        onPressed: () => _obrisiPutnika(putnik),
+                        onPressed: () => _obrisiPutnika(V2Putnik),
                         icon: Icons.delete_outline,
                         label: 'Obriši',
                         color: Colors.red,
@@ -1169,16 +1169,16 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     );
   }
 
-  Future<void> _toggleAktivnost(RegistrovaniPutnik putnik) async {
-    final noviStatus = putnik.aktivan ? 'neaktivan' : 'aktivan';
+  Future<void> _toggleAktivnost(RegistrovaniPutnik V2Putnik) async {
+    final noviStatus = V2Putnik.aktivan ? 'neaktivan' : 'aktivan';
     try {
       await _putnikService.updatePutnik(
-        putnik.id,
+        V2Putnik.id,
         {'status': noviStatus},
-        putnik.tabela,
+        V2Putnik.tabela,
       );
       if (mounted) {
-        AppSnackBar.success(context, '${putnik.putnikIme} je ${noviStatus == 'aktivan' ? "aktiviran" : "deaktiviran"}');
+        AppSnackBar.success(context, '${V2Putnik.putnikIme} je ${noviStatus == 'aktivan' ? "aktiviran" : "deaktiviran"}');
       }
     } catch (e) {
       if (mounted) {
@@ -1187,17 +1187,17 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     }
   }
 
-  void _editPutnik(RegistrovaniPutnik putnik) {
+  void _editPutnik(RegistrovaniPutnik V2Putnik) {
     showDialog(
       context: context,
       builder: (context) => V2PutnikDialog(
-        existingPutnik: putnik,
+        existingPutnik: V2Putnik,
         onSaved: () {
           // ?? REFRESH: Inkrementiraj key da forsira novi stream sa svježim podacima
           if (mounted) {
             setState(() {
               _streamRefreshKey++;
-              // ?? RESET FILTERA: Kada se sačuva putnik, očisti filtere da se svi vide
+              // ?? RESET FILTERA: Kada se sačuva V2Putnik, očisti filtere da se svi vide
               _selectedFilter = 'svi';
               _searchController.clear();
             });
@@ -1208,15 +1208,15 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   }
 
   /// ?? Prikaži PIN dijalog za putnika
-  void _showPinDialog(RegistrovaniPutnik putnik) {
+  void _showPinDialog(RegistrovaniPutnik V2Putnik) {
     showDialog(
       context: context,
       builder: (context) => V2PinDialog(
-        putnikId: putnik.id,
-        putnikIme: putnik.putnikIme,
-        putnikTabela: putnik.tabela,
-        trenutniPin: putnik.pin,
-        brojTelefona: putnik.brojTelefona,
+        putnikId: V2Putnik.id,
+        putnikIme: V2Putnik.putnikIme,
+        putnikTabela: V2Putnik.tabela,
+        trenutniPin: V2Putnik.pin,
+        brojTelefona: V2Putnik.brojTelefona,
       ),
     );
   }
@@ -1230,7 +1230,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
         onSaved: () {
           if (mounted) {
             setState(() {
-              // ?? RESET FILTERA: Kada se doda novi putnik, očisti filtere da se svi vide
+              // ?? RESET FILTERA: Kada se doda novi V2Putnik, očisti filtere da se svi vide
               _selectedFilter = 'svi';
               _searchController.clear();
             });
@@ -1240,7 +1240,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     );
   }
 
-  void _obrisiPutnika(RegistrovaniPutnik putnik) async {
+  void _obrisiPutnika(RegistrovaniPutnik V2Putnik) async {
     // Pokaži potvrdu za brisanje
     final potvrda = await showDialog<bool>(
       context: context,
@@ -1251,7 +1251,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Da li ste sigurni da želite da obrišete putnika "${putnik.putnikIme}"?',
+              'Da li ste sigurni da želite da obrišete putnika "${V2Putnik.putnikIme}"?',
             ),
             const SizedBox(height: 16),
             Container(
@@ -1281,7 +1281,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('• Putnik će biti TRAJNO obrisan iz baze'),
+                  const Text('• V2Putnik će biti TRAJNO obrisan iz baze'),
                   const Text('• Sve vožnje i statistike se brišu'),
                   const Text('• Svi zahtevi za sedišta se brišu'),
                   const Text('• Ova akcija je NEPOVRATNA!',
@@ -1307,14 +1307,14 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
     if (potvrda == true && mounted) {
       try {
-        final success = await _putnikService.deletePutnik(putnik.id, putnik.tabela);
+        final success = await _putnikService.deletePutnik(V2Putnik.id, V2Putnik.tabela);
 
         if (success) {
           // logic simplified slightly if not needing immediate mount check
         }
 
         if (success && mounted) {
-          AppSnackBar.success(context, '${putnik.putnikIme} je uspešno obrisan');
+          AppSnackBar.success(context, '${V2Putnik.putnikIme} je uspešno obrisan');
         } else if (mounted) {
           AppSnackBar.error(context, 'Greška pri brisanju putnika');
         }
@@ -1327,64 +1327,64 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   }
 
   // Helper funkcija za brojanje kontakata
-  int _prebrojKontakte(RegistrovaniPutnik putnik) {
+  int _prebrojKontakte(RegistrovaniPutnik V2Putnik) {
     int brojKontakata = 0;
-    if (putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty) {
+    if (V2Putnik.brojTelefona != null && V2Putnik.brojTelefona!.isNotEmpty) {
       brojKontakata++;
     }
-    if (putnik.brojTelefonaOca != null && putnik.brojTelefonaOca!.isNotEmpty) {
+    if (V2Putnik.brojTelefonaOca != null && V2Putnik.brojTelefonaOca!.isNotEmpty) {
       brojKontakata++;
     }
-    if (putnik.brojTelefonaMajke != null && putnik.brojTelefonaMajke!.isNotEmpty) {
+    if (V2Putnik.brojTelefonaMajke != null && V2Putnik.brojTelefonaMajke!.isNotEmpty) {
       brojKontakata++;
     }
     return brojKontakata;
   }
 
   // ??????????? NOVA FUNKCIJA - Prikazuje sve dostupne kontakte
-  Future<void> _pokaziKontaktOpcije(RegistrovaniPutnik putnik) async {
+  Future<void> _pokaziKontaktOpcije(RegistrovaniPutnik V2Putnik) async {
     final List<Widget> opcije = [];
 
     // Glavni broj telefona
-    if (putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty) {
+    if (V2Putnik.brojTelefona != null && V2Putnik.brojTelefona!.isNotEmpty) {
       opcije.add(
         ListTile(
           leading: const Icon(Icons.person, color: Colors.green),
           title: const Text('Pozovi putnika'),
-          subtitle: Text(putnik.brojTelefona!),
+          subtitle: Text(V2Putnik.brojTelefona!),
           onTap: () async {
             Navigator.pop(context);
-            await _pozovi(putnik.brojTelefona!);
+            await _pozovi(V2Putnik.brojTelefona!);
           },
         ),
       );
     }
 
     // Otac
-    if (putnik.brojTelefonaOca != null && putnik.brojTelefonaOca!.isNotEmpty) {
+    if (V2Putnik.brojTelefonaOca != null && V2Putnik.brojTelefonaOca!.isNotEmpty) {
       opcije.add(
         ListTile(
           leading: const Icon(Icons.man, color: Colors.blue),
           title: const Text('Pozovi oca'),
-          subtitle: Text(putnik.brojTelefonaOca!),
+          subtitle: Text(V2Putnik.brojTelefonaOca!),
           onTap: () async {
             Navigator.pop(context);
-            await _pozovi(putnik.brojTelefonaOca!);
+            await _pozovi(V2Putnik.brojTelefonaOca!);
           },
         ),
       );
     }
 
     // Majka
-    if (putnik.brojTelefonaMajke != null && putnik.brojTelefonaMajke!.isNotEmpty) {
+    if (V2Putnik.brojTelefonaMajke != null && V2Putnik.brojTelefonaMajke!.isNotEmpty) {
       opcije.add(
         ListTile(
           leading: const Icon(Icons.woman, color: Colors.pink),
           title: const Text('Pozovi majku'),
-          subtitle: Text(putnik.brojTelefonaMajke!),
+          subtitle: Text(V2Putnik.brojTelefonaMajke!),
           onTap: () async {
             Navigator.pop(context);
-            await _pozovi(putnik.brojTelefonaMajke!);
+            await _pozovi(V2Putnik.brojTelefonaMajke!);
           },
         ),
       );
@@ -1408,7 +1408,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Kontaktiraj ${putnik.putnikIme}',
+                'Kontaktiraj ${V2Putnik.putnikIme}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1455,21 +1455,21 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   }
 
   // ?? PRIKAZ DIJALOGA ZA PLACANJE
-  Future<void> _prikaziPlacanje(RegistrovaniPutnik putnik) async {
+  Future<void> _prikaziPlacanje(RegistrovaniPutnik V2Putnik) async {
     if (!mounted) return;
 
     final TextEditingController iznosController = TextEditingController();
     String selectedMonth = _getCurrentMonthYear(); // Default current month
 
     // ?? FIX: Ucitaj stvarni ukupni iznos iz baze
-    final ukupnoPlaceno = await _putnikService.dohvatiUkupnoPlaceno(putnik.id);
+    final ukupnoPlaceno = await _putnikService.dohvatiUkupnoPlaceno(V2Putnik.id);
 
     // Default cena po danu za input field
-    final cenaPoDanu = CenaObracunService.getCenaPoDanu(putnik);
+    final cenaPoDanu = CenaObracunService.getCenaPoDanu(V2Putnik);
     iznosController.text = cenaPoDanu.toStringAsFixed(0);
 
-    final tipLower = putnik.tip.toLowerCase();
-    final imeLower = putnik.putnikIme.toLowerCase();
+    final tipLower = V2Putnik.tip.toLowerCase();
+    final imeLower = V2Putnik.putnikIme.toLowerCase();
 
     // ?? FIKSNE CENE (Vozaci/Admini prate isti standard)
     final jeZubi = tipLower == 'posiljka' && imeLower.contains('zubi');
@@ -1494,7 +1494,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      jeFiksna ? 'Fiksna naplata - ${putnik.putnikIme}' : 'Placanje - ${putnik.putnikIme}',
+                      jeFiksna ? 'Fiksna naplata - ${V2Putnik.putnikIme}' : 'Placanje - ${V2Putnik.putnikIme}',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
@@ -1552,7 +1552,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                                       ),
                                       // ?? REALTIME: Vozac i datum poslednjeg placanja iz voznje_log
                                       StreamBuilder<Map<String, dynamic>?>(
-                                        stream: Stream.fromFuture(_putnikService.dohvatiPlacanja(putnik.id))
+                                        stream: Stream.fromFuture(_putnikService.dohvatiPlacanja(V2Putnik.id))
                                             .map((lista) => lista.isNotEmpty ? lista.first : null),
                                         builder: (context, snapshot) {
                                           final placanje = snapshot.data;
@@ -1722,7 +1722,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop(); // Zatvori trenutni dialog
-                    _prikaziDetaljneStatistike(putnik); // Otvori statistike
+                    _prikaziDetaljneStatistike(V2Putnik); // Otvori statistike
                   },
                   icon: const Icon(Icons.analytics_outlined),
                   label: const Text('Detaljno'),
@@ -1736,7 +1736,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     final iznos = double.tryParse(iznosController.text);
                     if (iznos != null && iznos > 0) {
                       Navigator.of(context).pop();
-                      await _sacuvajPlacanje(putnik, iznos, selectedMonth);
+                      await _sacuvajPlacanje(V2Putnik, iznos, selectedMonth);
                     } else {
                       AppSnackBar.error(context, 'Unesite valjan iznos');
                     }
@@ -1757,22 +1757,22 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   } // ?? CUVANJE PLACANJA
 
   // ?? PRIKAŽI DETALJNE STATISTIKE PUTNIKA
-  Future<void> _prikaziDetaljneStatistike(RegistrovaniPutnik putnik) async {
+  Future<void> _prikaziDetaljneStatistike(RegistrovaniPutnik V2Putnik) async {
     await PutnikStatistikeHelper.prikaziDetaljneStatistike(
       context: context,
-      putnikId: putnik.id,
-      putnikIme: putnik.putnikIme,
-      tip: putnik.tip,
-      tipSkole: putnik.tipSkole,
-      brojTelefona: putnik.brojTelefona,
-      createdAt: putnik.createdAt,
-      updatedAt: putnik.updatedAt,
-      aktivan: putnik.aktivan,
+      putnikId: V2Putnik.id,
+      putnikIme: V2Putnik.putnikIme,
+      tip: V2Putnik.tip,
+      tipSkole: V2Putnik.tipSkole,
+      brojTelefona: V2Putnik.brojTelefona,
+      createdAt: V2Putnik.createdAt,
+      updatedAt: V2Putnik.updatedAt,
+      aktivan: V2Putnik.aktivan,
     );
   }
 
   Future<void> _sacuvajPlacanje(
-    RegistrovaniPutnik putnik,
+    RegistrovaniPutnik V2Putnik,
     double iznos,
     String mesec,
   ) async {
@@ -1784,9 +1784,9 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
       final Map<String, dynamic> datumi = _konvertujMesecUDatume(mesec);
 
       final uspeh = await _putnikService.upisPlacanjaULog(
-        putnikId: putnik.id,
-        putnikIme: putnik.putnikIme,
-        putnikTabela: putnik.tabela,
+        putnikId: V2Putnik.id,
+        putnikIme: V2Putnik.putnikIme,
+        putnikTabela: V2Putnik.tabela,
         iznos: iznos,
         vozacIme: currentDriverName,
         datum: datumi['pocetakMeseca'] as DateTime,

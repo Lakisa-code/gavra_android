@@ -2,7 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'services/theme_manager.dart';
+import 'services/v2_theme_manager.dart';
 
 // 🌍 GLOBALNO REŠENJE ZA SRPSKU DJAKRITIKU (š, đ, č, ć, ž)
 // Unicode normalizacija i font fallback-ovi

@@ -38,7 +38,7 @@ class V2PinZahtevService {
       // 🔔 Pošalji notifikaciju adminima
       await RealtimeNotificationService.sendNotificationToAdmins(
         title: '🔔 Novi zahtev za PIN',
-        body: 'Putnik traži PIN za pristup aplikaciji',
+        body: 'V2Putnik traži PIN za pristup aplikaciji',
         data: {'type': 'pin_zahtev', 'putnik_id': putnikId},
       );
 
@@ -71,7 +71,7 @@ class V2PinZahtevService {
   }
 
   /// Dohvati zahteve iz baze i emituj na stream
-  /// Putnik podaci se čitaju iz V2MasterRealtimeManager cache-a
+  /// V2Putnik podaci se čitaju iz V2MasterRealtimeManager cache-a
   static Future<void> _fetchAndEmitZahtevi() async {
     try {
       final data = await _supabase
@@ -88,9 +88,7 @@ class V2PinZahtevService {
           ...Map<String, dynamic>.from(z as Map),
           'putnik_ime': putnikData?['ime'],
           'broj_telefona': putnikData?['telefon'],
-          'tip': putnikData != null
-              ? V2MasterRealtimeManager.instance.getIme(z['putnik_tabela'] as String? ?? '', putnikId ?? '')
-              : null,
+          'tip': _tabelaToTip(z['putnik_tabela'] as String? ?? ''),
         };
       }).toList();
 
@@ -182,6 +180,21 @@ class V2PinZahtevService {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  static String _tabelaToTip(String tabela) {
+    switch (tabela) {
+      case 'v2_radnici':
+        return 'radnik';
+      case 'v2_ucenici':
+        return 'ucenik';
+      case 'v2_dnevni':
+        return 'dnevni';
+      case 'v2_posiljke':
+        return 'posiljka';
+      default:
+        return tabela;
     }
   }
 }
