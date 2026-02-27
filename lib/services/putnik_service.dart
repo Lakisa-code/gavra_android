@@ -509,39 +509,16 @@ class PutnikService {
     if (res == null) {
       throw Exception('Putnik "${putnik.ime}" nije pronađen u bazi ili nije aktivan');
     }
-    final putnikId = res['id'];
+    final putnikId = res['id'].toString();
 
-    final gradKey = GradAdresaValidator.normalizeGrad(putnik.grad);
-    final normVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
-    final danKey = putnik.dan.toLowerCase();
-
-    // ⛔ Postavi sve DRUGE aktivne termine za isti dan+grad na 'bez_polaska'
-    // Putnik ide samo jednim terminom — poređenje po zeljeno_vreme (cekaonica/identifikator reda)
-    // voznje_log se NE dira — nema uticaja na statistiku
-    try {
-      await supabase
-          .from('seat_requests')
-          .update({
-            'status': 'bez_polaska',
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('putnik_id', putnikId.toString())
-          .eq('dan', danKey)
-          .eq('grad', gradKey)
-          .neq('zeljeno_vreme', '$normVreme:00')
-          .inFilter('status', ['pending', 'manual', 'approved', 'confirmed']);
-      debugPrint('🔄 [dodajPutnika] Stari termini ($gradKey/$danKey ≠ $normVreme) → bez_polaska');
-    } catch (e) {
-      debugPrint('⚠️ [dodajPutnika] Greška pri postavljanju starih termina na bez_polaska: $e');
-    }
-
-    await SeatRequestService.insertSeatRequest(
-      putnikId: putnikId.toString(),
+    // Vozač/admin ručno dodaje → isAdmin=true → confirmed + dodeljeno_vreme odmah
+    await SeatRequestService.submitPolazak(
+      putnikId: putnikId,
       dan: putnik.dan,
-      vreme: putnik.polazak,
       grad: putnik.grad,
+      vreme: putnik.polazak,
       brojMesta: putnik.brojMesta,
-      status: 'confirmed', // Vozač ga je dodao ručno
+      isAdmin: true,
       customAdresaId: putnik.adresaId,
     );
   }

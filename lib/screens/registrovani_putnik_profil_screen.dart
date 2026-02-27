@@ -13,11 +13,11 @@ import '../services/cena_obracun_service.dart';
 import '../services/putnik_push_service.dart'; // 📱 Push notifikacije za putnike
 import '../services/putnik_service.dart'; // 🏖️ Za bolovanje/godišnji
 import '../services/realtime/realtime_manager.dart';
+import '../services/seat_request_service.dart';
 import '../services/theme_manager.dart';
 import '../services/weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
-import '../utils/registrovani_helpers.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 import '../widgets/shared/time_picker_cell.dart';
 
@@ -1605,14 +1605,11 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     final putnikId = _putnikData['id']?.toString();
     if (putnikId == null) return;
 
-    final tipPutnika = (_putnikData['tip'] ?? '').toString().toLowerCase();
-    final jeDnevni = tipPutnika.contains('dnevni') || tipPutnika.contains('posiljka');
+    final gradKey = tipGrad.startsWith('bc') ? 'BC' : 'VS';
 
-    // 🚫 BEZ POLASKA (admin) → status = bez_polaska, bez logovanja u voznje_log
+    // null → bez_polaska (ukloni polazak)
     if (novoVreme == null) {
       try {
-        final gradKey = tipGrad.startsWith('bc') ? 'BC' : 'VS';
-
         final existing = await supabase
             .from('seat_requests')
             .select('id, zeljeno_vreme, dodeljeno_vreme')
@@ -1629,7 +1626,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           return;
         }
 
-        // Koristiti stvarni termin (dodeljeno_vreme) ako postoji, fallback na zeljeno_vreme (cekaonica)
         final vremeZaUklanjanje = (existing['dodeljeno_vreme'] ?? existing['zeljeno_vreme'])?.toString();
         await PutnikService().ukloniPolazak(
           putnikId,
@@ -1638,83 +1634,36 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           selectedDan: dan,
           requestId: existing['id']?.toString(),
         );
-
-        await _loadActiveRequests();
-        await _refreshPutnikData();
       } catch (e) {
-        debugPrint('❌ Greška u _updatePolazak (bez_polaska): $e');
-        if (mounted) {
-          AppSnackBar.error(context, 'Greška pri uklanjanju polaska.');
-        }
+        debugPrint('❌ _updatePolazak (bez_polaska): $e');
+        if (mounted) AppSnackBar.error(context, 'Greška pri uklanjanju polaska.');
+        return;
       }
-      return;
+    } else {
+      // dan + grad + zeljeno_vreme → pending (putnik šalje zahtev)
+      try {
+        final rpRow = RealtimeManager.instance.rpCache[putnikId];
+        final brojMesta = (rpRow?['broj_mesta'] as int?) ?? 1;
+        await SeatRequestService.submitPolazak(
+          putnikId: putnikId,
+          dan: dan,
+          grad: gradKey,
+          vreme: novoVreme,
+          brojMesta: brojMesta,
+          isAdmin: false,
+        );
+      } catch (e) {
+        debugPrint('❌ _updatePolazak: $e');
+        if (mounted) AppSnackBar.error(context, 'Greška pri čuvanju promene.');
+        return;
+      }
     }
 
-    final String normalizedVreme = RegistrovaniHelpers.normalizeTime(novoVreme) ?? '';
-
-    // Uvek pending za dnevne putnike — tip_putnika kolona već govori sve
-    const String rpcStatus = 'pending';
-
-    try {
-      final gradClean = tipGrad.startsWith('bc') ? 'BC' : 'VS';
-      final danClean = dan.toLowerCase();
-
-      if (normalizedVreme.isEmpty) {
-        // Prazno vreme → cancel seat_requests za ovaj dan+grad
-        await supabase
-            .from('seat_requests')
-            .update({'status': 'cancelled', 'updated_at': DateTime.now().toIso8601String()})
-            .eq('putnik_id', putnikId)
-            .eq('dan', danClean)
-            .eq('grad', gradClean);
-      } else {
-        // Pronađi postojeći seat_request za ovaj dan+grad+vreme
-        final existing = await supabase
-            .from('seat_requests')
-            .select('id')
-            .eq('putnik_id', putnikId)
-            .eq('dan', danClean)
-            .eq('grad', gradClean)
-            .eq('zeljeno_vreme', normalizedVreme)
-            .maybeSingle();
-
-        if (existing != null) {
-          await supabase
-              .from('seat_requests')
-              .update({'status': rpcStatus, 'updated_at': DateTime.now().toIso8601String()}).eq('id', existing['id']);
-        } else {
-          // Dohvati broj_mesta iz rpCache ili baze
-          final rpRow = RealtimeManager.instance.rpCache[putnikId];
-          final brojMesta = (rpRow?['broj_mesta'] as int?) ?? 1;
-          await supabase.from('seat_requests').insert({
-            'putnik_id': putnikId,
-            'grad': gradClean,
-            'zeljeno_vreme': normalizedVreme,
-            'dan': danClean,
-            'status': rpcStatus,
-            'broj_mesta': brojMesta,
-            'created_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          });
-        }
-        // ❌ UKLONJENO: update updated_at na registrovani_putnici
-        // — to je triggerovalo Realtime kaskadu (refresh profila + 5 querija)
-        // za svaku izmenu polaska. _loadActiveRequests() ispod je dovoljan.
-      }
-
-      // 2. Osveži podatke
-      await _loadActiveRequests();
-      await _refreshPutnikData();
-
-      if (mounted) {
-        AppSnackBar.success(
-            context, 'Polazak ažuriran: $dan ${tipGrad.startsWith('bc') ? 'BC' : 'VS'} $normalizedVreme.');
-      }
-    } catch (e) {
-      debugPrint('❌ Greška u _updatePolazak: $e');
-      if (mounted) {
-        AppSnackBar.error(context, 'Greška pri čuvanju promene.');
-      }
+    await _loadActiveRequests();
+    await _refreshPutnikData();
+    if (mounted) {
+      AppSnackBar.success(
+          context, 'Polazak ažuriran: $dan $gradKey${novoVreme != null ? " $novoVreme" : " uklonjen"}.');
     }
   }
 
