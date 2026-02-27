@@ -55,7 +55,7 @@ jobs:
           VERSION_CODE=$(echo "$CURRENT" | cut -d'+' -f2)
           NEW_CODE=$((VERSION_CODE + 1))
           NEW_VERSION="${VERSION_NAME}+${NEW_CODE}"
-          sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+          sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "VERSION_CODE=$NEW_CODE" >> $GITHUB_OUTPUT
           echo "📌 Bumped: $CURRENT → $NEW_VERSION"
