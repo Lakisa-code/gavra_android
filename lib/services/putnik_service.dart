@@ -500,7 +500,7 @@ class PutnikService {
         .from('registrovani_putnici')
         .select('id, tip')
         .eq('putnik_ime', putnik.ime)
-        .eq('aktivan', true)
+        .neq('status', 'neaktivan')
         .eq('obrisan', false)
         .maybeSingle();
 

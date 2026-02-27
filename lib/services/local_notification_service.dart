@@ -518,7 +518,7 @@ class LocalNotificationService {
           .from('registrovani_putnici')
           .select('id')
           .eq('putnik_ime', putnikIme)
-          .eq('aktivan', true)
+          .neq('status', 'neaktivan')
           .eq('obrisan', false)
           .maybeSingle();
 

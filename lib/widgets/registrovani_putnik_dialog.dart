@@ -1749,9 +1749,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'broj_telefona_oca': _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
       'broj_telefona_majke':
           _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
-      'status': (widget.existingPutnik?.status == 'aktivan' || widget.existingPutnik?.status == null)
-          ? 'radi'
-          : widget.existingPutnik!.status,
+      'status': (widget.existingPutnik?.status == null) ? 'aktivan' : widget.existingPutnik!.status,
       // Datumi
       'datum_pocetka_meseca': pocetak.toIso8601String().split('T')[0],
       'datum_kraja_meseca': kraj.toIso8601String().split('T')[0],

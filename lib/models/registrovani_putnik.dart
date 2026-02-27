@@ -18,7 +18,7 @@ class RegistrovaniPutnik {
     required this.createdAt,
     required this.updatedAt,
     this.aktivan = true,
-    this.status = 'radi', // 🔧 FIX: Default na 'radi' umesto 'aktivan'
+    this.status = 'aktivan',
     this.obrisan = false,
     // Nova polja za database kompatibilnost
     this.tipPrikazivanja = 'standard',
@@ -157,7 +157,7 @@ class RegistrovaniPutnik {
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : DateTime.now(),
       updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String).toLocal() : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
-      status: (map['status'] == 'aktivan' || map['status'] == null) ? 'radi' : map['status'] as String,
+      status: map['status'] as String? ?? 'aktivan',
       obrisan: map['obrisan'] as bool? ?? false,
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
       vozacId: map['vozac_id'] as String?,
@@ -195,7 +195,6 @@ class RegistrovaniPutnik {
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
-      'aktivan': aktivan,
       'status': status,
       'obrisan': obrisan,
       'tip_prikazivanja': tipPrikazivanja,

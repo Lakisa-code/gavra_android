@@ -176,10 +176,10 @@ class RealtimeManager {
           .select('id, putnik_ime, broj_telefona, broj_telefona_2, broj_telefona_oca, '
               'broj_telefona_majke, tip, tip_skole, adresa_bela_crkva_id, adresa_vrsac_id, '
               'datum_pocetka_meseca, datum_kraja_meseca, created_at, updated_at, '
-              'aktivan, status, obrisan, is_duplicate, tip_prikazivanja, '
+              'status, obrisan, is_duplicate, tip_prikazivanja, '
               'pin, email, cena_po_danu, treba_racun, '
               'firma_naziv, firma_pib, firma_mb, firma_ziro, firma_adresa, broj_mesta')
-          .eq('aktivan', true)
+          .neq('status', 'neaktivan')
           .eq('obrisan', false);
       for (final row in rows) {
         rpCache[row['id'].toString()] = Map<String, dynamic>.from(row);

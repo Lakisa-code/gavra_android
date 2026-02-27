@@ -45,7 +45,7 @@ class RegistrovaniPutnikService {
     final response = await _supabase
         .from('registrovani_putnici')
         .select('*')
-        .eq('aktivan', true)
+        .neq('status', 'neaktivan')
         .eq('obrisan', false)
         .eq('treba_racun', true)
         .eq('is_duplicate', false)
@@ -144,10 +144,10 @@ class RegistrovaniPutnikService {
       // Filtriraj lokalno umesto preko Supabase
       final putnici = data
           .where((json) {
-            final aktivan = json['aktivan'] as bool? ?? false;
+            final status = json['status'] as String? ?? 'aktivan';
             final obrisan = json['obrisan'] as bool? ?? false; // 🛡️ FIX: Default je false (nije obrisan)
             final isDuplicate = json['is_duplicate'] as bool? ?? false;
-            return aktivan && !obrisan && !isDuplicate;
+            return status != 'neaktivan' && !obrisan && !isDuplicate;
           })
           .map((json) => RegistrovaniPutnik.fromMap(json))
           .toList()
@@ -228,12 +228,12 @@ class RegistrovaniPutnikService {
       final putnikId = newRecord['id'] as String?;
       if (putnikId == null) return;
 
-      // Proveri da li zadovoljava filter kriterijume (aktivan, nije obrisan, nije duplikat)
-      final aktivan = newRecord['aktivan'] as bool? ?? false;
+      // Proveri da li zadovoljava filter kriterijume (nije neaktivan, nije obrisan, nije duplikat)
+      final status = newRecord['status'] as String? ?? 'aktivan';
       final obrisan = newRecord['obrisan'] as bool? ?? false; // 🛡️ FIX: Default je false
       final isDuplicate = newRecord['is_duplicate'] as bool? ?? false;
 
-      if (!aktivan || obrisan || isDuplicate) {
+      if (status == 'neaktivan' || obrisan || isDuplicate) {
         debugPrint('🔄 [RegistrovaniPutnik] INSERT ignorisan (ne zadovoljava filter)');
         return;
       }
@@ -267,10 +267,10 @@ class RegistrovaniPutnikService {
       final index = _lastValue!.indexWhere((p) => p.id == putnikId);
 
       // Proveri da li sada zadovoljava filter kriterijume
-      final aktivan = newRecord['aktivan'] as bool? ?? false;
+      final status = newRecord['status'] as String? ?? 'aktivan';
       final obrisan = newRecord['obrisan'] as bool? ?? false; // 🛡️ FIX: Default je false
       final isDuplicate = newRecord['is_duplicate'] as bool? ?? false;
-      final shouldBeIncluded = aktivan && !obrisan && !isDuplicate;
+      final shouldBeIncluded = status != 'neaktivan' && !obrisan && !isDuplicate;
 
       if (shouldBeIncluded) {
         // Dohvati potpune podatke sa JOIN-om
@@ -285,7 +285,7 @@ class RegistrovaniPutnikService {
         if (index == -1) {
           // Možda je bio neaktivan, a sada je aktivan - dodaj
           _lastValue!.add(updatedPutnik);
-          debugPrint('✅ [RegistrovaniPutnik] UPDATE: Dodan ${updatedPutnik.putnikIme} (sada aktivan)');
+          debugPrint('✅ [RegistrovaniPutnik] UPDATE: Dodan ${updatedPutnik.putnikIme} (više nije neaktivan)');
         } else {
           // Update postojeći
           _lastValue![index] = updatedPutnik;

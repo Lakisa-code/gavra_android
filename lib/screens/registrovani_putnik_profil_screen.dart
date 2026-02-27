@@ -650,7 +650,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
   /// 🏖️ Dugme za postavljanje bolovanja/godišnjeg - SAMO za radnike
   Widget _buildOdsustvoButton() {
-    final status = _putnikData['status']?.toString().toLowerCase() ?? 'radi';
+    final status = _putnikData['status']?.toString().toLowerCase() ?? 'aktivan';
     final jeNaOdsustvu = status == 'bolovanje' || status == 'godisnji';
 
     return Padding(
@@ -711,7 +711,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       );
 
       if (confirm == true) {
-        await _postaviStatus('radi');
+        await _postaviStatus('aktivan');
       }
     } else {
       // Odabir tipa odsustva
@@ -788,7 +788,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       });
 
       if (mounted) {
-        final poruka = noviStatus == 'radi'
+        final poruka = noviStatus == 'aktivan'
             ? 'Vraćeni ste na posao'
             : noviStatus == 'godisnji'
                 ? 'Postavljeni ste na godišnji odmor'

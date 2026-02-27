@@ -69,7 +69,7 @@ class Putnik {
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : null,
       mesecnaKarta: !isDnevni,
       dan: '',
-      status: map['status'] as String? ?? 'radi',
+      status: map['status'] as String? ?? 'aktivan',
       statusVreme: map['updated_at'] as String?,
       grad: grad,
       adresa: _determineAdresaFromRegistrovani(map, grad),
@@ -391,8 +391,7 @@ class Putnik {
       'tip_skole': null, // ? NOVA KOLONA - možda treba logika
       'broj_telefona': brojTelefona,
       'tip_prikazivanja': null,
-      'aktivan': !obrisan,
-      'status': status ?? 'radi',
+      'status': status ?? 'aktivan',
       'datum_pocetka_meseca': startOfMonth.toIso8601String().split('T')[0],
       'datum_kraja_meseca': endOfMonth.toIso8601String().split('T')[0],
       // UUID validacija za vozac_id
