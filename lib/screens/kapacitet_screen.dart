@@ -1,7 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 
-import '../services/kapacitet_service.dart';
 import '../services/theme_manager.dart';
+import '../services/v2_kapacitet_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 
@@ -13,8 +13,7 @@ class KapacitetScreen extends StatefulWidget {
   State<KapacitetScreen> createState() => _KapacitetScreenState();
 }
 
-class _KapacitetScreenState extends State<KapacitetScreen>
-    with SingleTickerProviderStateMixin {
+class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -172,8 +171,7 @@ class _KapacitetScreenState extends State<KapacitetScreen>
                             ),
                             child: const Text(
                               'Otkaži',
-                              style:
-                                  TextStyle(color: Colors.grey, fontSize: 16),
+                              style: TextStyle(color: Colors.grey, fontSize: 16),
                             ),
                           ),
                         ),
@@ -197,8 +195,7 @@ class _KapacitetScreenState extends State<KapacitetScreen>
                             ),
                             child: const Text(
                               'Sačuvaj',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.white),
+                              style: TextStyle(fontSize: 16, color: Colors.white),
                             ),
                           ),
                         ),
@@ -214,7 +211,7 @@ class _KapacitetScreenState extends State<KapacitetScreen>
     );
 
     if (result != null && result != trenutni) {
-      final success = await KapacitetService.setKapacitet(grad, vreme, result);
+      final success = await V2KapacitetService.setKapacitet(grad, vreme, result);
       if (!mounted) return;
       if (success) {
         if (mounted) {
@@ -226,8 +223,7 @@ class _KapacitetScreenState extends State<KapacitetScreen>
     }
   }
 
-  Widget _buildGradTab(String grad, List<String> vremena,
-      Map<String, Map<String, int>> kapacitet) {
+  Widget _buildGradTab(String grad, List<String> vremena, Map<String, Map<String, int>> kapacitet) {
     return Column(
       children: [
         Expanded(
@@ -263,17 +259,14 @@ class _KapacitetScreenState extends State<KapacitetScreen>
                       IconButton(
                         onPressed: maxMesta > 1
                             ? () async {
-                                final success =
-                                    await KapacitetService.setKapacitet(
-                                        grad, vreme, maxMesta - 1);
+                                final success = await V2KapacitetService.setKapacitet(grad, vreme, maxMesta - 1);
                                 if (!mounted) return;
                                 if (!success) {
                                   AppSnackBar.error(context, '❌ Greška pri čuvanju');
                                 }
                               }
                             : null,
-                        icon: const Icon(Icons.remove_circle,
-                            color: Colors.red, size: 32),
+                        icon: const Icon(Icons.remove_circle, color: Colors.red, size: 32),
                       ),
                       // Prikaz broja
                       Container(
@@ -298,17 +291,14 @@ class _KapacitetScreenState extends State<KapacitetScreen>
                       IconButton(
                         onPressed: maxMesta < 20
                             ? () async {
-                                final success =
-                                    await KapacitetService.setKapacitet(
-                                        grad, vreme, maxMesta + 1);
+                                final success = await V2KapacitetService.setKapacitet(grad, vreme, maxMesta + 1);
                                 if (!mounted) return;
                                 if (!success) {
                                   AppSnackBar.error(context, '❌ Greška pri čuvanju');
                                 }
                               }
                             : null,
-                        icon: const Icon(Icons.add_circle,
-                            color: Colors.green, size: 32),
+                        icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
                       ),
                     ],
                   ),
@@ -357,10 +347,9 @@ class _KapacitetScreenState extends State<KapacitetScreen>
           ),
         ),
         body: StreamBuilder<Map<String, Map<String, int>>>(
-          stream: KapacitetService.streamKapacitet(),
+          stream: V2KapacitetService.streamKapacitet(),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting &&
-                !snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
 
@@ -369,8 +358,8 @@ class _KapacitetScreenState extends State<KapacitetScreen>
             return TabBarView(
               controller: _tabController,
               children: [
-                _buildGradTab('BC', KapacitetService.bcVremena, data),
-                _buildGradTab('VS', KapacitetService.vsVremena, data),
+                _buildGradTab('BC', V2KapacitetService.bcVremena, data),
+                _buildGradTab('VS', V2KapacitetService.vsVremena, data),
               ],
             );
           },

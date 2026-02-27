@@ -9,7 +9,7 @@ import '../globals.dart';
 /// Svi tokeni (FCM i HMS, vozači i putnici) se registruju na isti način:
 /// - Direktan UPSERT u push_tokens tabelu
 /// - Pending token mehanizam za offline scenarije
-class PushTokenService {
+class V2PushTokenService {
   /// Lazy getter - pristupa Supabase tek kada je potrebno i inicijalizovan
   static SupabaseClient get _supabase => supabase;
 
@@ -55,17 +55,17 @@ class PushTokenService {
 
       // Obriši stare tokene za istog putnika
       if (putnikId != null && putnikId.isNotEmpty) {
-        await _supabase.from('push_tokens').delete().eq('putnik_id', putnikId).timeout(timeout).catchError((e) => null);
+        await _supabase.from('v2_push_tokens').delete().eq('putnik_id', putnikId).timeout(timeout).catchError((e) => null);
       }
 
       // Obriši stare tokene za istog vozača
       if (vozacId != null && vozacId.isNotEmpty) {
-        await _supabase.from('push_tokens').delete().eq('vozac_id', vozacId).timeout(timeout).catchError((e) => null);
+        await _supabase.from('v2_push_tokens').delete().eq('vozac_id', vozacId).timeout(timeout).catchError((e) => null);
       }
 
       // Obriši stare tokene za istog vozača (po user_id)
       if (userId != null && userId.isNotEmpty) {
-        await _supabase.from('push_tokens').delete().eq('user_id', userId).timeout(timeout).catchError((e) => null);
+        await _supabase.from('v2_push_tokens').delete().eq('user_id', userId).timeout(timeout).catchError((e) => null);
       }
 
       // ✅ UPSERT novi token (ako token već postoji, ažuriraće ga, ako ne, insertovaće)
@@ -82,7 +82,7 @@ class PushTokenService {
       if (vozacId != null && vozacId.isNotEmpty) data['vozac_id'] = vozacId;
       if (putnikId != null && putnikId.isNotEmpty) data['putnik_id'] = putnikId;
 
-      await _supabase.from('push_tokens').upsert(data, onConflict: 'token').timeout(timeout);
+      await _supabase.from('v2_push_tokens').upsert(data, onConflict: 'token').timeout(timeout);
 
       if (kDebugMode) {
         debugPrint('✅ [PushToken] Token registrovan: $provider/$userType/${token.substring(0, 20)}...');
@@ -167,13 +167,13 @@ class PushTokenService {
   }) async {
     try {
       if (token != null) {
-        await _supabase.from('push_tokens').delete().eq('token', token);
+        await _supabase.from('v2_push_tokens').delete().eq('token', token);
       } else if (putnikId != null) {
-        await _supabase.from('push_tokens').delete().eq('putnik_id', putnikId);
+        await _supabase.from('v2_push_tokens').delete().eq('putnik_id', putnikId);
       } else if (userId != null) {
-        await _supabase.from('push_tokens').delete().eq('user_id', userId);
+        await _supabase.from('v2_push_tokens').delete().eq('user_id', userId);
       } else if (vozacId != null) {
-        await _supabase.from('push_tokens').delete().eq('vozac_id', vozacId);
+        await _supabase.from('v2_push_tokens').delete().eq('vozac_id', vozacId);
       } else {
         return false;
       }
@@ -198,7 +198,7 @@ class PushTokenService {
 
     try {
       final response =
-          await _supabase.from('push_tokens').select('user_id, token, provider').inFilter('user_id', userIds);
+          await _supabase.from('v2_push_tokens').select('user_id, token, provider').inFilter('user_id', userIds);
 
       return (response as List)
           .map<Map<String, String>>((row) {
@@ -222,7 +222,7 @@ class PushTokenService {
   /// Koristi se za slanje vremenskih upozorenja i drugih vozačkih notifikacija
   static Future<List<Map<String, String>>> getTokensForVozaci() async {
     try {
-      final response = await _supabase.from('push_tokens').select('user_id, token, provider').eq('user_type', 'vozac');
+      final response = await _supabase.from('v2_push_tokens').select('user_id, token, provider').eq('user_type', 'vozac');
 
       return (response as List)
           .map<Map<String, String>>((row) {

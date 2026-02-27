@@ -10,7 +10,7 @@ import 'realtime/realtime_manager.dart';
 
 /// 🎫 Servis za upravljanje kapacitetom polazaka
 /// Omogućava realtime prikaz slobodnih mesta i admin kontrolu
-class KapacitetService {
+class V2KapacitetService {
   static SupabaseClient get _supabase => supabase;
 
   // 🔄 GLOBAL REALTIME LISTENER za automatsko ažuriranje
@@ -80,7 +80,8 @@ class KapacitetService {
   /// Vraća: {'BC': {'5:00': 8, '6:00': 8, ...}, 'VS': {'6:00': 8, ...}}
   static Future<Map<String, Map<String, int>>> getKapacitet() async {
     try {
-      final response = await _supabase.from('kapacitet_polazaka').select('grad, vreme, max_mesta').eq('aktivan', true);
+      final response =
+          await _supabase.from('v2_kapacitet_polazaka').select('grad, vreme, max_mesta').eq('aktivan', true);
 
       final result = <String, Map<String, int>>{
         'BC': {},
@@ -132,7 +133,7 @@ class KapacitetService {
     });
 
     // Koristi centralizovani RealtimeManager
-    subscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
+    subscription = RealtimeManager.instance.subscribe('v2_kapacitet_polazaka').listen((payload) {
       // Na bilo koju promenu, ponovo učitaj sve
       getKapacitet().then((data) {
         if (!controller.isClosed) {
@@ -143,7 +144,7 @@ class KapacitetService {
 
     controller.onCancel = () {
       subscription?.cancel();
-      RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
+      RealtimeManager.instance.unsubscribe('v2_kapacitet_polazaka');
     };
 
     return controller.stream;
@@ -154,7 +155,7 @@ class KapacitetService {
     try {
       // Prvo probaj update ako postoji zapis
       final updateResult = await _supabase
-          .from('kapacitet_polazaka')
+          .from('v2_kapacitet_polazaka')
           .update({
             'max_mesta': maxMesta,
             'aktivan': true,
@@ -166,7 +167,7 @@ class KapacitetService {
 
       // Ako update nije promenio ništa, uradi insert
       if (updateResult.isEmpty) {
-        await _supabase.from('kapacitet_polazaka').insert({
+        await _supabase.from('v2_kapacitet_polazaka').insert({
           'grad': grad,
           'vreme': vreme,
           'max_mesta': maxMesta,
@@ -234,7 +235,7 @@ class KapacitetService {
     }
 
     // Pokreni globalni listener
-    _globalRealtimeSubscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
+    _globalRealtimeSubscription = RealtimeManager.instance.subscribe('v2_kapacitet_polazaka').listen((payload) {
       // Na svaku promenu, osveži cache
       refreshKapacitetCache();
     });
@@ -244,7 +245,7 @@ class KapacitetService {
   static void stopGlobalRealtimeListener() {
     _globalRealtimeSubscription?.cancel();
     _globalRealtimeSubscription = null;
-    RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
+    RealtimeManager.instance.unsubscribe('v2_kapacitet_polazaka');
     debugPrint('🛑 Globalni kapacitet listener zaustavljen');
   }
 }

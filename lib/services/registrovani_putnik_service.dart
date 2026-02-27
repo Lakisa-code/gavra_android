@@ -518,7 +518,7 @@ class RegistrovaniPutnikService {
     if (vozacUuid == null || vozacUuid.isEmpty) return null;
 
     try {
-      final response = await _supabase.from('vozaci').select('ime').eq('id', vozacUuid).limit(1).maybeSingle();
+      final response = await _supabase.from('v2_vozaci').select('ime').eq('id', vozacUuid).limit(1).maybeSingle();
       if (response == null) {
         return VozacCache.getImeByUuid(vozacUuid);
       }

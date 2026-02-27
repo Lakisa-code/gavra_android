@@ -45,17 +45,17 @@ class VozacRasporedEntry {
 }
 
 /// Servis za učitavanje i upravljanje vozac_raspored tabelom
-class VozacRasporedService {
-  static final VozacRasporedService _instance = VozacRasporedService._internal();
-  factory VozacRasporedService() => _instance;
-  VozacRasporedService._internal();
+class V2VozacRasporedService {
+  static final V2VozacRasporedService _instance = V2VozacRasporedService._internal();
+  factory V2VozacRasporedService() => _instance;
+  V2VozacRasporedService._internal();
 
   SupabaseClient get _supabase => supabase;
 
   /// Učitaj sve unose iz tabele
   Future<List<VozacRasporedEntry>> loadAll() async {
     try {
-      final response = await _supabase.from('vozac_raspored').select();
+      final response = await _supabase.from('v2_vozac_raspored').select();
       return (response as List).map((row) => VozacRasporedEntry.fromMap(row as Map<String, dynamic>)).toList();
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
@@ -65,7 +65,7 @@ class VozacRasporedService {
 
   /// Dodaj ili zameni unos (upsert po dan+grad+vreme+vozac)
   Future<void> upsert(VozacRasporedEntry entry) async {
-    await _supabase.from('vozac_raspored').upsert(entry.toMap(), onConflict: 'dan,grad,vreme,vozac');
+    await _supabase.from('v2_vozac_raspored').upsert(entry.toMap(), onConflict: 'dan,grad,vreme,vozac');
   }
 
   /// Obriši unos za termin (dan+grad+vreme+vozac)
@@ -76,7 +76,7 @@ class VozacRasporedService {
     required String vozac,
   }) async {
     await _supabase
-        .from('vozac_raspored')
+        .from('v2_vozac_raspored')
         .delete()
         .eq('dan', dan)
         .eq('grad', grad)

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/seat_request.dart';
-import '../services/seat_request_service.dart';
 import '../services/theme_manager.dart';
+import '../services/v2_seat_request_service.dart';
 import '../theme.dart';
 
 /// 📋 Audit/log ekran za SVE seat_requests — admin pregled celog toka zahteva
@@ -94,7 +94,7 @@ class _SeatRequestsLogScreenState extends State<SeatRequestsLogScreen> {
   }
 
   Stream<List<SeatRequest>> _buildStream() {
-    return SeatRequestService.streamSviZahtevi(
+    return V2SeatRequestService.streamSviZahtevi(
       statusFilter: _statusFilter.isEmpty ? null : _statusFilter.toList(),
       gradFilter: _gradFilter,
     );

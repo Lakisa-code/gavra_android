@@ -12,12 +12,10 @@ import '../globals.dart';
 import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/admin_security_service.dart';
-import '../services/adresa_supabase_service.dart';
 import '../services/auth_manager.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
-import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
 import '../services/local_notification_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
@@ -27,9 +25,11 @@ import '../services/registrovani_putnik_service.dart';
 import '../services/seat_request_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
+import '../services/v2_adresa_supabase_service.dart';
 import '../services/v2_app_settings_service.dart'; // 🔄 Update check
+import '../services/v2_kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
 import '../services/v2_racun_service.dart';
-import '../services/vozac_raspored_service.dart';
+import '../services/v2_vozac_raspored_service.dart';
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
@@ -1004,7 +1004,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ..sort((a, b) => a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase()));
 
     // 🆕 Učitaj adrese za selektovani grad
-    final adreseZaGrad = await AdresaSupabaseService.getAdreseZaGrad(_selectedGrad);
+    final adreseZaGrad = await V2AdresaSupabaseService.getAdreseZaGrad(_selectedGrad);
     dostupneAdrese = adreseZaGrad.map((a) => {'id': a.id, 'naziv': a.naziv}).toList()
       ..sort((a, b) => (a['naziv'] ?? '').compareTo(b['naziv'] ?? ''));
 
@@ -2708,7 +2708,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,
           getPutnikCount: getPutnikCount,
-          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          getKapacitet: (grad, vreme) => V2KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
           showVozacBoja: true,
@@ -2720,7 +2720,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,
           getPutnikCount: getPutnikCount,
-          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          getKapacitet: (grad, vreme) => V2KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
           showVozacBoja: true,
@@ -2732,7 +2732,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,
           getPutnikCount: getPutnikCount,
-          getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+          getKapacitet: (grad, vreme) => V2KapacitetService.getKapacitetSync(grad, vreme),
           onPolazakChanged: onChanged,
           selectedDan: _selectedDay,
           showVozacBoja: true,

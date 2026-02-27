@@ -9,7 +9,7 @@ import '../utils/vozac_cache.dart';
 /// Servis za upravljanje istorijom vožnji
 /// MINIMALNA tabela: putnik_id, datum, tip (voznja/otkazivanje/uplata), iznos, vozac_id
 /// ✅ TRAJNO REŠENJE: Sve statistike se čitaju iz ove tabele
-class VoznjeLogService {
+class V2StatistikaIstorijaService {
   static SupabaseClient get _supabase => supabase;
 
   /// 📊 STATISTIKE ZA POPIS - Broj vožnji, otkazivanja i uplata po vozaču za određeni datum
@@ -31,7 +31,7 @@ class VoznjeLogService {
       final datumStr = datum.toIso8601String().split('T')[0];
 
       final response = await _supabase
-          .from('voznje_log')
+          .from('v2_statistika_istorija')
           .select('tip, iznos')
           .eq('vozac_id', vozacUuid)
           .eq('datum', datumStr)
@@ -87,7 +87,12 @@ class VoznjeLogService {
     String? vreme,
   }) async {
     try {
-      var query = _supabase.from('voznje_log').select('id').eq('putnik_id', putnikId).eq('datum', datum).eq('tip', tip);
+      var query = _supabase
+          .from('v2_statistika_istorija')
+          .select('id')
+          .eq('putnik_id', putnikId)
+          .eq('datum', datum)
+          .eq('tip', tip);
 
       if (grad != null) {
         // ✅ NOVO: Koristi dedicirane kolone umesto meta JSONB
@@ -95,9 +100,8 @@ class VoznjeLogService {
         query = query.eq('grad', gradKey);
       }
       if (vreme != null) {
-        // ✅ NOVO: Koristi dedicirane kolone
         final normVreme = GradAdresaValidator.normalizeTime(vreme);
-        query = query.eq('vreme_polaska', normVreme);
+        query = query.eq('vreme', normVreme);
       }
 
       return await query.maybeSingle();
@@ -133,7 +137,7 @@ class VoznjeLogService {
       // Ako nije u cache-u, dohvati iz baze
       if (vozacIme == null || vozacIme.isEmpty) {
         try {
-          final vozacData = await _supabase.from('vozaci').select('ime').eq('id', vozacId).maybeSingle();
+          final vozacData = await _supabase.from('v2_vozaci').select('ime').eq('id', vozacId).maybeSingle();
           vozacIme = vozacData?['ime'] as String?;
           debugPrint('💰 [dodajUplatu] vozacId=$vozacId → vozac_ime=$vozacIme');
         } catch (e) {
@@ -151,19 +155,15 @@ class VoznjeLogService {
       debugPrint('⚠️ [dodajUplatu] vozacId je NULL ili prazan!');
     }
 
-    await _supabase.from('voznje_log').insert({
+    await _supabase.from('v2_statistika_istorija').insert({
       'putnik_id': putnikId,
       'datum': datum.toIso8601String().split('T')[0],
       'tip': tipUplate,
       'iznos': iznos,
       'vozac_id': vozacId,
       'vozac_ime': vozacIme,
-      'placeni_mesec': placeniMesec ?? datum.month,
-      'placena_godina': placenaGodina ?? datum.year,
-      'tip_placanja': tipPlacanja,
-      'status': status,
       'grad': gradKod,
-      'vreme_polaska': vremeNormalizovano,
+      'vreme': vremeNormalizovano,
     });
   }
 
@@ -176,11 +176,15 @@ class VoznjeLogService {
     Stream<List<Map<String, dynamic>>> query;
     if (fromStr == toStr) {
       // Isti dan - koristi eq filter
-      query = _supabase.from('voznje_log').stream(primaryKey: ['id']).eq('datum', fromStr).limit(500);
+      query = _supabase.from('v2_statistika_istorija').stream(primaryKey: ['id']).eq('datum', fromStr).limit(500);
     } else {
       // Različiti dani - učitaj sve i filtriraj u kodu
       // NOTE: Supabase stream ne podržava gte/lte, trebajmo filter u map()
-      query = _supabase.from('voznje_log').stream(primaryKey: ['id']).order('datum', ascending: false).limit(500);
+      query = _supabase
+          .from('v2_statistika_istorija')
+          .stream(primaryKey: ['id'])
+          .order('datum', ascending: false)
+          .limit(500);
     }
 
     return query.map((records) {
@@ -252,22 +256,16 @@ class VoznjeLogService {
         vozacIme = VozacCache.getImeByUuid(vozacId);
       }
 
-      await _supabase.from('voznje_log').insert({
+      await _supabase.from('v2_statistika_istorija').insert({
         'tip': tip,
         'putnik_id': putnikId,
         'vozac_id': vozacId,
         'vozac_ime': vozacIme,
         'iznos': iznos,
-        'broj_mesta': brojMesta,
         'datum': datumStr,
         'detalji': detalji,
         'grad': gradKod,
-        'vreme_polaska': vremeNormalizovano,
-        'placeni_mesec': now.month,
-        'placena_godina': now.year,
-        'sati_pre_polaska': satiPrePolaska,
-        'tip_placanja': tipPlacanja,
-        'status': status,
+        'vreme': vremeNormalizovano,
       });
     } catch (e, stack) {
       debugPrint('❌ Greška pri logovanju akcije ($tip): $e\n$stack');

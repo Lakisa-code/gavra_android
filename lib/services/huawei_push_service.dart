@@ -8,8 +8,8 @@ import 'package:huawei_push/huawei_push.dart';
 
 import 'auth_manager.dart';
 import 'local_notification_service.dart';
-import 'push_token_service.dart';
 import 'realtime_notification_service.dart'; // <--- Dodato ovde
+import 'v2_push_token_service.dart';
 
 /// Lightweight wrapper around the `huawei_push` plugin.
 ///
@@ -263,7 +263,7 @@ class HuaweiPushService {
       return;
     }
 
-    await PushTokenService.registerToken(
+    await V2PushTokenService.registerToken(
       token: token,
       provider: 'huawei',
       userType: 'vozac',
@@ -274,6 +274,6 @@ class HuaweiPushService {
   /// Pokušaj registracije pending tokena (ako postoji)
   Future<void> tryRegisterPendingToken() async {
     // Delegiraj na PushTokenService
-    await PushTokenService.tryRegisterPendingToken();
+    await V2PushTokenService.tryRegisterPendingToken();
   }
 }

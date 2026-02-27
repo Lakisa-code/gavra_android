@@ -351,7 +351,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       try {
         if (adresaBcId != null && adresaBcId.isNotEmpty) {
           final bcResponse =
-              await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaBcId).maybeSingle();
+              await supabase.from('v2_adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaBcId).maybeSingle();
           if (bcResponse != null) {
             adresaBcNaziv = bcResponse['naziv'] as String?;
             if (grad == 'BC' && bcResponse['gps_lat'] != null && bcResponse['gps_lng'] != null) {
@@ -362,7 +362,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         }
         if (adresaVsId != null && adresaVsId.isNotEmpty) {
           final vsResponse =
-              await supabase.from('adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaVsId).maybeSingle();
+              await supabase.from('v2_adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaVsId).maybeSingle();
           if (vsResponse != null) {
             adresaVsNaziv = vsResponse['naziv'] as String?;
             if (grad == 'VS' && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {

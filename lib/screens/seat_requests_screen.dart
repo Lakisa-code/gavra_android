@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models/seat_request.dart';
 import '../services/auth_manager.dart';
-import '../services/seat_request_service.dart';
 import '../services/theme_manager.dart';
+import '../services/v2_seat_request_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 
@@ -74,7 +74,7 @@ class _SeatRequestsScreenState extends State<SeatRequestsScreen> {
           ),
         ),
         body: StreamBuilder<List<SeatRequest>>(
-          stream: SeatRequestService.streamManualRequests(),
+          stream: V2SeatRequestService.streamManualRequests(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator(color: Colors.white));

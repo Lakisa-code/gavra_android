@@ -8,13 +8,13 @@ import '../models/putnik.dart';
 import '../services/admin_security_service.dart'; // 🛡️ ADMIN SECURITY
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/pin_zahtev_service.dart'; // 🔑 PIN ZAHTEVI
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
 import '../services/v2_app_settings_service.dart'; // ⚙️ NAV BAR SETTINGS
-import '../services/vozac_service.dart'; // 🛠️ VOZAC SERVIS
+import '../services/v2_pin_zahtev_service.dart'; // 🔑 PIN ZAHTEVI
+import '../services/v2_vozac_service.dart'; // 🛠️ VOZAC SERVIS
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 import '../utils/date_utils.dart' as app_date_utils;
@@ -110,7 +110,7 @@ class _AdminScreenState extends State<AdminScreen> {
   /// 📋 ACTION LOG PICKER DIALOG - Admin bira vozača za pregled dnevnika akcija
   void _showActionLogDialog(BuildContext context) async {
     try {
-      final vozacService = VozacService();
+      final vozacService = V2VozacService();
       final vozaci = await vozacService.getAllVozaci();
 
       if (!mounted) return;
@@ -179,7 +179,7 @@ class _AdminScreenState extends State<AdminScreen> {
   void _showVozacPickerDialog(BuildContext context) async {
     // Asinkrono učitaj vozače iz baze umesto fallback vrednosti
     try {
-      final vozacService = VozacService();
+      final vozacService = V2VozacService();
       final vozaci = await vozacService.getAllVozaci();
 
       if (!mounted) return;
@@ -261,7 +261,7 @@ class _AdminScreenState extends State<AdminScreen> {
   // 🔑 Učitaj broj PIN zahteva koji čekaju
   Future<void> _loadBrojPinZahteva() async {
     try {
-      final broj = await PinZahtevService.brojZahtevaKojiCekaju();
+      final broj = await V2PinZahtevService.brojZahtevaKojiCekaju();
       if (mounted) {
         setState(() => _brojPinZahteva = broj);
       }

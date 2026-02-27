@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../globals.dart';
 import '../services/biometric_service.dart';
-import '../services/pin_zahtev_service.dart';
 import '../services/putnik_push_service.dart';
+import '../services/v2_pin_zahtev_service.dart';
 import '../theme.dart';
 import 'registrovani_putnik_profil_screen.dart';
 
@@ -171,7 +171,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         } else if (pin == null || pin.isEmpty) {
           // Ima email ali nema PIN
           // Proveri da li je već poslao zahtev
-          final imaZahtev = await PinZahtevService.imaZahtevKojiCeka(response['id']);
+          final imaZahtev = await V2PinZahtevService.imaZahtevKojiCeka(response['id']);
           if (imaZahtev) {
             setState(() {
               _currentStep = _LoginStep.zahtevPoslat;
@@ -253,7 +253,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       final putnikId = _putnikData!['id'] as String;
 
       // Sačuvaj email u bazi
-      final success = await PinZahtevService.azurirajEmail(
+      final success = await V2PinZahtevService.azurirajEmail(
         putnikId: putnikId,
         email: email,
       );
@@ -338,7 +338,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       final email = _putnikData!['email'] as String? ?? _emailController.text.trim();
       final telefon = _putnikData!['broj_telefona'] as String? ?? _telefonController.text.trim();
 
-      final success = await PinZahtevService.posaljiZahtev(
+      final success = await V2PinZahtevService.posaljiZahtev(
         putnikId: putnikId,
         email: email,
         telefon: telefon,
@@ -1010,7 +1010,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       final telefon = _putnikData!['broj_telefona'] as String? ?? _telefonController.text.trim();
 
       // Proveri da li već ima zahtev koji čeka
-      final imaZahtev = await PinZahtevService.imaZahtevKojiCeka(putnikId);
+      final imaZahtev = await V2PinZahtevService.imaZahtevKojiCeka(putnikId);
       if (imaZahtev) {
         setState(() {
           _currentStep = _LoginStep.zahtevPoslat;
@@ -1019,7 +1019,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         return;
       }
 
-      final success = await PinZahtevService.posaljiZahtev(
+      final success = await V2PinZahtevService.posaljiZahtev(
         putnikId: putnikId,
         email: email,
         telefon: telefon,

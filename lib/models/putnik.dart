@@ -1,5 +1,5 @@
 ﻿import '../constants/day_constants.dart';
-import '../services/adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
+import '../services/v2_adresa_supabase_service.dart'; // DODATO za fallback učitavanje adrese
 import '../utils/registrovani_helpers.dart';
 
 class Putnik {
@@ -525,7 +525,7 @@ class Putnik {
 
     try {
       // Pokušaj da učitaš adresu direktno iz baze koristeći UUID
-      final fetchedAdresa = await AdresaSupabaseService.getNazivAdreseByUuid(adresaId);
+      final fetchedAdresa = await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaId);
       if (fetchedAdresa != null && fetchedAdresa.isNotEmpty) {
         return fetchedAdresa;
       }

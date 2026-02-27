@@ -2,8 +2,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'push_token_service.dart';
 import 'realtime_notification_service.dart';
+import 'v2_push_token_service.dart';
 import 'weather_service.dart';
 
 /// 🌨️ Servis za automatska upozorenja o opasnim vremenskim uslovima
@@ -126,7 +126,7 @@ class V2WeatherAlertService {
   static Future<void> _sendWeatherAlert(List<String> alerts) async {
     try {
       // Dohvati tokene svih vozača
-      final vozacTokens = await PushTokenService.getTokensForVozaci();
+      final vozacTokens = await V2PushTokenService.getTokensForVozaci();
 
       if (vozacTokens.isEmpty) {
         if (kDebugMode) debugPrint('⚠️ [WeatherAlert] Nema vozačkih tokena');

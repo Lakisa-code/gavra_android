@@ -7,7 +7,7 @@ import 'realtime/realtime_manager.dart';
 
 /// 🚗 VOZILA SERVICE - Kolska knjiga
 /// Evidencija vozila i njihovo tehničko stanje
-class VozilaService {
+class V2VozilaService {
   static SupabaseClient get _supabase => supabase;
 
   static StreamSubscription? _vozilaSubscription;
@@ -16,7 +16,7 @@ class VozilaService {
   /// Dohvati sva vozila
   static Future<List<Vozilo>> getVozila() async {
     try {
-      final response = await _supabase.from('vozila').select().order('registarski_broj');
+      final response = await _supabase.from('v2_vozila').select().order('registarski_broj');
       return (response as List).map((row) => Vozilo.fromJson(row)).toList();
     } catch (e) {
       return [];
@@ -26,7 +26,7 @@ class VozilaService {
   /// Stream vozila sa realtime osvežavanjem
   static Stream<List<Vozilo>> streamVozila() {
     if (_vozilaSubscription == null) {
-      _vozilaSubscription = RealtimeManager.instance.subscribe('vozila').listen((payload) {
+      _vozilaSubscription = RealtimeManager.instance.subscribe('v2_vozila').listen((payload) {
         _refreshVozilaStream();
       });
       // Inicijalno učitavanje
@@ -52,7 +52,7 @@ class VozilaService {
   /// Ažuriraj kolsku knjigu vozila
   static Future<bool> updateKolskaKnjiga(String id, Map<String, dynamic> podaci) async {
     try {
-      await _supabase.from('vozila').update(podaci).eq('id', id);
+      await _supabase.from('v2_vozila').update(podaci).eq('id', id);
       return true;
     } catch (e) {
       return false;
@@ -62,7 +62,7 @@ class VozilaService {
   /// Ažuriraj broj mesta vozila
   static Future<bool> updateBrojMesta(String id, int brojMesta) async {
     try {
-      await _supabase.from('vozila').update({'broj_mesta': brojMesta}).eq('id', id);
+      await _supabase.from('v2_vozila').update({'broj_mesta': brojMesta}).eq('id', id);
       return true;
     } catch (e) {
       return false;
@@ -82,7 +82,7 @@ class VozilaService {
     String? pozicija,
   }) async {
     try {
-      await _supabase.from('vozila_istorija').insert({
+      await _supabase.from('v2_vozila_servis').insert({
         'vozilo_id': voziloId,
         'tip': tip,
         'datum': datum?.toIso8601String().split('T')[0],

@@ -1,4 +1,4 @@
-import 'voznje_log_service.dart';
+import 'v2_statistika_istorija_service.dart';
 
 /// Servis za statistiku
 /// ✅ TRAJNO REŠENJE: Koristi VoznjeLogService kao source of truth
@@ -14,7 +14,7 @@ class StatistikaService {
     required DateTime from,
     required DateTime to,
   }) {
-    return VoznjeLogService.streamPazarPoVozacima(from: from, to: to);
+    return V2StatistikaIstorijaService.streamPazarPoVozacima(from: from, to: to);
   }
 
   /// Stream pazara za određenog vozača

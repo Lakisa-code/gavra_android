@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../services/gorivo_service.dart';
-import '../services/vozila_service.dart';
+import '../services/v2_gorivo_service.dart';
+import '../services/v2_vozila_service.dart';
 import '../utils/app_snack_bar.dart';
 
-/// ⛽ GORIVO SCREEN
-/// Kućna pumpa — stanje, punjenja, točenja, statistike po vozilu
+/// â›½ GORIVO SCREEN
+/// KuÄ‡na pumpa â€” stanje, punjenja, toÄenja, statistike po vozilu
 class GorivoScreen extends StatefulWidget {
   const GorivoScreen({super.key});
 
@@ -17,7 +17,7 @@ class GorivoScreen extends StatefulWidget {
 class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  static const Color _accent = Color(0xFFFF9800); // narandžasta = gorivo
+  static const Color _accent = Color(0xFFFF9800); // narandÅ¾asta = gorivo
 
   final _fmt = NumberFormat('#,##0.0', 'sr');
   final _fmtInt = NumberFormat('#,###', 'sr');
@@ -38,7 +38,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('⛽ Pumpa goriva', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('â›½ Pumpa goriva', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         backgroundColor: _accent,
         actions: [
           IconButton(
@@ -53,9 +53,9 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           tabs: const [
-            Tab(text: '📊 Stanje'),
-            Tab(text: '🛢️ Punjenja'),
-            Tab(text: '🚗 Točenja'),
+            Tab(text: 'ðŸ“Š Stanje'),
+            Tab(text: 'ðŸ›¢ï¸ Punjenja'),
+            Tab(text: 'ðŸš— ToÄenja'),
           ],
         ),
       ),
@@ -71,7 +71,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
     );
   }
 
-  // ── FAB - mijenja se po tabu ──────────────────────────────────
+  // â”€â”€ FAB - mijenja se po tabu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildFab() {
     return AnimatedBuilder(
       animation: _tabController,
@@ -88,7 +88,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
             onPressed: _showDodajTocenjeDialog,
             backgroundColor: _accent,
             icon: const Icon(Icons.local_gas_station),
-            label: const Text('Točenje'),
+            label: const Text('ToÄenje'),
           );
         }
         return const SizedBox.shrink();
@@ -96,17 +96,17 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
     );
   }
 
-  // ── TAB 1: STANJE ─────────────────────────────────────────────
+  // â”€â”€ TAB 1: STANJE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildStanjeTab() {
     return FutureBuilder<PumpaStanje?>(
-      future: GorivoService.getStanje(),
+      future: V2GorivoService.getStanje(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: _accent));
         }
         final stanje = snapshot.data;
         if (stanje == null) {
-          return const Center(child: Text('Greška pri učitavanju stanja'));
+          return const Center(child: Text('GreÅ¡ka pri uÄitavanju stanja'));
         }
         return RefreshIndicator(
           onRefresh: () async => setState(() {}),
@@ -129,7 +129,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
     );
   }
 
-  /// Vizuelni brojčanik pumpe
+  /// Vizuelni brojÄanik pumpe
   Widget _buildBrojcanik(PumpaStanje stanje) {
     final procenat = (stanje.procenatPune / 100).clamp(0.0, 1.0);
     final Color barColor = stanje.prazna
@@ -154,7 +154,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '⛽ Trenutno stanje',
+                  'â›½ Trenutno stanje',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -168,7 +168,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                       border: Border.all(color: Colors.red),
                     ),
                     child: const Text(
-                      '⚠️ MALO GORIVA',
+                      'âš ï¸ MALO GORIVA',
                       style: TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.bold,
@@ -242,20 +242,20 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('📋 Detalji',
+            Text('ðŸ“‹ Detalji',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     )),
             const SizedBox(height: 12),
-            _detaljiRow('🟢 Ukupno dopunjeno', '${_fmt.format(stanje.ukupnoPunjeno)} L', Colors.green),
-            _detaljiRow('🔴 Ukupno utrošeno', '${_fmt.format(stanje.ukupnoUtroseno)} L', Colors.red),
+            _detaljiRow('ðŸŸ¢ Ukupno dopunjeno', '${_fmt.format(stanje.ukupnoPunjeno)} L', Colors.green),
+            _detaljiRow('ðŸ”´ Ukupno utroÅ¡eno', '${_fmt.format(stanje.ukupnoUtroseno)} L', Colors.red),
             _detaljiRow(
-              '🔔 Alarm nivo',
+              'ðŸ”” Alarm nivo',
               '${_fmt.format(stanje.alarmNivo)} L',
               stanje.ispodAlarma ? Colors.red : Colors.grey,
             ),
             _detaljiRow(
-              '📦 Kapacitet',
+              'ðŸ“¦ Kapacitet',
               '${_fmt.format(stanje.kapacitetLitri)} L',
               Theme.of(context).colorScheme.onSurface,
             ),
@@ -287,7 +287,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
 
   Widget _buildStatistikePoVozilu() {
     return FutureBuilder<List<VoziloStatistika>>(
-      future: GorivoService.getStatistikePoVozilu(
+      future: V2GorivoService.getStatistikePoVozilu(
         od: DateTime(DateTime.now().year, DateTime.now().month, 1),
       ),
       builder: (context, snapshot) {
@@ -301,7 +301,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('🚗 Potrošnja ovog meseca — po vozilu',
+                Text('ðŸš— PotroÅ¡nja ovog meseca â€” po vozilu',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         )),
@@ -327,7 +327,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
             children: [
               Text(v.registarskiBroj, style: const TextStyle(fontWeight: FontWeight.w600)),
               Text(
-                '${_fmt.format(v.ukupnoLitri)} L  •  ${v.brojTocenja}× točeno',
+                '${_fmt.format(v.ukupnoLitri)} L  â€¢  ${v.brojTocenja}Ã— toÄeno',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: _accent,
                       fontWeight: FontWeight.bold,
@@ -350,10 +350,10 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
     );
   }
 
-  // ── TAB 2: PUNJENJA ───────────────────────────────────────────
+  // â”€â”€ TAB 2: PUNJENJA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildPunjenjaTab() {
     return FutureBuilder<List<PumpaPunjenje>>(
-      future: GorivoService.getPunjenja(),
+      future: V2GorivoService.getPunjenja(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: _accent));
@@ -366,12 +366,12 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
               children: [
                 Icon(Icons.local_gas_station, size: 64, color: Colors.grey.withOpacity(0.3)),
                 const SizedBox(height: 16),
-                Text('Nema zabeleženih punjenja',
+                Text('Nema zabeleÅ¾enih punjenja',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.grey,
                         )),
                 const SizedBox(height: 8),
-                const Text('Klikni + da dodaš prvo punjenje', style: TextStyle(color: Colors.grey)),
+                const Text('Klikni + da dodaÅ¡ prvo punjenje', style: TextStyle(color: Colors.grey)),
               ],
             ),
           );
@@ -400,7 +400,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.green.withOpacity(0.15),
-          child: const Text('🛢️', style: TextStyle(fontSize: 20)),
+          child: const Text('ðŸ›¢ï¸', style: TextStyle(fontSize: 20)),
         ),
         title: Text(
           '+${_fmt.format(p.litri)} L',
@@ -412,20 +412,20 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
             Text(datumStr),
             if (p.cenaPoPLitru != null)
               Text(
-                '${_fmt.format(p.cenaPoPLitru!)} din/L  →  ${_fmtInt.format(p.ukupnoCena ?? 0)} din',
+                '${_fmt.format(p.cenaPoPLitru!)} din/L  â†’  ${_fmtInt.format(p.ukupnoCena ?? 0)} din',
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-            if (p.dobavljac != null) Text('Dobavljač: ${p.dobavljac}', style: const TextStyle(fontSize: 12)),
+            if (p.dobavljac != null) Text('DobavljaÄ: ${p.dobavljac}', style: const TextStyle(fontSize: 12)),
             if (p.napomena != null) Text(p.napomena!, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
           ],
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline, color: Colors.red),
           onPressed: () => _confirmDelete(
-            'Obriši punjenje?',
+            'ObriÅ¡i punjenje?',
             '${_fmt.format(p.litri)} L od $datumStr',
             () async {
-              await GorivoService.deletePunjenje(p.id);
+              await V2GorivoService.deletePunjenje(p.id);
               setState(() {});
             },
           ),
@@ -434,10 +434,10 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
     );
   }
 
-  // ── TAB 3: TOČENJA ───────────────────────────────────────────
+  // â”€â”€ TAB 3: TOÄŒENJA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildTocenjaTab() {
     return FutureBuilder<List<PumpaTocenje>>(
-      future: GorivoService.getTocenja(),
+      future: V2GorivoService.getTocenja(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: _accent));
@@ -450,12 +450,12 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
               children: [
                 Icon(Icons.directions_car, size: 64, color: Colors.grey.withOpacity(0.3)),
                 const SizedBox(height: 16),
-                Text('Nema zabeleženih točenja',
+                Text('Nema zabeleÅ¾enih toÄenja',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.grey,
                         )),
                 const SizedBox(height: 8),
-                const Text('Klikni + da dodaš točenje', style: TextStyle(color: Colors.grey)),
+                const Text('Klikni + da dodaÅ¡ toÄenje', style: TextStyle(color: Colors.grey)),
               ],
             ),
           );
@@ -484,7 +484,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: _accent.withOpacity(0.15),
-          child: const Text('⛽', style: TextStyle(fontSize: 20)),
+          child: const Text('â›½', style: TextStyle(fontSize: 20)),
         ),
         title: Row(
           children: [
@@ -517,10 +517,10 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline, color: Colors.red),
           onPressed: () => _confirmDelete(
-            'Obriši točenje?',
-            '${_fmt.format(t.litri)} L — ${t.voziloNaziv} — $datumStr',
+            'ObriÅ¡i toÄenje?',
+            '${_fmt.format(t.litri)} L â€” ${t.voziloNaziv} â€” $datumStr',
             () async {
-              await GorivoService.deleteTocenje(t.id);
+              await V2GorivoService.deleteTocenje(t.id);
               setState(() {});
             },
           ),
@@ -529,7 +529,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
     );
   }
 
-  // ── DIJALOZI ─────────────────────────────────────────────────
+  // â”€â”€ DIJALOZI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _showDodajPunjenjeDialog() {
     final litriCtrl = TextEditingController();
@@ -544,7 +544,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => _buildBottomSheet(
-          title: '🛢️ Novo punjenje pumpe',
+          title: 'ðŸ›¢ï¸ Novo punjenje pumpe',
           accentColor: Colors.green,
           children: [
             // Datum
@@ -554,7 +554,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
             const SizedBox(height: 12),
             _inputField(cenaCtrl, 'Cena po litru', suffixText: 'din/L', keyboardType: TextInputType.number),
             const SizedBox(height: 12),
-            _inputField(dobavljacCtrl, 'Dobavljač'),
+            _inputField(dobavljacCtrl, 'DobavljaÄ'),
             const SizedBox(height: 12),
             _inputField(napomenaCtrl, 'Napomena'),
             const SizedBox(height: 20),
@@ -567,7 +567,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                     AppSnackBar.warning(context, 'Unesi broj litara!');
                     return;
                   }
-                  final ok = await GorivoService.addPunjenje(
+                  final ok = await V2GorivoService.addPunjenje(
                     datum: datum,
                     litri: litri,
                     cenaPoPLitru: double.tryParse(cenaCtrl.text),
@@ -578,9 +578,9 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                   Navigator.pop(ctx);
                   if (ok) setState(() {});
                   if (ok) {
-                    AppSnackBar.success(context, '✅ Punjenje dodato: $litri L');
+                    AppSnackBar.success(context, 'âœ… Punjenje dodato: $litri L');
                   } else {
-                    AppSnackBar.error(context, '❌ Greška pri dodavanju');
+                    AppSnackBar.error(context, 'âŒ GreÅ¡ka pri dodavanju');
                   }
                 },
                 icon: const Icon(Icons.add),
@@ -599,7 +599,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
   }
 
   void _showDodajTocenjeDialog() async {
-    final vozila = await VozilaService.getVozila();
+    final vozila = await V2VozilaService.getVozila();
     if (!mounted) return;
 
     final litriCtrl = TextEditingController();
@@ -609,7 +609,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
     Vozilo? selectedVozilo = vozila.isNotEmpty ? vozila.first : null;
 
     // Zadnja cijena
-    final lastCena = await GorivoService.getPoslednaCenaPoPLitru();
+    final lastCena = await V2GorivoService.getPoslednaCenaPoPLitru();
 
     if (!mounted) return;
 
@@ -619,7 +619,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => _buildBottomSheet(
-          title: '⛽ Novo točenje',
+          title: 'â›½ Novo toÄenje',
           accentColor: _accent,
           children: [
             // Datum
@@ -634,7 +634,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                   .map((v) => DropdownMenuItem(
                         value: v,
                         child: Text(
-                          '${v.registarskiBroj}${v.marka != null ? " — ${v.marka}" : ""}',
+                          '${v.registarskiBroj}${v.marka != null ? " â€” ${v.marka}" : ""}',
                         ),
                       ))
                   .toList(),
@@ -649,7 +649,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
             if (lastCena != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Poslednja cena: ${lastCena.toStringAsFixed(2)} din/L — koristi se za finansije',
+                'Poslednja cena: ${lastCena.toStringAsFixed(2)} din/L â€” koristi se za finansije',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
@@ -667,7 +667,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                     AppSnackBar.warning(context, 'Izaberi vozilo!');
                     return;
                   }
-                  final ok = await GorivoService.addTocenje(
+                  final ok = await V2GorivoService.addTocenje(
                     datum: datum,
                     voziloId: selectedVozilo!.id,
                     litri: litri,
@@ -679,13 +679,14 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                   Navigator.pop(ctx);
                   if (ok) setState(() {});
                   if (ok) {
-                    AppSnackBar.success(context, '✅ Točenje zabeleženo: $litri L → ${selectedVozilo!.registarskiBroj}');
+                    AppSnackBar.success(
+                        context, 'âœ… ToÄenje zabeleÅ¾eno: $litri L â†’ ${selectedVozilo!.registarskiBroj}');
                   } else {
-                    AppSnackBar.error(context, '❌ Greška pri dodavanju');
+                    AppSnackBar.error(context, 'âŒ GreÅ¡ka pri dodavanju');
                   }
                 },
                 icon: const Icon(Icons.local_gas_station),
-                label: const Text('Zabeloži točenje'),
+                label: const Text('ZabeloÅ¾i toÄenje'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _accent,
                   foregroundColor: Colors.white,
@@ -700,7 +701,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
   }
 
   void _showConfigDialog() async {
-    final stanje = await GorivoService.getStanje();
+    final stanje = await V2GorivoService.getStanje();
     if (!mounted) return;
 
     final kapacitetCtrl = TextEditingController(text: stanje?.kapacitetLitri.toStringAsFixed(0) ?? '3000');
@@ -712,18 +713,18 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _buildBottomSheet(
-        title: '⚙️ Podešavanja pumpe',
+        title: 'âš™ï¸ PodeÅ¡avanja pumpe',
         accentColor: Colors.blueGrey,
         children: [
           _inputField(kapacitetCtrl, 'Kapacitet pumpe', suffixText: 'L', keyboardType: TextInputType.number),
           const SizedBox(height: 12),
-          _inputField(alarmCtrl, 'Alarm — upozorenje ispod', suffixText: 'L', keyboardType: TextInputType.number),
+          _inputField(alarmCtrl, 'Alarm â€” upozorenje ispod', suffixText: 'L', keyboardType: TextInputType.number),
           const SizedBox(height: 12),
-          _inputField(pocetnoCtrl, 'Početno stanje (koliko ima sad)',
+          _inputField(pocetnoCtrl, 'PoÄetno stanje (koliko ima sad)',
               suffixText: 'L', keyboardType: TextInputType.number),
           const SizedBox(height: 8),
           Text(
-            'Početno stanje postavi na trenutnu litražu pumpe. Sve buduće promene idu na to.',
+            'PoÄetno stanje postavi na trenutnu litraÅ¾u pumpe. Sve buduÄ‡e promene idu na to.',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 20),
@@ -731,7 +732,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                final ok = await GorivoService.updateConfig(
+                final ok = await V2GorivoService.updateConfig(
                   kapacitet: double.tryParse(kapacitetCtrl.text),
                   alarmNivo: double.tryParse(alarmCtrl.text),
                   pocetnoStanje: double.tryParse(pocetnoCtrl.text),
@@ -740,13 +741,13 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
                 Navigator.pop(ctx);
                 if (ok) setState(() {});
                 if (ok) {
-                  AppSnackBar.success(context, '✅ podešavanja sačuvana');
+                  AppSnackBar.success(context, 'âœ… podeÅ¡avanja saÄuvana');
                 } else {
-                  AppSnackBar.error(context, '❌ Greška pri čuvanju');
+                  AppSnackBar.error(context, 'âŒ GreÅ¡ka pri Äuvanju');
                 }
               },
               icon: const Icon(Icons.save),
-              label: const Text('Sačuvaj'),
+              label: const Text('SaÄuvaj'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueGrey,
                 foregroundColor: Colors.white,
@@ -766,10 +767,10 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
         title: Text(title),
         content: Text(subtitle),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('OtkaÅ¾i')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Obriši', style: TextStyle(color: Colors.red)),
+            child: const Text('ObriÅ¡i', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -777,7 +778,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
     if (ok == true) onConfirm();
   }
 
-  // ── HELPERS ──────────────────────────────────────────────────
+  // â”€â”€ HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildBottomSheet({
     required String title,

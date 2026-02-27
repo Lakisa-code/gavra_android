@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -10,9 +10,9 @@ import '../screens/welcome_screen.dart';
 import '../utils/vozac_cache.dart';
 import 'firebase_service.dart';
 import 'huawei_push_service.dart';
-import 'push_token_service.dart';
+import 'v2_push_token_service.dart';
 
-/// 🔐 CENTRALIZOVANI AUTH MANAGER
+/// ðŸ” CENTRALIZOVANI AUTH MANAGER
 /// Upravlja lokalnim auth operacijama kroz SharedPreferences
 /// Koristi device recognition i session management bez Supabase Auth
 class AuthManager {
@@ -22,27 +22,27 @@ class AuthManager {
   static const String _deviceIdKey = 'device_id';
   static const String _rememberedDevicesKey = 'remembered_devices';
 
-  /// 🚗 DRIVER SESSION MANAGEMENT
+  /// ðŸš— DRIVER SESSION MANAGEMENT
 
-  /// Postavi trenutnog vozača (bez email auth-a)
+  /// Postavi trenutnog vozaÄa (bez email auth-a)
   static Future<void> setCurrentDriver(String driverName) async {
-    // Validacija da je vozač prepoznat
+    // Validacija da je vozaÄ prepoznat
     if (!(VozacCache.isValidIme(driverName))) {
-      throw ArgumentError('Vozač "$driverName" nije registrovan');
+      throw ArgumentError('VozaÄ "$driverName" nije registrovan');
     }
 
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
 
-    // 📱 Ažuriraj push token u pozadini - NE BLOKIRAJ login flow
+    // ðŸ“± AÅ¾uriraj push token u pozadini - NE BLOKIRAJ login flow
     _updatePushTokenWithUserId(driverName);
   }
 
-  /// 📱 Ažurira push token sa user_id i vozac_id vozača
-  /// Podržava i FCM (Google) i HMS (Huawei) tokene
+  /// ðŸ“± AÅ¾urira push token sa user_id i vozac_id vozaÄa
+  /// PodrÅ¾ava i FCM (Google) i HMS (Huawei) tokene
   static Future<void> _updatePushTokenWithUserId(String driverName) async {
     try {
-      debugPrint('🔄 [AuthManager] Ažuriram token za vozača: $driverName');
+      debugPrint('ðŸ”„ [AuthManager] AÅ¾uriram token za vozaÄa: $driverName');
 
       // Dohvati vozac_id direktno iz baze
       Vozac? vozac = VozacCache.getVozacByIme(driverName);
@@ -50,90 +50,90 @@ class AuthManager {
 
       // Fallback: Ako VozacCache nema podatke, probaj direktno iz baze
       if (vozacId == null) {
-        debugPrint('🔄 [AuthManager] VozacCache nema podatke, koristim direktno iz baze...');
+        debugPrint('ðŸ”„ [AuthManager] VozacCache nema podatke, koristim direktno iz baze...');
 
         // Direktno iz baze
         try {
           vozac = VozacCache.getVozacByIme(driverName);
           vozacId = vozac?.id;
           if (vozacId != null) {
-            debugPrint('🔄 [AuthManager] Vozac_id dobijen direktno: $vozacId');
+            debugPrint('ðŸ”„ [AuthManager] Vozac_id dobijen direktno: $vozacId');
           }
         } catch (e) {
-          debugPrint('⚠️ [AuthManager] VozacBoja inicijalizacija neuspešna: $e');
+          debugPrint('âš ï¸ [AuthManager] VozacBoja inicijalizacija neuspeÅ¡na: $e');
         }
 
         // Ako i dalje nema podataka, probaj direktno iz baze
         if (vozacId == null) {
-          debugPrint('🔄 [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
+          debugPrint('ðŸ”„ [AuthManager] VozacBoja nema podatke, pokuÅ¡avam fallback iz baze...');
           try {
             final response = await supabase
-                .from('vozaci')
+                .from('v2_vozaci')
                 .select('id')
                 .eq('ime', driverName)
                 .single()
                 .timeout(const Duration(seconds: 3));
 
             vozacId = response['id'] as String?;
-            debugPrint('🔄 [AuthManager] Fallback vozac_id: $vozacId');
+            debugPrint('ðŸ”„ [AuthManager] Fallback vozac_id: $vozacId');
           } catch (e) {
-            debugPrint('⚠️ [AuthManager] Fallback iz baze neuspešan: $e');
+            debugPrint('âš ï¸ [AuthManager] Fallback iz baze neuspeÅ¡an: $e');
           }
         }
       }
 
-      debugPrint('🔄 [AuthManager] Final vozac_id: $vozacId');
+      debugPrint('ðŸ”„ [AuthManager] Final vozac_id: $vozacId');
 
-      // Registruj tokene samo ako je vozač uspešno identifikovan
+      // Registruj tokene samo ako je vozaÄ uspeÅ¡no identifikovan
       if (vozacId == null || vozacId.isEmpty || driverName.isEmpty) {
-        debugPrint('⚠️ [AuthManager] Vozač nije ulogovan ili identifikovan - preskačem registraciju tokena');
+        debugPrint('âš ï¸ [AuthManager] VozaÄ nije ulogovan ili identifikovan - preskaÄem registraciju tokena');
         return;
       }
 
-      // 1. Pokušaj FCM token (Google/Samsung uređaji)
+      // 1. PokuÅ¡aj FCM token (Google/Samsung ureÄ‘aji)
       final fcmToken = await FirebaseService.getFCMToken();
       if (fcmToken != null && fcmToken.isNotEmpty) {
-        debugPrint('🔄 [AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
-        final success = await PushTokenService.registerToken(
+        debugPrint('ðŸ”„ [AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
+        final success = await V2PushTokenService.registerToken(
           token: fcmToken,
           provider: 'fcm',
           userType: 'vozac',
           userId: driverName,
           vozacId: vozacId,
         );
-        debugPrint('🔄 [AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
+        debugPrint('ðŸ”„ [AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
       }
 
-      // 2. Pokušaj HMS token (Huawei uređaji)
+      // 2. PokuÅ¡aj HMS token (Huawei ureÄ‘aji)
       // Koristi direktno dobijanje tokena
       try {
         final hmsToken = await HuaweiPushService().getHMSToken();
         if (hmsToken != null && hmsToken.isNotEmpty) {
-          debugPrint('🔄 [AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
-          final success = await PushTokenService.registerToken(
+          debugPrint('ðŸ”„ [AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
+          final success = await V2PushTokenService.registerToken(
             token: hmsToken,
             provider: 'huawei',
             userType: 'vozac',
             userId: driverName,
             vozacId: vozacId,
           );
-          debugPrint('🔄 [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
+          debugPrint('ðŸ”„ [AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
         } else {
-          debugPrint('🔄 [AuthManager] HMS token nije dostupan (token je null/prazan)');
+          debugPrint('ðŸ”„ [AuthManager] HMS token nije dostupan (token je null/prazan)');
         }
       } catch (e) {
-        // HMS nije dostupan na ovom uređaju - OK
-        debugPrint('🔄 [AuthManager] HMS nije dostupan: $e');
+        // HMS nije dostupan na ovom ureÄ‘aju - OK
+        debugPrint('ðŸ”„ [AuthManager] HMS nije dostupan: $e');
       }
     } catch (e) {
-      debugPrint('❌ [AuthManager] Greška pri ažuriranju tokena: $e');
+      debugPrint('âŒ [AuthManager] GreÅ¡ka pri aÅ¾uriranju tokena: $e');
     }
   }
 
-  /// Dobij trenutnog vozača - ČITA IZ SUPABASE po FCM/HMS tokenu
+  /// Dobij trenutnog vozaÄa - ÄŒITA IZ SUPABASE po FCM/HMS tokenu
   /// Fallback na SharedPreferences ako nema interneta
   static Future<String?> getCurrentDriver() async {
-    // 2. Pokušaj iz Supabase
+    // 2. PokuÅ¡aj iz Supabase
     try {
       final driverFromSupabase = await _getDriverFromSupabase();
       if (driverFromSupabase != null) {
@@ -143,7 +143,7 @@ class AuthManager {
         return driverFromSupabase;
       }
     } catch (e) {
-      debugPrint('⚠️ [AuthManager] Supabase nedostupan: $e');
+      debugPrint('âš ï¸ [AuthManager] Supabase nedostupan: $e');
     }
 
     // 3. Fallback na SharedPreferences (offline mod)
@@ -152,7 +152,7 @@ class AuthManager {
     return localDriver;
   }
 
-  /// 🔍 Dohvati vozača iz Supabase po FCM/HMS tokenu
+  /// ðŸ” Dohvati vozaÄa iz Supabase po FCM/HMS tokenu
   static Future<String?> _getDriverFromSupabase() async {
     // Dobij trenutni FCM token
     String? token;
@@ -165,19 +165,19 @@ class AuthManager {
         try {
           token = await HuaweiPushService().getHMSToken();
         } catch (e) {
-          debugPrint('⚠️ Error getting HMS token: $e');
+          debugPrint('âš ï¸ Error getting HMS token: $e');
         }
       }
 
       if (token == null || token.isEmpty) {
-        debugPrint('⚠️ [AuthManager] Nema FCM/HMS tokena');
+        debugPrint('âš ï¸ [AuthManager] Nema FCM/HMS tokena');
         return null;
       }
 
-      // Query push_tokens po tokenu - zaštiti pristup preko globalnog gettera
+      // Query push_tokens po tokenu - zaÅ¡titi pristup preko globalnog gettera
       try {
         final response = await supabase
-            .from('push_tokens')
+            .from('v2_push_tokens')
             .select('user_id')
             .eq('token', token)
             .eq('user_type', 'vozac')
@@ -185,33 +185,33 @@ class AuthManager {
 
         if (response != null && response['user_id'] != null) {
           final userId = response['user_id'] as String;
-          debugPrint('✅ [AuthManager] Vozač iz Supabase: $userId');
+          debugPrint('âœ… [AuthManager] VozaÄ iz Supabase: $userId');
           return userId;
         }
       } catch (supabaseError) {
         // Supabase nije inicijalizovan ili je nedostupan
-        debugPrint('⚠️ [AuthManager] Supabase greška: $supabaseError');
+        debugPrint('âš ï¸ [AuthManager] Supabase greÅ¡ka: $supabaseError');
         return null;
       }
 
       return null;
     } catch (e) {
-      debugPrint('❌ [AuthManager] Greška pri čitanju iz Supabase: $e');
+      debugPrint('âŒ [AuthManager] GreÅ¡ka pri Äitanju iz Supabase: $e');
       return null;
     }
   }
 
-  /// 🕐 SESSION VALIDATION
+  /// ðŸ• SESSION VALIDATION
 
-  /// Proveri da li je sesija još aktivna (sveža)
-  /// Vraća true ako je korisnik bio autentifikovan u poslednjih 30 minuta
+  /// Proveri da li je sesija joÅ¡ aktivna (sveÅ¾a)
+  /// VraÄ‡a true ako je korisnik bio autentifikovan u poslednjih 30 minuta
   static Future<bool> isSessionActive() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final sessionTimestamp = prefs.getString(_authSessionKey);
 
       if (sessionTimestamp == null) {
-        debugPrint('🕐 [AuthManager] Sesija nije aktivna - nema timestamp');
+        debugPrint('ðŸ• [AuthManager] Sesija nije aktivna - nema timestamp');
         return false;
       }
 
@@ -221,65 +221,65 @@ class AuthManager {
 
       final isActive = difference.inMinutes < 30;
       debugPrint(
-          '🕐 [AuthManager] Sesija: ${difference.inMinutes} min od logina - ${isActive ? "AKTIVNA" : "ISTEKLA"}');
+          'ðŸ• [AuthManager] Sesija: ${difference.inMinutes} min od logina - ${isActive ? "AKTIVNA" : "ISTEKLA"}');
 
       return isActive;
     } catch (e) {
-      debugPrint('🕐 [AuthManager] Greška pri proveri sesije: $e');
+      debugPrint('ðŸ• [AuthManager] GreÅ¡ka pri proveri sesije: $e');
       return false;
     }
   }
 
-  /// 🚪 LOGOUT FUNCTIONALITY
+  /// ðŸšª LOGOUT FUNCTIONALITY
 
-  /// Centralizovan logout - briše sve session podatke
+  /// Centralizovan logout - briÅ¡e sve session podatke
   static Future<void> logout(BuildContext context) async {
     try {
-      debugPrint('🔄 Starting logout process...');
+      debugPrint('ðŸ”„ Starting logout process...');
 
       final prefs = await SharedPreferences.getInstance();
 
-      // 1. Obriši SharedPreferences - SVE session podatke uključujući zapamćene uređaje
+      // 1. ObriÅ¡i SharedPreferences - SVE session podatke ukljuÄujuÄ‡i zapamÄ‡ene ureÄ‘aje
       await prefs.remove(_driverKey);
       await prefs.remove(_authSessionKey);
       await prefs.remove(_rememberedDevicesKey);
-      debugPrint('✅ SharedPreferences cleared');
+      debugPrint('âœ… SharedPreferences cleared');
 
-      // 2. Obriši push tokene iz Supabase baze
+      // 2. ObriÅ¡i push tokene iz Supabase baze
       try {
         final currentDriver = await getCurrentDriver();
         if (currentDriver != null) {
-          // Nađi vozac_id za trenutnog vozača
+          // NaÄ‘i vozac_id za trenutnog vozaÄa
           Vozac? vozac = VozacCache.getVozacByIme(currentDriver);
           if (vozac?.id != null) {
-            await PushTokenService.clearToken(vozacId: vozac!.id);
-            debugPrint('✅ Push tokens cleared for vozac: $currentDriver');
+            await V2PushTokenService.clearToken(vozacId: vozac!.id);
+            debugPrint('âœ… Push tokens cleared for vozac: $currentDriver');
           }
         }
       } catch (e) {
-        debugPrint('⚠️ Error clearing push tokens: $e');
+        debugPrint('âš ï¸ Error clearing push tokens: $e');
       }
 
-      // 3. Očisti Firebase session (ako postoji)
+      // 3. OÄisti Firebase session (ako postoji)
       try {
         await FirebaseService.clearCurrentDriver();
-        debugPrint('✅ Firebase session cleared');
+        debugPrint('âœ… Firebase session cleared');
       } catch (e) {
-        debugPrint('⚠️ Error clearing Firebase session: $e');
+        debugPrint('âš ï¸ Error clearing Firebase session: $e');
       }
 
       // 4. Navigiraj na WelcomeScreen sa punim refresh-om (uklanja sve rute)
-      // ⚠️ Koristi globalnu navigatorKey umesto konteksta jer context može biti invalidiran
-      debugPrint('🚀 Navigating to WelcomeScreen...');
+      // âš ï¸ Koristi globalnu navigatorKey umesto konteksta jer context moÅ¾e biti invalidiran
+      debugPrint('ðŸš€ Navigating to WelcomeScreen...');
 
       if (navigatorKey.currentState != null) {
         navigatorKey.currentState!.pushAndRemoveUntil(
           MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
           (route) => false,
         );
-        debugPrint('✅ Navigation successful');
+        debugPrint('âœ… Navigation successful');
       } else {
-        debugPrint('⚠️ NavigatorKey state is null, attempting fallback');
+        debugPrint('âš ï¸ NavigatorKey state is null, attempting fallback');
         if (context.mounted) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
@@ -288,8 +288,8 @@ class AuthManager {
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Error during logout: $e');
-      // Logout greška - svejedno navigiraj na welcome
+      debugPrint('âš ï¸ Error during logout: $e');
+      // Logout greÅ¡ka - svejedno navigiraj na welcome
       try {
         if (navigatorKey.currentState != null) {
           navigatorKey.currentState!.pushAndRemoveUntil(
@@ -298,12 +298,12 @@ class AuthManager {
           );
         }
       } catch (e2) {
-        debugPrint('⚠️ Error in logout error handler: $e2');
+        debugPrint('âš ï¸ Error in logout error handler: $e2');
       }
     }
   }
 
-  /// 🛠️ HELPER METHODS
+  /// ðŸ› ï¸ HELPER METHODS
 
   static Future<void> _saveDriverSession(String driverName) async {
     final prefs = await SharedPreferences.getInstance();
@@ -311,9 +311,9 @@ class AuthManager {
     await prefs.setString(_authSessionKey, DateTime.now().toIso8601String());
   }
 
-  /// 📱 DEVICE RECOGNITION
+  /// ðŸ“± DEVICE RECOGNITION
 
-  /// Generiše jedinstveni device ID
+  /// GeneriÅ¡e jedinstveni device ID
   static Future<String> _getDeviceId() async {
     final prefs = await SharedPreferences.getInstance();
     String? deviceId = prefs.getString(_deviceIdKey);
@@ -336,7 +336,7 @@ class AuthManager {
     return deviceId;
   }
 
-  /// Zapamti ovaj uređaj za automatski login
+  /// Zapamti ovaj ureÄ‘aj za automatski login
   static Future<void> rememberDevice(String email, String driverName) async {
     final prefs = await SharedPreferences.getInstance();
     final deviceId = await _getDeviceId();
@@ -344,7 +344,7 @@ class AuthManager {
     // Format: "deviceId:email:driverName"
     final deviceInfo = '$deviceId:$email:$driverName';
 
-    // Sačuvaj u listi zapamćenih uređaja
+    // SaÄuvaj u listi zapamÄ‡enih ureÄ‘aja
     final rememberedDevices = prefs.getStringList(_rememberedDevicesKey) ?? [];
 
     // Ukloni stari entry za isti email ako postoji
@@ -356,7 +356,7 @@ class AuthManager {
     await prefs.setStringList(_rememberedDevicesKey, rememberedDevices);
   }
 
-  /// Proveri da li je ovaj uređaj zapamćen
+  /// Proveri da li je ovaj ureÄ‘aj zapamÄ‡en
   static Future<Map<String, String>?> getRememberedDevice() async {
     final prefs = await SharedPreferences.getInstance();
     final deviceId = await _getDeviceId();
@@ -376,7 +376,7 @@ class AuthManager {
   }
 }
 
-/// 📊 AUTH RESULT CLASS
+/// ðŸ“Š AUTH RESULT CLASS
 class AuthResult {
   AuthResult.success([this.message = '']) : isSuccess = true;
   AuthResult.error(this.message) : isSuccess = false;

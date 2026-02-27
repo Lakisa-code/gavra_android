@@ -9,9 +9,7 @@ import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/auth_manager.dart';
-import '../services/driver_location_service.dart'; // 📍 Za ETA tracking
 import '../services/firebase_service.dart'; // 👤 Za vozača
-import '../services/kapacitet_service.dart'; // 🎫 Za broj mesta
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
 import '../services/putnik_service.dart';
 import '../services/realtime/realtime_manager.dart'; // 🔴 Za realtime raspored
@@ -20,8 +18,10 @@ import '../services/realtime_notification_service.dart'; // 🔔 Za realtime not
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../services/theme_manager.dart';
-import '../services/vozac_putnik_service.dart';
-import '../services/vozac_raspored_service.dart';
+import '../services/v2_driver_location_service.dart'; // 📍 Za ETA tracking
+import '../services/v2_kapacitet_service.dart'; // 🎫 Za broj mesta
+import '../services/v2_vozac_putnik_service.dart';
+import '../services/v2_vozac_raspored_service.dart';
 import '../utils/app_snack_bar.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/putnik_count_helper.dart'; // 🔢 Za brojanje putnika po gradu
@@ -175,8 +175,8 @@ class _VozacScreenState extends State<VozacScreen> {
 
   Future<void> _loadRaspored() async {
     final results = await Future.wait([
-      VozacRasporedService().loadAll(),
-      VozacPutnikService().loadAll(),
+      V2VozacRasporedService().loadAll(),
+      V2VozacPutnikService().loadAll(),
     ]);
     if (mounted) {
       setState(() {
@@ -195,7 +195,7 @@ class _VozacScreenState extends State<VozacScreen> {
       if (mounted) setState(() => _rasporedCache = entries);
     });
     RealtimeManager.instance.subscribe('vozac_putnik').listen((_) {
-      VozacPutnikService().loadAll().then((data) {
+      V2VozacPutnikService().loadAll().then((data) {
         if (mounted) setState(() => _vozacPutnikCache = data);
       });
     });
@@ -208,8 +208,8 @@ class _VozacScreenState extends State<VozacScreen> {
 
     // Subscribe to driver position updates - auriraj lokaciju u realnom vremenu
     _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {
-      // ?? Poalji poziciju vozaca u DriverLocationService za pracenje uivu
-      DriverLocationService.instance.forceLocationUpdate(knownPosition: pos);
+      // ?? Poalji poziciju vozaca u V2DriverLocationService za pracenje uivu
+      V2DriverLocationService.instance.forceLocationUpdate(knownPosition: pos);
     });
   }
 
@@ -375,8 +375,8 @@ class _VozacScreenState extends State<VozacScreen> {
       // Svi putnici su pokupljeni ili otkazani - ZADR�I ih u listi
 
       // ? STOP TRACKING AKO SU SVI GOTOVI
-      if (DriverLocationService.instance.isTracking) {
-        await DriverLocationService.instance.updatePutniciEta({});
+      if (V2DriverLocationService.instance.isTracking) {
+        await V2DriverLocationService.instance.updatePutniciEta({});
       }
 
       if (mounted) {
@@ -403,8 +403,8 @@ class _VozacScreenState extends State<VozacScreen> {
           });
 
           // 🛠️ REALTIME FIX: Ažuriraj ETA (uklanja pokupljene sa mape)
-          if (DriverLocationService.instance.isTracking && result.putniciEta != null) {
-            await DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
+          if (V2DriverLocationService.instance.isTracking && result.putniciEta != null) {
+            await V2DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
           }
 
           if (!mounted) return;
@@ -732,7 +732,7 @@ class _VozacScreenState extends State<VozacScreen> {
       // Izvuci redosled imena putnika
       final putniciRedosled = _optimizedRoute.map((p) => p.ime).toList();
 
-      await DriverLocationService.instance.startTracking(
+      await V2DriverLocationService.instance.startTracking(
         vozacId: VozacCache.getUuidByIme(_currentDriver!) ?? _currentDriver!,
         vozacIme: _currentDriver!,
         grad: _selectedGrad,
@@ -767,7 +767,7 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // ZAUSTAVI GPS TRACKING
   Future<void> _stopGpsTracking() async {
-    await DriverLocationService.instance.stopTracking();
+    await V2DriverLocationService.instance.stopTracking();
 
     if (mounted) {
       setState(() {
@@ -864,7 +864,7 @@ class _VozacScreenState extends State<VozacScreen> {
           final currentVozacId = VozacCache.getUuidByIme(_currentDriver ?? '');
           final mojiPutnici = _currentDriver == null
               ? sviPutnici
-              : VozacPutnikService.filterKombinovan<Putnik>(
+              : V2VozacPutnikService.filterKombinovan<Putnik>(
                   sviPutnici: sviPutnici,
                   vozac: _currentDriver!,
                   vozacId: currentVozacId,
@@ -899,7 +899,7 @@ class _VozacScreenState extends State<VozacScreen> {
             targetDayAbbr: targetDan,
           );
           int getPutnikCount(String grad, String vreme) => countHelper.getCount(grad, vreme);
-          int getKapacitet(String grad, String vreme) => KapacitetService.getKapacitetSync(grad, vreme);
+          int getKapacitet(String grad, String vreme) => V2KapacitetService.getKapacitetSync(grad, vreme);
 
           Widget buildNavBarForType(String navType) {
             switch (navType) {

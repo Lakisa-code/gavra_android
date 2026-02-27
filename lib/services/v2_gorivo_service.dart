@@ -1,30 +1,30 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import 'finansije_service.dart';
+import 'v2_finansije_service.dart';
 
-/// ⛽ GORIVO SERVICE
-/// Upravljanje kućnom pumpom goriva: punjenja, točenja, stanje, statistike
-class GorivoService {
+/// â›½ GORIVO SERVICE
+/// Upravljanje kuÄ‡nom pumpom goriva: punjenja, toÄenja, stanje, statistike
+class V2GorivoService {
   static SupabaseClient get _db => supabase;
 
-  // ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // STANJE PUMPE
-  // ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Dohvati trenutno stanje pumpe
   static Future<PumpaStanje?> getStanje() async {
     try {
-      final response = await _db.from('pumpa_stanje').select().single();
+      final response = await _db.from('v2_pumpa_stanje').select().single();
       return PumpaStanje.fromJson(response);
     } catch (e) {
-      debugPrint('❌ [Gorivo] getStanje error: $e');
+      debugPrint('âŒ [Gorivo] getStanje error: $e');
       return null;
     }
   }
 
-  /// Ažuriraj konfiguraciju pumpe (kapacitet, alarm nivo, početno stanje)
+  /// AÅ¾uriraj konfiguraciju pumpe (kapacitet, alarm nivo, poÄetno stanje)
   static Future<bool> updateConfig({
     double? kapacitet,
     double? alarmNivo,
@@ -38,30 +38,30 @@ class GorivoService {
       if (alarmNivo != null) data['alarm_nivo'] = alarmNivo;
       if (pocetnoStanje != null) data['pocetno_stanje'] = pocetnoStanje;
 
-      await _db.from('pumpa_config').update(data);
+      await _db.from('v2_pumpa_config').update(data);
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] updateConfig error: $e');
+      debugPrint('âŒ [Gorivo] updateConfig error: $e');
       return false;
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // PUNJENJA (nabavka goriva)
-  // ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Dohvati sva punjenja (najnovija prva)
   static Future<List<PumpaPunjenje>> getPunjenja({int limit = 50}) async {
     try {
       final response = await _db
-          .from('pumpa_punjenja')
+          .from('v2_pumpa_punjenja')
           .select()
           .order('datum', ascending: false)
           .order('created_at', ascending: false)
           .limit(limit);
       return (response as List).map((r) => PumpaPunjenje.fromJson(r)).toList();
     } catch (e) {
-      debugPrint('❌ [Gorivo] getPunjenja error: $e');
+      debugPrint('âŒ [Gorivo] getPunjenja error: $e');
       return [];
     }
   }
@@ -75,43 +75,43 @@ class GorivoService {
     String? napomena,
   }) async {
     try {
-      await _db.from('pumpa_punjenja').insert({
+      await _db.from('v2_pumpa_punjenja').insert({
         'datum': datum.toIso8601String().split('T')[0],
         'litri': litri,
         'cena_po_litru': cenaPoPLitru,
         'dobavljac': dobavljac,
         'napomena': napomena,
       });
-      debugPrint('✅ [Gorivo] Punjenje dodato: $litri L');
+      debugPrint('âœ… [Gorivo] Punjenje dodato: $litri L');
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] addPunjenje error: $e');
+      debugPrint('âŒ [Gorivo] addPunjenje error: $e');
       return false;
     }
   }
 
-  /// Obriši punjenje
+  /// ObriÅ¡i punjenje
   static Future<bool> deletePunjenje(String id) async {
     try {
-      await _db.from('pumpa_punjenja').delete().eq('id', id);
+      await _db.from('v2_pumpa_punjenja').delete().eq('id', id);
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] deletePunjenje error: $e');
+      debugPrint('âŒ [Gorivo] deletePunjenje error: $e');
       return false;
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // TOČENJA (po vozilu)
-  // ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // TOÄŒENJA (po vozilu)
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  /// Dohvati sva točenja (najnovija prva)
+  /// Dohvati sva toÄenja (najnovija prva)
   static Future<List<PumpaTocenje>> getTocenja({
     int limit = 100,
     String? voziloId,
   }) async {
     try {
-      var selectQuery = _db.from('pumpa_tocenja').select('*, vozila(registarski_broj, marka, model)');
+      var selectQuery = _db.from('v2_pumpa_tocenja').select('*, v2_vozila(registarski_broj, marka, model)');
 
       final response = await (voziloId != null ? selectQuery.eq('vozilo_id', voziloId) : selectQuery)
           .order('datum', ascending: false)
@@ -119,22 +119,22 @@ class GorivoService {
           .limit(limit);
       return (response as List).map((r) => PumpaTocenje.fromJson(r)).toList();
     } catch (e) {
-      debugPrint('❌ [Gorivo] getTocenja error: $e');
+      debugPrint('âŒ [Gorivo] getTocenja error: $e');
       return [];
     }
   }
 
-  /// Dodaj točenje — i automatski kreira trošak u finansijama
+  /// Dodaj toÄenje â€” i automatski kreira troÅ¡ak u finansijama
   static Future<bool> addTocenje({
     required DateTime datum,
     required String voziloId,
     required double litri,
     int? kmVozila,
     String? napomena,
-    double? cenaPoPLitru, // za obračun troška
+    double? cenaPoPLitru, // za obraÄun troÅ¡ka
   }) async {
     try {
-      await _db.from('pumpa_tocenja').insert({
+      await _db.from('v2_pumpa_tocenja').insert({
         'datum': datum.toIso8601String().split('T')[0],
         'vozilo_id': voziloId,
         'litri': litri,
@@ -142,15 +142,15 @@ class GorivoService {
         'napomena': napomena,
       });
 
-      // Ažuriraj kilometražu vozila ako je unesena
+      // AÅ¾uriraj kilometraÅ¾u vozila ako je unesena
       if (kmVozila != null) {
-        await _db.from('vozila').update({'kilometraza': kmVozila}).eq('id', voziloId);
+        await _db.from('v2_vozila').update({'kilometraza': kmVozila}).eq('id', voziloId);
       }
 
-      // Kreiraj trošak u finansijama (ako postoji cijena)
+      // Kreiraj troÅ¡ak u finansijama (ako postoji cijena)
       if (cenaPoPLitru != null && cenaPoPLitru > 0) {
         final iznos = litri * cenaPoPLitru;
-        await FinansijeService.addTrosak(
+        await V2FinansijeService.addTrosak(
           'Gorivo',
           'gorivo',
           iznos,
@@ -159,37 +159,37 @@ class GorivoService {
         );
       }
 
-      debugPrint('✅ [Gorivo] Točenje dodato: $litri L za vozilo $voziloId');
+      debugPrint('âœ… [Gorivo] ToÄenje dodato: $litri L za vozilo $voziloId');
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] addTocenje error: $e');
+      debugPrint('âŒ [Gorivo] addTocenje error: $e');
       return false;
     }
   }
 
-  /// Obriši točenje
+  /// ObriÅ¡i toÄenje
   static Future<bool> deleteTocenje(String id) async {
     try {
-      await _db.from('pumpa_tocenja').delete().eq('id', id);
+      await _db.from('v2_pumpa_tocenja').delete().eq('id', id);
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] deleteTocenje error: $e');
+      debugPrint('âŒ [Gorivo] deleteTocenje error: $e');
       return false;
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // STATISTIKE
-  // ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  /// Potrošnja po vozilu za period
+  /// PotroÅ¡nja po vozilu za period
   static Future<List<VoziloStatistika>> getStatistikePoVozilu({
     DateTime? od,
     DateTime? do_,
   }) async {
     try {
       var query =
-          _db.from('pumpa_tocenja').select('vozilo_id, litri, km_vozila, vozila(registarski_broj, marka, model)');
+          _db.from('v2_pumpa_tocenja').select('vozilo_id, litri, km_vozila, v2_vozila(registarski_broj, marka, model)');
 
       if (od != null) {
         query = query.gte('datum', od.toIso8601String().split('T')[0]);
@@ -232,7 +232,7 @@ class GorivoService {
       lista.sort((a, b) => b.ukupnoLitri.compareTo(a.ukupnoLitri));
       return lista;
     } catch (e) {
-      debugPrint('❌ [Gorivo] getStatistikePoVozilu error: $e');
+      debugPrint('âŒ [Gorivo] getStatistikePoVozilu error: $e');
       return [];
     }
   }
@@ -241,7 +241,7 @@ class GorivoService {
   static Future<double?> getPoslednaCenaPoPLitru() async {
     try {
       final response = await _db
-          .from('pumpa_punjenja')
+          .from('v2_pumpa_punjenja')
           .select('cena_po_litru')
           .not('cena_po_litru', 'is', null)
           .order('datum', ascending: false)
@@ -256,9 +256,9 @@ class GorivoService {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // MODELI
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class PumpaStanje {
   final double kapacitetLitri;

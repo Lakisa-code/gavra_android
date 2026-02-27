@@ -13,7 +13,6 @@ import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/theme_manager.dart';
-import '../services/vozac_service.dart';
 import '../utils/vozac_cache.dart';
 import 'home_screen.dart';
 import 'o_nama_screen.dart';

@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../globals.dart';
 import '../services/realtime/realtime_manager.dart';
-import '../services/voznje_log_service.dart';
+import '../services/v2_statistika_istorija_service.dart';
 
 /// Servis za globalna podešavanja aplikacije iz Supabase
 class V2AppSettingsService {
@@ -130,7 +130,7 @@ class V2AppSettingsService {
 
     // 📝 LOG U DNEVNIK
     try {
-      await VoznjeLogService.logGeneric(tip: 'admin_akcija', detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
+      await V2StatistikaIstorijaService.logGeneric(tip: 'admin_akcija', detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
     } catch (_) {}
   }
 

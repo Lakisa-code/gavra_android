@@ -3,8 +3,8 @@
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/putnik_helpers.dart';
-import 'kapacitet_service.dart';
 import 'putnik_service.dart';
+import 'v2_kapacitet_service.dart';
 
 /// 🎫 Model za slobodna mesta po polasku
 class SlobodnaMesta {
@@ -120,7 +120,7 @@ class SlobodnaMestaService {
 
     try {
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
-      final kapacitet = await KapacitetService.getKapacitet();
+      final kapacitet = await V2KapacitetService.getKapacitet();
 
       // Bela Crkva
       final bcKapaciteti = kapacitet['BC'] ?? {};
@@ -148,7 +148,7 @@ class SlobodnaMestaService {
 
     try {
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
-      final kapacitet = await KapacitetService.getKapacitet();
+      final kapacitet = await V2KapacitetService.getKapacitet();
 
       // Vrsac - Koristi SVA vremena iz kapaciteta
       final vsKapaciteti = kapacitet['VS'] ?? {};

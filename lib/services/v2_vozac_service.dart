@@ -8,15 +8,15 @@ import '../models/vozac.dart';
 import 'realtime/realtime_manager.dart';
 
 /// Servis za upravljanje vozačima
-class VozacService {
+class V2VozacService {
   // Singleton pattern
-  static final VozacService _instance = VozacService._internal();
+  static final V2VozacService _instance = V2VozacService._internal();
 
-  factory VozacService() {
+  factory V2VozacService() {
     return _instance;
   }
 
-  VozacService._internal();
+  V2VozacService._internal();
 
   SupabaseClient get _supabase => supabase;
 
@@ -25,7 +25,7 @@ class VozacService {
 
   /// Dohvata sve vozače
   Future<List<Vozac>> getAllVozaci() async {
-    final response = await _supabase.from('vozaci').select('id, ime, email, telefon, sifra, boja').order('ime');
+    final response = await _supabase.from('v2_vozaci').select('id, ime, email, telefon, sifra, boja').order('ime');
     final vozaci = response.map((json) => Vozac.fromMap(json)).toList();
     if (kDebugMode && vozaci.isNotEmpty) {
       debugPrint('✅ [VozacService] Učitano ${vozaci.length} vozača iz Supabase');
@@ -35,13 +35,13 @@ class VozacService {
 
   /// Dodaje novog vozača
   Future<Vozac> addVozac(Vozac vozac) async {
-    final response = await _supabase.from('vozaci').insert(vozac.toMap()).select().single();
+    final response = await _supabase.from('v2_vozaci').insert(vozac.toMap()).select().single();
     return Vozac.fromMap(response);
   }
 
   /// Ažurira postojećeg vozača
   Future<Vozac> updateVozac(Vozac vozac) async {
-    final response = await _supabase.from('vozaci').update(vozac.toMap()).eq('id', vozac.id).select().single();
+    final response = await _supabase.from('v2_vozaci').update(vozac.toMap()).eq('id', vozac.id).select().single();
     return Vozac.fromMap(response);
   }
 
@@ -56,7 +56,7 @@ class VozacService {
         // Periodično proveravaj da li je Supabase postao spreman
         _waitForSupabaseAndSubscribe();
       } else {
-        _vozaciSubscription = RealtimeManager.instance.subscribe('vozaci').listen((payload) {
+        _vozaciSubscription = RealtimeManager.instance.subscribe('v2_vozaci').listen((payload) {
           _refreshVozaciStream();
         });
         // Inicijalno učitavanje
@@ -77,7 +77,7 @@ class VozacService {
       if (isSupabaseReady || attempts >= maxAttempts) {
         timer.cancel();
         if (isSupabaseReady && _vozaciSubscription == null) {
-          _vozaciSubscription = RealtimeManager.instance.subscribe('vozaci').listen((payload) {
+          _vozaciSubscription = RealtimeManager.instance.subscribe('v2_vozaci').listen((payload) {
             _refreshVozaciStream();
           });
           // Inicijalno učitavanje

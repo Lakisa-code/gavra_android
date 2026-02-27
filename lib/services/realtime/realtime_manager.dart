@@ -136,7 +136,7 @@ class RealtimeManager {
     try {
       final dan = _todayKratica();
       final rows = await _supabase
-          .from('seat_requests')
+          .from('v2_polasci')
           .select('id, putnik_id, grad, zeljeno_vreme, dodeljeno_vreme, status, '
               'created_at, updated_at, processed_at, priority, broj_mesta, '
               'custom_adresa_id, alternative_vreme_1, alternative_vreme_2, '
@@ -156,9 +156,9 @@ class RealtimeManager {
   Future<void> _loadVlCache() async {
     try {
       final rows = await _supabase
-          .from('voznje_log')
-          .select('id, putnik_id, datum, tip, iznos, vozac_id, vozac_ime, '
-              'grad, vreme_polaska, tip_putnika, created_at, status')
+          .from('v2_statistika_istorija')
+          .select('id, putnik_id, putnik_ime, putnik_tabela, datum, dan, '
+              'grad, vreme, tip, iznos, vozac_id, vozac_ime, detalji, created_at')
           .eq('datum', _loadedDate!);
       for (final row in rows) {
         vlCache[row['id'].toString()] = Map<String, dynamic>.from(row);
@@ -193,20 +193,20 @@ class RealtimeManager {
   Future<void> _loadStaticCaches() async {
     try {
       final results = await Future.wait([
-        _supabase.from('vozaci').select('id, ime, email, telefon, sifra, boja'),
-        _supabase.from('vozila').select('id, registarski_broj, marka, model, naziv, broj_mesta'),
-        _supabase.from('kapacitet_polazaka').select('id, grad, vreme, max_mesta, aktivan').eq('aktivan', true),
+        _supabase.from('v2_vozaci').select('id, ime, email, telefon, sifra, boja'),
+        _supabase.from('v2_vozila').select('id, registarski_broj, marka, model, naziv, broj_mesta'),
+        _supabase.from('v2_kapacitet_polazaka').select('id, grad, vreme, max_mesta, aktivan').eq('aktivan', true),
         _supabase.from('app_settings').select(),
-        _supabase.from('adrese').select('id, naziv, grad, gps_lat, gps_lng'),
-        _supabase.from('vozac_raspored').select(),
-        _supabase.from('vozac_putnik').select(),
+        _supabase.from('v2_adrese').select('id, naziv, grad, gps_lat, gps_lng'),
+        _supabase.from('v2_vozac_raspored').select(),
+        _supabase.from('v2_vozac_putnik').select(),
         _supabase
-            .from('finansije_troskovi')
+            .from('v2_finansije_troskovi')
             .select('id, naziv, iznos, tip, aktivan, vozac_id, created_at')
             .eq('aktivan', true),
-        _supabase.from('pumpa_config').select(),
+        _supabase.from('v2_pumpa_config').select(),
         // 🚐 vozac_lokacije — aktivne lokacije vozača (za KombiEtaWidget)
-        _supabase.from('vozac_lokacije').select().eq('aktivan', true),
+        _supabase.from('v2_vozac_lokacije').select().eq('aktivan', true),
       ]);
       for (final row in results[0] as List) {
         vozaciCache[row['id'].toString()] = Map<String, dynamic>.from(row);

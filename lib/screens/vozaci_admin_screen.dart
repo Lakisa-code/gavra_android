@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../models/vozac.dart';
-import '../services/vozac_service.dart';
+import '../services/v2_vozac_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 
-/// 👥 VOZAČI ADMIN SCREEN - Admin panel za upravljanje vozačima
-/// Ovde dodaješ/brišeš vozače, emailove, šifre, telefone, boje
+/// ðŸ‘¥ VOZAÄŒI ADMIN SCREEN - Admin panel za upravljanje vozaÄima
+/// Ovde dodajeÅ¡/briÅ¡eÅ¡ vozaÄe, emailove, Å¡ifre, telefone, boje
 class VozaciAdminScreen extends StatefulWidget {
   const VozaciAdminScreen({super.key});
 
@@ -15,7 +15,7 @@ class VozaciAdminScreen extends StatefulWidget {
 }
 
 class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
-  // Forma za novog vozača
+  // Forma za novog vozaÄa
   final _formKey = GlobalKey<FormState>();
   final _imeController = TextEditingController();
   final _emailController = TextEditingController();
@@ -25,19 +25,19 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
 
   // Predefinisane boje za izbor
   final List<Color> _availableColors = [
-    const Color(0xFF7C4DFF), // ljubičasta
-    const Color(0xFFFF9800), // narandžasta
+    const Color(0xFF7C4DFF), // ljubiÄasta
+    const Color(0xFFFF9800), // narandÅ¾asta
     const Color(0xFF00E5FF), // cyan
     const Color(0xFFFF1493), // pink
-    const Color(0xFFFFD700), // žuta (Gold)
+    const Color(0xFFFFD700), // Å¾uta (Gold)
     const Color(0xFF4CAF50), // zelena
     const Color(0xFFE91E63), // crvena-pink
     const Color(0xFF2196F3), // plava
-    const Color(0xFFFFEB3B), // svetla žuta
-    const Color(0xFF9C27B0), // tamno ljubičasta
+    const Color(0xFFFFEB3B), // svetla Å¾uta
+    const Color(0xFF9C27B0), // tamno ljubiÄasta
   ];
 
-  final VozacService _vozacService = VozacService();
+  final V2VozacService _vozacService = V2VozacService();
 
   @override
   void initState() {
@@ -53,7 +53,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
     super.dispose();
   }
 
-  /// Dodaj novog vozača
+  /// Dodaj novog vozaÄa
   Future<void> _addVozac() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -66,13 +66,13 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
     );
 
     try {
-      final vozacService = VozacService();
-      await vozacService.addVozac(noviVozac);
+      final V2VozacService = V2VozacService();
+      await V2VozacService.addVozac(noviVozac);
       if (!mounted) return;
-      AppSnackBar.info(context, 'Vozač dodan');
+      AppSnackBar.info(context, 'VozaÄ dodan');
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.error(context, 'Greška: $e');
+      AppSnackBar.error(context, 'GreÅ¡ka: $e');
       return;
     }
 
@@ -84,23 +84,23 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
 
     if (mounted) {
       Navigator.pop(context);
-      AppSnackBar.success(context, 'Vozač ${noviVozac.ime} dodat!');
+      AppSnackBar.success(context, 'VozaÄ ${noviVozac.ime} dodat!');
     }
   }
 
-  /// Obriši vozača
+  /// ObriÅ¡i vozaÄa
   Future<void> _deleteVozac(int index) async {
-    // Trebam pristup svim vozačima iz StreamBuilder-a
-    // Za sada ćemo koristiti prvi vozač kao test
-    // U pravoj implementaciji, trebalo bi prosleđivanje vozača kao parametra
+    // Trebam pristup svim vozaÄima iz StreamBuilder-a
+    // Za sada Ä‡emo koristiti prvi vozaÄ kao test
+    // U pravoj implementaciji, trebalo bi prosleÄ‘ivanje vozaÄa kao parametra
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Greška', style: TextStyle(color: Colors.white)),
+        title: const Text('GreÅ¡ka', style: TextStyle(color: Colors.white)),
         content: const Text(
-          'Brisanje vozača nije dostupno u ovoj verziji.\nKoristite web admin panel.',
+          'Brisanje vozaÄa nije dostupno u ovoj verziji.\nKoristite web admin panel.',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -113,9 +113,9 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
     );
   }
 
-  /// Edituj vozača
+  /// Edituj vozaÄa
   Future<void> _editVozac(int index) async {
-    // Dohvati trenutni vozač stream podatke
+    // Dohvati trenutni vozaÄ stream podatke
     final vozaci = await _vozacService.getAllVozaci();
     if (index < 0 || index >= vozaci.length) return;
 
@@ -133,7 +133,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
     showDialog(
       context: context,
       builder: (ctx) => _buildVozacDialog(
-        title: 'Izmeni vozača',
+        title: 'Izmeni vozaÄa',
         onSave: () async {
           if (!_formKey.currentState!.validate()) return;
 
@@ -150,17 +150,17 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
             await _vozacService.updateVozac(updatedVozac);
             if (!mounted) return;
             Navigator.pop(context);
-            AppSnackBar.info(context, 'Vozač ažuriran');
+            AppSnackBar.info(context, 'VozaÄ aÅ¾uriran');
           } catch (e) {
             if (!mounted) return;
-            AppSnackBar.error(context, 'Greška: $e');
+            AppSnackBar.error(context, 'GreÅ¡ka: $e');
           }
         },
       ),
     );
   }
 
-  /// Dialog za dodavanje/editovanje vozača
+  /// Dialog za dodavanje/editovanje vozaÄa
   Widget _buildVozacDialog({required String title, required VoidCallback onSave}) {
     return StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
@@ -176,7 +176,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
                 TextFormField(
                   controller: _imeController,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('Ime vozača', Icons.person),
+                  decoration: _inputDecoration('Ime vozaÄa', Icons.person),
                   validator: (v) => v?.isEmpty == true ? 'Unesite ime' : null,
                 ),
                 const SizedBox(height: 12),
@@ -195,12 +195,12 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Šifra
+                // Å ifra
                 TextFormField(
                   controller: _sifraController,
                   style: const TextStyle(color: Colors.white),
                   obscureText: true,
-                  decoration: _inputDecoration('Šifra', Icons.lock),
+                  decoration: _inputDecoration('Å ifra', Icons.lock),
                 ),
                 const SizedBox(height: 12),
 
@@ -257,12 +257,12 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
               _telefonController.clear();
               Navigator.pop(context);
             },
-            child: const Text('Otkaži'),
+            child: const Text('OtkaÅ¾i'),
           ),
           ElevatedButton(
             onPressed: onSave,
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Sačuvaj'),
+            child: const Text('SaÄuvaj'),
           ),
         ],
       ),
@@ -309,7 +309,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                '👥 Vozači Admin',
+                'ðŸ‘¥ VozaÄi Admin',
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               const SizedBox(width: 12),
@@ -325,7 +325,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
                   showDialog(
                     context: context,
                     builder: (ctx) => _buildVozacDialog(
-                      title: 'Dodaj vozača',
+                      title: 'Dodaj vozaÄa',
                       onSave: _addVozac,
                     ),
                   );
@@ -344,7 +344,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
             if (snapshot.hasError) {
               return Center(
                 child: Text(
-                  'Greška pri učitavanju vozača: ${snapshot.error}',
+                  'GreÅ¡ka pri uÄitavanju vozaÄa: ${snapshot.error}',
                   style: const TextStyle(color: Colors.white),
                 ),
               );
@@ -355,11 +355,11 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
             return ListView(
               padding: const EdgeInsets.all(12),
               children: [
-                // 👥 SEKCIJA VOZAČA
+                // ðŸ‘¥ SEKCIJA VOZAÄŒA
                 Row(
                   children: [
                     const Text(
-                      '👥 VOZAČI',
+                      'ðŸ‘¥ VOZAÄŒI',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -387,7 +387,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
                     child: Padding(
                       padding: EdgeInsets.all(20),
                       child: Text(
-                        'Nema vozača.\nKlikni + da dodaš.',
+                        'Nema vozaÄa.\nKlikni + da dodaÅ¡.',
                         style: TextStyle(color: Colors.white70, fontSize: 18),
                         textAlign: TextAlign.center,
                       ),
@@ -429,7 +429,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Ime vozača + ikone u istom redu
+                                  // Ime vozaÄa + ikone u istom redu
                                   Row(
                                     children: [
                                       Expanded(
@@ -485,7 +485,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
                                       if (vozac.sifra?.isNotEmpty == true)
                                         const Padding(
                                           padding: EdgeInsets.only(left: 6),
-                                          child: Text('🔒', style: TextStyle(fontSize: 12)),
+                                          child: Text('ðŸ”’', style: TextStyle(fontSize: 12)),
                                         ),
                                     ],
                                   ),

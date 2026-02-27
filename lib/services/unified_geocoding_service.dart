@@ -11,8 +11,8 @@ import 'package:geolocator/geolocator.dart';
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
-import 'adresa_supabase_service.dart';
 import 'geocoding_service.dart';
+import 'v2_adresa_supabase_service.dart';
 
 /// Callback za praćenje progresa geocodinga
 typedef GeocodingProgressCallback = void Function(
@@ -100,7 +100,7 @@ class UnifiedGeocodingService {
 
       // PRIORITET 1: Koordinate iz baze (preko adresaId)
       if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
-        final adresaFromDb = await AdresaSupabaseService.getAdresaByUuid(
+        final adresaFromDb = await V2AdresaSupabaseService.getAdresaByUuid(
           putnik.adresaId!,
         );
         if (adresaFromDb != null) {
@@ -216,13 +216,13 @@ class UnifiedGeocodingService {
   }) async {
     try {
       if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
-        await AdresaSupabaseService.updateKoordinate(
+        await V2AdresaSupabaseService.updateKoordinate(
           putnik.adresaId!,
           lat: lat,
           lng: lng,
         );
       } else if (putnik.adresa != null && putnik.adresa!.isNotEmpty) {
-        await AdresaSupabaseService.createOrGetAdresa(
+        await V2AdresaSupabaseService.createOrGetAdresa(
           naziv: putnik.adresa!,
           grad: putnik.grad,
           lat: lat,

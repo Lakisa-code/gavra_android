@@ -536,7 +536,7 @@ class PutnikService {
     String? vozacId;
     if (driver != null) {
       try {
-        final vozacData = await supabase.from('vozaci').select('id').eq('ime', driver).maybeSingle();
+        final vozacData = await supabase.from('v2_vozaci').select('id').eq('ime', driver).maybeSingle();
         vozacId = vozacData?['id'] as String?;
       } catch (e) {
         debugPrint('⚠️ [oznaciPokupljen] Greška pri dohvatanju vozača "$driver": $e');
@@ -910,7 +910,7 @@ class PutnikService {
     String? vozacId;
     if (driver != null) {
       try {
-        final vozacData = await supabase.from('vozaci').select('id').eq('ime', driver).maybeSingle();
+        final vozacData = await supabase.from('v2_vozaci').select('id').eq('ime', driver).maybeSingle();
         vozacId = vozacData?['id'] as String?;
         debugPrint('💰 [oznaciPlaceno] driver="$driver" → vozacId=$vozacId');
       } catch (e) {

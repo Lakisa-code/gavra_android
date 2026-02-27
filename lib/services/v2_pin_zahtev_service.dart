@@ -8,7 +8,7 @@ import 'realtime/realtime_manager.dart';
 import 'realtime_notification_service.dart';
 
 /// 📨 Servis za upravljanje PIN zahtevima putnika
-class PinZahtevService {
+class V2PinZahtevService {
   static SupabaseClient get _supabase => supabase;
 
   static StreamSubscription<PostgresChangePayload>? _pinZahteviSubscription;
@@ -22,13 +22,13 @@ class PinZahtevService {
   }) async {
     try {
       final existing =
-          await _supabase.from('pin_zahtevi').select().eq('putnik_id', putnikId).eq('status', 'ceka').maybeSingle();
+          await _supabase.from('v2_pin_zahtevi').select().eq('putnik_id', putnikId).eq('status', 'ceka').maybeSingle();
 
       if (existing != null) {
         return true;
       }
 
-      await _supabase.from('pin_zahtevi').insert({
+      await _supabase.from('v2_pin_zahtevi').insert({
         'putnik_id': putnikId,
         'email': email,
         'telefon': telefon,
@@ -60,7 +60,7 @@ class PinZahtevService {
 
   /// Pokreni realtime listener koristeći RealtimeManager
   static void _startRealtimeListener() {
-    _pinZahteviSubscription = RealtimeManager.instance.subscribe('pin_zahtevi').listen((payload) async {
+    _pinZahteviSubscription = RealtimeManager.instance.subscribe('v2_pin_zahtevi').listen((payload) async {
       debugPrint('🔔 [PinZahtevService] Primljena realtime promena: ${payload.eventType}');
       // Učitaj sve zahteve koji čekaju
       await _fetchAndEmitZahtevi();
@@ -73,7 +73,7 @@ class PinZahtevService {
   /// Dohvati zahteve iz baze i emituj na stream
   static Future<void> _fetchAndEmitZahtevi() async {
     try {
-      final data = await _supabase.from('pin_zahtevi').select('''
+      final data = await _supabase.from('v2_pin_zahtevi').select('''
         *,
         registrovani_putnici (
           id,
@@ -97,12 +97,12 @@ class PinZahtevService {
   static void dispose() {
     _pinZahteviSubscription?.cancel();
     _pinZahteviSubscription = null;
-    RealtimeManager.instance.unsubscribe('pin_zahtevi');
+    RealtimeManager.instance.unsubscribe('v2_pin_zahtevi');
   }
 
   static Future<int> brojZahtevaKojiCekaju() async {
     try {
-      final response = await _supabase.from('pin_zahtevi').select('id').eq('status', 'ceka');
+      final response = await _supabase.from('v2_pin_zahtevi').select('id').eq('status', 'ceka');
 
       return (response as List).length;
     } catch (e) {
@@ -115,13 +115,13 @@ class PinZahtevService {
     required String pin,
   }) async {
     try {
-      final zahtev = await _supabase.from('pin_zahtevi').select('putnik_id').eq('id', zahtevId).single();
+      final zahtev = await _supabase.from('v2_pin_zahtevi').select('putnik_id').eq('id', zahtevId).single();
 
       final putnikId = zahtev['putnik_id'] as String;
 
       await _supabase.from('registrovani_putnici').update({'pin': pin}).eq('id', putnikId);
 
-      await _supabase.from('pin_zahtevi').update({'status': 'odobren'}).eq('id', zahtevId);
+      await _supabase.from('v2_pin_zahtevi').update({'status': 'odobren'}).eq('id', zahtevId);
 
       return true;
     } catch (e) {
@@ -131,7 +131,7 @@ class PinZahtevService {
 
   static Future<bool> odbijZahtev(String zahtevId) async {
     try {
-      await _supabase.from('pin_zahtevi').update({'status': 'odbijen'}).eq('id', zahtevId);
+      await _supabase.from('v2_pin_zahtevi').update({'status': 'odbijen'}).eq('id', zahtevId);
 
       return true;
     } catch (e) {
@@ -142,7 +142,7 @@ class PinZahtevService {
   static Future<bool> imaZahtevKojiCeka(String putnikId) async {
     try {
       final response =
-          await _supabase.from('pin_zahtevi').select('id').eq('putnik_id', putnikId).eq('status', 'ceka').maybeSingle();
+          await _supabase.from('v2_pin_zahtevi').select('id').eq('putnik_id', putnikId).eq('status', 'ceka').maybeSingle();
 
       return response != null;
     } catch (e) {

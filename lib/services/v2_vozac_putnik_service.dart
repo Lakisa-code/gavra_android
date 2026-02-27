@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_cache.dart';
-import 'vozac_raspored_service.dart';
+import 'v2_vozac_raspored_service.dart';
 
 /// Model za jedan red iz vozac_putnik tabele.
 ///
@@ -61,17 +61,17 @@ class VozacPutnikEntry {
 /// Arhitektura:
 ///   vozac_putnik   — per-putnik individualna dodjela (ovaj servis)
 ///   vozac_raspored — per-termin raspored (VozacRasporedService)
-class VozacPutnikService {
-  static final VozacPutnikService _instance = VozacPutnikService._internal();
-  factory VozacPutnikService() => _instance;
-  VozacPutnikService._internal();
+class V2VozacPutnikService {
+  static final V2VozacPutnikService _instance = V2VozacPutnikService._internal();
+  factory V2VozacPutnikService() => _instance;
+  V2VozacPutnikService._internal();
 
   SupabaseClient get _supabase => supabase;
 
   /// Učitaj sve individualne dodjele
   Future<List<VozacPutnikEntry>> loadAll() async {
     try {
-      final response = await _supabase.from('vozac_putnik').select();
+      final response = await _supabase.from('v2_vozac_putnik').select();
       return (response as List).map((row) => VozacPutnikEntry.fromMap(row as Map<String, dynamic>)).toList();
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
@@ -98,7 +98,7 @@ class VozacPutnikService {
     }
 
     try {
-      await _supabase.from('vozac_putnik').upsert(
+      await _supabase.from('v2_vozac_putnik').upsert(
         {
           'putnik_id': putnikId,
           'vozac_id': vozacId,
@@ -120,7 +120,7 @@ class VozacPutnikService {
   /// Briše individualnu dodjelu za putnika (putnik se vraća na termin-level vozača).
   Future<bool> delete({required String putnikId}) async {
     try {
-      await _supabase.from('vozac_putnik').delete().eq('putnik_id', putnikId);
+      await _supabase.from('v2_vozac_putnik').delete().eq('putnik_id', putnikId);
       return true;
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
@@ -130,7 +130,7 @@ class VozacPutnikService {
 
   /// Briše sve individualne dodjele za datog vozača.
   Future<void> deleteForVozac({required String vozacId}) async {
-    await _supabase.from('vozac_putnik').delete().eq('vozac_id', vozacId);
+    await _supabase.from('v2_vozac_putnik').delete().eq('vozac_id', vozacId);
   }
 
   /// Kombinirani filter: per-putnik individualna dodjela + per-termin raspored.

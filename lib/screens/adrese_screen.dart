@@ -2,7 +2,7 @@
 
 import '../globals.dart';
 import '../models/adresa.dart';
-import '../services/adresa_supabase_service.dart';
+import '../services/v2_adresa_supabase_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 
@@ -67,7 +67,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
           insertData['gps_lng'] = result['longitude'];
         }
 
-        await supabase.from('adrese').insert(insertData);
+        await supabase.from('v2_adrese').insert(insertData);
 
         if (mounted) {
           AppSnackBar.success(context, '✅ Adresa dodana');
@@ -111,7 +111,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
           updateData['gps_lng'] = result['longitude'];
         }
 
-        await supabase.from('adrese').update(updateData).eq('id', adresa.id);
+        await supabase.from('v2_adrese').update(updateData).eq('id', adresa.id);
 
         if (mounted) {
           AppSnackBar.success(context, '✅ Adresa ažurirana');
@@ -148,7 +148,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
     if (confirmed != true) return;
 
     try {
-      await supabase.from('adrese').delete().eq('id', adresa.id);
+      await supabase.from('v2_adrese').delete().eq('id', adresa.id);
 
       // Čekaj malo da se baza ažurira prije nego što osvežavaš stream
       await Future.delayed(const Duration(milliseconds: 300));
@@ -167,7 +167,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Adresa>>(
-      stream: AdresaSupabaseService.streamSveAdrese(),
+      stream: V2AdresaSupabaseService.streamSveAdrese(),
       builder: (context, snapshot) {
         final adrese = snapshot.data ?? [];
         final isLoading = snapshot.connectionState == ConnectionState.waiting && adrese.isEmpty;

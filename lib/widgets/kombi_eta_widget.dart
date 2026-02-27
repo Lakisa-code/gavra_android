@@ -80,7 +80,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         // 🔁 FALLBACK: cache još nije popunjen (prva sekunda pri startu)
         // Radi jedan DB upit i popuni lokacijeCache
         debugPrint('⚠️ [KombiEta] lokacijeCache prazan — fallback DB upit');
-        final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true);
+        final data = await supabase.from('v2_vozac_lokacije').select().eq('aktivan', true);
         if (!mounted) return;
         // Ažuriraj cache sa svežim podacima
         for (final row in data as List<dynamic>) {
@@ -182,7 +182,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
           onError: (_) {},
         );
     if (widget.putnikId != null) {
-      _putnikSubscription = RealtimeManager.instance.subscribe('seat_requests').listen(
+      _putnikSubscription = RealtimeManager.instance.subscribe('v2_polasci').listen(
         (payload) {
           // ✅ Filtriraj payload — reaguj samo na promene za OVOG putnika
           final record = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
@@ -204,7 +204,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       final normVreme = widget.vreme != null ? GradAdresaValidator.normalizeTime(widget.vreme!) : null;
 
       var query = supabase
-          .from('seat_requests')
+          .from('v2_polasci')
           .select('status, updated_at')
           .eq('putnik_id', widget.putnikId!)
           .eq('status', 'pokupljen')

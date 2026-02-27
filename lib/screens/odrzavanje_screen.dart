@@ -1,13 +1,13 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../services/vozila_service.dart';
+import '../services/v2_vozila_service.dart';
 import '../utils/app_snack_bar.dart';
 
-/// 📖 KOLSKA KNJIGA
-/// Tehničko praćenje vozila - servisi, registracija, gume...
+/// ðŸ“– KOLSKA KNJIGA
+/// TehniÄko praÄ‡enje vozila - servisi, registracija, gume...
 class OdrzavanjeScreen extends StatefulWidget {
   const OdrzavanjeScreen({super.key});
 
@@ -26,12 +26,12 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
   @override
   void initState() {
     super.initState();
-    // Realtime osvežavanje vozila
-    _vozilaSubscription = VozilaService.streamVozila().listen((vozila) {
+    // Realtime osveÅ¾avanje vozila
+    _vozilaSubscription = V2VozilaService.streamVozila().listen((vozila) {
       setState(() {
         _vozila = vozila;
         _isLoading = false;
-        // Ako je bilo selektovano vozilo, osveži ga
+        // Ako je bilo selektovano vozilo, osveÅ¾i ga
         if (_selectedVozilo != null) {
           try {
             _selectedVozilo = vozila.firstWhere(
@@ -47,11 +47,11 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
   Future<void> _loadVozila() async {
     setState(() => _isLoading = true);
-    final vozila = await VozilaService.getVozila();
+    final vozila = await V2VozilaService.getVozila();
     setState(() {
       _vozila = vozila;
       _isLoading = false;
-      // Ako je bilo selektovano vozilo, osveži ga
+      // Ako je bilo selektovano vozilo, osveÅ¾i ga
       if (_selectedVozilo != null) {
         _selectedVozilo = vozila.firstWhere(
           (v) => v.id == _selectedVozilo!.id,
@@ -77,7 +77,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('📖 Kolska knjiga'),
+        title: const Text('ðŸ“– Kolska knjiga'),
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
@@ -122,12 +122,12 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     return vozilo.registracijaVaziDo!.difference(DateTime.now()).inDays;
   }
 
-  // Informativna senka za 15-30 dana do isteka (žuta/limeta)
+  // Informativna senka za 15-30 dana do isteka (Å¾uta/limeta)
   List<BoxShadow>? _getRegistracijaSenka(Vozilo vozilo) {
     final danaDoIsteka = _getDanaDoIsteka(vozilo);
     if (danaDoIsteka == null) return null;
 
-    // Samo za 15-30 dana (≤14 dana već ima widget na home screenu)
+    // Samo za 15-30 dana (â‰¤14 dana veÄ‡ ima widget na home screenu)
     if (danaDoIsteka >= 15 && danaDoIsteka <= 30) {
       return [
         BoxShadow(
@@ -180,21 +180,21 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Otkaži'),
+            child: const Text('OtkaÅ¾i'),
           ),
           ElevatedButton(
             onPressed: () {
               final broj = int.tryParse(controller.text);
               Navigator.pop(context, broj);
             },
-            child: const Text('Sačuvaj'),
+            child: const Text('SaÄuvaj'),
           ),
         ],
       ),
     );
 
     if (result != null && result != vozilo.brojMesta) {
-      await VozilaService.updateBrojMesta(vozilo.id, result);
+      await V2VozilaService.updateBrojMesta(vozilo.id, result);
       await _loadVozila();
       if (mounted) {
         AppSnackBar.info(context, 'Broj mesta za ${vozilo.registarskiBroj}: $result');
@@ -243,7 +243,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
-                        boxShadow: registracijaSenka, // 🟡 Informativna senka 15-30 dana
+                        boxShadow: registracijaSenka, // ðŸŸ¡ Informativna senka 15-30 dana
                       ),
                       child: Icon(
                         Icons.airport_shuttle,
@@ -344,7 +344,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                           const Icon(Icons.speed, size: 16, color: Colors.blue),
                           const SizedBox(width: 6),
                           Text(
-                            'Trenutna kilometraža: ',
+                            'Trenutna kilometraÅ¾a: ',
                             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                           ),
                           Text(
@@ -361,18 +361,18 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             const SizedBox(height: 16),
 
-            // Broj šasije
+            // Broj Å¡asije
             _buildEditableField(
-              icon: '🔢',
-              label: 'Broj šasije (VIN)',
+              icon: 'ðŸ”¢',
+              label: 'Broj Å¡asije (VIN)',
               value: v.brojSasije,
-              onEdit: () => _editTextField('broj_sasije', 'Broj šasije', v.brojSasije),
+              onEdit: () => _editTextField('broj_sasije', 'Broj Å¡asije', v.brojSasije),
             ),
 
-            // Registracija važi do
+            // Registracija vaÅ¾i do
             _buildEditableField(
-              icon: '📋',
-              label: 'Registracija važi do',
+              icon: 'ðŸ“‹',
+              label: 'Registracija vaÅ¾i do',
               value: Vozilo.formatDatum(v.registracijaVaziDo),
               valueColor: v.registracijaIstekla
                   ? Colors.red
@@ -385,12 +385,12 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                       ? '${v.danaDoIstekaRegistracije} dana'
                       : null,
               badgeColor: v.registracijaIstekla ? Colors.red : Colors.orange,
-              onEdit: () => _editDateField('registracija_vazi_do', 'Registracija važi do', v.registracijaVaziDo),
+              onEdit: () => _editDateField('registracija_vazi_do', 'Registracija vaÅ¾i do', v.registracijaVaziDo),
             ),
 
             // Napomena
             _buildEditableField(
-              icon: '📝',
+              icon: 'ðŸ“',
               label: 'Napomena',
               value: v.napomena ?? '-',
               onEdit: () => _editTextField('napomena', 'Napomena', v.napomena, multiline: true),
@@ -400,7 +400,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             // Mali servis
             _buildEditableField(
-              icon: '🔧',
+              icon: 'ðŸ”§',
               label: 'Mali servis',
               value: _formatServis(v.maliServisDatum, v.maliServisKm),
               onEdit: () => _editServisField('mali_servis', 'Mali servis', v.maliServisDatum, v.maliServisKm),
@@ -408,7 +408,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             // Veliki servis
             _buildEditableField(
-              icon: '🛠️',
+              icon: 'ðŸ› ï¸',
               label: 'Veliki servis',
               value: _formatServis(v.velikiServisDatum, v.velikiServisKm),
               onEdit: () => _editServisField('veliki_servis', 'Veliki servis', v.velikiServisDatum, v.velikiServisKm),
@@ -416,7 +416,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             // Alternator
             _buildEditableField(
-              icon: '⚡',
+              icon: 'âš¡',
               label: 'Alternator',
               value: _formatServis(v.alternatorDatum, v.alternatorKm),
               onEdit: () => _editServisField('alternator', 'Alternator', v.alternatorDatum, v.alternatorKm),
@@ -424,33 +424,33 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             // Akumulator
             _buildEditableField(
-              icon: '🔋',
+              icon: 'ðŸ”‹',
               label: 'Akumulator',
               value: _formatServis(v.akumulatorDatum, v.akumulatorKm),
               onEdit: () => _editServisField('akumulator', 'Akumulator', v.akumulatorDatum, v.akumulatorKm),
             ),
 
-            // Pločice prednje
+            // PloÄice prednje
             _buildEditableField(
-              icon: '🛑',
-              label: 'Pločice prednje',
+              icon: 'ðŸ›‘',
+              label: 'PloÄice prednje',
               value: _formatServis(v.plocicePrednjeDatum, v.plocicePrednjeKm),
               onEdit: () =>
-                  _editServisField('plocice_prednje', 'Pločice prednje', v.plocicePrednjeDatum, v.plocicePrednjeKm),
+                  _editServisField('plocice_prednje', 'PloÄice prednje', v.plocicePrednjeDatum, v.plocicePrednjeKm),
             ),
 
-            // Pločice zadnje
+            // PloÄice zadnje
             _buildEditableField(
-              icon: '🛑',
-              label: 'Pločice zadnje',
+              icon: 'ðŸ›‘',
+              label: 'PloÄice zadnje',
               value: _formatServis(v.plociceZadnjeDatum, v.plociceZadnjeKm),
               onEdit: () =>
-                  _editServisField('plocice_zadnje', 'Pločice zadnje', v.plociceZadnjeDatum, v.plociceZadnjeKm),
+                  _editServisField('plocice_zadnje', 'PloÄice zadnje', v.plociceZadnjeDatum, v.plociceZadnjeKm),
             ),
 
             // Trap
             _buildEditableField(
-              icon: '🔩',
+              icon: 'ðŸ”©',
               label: 'Trap',
               value: _formatServis(v.trapDatum, v.trapKm),
               onEdit: () => _editServisField('trap', 'Trap', v.trapDatum, v.trapKm),
@@ -460,7 +460,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             // Gume prednje
             _buildEditableField(
-              icon: '🛞',
+              icon: 'ðŸ›ž',
               label: 'Gume prednje',
               value: v.gumePrednjeOpis ?? v.gumeOpis ?? '-',
               subtitle: _formatGumeSubtitle(v.gumePrednjeDatum ?? v.gumeDatum, v.gumePrednjeKm),
@@ -474,7 +474,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             // Gume zadnje
             _buildEditableField(
-              icon: '🛞',
+              icon: 'ðŸ›ž',
               label: 'Gume zadnje',
               value: v.gumeZadnjeOpis ?? '-',
               subtitle: _formatGumeSubtitle(v.gumeZadnjeDatum, v.gumeZadnjeKm),
@@ -485,7 +485,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
             // Radio code
             _buildEditableField(
-              icon: '📻',
+              icon: 'ðŸ“»',
               label: 'Radio code',
               value: v.radio,
               onEdit: () => _editTextField('radio', 'Radio code', v.radio),
@@ -503,7 +503,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     final parts = <String>[];
     if (datum != null) parts.add(Vozilo.formatDatum(datum));
     if (km != null) parts.add('${_formatBroja.format(km)} km');
-    return parts.join(' • ');
+    return parts.join(' â€¢ ');
   }
 
   String? _formatGumeSubtitle(DateTime? datum, int? km) {
@@ -511,7 +511,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     final parts = <String>[];
     if (datum != null) parts.add('Menjane: ${Vozilo.formatDatum(datum)}');
     if (km != null) parts.add('${_formatBroja.format(km)} km');
-    return parts.join(' • ');
+    return parts.join(' â€¢ ');
   }
 
   Widget _buildEditableField({
@@ -576,9 +576,9 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // EDIT DIALOGS
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   void _editTextField(String field, String label, String? currentValue, {bool multiline = false}) {
     final controller = TextEditingController(text: currentValue);
@@ -599,11 +599,11 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Otkaži'),
+            child: const Text('OtkaÅ¾i'),
           ),
           TextButton(
             onPressed: () async {
-              final success = await VozilaService.updateKolskaKnjiga(
+              final success = await V2VozilaService.updateKolskaKnjiga(
                 _selectedVozilo!.id,
                 {field: controller.text.isEmpty ? null : controller.text},
               );
@@ -611,10 +611,10 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
               Navigator.pop(context);
               if (success) {
                 _loadVozila();
-                AppSnackBar.success(context, '✅ Sačuvano');
+                AppSnackBar.success(context, 'âœ… SaÄuvano');
               }
             },
-            child: const Text('Sačuvaj'),
+            child: const Text('SaÄuvaj'),
           ),
         ],
       ),
@@ -631,14 +631,14 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
     );
 
     if (picked != null) {
-      final success = await VozilaService.updateKolskaKnjiga(
+      final success = await V2VozilaService.updateKolskaKnjiga(
         _selectedVozilo!.id,
         {field: picked.toIso8601String().split('T')[0]},
       );
       if (success) {
         _loadVozila();
         if (mounted) {
-          AppSnackBar.success(context, '✅ Sačuvano');
+          AppSnackBar.success(context, 'âœ… SaÄuvano');
         }
       }
     }
@@ -706,12 +706,12 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Kilometraža
+                    // KilometraÅ¾a
                     TextField(
                       controller: kmController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Kilometraža servisa',
+                        labelText: 'KilometraÅ¾a servisa',
                         hintText: currentVanKm != null ? 'Trenutno: $currentVanKm km' : null,
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.speed),
@@ -729,19 +729,19 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                           '${prefix}_km': kmValue,
                         };
 
-                        // Ako je uneta kilometraža veća od trenutne u bazi, ažuriraj i nju
+                        // Ako je uneta kilometraÅ¾a veÄ‡a od trenutne u bazi, aÅ¾uriraj i nju
                         if (kmValue != null && kmValue > (_selectedVozilo?.kilometraza ?? 0)) {
                           updateData['kilometraza'] = kmValue.toDouble();
                         }
 
-                        final success = await VozilaService.updateKolskaKnjiga(
+                        final success = await V2VozilaService.updateKolskaKnjiga(
                           _selectedVozilo!.id,
                           updateData,
                         );
 
                         // Dodaj u istoriju
                         if (success && (selectedDatum != null || kmValue != null)) {
-                          await VozilaService.addIstorijuServisa(
+                          await V2VozilaService.addIstorijuServisa(
                             voziloId: _selectedVozilo!.id,
                             tip: prefix,
                             datum: selectedDatum,
@@ -753,11 +753,11 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                         Navigator.pop(context);
                         if (success) {
                           _loadVozila();
-                          AppSnackBar.success(context, '✅ Sačuvano');
+                          AppSnackBar.success(context, 'âœ… SaÄuvano');
                         }
                       },
                       icon: const Icon(Icons.save),
-                      label: const Text('Sačuvaj'),
+                      label: const Text('SaÄuvaj'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -782,13 +782,13 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
     // Tipovi guma sa emoji
     String? selectedTip;
-    // Pokušaj prepoznati tip iz opisa
+    // PokuÅ¡aj prepoznati tip iz opisa
     if (opis != null) {
-      if (opis.contains('☀️') || opis.toLowerCase().contains('letn')) {
+      if (opis.contains('â˜€ï¸') || opis.toLowerCase().contains('letn')) {
         selectedTip = 'letnje';
-      } else if (opis.contains('❄️') || opis.toLowerCase().contains('zimsk')) {
+      } else if (opis.contains('â„ï¸') || opis.toLowerCase().contains('zimsk')) {
         selectedTip = 'zimske';
-      } else if (opis.contains('🌤️') ||
+      } else if (opis.contains('ðŸŒ¤ï¸') ||
           opis.toLowerCase().contains('m+s') ||
           opis.toLowerCase().contains('univerzal')) {
         selectedTip = 'ms';
@@ -818,7 +818,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '🛞 $label',
+                      'ðŸ›ž $label',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
@@ -831,7 +831,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                       children: [
                         Expanded(
                           child: _buildTipGumaChip(
-                            '☀️ Letnje',
+                            'â˜€ï¸ Letnje',
                             'letnje',
                             selectedTip,
                             (tip) => setStateDialog(() => selectedTip = tip),
@@ -840,7 +840,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildTipGumaChip(
-                            '❄️ Zimske',
+                            'â„ï¸ Zimske',
                             'zimske',
                             selectedTip,
                             (tip) => setStateDialog(() => selectedTip = tip),
@@ -849,7 +849,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildTipGumaChip(
-                            '🌤️ M+S',
+                            'ðŸŒ¤ï¸ M+S',
                             'ms',
                             selectedTip,
                             (tip) => setStateDialog(() => selectedTip = tip),
@@ -900,12 +900,12 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Kilometraža
+                    // KilometraÅ¾a
                     TextField(
                       controller: kmController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Kilometraža zamene',
+                        labelText: 'KilometraÅ¾a zamene',
                         hintText: currentVanKm != null ? 'Trenutno: $currentVanKm km' : null,
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.speed),
@@ -916,14 +916,14 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
                     ElevatedButton.icon(
                       onPressed: () async {
-                        // Složi opis sa tipom guma
+                        // SloÅ¾i opis sa tipom guma
                         String finalOpis = '';
                         if (selectedTip != null) {
                           final tipEmoji = selectedTip == 'letnje'
-                              ? '☀️'
+                              ? 'â˜€ï¸'
                               : selectedTip == 'zimske'
-                                  ? '❄️'
-                                  : '🌤️';
+                                  ? 'â„ï¸'
+                                  : 'ðŸŒ¤ï¸';
                           finalOpis = tipEmoji;
                         }
                         if (opisController.text.isNotEmpty) {
@@ -932,7 +932,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
                         final kmValue = int.tryParse(kmController.text);
 
-                        // Sačuvaj u vozila tabelu
+                        // SaÄuvaj u vozila tabelu
                         final Map<String, dynamic> updateData = isPrednje
                             ? {
                                 'gume_prednje_datum': selectedDatum?.toIso8601String().split('T')[0],
@@ -945,19 +945,19 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                                 'gume_zadnje_km': kmValue,
                               };
 
-                        // Ako je uneta kilometraža veća od trenutne u bazi, ažuriraj i nju
+                        // Ako je uneta kilometraÅ¾a veÄ‡a od trenutne u bazi, aÅ¾uriraj i nju
                         if (kmValue != null && kmValue > (_selectedVozilo?.kilometraza ?? 0)) {
                           updateData['kilometraza'] = kmValue.toDouble();
                         }
 
-                        final success = await VozilaService.updateKolskaKnjiga(
+                        final success = await V2VozilaService.updateKolskaKnjiga(
                           _selectedVozilo!.id,
                           updateData,
                         );
 
                         // Dodaj u istoriju
                         if (success && selectedDatum != null) {
-                          await VozilaService.addIstorijuServisa(
+                          await V2VozilaService.addIstorijuServisa(
                             voziloId: _selectedVozilo!.id,
                             tip: isPrednje ? 'gume_prednje' : 'gume_zadnje',
                             datum: selectedDatum,
@@ -971,11 +971,11 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
                         Navigator.pop(context);
                         if (success) {
                           _loadVozila();
-                          AppSnackBar.success(context, '✅ Sačuvano');
+                          AppSnackBar.success(context, 'âœ… SaÄuvano');
                         }
                       },
                       icon: const Icon(Icons.save),
-                      label: const Text('Sačuvaj'),
+                      label: const Text('SaÄuvaj'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../globals.dart';
 import 'notification_navigation_service.dart';
-import 'vozac_service.dart';
+import 'v2_vozac_service.dart';
 
 class RealtimeNotificationService {
   // ⚡ STREAM ZA IN-APP NOTIFIKACIJE
@@ -73,11 +73,11 @@ class RealtimeNotificationService {
     try {
       // 🔧 FIX: Dinamičko učitavanje admin vozača
       const adminNames = ['Bojan'];
-      final vozacService = VozacService();
+      final vozacService = V2VozacService();
       final allVozaci = await vozacService.getAllVozaci();
       final adminVozaci = allVozaci.where((v) => adminNames.contains(v.ime)).map((v) => v.ime).toList();
 
-      final response = await supabase.from('push_tokens').select('token, provider').inFilter('user_id', adminVozaci);
+      final response = await supabase.from('v2_push_tokens').select('token, provider').inFilter('user_id', adminVozaci);
 
       if ((response as List).isEmpty) return;
 
@@ -107,7 +107,7 @@ class RealtimeNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      final response = await supabase.from('push_tokens').select('token, provider').eq('putnik_id', putnikId);
+      final response = await supabase.from('v2_push_tokens').select('token, provider').eq('putnik_id', putnikId);
 
       if ((response as List).isEmpty) {
         debugPrint('⚠️ [RealtimeNotification] Nema tokena za putnika $putnikId');

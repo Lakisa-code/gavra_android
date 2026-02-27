@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -8,8 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_manager.dart';
 import 'firebase_background_handler.dart';
 import 'local_notification_service.dart';
-import 'push_token_service.dart';
 import 'realtime_notification_service.dart';
+import 'v2_push_token_service.dart';
 
 class FirebaseService {
   static String? _currentDriver;
@@ -21,33 +21,33 @@ class FirebaseService {
 
       final messaging = FirebaseMessaging.instance;
 
-      // 🌙 Background Handler Registration
+      // ðŸŒ™ Background Handler Registration
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
       // Request notification permission
       try {
         await messaging.requestPermission();
       } catch (e) {
-        debugPrint('⚠️ Error requesting FCM permission: $e');
+        debugPrint('âš ï¸ Error requesting FCM permission: $e');
       }
     } catch (e) {
-      // Ignoriši greške
+      // IgnoriÅ¡i greÅ¡ke
     }
   }
 
-  /// Dobija trenutnog vozača - DELEGIRA NA AuthManager
-  /// AuthManager čita iz Supabase (push_tokens tabela) kao izvor istine
+  /// Dobija trenutnog vozaÄa - DELEGIRA NA AuthManager
+  /// AuthManager Äita iz Supabase (push_tokens tabela) kao izvor istine
   static Future<String?> getCurrentDriver() async {
     _currentDriver = await AuthManager.getCurrentDriver();
     return _currentDriver;
   }
 
-  /// Postavlja trenutnog vozača
+  /// Postavlja trenutnog vozaÄa
   static Future<void> setCurrentDriver(String driver) async {
     _currentDriver = driver;
   }
 
-  /// Briše trenutnog vozača
+  /// BriÅ¡e trenutnog vozaÄa
   static Future<void> clearCurrentDriver() async {
     _currentDriver = null;
   }
@@ -63,7 +63,7 @@ class FirebaseService {
     }
   }
 
-  /// 📲 Registruje FCM token na server (push_tokens tabela)
+  /// ðŸ“² Registruje FCM token na server (push_tokens tabela)
   /// Ovo se mora pozvati pri pokretanju aplikacije
   static Future<String?> initializeAndRegisterToken() async {
     try {
@@ -75,7 +75,7 @@ class FirebaseService {
       try {
         await messaging.requestPermission();
       } catch (e) {
-        debugPrint('⚠️ Error requesting FCM permission (init): $e');
+        debugPrint('âš ï¸ Error requesting FCM permission (init): $e');
       }
 
       // Get token
@@ -89,7 +89,7 @@ class FirebaseService {
             await _registerTokenWithServer(newToken);
           },
           onError: (error) {
-            debugPrint('🔴 [FirebaseService] Token refresh error: $error');
+            debugPrint('ðŸ”´ [FirebaseService] Token refresh error: $error');
           },
         );
 
@@ -112,28 +112,28 @@ class FirebaseService {
     try {
       driverName = await AuthManager.getCurrentDriver();
 
-      // Ako nije vozač, proveri da li je putnik
+      // Ako nije vozaÄ, proveri da li je putnik
       if (driverName == null || driverName.isEmpty) {
         final prefs = await SharedPreferences.getInstance();
-        // Ovi ključevi se koriste u RegistrovaniPutnikProfilScreen za auto-login i identifikaciju
-        // Moramo naći putnikId - obično se dobija iz baze pri prijavi, ali ga možemo keširati
+        // Ovi kljuÄevi se koriste u RegistrovaniPutnikProfilScreen za auto-login i identifikaciju
+        // Moramo naÄ‡i putnikId - obiÄno se dobija iz baze pri prijavi, ali ga moÅ¾emo keÅ¡irati
         putnikId = prefs.getString('registrovani_putnik_id');
         putnikIme = prefs.getString('registrovani_putnik_ime');
       }
     } catch (e) {
-      debugPrint('⚠️ Error getting current user for FCM: $e');
+      debugPrint('âš ï¸ Error getting current user for FCM: $e');
     }
 
     // Registruj ako imamo bilo koga
     if (driverName != null && driverName.isNotEmpty) {
-      await PushTokenService.registerToken(
+      await V2PushTokenService.registerToken(
         token: token,
         provider: 'fcm',
         userType: 'vozac',
         userId: driverName,
       );
     } else if (putnikId != null && putnikId.isNotEmpty) {
-      await PushTokenService.registerToken(
+      await V2PushTokenService.registerToken(
         token: token,
         provider: 'fcm',
         userType: 'putnik',
@@ -141,16 +141,16 @@ class FirebaseService {
         putnikId: putnikId,
       );
     } else {
-      debugPrint('⚠️ [FirebaseService] Korisnik nije ulogovan - FCM token nije registrovan na serveru');
+      debugPrint('âš ï¸ [FirebaseService] Korisnik nije ulogovan - FCM token nije registrovan na serveru');
     }
   }
 
-  /// 🔒 Flag da sprečimo višestruko registrovanje FCM listenera
+  /// ðŸ”’ Flag da spreÄimo viÅ¡estruko registrovanje FCM listenera
   static bool _fcmListenerRegistered = false;
 
   /// Postavlja FCM listener
   static void setupFCMListeners() {
-    // ✅ Sprečava višestruko registrovanje (duplirane notifikacije)
+    // âœ… SpreÄava viÅ¡estruko registrovanje (duplirane notifikacije)
     if (_fcmListenerRegistered) return;
     _fcmListenerRegistered = true;
 
@@ -163,7 +163,7 @@ class FirebaseService {
 
         // Show a local notification when app is foreground
         try {
-          // Prvo pokušaj notification payload, pa data payload
+          // Prvo pokuÅ¡aj notification payload, pa data payload
           final title = message.notification?.title ?? message.data['title'] as String? ?? 'Gavra Notification';
           final body = message.notification?.body ??
               message.data['body'] as String? ??
@@ -174,7 +174,7 @@ class FirebaseService {
         } catch (_) {}
       },
       onError: (error) {
-        debugPrint('🔴 [FirebaseService] onMessage stream error: $error');
+        debugPrint('ðŸ”´ [FirebaseService] onMessage stream error: $error');
       },
     );
 
@@ -184,11 +184,11 @@ class FirebaseService {
           // Navigate or handle tap
           RealtimeNotificationService.handleInitialMessage(message.data);
         } catch (e) {
-          debugPrint('🔴 [FirebaseService] onMessageOpenedApp error: $e');
+          debugPrint('ðŸ”´ [FirebaseService] onMessageOpenedApp error: $e');
         }
       },
       onError: (error) {
-        debugPrint('🔴 [FirebaseService] onMessageOpenedApp stream error: $error');
+        debugPrint('ðŸ”´ [FirebaseService] onMessageOpenedApp stream error: $error');
       },
     );
   }

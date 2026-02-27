@@ -5,8 +5,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
-import '../services/adresa_supabase_service.dart';
 import '../services/registrovani_putnik_service.dart';
+import '../services/v2_adresa_supabase_service.dart';
 import '../services/voznje_log_service.dart'; // 📝 DODATO
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
@@ -81,8 +81,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   /// Učitaj odobrene adrese iz baze
   Future<void> _loadAdreseFromDatabase() async {
     try {
-      final adreseBC = await AdresaSupabaseService.getAdreseZaGrad('BC');
-      final adreseVS = await AdresaSupabaseService.getAdreseZaGrad('VS');
+      final adreseBC = await V2AdresaSupabaseService.getAdreseZaGrad('BC');
+      final adreseVS = await V2AdresaSupabaseService.getAdreseZaGrad('VS');
 
       if (mounted) {
         setState(() {
@@ -167,16 +167,16 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       }
 
       if (idsToFetch.isNotEmpty) {
-        final fetched = await AdresaSupabaseService.getAdreseByUuids(idsToFetch);
+        final fetched = await V2AdresaSupabaseService.getAdreseByUuids(idsToFetch);
 
         final bcNaziv = putnik.adresaBelaCrkvaId != null
             ? fetched[putnik.adresaBelaCrkvaId!]?.naziv ??
-                await AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaBelaCrkvaId)
+                await V2AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaBelaCrkvaId)
             : null;
 
         final vsNaziv = putnik.adresaVrsacId != null
             ? fetched[putnik.adresaVrsacId!]?.naziv ??
-                await AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaVrsacId)
+                await V2AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaVrsacId)
             : null;
 
         if (mounted) {

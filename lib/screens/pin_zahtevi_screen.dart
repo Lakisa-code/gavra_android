@@ -1,15 +1,15 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../services/pin_zahtev_service.dart';
+import '../services/v2_pin_zahtev_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 
-/// 📋 PIN ZAHTEVI SCREEN
-/// Admin vidi sve zahteve za PIN i može da odobri/odbije
+/// ðŸ“‹ PIN ZAHTEVI SCREEN
+/// Admin vidi sve zahteve za PIN i moÅ¾e da odobri/odbije
 class PinZahteviScreen extends StatefulWidget {
   const PinZahteviScreen({super.key});
 
@@ -21,7 +21,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: PinZahtevService.streamZahteviKojiCekaju(),
+      stream: V2PinZahtevService.streamZahteviKojiCekaju(),
       builder: (context, snapshot) {
         final zahtevi = snapshot.data ?? [];
         final isLoading = snapshot.connectionState == ConnectionState.waiting && zahtevi.isEmpty;
@@ -45,7 +45,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                         : zahtevi.isEmpty
                             ? const Center(
                                 child: Text(
-                                  'Nema zahteva na čekanju.',
+                                  'Nema zahteva na Äekanju.',
                                   style: TextStyle(color: Colors.white70),
                                 ),
                               )
@@ -67,15 +67,15 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     );
   }
 
-  /// Generiši random 4-cifreni PIN
+  /// GeneriÅ¡i random 4-cifreni PIN
   String _generatePin() {
     final random = Random();
     return (1000 + random.nextInt(9000)).toString();
   }
 
-  /// Pošalji PIN putem SMS-a
+  /// PoÅ¡alji PIN putem SMS-a
   Future<void> _posaljiPinSms(String brojTelefona, String pin, String ime) async {
-    final message = 'Vaš PIN za aplikaciju Gavra 013 je: $pin\n'
+    final message = 'VaÅ¡ PIN za aplikaciju Gavra 013 je: $pin\n'
         'Koristite ovaj PIN zajedno sa brojem telefona za pristup.\n'
         '- Gavra 013';
 
@@ -95,7 +95,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška pri otvaranju SMS: $e');
+        AppSnackBar.error(context, 'GreÅ¡ka pri otvaranju SMS: $e');
       }
     }
   }
@@ -156,7 +156,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                 pinController.text = _generatePin();
               },
               icon: const Icon(Icons.refresh, color: Colors.amber),
-              label: const Text('Generiši novi', style: TextStyle(color: Colors.amber)),
+              label: const Text('GeneriÅ¡i novi', style: TextStyle(color: Colors.amber)),
             ),
           ],
         ),
@@ -181,20 +181,20 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     );
 
     if (rezultat != null) {
-      final success = await PinZahtevService.odobriZahtev(
+      final success = await V2PinZahtevService.odobriZahtev(
         zahtevId: zahtevId,
         pin: rezultat,
       );
 
       if (!mounted) return;
       if (success) {
-        AppSnackBar.success(context, '✅ PIN $rezultat dodeljen putniku $ime');
-        // Automatski otvori SMS da pošalje PIN
+        AppSnackBar.success(context, 'âœ… PIN $rezultat dodeljen putniku $ime');
+        // Automatski otvori SMS da poÅ¡alje PIN
         if (brojTelefona.isNotEmpty) {
           await _posaljiPinSms(brojTelefona, rezultat, ime);
         }
       } else {
-        AppSnackBar.error(context, 'Greška pri dodeli PIN-a');
+        AppSnackBar.error(context, 'GreÅ¡ka pri dodeli PIN-a');
       }
     }
   }
@@ -218,7 +218,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
           ],
         ),
         content: Text(
-          'Da li sigurno želite da odbijete zahtev za PIN od putnika $ime?',
+          'Da li sigurno Å¾elite da odbijete zahtev za PIN od putnika $ime?',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -236,12 +236,12 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
     );
 
     if (potvrda == true) {
-      final success = await PinZahtevService.odbijZahtev(zahtevId);
+      final success = await V2PinZahtevService.odbijZahtev(zahtevId);
       if (!mounted) return;
       if (success) {
         AppSnackBar.warning(context, 'Zahtev od $ime je odbijen');
       } else {
-        AppSnackBar.error(context, 'Greška pri odbijanju');
+        AppSnackBar.error(context, 'GreÅ¡ka pri odbijanju');
       }
     }
   }
@@ -297,9 +297,9 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                       ),
                       Text(
                         tip == 'radnik'
-                            ? '👷 Radnik'
+                            ? 'ðŸ‘· Radnik'
                             : tip == 'ucenik'
-                                ? '🎓 Učenik'
+                                ? 'ðŸŽ“ UÄenik'
                                 : tip,
                         style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
                       ),
@@ -313,7 +313,7 @@ class _PinZahteviScreenState extends State<PinZahteviScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    '⏳ Čeka',
+                    'â³ ÄŒeka',
                     style: TextStyle(color: Colors.orange, fontSize: 12),
                   ),
                 ),

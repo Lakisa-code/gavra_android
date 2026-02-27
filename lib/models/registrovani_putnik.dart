@@ -1,4 +1,4 @@
-﻿import '../services/adresa_supabase_service.dart';
+﻿import '../services/v2_adresa_supabase_service.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
 class RegistrovaniPutnik {
@@ -288,13 +288,13 @@ class RegistrovaniPutnik {
   /// Dobija naziv adrese za Belu Crkvu
   Future<String?> getAdresaBelaCrkvaNaziv() async {
     if (adresaBelaCrkvaId == null) return null;
-    return await AdresaSupabaseService.getNazivAdreseByUuid(adresaBelaCrkvaId);
+    return await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaBelaCrkvaId);
   }
 
   /// Dobija naziv adrese za Vrsac
   Future<String?> getAdresaVrsacNaziv() async {
     if (adresaVrsacId == null) return null;
-    return await AdresaSupabaseService.getNazivAdreseByUuid(adresaVrsacId);
+    return await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaVrsacId);
   }
 
   /// Dobija adresu za prikaz na osnovu selektovanog grada

@@ -13,18 +13,18 @@
 | # | Stara tabela | Nova tabela | Fajl | Status |
 |---|---|---|---|:---:|
 | 1 | `weather_alerts_log` | `v2_weather_alerts_log` | `v2_weather_alert_service.dart` | ✅ |
-| 2 | `racun_sequence` | `v2_racun_sequence` | `racun_service.dart` | ⬜ |
-| 3 | `adrese` | `v2_adrese` | `adresa_supabase_service.dart` | ⬜ |
-| 4 | `vozac_raspored` | `v2_vozac_raspored` | `vozac_raspored_service.dart` | ⬜ |
-| 5 | `vozac_putnik` | `v2_vozac_putnik` | `vozac_putnik_service.dart` | ⬜ |
-| 6 | `vozac_lokacije` | `v2_vozac_lokacije` | `driver_location_service.dart` | ⬜ |
-| 7 | `vozila_istorija` | `v2_vozila_servis` | `vozila_service.dart` | ⬜ |
-| 8 | `app_settings` | `v2_app_settings` | `app_settings_service.dart` | ⬜ |
-| 9 | `finansije_troskovi` | `v2_finansije_troskovi` | `finansije_service.dart` | ⬜ |
-| 10 | `pumpa_stanje` | `v2_pumpa_stanje` | `gorivo_service.dart` | ⬜ |
-| 11 | `pumpa_config` | `v2_pumpa_config` | `gorivo_service.dart` | ⬜ |
-| 12 | `pumpa_punjenja` | `v2_pumpa_punjenja` | `gorivo_service.dart` | ⬜ |
-| 13 | `pumpa_tocenja` | `v2_pumpa_tocenja` | `gorivo_service.dart` | ⬜ |
+| 2 | `racun_sequence` | `v2_racun_sequence` | `racun_service.dart` | ✅ |
+| 3 | `adrese` | `v2_adrese` | `adresa_supabase_service.dart` | ✅ |
+| 4 | `vozac_raspored` | `v2_vozac_raspored` | `vozac_raspored_service.dart` | ✅ |
+| 5 | `vozac_putnik` | `v2_vozac_putnik` | `vozac_putnik_service.dart` | ✅ |
+| 6 | `vozac_lokacije` | `v2_vozac_lokacije` | `driver_location_service.dart` | ✅ |
+| 7 | `vozila_istorija` | `v2_vozila_servis` | `vozila_service.dart` | ✅ |
+| 8 | `app_settings` | `v2_app_settings` | `app_settings_service.dart` | ✅ |
+| 9 | `finansije_troskovi` | `v2_finansije_troskovi` | `finansije_service.dart` | ✅ |
+| 10 | `pumpa_stanje` | `v2_pumpa_stanje` | `gorivo_service.dart` | ✅ |
+| 11 | `pumpa_config` | `v2_pumpa_config` | `gorivo_service.dart` | ✅ |
+| 12 | `pumpa_punjenja` | `v2_pumpa_punjenja` | `gorivo_service.dart` | ✅ |
+| 13 | `pumpa_tocenja` | `v2_pumpa_tocenja` | `gorivo_service.dart` | ✅ |
 
 ---
 
@@ -32,45 +32,52 @@
 
 > Više fajlova, ali još uvek direktna zamena stringa.
 
-### `kapacitet_polazaka` → `v2_kapacitet_polazaka` ⬜
+### `kapacitet_polazaka` → `v2_kapacitet_polazaka` ✅
 - `kapacitet_service.dart`
 - `seat_request_service.dart`
 - `realtime_manager.dart`
 
-### `vozaci` → `v2_vozaci` ⬜
+### `vozaci` → `v2_vozaci` ✅
 - `vozac_service.dart`
 - `voznje_log_service.dart`
 - `putnik_service.dart`
 - `auth_manager.dart`
 - `realtime_manager.dart`
 
-### `vozila` → `v2_vozila` ⬜
+### `vozila` → `v2_vozila` ✅
 - `vozila_service.dart`
 - `gorivo_service.dart`
 - `realtime_manager.dart`
 
-### `pin_zahtevi` → `v2_pin_zahtevi` ⬜
+### `pin_zahtevi` → `v2_pin_zahtevi` ✅
 - `pin_zahtev_service.dart`
 - `registrovani_putnik_service.dart`
 
-### `push_tokens` → `v2_push_tokens` ⬜
+### `push_tokens` → `v2_push_tokens` ✅
 - `push_token_service.dart`
 - `realtime_notification_service.dart`
 - `auth_manager.dart`
 
-### `voznje_log` → `v2_voznje_log` ⬜
-- `voznje_log_service.dart`
-- `finansije_service.dart`
-- `putnik_service.dart`
-- `registrovani_putnik_service.dart`
-- `cena_obracun_service.dart`
-- `realtime_manager.dart`
+### `voznje_log` → `v2_statistika_istorija` ✅
+- `voznje_log_service.dart` → `v2_statistika_istorija_service.dart` (`V2StatistikaIstorijaService`) ✅
+- `v2_finansije_service.dart` (sve .from) ✅
+- `statistika_service.dart` (import + klasa) ✅
+- `v2_app_settings_service.dart` (import + klasa) ✅
+- `realtime_manager.dart` (_loadVlCache) ✅
+- `main.dart` (import + dispose) ✅
+- `putnik_service.dart` — ⬜ Sekcija 3
+- `registrovani_putnik_service.dart` — ⬜ Sekcija 3
+- `local_notification_service.dart` — ⬜ Sekcija 3
+- `registrovani_putnik_dialog.dart` — ⬜ Sekcija 3
 
-### `seat_requests` → `v2_polasci` ⬜
-- `seat_request_service.dart`
-- `putnik_service.dart`
-- `local_notification_service.dart`
-- `realtime_manager.dart`
+### `seat_requests` → `v2_polasci` ✅
+- `v2_seat_request_service.dart` (`V2SeatRequestService`) ✅
+- `realtime_manager.dart` (_loadSrCache) ✅
+- `kombi_eta_widget.dart` (subscribe + .from) ✅
+- `seat_requests_screen.dart` ✅
+- `seat_requests_log_screen.dart` ✅
+- `putnik_service.dart` — ⬜ Sekcija 3
+- `local_notification_service.dart` — ⬜ Sekcija 3
 
 ---
 

@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_manager.dart';
 import '../services/biometric_service.dart';
 import '../services/theme_manager.dart';
-import '../services/vozac_service.dart';
 import '../utils/app_snack_bar.dart';
 import 'home_screen.dart';
 import 'vozac_screen.dart';

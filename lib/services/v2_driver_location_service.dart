@@ -11,12 +11,12 @@ import 'permission_service.dart';
 
 /// Servis za slanje GPS lokacije vozača u realtime
 /// Putnici mogu pratiti lokaciju kombija dok čekaju
-class DriverLocationService {
-  static final DriverLocationService _instance = DriverLocationService._internal();
-  factory DriverLocationService() => _instance;
-  DriverLocationService._internal();
+class V2DriverLocationService {
+  static final V2DriverLocationService _instance = V2DriverLocationService._internal();
+  factory V2DriverLocationService() => _instance;
+  V2DriverLocationService._internal();
 
-  static DriverLocationService get instance => _instance;
+  static V2DriverLocationService get instance => _instance;
 
   // RealtimeGpsService garantuje slanje lokacije svakih 30s putem positionStream.
   // Lokacija (lat/lng) → Supabase svake 30s (bez API poziva).
@@ -112,7 +112,7 @@ class DriverLocationService {
     if (_currentVozacId != null) {
       try {
         debugPrint('🛑 [DriverLocation] Stopping tracking for vozac: $_currentVozacId');
-        await supabase.from('vozac_lokacije').update({
+        await supabase.from('v2_vozac_lokacije').update({
           'aktivan': false,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('vozac_id', _currentVozacId!);
@@ -235,7 +235,7 @@ class DriverLocationService {
 
       _lastPosition = position;
 
-      await supabase.from('vozac_lokacije').upsert({
+      await supabase.from('v2_vozac_lokacije').upsert({
         'vozac_id': _currentVozacId,
         'vozac_ime': _currentVozacIme,
         'lat': position.latitude,

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,11 +6,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
-import '../services/kapacitet_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime/realtime_manager.dart';
-import '../services/vozac_putnik_service.dart';
-import '../services/vozac_raspored_service.dart';
+import '../services/v2_kapacitet_service.dart';
+import '../services/v2_vozac_putnik_service.dart';
+import '../services/v2_vozac_raspored_service.dart';
 import '../theme.dart';
 import '../utils/app_snack_bar.dart';
 import '../utils/putnik_count_helper.dart';
@@ -19,9 +19,9 @@ import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_praznici.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 
-/// 🗓️ Ekran za upravljanje rasporedom vozača
-/// Admin može dodijeliti vozača po terminu (vozac_raspored) i po putniku (vozac_putnik).
-/// Realtime: automatski osvježava kada se promijeni raspored ili individualna dodjela putnika.
+/// ðŸ—“ï¸ Ekran za upravljanje rasporedom vozaÄa
+/// Admin moÅ¾e dodijeliti vozaÄa po terminu (vozac_raspored) i po putniku (vozac_putnik).
+/// Realtime: automatski osvjeÅ¾ava kada se promijeni raspored ili individualna dodjela putnika.
 class VozacRasporedScreen extends StatefulWidget {
   const VozacRasporedScreen({super.key});
 
@@ -31,8 +31,8 @@ class VozacRasporedScreen extends StatefulWidget {
 
 class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   final _putnikService = PutnikService();
-  final _rasporedService = VozacRasporedService();
-  final _vozacPutnikService = VozacPutnikService();
+  final _rasporedService = V2VozacRasporedService();
+  final _vozacPutnikService = V2VozacPutnikService();
 
   String _selectedGrad = 'BC';
   String _selectedVreme = '';
@@ -40,7 +40,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   List<VozacRasporedEntry> _rasporedCache = [];
   List<VozacPutnikEntry> _vozacPutnikCache = [];
 
-  // 🔴 Realtime subscriptions
+  // ðŸ”´ Realtime subscriptions
   StreamSubscription<PostgresChangePayload>? _rasporedSub;
 
   final List<String> _days = ['pon', 'uto', 'sre', 'cet', 'pet'];
@@ -76,13 +76,13 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     _subscribeRealtime();
   }
 
-  /// Automatski selektuje najbliže vreme polaska za trenutni čas.
+  /// Automatski selektuje najbliÅ¾e vreme polaska za trenutni Äas.
   /// Prioritet: prvo vreme koje je >= sada, fallback na poslednje vreme u listi.
   void _autoSelectNajblizeVreme() {
     final now = DateTime.now();
     final nowMinutes = now.hour * 60 + now.minute;
 
-    // Pokušaj BC prvo (default grad)
+    // PokuÅ¡aj BC prvo (default grad)
     final bcList = bcVremena;
     String? najblize;
     for (final v in bcList) {
@@ -120,7 +120,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     }
   }
 
-  /// 🔴 Realtime: prati vozac_raspored i vozac_putnik tabele
+  /// ðŸ”´ Realtime: prati vozac_raspored i vozac_putnik tabele
   void _subscribeRealtime() {
     _rasporedSub = RealtimeManager.instance.subscribe('vozac_raspored').listen((_) {
       // Reload iz cache-a pri svakoj promjeni
@@ -136,16 +136,16 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     });
   }
 
-  /// Vraća ISO datum koji odgovara selektovanom danu u sedmici.
-  /// Ako je danas pon a chip je 'sre' → vraća ISO datum za srijedu ove sedmice.
-  /// Vikend → koristi sledeću radnu sedmicu.
+  /// VraÄ‡a ISO datum koji odgovara selektovanom danu u sedmici.
+  /// Ako je danas pon a chip je 'sre' â†’ vraÄ‡a ISO datum za srijedu ove sedmice.
+  /// Vikend â†’ koristi sledeÄ‡u radnu sedmicu.
   String _getIsoDateForSelectedDay() {
     final now = DateTime.now();
-    // Baza: ponedeljak ove sedmice (ili sledeće ako je vikend)
+    // Baza: ponedeljak ove sedmice (ili sledeÄ‡e ako je vikend)
     final int todayWeekday = now.weekday; // 1=pon ... 7=ned
     final int daysToMonday = (todayWeekday == 6 || todayWeekday == 7)
-        ? (8 - todayWeekday) // vikend → sledeći ponedeljak
-        : (1 - todayWeekday); // radni dan → ovaj ponedeljak
+        ? (8 - todayWeekday) // vikend â†’ sledeÄ‡i ponedeljak
+        : (1 - todayWeekday); // radni dan â†’ ovaj ponedeljak
     final monday = now.add(Duration(days: daysToMonday));
 
     const dayOffsets = {'pon': 0, 'uto': 1, 'sre': 2, 'cet': 3, 'pet': 4};
@@ -153,7 +153,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     return monday.add(Duration(days: offset)).toIso8601String().split('T').first;
   }
 
-  /// Da li je selektovani dan u sledećoj sedmici (vikend slučaj)
+  /// Da li je selektovani dan u sledeÄ‡oj sedmici (vikend sluÄaj)
   bool get _isNextWeek {
     final now = DateTime.now();
     return now.weekday == DateTime.saturday || now.weekday == DateTime.sunday;
@@ -172,7 +172,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
       });
   }
 
-  /// 🎨 Vraća boju vozača dodijeljenog terminu (grad+vreme) za selektovani dan
+  /// ðŸŽ¨ VraÄ‡a boju vozaÄa dodijeljenog terminu (grad+vreme) za selektovani dan
   Color? _getVozacColorForTermin(String grad, String vreme) {
     final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
     final entry = _rasporedCache
@@ -184,7 +184,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     return VozacCache.getColor(entry.vozacId);
   }
 
-  /// 🚗 Naziv vozača dodijeljenog terminu
+  /// ðŸš— Naziv vozaÄa dodijeljenog terminu
   String? _getVozacZaTermin(String grad, String vreme) {
     final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
     final entry = _rasporedCache.where((r) => r.dan == dan && r.grad == grad && r.vreme == vreme).firstOrNull;
@@ -194,11 +194,11 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     return VozacCache.getImeByUuid(entry.vozacId);
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // DIALOZI ZA DODJELU
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-  /// 🗓️ Dialog: Dodijeli vozača terminu (vozac_raspored)
+  /// ðŸ—“ï¸ Dialog: Dodijeli vozaÄa terminu (vozac_raspored)
   Future<void> _showTerminAssignDialog(String grad, String vreme) async {
     final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
     final trenutni = _getVozacZaTermin(grad, vreme);
@@ -206,7 +206,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
 
     final vozaci = VozacCache.imenaVozaca;
     if (vozaci.isEmpty) {
-      if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozača');
+      if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozaÄa');
       return;
     }
 
@@ -239,16 +239,16 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                '🗓️ Termin: $grad $vreme — $dan'.toUpperCase(),
+                'ðŸ—“ï¸ Termin: $grad $vreme â€” $dan'.toUpperCase(),
                 style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Dodijeli vozača terminu',
+                'Dodijeli vozaÄa terminu',
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const SizedBox(height: 16),
-              // Lista vozača
+              // Lista vozaÄa
               ...vozaci.map((ime) {
                 final isSelected = odabranVozac == ime;
                 final color = VozacCache.getColor(ime);
@@ -333,15 +333,15 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // BAZA OPERACIJE
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-  /// 👤 Dialog: Dodijeli vozača pojedinačnom putniku (vozac_putnik individualna dodjela)
-  /// Samo dostupno kada termin NEMA vozača u vozac_raspored.
+  /// ðŸ‘¤ Dialog: Dodijeli vozaÄa pojedinaÄnom putniku (vozac_putnik individualna dodjela)
+  /// Samo dostupno kada termin NEMA vozaÄa u vozac_raspored.
   Future<void> _showPutnikAssignDialog(Putnik putnik) async {
     final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
-    // Pronađi trenutnu individualnu dodjelu za ovog putnika
+    // PronaÄ‘i trenutnu individualnu dodjelu za ovog putnika
     final trenutniEntry = _vozacPutnikCache
         .where(
           (e) => e.putnikId == putnik.id?.toString(),
@@ -352,7 +352,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
 
     final vozaci = VozacCache.imenaVozaca;
     if (vozaci.isEmpty) {
-      if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozača');
+      if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozaÄa');
       return;
     }
 
@@ -385,21 +385,21 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                '👤 ${putnik.ime}'.toUpperCase(),
+                'ðŸ‘¤ ${putnik.ime}'.toUpperCase(),
                 style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1),
               ),
               const SizedBox(height: 4),
               Text(
-                '$_selectedGrad $_selectedVreme — $dan'.toUpperCase(),
+                '$_selectedGrad $_selectedVreme â€” $dan'.toUpperCase(),
                 style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Dodijeli vozača putniku',
+                'Dodijeli vozaÄa putniku',
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const SizedBox(height: 16),
-              // Lista vozača
+              // Lista vozaÄa
               ...vozaci.map((ime) {
                 final isSelected = odabranVozac == ime;
                 final color = VozacCache.getColor(ime);
@@ -455,9 +455,9 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                     final ok = await _vozacPutnikService.delete(putnikId: putnik.id!.toString());
                     if (ok) {
                       await _loadAll();
-                      if (mounted) AppSnackBar.success(context, '🗑️ Individualna dodjela uklonjena');
+                      if (mounted) AppSnackBar.success(context, 'ðŸ—‘ï¸ Individualna dodjela uklonjena');
                     } else {
-                      if (mounted) AppSnackBar.error(context, '❌ Greška pri brisanju');
+                      if (mounted) AppSnackBar.error(context, 'âŒ GreÅ¡ka pri brisanju');
                     }
                   },
                   icon: const Icon(Icons.person_remove_outlined, color: Colors.redAccent, size: 18),
@@ -487,9 +487,9 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                           );
                           if (ok) {
                             await _loadAll();
-                            if (mounted) AppSnackBar.success(context, '✅ $odabranVozac → ${putnik.ime}');
+                            if (mounted) AppSnackBar.success(context, 'âœ… $odabranVozac â†’ ${putnik.ime}');
                           } else {
-                            if (mounted) AppSnackBar.error(context, '❌ Greška pri dodjeli');
+                            if (mounted) AppSnackBar.error(context, 'âŒ GreÅ¡ka pri dodjeli');
                           }
                         },
                   child: const Text('Potvrdi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -505,7 +505,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   Future<void> _spasiTermin(String dan, String grad, String vreme, String vozacIme) async {
     final vozacId = VozacCache.getUuidByIme(vozacIme);
     if (vozacId == null) {
-      if (mounted) AppSnackBar.error(context, '❌ Vozač nije pronađen u sistemu');
+      if (mounted) AppSnackBar.error(context, 'âŒ VozaÄ nije pronaÄ‘en u sistemu');
       return;
     }
     try {
@@ -517,9 +517,9 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
         vozacId: vozacId,
       ));
       await _loadAll();
-      if (mounted) AppSnackBar.success(context, '✅ $vozacIme → $grad $vreme ($dan)');
+      if (mounted) AppSnackBar.success(context, 'âœ… $vozacIme â†’ $grad $vreme ($dan)');
     } catch (e) {
-      if (mounted) AppSnackBar.error(context, '❌ Greška: $e');
+      if (mounted) AppSnackBar.error(context, 'âŒ GreÅ¡ka: $e');
     }
   }
 
@@ -527,15 +527,15 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     try {
       await _rasporedService.deleteTermin(dan: dan, grad: grad, vreme: vreme, vozac: vozacIme);
       await _loadAll();
-      if (mounted) AppSnackBar.success(context, '🗑️ Dodjela uklonjena: $grad $vreme ($dan)');
+      if (mounted) AppSnackBar.success(context, 'ðŸ—‘ï¸ Dodjela uklonjena: $grad $vreme ($dan)');
     } catch (e) {
-      if (mounted) AppSnackBar.error(context, '❌ Greška: $e');
+      if (mounted) AppSnackBar.error(context, 'âŒ GreÅ¡ka: $e');
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // BUILD
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   @override
   Widget build(BuildContext context) {
@@ -587,11 +587,11 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Raspored vozača',
+                  'Raspored vozaÄa',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(width: 8),
-                // 🟡 Indikator: koliko termina ima dodjelu za selektovani dan
+                // ðŸŸ¡ Indikator: koliko termina ima dodjelu za selektovani dan
                 Builder(builder: (_) {
                   final count = _rasporedCache.where((r) => r.dan == targetDay).length;
                   if (count == 0 && !_isNextWeek) return const SizedBox.shrink();
@@ -602,7 +602,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      _isNextWeek ? 'sledeća sedmica' : '$count',
+                      _isNextWeek ? 'sledeÄ‡a sedmica' : '$count',
                       style: const TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                   );
@@ -615,7 +615,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
             child: SafeArea(
               child: Column(
                 children: [
-                  // 🗓️ DAY CHIPS
+                  // ðŸ—“ï¸ DAY CHIPS
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -680,7 +680,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                     ),
                   ),
 
-                  // 🗓️ TERMIN INFO TRAKA: koji vozač je dodeljen selektovanom terminu
+                  // ðŸ—“ï¸ TERMIN INFO TRAKA: koji vozaÄ je dodeljen selektovanom terminu
                   if (_selectedVreme.isNotEmpty) _buildTerminInfoRow(targetDay),
 
                   // Lista putnika
@@ -741,7 +741,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     );
   }
 
-  /// 🟡 Traka ispod day chips-a: vozač za selektovani termin + tap za izmjenu
+  /// ðŸŸ¡ Traka ispod day chips-a: vozaÄ za selektovani termin + tap za izmjenu
   Widget _buildTerminInfoRow(String dan) {
     final vozac = _getVozacZaTermin(_selectedGrad, _selectedVreme);
     final color = vozac != null ? VozacCache.getColor(vozac) : Colors.white24;
@@ -763,7 +763,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                vozac != null ? 'Vozač: $vozac' : 'Nema dodjele — tap za dodjelu vozača',
+                vozac != null ? 'VozaÄ: $vozac' : 'Nema dodjele â€” tap za dodjelu vozaÄa',
                 style: TextStyle(
                   color: vozac != null ? Colors.white : Colors.white54,
                   fontWeight: FontWeight.w600,
@@ -789,7 +789,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
       selectedGrad: _selectedGrad,
       selectedVreme: _selectedVreme,
       getPutnikCount: getPutnikCount,
-      getKapacitet: (String grad, String vreme) => KapacitetService.getKapacitetSync(grad, vreme),
+      getKapacitet: (String grad, String vreme) => V2KapacitetService.getKapacitetSync(grad, vreme),
       onPolazakChanged: _onPolazakChanged,
       selectedDan: targetDay,
       showVozacBoja: true,
@@ -837,18 +837,18 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // TILE ZA PUTNIKA U RASPORED EKRANU
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 /// Prikazuje jednog putnika u raspored ekranu.
 ///
-/// [terminJeDodeljen] — true ako termin ima vozača u vozac_raspored.
-///   - true  → tap je onemogućen, prikazuje se lock ikona
-///   - false → tap otvara dialog za individualnu dodjelu (vozac_putnik)
+/// [terminJeDodeljen] â€” true ako termin ima vozaÄa u vozac_raspored.
+///   - true  â†’ tap je onemoguÄ‡en, prikazuje se lock ikona
+///   - false â†’ tap otvara dialog za individualnu dodjelu (vozac_putnik)
 ///
-/// [vozacPutnikIme] — ime vozača iz individualne dodjele (ako postoji)
-/// [onTap] — callback za tap (null ako je termin dodeljen)
+/// [vozacPutnikIme] â€” ime vozaÄa iz individualne dodjele (ako postoji)
+/// [onTap] â€” callback za tap (null ako je termin dodeljen)
 class _PutnikRasporedTile extends StatelessWidget {
   const _PutnikRasporedTile({
     required this.putnik,
@@ -894,13 +894,13 @@ class _PutnikRasporedTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      putnik.adresa ?? '${putnik.grad} · ${putnik.polazak}',
+                      putnik.adresa ?? '${putnik.grad} Â· ${putnik.polazak}',
                       style: const TextStyle(color: Colors.white38, fontSize: 12),
                     ),
                   ],
                 ),
               ),
-              // Desna strana: ikona za dodjelu (samo kad termin nema vozača)
+              // Desna strana: ikona za dodjelu (samo kad termin nema vozaÄa)
               if (!terminJeDodeljen) const Icon(Icons.person_add_outlined, color: Colors.white38, size: 18),
             ],
           ),
