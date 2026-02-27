@@ -362,10 +362,11 @@ BEGIN
         JOIN registrovani_putnici rp ON sr.putnik_id = rp.id
         WHERE sr.status = 'pending' 
           AND lower(rp.tip) != 'dnevni' -- ⛔ NE MIJENJATI: Dnevni putnici NIKAD ne prolaze auto-obradu → manual
+        ORDER BY sr.created_at ASC -- Ko je prvi poslao zahtev za taj termin, prvi se obrađuje (jedino pravilo)
     LOOP
         -- Proveri pravilo čekanja za ovaj zahtev
-        -- VAŽNO: Koristimo updated_at (ne created_at) da bi reset vremena radio
-        -- kad putnik promijeni termin - čekanje kreće od posljednje izmjene
+        -- VAŽNO: Koristimo updated_at za mjerenje čekanja (koliko dugo čeka od posljednje izmjene statusa)
+        -- ali REDOSLJED obrade određuje created_at (kada je zahtev kreiran za taj termin)
         SELECT * INTO cekanje_pravilo 
         FROM get_cekanje_pravilo(
             v_req.tip, 
