@@ -119,7 +119,7 @@ class SeatRequestService {
     }
   }
 
-  /// Stream za zahteve koji čekaju ručnu obradu admina (samo tip=dnevni, status=pending)
+  /// Stream za zahteve koji čekaju ručnu obradu admina (svi tipovi, status=pending)
   /// Koristi select+JOIN sa registrovani_putnici da bi dobio putnik_ime i broj_telefona
   static Stream<List<SeatRequest>> streamManualRequests() {
     final controller = StreamController<List<SeatRequest>>.broadcast();
@@ -130,7 +130,6 @@ class SeatRequestService {
             .from('seat_requests')
             .select('*, registrovani_putnici(putnik_ime, broj_telefona)')
             .eq('status', 'pending')
-            .eq('tip_putnika', 'dnevni')
             .order('created_at', ascending: false);
         if (!controller.isClosed) {
           controller.add(data.map((json) => SeatRequest.fromJson(json)).toList());
@@ -190,14 +189,13 @@ class SeatRequestService {
     return controller.stream;
   }
 
-  /// 🔢 Stream za broj zahteva koji čekaju ručnu obradu (za bedž na Home ekranu - samo dnevni)
+  /// 🔢 Stream za broj zahteva koji čekaju ručnu obradu (za bedž na Home ekranu - svi tipovi)
   static Stream<int> streamManualRequestCount() {
     final controller = StreamController<int>.broadcast();
 
     Future<void> fetch() async {
       try {
-        final data =
-            await _supabase.from('seat_requests').select('id').eq('status', 'pending').eq('tip_putnika', 'dnevni');
+        final data = await _supabase.from('seat_requests').select('id').eq('status', 'pending');
         if (!controller.isClosed) {
           controller.add((data as List).length);
         }
@@ -219,13 +217,12 @@ class SeatRequestService {
   /// 🤖 DIGITALNI DISPEČER — replicira dispecer_cron_obrada + obradi_seat_request SQL logiku
   static Future<int> triggerDigitalDispecer() async {
     try {
-      // 1. Dohvati sve pending zahteve (osim dnevnih putnika)
+      // 1. Dohvati sve pending zahteve
       final pendingRows = await _supabase
           .from('seat_requests')
           .select('id, grad, dan, updated_at, zeljeno_vreme, broj_mesta, putnik_id, created_at, '
               'registrovani_putnici!inner(tip)')
-          .eq('status', 'pending')
-          .neq('registrovani_putnici.tip', 'dnevni');
+          .eq('status', 'pending');
 
       if (pendingRows.isEmpty) return 0;
 
