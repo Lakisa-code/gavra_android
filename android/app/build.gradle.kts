@@ -37,7 +37,7 @@ android {
 
     defaultConfig {
         applicationId = "com.gavra013.gavra_android"
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
