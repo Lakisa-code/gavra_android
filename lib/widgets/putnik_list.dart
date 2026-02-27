@@ -38,11 +38,10 @@ class PutnikList extends StatelessWidget {
   final String? selectedDay;
 
   // Helper metoda za sortiranje putnika po grupama
-  // Prioritet zavisi od toga da li ima sivih kartica:
-  // - Ako ima sivih: Moji → Nedodeljeni → Sivi → Plavi → Zeleni → Crveni → Žuti
-  // - Ako nema sivih: Svi beli alfabetski → Plavi → Zeleni → Crveni → Žuti
+  // Prati CardColorHelper prioritet boja:
+  // Beli (moji→nedodeljeni) → Sivi (tuđi) → Plavi → Zeleni → Crveni → Žuti
   int _putnikSortKey(Putnik p, String currentDriver, {bool imaSivih = false}) {
-    // 🟡 ŽUTE - Odsustvo ima najveći sort key (na dno)
+    // 🟡 ŽUTE - Odsustvo
     if (p.jeOdsustvo) {
       return 7; // žute na dno liste
     }
@@ -65,18 +64,16 @@ class PutnikList extends StatelessWidget {
       return 4;
     }
 
-    // 🔘 SIVI - Tuđi putnici (dodeljen DRUGOM vozaču) - NEPOKUPLJENI
+    // 🔘 SIVI - Tuđi putnici (dodeljen DRUGOM vozaču)
     final bool isTudji = p.dodeljenVozac != null &&
         p.dodeljenVozac!.isNotEmpty &&
         p.dodeljenVozac != 'Nedodeljen' &&
         p.dodeljenVozac != currentDriver;
     if (isTudji) {
-      return 3; // sivi - tuđi putnici
+      return 3; // sivi - između belih i plavih
     }
 
-    // ⚪ BELI - Moji ili Nedodeljeni
-    // Ako ima sivih, razdvoji moje i nedodeljene
-    // Ako nema sivih, svi beli zajedno (alfabetski)
+    // ⚪ BELI - Moji ili Nedodeljeni (na vrhu)
     if (imaSivih) {
       final bool isMoj = p.dodeljenVozac == currentDriver;
       if (isMoj) {
@@ -94,7 +91,6 @@ class PutnikList extends StatelessWidget {
     return putnici.any((p) =>
         !p.jeOdsustvo &&
         !p.jeOtkazan &&
-        !p.jePokupljen &&
         p.dodeljenVozac != null &&
         p.dodeljenVozac!.isNotEmpty &&
         p.dodeljenVozac != 'Nedodeljen' &&
