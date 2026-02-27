@@ -493,7 +493,7 @@ class PutnikService {
     }
   }
 
-  Future<void> dodajPutnika(Putnik putnik, {bool skipKapacitetCheck = false}) async {
+  Future<void> dodajPutnika(Putnik putnik) async {
     debugPrint('🔍 [PutnikService] dodajPutnika: ime="${putnik.ime}"');
 
     final res = await supabase

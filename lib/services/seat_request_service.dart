@@ -76,29 +76,6 @@ class SeatRequestService {
     }
   }
 
-  /// @deprecated Koristi [submitPolazak] umesto ovoga.
-  /// Ostavljeno kao alias radi kompatibilnosti sa starim pozivima.
-  static Future<void> insertSeatRequest({
-    required String putnikId,
-    required String dan,
-    required String vreme,
-    required String grad,
-    int brojMesta = 1,
-    String status = 'pending',
-    int priority = 1,
-    String? customAdresaId,
-  }) async {
-    await submitPolazak(
-      putnikId: putnikId,
-      dan: dan,
-      grad: grad,
-      vreme: vreme,
-      brojMesta: brojMesta,
-      isAdmin: status == 'confirmed' || status == 'manual',
-      customAdresaId: customAdresaId,
-    );
-  }
-
   /// Odobrava zahtev — kopira zeljeno_vreme u dodeljeno_vreme
   static Future<bool> approveRequest(String id, {String? approvedBy}) async {
     try {

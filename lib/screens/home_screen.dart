@@ -1713,10 +1713,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         );
 
                                         // Duplikat provera se Vrsi u PutnikService.dodajPutnika()
-                                        await _putnikService.dodajPutnika(
-                                          putnik,
-                                          skipKapacitetCheck: AdminSecurityService.isAdmin(_currentDriver),
-                                        );
+                                        await _putnikService.dodajPutnika(putnik);
 
                                         // 🔄 Eksplicitan refresh stream-a da se putnik odmah prikaže
                                         _putnikService.refreshAllActiveStreams();
