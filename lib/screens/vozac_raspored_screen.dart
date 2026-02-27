@@ -7,7 +7,7 @@ import '../config/route_config.dart';
 import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
-import '../services/realtime/realtime_manager.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_kapacitet_service.dart';
 import '../services/v2_vozac_putnik_service.dart';
 import '../services/v2_vozac_raspored_service.dart';
@@ -122,13 +122,13 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
 
   /// ðŸ”´ Realtime: prati vozac_raspored i vozac_putnik tabele
   void _subscribeRealtime() {
-    _rasporedSub = RealtimeManager.instance.subscribe('vozac_raspored').listen((_) {
+    _rasporedSub = V2MasterRealtimeManager.instance.subscribe('v2_vozac_raspored').listen((_) {
       // Reload iz cache-a pri svakoj promjeni
       final entries =
-          RealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
+          V2MasterRealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
       if (mounted) setState(() => _rasporedCache = entries);
     });
-    RealtimeManager.instance.subscribe('vozac_putnik').listen((_) {
+    V2MasterRealtimeManager.instance.subscribe('v2_vozac_putnik').listen((_) {
       // Reload vozac_putnik cache-a pri svakoj promjeni
       _vozacPutnikService.loadAll().then((data) {
         if (mounted) setState(() => _vozacPutnikCache = data);

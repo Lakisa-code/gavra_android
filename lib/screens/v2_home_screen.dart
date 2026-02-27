@@ -17,7 +17,7 @@ import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ? VRACEN na stari servis zbog grešaka u novom
-import '../services/realtime/realtime_manager.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/slobodna_mesta_service.dart'; // ?? Provera kapaciteta
 import '../services/theme_manager.dart'; // ?? Tema sistem
 import '../services/v2_adresa_supabase_service.dart';
@@ -2683,7 +2683,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   /// ?? Boja vozaca za termin (za bottom nav bar border)
   Color? _getVozacColorForTermin(String grad, String vreme) {
     final dan = _getDayAbbreviation(_selectedDay);
-    final entry = RealtimeManager.instance.rasporedCache.values
+    final entry = V2MasterRealtimeManager.instance.rasporedCache.values
         .map((row) => VozacRasporedEntry.fromMap(row))
         .where((r) => r.dan == dan && r.grad == grad && r.vreme == vreme)
         .firstOrNull;
