@@ -309,14 +309,6 @@ class V2PutnikService {
 
   /// Stream aktivnih putnika kao RegistrovaniPutnik
   Stream<List<RegistrovaniPutnik>> streamAktivniPutnici() async* {
-    // Emituj inicijalne iz cache-a
-    final cached = getSviIzCachea();
-    if (cached.isNotEmpty) {
-      yield cached.map((r) => RegistrovaniPutnik.fromMap(r)).toList();
-    }
-
-    // Emituj svaki put kad se cache promeni
-    // (screeni koji trebaju realtime neka koriste V2MasterRealtimeManager direktno)
     final loaded = await getAllAktivniKaoModel();
     yield loaded;
   }
