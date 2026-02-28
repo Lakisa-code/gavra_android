@@ -116,7 +116,7 @@ class V2PutnikStreamService {
               ['pending', 'manual', 'approved', 'confirmed', 'otkazano', 'cancelled', 'bez_polaska', 'pokupljen']);
       final vlRows = await supabase
           .from('v2_statistika_istorija')
-          .select('id, putnik_id, datum, tip, iznos, vozac_id, vozac_ime, grad, vreme as vreme_polaska, created_at')
+          .select('id, putnik_id, datum, tip, iznos, vozac_id, vozac_ime, grad, vreme, created_at')
           .eq('datum', todayDate);
       final vlByPutnik = <String, List<Map<String, dynamic>>>{};
       for (final vl in vlRows) {
@@ -151,7 +151,7 @@ class V2PutnikStreamService {
     // Filtriraj voznje_log samo za isti grad i vreme
     List<Map<String, dynamic>> matchedVl = vlRows.where((vl) {
       final vlGrad = (vl['grad'] ?? '').toString().toUpperCase();
-      final vlVreme = vl['vreme_polaska']?.toString();
+      final vlVreme = vl['vreme']?.toString();
       final gradOk = vlGrad.isEmpty || vlGrad == srGrad;
       final vremeOk = vlVreme == null || srVreme == null || vlVreme == srVreme;
       return gradOk && vremeOk;

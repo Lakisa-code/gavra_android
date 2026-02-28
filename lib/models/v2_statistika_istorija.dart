@@ -58,7 +58,7 @@ class V2StatistikaIstorija {
       tipPlacanja: json['tip_placanja'] as String?,
       status: json['status'] as String?,
       grad: json['grad'] as String?,
-      vremePolaska: json['vreme_polaska'] as String?,
+      vremePolaska: (json['vreme_polaska'] ?? json['vreme']) as String?,
       vozacIme: json['vozac_ime'] as String?,
     );
   }
