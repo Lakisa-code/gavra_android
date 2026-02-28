@@ -77,7 +77,7 @@ CREATE TABLE public.v2_vozila (
 CREATE TABLE public.v2_radnici (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ime             text NOT NULL,
-  status          text,
+  status          text NOT NULL DEFAULT 'aktivan',
   telefon         text,
   telefon_2       text,
   adresa_bc_id    uuid REFERENCES public.v2_adrese(id),
@@ -85,7 +85,8 @@ CREATE TABLE public.v2_radnici (
   pin             text,
   email           text,
   cena_po_danu    numeric,
-  broj_mesta      int DEFAULT 1,
+  treba_racun     boolean NOT NULL DEFAULT false,
+  broj_mesta      int NOT NULL DEFAULT 1,
   created_at      timestamptz DEFAULT now(),
   updated_at      timestamptz DEFAULT now()
 );
@@ -96,7 +97,7 @@ CREATE TABLE public.v2_radnici (
 CREATE TABLE public.v2_ucenici (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ime             text NOT NULL,
-  status          text,
+  status          text NOT NULL DEFAULT 'aktivan',
   telefon         text,
   telefon_oca     text,
   telefon_majke   text,
@@ -105,7 +106,8 @@ CREATE TABLE public.v2_ucenici (
   pin             text,
   email           text,
   cena_po_danu    numeric,
-  broj_mesta      int DEFAULT 1,
+  treba_racun     boolean NOT NULL DEFAULT false,
+  broj_mesta      int NOT NULL DEFAULT 1,
   created_at      timestamptz DEFAULT now(),
   updated_at      timestamptz DEFAULT now()
 );
@@ -116,12 +118,14 @@ CREATE TABLE public.v2_ucenici (
 CREATE TABLE public.v2_dnevni (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ime          text NOT NULL,
-  status       text,
+  status       text NOT NULL DEFAULT 'aktivan',
   telefon      text,
   telefon_2    text,
   adresa_bc_id uuid REFERENCES public.v2_adrese(id),
   adresa_vs_id uuid REFERENCES public.v2_adrese(id),
   cena         numeric,
+  treba_racun  boolean NOT NULL DEFAULT false,
+  broj_mesta   int NOT NULL DEFAULT 1,
   created_at   timestamptz DEFAULT now(),
   updated_at   timestamptz DEFAULT now()
 );
@@ -132,11 +136,12 @@ CREATE TABLE public.v2_dnevni (
 CREATE TABLE public.v2_posiljke (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ime          text,
-  status       text,
+  status       text NOT NULL DEFAULT 'aktivan',
   telefon      text,
   adresa_bc_id uuid REFERENCES public.v2_adrese(id),
   adresa_vs_id uuid REFERENCES public.v2_adrese(id),
   cena         numeric,
+  treba_racun  boolean NOT NULL DEFAULT false,
   created_at   timestamptz DEFAULT now(),
   updated_at   timestamptz DEFAULT now()
 );

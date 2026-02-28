@@ -59,7 +59,7 @@ class RegistrovaniPutnik {
       id: map['id'] as String,
       ime: map['ime'] as String,
       v2Tabela: v2Tabela,
-      status: map['status'] as String? ?? 'aktivan',
+      status: map['status'] as String,
       telefon: map['telefon'] as String?,
       telefon2: map['telefon_2'] as String?,
       telefonOca: map['telefon_oca'] as String?,
@@ -69,8 +69,8 @@ class RegistrovaniPutnik {
       pin: map['pin'] as String?,
       email: map['email'] as String?,
       cena: dnevniIliPosiljka ? _parseNum(map['cena'])?.toDouble() : _parseNum(map['cena_po_danu'])?.toDouble(),
-      trebaRacun: map['treba_racun'] as bool? ?? false,
-      brojMesta: _parseNum(map['broj_mesta'])?.toInt() ?? 1,
+      trebaRacun: map['treba_racun'] as bool,
+      brojMesta: v2Tabela == 'v2_posiljke' ? 0 : (_parseNum(map['broj_mesta'])!.toInt()),
       createdAt: DateTime.parse(map['created_at'] as String).toLocal(),
       updatedAt: DateTime.parse(map['updated_at'] as String).toLocal(),
       adresa: (map['adresa_bc'] is Map ? (map['adresa_bc'] as Map)['naziv'] as String? : null) ??
@@ -102,6 +102,7 @@ class RegistrovaniPutnik {
     }
     if (dnevniIliPosiljka) {
       result['cena'] = cena;
+      if (v2Tabela == 'v2_dnevni') result['broj_mesta'] = brojMesta;
     } else {
       result['cena_po_danu'] = cena;
       result['broj_mesta'] = brojMesta;
