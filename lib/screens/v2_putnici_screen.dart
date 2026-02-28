@@ -254,16 +254,15 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
     // Filter po tipu (radnik/ucenik)
     if (filterType != 'svi') {
-      filtered = filtered.where((p) => p.tip == filterType).toList();
+      filtered = filtered.where((p) => p.v2Tabela == filterType).toList();
     }
 
     // Filter po search term
     if (searchTerm.isNotEmpty) {
       final searchLower = searchTerm.toLowerCase();
       filtered = filtered.where((p) {
-        return p.putnikIme.toLowerCase().contains(searchLower) ||
-            p.tip.toLowerCase().contains(searchLower) ||
-            (p.tipSkole?.toLowerCase().contains(searchLower) ?? false);
+        return p.ime.toLowerCase().contains(searchLower) ||
+            p.v2Tabela.toLowerCase().contains(searchLower);
       }).toList();
     }
 
@@ -272,7 +271,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
       final aAktivan = a.status == 'aktivan';
       final bAktivan = b.status == 'aktivan';
       if (aAktivan != bAktivan) return aAktivan ? -1 : 1;
-      return a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase());
+      return a.ime.toLowerCase().compareTo(b.ime.toLowerCase());
     });
 
     return filtered;
@@ -664,10 +663,10 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                   // 📊 PREBROJAVANJE PUTNIKA PO TIPU
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
-                      final radnika = sviPutnici.where((p) => p.tip == 'radnik').length;
-                      final ucenika = sviPutnici.where((p) => p.tip == 'ucenik').length;
-                      final dnevnih = sviPutnici.where((p) => p.tip == 'dnevni').length;
-                      final posiljki = sviPutnici.where((p) => p.tip == 'posiljka').length;
+                      final radnika = sviPutnici.where((p) => p.v2Tabela == 'v2_radnici').length;
+                      final ucenika = sviPutnici.where((p) => p.v2Tabela == 'v2_ucenici').length;
+                      final dnevnih = sviPutnici.where((p) => p.v2Tabela == 'v2_dnevni').length;
+                      final posiljki = sviPutnici.where((p) => p.v2Tabela == 'v2_posiljke').length;
 
                       if (_brojRadnika != radnika ||
                           _brojUcenika != ucenika ||
@@ -857,7 +856,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              V2Putnik.putnikIme,
+                              V2Putnik.ime,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -873,31 +872,37 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          switch (V2Putnik.tip) {
-                            'radnik' => Icons.engineering,
-                            'ucenik' => Icons.school,
-                            'dnevni' => Icons.today,
-                            'posiljka' => Icons.local_shipping,
+                          switch (V2Putnik.v2Tabela) {
+                            'v2_radnici' => Icons.engineering,
+                            'v2_ucenici' => Icons.school,
+                            'v2_dnevni' => Icons.today,
+                            'v2_posiljke' => Icons.local_shipping,
                             _ => Icons.person,
                           },
                           size: 14,
-                          color: switch (V2Putnik.tip) {
-                            'radnik' => Colors.blue.shade600,
-                            'ucenik' => Colors.green.shade600,
-                            'dnevni' => Colors.orange.shade600,
-                            'posiljka' => Colors.deepOrange.shade600,
+                          color: switch (V2Putnik.v2Tabela) {
+                            'v2_radnici' => Colors.blue.shade600,
+                            'v2_ucenici' => Colors.green.shade600,
+                            'v2_dnevni' => Colors.orange.shade600,
+                            'v2_posiljke' => Colors.deepOrange.shade600,
                             _ => Colors.grey.shade600,
                           },
                         ),
                         const SizedBox(width: 3),
                         Text(
-                          V2Putnik.tip.toUpperCase(),
+                          switch (V2Putnik.v2Tabela) {
+                            'v2_radnici' => 'RADNIK',
+                            'v2_ucenici' => 'UCENIK',
+                            'v2_dnevni' => 'DNEVNI',
+                            'v2_posiljke' => 'POSILJKA',
+                            _ => V2Putnik.v2Tabela.toUpperCase(),
+                          },
                           style: TextStyle(
-                            color: switch (V2Putnik.tip) {
-                              'radnik' => Colors.blue.shade700,
-                              'ucenik' => Colors.green.shade700,
-                              'dnevni' => Colors.orange.shade700,
-                              'posiljka' => Colors.deepOrange.shade700,
+                            color: switch (V2Putnik.v2Tabela) {
+                              'v2_radnici' => Colors.blue.shade700,
+                              'v2_ucenici' => Colors.green.shade700,
+                              'v2_dnevni' => Colors.orange.shade700,
+                              'v2_posiljke' => Colors.deepOrange.shade700,
                               _ => Colors.grey.shade700,
                             },
                             fontWeight: FontWeight.w600,
@@ -916,14 +921,14 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                   Row(
                     children: [
                       Icon(
-                        V2Putnik.tip == 'ucenik' ? Icons.school_outlined : Icons.business_outlined,
+                        Icons.location_on_outlined,
                         size: 16,
                         color: Colors.grey.shade600,
                       ),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          V2Putnik.tipSkole!,
+                          V2Putnik.adresa!,
                           style: TextStyle(
                             color: Colors.grey.shade700,
                             fontSize: 12,
@@ -1004,9 +1009,9 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                 Row(
                   children: [
                     // Pozovi (ako ima bilo koji telefon)
-                    if (V2Putnik.brojTelefona != null ||
-                        V2Putnik.brojTelefonaOca != null ||
-                        V2Putnik.brojTelefonaMajke != null) ...[
+                    if (V2Putnik.telefon != null ||
+                        V2Putnik.telefonOca != null ||
+                        V2Putnik.telefonMajke != null) ...[
                       Expanded(
                         child: _buildCompactActionButton(
                           onPressed: () => _pokaziKontaktOpcije(V2Putnik),
@@ -1150,7 +1155,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              V2Putnik.putnikIme,
+              V2Putnik.ime,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
@@ -1200,14 +1205,14 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
       await _putnikService.updatePutnik(
         V2Putnik.id,
         {'status': noviStatus},
-        V2Putnik.tabela,
+        V2Putnik.v2Tabela,
       );
       if (mounted) {
         final poruka = switch (noviStatus) {
-          'aktivan' => '${V2Putnik.putnikIme} je aktiviran',
-          'neaktivan' => '${V2Putnik.putnikIme} je deaktiviran',
-          'godisnji' => '${V2Putnik.putnikIme} je na godišnjem',
-          'bolovanje' => '${V2Putnik.putnikIme} je na bolovanju',
+          'aktivan' => '${V2Putnik.ime} je aktiviran',
+          'neaktivan' => '${V2Putnik.ime} je deaktiviran',
+          'godisnji' => '${V2Putnik.ime} je na godišnjem',
+          'bolovanje' => '${V2Putnik.ime} je na bolovanju',
           _ => 'Status promenjen',
         };
         AppSnackBar.success(context, poruka);
@@ -1245,10 +1250,10 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
       context: context,
       builder: (context) => V2PinDialog(
         putnikId: V2Putnik.id,
-        putnikIme: V2Putnik.putnikIme,
-        putnikTabela: V2Putnik.tabela,
+        putnikIme: V2Putnik.ime,
+        putnikTabela: V2Putnik.v2Tabela,
         trenutniPin: V2Putnik.pin,
-        brojTelefona: V2Putnik.brojTelefona,
+        brojTelefona: V2Putnik.telefon,
       ),
     );
   }
@@ -1283,7 +1288,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Da li ste sigurni da želite da obrišete putnika "${V2Putnik.putnikIme}"?',
+              'Da li ste sigurni da želite da obrišete putnika "${V2Putnik.ime}"?',
             ),
             const SizedBox(height: 16),
             Container(
@@ -1339,14 +1344,14 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
     if (potvrda == true && mounted) {
       try {
-        final success = await _putnikService.deletePutnik(V2Putnik.id, V2Putnik.tabela);
+        final success = await _putnikService.deletePutnik(V2Putnik.id, V2Putnik.v2Tabela);
 
         if (success) {
           // logic simplified slightly if not needing immediate mount check
         }
 
         if (success && mounted) {
-          AppSnackBar.success(context, '${V2Putnik.putnikIme} je uspešno obrisan');
+          AppSnackBar.success(context, '${V2Putnik.ime} je uspešno obrisan');
         } else if (mounted) {
           AppSnackBar.error(context, 'Greška pri brisanju putnika');
         }
@@ -1364,45 +1369,45 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     final List<Widget> opcije = [];
 
     // Glavni broj telefona
-    if (V2Putnik.brojTelefona != null && V2Putnik.brojTelefona!.isNotEmpty) {
+    if (V2Putnik.telefon != null && V2Putnik.telefon!.isNotEmpty) {
       opcije.add(
         ListTile(
           leading: const Icon(Icons.person, color: Colors.green),
           title: const Text('Pozovi putnika'),
-          subtitle: Text(V2Putnik.brojTelefona!),
+          subtitle: Text(V2Putnik.telefon!),
           onTap: () async {
             Navigator.pop(context);
-            await _pozovi(V2Putnik.brojTelefona!);
+            await _pozovi(V2Putnik.telefon!);
           },
         ),
       );
     }
 
     // Otac
-    if (V2Putnik.brojTelefonaOca != null && V2Putnik.brojTelefonaOca!.isNotEmpty) {
+    if (V2Putnik.telefonOca != null && V2Putnik.telefonOca!.isNotEmpty) {
       opcije.add(
         ListTile(
           leading: const Icon(Icons.man, color: Colors.blue),
           title: const Text('Pozovi oca'),
-          subtitle: Text(V2Putnik.brojTelefonaOca!),
+          subtitle: Text(V2Putnik.telefonOca!),
           onTap: () async {
             Navigator.pop(context);
-            await _pozovi(V2Putnik.brojTelefonaOca!);
+            await _pozovi(V2Putnik.telefonOca!);
           },
         ),
       );
     }
 
     // Majka
-    if (V2Putnik.brojTelefonaMajke != null && V2Putnik.brojTelefonaMajke!.isNotEmpty) {
+    if (V2Putnik.telefonMajke != null && V2Putnik.telefonMajke!.isNotEmpty) {
       opcije.add(
         ListTile(
           leading: const Icon(Icons.woman, color: Colors.pink),
           title: const Text('Pozovi majku'),
-          subtitle: Text(V2Putnik.brojTelefonaMajke!),
+          subtitle: Text(V2Putnik.telefonMajke!),
           onTap: () async {
             Navigator.pop(context);
-            await _pozovi(V2Putnik.brojTelefonaMajke!);
+            await _pozovi(V2Putnik.telefonMajke!);
           },
         ),
       );
@@ -1426,7 +1431,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Kontaktiraj ${V2Putnik.putnikIme}',
+                'Kontaktiraj ${V2Putnik.ime}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1486,13 +1491,13 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     final cenaPoDanu = CenaObracunService.getCenaPoDanu(V2Putnik);
     iznosController.text = cenaPoDanu.toStringAsFixed(0);
 
-    final tipLower = V2Putnik.tip.toLowerCase();
-    final imeLower = V2Putnik.putnikIme.toLowerCase();
+    final tipLower = V2Putnik.v2Tabela;
+    final imeLower = V2Putnik.ime.toLowerCase();
 
     // ?? FIKSNE CENE (Vozaci/Admini prate isti standard)
-    final jeZubi = tipLower == 'posiljka' && imeLower.contains('zubi');
-    final jePosiljka = tipLower == 'posiljka';
-    final jeDnevni = tipLower == 'dnevni';
+    final jeZubi = tipLower == 'v2_posiljke' && imeLower.contains('zubi');
+    final jePosiljka = tipLower == 'v2_posiljke';
+    final jeDnevni = tipLower == 'v2_dnevni';
     final jeFiksna = jeZubi || jePosiljka || jeDnevni;
 
     if (!mounted) return;
@@ -1512,7 +1517,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      jeFiksna ? 'Fiksna naplata - ${V2Putnik.putnikIme}' : 'Placanje - ${V2Putnik.putnikIme}',
+                      jeFiksna ? 'Fiksna naplata - ${V2Putnik.ime}' : 'Placanje - ${V2Putnik.ime}',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
@@ -1779,10 +1784,10 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     await PutnikStatistikeHelper.prikaziDetaljneStatistike(
       context: context,
       putnikId: V2Putnik.id,
-      putnikIme: V2Putnik.putnikIme,
-      tip: V2Putnik.tip,
-      tipSkole: V2Putnik.tipSkole,
-      brojTelefona: V2Putnik.brojTelefona,
+      putnikIme: V2Putnik.ime,
+      tip: V2Putnik.v2Tabela,
+      tipSkole: null,
+      brojTelefona: V2Putnik.telefon,
       createdAt: V2Putnik.createdAt,
       updatedAt: V2Putnik.updatedAt,
       aktivan: V2Putnik.aktivan,
@@ -1803,8 +1808,8 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
       final uspeh = await _putnikService.upisPlacanjaULog(
         putnikId: V2Putnik.id,
-        putnikIme: V2Putnik.putnikIme,
-        putnikTabela: V2Putnik.tabela,
+        putnikIme: V2Putnik.ime,
+        putnikTabela: V2Putnik.v2Tabela,
         iznos: iznos,
         vozacIme: currentDriverName,
         datum: datumi['pocetakMeseca'] as DateTime,

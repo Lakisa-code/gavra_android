@@ -167,12 +167,12 @@ class V2RacunService {
 
         final stranica = await _kreirajRacunZaFirmuStranicu(
           brojRacuna: brojRacuna,
-          firmaNaziv: V2Putnik.firmaNaziv ?? V2Putnik.putnikIme,
-          firmaPib: V2Putnik.firmaPib ?? '',
-          firmaMb: V2Putnik.firmaMb ?? '',
-          firmaZiro: V2Putnik.firmaZiro ?? '',
-          firmaAdresa: V2Putnik.firmaAdresa ?? '',
-          putnikIme: V2Putnik.putnikIme,
+          firmaNaziv: V2Putnik.ime,
+          firmaPib: '',
+          firmaMb: '',
+          firmaZiro: '',
+          firmaAdresa: '',
+          putnikIme: V2Putnik.ime,
           opisUsluge: 'Prevoz putnika za $mesecStr',
           cenaPoDanu: cenaPoDanu,
           brojDana: brojDana,

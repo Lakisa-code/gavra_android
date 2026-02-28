@@ -325,13 +325,13 @@ class _PutnikCardState extends State<PutnikCard> {
         // ?? Sugeriši cenu na osnovu tipa putnika
         final sugerisanaCena = CenaObracunService.getCenaPoDanu(registrovaniPutnik);
 
-        final tipLower = registrovaniPutnik.tip.toLowerCase();
-        final imeLower = registrovaniPutnik.putnikIme.toLowerCase();
+        final tipLower = registrovaniPutnik.v2Tabela;
+        final imeLower = registrovaniPutnik.ime.toLowerCase();
 
         // ?? FIKSNE CENE (Vozaci ne mogu da menjaju)
-        final jeZubi = tipLower == 'posiljka' && imeLower.contains('zubi');
-        final jePosiljka = tipLower == 'posiljka';
-        final jeDnevni = tipLower == 'dnevni';
+        final jeZubi = tipLower == 'v2_posiljke' && imeLower.contains('zubi');
+        final jePosiljka = tipLower == 'v2_posiljke';
+        final jeDnevni = tipLower == 'v2_dnevni';
         final jeFiksna = jeZubi || jePosiljka || jeDnevni;
 
         final controller = TextEditingController(text: sugerisanaCena.toStringAsFixed(0));

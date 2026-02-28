@@ -16,15 +16,14 @@ class CenaObracunService {
   /// Dobija cenu po danu za putnika (SAMO custom cena)
   static double getCenaPoDanu(RegistrovaniPutnik V2Putnik) {
     // 1. Ako ima postavljenu custom cenu - koristi je
-    if (V2Putnik.cenaPoDanu != null && V2Putnik.cenaPoDanu! > 0) {
-      return V2Putnik.cenaPoDanu!;
+    if (V2Putnik.cena != null && V2Putnik.cena! > 0) {
+      return V2Putnik.cena!;
     }
 
-    final tipLower = V2Putnik.tip.toLowerCase();
-    final imeLower = V2Putnik.putnikIme.toLowerCase();
+    final imeLower = V2Putnik.ime.toLowerCase();
 
     // 2. STROGO FIKSNE CENE samo za specijalne slučajeve
-    if (tipLower == 'posiljka' && imeLower.contains('zubi')) {
+    if (V2Putnik.v2Tabela == 'v2_posiljke' && imeLower.contains('zubi')) {
       return 300.0;
     }
 
@@ -76,9 +75,8 @@ class CenaObracunService {
         final logs = grupisanRekordi[p.id] ?? [];
         if (logs.isEmpty) continue;
 
-        final tipLower = p.tip.toLowerCase();
-        final jeDnevni = tipLower == 'dnevni';
-        final jePosiljka = tipLower == 'posiljka' || tipLower == 'pošiljka';
+        final jeDnevni = p.v2Tabela == 'v2_dnevni';
+        final jePosiljka = p.v2Tabela == 'v2_posiljke';
 
         if (jeDnevni || jePosiljka) {
           int totalUnits = 0;

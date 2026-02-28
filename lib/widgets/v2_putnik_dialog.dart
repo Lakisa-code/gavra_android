@@ -117,30 +117,32 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       final V2Putnik = widget.existingPutnik!;
 
       // Load basic info
-      _imeController.text = V2Putnik.putnikIme;
-      _tip = V2Putnik.tip;
+      _imeController.text = V2Putnik.ime;
+      _tip = switch (V2Putnik.v2Tabela) {
+        'v2_ucenici' => 'ucenik',
+        'v2_dnevni' => 'dnevni',
+        'v2_posiljke' => 'posiljka',
+        _ => 'radnik',
+      };
       _brojMestaController.text = V2Putnik.brojMesta.toString();
-      _tipSkoleController.text = V2Putnik.tipSkole ?? '';
-      _brojTelefonaController.text = V2Putnik.brojTelefona ?? '';
-      _brojTelefona2Controller.text = V2Putnik.brojTelefona2 ?? '';
-      _brojTelefonaOcaController.text = V2Putnik.brojTelefonaOca ?? '';
-      _brojTelefonaMajkeController.text = V2Putnik.brojTelefonaMajke ?? '';
+      _tipSkoleController.text = '';
+      _brojTelefonaController.text = V2Putnik.telefon ?? '';
+      _brojTelefona2Controller.text = V2Putnik.telefon2 ?? '';
+      _brojTelefonaOcaController.text = V2Putnik.telefonOca ?? '';
+      _brojTelefonaMajkeController.text = V2Putnik.telefonMajke ?? '';
 
-      // Load cena po danu
-      if (V2Putnik.cenaPoDanu != null && V2Putnik.cenaPoDanu! > 0) {
-        _cenaPoDanuController.text = V2Putnik.cenaPoDanu!.toStringAsFixed(0);
+      if (V2Putnik.cena != null && V2Putnik.cena! > 0) {
+        _cenaPoDanuController.text = V2Putnik.cena!.toStringAsFixed(0);
       }
 
-      // ?? Load email
       _emailController.text = V2Putnik.email ?? '';
 
-      // ?? Load podaci za racun
       _trebaRacun = V2Putnik.trebaRacun;
-      _firmaNazivController.text = V2Putnik.firmaNaziv ?? '';
-      _firmaPibController.text = V2Putnik.firmaPib ?? '';
-      _firmaMbController.text = V2Putnik.firmaMb ?? '';
-      _firmaZiroController.text = V2Putnik.firmaZiro ?? '';
-      _firmaAdresaController.text = V2Putnik.firmaAdresa ?? '';
+      _firmaNazivController.text = '';
+      _firmaPibController.text = '';
+      _firmaMbController.text = '';
+      _firmaZiroController.text = '';
+      _firmaAdresaController.text = '';
 
       // Load addresses asynchronously
       _loadAdreseForEditovanje();
@@ -158,33 +160,32 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     // Try batch fetch for both ids
     try {
       final idsToFetch = <String>[];
-      if (V2Putnik.adresaBelaCrkvaId != null && V2Putnik.adresaBelaCrkvaId!.isNotEmpty) {
-        idsToFetch.add(V2Putnik.adresaBelaCrkvaId!);
+      if (V2Putnik.adresaBcId != null && V2Putnik.adresaBcId!.isNotEmpty) {
+        idsToFetch.add(V2Putnik.adresaBcId!);
       }
-      if (V2Putnik.adresaVrsacId != null && V2Putnik.adresaVrsacId!.isNotEmpty) {
-        idsToFetch.add(V2Putnik.adresaVrsacId!);
+      if (V2Putnik.adresaVsId != null && V2Putnik.adresaVsId!.isNotEmpty) {
+        idsToFetch.add(V2Putnik.adresaVsId!);
       }
 
       if (idsToFetch.isNotEmpty) {
         final fetched = await V2AdresaSupabaseService.getAdreseByUuids(idsToFetch);
 
-        final bcNaziv = V2Putnik.adresaBelaCrkvaId != null
-            ? fetched[V2Putnik.adresaBelaCrkvaId!]?.naziv ??
-                await V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaBelaCrkvaId)
+        final bcNaziv = V2Putnik.adresaBcId != null
+            ? fetched[V2Putnik.adresaBcId!]?.naziv ??
+                await V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaBcId)
             : null;
 
-        final vsNaziv = V2Putnik.adresaVrsacId != null
-            ? fetched[V2Putnik.adresaVrsacId!]?.naziv ??
-                await V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaVrsacId)
+        final vsNaziv = V2Putnik.adresaVsId != null
+            ? fetched[V2Putnik.adresaVsId!]?.naziv ??
+                await V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaVsId)
             : null;
 
         if (mounted) {
           setState(() {
             _adresaBelaCrkvaController.text = bcNaziv ?? '';
             _adresaVrsacController.text = vsNaziv ?? '';
-            // keep UUIDs so autocomplete selection is preserved
-            _adresaBelaCrkvaId = V2Putnik.adresaBelaCrkvaId;
-            _adresaVrsacId = V2Putnik.adresaVrsacId;
+            _adresaBelaCrkvaId = V2Putnik.adresaBcId;
+            _adresaVrsacId = V2Putnik.adresaVsId;
           });
         }
       } else {
@@ -1350,12 +1351,11 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
 
       if (widget.isEditing) {
         putnikId = widget.existingPutnik!.id;
-        putnikTabela = widget.existingPutnik!.tabela;
+        putnikTabela = widget.existingPutnik!.v2Tabela;
         await _putnikService.updatePutnik(putnikId, putnikData, putnikTabela);
       } else {
-        // Odredi tabelu na osnovu tipa
         final noviPutnik = RegistrovaniPutnik.fromMap(putnikData);
-        putnikTabela = noviPutnik.tabela;
+        putnikTabela = noviPutnik.v2Tabela;
         final row = await _putnikService.createPutnik(putnikData, putnikTabela);
         putnikId = row['id'] as String;
       }
