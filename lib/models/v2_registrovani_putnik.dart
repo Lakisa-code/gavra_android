@@ -1,352 +1,185 @@
 import '../services/v2_adresa_supabase_service.dart';
 
-/// Model za mesecne putnike - ažurirana verzija
 class RegistrovaniPutnik {
   RegistrovaniPutnik({
     required this.id,
-    required this.putnikIme,
-    this.brojTelefona,
-    this.brojTelefona2,
-    this.brojTelefonaOca,
-    this.brojTelefonaMajke,
-    required this.tip,
-    this.tipSkole,
-    this.adresaBelaCrkvaId,
-    this.adresaVrsacId,
-    required this.datumPocetkaMeseca,
-    required this.datumKrajaMeseca,
+    required this.ime,
+    required this.v2Tabela,
+    required this.status,
     required this.createdAt,
     required this.updatedAt,
-    this.status = 'aktivan',
-    this.obrisan = false,
-    // Nova polja za database kompatibilnost
-    this.tipPrikazivanja = 'standard',
-    this.vozacId,
-    // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
+    this.telefon,
+    this.telefon2,
+    this.telefonOca,
+    this.telefonMajke,
+    this.adresaBcId,
+    this.adresaVsId,
+    this.pin,
+    this.email,
+    this.cena,
+    this.trebaRacun = false,
+    this.brojMesta = 1,
     this.adresa,
     this.grad,
-    // Tracking polja - UKLONJENO: pokupljen, placeno - sada u voznje_log
-    this.pin,
-    this.email, // ?? Email za kontakt i Google Play testing
-    this.cenaPoDanu, // ?? Custom cena po danu (NULL = 0.0, nema više defaulta)
-    // ?? Polja za racune
-    this.trebaRacun = false,
-    this.firmaNaziv,
-    this.firmaPib,
-    this.firmaMb,
-    this.firmaZiro,
-    this.firmaAdresa,
-    this.brojMesta = 1, // ?? Broj rezervisanih mesta
   });
 
-  /// Identifikator putnika
   final String id;
+  final String ime;
 
-  /// Kombinovano ime i prezime putnika
-  final String putnikIme;
+  /// v2_radnici | v2_ucenici | v2_dnevni | v2_posiljke
+  final String v2Tabela;
 
-  /// Broj telefona putnika
-  final String? brojTelefona;
-
-  /// Drugi/alternativni telefon za radnike i dnevne
-  final String? brojTelefona2;
-
-  /// Dodatni telefon oca (za ucenike)
-  final String? brojTelefonaOca;
-
-  /// Dodatni telefon majke (za ucenike)
-  final String? brojTelefonaMajke;
-
-  /// Tip putnika (radnik, ucenik, itd.)
-  final String tip;
-
-  /// Tip škole (samo za ucenike)
-  final String? tipSkole;
-
-  /// UUID reference za adresu u Beloj Crkvi
-  final String? adresaBelaCrkvaId;
-
-  /// UUID reference za adresu u Vrscu
-  final String? adresaVrsacId;
-
-  /// Datum pocetka meseca
-  final DateTime datumPocetkaMeseca;
-
-  /// Datum kraja meseca
-  final DateTime datumKrajaMeseca;
-
-  /// Datum i vreme kreiranja zapisa
-  final DateTime createdAt;
-
-  /// Datum i vreme poslednje izmene zapisa
-  final DateTime updatedAt;
-
-  /// Da li je V2Putnik aktivan — derivirano iz status polja
-  bool get aktivan => status == 'aktivan';
-
-  /// Status putnika (aktivan, neaktivan, godisnji, bolovanje)
+  /// aktivan | neaktivan | godisnji | bolovanje
   final String status;
 
-  /// Da li je V2Putnik obrisan (logicko brisanje)
-  final bool obrisan;
+  bool get aktivan => status == 'aktivan';
 
-  // Nova polja iz baze
-  /// Tip prikazivanja putnika (standard, detaljno, itd.)
-  final String tipPrikazivanja;
+  final String? telefon;
+  final String? telefon2;
+  final String? telefonOca;
+  final String? telefonMajke;
+  final String? adresaBcId;
+  final String? adresaVsId;
+  final String? pin;
+  final String? email;
+  final double? cena;
+  final bool trebaRacun;
+  final int brojMesta;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-  /// ID vozaca (ako je dodeljen)
-  final String? vozacId;
-
-  // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
-  /// Adresa putnika (izracunata polja)
+  /// Iz JOIN-a — ne ide u bazu
   final String? adresa;
-
-  /// Grad putnika (izracunata polja)
   final String? grad;
 
-  // Tracking polja - UKLONJENO: pokupljen, placeno, vremePokupljenja - sada u voznje_log
-  /// PIN za login
-  final String? pin;
-
-  /// Email za kontakt i Google Play testing
-  final String? email;
-
-  /// Custom cena po danu (NULL = 0.0)
-  final double? cenaPoDanu;
-  // ?? Polja za racune
-  /// Da li je potreban racun
-  final bool trebaRacun;
-
-  /// Naziv firme za racun
-  final String? firmaNaziv;
-
-  /// PIB firme za racun
-  final String? firmaPib;
-
-  /// MB firme za racun
-  final String? firmaMb;
-
-  /// žiro racun firme za racun
-  final String? firmaZiro;
-
-  /// Adresa firme za racun
-  final String? firmaAdresa;
-
-  /// Broj rezervisanih mesta
-  final int brojMesta;
-
   factory RegistrovaniPutnik.fromMap(Map<String, dynamic> map) {
-    // Tip se određuje isključivo iz _tabela ključa koji dodaje V2PutnikService
-    final tabela = map['_tabela'] as String;
-    final tipIzTabele = tabela == 'v2_radnici'
-        ? 'radnik'
-        : tabela == 'v2_ucenici'
-            ? 'ucenik'
-            : tabela == 'v2_dnevni'
-                ? 'dnevni'
-                : 'posiljka';
+    final v2Tabela = map['_tabela'] as String;
+    final bool dnevniIliPosiljka = v2Tabela == 'v2_dnevni' || v2Tabela == 'v2_posiljke';
     return RegistrovaniPutnik(
-      id: map['id'] as String? ?? _generateUuid(),
-      putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String? ?? '',
-      brojTelefona: map['telefon'] as String?,
-      brojTelefona2: map['telefon_2'] as String?,
-      brojTelefonaOca: map['telefon_oca'] as String?,
-      brojTelefonaMajke: map['telefon_majke'] as String?,
-      tip: tipIzTabele,
-      tipSkole: map['tip_skole'] as String?,
-      adresaBelaCrkvaId: map['adresa_bc_id'] as String?,
-      adresaVrsacId: map['adresa_vs_id'] as String?,
-      datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
-          ? DateTime.parse(map['datum_pocetka_meseca'] as String)
-          : DateTime(DateTime.now().year, DateTime.now().month),
-      datumKrajaMeseca: map['datum_kraja_meseca'] != null
-          ? DateTime.parse(map['datum_kraja_meseca'] as String)
-          : DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : DateTime.now(),
-      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String).toLocal() : DateTime.now(),
+      id: map['id'] as String,
+      ime: map['ime'] as String,
+      v2Tabela: v2Tabela,
       status: map['status'] as String? ?? 'aktivan',
-      obrisan: map['obrisan'] as bool? ?? false,
-      tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
-      vozacId: map['vozac_id'] as String?,
-      adresa: map['adresa'] as String? ??
-          (map['adresa_bc'] is Map ? (map['adresa_bc'] as Map)['naziv'] as String? : null) ??
-          (map['adresa_vs'] is Map ? (map['adresa_vs'] as Map)['naziv'] as String? : null),
-      grad: map['grad'] as String? ?? (map['adresa_bc'] is Map ? 'BC' : (map['adresa_vs'] is Map ? 'VS' : null)),
+      telefon: map['telefon'] as String?,
+      telefon2: map['telefon_2'] as String?,
+      telefonOca: map['telefon_oca'] as String?,
+      telefonMajke: map['telefon_majke'] as String?,
+      adresaBcId: map['adresa_bc_id'] as String?,
+      adresaVsId: map['adresa_vs_id'] as String?,
       pin: map['pin'] as String?,
-      email: map['email'] as String?, // ?? Email
-      cenaPoDanu: (tabela == 'v2_dnevni' || tabela == 'v2_posiljke')
-          ? _parseNum(map['cena'])?.toDouble()
-          : _parseNum(map['cena_po_danu'])?.toDouble(),
+      email: map['email'] as String?,
+      cena: dnevniIliPosiljka ? _parseNum(map['cena'])?.toDouble() : _parseNum(map['cena_po_danu'])?.toDouble(),
       trebaRacun: map['treba_racun'] as bool? ?? false,
-      firmaNaziv: map['firma_naziv'] as String?,
-      firmaPib: map['firma_pib'] as String?,
-      firmaMb: map['firma_mb'] as String?,
-      firmaZiro: map['firma_ziro'] as String?,
-      firmaAdresa: map['firma_adresa'] as String?,
-      brojMesta: _parseNum(map['broj_mesta'])?.toInt() ?? 1, // ?? Citaj broj mesta
+      brojMesta: _parseNum(map['broj_mesta'])?.toInt() ?? 1,
+      createdAt: DateTime.parse(map['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(map['updated_at'] as String).toLocal(),
+      adresa: (map['adresa_bc'] is Map ? (map['adresa_bc'] as Map)['naziv'] as String? : null) ??
+          (map['adresa_vs'] is Map ? (map['adresa_vs'] as Map)['naziv'] as String? : null),
+      grad: map['adresa_bc'] is Map ? 'BC' : (map['adresa_vs'] is Map ? 'VS' : null),
     );
   }
 
-  /// Konvertuje objekat u Map za bazu
   Map<String, dynamic> toMap() {
-    // ?? BINARYBITCH CLEAN toMap() - SAMO kolone koje postoje u bazi!
-    Map<String, dynamic> result = {
-      'putnik_ime': putnikIme,
-      'broj_telefona': brojTelefona,
-      'broj_telefona_2': brojTelefona2,
-      'broj_telefona_oca': brojTelefonaOca,
-      'broj_telefona_majke': brojTelefonaMajke,
-      'tip': tip,
-      'tip_skole': tipSkole,
-      'adresa_bela_crkva_id': adresaBelaCrkvaId,
-      'adresa_vrsac_id': adresaVrsacId,
-      'datum_pocetka_meseca': datumPocetkaMeseca.toIso8601String().split('T')[0],
-      'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
+    final bool dnevniIliPosiljka = v2Tabela == 'v2_dnevni' || v2Tabela == 'v2_posiljke';
+    final result = <String, dynamic>{
+      'id': id,
+      'ime': ime,
+      'status': status,
+      'telefon': telefon,
+      'adresa_bc_id': adresaBcId,
+      'adresa_vs_id': adresaVsId,
+      'pin': pin,
+      'email': email,
+      'treba_racun': trebaRacun,
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
-      'status': status,
-      'obrisan': obrisan,
-      'tip_prikazivanja': tipPrikazivanja,
-      'email': email, // ?? Email
-      'cena_po_danu': cenaPoDanu, // ?? Custom cena po danu
-      // ?? Polja za racune
-      'treba_racun': trebaRacun,
-      'firma_naziv': firmaNaziv,
-      'firma_pib': firmaPib,
-      'firma_mb': firmaMb,
-      'firma_ziro': firmaZiro,
-      'firma_adresa': firmaAdresa,
-      'broj_mesta': brojMesta,
     };
 
-    // Dodaj id samo ako nije prazan i NIJE fallback-uuid (za UPDATE operacije)
-    // Za INSERT operacije, ostavi id da baza generiše UUID
-    if (id.isNotEmpty && !id.startsWith('fallback-uuid-')) {
-      result['id'] = id;
+    if (v2Tabela != 'v2_posiljke') result['telefon_2'] = telefon2;
+    if (v2Tabela == 'v2_ucenici') {
+      result['telefon_oca'] = telefonOca;
+      result['telefon_majke'] = telefonMajke;
+    }
+    if (dnevniIliPosiljka) {
+      result['cena'] = cena;
+    } else {
+      result['cena_po_danu'] = cena;
+      result['broj_mesta'] = brojMesta;
     }
 
     return result;
   }
 
-  String get punoIme => putnikIme;
-
-  /// Vraca naziv v2 tabele na osnovu tipa putnika
-  String get tabela {
-    switch (tip.toLowerCase()) {
-      case 'ucenik':
-        return 'v2_ucenici';
-      case 'dnevni':
-        return 'v2_dnevni';
-      case 'posiljka':
-        return 'v2_posiljke';
-      default:
-        return 'v2_radnici';
-    }
-  }
-
-  /// copyWith metoda za kreiranje kopije sa izmenjenim poljima
   RegistrovaniPutnik copyWith({
     String? id,
-    String? putnikIme,
-    String? brojTelefona,
-    String? brojTelefonaOca,
-    String? brojTelefonaMajke,
-    String? tip,
-    String? tipSkole,
-    String? adresaBelaCrkvaId,
-    String? adresaVrsacId,
-    DateTime? datumPocetkaMeseca,
-    DateTime? datumKrajaMeseca,
-    bool? aktivan, // ignorisano, derivira se iz status
+    String? ime,
+    String? v2Tabela,
     String? status,
-    bool? obrisan,
-    // Computed fields za UI
+    String? telefon,
+    String? telefon2,
+    String? telefonOca,
+    String? telefonMajke,
+    String? adresaBcId,
+    String? adresaVsId,
+    String? pin,
+    String? email,
+    double? cena,
+    bool? trebaRacun,
+    int? brojMesta,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     String? adresa,
     String? grad,
-    // ?? Polja za racune
-    bool? trebaRacun,
-    String? firmaNaziv,
-    String? firmaPib,
-    String? firmaMb,
-    String? firmaZiro,
-    String? firmaAdresa,
   }) {
     return RegistrovaniPutnik(
       id: id ?? this.id,
-      putnikIme: putnikIme ?? this.putnikIme,
-      brojTelefona: brojTelefona ?? this.brojTelefona,
-      brojTelefonaOca: brojTelefonaOca ?? this.brojTelefonaOca,
-      brojTelefonaMajke: brojTelefonaMajke ?? this.brojTelefonaMajke,
-      tip: tip ?? this.tip,
-      tipSkole: tipSkole ?? this.tipSkole,
-      adresaBelaCrkvaId: adresaBelaCrkvaId ?? this.adresaBelaCrkvaId,
-      adresaVrsacId: adresaVrsacId ?? this.adresaVrsacId,
-      datumPocetkaMeseca: datumPocetkaMeseca ?? this.datumPocetkaMeseca,
-      datumKrajaMeseca: datumKrajaMeseca ?? this.datumKrajaMeseca,
-      createdAt: createdAt,
-      updatedAt: DateTime.now(),
+      ime: ime ?? this.ime,
+      v2Tabela: v2Tabela ?? this.v2Tabela,
       status: status ?? this.status,
-      obrisan: obrisan ?? this.obrisan,
-      // Computed fields za UI
+      telefon: telefon ?? this.telefon,
+      telefon2: telefon2 ?? this.telefon2,
+      telefonOca: telefonOca ?? this.telefonOca,
+      telefonMajke: telefonMajke ?? this.telefonMajke,
+      adresaBcId: adresaBcId ?? this.adresaBcId,
+      adresaVsId: adresaVsId ?? this.adresaVsId,
+      pin: pin ?? this.pin,
+      email: email ?? this.email,
+      cena: cena ?? this.cena,
+      trebaRacun: trebaRacun ?? this.trebaRacun,
+      brojMesta: brojMesta ?? this.brojMesta,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
       adresa: adresa ?? this.adresa,
       grad: grad ?? this.grad,
-      // ?? Polja za racune
-      trebaRacun: trebaRacun ?? this.trebaRacun,
-      firmaNaziv: firmaNaziv ?? this.firmaNaziv,
-      firmaPib: firmaPib ?? this.firmaPib,
-      firmaMb: firmaMb ?? this.firmaMb,
-      firmaZiro: firmaZiro ?? this.firmaZiro,
-      firmaAdresa: firmaAdresa ?? this.firmaAdresa,
     );
   }
 
   @override
-  String toString() {
-    return 'RegistrovaniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan)';
-  }
+  String toString() => 'RegistrovaniPutnik(id: $id, ime: $ime, v2Tabela: $v2Tabela, status: $status)';
 
-  // ==================== ADDRESS HELPERS ====================
-
-  /// Dobija naziv adrese za Belu Crkvu
   Future<String?> getAdresaBelaCrkvaNaziv() async {
-    if (adresaBelaCrkvaId == null) return null;
-    return await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaBelaCrkvaId);
+    if (adresaBcId == null) return null;
+    return await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaBcId);
   }
 
-  /// Dobija naziv adrese za Vrsac
   Future<String?> getAdresaVrsacNaziv() async {
-    if (adresaVrsacId == null) return null;
-    return await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaVrsacId);
+    if (adresaVsId == null) return null;
+    return await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaVsId);
   }
 
-  /// Dobija adresu za prikaz na osnovu selektovanog grada
   Future<String> getAdresaZaSelektovaniGrad(String? selektovaniGrad) async {
     final bcNaziv = await getAdresaBelaCrkvaNaziv();
     final vsNaziv = await getAdresaVrsacNaziv();
-
-    // Logika: prikaži adresu za selektovani grad
     if (selektovaniGrad?.toLowerCase().contains('bela') == true) {
-      // BC selektovano ? prikaži BC adresu, fallback na VS
       if (bcNaziv != null) return bcNaziv;
       if (vsNaziv != null) return vsNaziv;
     } else {
-      // VS selektovano ? prikaži VS adresu, fallback na BC
       if (vsNaziv != null) return vsNaziv;
       if (bcNaziv != null) return bcNaziv;
     }
-
     return 'Nema adresa';
   }
 
-  /// ? HELPER: Generiši UUID ako nedostaje iz baze
-  static String _generateUuid() {
-    // Jednostavna UUID v4 simulacija za fallback
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = (timestamp * 1000 + (timestamp % 1000)).toRadixString(36);
-    return 'fallback-uuid-$random';
-  }
-
-  /// ?? Helper za sigurno parsiranje brojeva (podržava num i String za Postgres numeric)
   static num? _parseNum(dynamic value) {
     if (value == null) return null;
     if (value is num) return value;

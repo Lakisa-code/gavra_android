@@ -1300,7 +1300,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
                     const SizedBox(height: 16),
 
                     // 🏖️ Bolovanje/Godišnji dugme - SAMO za radnike
-                    if (_putnikData['tip']?.toString().toLowerCase() == 'radnik') ...[
+                    if ((_putnikData['_tabela'] ?? _putnikData['putnik_tabela'] ?? '').toString() == 'v2_radnici') ...[
                       _buildOdsustvoButton(),
                       const SizedBox(height: 16),
                     ],
