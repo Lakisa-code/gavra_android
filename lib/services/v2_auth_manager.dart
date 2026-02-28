@@ -170,19 +170,28 @@ class AuthManager {
         return null;
       }
 
-      // Query push_tokens po tokenu - zaštiti pristup preko globalnog gettera
+      // Query push_tokens po tokenu da dobijemo vozac_id
       try {
-        final response = await supabase
+        final tokenRow = await supabase
             .from('v2_push_tokens')
-            .select('user_id')
+            .select('vozac_id')
             .eq('token', token)
-            .eq('user_type', 'vozac')
+            .not('vozac_id', 'is', null)
             .maybeSingle();
 
-        if (response != null && response['user_id'] != null) {
-          final userId = response['user_id'] as String;
-          debugPrint('. [AuthManager] Vozač iz Supabase: $userId');
-          return userId;
+        if (tokenRow != null && tokenRow['vozac_id'] != null) {
+          final vozacId = tokenRow['vozac_id'] as String;
+          // Dohvati ime vozača iz v2_vozaci tabele
+          final vozacRow = await supabase
+              .from('v2_vozaci')
+              .select('ime')
+              .eq('id', vozacId)
+              .maybeSingle();
+          if (vozacRow != null && vozacRow['ime'] != null) {
+            final ime = vozacRow['ime'] as String;
+            debugPrint(' [AuthManager] Vozač iz Supabase: $ime');
+            return ime;
+          }
         }
       } catch (supabaseError) {
         // Supabase nije inicijalizovan ili je nedostupan

@@ -71,13 +71,21 @@ class RealtimeNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      // ?? FIX: Dinamicko ucitavanje admin vozaca
+      // Dinamičko učitavanje admin vozača po imenu, filter po vozac_id (UUID)
       const adminNames = ['Bojan'];
       final vozacService = V2VozacService();
       final allVozaci = await vozacService.getAllVozaci();
-      final adminVozaci = allVozaci.where((v) => adminNames.contains(v.ime)).map((v) => v.ime).toList();
+      final adminVozacIds = allVozaci
+          .where((v) => adminNames.contains(v.ime))
+          .map((v) => v.id)
+          .toList();
 
-      final response = await supabase.from('v2_push_tokens').select('token, provider').inFilter('user_id', adminVozaci);
+      if (adminVozacIds.isEmpty) return;
+
+      final response = await supabase
+          .from('v2_push_tokens')
+          .select('token, provider')
+          .inFilter('vozac_id', adminVozacIds);
 
       if ((response as List).isEmpty) return;
 
