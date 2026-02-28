@@ -33,7 +33,7 @@ class V2PutniciScreen extends StatefulWidget {
 
 class _V2PutniciScreenState extends State<V2PutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni'
+  String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni', 'posiljka'
 
   // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon cuvanja
   int _streamRefreshKey = 0;
@@ -68,6 +68,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   int _brojRadnika = 0;
   int _brojUcenika = 0;
   int _brojDnevnih = 0;
+  int _brojPosiljki = 0;
 
   @override
   void initState() {
@@ -497,6 +498,70 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                         ),
                       ],
                     ),
+                    // Filter za posiljke sa brojem
+                    Stack(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.local_shipping,
+                            color: _selectedFilter == 'posiljka' ? Colors.white : Colors.white70,
+                            shadows: const [
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                          onPressed: () {
+                            final newFilter = _selectedFilter == 'posiljka' ? 'svi' : 'posiljka';
+                            setState(() {
+                              _selectedFilter = newFilter;
+                            });
+                          },
+                          tooltip: 'Filtriraj posiljke',
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFFFF8C00),
+                                  Color(0xFFE65C00),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.orange.withOpacity(0.4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 24,
+                              minHeight: 24,
+                            ),
+                            child: Text(
+                              _brojPosiljki.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     IconButton(
                       icon: const Icon(
                         Icons.add,
@@ -600,13 +665,15 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                     if (mounted) {
                       final radnika = sviPutnici.where((p) => p.tip == 'radnik').length;
                       final ucenika = sviPutnici.where((p) => p.tip == 'ucenik').length;
-                      final dnevnih = sviPutnici.where((p) => p.tip == 'dnevni' || p.tip == 'posiljka').length;
+                      final dnevnih = sviPutnici.where((p) => p.tip == 'dnevni').length;
+                      final posiljki = sviPutnici.where((p) => p.tip == 'posiljka').length;
 
-                      if (_brojRadnika != radnika || _brojUcenika != ucenika || _brojDnevnih != dnevnih) {
+                      if (_brojRadnika != radnika || _brojUcenika != ucenika || _brojDnevnih != dnevnih || _brojPosiljki != posiljki) {
                         setState(() {
                           _brojRadnika = radnika;
                           _brojUcenika = ucenika;
                           _brojDnevnih = dnevnih;
+                          _brojPosiljki = posiljki;
                         });
                       }
                     }
