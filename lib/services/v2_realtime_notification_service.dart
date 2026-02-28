@@ -21,7 +21,7 @@ class RealtimeNotificationService {
     _notificationStreamController.add(data);
   }
 
-  /// ?? Poöalji push notifikaciju na specificne tokene
+  /// ?? Po≈°alji push notifikaciju na specificne tokene
   static Future<bool> sendPushNotification({
     required String title,
     required String body,
@@ -53,7 +53,7 @@ class RealtimeNotificationService {
       if (response.data != null && response.data['success'] == true) {
         return true;
       } else {
-        // ?? UKLONJENO: Fallback na lokalnu notifikaciju (korisnik ûeli iskljucivo Supabase/Push)
+        // ?? UKLONJENO: Fallback na lokalnu notifikaciju (korisnik ≈æeli iskljucivo Supabase/Push)
         // await LocalNotificationService.showRealtimeNotification(
         //    title: title, body: body, payload: jsonEncode(data ?? {}));
         return false;
@@ -64,7 +64,7 @@ class RealtimeNotificationService {
     }
   }
 
-  /// ?? Poöalji notifikaciju samo adminima (Bojan)
+  /// ?? Po≈°alji notifikaciju samo adminima (Bojan)
   static Future<void> sendNotificationToAdmins({
     required String title,
     required String body,
@@ -99,7 +99,7 @@ class RealtimeNotificationService {
     }
   }
 
-  /// ?? Poöalji push notifikaciju putniku
+  /// ?? Po≈°alji push notifikaciju putniku
   static Future<bool> sendNotificationToPutnik({
     required String putnikId,
     required String title,
@@ -152,7 +152,7 @@ class RealtimeNotificationService {
   static bool _foregroundListenerRegistered = false;
 
   /// ?? DEPRECATED: Notifikacije se sada inicijalizuju globalno u FirebaseService/HuaweiPushService.
-  /// Ova metoda ne radi niöta kako bi se sprecili dupli listeneri.
+  /// Ova metoda ne radi ni≈°ta kako bi se sprecili dupli listeneri.
   static void listenForForegroundNotifications(BuildContext context) {
     if (_foregroundListenerRegistered) return;
     _foregroundListenerRegistered = true;

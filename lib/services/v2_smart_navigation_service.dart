@@ -16,12 +16,12 @@ import 'v2_unified_geocoding_service.dart';
 /// HERE WEGO ONLY:
 /// - HERE WeGo (10 waypoints) - besplatno, radi na svim uredajima
 /// - Automatska segmentacija rute kada prelazi limit waypoinata
-/// - Offline mape, po�tuje redosled putnika
+/// - Offline mape, poštuje redosled putnika
 class SmartNavigationService {
   /// Vrati krajnju destinaciju na osnovu startCity
-  /// startCity je grad ODAKLE putnici krecu (polazi�te putnika)
+  /// startCity je grad ODAKLE putnici krecu (polazište putnika)
   ///
-  /// LOGIKA VO�NJE:
+  /// LOGIKA VOžNJE:
   /// - BC polazak (ujutru): Putnici su u BC, vozac ih pokuplja i vozi u VS
   ///   -> endDestination = Vrsac (gde ih vozi)
   /// - VS polazak (popodne): Putnici su u VS, vozac ih pokuplja i vraca u BC
@@ -84,12 +84,12 @@ class SmartNavigationService {
         endDestination: endDestination,
       );
 
-      // OSRM neuspe�an - vrati gre�ku
+      // OSRM neuspešan - vrati grešku
       if (!osrmResult.success || osrmResult.optimizedPutnici == null) {
         return NavigationResult.error(osrmResult.message);
       }
 
-      // OSRM uspe�an
+      // OSRM uspešan
       final List<V2Putnik> optimizedRoute = osrmResult.optimizedPutnici!;
       final Map<V2Putnik, Position> coordinates = osrmResult.coordinates ?? {};
 
@@ -107,7 +107,7 @@ class SmartNavigationService {
         putniciEta: osrmResult.putniciEta,
       );
     } catch (e) {
-      return NavigationResult.error('? Gre�ka pri optimizaciji: $e');
+      return NavigationResult.error('? Greška pri optimizaciji: $e');
     }
   }
 
@@ -139,7 +139,7 @@ class SmartNavigationService {
 
       // 3. POKRENI MULTI-PROVIDER NAVIGACIJU
       if (!context.mounted) {
-        return NavigationResult.error('? Context nije vi�e aktivan');
+        return NavigationResult.error('? Context nije više aktivan');
       }
       final result = await HereWeGoNavigationService.startNavigation(
         context: context,
@@ -158,7 +158,7 @@ class SmartNavigationService {
         return NavigationResult.error(result.message);
       }
     } catch (e) {
-      return NavigationResult.error('? Gre�ka: $e');
+      return NavigationResult.error('? Greška: $e');
     }
   }
 
@@ -174,7 +174,7 @@ class SmartNavigationService {
       throw Exception('GPS dozvole nisu odobrene ili GPS nije ukljucen');
     }
 
-    // Dobij poziciju sa visokom tacno�cu
+    // Dobij poziciju sa visokom tacnošcu
     return await Geolocator.getCurrentPosition();
   }
 

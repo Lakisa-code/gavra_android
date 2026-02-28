@@ -2,7 +2,7 @@
 import 'v2_time_validator.dart';
 
 /// UTIL ZA VALIDACIJU GRADOVA I ADRESA
-/// Ogranicava aplikaciju na op�tine Bela Crkva i Vrsac
+/// Ogranicava aplikaciju na opštine Bela Crkva i Vrsac
 class GradAdresaValidator {
   /// ? PROVERI DA LI JE GRAD BELA CRKVA (ili BC skracenica)
   static bool isBelaCrkva(String? grad) {
@@ -18,7 +18,7 @@ class GradAdresaValidator {
     return normalized.contains('vrsac') || normalized.contains('vr') || normalized == 'vs';
   }
 
-  /// JEDNOSTAVNO GRAD PORE�ENJE - samo 2 glavna grada
+  /// JEDNOSTAVNO GRAD POREŠENJE - samo 2 glavna grada
   /// LOGIKA: Bela Crkva ili Vrsac - filtrira po gradu putnika
   static bool isGradMatch(
     String? putnikGrad,

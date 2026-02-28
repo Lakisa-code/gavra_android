@@ -18,7 +18,7 @@ import '../utils/v2_text_utils.dart';
 class PrintingService {
   static final V2PutnikStreamService _putnikService = V2PutnikStreamService();
 
-  // ========== FONTOVI SA PODR�KOM ZA SRPSKA SLOVA ==========
+  // ========== FONTOVI SA PODRŠKOM ZA SRPSKA SLOVA ==========
   static pw.Font get regularFont => pw.Font.helvetica();
   static pw.Font get boldFont => pw.Font.helveticaBold();
 
@@ -132,7 +132,7 @@ class PrintingService {
       await OpenFilex.open(file.path);
     } catch (e) {
       if (context.mounted) {
-        AppSnackBar.error(context, '? Gre�ka pri �tampanju: $e');
+        AppSnackBar.error(context, '? Greška pri štampanju: $e');
       }
     }
   }
@@ -187,7 +187,7 @@ class PrintingService {
 
               pw.SizedBox(height: 40),
 
-              // ========== PODACI O VO�NJI ==========
+              // ========== PODACI O VOžNJI ==========
               _buildInfoRow('Datum:', danas),
               pw.SizedBox(height: 8),
               _buildInfoRow('Narucilac:', '______________________'),
@@ -213,7 +213,7 @@ class PrintingService {
 
               pw.SizedBox(height: 20),
 
-              // ========== LISTA PUTNIKA (1-8 + dodatni ako ima vi�e) ==========
+              // ========== LISTA PUTNIKA (1-8 + dodatni ako ima više) ==========
               ...List.generate(
                 putnici.length > 8 ? putnici.length : 8,
                 (index) {

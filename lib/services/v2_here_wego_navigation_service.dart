@@ -44,7 +44,7 @@ class HereWeGoNavigationService {
         return HereWeGoNavResult.error('Nema putnika sa validnim koordinatama');
       }
 
-      // SEGMENTACIJA AKO IMA VI�E OD 10 PUTNIKA
+      // SEGMENTACIJA AKO IMA VIŠE OD 10 PUTNIKA
       if (validPutnici.length <= maxWaypoints) {
         return await _launchNavigation(
           putnici: validPutnici,
@@ -53,7 +53,7 @@ class HereWeGoNavigationService {
         );
       } else {
         if (!context.mounted) {
-          return HereWeGoNavResult.error('Context nije vi�e aktivan');
+          return HereWeGoNavResult.error('Context nije više aktivan');
         }
         return await _launchSegmentedNavigation(
           context: context,
@@ -63,14 +63,14 @@ class HereWeGoNavigationService {
         );
       }
     } catch (e) {
-      return HereWeGoNavResult.error('Gre�ka: $e');
+      return HereWeGoNavResult.error('Greška: $e');
     }
   }
 
   /// ?? Proveri da li je HERE WeGo instaliran
   static Future<bool> _isHereWeGoInstalled() async {
     try {
-      // Proveravamo vi�e poznatih �ema da budemo sigurni
+      // Proveravamo više poznatih šema da budemo sigurni
       final schemes = [
         '$appScheme://test',
         'here-route://test',
@@ -99,9 +99,9 @@ class HereWeGoNavigationService {
               children: [
                 Text('Za rad sa putnicima koristimo ISKLJUCIVO HERE WeGo navigaciju.'),
                 SizedBox(height: 12),
-                Text('Aplikacija trenutno nije nadena na va�em telefonu.'),
+                Text('Aplikacija trenutno nije nadena na vašem telefonu.'),
                 SizedBox(height: 12),
-                Text('Da li �elite da je preuzmete sada?'),
+                Text('Da li želite da je preuzmete sada?'),
               ],
             ),
             actions: [
@@ -130,7 +130,7 @@ class HereWeGoNavigationService {
       if (isHuawei) {
         // AppGallery link za HERE WeGo
         url = 'https://appgallery.huawei.com/app/C101452907';
-        // Mo�emo probati i direktnu �emu za AppGallery ako je podr�ano
+        // Možemo probati i direktnu šemu za AppGallery ako je podržano
         final marketUri = Uri.parse('appmarket://details?id=com.here.app.maps');
         if (await canLaunchUrl(marketUri)) {
           await launchUrl(marketUri, mode: LaunchMode.externalApplication);
@@ -203,13 +203,13 @@ class HereWeGoNavigationService {
           );
         }
       }
-      return HereWeGoNavResult.error('Gre�ka pri otvaranju HERE WeGo');
+      return HereWeGoNavResult.error('Greška pri otvaranju HERE WeGo');
     } catch (e) {
-      return HereWeGoNavResult.error('Gre�ka: $e');
+      return HereWeGoNavResult.error('Greška: $e');
     }
   }
 
-  /// ?? Segmentirana navigacija (vi�e od 10 putnika)
+  /// ?? Segmentirana navigacija (više od 10 putnika)
   static Future<HereWeGoNavResult> _launchSegmentedNavigation({
     required BuildContext context,
     required List<V2Putnik> putnici,
@@ -241,7 +241,7 @@ class HereWeGoNavigationService {
 
       if (!result.success) {
         return HereWeGoNavResult.partial(
-          message: 'Gre�ka pri segmentu ${currentSegment + 1}',
+          message: 'Greška pri segmentu ${currentSegment + 1}',
           launchedPutnici: launchedPutnici,
           remainingPutnici: segments.skip(currentSegment).expand((s) => s).toList(),
         );

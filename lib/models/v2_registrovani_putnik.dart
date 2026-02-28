@@ -1,6 +1,6 @@
 import '../services/v2_adresa_supabase_service.dart';
 
-/// Model za mesecne putnike - aûurirana verzija
+/// Model za mesecne putnike - a≈æurirana verzija
 class RegistrovaniPutnik {
   RegistrovaniPutnik({
     required this.id,
@@ -23,13 +23,13 @@ class RegistrovaniPutnik {
     // Nova polja za database kompatibilnost
     this.tipPrikazivanja = 'standard',
     this.vozacId,
-    // Computed fields za UI display (dolaze iz JOIN-a, ne öalju se u bazu)
+    // Computed fields za UI display (dolaze iz JOIN-a, ne ≈°alju se u bazu)
     this.adresa,
     this.grad,
     // Tracking polja - UKLONJENO: pokupljen, placeno - sada u voznje_log
     this.pin,
     this.email, // ?? Email za kontakt i Google Play testing
-    this.cenaPoDanu, // ?? Custom cena po danu (NULL = 0.0, nema viöe defaulta)
+    this.cenaPoDanu, // ?? Custom cena po danu (NULL = 0.0, nema vi≈°e defaulta)
     // ?? Polja za racune
     this.trebaRacun = false,
     this.firmaNaziv,
@@ -61,7 +61,7 @@ class RegistrovaniPutnik {
   /// Tip putnika (radnik, ucenik, itd.)
   final String tip;
 
-  /// Tip ökole (samo za ucenike)
+  /// Tip ≈°kole (samo za ucenike)
   final String? tipSkole;
 
   /// UUID reference za adresu u Beloj Crkvi
@@ -98,7 +98,7 @@ class RegistrovaniPutnik {
   /// ID vozaca (ako je dodeljen)
   final String? vozacId;
 
-  // Computed fields za UI display (dolaze iz JOIN-a, ne öalju se u bazu)
+  // Computed fields za UI display (dolaze iz JOIN-a, ne ≈°alju se u bazu)
   /// Adresa putnika (izracunata polja)
   final String? adresa;
 
@@ -127,7 +127,7 @@ class RegistrovaniPutnik {
   /// MB firme za racun
   final String? firmaMb;
 
-  /// éiro racun firme za racun
+  /// ≈æiro racun firme za racun
   final String? firmaZiro;
 
   /// Adresa firme za racun
@@ -211,7 +211,7 @@ class RegistrovaniPutnik {
     };
 
     // Dodaj id samo ako nije prazan i NIJE fallback-uuid (za UPDATE operacije)
-    // Za INSERT operacije, ostavi id da baza generiöe UUID
+    // Za INSERT operacije, ostavi id da baza generi≈°e UUID
     if (id.isNotEmpty && !id.startsWith('fallback-uuid-')) {
       result['id'] = id;
     }
@@ -316,13 +316,13 @@ class RegistrovaniPutnik {
     final bcNaziv = await getAdresaBelaCrkvaNaziv();
     final vsNaziv = await getAdresaVrsacNaziv();
 
-    // Logika: prikaûi adresu za selektovani grad
+    // Logika: prika≈æi adresu za selektovani grad
     if (selektovaniGrad?.toLowerCase().contains('bela') == true) {
-      // BC selektovano ? prikaûi BC adresu, fallback na VS
+      // BC selektovano ? prika≈æi BC adresu, fallback na VS
       if (bcNaziv != null) return bcNaziv;
       if (vsNaziv != null) return vsNaziv;
     } else {
-      // VS selektovano ? prikaûi VS adresu, fallback na BC
+      // VS selektovano ? prika≈æi VS adresu, fallback na BC
       if (vsNaziv != null) return vsNaziv;
       if (bcNaziv != null) return bcNaziv;
     }
@@ -330,7 +330,7 @@ class RegistrovaniPutnik {
     return 'Nema adresa';
   }
 
-  /// ? HELPER: Generiöi UUID ako nedostaje iz baze
+  /// ? HELPER: Generi≈°i UUID ako nedostaje iz baze
   static String _generateUuid() {
     // Jednostavna UUID v4 simulacija za fallback
     final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -338,7 +338,7 @@ class RegistrovaniPutnik {
     return 'fallback-uuid-$random';
   }
 
-  /// ?? Helper za sigurno parsiranje brojeva (podrûava num i String za Postgres numeric)
+  /// ?? Helper za sigurno parsiranje brojeva (podr≈æava num i String za Postgres numeric)
   static num? _parseNum(dynamic value) {
     if (value == null) return null;
     if (value is num) return value;

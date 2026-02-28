@@ -7,15 +7,15 @@ import 'v2_realtime_notification_service.dart';
 import 'v2_weather_service.dart';
 
 /// ??? Servis za automatska upozorenja o opasnim vremenskim uslovima
-/// �alje push notifikacije vozacima kada se ocekuje:
+/// šalje push notifikacije vozacima kada se ocekuje:
 /// - ?? Sneg
-/// - ?? Ledena ki�a (freezing rain)
+/// - ?? Ledena kiša (freezing rain)
 /// - ?? Nevreme (grmljavina)
 /// - ??? Gusta magla
 class V2WeatherAlertService {
   static SupabaseClient get _supabase => supabase;
 
-  /// Glavna funkcija - proverava prognozu i �alje upozorenje ako treba
+  /// Glavna funkcija - proverava prognozu i šalje upozorenje ako treba
   /// Poziva se na app startup (main.dart)
   static Future<void> checkAndSendWeatherAlerts() async {
     try {
@@ -53,7 +53,7 @@ class V2WeatherAlertService {
         return;
       }
 
-      // Po�alji upozorenje vozacima
+      // Pošalji upozorenje vozacima
       await _sendWeatherAlert(alerts);
 
       // Oznaci da je poslato
@@ -63,11 +63,11 @@ class V2WeatherAlertService {
         debugPrint('?? [WeatherAlert] Poslato upozorenje: ${alerts.join(', ')}');
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('? [WeatherAlert] Gre�ka: $e');
+      if (kDebugMode) debugPrint('? [WeatherAlert] Greška: $e');
     }
   }
 
-  /// Proverava da li prognoza sadr�i opasne uslove
+  /// Proverava da li prognoza sadrži opasne uslove
   static List<String> _checkForDangerousWeather(WeatherData weather, String grad) {
     final alerts = <String>[];
     final code = weather.dailyWeatherCode ?? weather.weatherCode;
@@ -77,9 +77,9 @@ class V2WeatherAlertService {
       alerts.add('?? Sneg u $grad');
     }
 
-    // ?? LEDENA KI�A (56-57, 66-67) - POSEBNO OPASNO
+    // ?? LEDENA KIŠA (56-57, 66-67) - POSEBNO OPASNO
     if ((code >= 56 && code <= 57) || (code >= 66 && code <= 67)) {
-      alerts.add('?? Ledena ki�a u $grad - OPREZ!');
+      alerts.add('?? Ledena kiša u $grad - OPREZ!');
     }
 
     // ?? NEVREME/GRMLJAVINA (95-99)
@@ -92,9 +92,9 @@ class V2WeatherAlertService {
       alerts.add('??? Gusta magla u $grad');
     }
 
-    // ??? JAKA KI�A (65, 82) - samo najjaci intenzitet
+    // ??? JAKA KIŠA (65, 82) - samo najjaci intenzitet
     if (code == 65 || code == 82) {
-      alerts.add('??? Jaka ki�a u $grad');
+      alerts.add('??? Jaka kiša u $grad');
     }
 
     return alerts;
@@ -116,13 +116,13 @@ class V2WeatherAlertService {
     } catch (e) {
       // Ako tabela ne postoji, vrati false
       if (kDebugMode) {
-        debugPrint('?? [WeatherAlert] Gre�ka pri proveri loga: $e');
+        debugPrint('?? [WeatherAlert] Greška pri proveri loga: $e');
       }
       return false;
     }
   }
 
-  /// �alje push notifikaciju svim vozacima
+  /// šalje push notifikaciju svim vozacima
   static Future<void> _sendWeatherAlert(List<String> alerts) async {
     try {
       // Dohvati tokene svih vozaca
@@ -137,7 +137,7 @@ class V2WeatherAlertService {
       final title = '?? Upozorenje - Vremenski uslovi';
       final body = _createAlertMessage(alerts);
 
-      // Po�alji push
+      // Pošalji push
       await RealtimeNotificationService.sendPushNotification(
         title: title,
         body: body,
@@ -152,7 +152,7 @@ class V2WeatherAlertService {
         debugPrint('? [WeatherAlert] Poslato ${vozacTokens.length} vozacima');
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('? [WeatherAlert] Gre�ka pri slanju: $e');
+      if (kDebugMode) debugPrint('? [WeatherAlert] Greška pri slanju: $e');
     }
   }
 
@@ -162,8 +162,8 @@ class V2WeatherAlertService {
     final dateStr = '${now.day}.${now.month}.${now.year}';
 
     return '?? GAVRA 013 - $dateStr\n\n'
-        'Ocekuju se lo�i vremenski uslovi:\n\n'
-        '${alerts.map((a) => '� $a').join('\n')}\n\n'
+        'Ocekuju se loši vremenski uslovi:\n\n'
+        '${alerts.map((a) => 'š $a').join('\n')}\n\n'
         '?? Vozite oprezno i prilagodite brzinu uslovima na putu!';
   }
 
@@ -178,7 +178,7 @@ class V2WeatherAlertService {
         'alert_types': alertTypes,
       });
     } catch (e) {
-      if (kDebugMode) debugPrint('? [WeatherAlert] Gre�ka pri upisu loga: $e');
+      if (kDebugMode) debugPrint('? [WeatherAlert] Greška pri upisu loga: $e');
     }
   }
 }

@@ -9,7 +9,7 @@ import '../utils/v2_vozac_cache.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 import 'v2_statistika_istorija_service.dart';
 
-/// Servis za upravljanje putnicima (v2_ �ema)
+/// Servis za upravljanje putnicima (v2_ šema)
 /// Agregira sve 4 V2Putnik tabele: v2_radnici, v2_ucenici, v2_dnevni, v2_posiljke
 class V2PutnikService {
   V2PutnikService({SupabaseClient? supabaseClient}) : _supabaseOverride = supabaseClient;
@@ -30,13 +30,13 @@ class V2PutnikService {
     return {...row, '_tabela': tabela};
   }
 
-  /// Dohvata putnika iz bilo koje od 4 tabele (pretra�uje sve dok ne nade)
+  /// Dohvata putnika iz bilo koje od 4 tabele (pretražuje sve dok ne nade)
   Future<Map<String, dynamic>?> findPutnikById(String id) async {
-    // Prvo poku�aj iz cache-a
+    // Prvo pokušaj iz cache-a
     final cached = V2MasterRealtimeManager.instance.getPutnikById(id);
     if (cached != null) return cached;
 
-    // Fallback: pretra�i sve tabele
+    // Fallback: pretraži sve tabele
     for (final tabela in _putnikTabele) {
       final row = await _supabase.from(tabela).select().eq('id', id).maybeSingle();
       if (row != null) return {...row, '_tabela': tabela};
@@ -73,7 +73,7 @@ class V2PutnikService {
     return {...row, '_tabela': tabela};
   }
 
-  /// Dohvata putnika po telefonu (pretra�uje sve tabele)
+  /// Dohvata putnika po telefonu (pretražuje sve tabele)
   Future<Map<String, dynamic>?> findByTelefon(String telefon) async {
     if (telefon.isEmpty) return null;
     final normalized = _normalizePhone(telefon);
@@ -120,10 +120,10 @@ class V2PutnikService {
   }
 
   // ---------------------------------------------
-  // A�URIRANJE
+  // AŽURIRANJE
   // ---------------------------------------------
 
-  /// A�urira putnika u datoj tabeli
+  /// Ažurira putnika u datoj tabeli
   Future<Map<String, dynamic>> updatePutnik(
     String id,
     Map<String, dynamic> updates,
@@ -134,7 +134,7 @@ class V2PutnikService {
     return {...row, '_tabela': tabela};
   }
 
-  /// A�urira PIN putnika
+  /// Ažurira PIN putnika
   Future<void> updatePin(String id, String noviPin, String tabela) async {
     await _supabase.from(tabela).update({
       'pin': noviPin,
@@ -142,7 +142,7 @@ class V2PutnikService {
     }).eq('id', id);
   }
 
-  /// A�urira email putnika
+  /// Ažurira email putnika
   Future<void> updateEmail(String id, String email, String tabela) async {
     await _supabase.from(tabela).update({
       'email': email,
@@ -154,15 +154,15 @@ class V2PutnikService {
   // BRISANJE
   // ---------------------------------------------
 
-  /// Bri�e putnika i sve vezane podatke (trajno)
+  /// Briše putnika i sve vezane podatke (trajno)
   Future<bool> deletePutnik(String id, String tabela) async {
     try {
-      // Bri�i vezane podatke
+      // Briši vezane podatke
       await _supabase.from('v2_pin_zahtevi').delete().eq('putnik_id', id);
       await _supabase.from('v2_polasci').delete().eq('putnik_id', id);
       await _supabase.from('v2_vozac_putnik').delete().eq('putnik_id', id);
-      // v2_voznje_log se ne bri�e (audit trail)
-      // Bri�i putnika
+      // v2_voznje_log se ne briše (audit trail)
+      // Briši putnika
       await _supabase.from(tabela).delete().eq('id', id);
       return true;
     } catch (e) {
@@ -296,12 +296,12 @@ class V2PutnikService {
   }
 
   // ---------------------------------------------
-  // BACKWARD COMPAT � za screene koji jo� nisu migrirani
+  // BACKWARD COMPAT ž za screene koji još nisu migrirani
   // Vraca RegistrovaniPutnik objekat iz v2_ podataka
   // ---------------------------------------------
 
   /// Dohvata sve aktivne putnike kao RegistrovaniPutnik listu
-  /// (za screene koji jo� koriste stari model)
+  /// (za screene koji još koriste stari model)
   Future<List<RegistrovaniPutnik>> getAllAktivniKaoModel() async {
     final svi = await getSviAktivni();
     return svi.map((row) => RegistrovaniPutnik.fromMap(row)).toList();

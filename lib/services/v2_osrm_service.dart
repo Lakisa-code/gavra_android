@@ -71,7 +71,7 @@ class OsrmService {
       );
 
       if (parseResult == null) {
-        return OsrmResult.error('Gre�ka pri parsiranju OSRM odgovora');
+        return OsrmResult.error('Greška pri parsiranju OSRM odgovora');
       }
 
       return OsrmResult.success(
@@ -82,7 +82,7 @@ class OsrmService {
         putniciEta: parseResult.putniciEta, // ?? ETA za svakog putnika
       );
     } catch (e) {
-      return OsrmResult.error('Gre�ka pri optimizaciji: $e');
+      return OsrmResult.error('Greška pri optimizaciji: $e');
     }
   }
 

@@ -13,7 +13,7 @@ import 'realtime/v2_master_realtime_manager.dart';
 class V2KapacitetService {
   static SupabaseClient get _supabase => supabase;
 
-  // ?? GLOBAL REALTIME LISTENER za automatsko a�uriranje
+  // ?? GLOBAL REALTIME LISTENER za automatsko ažuriranje
   static StreamSubscription? _globalRealtimeSubscription;
 
   // ?? CACHE za kapacitet (inicijalizuje se na startup)
@@ -119,7 +119,7 @@ class V2KapacitetService {
     }
   }
 
-  /// Stream kapaciteta (realtime a�uriranje) - koristi RealtimeManager
+  /// Stream kapaciteta (realtime ažuriranje) - koristi RealtimeManager
   static Stream<Map<String, Map<String, int>>> streamKapacitet() {
     final controller = StreamController<Map<String, Map<String, int>>>.broadcast();
     StreamSubscription? subscription;
@@ -160,7 +160,7 @@ class V2KapacitetService {
           .eq('vreme', vreme)
           .select();
 
-      // Ako update nije promenio ni�ta, uradi insert
+      // Ako update nije promenio ništa, uradi insert
       if (updateResult.isEmpty) {
         await _supabase.from('v2_kapacitet_polazaka').insert({
           'grad': grad,
@@ -205,17 +205,17 @@ class V2KapacitetService {
       _kapacitetCacheInitialized = true;
     }
 
-    // Pokreni realtime listener za a�uriranje cache-a
+    // Pokreni realtime listener za ažuriranje cache-a
     startGlobalRealtimeListener();
   }
 
-  /// A�urira cache iz baze
+  /// Ažurira cache iz baze
   static Future<void> refreshKapacitetCache() async {
     try {
       final data = await getKapacitet();
       _kapacitetCache = data;
     } catch (e) {
-      // Zadr�i stari cache ako fetch nije useo
+      // Zadrži stari cache ako fetch nije useo
     }
   }
 
@@ -229,7 +229,7 @@ class V2KapacitetService {
 
     // Pokreni globalni listener
     _globalRealtimeSubscription = V2MasterRealtimeManager.instance.subscribe('v2_kapacitet_polazaka').listen((payload) {
-      // Na svaku promenu, osve�i cache
+      // Na svaku promenu, osveži cache
       refreshKapacitetCache();
     });
   }

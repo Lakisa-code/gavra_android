@@ -47,7 +47,7 @@ class V2Putnik {
       return V2Putnik.fromRegistrovaniPutnici(map);
     }
 
-    // GRE�KA - Struktura tabele nije prepoznata
+    // GREŠKA - Struktura tabele nije prepoznata
     throw Exception(
       'Struktura podataka nije prepoznata - ocekuje se putnik_ime kolona iz registrovani_putnici',
     );
@@ -121,7 +121,7 @@ class V2Putnik {
     final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
 
     final danStr = (req['dan']?.toString() ?? '').toLowerCase();
-    // ? PRIORITET: datum iz RPC-a (p_datum = danas) � ne racunaj iz dana jer ide u buducnost
+    // ? PRIORITET: datum iz RPC-a (p_datum = danas) š ne racunaj iz dana jer ide u buducnost
     // Fallback: _getIsoDateForDan samo ako RPC nije vratio datum (direktni seat_requests query)
     final rpcDatum = req['datum']?.toString();
     final datumStr = (rpcDatum != null && rpcDatum.isNotEmpty)
@@ -130,7 +130,7 @@ class V2Putnik {
     final gRaw = req['grad']?.toString().toLowerCase() ?? '';
     final grad = (gRaw == 'vs' || gRaw.contains('vrs') || gRaw.contains('vr')) ? 'VS' : 'BC';
 
-    // ? PRIORITET: Dodeljeno vreme (ako je vozac pomerio termin), inace �eljeno
+    // ? PRIORITET: Dodeljeno vreme (ako je vozac pomerio termin), inace šeljeno
     final vremeRaw = (req['dodeljeno_vreme'] ?? req['zeljeno_vreme'])?.toString() ?? '';
 
     // Provera da li je pokupljen (iz voznje_log ili statusa)
@@ -146,12 +146,12 @@ class V2Putnik {
     final tip = p['tip'] as String?;
     final isDnevni = tip == 'dnevni' || tip == 'posiljka';
 
-    // Status: Prioritet ima status iz profila ako je na bolovanju/godi�njem,
+    // Status: Prioritet ima status iz profila ako je na bolovanju/godišnjem,
     // inace koristimo status iz seat_request (approved, confirmed, cancelled...)
     final profileStatus = p['status']?.toString().toLowerCase();
     String? finalStatus = req['status']?.toString();
 
-    if (profileStatus == 'bolovanje' || profileStatus == 'godisnji' || profileStatus == 'godi�nji') {
+    if (profileStatus == 'bolovanje' || profileStatus == 'godisnji' || profileStatus == 'godišnji') {
       // Ako je globalno na odsustvu, to je primarni status za prikaz
       finalStatus = profileStatus;
     }
@@ -208,7 +208,7 @@ class V2Putnik {
   }
 
   /// Izracunava ISO datum (yyyy-MM-dd) za danu kraticu dana (pon, uto...)
-  /// Tra�i od danas pa unaprijed (max 7 dana) sljedeci taj dan u sedmici
+  /// Traži od danas pa unaprijed (max 7 dana) sljedeci taj dan u sedmici
   static String _getIsoDateForDan(String danKratica) {
     if (danKratica.isEmpty) return '';
     try {
@@ -282,7 +282,7 @@ class V2Putnik {
 
   bool get jeBolovanje => status != null && status!.toLowerCase() == 'bolovanje';
 
-  bool get jeGodisnji => status != null && (status!.toLowerCase() == 'godi�nji' || status!.toLowerCase() == 'godisnji');
+  bool get jeGodisnji => status != null && (status!.toLowerCase() == 'godišnji' || status!.toLowerCase() == 'godisnji');
 
   bool get jeOdsustvo => jeBolovanje || jeGodisnji;
 
@@ -317,12 +317,12 @@ class V2Putnik {
     final bcPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'bc');
     final vsPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'vs');
 
-    // Ako ima BC polazak danas, V2Putnik putuje IZ Bela Crkva (pokuplja� ga tamo)
+    // Ako ima BC polazak danas, V2Putnik putuje IZ Bela Crkva (pokupljaš ga tamo)
     if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {
       return 'BC';
     }
 
-    // Ako ima VS polazak danas, V2Putnik putuje IZ Vrsac (pokuplja� ga tamo)
+    // Ako ima VS polazak danas, V2Putnik putuje IZ Vrsac (pokupljaš ga tamo)
     if (vsPolazak != null && vsPolazak.toString().isNotEmpty) {
       return 'VS';
     }
@@ -359,7 +359,7 @@ class V2Putnik {
     }
 
     // ? FIX: Koristi grad parametar za odredivanje ispravne adrese
-    // Ako je grad Bela Crkva, koristi BC adresu (gde pokuplja� putnika)
+    // Ako je grad Bela Crkva, koristi BC adresu (gde pokupljaš putnika)
     // Ako je grad Vrsac, koristi VS adresu
     if (grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc')) {
       return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
@@ -388,7 +388,7 @@ class V2Putnik {
       // 'id': id, // Uklonjen - Supabase ce auto-generirati UUID
       'putnik_ime': ime,
       'tip': 'radnik', // ili 'ucenik' - treba logiku za odredivanje
-      'tip_skole': null, // ? NOVA KOLONA - mo�da treba logika
+      'tip_skole': null, // ? NOVA KOLONA - mošda treba logika
       'broj_telefona': brojTelefona,
       'tip_prikazivanja': null,
       'status': status ?? 'aktivan',
@@ -402,7 +402,7 @@ class V2Putnik {
   }
 
   // -----------------------------------------------------------------------
-  // ?? COPY WITH - za a�uriranje putnika sa novim podacima
+  // ?? COPY WITH - za ažuriranje putnika sa novim podacima
   // -----------------------------------------------------------------------
 
   V2Putnik copyWith({
@@ -518,19 +518,19 @@ class V2Putnik {
       return adresa;
     }
 
-    // Ako nemamo adresaId, ne mo�emo ucitati
+    // Ako nemamo adresaId, ne možemo ucitati
     if (adresaId == null || adresaId!.isEmpty) {
-      return adresa; // vrati �ta god imamo (ili null)
+      return adresa; // vrati šta god imamo (ili null)
     }
 
     try {
-      // Poku�aj da ucita� adresu direktno iz baze koristeci UUID
+      // Pokušaj da ucitaš adresu direktno iz baze koristeci UUID
       final fetchedAdresa = await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaId);
       if (fetchedAdresa != null && fetchedAdresa.isNotEmpty) {
         return fetchedAdresa;
       }
     } catch (_) {
-      // Ignore error i vrati �ta god imamo
+      // Ignore error i vrati šta god imamo
     }
 
     return adresa;

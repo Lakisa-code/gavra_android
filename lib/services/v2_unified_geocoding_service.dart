@@ -43,11 +43,11 @@ class UnifiedGeocodingService {
   UnifiedGeocodingService._();
 
   // -----------------------------------------------------------------------
-  // GLAVNA FUNKCIJA - Dobij koordinate za vi�e putnika (PARALELNO)
+  // GLAVNA FUNKCIJA - Dobij koordinate za više putnika (PARALELNO)
   // -----------------------------------------------------------------------
 
   /// Dobij koordinate za listu putnika sa paralelnim fetch-om
-  /// Vraca mapu V2Putnik -> Position samo za uspe�no geocodirane
+  /// Vraca mapu V2Putnik -> Position samo za uspešno geocodirane
   static Future<Map<V2Putnik, Position>> getCoordinatesForPutnici(
     List<V2Putnik> putnici, {
     GeocodingProgressCallback? onProgress,

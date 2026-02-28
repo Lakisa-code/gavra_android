@@ -21,7 +21,7 @@ import '../utils/v2_vozac_cache.dart';
 import '../widgets/v2_dug_button.dart';
 import 'v2_adrese_screen.dart'; // ??? Upravljanje adresama
 import 'v2_dugovi_screen.dart';
-import 'v2_finansije_screen.dart'; // ?? Finansijski izve�taj
+import 'v2_finansije_screen.dart'; // ?? Finansijski izveštaj
 import 'v2_gorivo_screen.dart'; // ? Pumpa goriva
 import 'v2_kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'v2_odrzavanje_screen.dart'; // ?? Kolska knjiga - vozila
@@ -162,7 +162,7 @@ class _AdminScreenState extends State<AdminScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Otka�i'),
+                child: const Text('Otkaži'),
               ),
             ],
           );
@@ -170,11 +170,11 @@ class _AdminScreenState extends State<AdminScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.error(context, 'Gre�ka: $e');
+      AppSnackBar.error(context, 'Greška: $e');
     }
   }
 
-  /// ?? VOZAC PICKER DIALOG - Admin mo�e da vidi ekran bilo kog vozaca
+  /// ?? VOZAC PICKER DIALOG - Admin može da vidi ekran bilo kog vozaca
   void _showVozacPickerDialog(BuildContext context) async {
     // Asinkrono ucitaj vozace iz baze umesto fallback vrednosti
     try {
@@ -228,7 +228,7 @@ class _AdminScreenState extends State<AdminScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Otka�i'),
+                child: const Text('Otkaži'),
               ),
             ],
           );
@@ -237,7 +237,7 @@ class _AdminScreenState extends State<AdminScreen> {
     } catch (e) {
       if (kDebugMode) debugPrint('? Error loading drivers: $e');
       if (!mounted) return;
-      AppSnackBar.error(context, '? Gre�ka pri ucitavanju vozaca');
+      AppSnackBar.error(context, '? Greška pri ucitavanju vozaca');
     }
   }
 
@@ -265,7 +265,7 @@ class _AdminScreenState extends State<AdminScreen> {
         setState(() => _brojPinZahteva = broj);
       }
     } catch (e) {
-      // Ignori�emo gre�ku, badge jednostavno nece prikazati broj
+      // Ignorišemo grešku, badge jednostavno nece prikazati broj
     }
   }
 
@@ -279,7 +279,7 @@ class _AdminScreenState extends State<AdminScreen> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(builder: (context, setDialogState) {
-        // Dohvati vremena za izabrani grad i trenutni re�im (zimski/letnji/praznici)
+        // Dohvati vremena za izabrani grad i trenutni režim (zimski/letnji/praznici)
         final navType = navBarTypeNotifier.value;
         List<String> vremena;
         if (selectedGrad == 'BC') {
@@ -358,7 +358,7 @@ class _AdminScreenState extends State<AdminScreen> {
           actions: [
             TextButton(
               onPressed: isProcessing ? null : () => Navigator.pop(context),
-              child: const Text('Otka�i'),
+              child: const Text('Otkaži'),
             ),
             ElevatedButton(
               onPressed: isProcessing
@@ -377,8 +377,8 @@ class _AdminScreenState extends State<AdminScreen> {
                         AppSnackBar.success(
                             context,
                             selectedVreme == 'Sva vremena'
-                                ? '? Uspe�no uklonjeno $count putnika za ceo dan ($selectedGrad) - $selectedDan'
-                                : '? Uspe�no uklonjeno $count putnika za $selectedVreme ($selectedGrad) - $selectedDan');
+                                ? '? Uspešno uklonjeno $count putnika za ceo dan ($selectedGrad) - $selectedDan'
+                                : '? Uspešno uklonjeno $count putnika za $selectedVreme ($selectedGrad) - $selectedDan');
                       }
                     },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
@@ -428,7 +428,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 ListTile(
                   leading: const Text('??', style: TextStyle(fontSize: 24)),
                   title: const Text('Finansije'),
-                  subtitle: const Text('Prihodi, tro�kovi, neto zarada'),
+                  subtitle: const Text('Prihodi, troškovi, neto zarada'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.pop(context);
@@ -1124,13 +1124,13 @@ class _AdminScreenState extends State<AdminScreen> {
                   children: [
                     const Icon(Icons.error, color: Colors.red, size: 64),
                     const SizedBox(height: 16),
-                    Text('Gre�ka: ${snapshot.error}'),
+                    Text('Greška: ${snapshot.error}'),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        if (mounted) setState(() {}); // Poku�aj ponovo
+                        if (mounted) setState(() {}); // Pokušaj ponovo
                       },
-                      child: const Text('Poku�aj ponovo'),
+                      child: const Text('Pokušaj ponovo'),
                     ),
                   ],
                 ),
@@ -1147,7 +1147,7 @@ class _AdminScreenState extends State<AdminScreen> {
               final shortDayName = _getShortDayName(_selectedDan).toLowerCase();
               return V2Putnik.dan.toLowerCase() == shortDayName;
             }).toList();
-            // ?? DU�NICI - putnici sa PLAVOM KARTICOM (nisu mesecni tip) koji nisu platili
+            // ?? DUšNICI - putnici sa PLAVOM KARTICOM (nisu mesecni tip) koji nisu platili
             final filteredDuznici = filteredPutnici.where((V2Putnik) {
               final nijeMesecni = !V2Putnik.isMesecniTip;
               if (!nijeMesecni) {
@@ -1158,7 +1158,7 @@ class _AdminScreenState extends State<AdminScreen> {
               final nijeOtkazan = V2Putnik.status != 'otkazan' && V2Putnik.status != 'Otkazano';
               final pokupljen = V2Putnik.jePokupljen;
 
-              // ? SVI (admin i vozaci) vide SVE du�nike � vozaci mogu naplatiti tude dugove
+              // ? SVI (admin i vozaci) vide SVE dužnike ž vozaci mogu naplatiti tude dugove
               return nijePlatio && nijeOtkazan && pokupljen;
             }).toList();
 
@@ -1175,10 +1175,10 @@ class _AdminScreenState extends State<AdminScreen> {
             // ? KORISTI CENTRALNU FUNKCIJU IZ DateUtils
             final targetWeekday = app_date_utils.DateUtils.getDayWeekdayNumber(_selectedDan);
 
-            // ?? USKLADI SA DANAS SCREEN: Ako je odabrani dan isti kao danas, koristi dana�nji datum
+            // ?? USKLADI SA DANAS SCREEN: Ako je odabrani dan isti kao danas, koristi današnji datum
             final DateTime targetDate;
             if (targetWeekday == currentWeekday) {
-              // Isti dan kao danas - koristi dana�nji datum (kao danas screen)
+              // Isti dan kao danas - koristi današnji datum (kao danas screen)
               targetDate = now;
             } else {
               // Standardna logika za ostale dane
@@ -1205,7 +1205,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 // Ukloni '_ukupno' kljuc za cist prikaz
                 final Map<String, double> pazar = Map.from(pazarMap)..remove('_ukupno');
 
-                // ?? FILTER PO VOZACU - Prika�i samo naplate trenutnog vozaca ili sve za admin
+                // ?? FILTER PO VOZACU - Prikaži samo naplate trenutnog vozaca ili sve za admin
                 // ??? KORISTI ADMIN SECURITY SERVICE za filtriranje privilegija
                 if (_currentDriver == null) {
                   return const Center(
@@ -1269,7 +1269,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Prikazuju se samo VA�E naplate, vozac: $_currentDriver',
+                                    'Prikazuju se samo VAŠE naplate, vozac: $_currentDriver',
                                     style: TextStyle(
                                       color: Colors.green[700],
                                       fontSize: 12,

@@ -14,7 +14,7 @@ class HapticService {
     }
   }
 
-  /// ?? Medium impact - za važnije akcije
+  /// ?? Medium impact - za vaÅ¡nije akcije
   static void mediumImpact() {
     try {
       HapticFeedback.mediumImpact();
@@ -41,7 +41,7 @@ class HapticService {
     }
   }
 
-  /// ?? Success feedback - kad se nešto uspešno zaVrsi
+  /// ?? Success feedback - kad se neÅ¡to uspeÅ¡no zaVrsi
   static void success() {
     try {
       HapticFeedback.lightImpact();
@@ -53,7 +53,7 @@ class HapticService {
     }
   }
 
-  /// ? Error feedback - za greške
+  /// ? Error feedback - za greÅ¡ke
   static void error() {
     try {
       HapticFeedback.heavyImpact();
@@ -63,10 +63,10 @@ class HapticService {
   }
 
   /// ?? POKUPLJEN VIBRACIJA - jaca vibracija kad se V2Putnik pokupi
-  /// Koristi Vibration paket za duže trajanje (200ms)
+  /// Koristi Vibration paket za duÅ¡e trajanje (200ms)
   static Future<void> putnikPokupljen() async {
     try {
-      // Proveri da li uredaj podržava vibraciju
+      // Proveri da li uredaj podrÅ¾ava vibraciju
       final hasVibrator = await Vibration.hasVibrator();
       if (hasVibrator == true) {
         // Dva kratka pulsa - "bip-bip" efekat

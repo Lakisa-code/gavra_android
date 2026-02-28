@@ -17,7 +17,7 @@ import '../utils/v2_app_snack_bar.dart';
 ///
 /// Parametri:
 /// - existingPutnik: null za dodavanje, postojeci objekat za editovanje
-/// - onSaved: callback koji se poziva posle uspe�nog cuvanja
+/// - onSaved: callback koji se poziva posle uspešnog cuvanja
 class V2PutnikDialog extends StatefulWidget {
   final RegistrovaniPutnik? existingPutnik; // null = dodavanje, !null = editovanje
   final VoidCallback? onSaved;
@@ -96,7 +96,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     }
   }
 
-  /// ?? Srpsko sortiranje - pravilno sortira c, c, �, �, d
+  /// ?? Srpsko sortiranje - pravilno sortira c, c, š, š, d
   int _serbianCompare(String a, String b) {
     // Normalizuj za sortiranje: zameni srpske karaktere
     String normalize(String s) {
@@ -105,8 +105,8 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
           .replaceAll('c', 'c~')
           .replaceAll('c', 'c~~')
           .replaceAll('d', 'd~')
-          .replaceAll('�', 's~')
-          .replaceAll('�', 'z~');
+          .replaceAll('š', 's~')
+          .replaceAll('š', 'z~');
     }
 
     return normalize(a).compareTo(normalize(b));
@@ -411,7 +411,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
             const SizedBox(height: 24),
             _buildTextField(
               controller: _tipSkoleController,
-              label: '�kola',
+              label: 'škola',
               icon: Icons.school,
             ),
           ],
@@ -556,7 +556,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Unesite cenu po danu za obracun. Ova cena ce se koristiti za naplatu usluga.\n� Radnik/Ucenik: naplata po danu.\n� Dnevni/Po�iljka: naplata po svakom pokupljenju.',
+                  'Unesite cenu po danu za obracun. Ova cena ce se koristiti za naplatu usluga.\nš Radnik/Ucenik: naplata po danu.\nš Dnevni/Pošiljka: naplata po svakom pokupljenju.',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.7),
                     fontSize: 12,
@@ -738,7 +738,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
               TextField(
                 controller: _firmaZiroController,
                 decoration: const InputDecoration(
-                  labelText: '�iro racun',
+                  labelText: 'žiro racun',
                   hintText: '340-0000011427591-61',
                   prefixIcon: Icon(Icons.account_balance),
                 ),
@@ -758,7 +758,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Otka�i'),
+            child: const Text('Otkaži'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -883,7 +883,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
               child: TextButton(
                 onPressed: _isLoading ? null : () => Navigator.pop(context),
                 child: const Text(
-                  'Otka�i',
+                  'Otkaži',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -1172,7 +1172,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
                 }
               } catch (e) {
                 if (mounted) {
-                  AppSnackBar.error(context, 'Gre�ka pri izboru kontakta: $e');
+                  AppSnackBar.error(context, 'Greška pri izboru kontakta: $e');
                 }
               }
             },
@@ -1220,7 +1220,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       ),
       dropdownColor: Theme.of(context).colorScheme.surface,
       items: items.map((String item) {
-        // Mapiranje internih vrednosti u lep�e labele za prikaz
+        // Mapiranje internih vrednosti u lepše labele za prikaz
         String displayLabel = item;
         switch (item) {
           case 'radnik':
@@ -1233,7 +1233,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
             displayLabel = 'Dnevni';
             break;
           case 'posiljka':
-            displayLabel = 'Po�iljka';
+            displayLabel = 'Pošiljka';
             break;
         }
 
@@ -1309,7 +1309,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     // Proveri da su sve ostale cifre
     final digitsOnly = cleaned.replaceAll('+', '');
     if (!RegExp(r'^\d+$').hasMatch(digitsOnly)) {
-      return 'Broj telefona mo�e sadr�ati samo cifre';
+      return 'Broj telefona može sadržati samo cifre';
     }
 
     return null;
@@ -1335,7 +1335,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         return 'Broj telefona već koristi V2Putnik: $existingName';
       }
     } catch (e) {
-      // Ako ne mo�emo proveriti, nastavi (bolje nego blokirati)
+      // Ako ne možemo proveriti, nastavi (bolje nego blokirati)
     }
 
     return null;
@@ -1395,11 +1395,11 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         Navigator.of(context).pop();
         if (widget.onSaved != null) widget.onSaved!();
         if (parentContext.mounted) {
-          AppSnackBar.success(parentContext, '? V2Putnik uspe�no sacuvan!');
+          AppSnackBar.success(parentContext, '? V2Putnik uspešno sacuvan!');
         }
       }
     } catch (e) {
-      debugPrint('? Gre�ka pri cuvanju putnika: $e');
+      debugPrint('? Greška pri cuvanju putnika: $e');
 
       // ?? LOG GRESKE ZA ADMINA
       try {
@@ -1416,7 +1416,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         if (errorMsg.contains('Exception:')) {
           errorMsg = errorMsg.split('Exception:').last.trim();
         }
-        AppSnackBar.error(context, 'Gre�ka: $errorMsg');
+        AppSnackBar.error(context, 'Greška: $errorMsg');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -1430,7 +1430,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     final kraj = widget.existingPutnik?.datumKrajaMeseca ?? DateTime(now.year, now.month + 1, 0);
 
     return {
-      'id': widget.existingPutnik?.id, // Mo�e biti null za novi insert
+      'id': widget.existingPutnik?.id, // Može biti null za novi insert
       'putnik_ime': _imeController.text.trim(),
       'tip': _tip,
       'broj_mesta': int.tryParse(_brojMestaController.text) ?? 1,
@@ -1484,18 +1484,18 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         return AlertDialog(
           title: const Text('Dozvola za kontakte'),
           content: const Text('Dozvola za pristup kontaktima je trajno odbijena. '
-              'Da biste mogli da birate kontakte, omogucite dozvolu u pode�avanjima aplikacije.'),
+              'Da biste mogli da birate kontakte, omogucite dozvolu u podešavanjima aplikacije.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Otka�i'),
+              child: const Text('Otkaži'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 openAppSettings();
               },
-              child: const Text('Otvori pode�avanja'),
+              child: const Text('Otvori podešavanja'),
             ),
           ],
         );
@@ -1601,7 +1601,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
               controller: _searchController,
               onChanged: _filterContacts,
               decoration: InputDecoration(
-                hintText: 'Pretra�i kontakte...',
+                hintText: 'Pretraži kontakte...',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(

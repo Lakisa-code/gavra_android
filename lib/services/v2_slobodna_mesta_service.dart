@@ -180,7 +180,7 @@ class SlobodnaMestaService {
   /// Proveri da li ima slobodnih mesta za odredeni polazak
   static Future<bool> imaSlobodnihMesta(String grad, String vreme,
       {String? datum, String? tipPutnika, int brojMesta = 1, String? excludeId}) async {
-    // ?? PO�ILJKE: Ne zauzimaju mesto, pa uvek ima "mesta" za njih
+    // ?? POŠILJKE: Ne zauzimaju mesto, pa uvek ima "mesta" za njih
     if (tipPutnika == 'posiljka') {
       return true;
     }
@@ -198,7 +198,7 @@ class SlobodnaMestaService {
     if (lista == null) return false;
 
     for (final s in lista) {
-      // ??? NORMALIZACIJA VREMENA IZ LISTE (Kapacitet table mo�e imati "6:00" umesto "06:00")
+      // ??? NORMALIZACIJA VREMENA IZ LISTE (Kapacitet table može imati "6:00" umesto "06:00")
       final currentVreme = GradAdresaValidator.normalizeTime(s.vreme);
       if (currentVreme == targetVreme) {
         return s.slobodna >= brojMesta;
