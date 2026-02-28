@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../services/v2_finansije_service.dart';
 
-/// �Y'� FINANSIJE SCREEN
+/// 💰 FINANSIJE SCREEN
 /// Prikazuje prihode, troškove i neto zaradu
 class FinansijeScreen extends StatefulWidget {
   const FinansijeScreen({super.key});
@@ -34,7 +34,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('�Y'� Finansije'),
+            title: const Text('💰 Finansije'),
             centerTitle: true,
             automaticallyImplyLeading: false,
             actions: [
@@ -71,7 +71,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
 
                             // NEDELJA
                             _buildPeriodCard(
-                              icon: '�Y".',
+                              icon: '📅',
                               naslov: 'Ova nedelja',
                               podnaslov: izvestaj.nedeljaPeriod,
                               prihod: izvestaj.prihodNedelja,
@@ -85,7 +85,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
 
                             // MESEC
                             _buildPeriodCard(
-                              icon: '�Y-"️',
+                              icon: '🗓️',
                               naslov: 'Ovaj mesec',
                               podnaslov: _getMesecNaziv(DateTime.now().month),
                               prihod: izvestaj.prihodMesec,
@@ -99,7 +99,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
 
                             // PROŠLA GODINA
                             _buildPeriodCard(
-                              icon: '�Y"S',
+                              icon: '📊',
                               naslov: 'Prošla godina (${izvestaj.proslaGodina})',
                               podnaslov: 'Ceo godišnji bilans',
                               prihod: izvestaj.prihodProslaGodina,
@@ -296,7 +296,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  '�Y"< Mesečni troškovi',
+                  '📋 Mesečni troškovi',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -363,7 +363,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
   }
 
   void _showTroskoviDialog(Map<String, double> poTipu) {
-    // Kontroleri za svaku kategoriju - NE POPUNJAVAJ POSTOJE�?E (SABIRANJE)
+    // Kontroleri za svaku kategoriju - NE POPUNJAVAJ POSTOJEĆE (SABIRANJE)
     final plateController = TextEditingController();
     final kreditController = TextEditingController();
     final gorivoController = TextEditingController();
@@ -405,7 +405,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '�sT️ Dodaj troškove',
+                    '⚙️ Dodaj troškove',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -416,50 +416,50 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                   const SizedBox(height: 24),
 
                   // Plate
-                  _buildTrosakInputRow('�Y'�', 'Plate', plateController, currentTotal: poTipu['plata']),
+                  _buildTrosakInputRow('💰', 'Plate', plateController, currentTotal: poTipu['plata']),
                   const SizedBox(height: 12),
 
                   // Kredit
-                  _buildTrosakInputRow('�Y��', 'Kredit', kreditController, currentTotal: poTipu['kredit']),
+                  _buildTrosakInputRow('🏦', 'Kredit', kreditController, currentTotal: poTipu['kredit']),
                   const SizedBox(height: 12),
 
                   // Gorivo
-                  _buildTrosakInputRow('�>�', 'Gorivo', gorivoController, currentTotal: poTipu['gorivo']),
+                  _buildTrosakInputRow('⛽', 'Gorivo', gorivoController, currentTotal: poTipu['gorivo']),
                   const SizedBox(height: 12),
 
                   // Amortizacija
-                  _buildTrosakInputRow('�Y"�', 'Amortizacija', amortizacijaController,
+                  _buildTrosakInputRow('🔧', 'Amortizacija', amortizacijaController,
                       currentTotal: poTipu['amortizacija']),
                   const SizedBox(height: 12),
 
                   // Registracija
-                  _buildTrosakInputRow('�Y"�', 'Registracija', registracijaController,
+                  _buildTrosakInputRow('📋', 'Registracija', registracijaController,
                       currentTotal: poTipu['registracija']),
                   const SizedBox(height: 12),
 
                   // YU auto
-                  _buildTrosakInputRow('�Ys-', 'YU auto', yuAutoController, currentTotal: poTipu['yu_auto']),
+                  _buildTrosakInputRow('🚗', 'YU auto', yuAutoController, currentTotal: poTipu['yu_auto']),
                   const SizedBox(height: 12),
 
                   // Majstori
-                  _buildTrosakInputRow('�Y>�️', 'Majstori', majstoriController, currentTotal: poTipu['majstori']),
+                  _buildTrosakInputRow('🛠️', 'Majstori', majstoriController, currentTotal: poTipu['majstori']),
                   const SizedBox(height: 12),
 
                   // Porez
-                  _buildTrosakInputRow('�Y�>️', 'Porez', porezController, currentTotal: poTipu['porez']),
+                  _buildTrosakInputRow('🏛️', 'Porez', porezController, currentTotal: poTipu['porez']),
                   const SizedBox(height: 12),
 
                   // Alimentacija
-                  _buildTrosakInputRow('�Y'�', 'Alimentacija', alimentacijaController,
+                  _buildTrosakInputRow('👶', 'Alimentacija', alimentacijaController,
                       currentTotal: poTipu['alimentacija']),
                   const SizedBox(height: 12),
 
                   // Računi
-                  _buildTrosakInputRow('�Y��', 'Računi', racuniController, currentTotal: poTipu['racuni']),
+                  _buildTrosakInputRow('🧾', 'Računi', racuniController, currentTotal: poTipu['racuni']),
                   const SizedBox(height: 12),
 
                   // Ostalo
-                  _buildTrosakInputRow('�Y"<', 'Ostalo', ostaloController, currentTotal: poTipu['ostalo']),
+                  _buildTrosakInputRow('📋', 'Ostalo', ostaloController, currentTotal: poTipu['ostalo']),
                   const SizedBox(height: 24),
 
                   // Sačuvaj dugme
@@ -591,7 +591,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            const Text('�Y'�', style: TextStyle(fontSize: 32)),
+            const Text('💰', style: TextStyle(fontSize: 32)),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -602,7 +602,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   Text(
-                    'Nepla�?ene vožnje svih putnika',
+                    'Neplaćene vožnje svih putnika',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                   ),
                 ],
@@ -655,7 +655,7 @@ class _FinansijeScreenState extends State<FinansijeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Column(
           children: [
-            const Text('�Y"S Izveštaj za period'),
+            const Text('📊 Izveštaj za period'),
             Text(
               '${dateFormat.format(from)} - ${dateFormat.format(to)}',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Colors.grey),
