@@ -668,7 +668,10 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                       final dnevnih = sviPutnici.where((p) => p.tip == 'dnevni').length;
                       final posiljki = sviPutnici.where((p) => p.tip == 'posiljka').length;
 
-                      if (_brojRadnika != radnika || _brojUcenika != ucenika || _brojDnevnih != dnevnih || _brojPosiljki != posiljki) {
+                      if (_brojRadnika != radnika ||
+                          _brojUcenika != ucenika ||
+                          _brojDnevnih != dnevnih ||
+                          _brojPosiljki != posiljki) {
                         setState(() {
                           _brojRadnika = radnika;
                           _brojUcenika = ucenika;
@@ -903,27 +906,33 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            V2Putnik.tip == 'radnik'
-                                ? Icons.engineering
-                                : V2Putnik.tip == 'dnevni'
-                                    ? Icons.today
-                                    : Icons.school,
+                            switch (V2Putnik.tip) {
+                              'radnik' => Icons.engineering,
+                              'ucenik' => Icons.school,
+                              'dnevni' => Icons.today,
+                              'posiljka' => Icons.local_shipping,
+                              _ => Icons.person,
+                            },
                             size: 16,
-                            color: V2Putnik.tip == 'radnik'
-                                ? Colors.blue.shade600
-                                : V2Putnik.tip == 'dnevni'
-                                    ? Colors.orange.shade600
-                                    : Colors.green.shade600,
+                            color: switch (V2Putnik.tip) {
+                              'radnik' => Colors.blue.shade600,
+                              'ucenik' => Colors.green.shade600,
+                              'dnevni' => Colors.orange.shade600,
+                              'posiljka' => Colors.deepOrange.shade600,
+                              _ => Colors.grey.shade600,
+                            },
                           ),
                           const SizedBox(width: 4),
                           Text(
                             V2Putnik.tip.toUpperCase(),
                             style: TextStyle(
-                              color: V2Putnik.tip == 'radnik'
-                                  ? Colors.blue.shade700
-                                  : V2Putnik.tip == 'dnevni'
-                                      ? Colors.orange.shade700
-                                      : Colors.green.shade700,
+                              color: switch (V2Putnik.tip) {
+                                'radnik' => Colors.blue.shade700,
+                                'ucenik' => Colors.green.shade700,
+                                'dnevni' => Colors.orange.shade700,
+                                'posiljka' => Colors.deepOrange.shade700,
+                                _ => Colors.grey.shade700,
+                              },
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
@@ -1245,7 +1254,8 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
         V2Putnik.tabela,
       );
       if (mounted) {
-        AppSnackBar.success(context, '${V2Putnik.putnikIme} je ${noviStatus == 'aktivan' ? "aktiviran" : "deaktiviran"}');
+        AppSnackBar.success(
+            context, '${V2Putnik.putnikIme} je ${noviStatus == 'aktivan' ? "aktiviran" : "deaktiviran"}');
       }
     } catch (e) {
       if (mounted) {

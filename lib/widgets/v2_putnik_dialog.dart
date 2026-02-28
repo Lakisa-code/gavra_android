@@ -1433,6 +1433,12 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       'id': widget.existingPutnik?.id, // Može biti null za novi insert
       'putnik_ime': _imeController.text.trim(),
       'tip': _tip,
+      '_tabela': switch (_tip) {
+        'ucenik' => 'v2_ucenici',
+        'dnevni' => 'v2_dnevni',
+        'posiljka' => 'v2_posiljke',
+        _ => 'v2_radnici',
+      },
       'broj_mesta': int.tryParse(_brojMestaController.text) ?? 1,
       'tip_skole': _tipSkoleController.text.isEmpty ? null : _tipSkoleController.text.trim(),
       'broj_telefona': _brojTelefonaController.text.isEmpty ? null : _brojTelefonaController.text.trim(),
