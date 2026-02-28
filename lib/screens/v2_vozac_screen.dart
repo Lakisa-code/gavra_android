@@ -1561,7 +1561,7 @@ class _VozacScreenState extends State<VozacScreen> {
                     ? const Padding(
                         padding: EdgeInsets.all(8.0),
                         child: Text(
-                          'Svi putnici imaju oba smera! ??',
+                          'Svi putnici imaju oba smera! 👍',
                           style: TextStyle(color: Colors.white70),
                         ),
                       )
