@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/v2_putnik.dart';
 import '../utils/v2_grad_adresa_validator.dart';

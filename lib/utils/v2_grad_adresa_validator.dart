@@ -1,4 +1,4 @@
-﻿import 'v2_text_utils.dart';
+import 'v2_text_utils.dart';
 import 'v2_time_validator.dart';
 
 /// UTIL ZA VALIDACIJU GRADOVA I ADRESA

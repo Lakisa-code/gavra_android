@@ -1,4 +1,4 @@
-﻿/// 🚐 Route Configuration
+/// 🚐 Route Configuration
 ///
 /// Vremena polazaka za različite rute i sezone.
 /// Koristi se u kapacitet servisu i navigacionim bar-ovima.

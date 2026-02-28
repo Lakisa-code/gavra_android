@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../models/v2_putnik.dart';
 import '../services/v2_putnik_stream_service.dart';

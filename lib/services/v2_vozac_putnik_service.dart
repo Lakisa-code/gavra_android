@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../utils/v2_grad_adresa_validator.dart';

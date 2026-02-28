@@ -1,4 +1,4 @@
-﻿import '../constants/v2_day_constants.dart';
+import '../constants/v2_day_constants.dart';
 import '../services/v2_adresa_supabase_service.dart'; // DODATO za fallback ucitavanje adrese
 import '../utils/v2_registrovani_helpers.dart';
 

@@ -75,7 +75,7 @@ class _RegistracijaData {
   }
 }
 
-/// �Y��️ TABLICA WIDGET - samo slika tablice (leva strana)
+/// ️ TABLICA WIDGET - samo slika tablice (leva strana)
 class RegistracijaTablicaWidget extends StatefulWidget {
   const RegistracijaTablicaWidget({super.key});
 
@@ -138,7 +138,7 @@ class _RegistracijaTablicaWidgetState extends State<RegistracijaTablicaWidget> {
   }
 }
 
-/// �Y"S BROJA�O WIDGET - samo broj dana (desna strana)
+/// "S BROJA WIDGET - samo broj dana (desna strana)
 class RegistracijaBrojacWidget extends StatefulWidget {
   const RegistracijaBrojacWidget({super.key});
 

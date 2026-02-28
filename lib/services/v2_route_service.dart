@@ -1,4 +1,4 @@
-﻿import '../config/v2_route_config.dart';
+import '../config/v2_route_config.dart';
 
 /// 🚐 Servis za dobavljanje satnih redoslijeda
 /// Koristi fiksne redoslijede iz RouteConfig-a na osnovu aktivnog režima (zimski/letnji/praznici)

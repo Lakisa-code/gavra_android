@@ -1,4 +1,4 @@
-﻿/// UNIFIED GEOCODING SERVICE
+/// UNIFIED GEOCODING SERVICE
 /// Centralizovani servis za geocoding sa:
 /// - Paralelnim fetch-om koordinata
 /// - Prioritetnim redosledom (Baza ? Memory ? Disk ? API)

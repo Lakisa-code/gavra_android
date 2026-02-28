@@ -1,4 +1,4 @@
-﻿import '../constants/v2_day_constants.dart';
+import '../constants/v2_day_constants.dart';
 
 /// JEDINSTVENA LOGIKA ZA SVE SCREEN-OVE
 ///

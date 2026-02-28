@@ -61,13 +61,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       _initServicesRecursively();
     });
 
-    // �Y"� ZAHTEV ZA DOZVOLAMA - pomeramo ovde iz main.dart da izbegnemo MaterialLocalizations grešku
+    // "ZAHTEV ZA DOZVOLAMA - pomeramo ovde iz main.dart da izbegnemo MaterialLocalizations grešku
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
       _requestPermissionsIfNeeded();
     });
 
-    // �Y"< PROVERA BATERIJSKE OPTIMIZACIJE - pomeramo ovde iz main.dart
+    // "< PROVERA BATERIJSKE OPTIMIZACIJE - pomeramo ovde iz main.dart
     Future.delayed(const Duration(seconds: 3), () {
       if (!mounted) return;
       _checkBatteryOptimization();
@@ -92,7 +92,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       });
     } catch (e) {
       // Nema fallback-a - ako Supabase ne radi, prikaži grešku
-      debugPrint('�O Greška pri učitavanju vozača: $e');
+      debugPrint(' Greška pri učitavanju vozača: $e');
       if (!mounted) return;
       setState(() {
         _drivers = []; // Prazna lista umesto hardkodovanih podataka
@@ -101,19 +101,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     }
   }
 
-  /// �Y>�️ Inicijalizacija servisa jedan po jedan, bez agresivnih await-ova
+  /// > Inicijalizacija servisa jedan po jedan, bez agresivnih await-ova
   Future<void> _initServicesRecursively() async {
     try {
       // 1. Notifikacije
       unawaited(LocalNotificationService.initialize(context));
 
-      // 2. Auto-login (dozvole su ve�? tražene pri prvom startu aplikacije)
+      // 2. Auto-login (dozvole su ve tražene pri prvom startu aplikacije)
       if (mounted) {
         _ensureNotificationPermissions();
         _checkAutoLogin();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('�s�️ [WelcomeScreen] Init failed: $e');
+      if (kDebugMode) debugPrint(' [WelcomeScreen] Init failed: $e');
     }
   }
 
@@ -138,17 +138,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     }
   }
 
-  // �Y"" AUTO-LOGIN BEZ PESME - Proveri da li je vozač ve�? logovan
+  // "" AUTO-LOGIN BEZ PESME - Proveri da li je vozač ve logovan
   Future<void> _checkAutoLogin() async {
-    // �YZ� PREKINI PESMU ako se auto-login aktivira
+    // ZPREKINI PESMU ako se auto-login aktivira
     await _stopAudio();
 
-    // �Y"� PRVO PROVERI REMEMBERED DEVICE
+    // "PRVO PROVERI REMEMBERED DEVICE
     final rememberedDevice = await AuthManager.getRememberedDevice();
     if (rememberedDevice != null) {
-      // Auto-login sa zapam�?enim ure�'ajem
+      // Auto-login sa zapamenim ureajem
       final email = rememberedDevice['email']!;
-      // �Y"" FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
+      // "" FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
       try {
         final driverName = VozacCache.getImeByEmail(email);
         // Ne dozvoli auto-login ako vozač nije prepoznat
@@ -171,7 +171,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
         return;
       } catch (e) {
-        debugPrint('�O [WelcomeScreen] Auto-login failed: $e');
+        debugPrint(' [WelcomeScreen] Auto-login failed: $e');
         // Nastavi dalje bez auto-login-a
       }
     }
@@ -180,7 +180,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     final activeDriver = await AuthManager.getCurrentDriver();
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
-      // Vozač je ve�? logovan - direktno na odgovaraju�?i ekran
+      // Vozač je ve logovan - direktno na odgovarajui ekran
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -227,7 +227,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     super.dispose();
   }
 
-  // Dodano za pra�?enje lifecycle-a aplikacije
+  // Dodano za praenje lifecycle-a aplikacije
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -238,7 +238,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         _stopAudio();
         break;
       case AppLifecycleState.resumed:
-        // Aplikacija se vra�?a u foreground - ne radi ništa
+        // Aplikacija se vraa u foreground - ne radi ništa
         break;
       case AppLifecycleState.inactive:
       case AppLifecycleState.detached:
@@ -265,32 +265,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   }
 
   Future<void> _loginAsDriver(String driverName) async {
-    // �YZ� PREKINI PESMU kada korisnik počne login
+    // ZPREKINI PESMU kada korisnik počne login
     await _stopAudio();
 
     // Uklonjena striktna validacija vozača - dozvoljava sve vozače
 
-    // �Y"� PRVO PROVERI REMEMBERED DEVICE za ovog vozača
+    // "PRVO PROVERI REMEMBERED DEVICE za ovog vozača
     final rememberedDevice = await AuthManager.getRememberedDevice();
     if (rememberedDevice != null) {
       final rememberedEmail = rememberedDevice['email']!;
       final rememberedName = rememberedDevice['driverName']!;
 
-      // �Y"" FORSIRAJ REFRESH: Koristi VozacCache mapiranje za ispravno ime
+      // "" FORSIRAJ REFRESH: Koristi VozacCache mapiranje za ispravno ime
       final correctName = VozacCache.getImeByEmail(rememberedEmail) ?? rememberedName;
 
       if (correctName == driverName) {
-        // �Y'? BIOMETRIJA: Traži samo ako sesija nije aktivna (vrati se posle dužeg vremena)
-        debugPrint('�Y"� [WelcomeScreen] Proveravam sesiju za $correctName...');
+        // '? BIOMETRIJA: Traži samo ako sesija nije aktivna (vrati se posle dužeg vremena)
+        debugPrint('"[WelcomeScreen] Proveravam sesiju za $correctName...');
         final sessionActive = await AuthManager.isSessionActive();
-        debugPrint('�Y"� [WelcomeScreen] Sesija aktivna: $sessionActive');
+        debugPrint('"[WelcomeScreen] Sesija aktivna: $sessionActive');
 
         if (!sessionActive) {
           // Sesija je istekla - proveri biometriju ako je uključena
           final biometricAvailable = await BiometricService.isBiometricAvailable();
           final biometricEnabled = await BiometricService.isBiometricEnabled();
 
-          debugPrint('�Y"� [WelcomeScreen] Biometrija: available=$biometricAvailable, enabled=$biometricEnabled');
+          debugPrint('"[WelcomeScreen] Biometrija: available=$biometricAvailable, enabled=$biometricEnabled');
 
           if (biometricAvailable && biometricEnabled) {
             final authenticated = await BiometricService.authenticate(
@@ -311,8 +311,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
           }
         }
 
-        // Ovaj vozač je zapam�?en na ovom ure�'aju - DIREKTNO AUTO-LOGIN
-        debugPrint('�Y"� [WelcomeScreen] Postavljam sesiju za $correctName');
+        // Ovaj vozač je zapamen na ovom ureaju - DIREKTNO AUTO-LOGIN
+        debugPrint('"[WelcomeScreen] Postavljam sesiju za $correctName');
         await AuthManager.setCurrentDriver(correctName);
 
         if (!mounted) return;
@@ -327,7 +327,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       }
     }
 
-    // AKO NIJE REMEMBERED DEVICE - IDI NA VOZA�O LOGIN
+    // AKO NIJE REMEMBERED DEVICE - IDI NA VOZA LOGIN
     if (!mounted) return;
     Navigator.push(
       context,
@@ -357,7 +357,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                 children: [
                   SizedBox(height: screenHeight * 0.04),
 
-                  // �YZ� LOGO sa shimmer efektom
+                  // ZLOGO sa shimmer efektom
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: GestureDetector(
@@ -404,7 +404,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
                   const SizedBox(height: 16),
 
-                  // �YZ� DOBRODOŠLI tekst - klikabilno za promenu teme
+                  // ZDOBRODOŠLI tekst - klikabilno za promenu teme
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: GestureDetector(
@@ -451,7 +451,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
                   SizedBox(height: screenHeight * 0.05),
 
-                  // �Ys? GLAVNO DUGME - PRIJAVA PUTNIKA
+                  // s? GLAVNO DUGME - PRIJAVA PUTNIKA
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: GestureDetector(
@@ -510,7 +510,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
                   const SizedBox(height: 24),
 
-                  // �Y"� SEKUNDARNA DUGMAD - O nama i Vozači
+                  // "SEKUNDARNA DUGMAD - O nama i Vozači
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: Row(
@@ -559,7 +559,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
                         const SizedBox(width: 16),
 
-                        // VOZA�OI
+                        // VOZAI
                         Expanded(
                           child: GestureDetector(
                             onTap: () => _showDriverSelectionDialog(),
@@ -601,7 +601,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
                   SizedBox(height: screenHeight * 0.08),
 
-                  // �Y"� FOOTER
+                  // "FOOTER
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: Column(
@@ -622,7 +622,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Designed �?� Developed �?� Crafted with balls',
+                          'Designed Developed Crafted with balls',
                           style: TextStyle(
                             fontSize: 10,
                             letterSpacing: 1,
@@ -647,7 +647,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            'v6.0.15 �?� 2025-2026',
+                            'v6.0.15 2025-2026',
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.white.withOpacity(0.5),
@@ -669,7 +669,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     );
   }
 
-  // �Ys- Dijalog za izbor vozača
+  // s- Dijalog za izbor vozača
   void _showDriverSelectionDialog() {
     showDialog(
       context: context,
@@ -795,7 +795,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     );
   }
 
-  /// �Y"� Zahtev za dozvolama ako su potrebne
+  /// "Zahtev za dozvolama ako su potrebne
   Future<void> _requestPermissionsIfNeeded() async {
     try {
       final permissionsChecked = await PermissionService.checkAllPermissionsGranted();
@@ -804,12 +804,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('�s�️ [WelcomeScreen] Permission request failed: $e');
+        debugPrint(' [WelcomeScreen] Permission request failed: $e');
       }
     }
   }
 
-  /// �Y"< Show battery optimization warning for Huawei/Xiaomi phones
+  /// "< Show battery optimization warning for Huawei/Xiaomi phones
   Future<void> _checkBatteryOptimization() async {
     try {
       final shouldShow = await BatteryOptimizationService.shouldShowWarning();

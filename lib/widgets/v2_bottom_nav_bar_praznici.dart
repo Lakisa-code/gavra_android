@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../config/v2_route_config.dart';
 import '../services/v2_theme_manager.dart';

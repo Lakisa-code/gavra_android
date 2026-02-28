@@ -1,4 +1,4 @@
-﻿import 'v2_grad_adresa_validator.dart';
+import 'v2_grad_adresa_validator.dart';
 
 enum RegistrovaniStatus { active, canceled, vacation, unknown }
 

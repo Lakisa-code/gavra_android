@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../models/v2_polazak.dart';
 import '../services/v2_auth_manager.dart';

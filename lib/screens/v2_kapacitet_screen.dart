@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../services/v2_kapacitet_service.dart';
 import '../services/v2_theme_manager.dart';
