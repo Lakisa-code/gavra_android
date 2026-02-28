@@ -46,7 +46,11 @@ class V2PutnikService {
 
   /// Dohvata sve aktivne putnike iz date tabele
   Future<List<Map<String, dynamic>>> getAktivniIzTabele(String tabela) async {
-    final rows = await _supabase.from(tabela).select().neq('status', 'neaktivan').order('ime');
+    final rows = await _supabase
+        .from(tabela)
+        .select('*, adresa_bc:adresa_bc_id(naziv, gps_lat, gps_lng), adresa_vs:adresa_vs_id(naziv, gps_lat, gps_lng)')
+        .neq('status', 'neaktivan')
+        .order('ime');
     return rows.map((r) => {...r, '_tabela': tabela}).toList();
   }
 
@@ -114,6 +118,8 @@ class V2PutnikService {
 
     data['created_at'] = DateTime.now().toUtc().toIso8601String();
     data['updated_at'] = DateTime.now().toUtc().toIso8601String();
+    data.remove('_tabela');
+    data.remove('tip');
 
     final row = await _supabase.from(tabela).insert(data).select().single();
     return {...row, '_tabela': tabela};
@@ -130,6 +136,8 @@ class V2PutnikService {
     String tabela,
   ) async {
     updates['updated_at'] = DateTime.now().toUtc().toIso8601String();
+    updates.remove('_tabela');
+    updates.remove('tip');
     final row = await _supabase.from(tabela).update(updates).eq('id', id).select().single();
     return {...row, '_tabela': tabela};
   }

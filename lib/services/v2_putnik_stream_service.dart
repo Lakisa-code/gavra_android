@@ -222,13 +222,13 @@ class V2PutnikStreamService {
     }
     if (nazivAdrese == null && rp != null) {
       final fallbackAdresaId =
-          srGrad == 'VS' ? rp['adresa_vrsac_id']?.toString() : rp['adresa_bela_crkva_id']?.toString();
+          srGrad == 'VS' ? rp['adresa_vs_id']?.toString() : rp['adresa_bc_id']?.toString();
       if (fallbackAdresaId != null && fallbackAdresaId.isNotEmpty) {
         nazivAdrese = V2MasterRealtimeManager.instance.adreseCache[fallbackAdresaId]?['naziv']?.toString();
       }
     }
 
-    // Gradi mapu kompatibilnu sa V2Putnik.fromSeatRequest()
+    // Gradi mapu za V2Putnik.v2FromPolazak()
     final map = Map<String, dynamic>.from(srRow);
     map['datum'] = isoDate;
     map['pokupljen_iz_loga'] = jePokupljen;
@@ -250,7 +250,7 @@ class V2PutnikStreamService {
     if (nazivAdrese != null) map['adrese'] = {'naziv': nazivAdrese};
     if (map['status'] == 'cancelled') map['status'] = 'otkazano';
     if (rp != null) map['registrovani_putnici'] = rp;
-    return V2Putnik.fromSeatRequest(map);
+    return V2Putnik.v2FromPolazak(map);
   }
 
   /// Fetcha putnike i emituje u controller. Jezgro stream logike.
@@ -435,7 +435,7 @@ class V2PutnikStreamService {
     }
 
     // Fallback na profil ako nema današnjeg seat_request-a
-    return V2Putnik.fromRegistrovaniPutnici(rpEntry);
+    return V2Putnik.v2FromProfil(rpEntry);
   }
 
   Future<V2Putnik?> getPutnikFromAnyTable(dynamic id) async {
@@ -451,7 +451,7 @@ class V2PutnikStreamService {
         final vlRows = rm.statistikaCache.values.where((vl) => vl['putnik_id']?.toString() == idStr).toList();
         return _buildPutnik(srRow, vlRows, rp, todayStr);
       }
-      if (rp != null) return V2Putnik.fromRegistrovaniPutnici(rp);
+      if (rp != null) return V2Putnik.v2FromProfil(rp);
       return null;
     } catch (_) {
       return null;

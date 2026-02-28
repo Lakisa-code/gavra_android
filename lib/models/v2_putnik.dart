@@ -42,29 +42,27 @@ class V2Putnik {
   });
 
   factory V2Putnik.fromMap(Map<String, dynamic> map) {
-    // Svi podaci dolaze iz registrovani_putnici tabele
-    if (map.containsKey('putnik_ime')) {
-      return V2Putnik.fromRegistrovaniPutnici(map);
-    }
-
-    // GREŠKA - Struktura tabele nije prepoznata
-    throw Exception(
-      'Struktura podataka nije prepoznata - ocekuje se putnik_ime kolona iz registrovani_putnici',
-    );
+    return V2Putnik.v2FromProfil(map);
   }
 
-  // NOVI: Factory za registrovani_putnici tabelu (PROFIL PUTNIKA)
-  factory V2Putnik.fromRegistrovaniPutnici(Map<String, dynamic> map) {
-    final grad = _determineGradFromRegistrovani(map);
-
-    // ?? SSOT: Ne citamo polazak iz profila, on mora doci iz seat_requests
-    final tipPutnika = map['tip'] as String?;
+  // Factory za v2 putnik profil (v2_radnici, v2_ucenici, v2_dnevni, v2_posiljke)
+  factory V2Putnik.v2FromProfil(Map<String, dynamic> map) {
+    final grad = _v2GradIzProfila(map);
+    final tipPutnika = map['_tabela'] != null
+        ? (map['_tabela'] == 'v2_radnici'
+            ? 'radnik'
+            : map['_tabela'] == 'v2_ucenici'
+                ? 'ucenik'
+                : map['_tabela'] == 'v2_dnevni'
+                    ? 'dnevni'
+                    : 'posiljka')
+        : map['tip'] as String?;
     final isDnevni = tipPutnika == 'dnevni' || tipPutnika == 'posiljka';
 
     return V2Putnik(
       id: map['id'],
-      ime: map['putnik_ime'] as String? ?? '',
-      polazak: '---', // Nema polaska bez seat_request-a
+      ime: map['ime'] as String? ?? '',
+      polazak: '---',
       pokupljen: false,
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : null,
       mesecnaKarta: !isDnevni,
@@ -72,10 +70,10 @@ class V2Putnik {
       status: map['status'] as String? ?? 'aktivan',
       statusVreme: map['updated_at'] as String?,
       grad: grad,
-      adresa: _determineAdresaFromRegistrovani(map, grad),
-      adresaId: _determineAdresaIdFromRegistrovani(map, grad),
+      adresa: _v2AdresaNaziv(map, grad),
+      adresaId: _v2AdresaId(map, grad),
       obrisan: !RegistrovaniHelpers.isActiveFromMap(map),
-      brojTelefona: map['broj_telefona'] as String?,
+      brojTelefona: map['telefon'] as String?,
       brojMesta: (map['broj_mesta'] as int?) ?? 1,
       tipPutnika: tipPutnika,
     );
@@ -116,7 +114,7 @@ class V2Putnik {
   final String? naplatioVozacId; // UUID vozaca koji je naplatio
   final String? otkazaoVozacId; // UUID vozaca koji je otkazao
 
-  factory V2Putnik.fromSeatRequest(Map<String, dynamic> req, {Map<String, dynamic>? profile}) {
+  factory V2Putnik.v2FromPolazak(Map<String, dynamic> req, {Map<String, dynamic>? profile}) {
     // Ako je profil join-ovan u samom requestu (Supabase .select('*, registrovani_putnici(...)'))
     final Map<String, dynamic> p = profile ?? (req['registrovani_putnici'] as Map<String, dynamic>? ?? {});
 
@@ -161,23 +159,23 @@ class V2Putnik {
 
     return V2Putnik(
       id: p['id'] ?? req['putnik_id'],
-      ime: p['putnik_ime'] ?? p['ime'] ?? '',
+      ime: p['ime'] as String? ?? '',
       polazak: vreme,
       dan: danStr.isNotEmpty ? danStr : _getDayNameFromIso(datumStr),
       grad: grad,
       status: finalStatus,
-      pokupljen: isPickedUp, // ? Redizajnirano: Gleda status ili voznje_log flag
-      placeno: isPaid, // ? Novo: Gleda status ili voznje_log flag
+      pokupljen: isPickedUp,
+      placeno: isPaid,
       datum: datumStr,
       tipPutnika: tip,
       mesecnaKarta: !isDnevni,
       brojMesta: req['broj_mesta'] ?? p['broj_mesta'] ?? 1,
-      adresa: (req['adrese'] as Map?)?['naziv'] ??
+      adresa: ((req['adrese'] as Map?)?['naziv'] as String?) ??
           (grad == 'VS'
-              ? (p['adresa_vs']?['naziv'] ?? p['adresa_vrsac_naziv'])
-              : (p['adresa_bc']?['naziv'] ?? p['adresa_bela_crkva_naziv'])),
-      adresaId: req['custom_adresa_id'] ?? (grad == 'VS' ? p['adresa_vrsac_id'] : p['adresa_bela_crkva_id']),
-      brojTelefona: p['broj_telefona'],
+              ? ((p['adresa_vs'] as Map<String, dynamic>?)?['naziv'] as String?)
+              : ((p['adresa_bc'] as Map<String, dynamic>?)?['naziv'] as String?)),
+      adresaId: req['custom_adresa_id'] as String? ?? (grad == 'VS' ? p['adresa_vs_id'] as String? : p['adresa_bc_id'] as String?),
+      brojTelefona: p['telefon'] as String?,
       statusVreme: p['updated_at'],
       vremeDodavanja: p['created_at'] != null ? DateTime.parse(p['created_at']) : null,
       vremePokupljenja: req['processed_at'] != null ? DateTime.parse(req['processed_at']).toLocal() : null,
@@ -308,7 +306,7 @@ class V2Putnik {
   String? get vozacIme => naplatioVozac ?? dodeljenVozac;
 
   // HELPER METODE za mapiranje
-  static String _determineGradFromRegistrovani(Map<String, dynamic> map) {
+  static String _v2GradIzProfila(Map<String, dynamic> map) {
     // Odredi grad na osnovu AKTIVNOG polaska za danas
     final index = DayConstants.weekdayToIndex(DateTime.now().weekday);
     final danKratica = DayConstants.dayAbbreviations[index];
@@ -336,46 +334,16 @@ class V2Putnik {
     return 'BC';
   }
 
-  static String? _determineAdresaFromRegistrovani(Map<String, dynamic> map, String grad) {
-    // ? FIX: Koristi grad parametar za odredivanje adrese umesto ponovnog racunanja
-    // Ovo osigurava konzistentnost izmedu grad i adresa polja
-
-    // ? NOVO: Citaj adresu iz JOIN objekta (adresa_bc, adresa_vs)
-    String? adresaBC;
-    String? adresaVS;
-
-    // Proveri da li postoji JOIN objekat za BC adresu
-    final adresaBcObj = map['adresa_bc'] as Map<String, dynamic>?;
-    if (adresaBcObj != null) {
-      adresaBC = adresaBcObj['naziv'] as String? ?? '${adresaBcObj['ulica'] ?? ''} ${adresaBcObj['broj'] ?? ''}'.trim();
-      if (adresaBC.isEmpty) adresaBC = null;
+  static String? _v2AdresaNaziv(Map<String, dynamic> map, String grad) {
+    if (grad == 'VS') {
+      return (map['adresa_vs'] as Map<String, dynamic>?)?['naziv'] as String?;
     }
-
-    // Proveri da li postoji JOIN objekat za VS adresu
-    final adresaVsObj = map['adresa_vs'] as Map<String, dynamic>?;
-    if (adresaVsObj != null) {
-      adresaVS = adresaVsObj['naziv'] as String? ?? '${adresaVsObj['ulica'] ?? ''} ${adresaVsObj['broj'] ?? ''}'.trim();
-      if (adresaVS.isEmpty) adresaVS = null;
-    }
-
-    // ? FIX: Koristi grad parametar za odredivanje ispravne adrese
-    // Ako je grad Bela Crkva, koristi BC adresu (gde pokupljaš putnika)
-    // Ako je grad Vrsac, koristi VS adresu
-    if (grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc')) {
-      return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
-    }
-
-    // Za Vrsac ili bilo koji drugi grad, koristi VS adresu
-    return adresaVS ?? adresaBC ?? 'Adresa nije definisana';
+    return (map['adresa_bc'] as Map<String, dynamic>?)?['naziv'] as String?;
   }
 
-  static String? _determineAdresaIdFromRegistrovani(Map<String, dynamic> map, String grad) {
-    // Koristi UUID reference na osnovu grada
-    if (grad.toLowerCase().contains('bela')) {
-      return map['adresa_bela_crkva_id'] as String?;
-    } else {
-      return map['adresa_vrsac_id'] as String?;
-    }
+  static String? _v2AdresaId(Map<String, dynamic> map, String grad) {
+    if (grad == 'VS') return map['adresa_vs_id'] as String?;
+    return map['adresa_bc_id'] as String?;
   }
 
   // ?? MAPIRANJE ZA registrovani_putnici TABELU
