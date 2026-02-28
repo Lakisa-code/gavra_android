@@ -261,8 +261,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     if (searchTerm.isNotEmpty) {
       final searchLower = searchTerm.toLowerCase();
       filtered = filtered.where((p) {
-        return p.ime.toLowerCase().contains(searchLower) ||
-            p.v2Tabela.toLowerCase().contains(searchLower);
+        return p.ime.toLowerCase().contains(searchLower) || p.v2Tabela.toLowerCase().contains(searchLower);
       }).toList();
     }
 
@@ -916,8 +915,8 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
                 const SizedBox(height: 12),
 
-                // ?? OSNOVNE INFORMACIJE - škola/ustanova
-                if (V2Putnik.tipSkole != null) ...[
+                // ?? OSNOVNE INFORMACIJE - adresa
+                if (V2Putnik.adresa != null) ...[
                   Row(
                     children: [
                       Icon(
@@ -1009,9 +1008,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                 Row(
                   children: [
                     // Pozovi (ako ima bilo koji telefon)
-                    if (V2Putnik.telefon != null ||
-                        V2Putnik.telefonOca != null ||
-                        V2Putnik.telefonMajke != null) ...[
+                    if (V2Putnik.telefon != null || V2Putnik.telefonOca != null || V2Putnik.telefonMajke != null) ...[
                       Expanded(
                         child: _buildCompactActionButton(
                           onPressed: () => _pokaziKontaktOpcije(V2Putnik),

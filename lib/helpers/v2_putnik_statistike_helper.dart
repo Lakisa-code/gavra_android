@@ -621,7 +621,7 @@ class PutnikStatistikeHelper {
 
       if (stats.isEmpty) stats = _emptyStats();
       stats['placeniMeseci'] = placeniMeseci;
-      stats['cena_po_danu'] = putnikObj?.cenaPoDanu;
+      stats['cena_po_danu'] = putnikObj?.cena;
       return stats;
     } catch (e) {
       return {'error': true, ..._emptyStats()};

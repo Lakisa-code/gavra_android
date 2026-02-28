@@ -618,13 +618,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          if (p.firmaNaziv != null && p.firmaNaziv!.isNotEmpty)
-                                            Text(
-                                              p.firmaNaziv!,
-                                              style: TextStyle(fontSize: 11, color: Colors.white70),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+
                                           Text(
                                             '${cena.toStringAsFixed(0)} RSD ž $dana dana = ${iznos.toStringAsFixed(0)} RSD',
                                             style: TextStyle(fontSize: 11, color: Colors.white70),
