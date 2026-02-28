@@ -217,7 +217,7 @@ class V2MasterRealtimeManager {
             .from('v2_radnici')
             .select(
               'id, ime, status, telefon, telefon_2, adresa_bc_id, adresa_vs_id, '
-              'pin, email, cena_po_danu, broj_mesta, created_at, updated_at',
+              'pin, email, cena_po_danu, broj_mesta, treba_racun, created_at, updated_at',
             )
             .eq('status', 'aktivan'),
         _db
@@ -225,21 +225,21 @@ class V2MasterRealtimeManager {
             .select(
               'id, ime, status, telefon, telefon_oca, telefon_majke, '
               'adresa_bc_id, adresa_vs_id, pin, email, cena_po_danu, broj_mesta, '
-              'created_at, updated_at',
+              'treba_racun, created_at, updated_at',
             )
             .eq('status', 'aktivan'),
         _db
             .from('v2_dnevni')
             .select(
               'id, ime, status, telefon, telefon_2, adresa_bc_id, adresa_vs_id, '
-              'cena, created_at, updated_at',
+              'cena, broj_mesta, treba_racun, created_at, updated_at',
             )
             .eq('status', 'aktivan'),
         _db
             .from('v2_posiljke')
             .select(
               'id, ime, status, telefon, adresa_bc_id, adresa_vs_id, '
-              'cena, created_at, updated_at',
+              'cena, treba_racun, created_at, updated_at',
             )
             .eq('status', 'aktivan'),
       ]);
@@ -322,7 +322,11 @@ class V2MasterRealtimeManager {
     if (id == null) return;
     final target = _cacheForTable(table);
     if (target != null) {
-      target[id] = Map<String, dynamic>.from(record);
+      // Sačuvaj postojeći _tabela tag ili dodaj novi — realtime payload ne sadrži _tabela
+      final existing = target[id];
+      final tagged = Map<String, dynamic>.from(record);
+      tagged['_tabela'] = existing?['_tabela'] ?? table;
+      target[id] = tagged;
     }
   }
 
