@@ -1441,11 +1441,10 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       },
       'broj_mesta': int.tryParse(_brojMestaController.text) ?? 1,
       'tip_skole': _tipSkoleController.text.isEmpty ? null : _tipSkoleController.text.trim(),
-      'broj_telefona': _brojTelefonaController.text.isEmpty ? null : _brojTelefonaController.text.trim(),
-      'broj_telefona_2': _brojTelefona2Controller.text.isEmpty ? null : _brojTelefona2Controller.text.trim(),
-      'broj_telefona_oca': _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
-      'broj_telefona_majke':
-          _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
+      'telefon': _brojTelefonaController.text.isEmpty ? null : _brojTelefonaController.text.trim(),
+      'telefon_2': _brojTelefona2Controller.text.isEmpty ? null : _brojTelefona2Controller.text.trim(),
+      'telefon_oca': _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
+      'telefon_majke': _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
       'status': (widget.existingPutnik?.status == null) ? 'aktivan' : widget.existingPutnik!.status,
       // Datumi
       'datum_pocetka_meseca': pocetak.toIso8601String().split('T')[0],

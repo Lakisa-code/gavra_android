@@ -138,21 +138,21 @@ class RegistrovaniPutnik {
 
   factory RegistrovaniPutnik.fromMap(Map<String, dynamic> map) {
     // Tip se određuje isključivo iz _tabela ključa koji dodaje V2PutnikService
-    final tabela = map['_tabela'] as String?;
+    final tabela = map['_tabela'] as String;
     final tipIzTabele = switch (tabela) {
       'v2_radnici' => 'radnik',
       'v2_ucenici' => 'ucenik',
       'v2_dnevni' => 'dnevni',
       'v2_posiljke' => 'posiljka',
-      _ => 'radnik', // fallback ako _tabela nije postavljen
+      _ => throw ArgumentError('Nepoznata tabela: $tabela'),
     };
     return RegistrovaniPutnik(
       id: map['id'] as String? ?? _generateUuid(),
       putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String? ?? '',
-      brojTelefona: map['broj_telefona'] as String?,
-      brojTelefona2: map['broj_telefona_2'] as String?,
-      brojTelefonaOca: map['broj_telefona_oca'] as String?,
-      brojTelefonaMajke: map['broj_telefona_majke'] as String?,
+      brojTelefona: map['broj_telefona'] as String? ?? map['telefon'] as String?,
+      brojTelefona2: map['broj_telefona_2'] as String? ?? map['telefon_2'] as String?,
+      brojTelefonaOca: map['broj_telefona_oca'] as String? ?? map['telefon_oca'] as String?,
+      brojTelefonaMajke: map['broj_telefona_majke'] as String? ?? map['telefon_majke'] as String?,
       tip: tipIzTabele,
       tipSkole: map['tip_skole'] as String?,
       adresaBelaCrkvaId: map['adresa_bela_crkva_id'] as String?,
