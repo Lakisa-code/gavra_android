@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../globals.dart';
 import 'v2_realtime_config.dart';
-import 'v2_realtime_status.dart';
 
 /// ════════════════════════════════════════════════════════════════════════════
 /// V2MasterRealtimeManager — čist, novi singleton za v2_ tabele
@@ -381,15 +380,7 @@ class V2MasterRealtimeManager {
   final Map<String, StreamController<PostgresChangePayload>> _controllers = {};
   final Map<String, int> _listenerCount = {};
   final Map<String, int> _reconnectAttempts = {};
-  final Map<String, RealtimeStatus> _statusMap = {};
   final Map<String, Timer?> _reconnectTimers = {};
-
-  final StreamController<Map<String, RealtimeStatus>> _statusController =
-      StreamController<Map<String, RealtimeStatus>>.broadcast();
-
-  Stream<Map<String, RealtimeStatus>> get statusStream => _statusController.stream;
-
-  RealtimeStatus getStatus(String table) => _statusMap[table] ?? RealtimeStatus.disconnected;
 
   /// Pretplati se na promene u tabeli.
   /// Više listenera može deliti isti channel.
@@ -423,8 +414,6 @@ class V2MasterRealtimeManager {
   }
 
   void _createChannel(String table) {
-    _updateStatus(table, RealtimeStatus.connecting);
-
     final channel = _db.channel('v2master:$table');
 
     channel
@@ -460,14 +449,12 @@ class V2MasterRealtimeManager {
     _controllers.remove(table);
     _listenerCount.remove(table);
     _reconnectAttempts.remove(table);
-    _updateStatus(table, RealtimeStatus.disconnected);
   }
 
   void _handleStatus(String table, RealtimeSubscribeStatus status, dynamic error) {
     switch (status) {
       case RealtimeSubscribeStatus.subscribed:
         _reconnectAttempts[table] = 0;
-        _updateStatus(table, RealtimeStatus.connected);
         break;
 
       case RealtimeSubscribeStatus.channelError:
@@ -494,12 +481,10 @@ class V2MasterRealtimeManager {
 
     final attempts = _reconnectAttempts[table] ?? 0;
     if (attempts >= RealtimeConfig.maxReconnectAttempts) {
-      _updateStatus(table, RealtimeStatus.error);
       _reconnectTimers[table] = null;
       return;
     }
 
-    _updateStatus(table, RealtimeStatus.reconnecting);
     _reconnectAttempts[table] = attempts + 1;
 
     final delays = [3, 6, 10];
@@ -523,13 +508,6 @@ class V2MasterRealtimeManager {
       if ((_listenerCount[table] ?? 0) <= 0) return; // provjeri ponovo nakon pauze
       _createChannel(table);
     });
-  }
-
-  void _updateStatus(String table, RealtimeStatus status) {
-    _statusMap[table] = status;
-    if (!_statusController.isClosed) {
-      _statusController.add(Map.from(_statusMap));
-    }
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -614,7 +592,5 @@ class V2MasterRealtimeManager {
     _controllers.clear();
     _listenerCount.clear();
     _reconnectAttempts.clear();
-    _statusMap.clear();
-    _statusController.close();
   }
 }
