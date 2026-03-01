@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../globals.dart';
 import '../utils/v2_grad_adresa_validator.dart';
-import 'v2_gps_foreground_service.dart';
 import 'v2_openrouteservice.dart';
 import 'v2_permission_service.dart';
 
@@ -22,6 +22,9 @@ class V2DriverLocationService {
   // Lokacija (lat/lng) ? Supabase svake 30s (bez API poziva).
   // ORS ETA korekcija ? svake 60s (odvojeni timer, ~900 poziva/dan).
   static const Duration _etaUpdateInterval = Duration(minutes: 1);
+  static const int _gpsNotifId = 9001;
+  static const String _gpsChannelId = 'gavra_gps_tracking';
+  static final _notifPlugin = FlutterLocalNotificationsPlugin();
 
   // State
   Timer? _etaTimer;
@@ -90,11 +93,11 @@ class V2DriverLocationService {
     // ? ORS ETA se racuna odvojeno svake 60s.
     _etaTimer = Timer.periodic(_etaUpdateInterval, (_) => _refreshEta());
 
-    // ??? Pokreni Android Foreground Service ž drži proces živ (kao Waze)
-    await GpsForegroundService.startService(
-      vozacIme: vozacIme,
+    // 🛰️ Prikaži persistent notifikaciju — drži app živ dok vozač prikuplja putnike
+    await _showGpsNotif(
       grad: grad,
       vreme: vremePolaska ?? '',
+      putniciCount: putniciEta?.values.where((v) => v >= 0).length ?? 0,
     );
 
     return true;
@@ -105,8 +108,8 @@ class V2DriverLocationService {
     _etaTimer?.cancel();
     _positionSubscription?.cancel();
 
-    // ?? Zaustavi Android Foreground Service ž ukloni notifikaciju iz status bara
-    await GpsForegroundService.stopService();
+    // 🛑 Ukloni persistent notifikaciju iz status bara
+    await _cancelGpsNotif();
 
     // Uvijek pokušaj update bez obzira na _isTracking flag
     if (_currentVozacId != null) {
@@ -180,20 +183,6 @@ class V2DriverLocationService {
       debugPrint('✅ [DriverLocation] ORS ETA (60s): ${result.putniciEta}');
       // Pošalji ažurirani ETA u Supabase odmah
       await _sendCurrentLocation();
-
-      // ?? Ažuriraj tekst notifikacije ž prikaži sledeceg putnika i ETA
-      if (_putniciRedosled != null && _currentPutniciEta != null) {
-        final sledeci = _putniciRedosled!.firstWhere(
-          (ime) => (_currentPutniciEta![ime] ?? -1) >= 0,
-          orElse: () => '',
-        );
-        if (sledeci.isNotEmpty) {
-          final eta = _currentPutniciEta![sledeci];
-          GpsForegroundService.updateNotificationText(
-            'Sledeci: $sledeci ž $eta min | $_currentGrad $_currentVremePolaska',
-          );
-        }
-      }
     } else {
       debugPrint('⚠️ [DriverLocation] ORS ETA neuspješan ž zadržan stari ETA');
     }
@@ -207,6 +196,49 @@ class V2DriverLocationService {
 
   Future<bool> _checkLocationPermission() async {
     return await PermissionService.ensureGpsForNavigation();
+  }
+
+  /// 🛰️ Prikaži ongoing notifikaciju u status baru
+  Future<void> _showGpsNotif({
+    required String grad,
+    required String vreme,
+    required int putniciCount,
+  }) async {
+    await _notifPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _gpsChannelId,
+            'Gavra GPS Tracking',
+            description: 'Aktivna ruta — vozač prati putnike',
+            importance: Importance.low,
+            playSound: false,
+            enableVibration: false,
+          ),
+        );
+    await _notifPlugin.show(
+      _gpsNotifId,
+      '🚌 Gavra 013 — $grad $vreme',
+      putniciCount > 0 ? 'Preostalo putnika: $putniciCount' : 'GPS tracking aktivan',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _gpsChannelId,
+          'Gavra GPS Tracking',
+          importance: Importance.low,
+          priority: Priority.low,
+          ongoing: true,
+          autoCancel: false,
+          playSound: false,
+          enableVibration: false,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+    );
+  }
+
+  /// 🛑 Ukloni ongoing notifikaciju
+  Future<void> _cancelGpsNotif() async {
+    await _notifPlugin.cancel(_gpsNotifId);
   }
 
   /// Pošalji trenutnu lokaciju u Supabase

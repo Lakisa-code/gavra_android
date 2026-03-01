@@ -197,8 +197,6 @@ class V2PolasciService {
   /// Broj zahteva u statusu `'obrada'` — za bedž na Home ekranu.
   static Stream<int> v2StreamBrojZahteva() => v2StreamZahteviObrada().map((list) => list.length);
 
-
-
   /// 🎫 Prihvata alternativni termin - ODMAH ODOBRAVA
   static Future<bool> v2PrihvatiAlternativu({
     String? requestId,
