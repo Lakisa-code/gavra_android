@@ -37,6 +37,25 @@ DECLARE
     v_putnik_ime text;
     v_grad_display text;
 BEGIN
+    -- Novi dnevni zahtev → obavijesti admina
+    IF (TG_OP = 'INSERT' AND NEW.status = 'obrada' AND NEW.putnik_tabela = 'dnevni') THEN
+        SELECT ime INTO v_putnik_ime FROM v2_dnevni WHERE id = NEW.putnik_id;
+        v_grad_display := CASE WHEN NEW.grad = 'BC' THEN 'Bela Crkva' WHEN NEW.grad = 'VS' THEN 'Vršac' ELSE NEW.grad END;
+        SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
+        INTO v_tokens
+        FROM v2_push_tokens
+        WHERE user_id IN (SELECT ime FROM vozaci WHERE ime = 'Bojan');
+        IF v_tokens IS NOT NULL AND jsonb_array_length(v_tokens) > 0 THEN
+            PERFORM notify_push(
+                v_tokens,
+                '🎟️ Novi dnevni zahtev',
+                COALESCE(v_putnik_ime, 'Putnik') || ' traži vožnju u ' || to_char(NEW.zeljeno_vreme, 'HH24:MI') || ' (' || v_grad_display || ', ' || UPPER(NEW.dan) || ')',
+                jsonb_build_object('type', 'v2_dnevni_obrada', 'id', NEW.id, 'grad', NEW.grad)
+            );
+        END IF;
+        RETURN NEW;
+    END IF;
+
     -- Samo ako se status mijenja
     IF (OLD.status = NEW.status) THEN RETURN NEW; END IF;
 
@@ -148,7 +167,7 @@ BEGIN
     SELECT jsonb_agg(jsonb_build_object('token', token, 'provider', provider))
     INTO v_admin_tokens
     FROM v2_push_tokens
-    WHERE user_id IN (SELECT ime FROM vozaci WHERE email = 'gavra.prevoz@gmail.com' OR ime = 'Bojan');
+    WHERE user_id IN (SELECT ime FROM vozaci WHERE ime = 'Bojan');
 
     -- Iteriraj kroz sve vozače koji su imali akcije u tom periodu
     FOR v_record IN 

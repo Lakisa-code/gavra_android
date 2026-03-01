@@ -274,7 +274,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     if (putnikId == null) return;
 
     try {
-      final tipPutnikaRaw = (_putnikData['tip'] ?? 'radnik').toString().toLowerCase();
+      final tipPutnikaRaw = _v2TipIzTabele(_putnikData);
       bool isJeDnevni(String t) => t.contains('dnevni') || t.contains('posiljka') || t.contains('pošiljka');
       final jeDnevni = isJeDnevni(tipPutnikaRaw);
 
@@ -1004,7 +1004,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
 
     final telefon = _putnikData['broj_telefona'] as String? ?? '-';
     final grad = _putnikData['grad'] as String? ?? 'BC';
-    final tip = _putnikData['tip'] as String? ?? 'radnik';
+    final tip = _v2TipIzTabele(_putnikData);
     final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
 
     return Container(
@@ -1376,7 +1376,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
 
   /// 📅 Widget za prikaz rasporeda polazaka po danima
   Widget _buildRasporedCard() {
-    final tip = _putnikData['tip'] as String? ?? 'radnik';
+    final tip = _v2TipIzTabele(_putnikData);
     final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
 
     // 🆕 Inicijalizuj polasci mapu sa praznim vrednostima za svih 7 dana
@@ -1682,7 +1682,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
             context: context,
             putnikId: _putnikData['id'] ?? '',
             putnikIme: _putnikData['putnik_ime'] ?? 'Nepoznato',
-            tip: _putnikData['tip'] ?? 'radnik',
+            tip: _v2TipIzTabele(_putnikData),
             tipSkole: _putnikData['tip_skole'],
             brojTelefona: _putnikData['broj_telefona'],
             createdAt:
@@ -1712,5 +1712,21 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
         ),
       ),
     );
+  }
+
+  /// 🔧 v2 helper: čita tip putnika iz '_tabela' ključa (v2 sistem)
+  /// Fallback na stari 'tip' ključ radi kompatibilnosti
+  String _v2TipIzTabele(Map<String, dynamic> data) {
+    final tabela = data['_tabela'] as String?;
+    if (tabela != null) {
+      return switch (tabela) {
+        'v2_radnici' => 'radnik',
+        'v2_ucenici' => 'ucenik',
+        'v2_dnevni' => 'dnevni',
+        'v2_posiljke' => 'posiljka',
+        _ => 'radnik',
+      };
+    }
+    return (data['tip'] as String? ?? 'radnik').toLowerCase();
   }
 }
