@@ -191,7 +191,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       await _initializeCurrentDriver();
       // ?? If the current driver is missing or invalid, redirect to welcome/login
-      if (_currentDriver == null || !VozacCache.isValidIme(_currentDriver)) {
+      // Preskočiti redirect ako VozacCache još nije inicijalizovan (race condition)
+      if (_currentDriver == null || (VozacCache.isInitialized && !VozacCache.isValidIme(_currentDriver))) {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,

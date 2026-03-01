@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../globals.dart';
+import '../../utils/v2_vozac_cache.dart';
 
 /// ════════════════════════════════════════════════════════════════════════════
 /// V2MasterRealtimeManager — čist, novi singleton za v2_ tabele
@@ -296,11 +297,15 @@ class V2MasterRealtimeManager {
         _db.from('v2_pumpa_config').select('id, kapacitet_litri, alarm_nivo, pocetno_stanje, updated_at'),
         _db.from('v2_vozac_lokacije').select('id, vozac_id, lat, lng, aktivan, updated_at').eq('aktivan', true),
         _db.from('v2_pin_zahtevi').select('id, putnik_id, putnik_tabela, email, telefon, status, created_at'),
-        _db.from('v2_app_settings').select('id, min_version, latest_version, store_url_android, store_url_huawei, store_url_ios, nav_bar_type, updated_at'),
+        _db.from('v2_app_settings').select(
+            'id, min_version, latest_version, store_url_android, store_url_huawei, store_url_ios, nav_bar_type, updated_at'),
       ]);
 
       _fillCache(vozaciCache, results[0]);
       _fillCache(vozilaCache, results[1]);
+
+      // Osvježi VozacCache odmah nakon što su vozači učitani iz baze
+      await VozacCache.initialize();
       _fillCache(kapacitetCache, results[2]);
       _fillCache(adreseCache, results[3]);
       _fillCache(rasporedCache, results[4]);

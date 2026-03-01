@@ -124,11 +124,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
   // "" AUTO-LOGIN BEZ PESME - Proveri da li je vozač ve logovan
   Future<void> _checkAutoLogin() async {
+    debugPrint('🚀 [WelcomeScreen] _checkAutoLogin POKRENUT | mounted=$mounted');
     // ZPREKINI PESMU ako se auto-login aktivira
     await _stopAudio();
 
     // "PRVO PROVERI REMEMBERED DEVICE
     final rememberedDevice = await AuthManager.getRememberedDevice();
+    debugPrint('🚀 [WelcomeScreen] rememberedDevice=$rememberedDevice');
     if (rememberedDevice != null) {
       // Auto-login sa zapamenim ureajem
       final email = rememberedDevice['email']!;
@@ -308,6 +310,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
             builder: (context) => _getScreenForDriver(correctName),
           ),
         );
+        return;
       }
     }
 
@@ -655,6 +658,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
   // s- Dijalog za izbor vozača
   void _showDriverSelectionDialog() {
+    // Osvježi listu vozača iz cache-a koji je sada sigurno popunjen
+    _loadDrivers();
     showDialog(
       context: context,
       builder: (BuildContext context) {

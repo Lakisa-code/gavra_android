@@ -26,8 +26,8 @@ class AuthManager {
 
   /// Postavi trenutnog vozača (bez email auth-a)
   static Future<void> setCurrentDriver(String driverName) async {
-    // Validacija da je vozač prepoznat
-    if (!(VozacCache.isValidIme(driverName))) {
+    // Validacija samo ako je cache već inicijalizovan (izbjegava race condition pri startu)
+    if (VozacCache.isInitialized && !VozacCache.isValidIme(driverName)) {
       throw ArgumentError('Vozač "$driverName" nije registrovan');
     }
 
@@ -129,6 +129,8 @@ class AuthManager {
   /// Dobij trenutnog vozača - ITA IZ SUPABASE po FCM/HMS tokenu
   /// Fallback na SharedPreferences ako nema interneta
   static Future<String?> getCurrentDriver() async {
+    debugPrint(
+        '🔍 [AuthManager] getCurrentDriver POZVAN | stack: ${StackTrace.current.toString().split('\n').take(3).join(' | ')}');
     // 2. Pokušaj iz Supabase
     try {
       final driverFromSupabase = await _getDriverFromSupabase();
@@ -182,11 +184,7 @@ class AuthManager {
         if (tokenRow != null && tokenRow['vozac_id'] != null) {
           final vozacId = tokenRow['vozac_id'] as String;
           // Dohvati ime vozača iz v2_vozaci tabele
-          final vozacRow = await supabase
-              .from('v2_vozaci')
-              .select('ime')
-              .eq('id', vozacId)
-              .maybeSingle();
+          final vozacRow = await supabase.from('v2_vozaci').select('ime').eq('id', vozacId).maybeSingle();
           if (vozacRow != null && vozacRow['ime'] != null) {
             final ime = vozacRow['ime'] as String;
             debugPrint(' [AuthManager] Vozač iz Supabase: $ime');
@@ -225,8 +223,7 @@ class AuthManager {
       final difference = now.difference(sessionTime);
 
       final isActive = difference.inMinutes < 30;
-      debugPrint(
-          '.[AuthManager] Sesija: ${difference.inMinutes} min od logina - ${isActive ? "AKTIVNA" : "ISTEKLA"}');
+      debugPrint('.[AuthManager] Sesija: ${difference.inMinutes} min od logina - ${isActive ? "AKTIVNA" : "ISTEKLA"}');
 
       return isActive;
     } catch (e) {

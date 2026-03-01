@@ -95,6 +95,9 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
 
     // Dekoduj sačuvane podatke
     final data = jsonDecode(savedData);
+
+    if (!mounted) return;
+
     _emailController.text = data['email'] ?? '';
     _telefonController.text = data['telefon'] ?? '';
     _sifraController.text = data['sifra'] ?? '';
