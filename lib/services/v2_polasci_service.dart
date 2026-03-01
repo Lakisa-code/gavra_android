@@ -122,14 +122,24 @@ class V2PolasciService {
     }
   }
 
-  /// Stream za zahteve koji čekaju ručnu obradu admina (svi tipovi, status=obrada)
-  static Stream<List<V2Polazak>> v2StreamZahteviObrada() {
+  /// Stream za zahteve — enrichuje putnik_ime i broj_telefona iz v2_* cache-a
+  /// [statusFilter] null = samo 'obrada', lista = filtriraj po datim statusima
+  /// [gradFilter] opcioni filter po gradu 'BC'/'VS'
+  static Stream<List<V2Polazak>> v2StreamZahteviObrada({List<String>? statusFilter, String? gradFilter}) {
     final controller = StreamController<List<V2Polazak>>.broadcast();
 
     Future<void> fetch() async {
       try {
-        final data =
-            await _supabase.from('v2_polasci').select().eq('status', 'obrada').order('created_at', ascending: false);
+        var query = _supabase.from('v2_polasci').select();
+        if (statusFilter != null && statusFilter.isNotEmpty) {
+          query = query.inFilter('status', statusFilter);
+        } else {
+          query = query.eq('status', 'obrada');
+        }
+        if (gradFilter != null) {
+          query = query.eq('grad', gradFilter);
+        }
+        final data = await query.order('created_at', ascending: false);
 
         final rm = V2MasterRealtimeManager.instance;
 
@@ -182,46 +192,6 @@ class V2PolasciService {
     return controller.stream;
   }
 
-  /// 📋 Stream za SVE zahteve — audit/log ekran za admina
-  /// Podržava filtere: [statusFilter] lista statusa, [gradFilter] 'BC'/'VS'/null, [limit] broj zapisa
-  static Stream<List<V2Polazak>> streamSviZahtevi({
-    List<String>? statusFilter,
-    String? gradFilter,
-    int limit = 200,
-  }) {
-    final controller = StreamController<List<V2Polazak>>.broadcast();
-
-    Future<void> fetch() async {
-      try {
-        var query = _supabase.from('v2_polasci').select();
-
-        if (statusFilter != null && statusFilter.isNotEmpty) {
-          query = query.inFilter('status', statusFilter);
-        }
-        if (gradFilter != null) {
-          query = query.eq('grad', gradFilter);
-        }
-
-        final data = await query.order('created_at', ascending: false).limit(limit);
-
-        if (!controller.isClosed) {
-          controller.add(data.map((json) => V2Polazak.fromJson(json)).toList());
-        }
-      } catch (e) {
-        debugPrint('❌ [V2PolasciService] streamSviZahtevi fetch error: $e');
-      }
-    }
-
-    fetch();
-    final sub = V2MasterRealtimeManager.instance.subscribe('v2_polasci').listen((_) => fetch());
-    controller.onCancel = () {
-      sub.cancel();
-      V2MasterRealtimeManager.instance.unsubscribe('v2_polasci');
-    };
-
-    return controller.stream;
-  }
-
   /// 🔢 Stream za broj zahteva koji čekaju ručnu obradu (za bedž na Home ekranu - svi tipovi)
   static Stream<int> v2StreamBrojZahteva() {
     final controller = StreamController<int>.broadcast();
@@ -250,11 +220,12 @@ class V2PolasciService {
   /// 🤖 DIGITALNI DISPEČER — replicira dispecer_cron_obrada + obrada v2_polasci logiku
   static Future<int> v2PokreniDispecera() async {
     try {
-      // 1. Dohvati sve pending zahteve
+      // 1. Dohvati sve pending zahteve (ORDER BY created_at ASC — jedino pravilo redosleda)
       final pendingRows = await _supabase
           .from('v2_polasci')
           .select('id, grad, dan, updated_at, zeljeno_vreme, broj_mesta, putnik_id, putnik_tabela, created_at')
-          .eq('status', 'obrada');
+          .eq('status', 'obrada')
+          .order('created_at', ascending: true);
 
       if (pendingRows.isEmpty) return 0;
 
@@ -298,41 +269,57 @@ class V2PolasciService {
           'v2_posiljke' => 'posiljka',
           _ => 'dnevni',
         };
+
+        // ⛔ Dnevni putnici NIKAD ne prolaze auto-obradu → uvek 'obrada' za admin ručno
+        if (tip == 'dnevni') continue;
+
         final DateTime updatedAt = DateTime.parse(req['updated_at'].toString()).toUtc();
         final String createdAtStr = req['created_at']?.toString() ?? req['updated_at'].toString();
         final DateTime createdAt = DateTime.parse(createdAtStr).toUtc();
         final String zeljeno = req['zeljeno_vreme'].toString();
         final int brojMesta = (req['broj_mesta'] as num?)?.toInt() ?? 1;
 
-        // --- get_cekanje_pravilo logika ---
+        // --- get_cekanje_pravilo (dispecer.sql) ---
         int minutaCekanja;
         bool proveraKapaciteta;
         if (grad == 'BC') {
           if (tip == 'ucenik' && createdAt.hour < 16) {
+            // BC učenik pre 16h: 5 min, BEZ provere kapaciteta (garantovano mesto)
             minutaCekanja = 5;
             proveraKapaciteta = false;
           } else if (tip == 'radnik') {
+            // BC radnik: 5 min, SA proverom kapaciteta
             minutaCekanja = 5;
             proveraKapaciteta = true;
           } else if (tip == 'ucenik' && createdAt.hour >= 16) {
-            minutaCekanja = 0;
+            // BC učenik posle 16h: čeka do 20h (specijalni slučaj), SA proverom
+            minutaCekanja = 0; // obrađuje se u 20h (bcUcenikNocni uslov)
             proveraKapaciteta = true;
           } else if (tip == 'posiljka') {
+            // BC pošiljka: 10 min, BEZ provere (ne zauzima mesto)
             minutaCekanja = 10;
             proveraKapaciteta = false;
           } else {
+            // BC default: 5 min, SA proverom
             minutaCekanja = 5;
             proveraKapaciteta = true;
           }
         } else if (grad == 'VS') {
           if (tip == 'posiljka') {
+            // VS pošiljka: 10 min, BEZ provere (ne zauzima mesto)
             minutaCekanja = 10;
             proveraKapaciteta = false;
+          } else if (tip == 'radnik' || tip == 'ucenik') {
+            // VS radnik/učenik: 10 min, SA proverom kapaciteta
+            minutaCekanja = 10;
+            proveraKapaciteta = true;
           } else {
+            // VS default: 10 min, SA proverom
             minutaCekanja = 10;
             proveraKapaciteta = true;
           }
         } else {
+          // Nepoznat grad: 5 min, SA proverom
           minutaCekanja = 5;
           proveraKapaciteta = true;
         }

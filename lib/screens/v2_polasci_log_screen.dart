@@ -108,7 +108,7 @@ class _V2PolasciLogScreenState extends State<V2PolasciLogScreen> {
   }
 
   Stream<List<V2Polazak>> _buildStream() {
-    return V2PolasciService.streamSviZahtevi(
+    return V2PolasciService.v2StreamZahteviObrada(
       statusFilter: _statusFilter.isEmpty ? null : _statusFilter.toList(),
       gradFilter: _gradFilter,
     );
