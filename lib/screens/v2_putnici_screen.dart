@@ -34,7 +34,7 @@ class V2PutniciScreen extends StatefulWidget {
 
 class _V2PutniciScreenState extends State<V2PutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni', 'posiljka'
+  String _selectedFilter = 'svi';
 
   // V2 servis instance
   final V2PutnikService _putnikService = V2PutnikService();
@@ -58,17 +58,17 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   // Services
   final List<StreamSubscription> _subscriptions = [];
 
+  // 🔢 BADGE COUNTERS
+  int _brojRadnika = 0;
+  int _brojUcenika = 0;
+  int _brojDnevnih = 0;
+  int _brojPosiljki = 0;
+
   // 💳 PLACANJE STATE
   Map<String, double> _stvarnaPlacanja = {};
   DateTime? _lastPaymentUpdate;
   Set<String> _lastPutnikIds = {};
   Timer? _paymentUpdateDebounceTimer; // ⏱️ DEBOUNCE TIMER za payment updates
-
-  // 📊 BROJANJE PUTNIKA PO TIPU
-  int _brojRadnika = 0;
-  int _brojUcenika = 0;
-  int _brojDnevnih = 0;
-  int _brojPosiljki = 0;
 
   @override
   void initState() {
@@ -216,18 +216,15 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     super.dispose();
   }
 
-  /// ?? DIREKTNO FILTRIRANJE - dodaje search i filterType na vec filtrirane podatke iz streama
-  /// Stream vec vraca aktivne putnike sa validnim statusom, ovde samo dodajemo dinamicke filtere
   List<RegistrovaniPutnik> _filterPutniciDirect(
     List<RegistrovaniPutnik> putnici,
     String searchTerm,
-    String filterType,
   ) {
     var filtered = putnici;
 
-    // Filter po tipu (radnik/ucenik)
-    if (filterType != 'svi') {
-      filtered = filtered.where((p) => p.v2Tabela == filterType).toList();
+    // Filter po tipu
+    if (_selectedFilter != 'svi') {
+      filtered = filtered.where((p) => p.v2Tabela == _selectedFilter).toList();
     }
 
     // Filter po search term
@@ -278,274 +275,74 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Filter za radnike sa brojem
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.engineering,
-                            color: _selectedFilter == 'radnik' ? Colors.white : Colors.white70,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black54,
-                              ),
-                            ],
-                          ),
-                          onPressed: () {
-                            final newFilter = _selectedFilter == 'radnik' ? 'svi' : 'radnik';
-                            setState(() {
-                              _selectedFilter = newFilter;
-                            });
-                          },
-                          tooltip: 'Filtriraj radnike',
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFFFF6B6B),
-                                  Color(0xFFFF8E53),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withOpacity(0.4),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 24,
-                              minHeight: 24,
-                            ),
-                            child: Text(
-                              _brojRadnika.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Filter za ucenike sa brojem
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.school,
-                            color: _selectedFilter == 'ucenik' ? Colors.white : Colors.white70,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black54,
-                              ),
-                            ],
-                          ),
-                          onPressed: () {
-                            final newFilter = _selectedFilter == 'ucenik' ? 'svi' : 'ucenik';
-                            setState(() {
-                              _selectedFilter = newFilter;
-                            });
-                          },
-                          tooltip: 'Filtriraj ucenike',
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF4ECDC4),
-                                  Color(0xFF44A08D),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.teal.withOpacity(0.4),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 24,
-                              minHeight: 24,
-                            ),
-                            child: Text(
-                              _brojUcenika.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Filter za dnevne putnike sa brojem
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.today,
-                            color: _selectedFilter == 'dnevni' ? Colors.white : Colors.white70,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black54,
-                              ),
-                            ],
-                          ),
-                          onPressed: () {
-                            final newFilter = _selectedFilter == 'dnevni' ? 'svi' : 'dnevni';
-                            setState(() {
-                              _selectedFilter = newFilter;
-                            });
-                          },
-                          tooltip: 'Filtriraj dnevne putnike',
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF5C9CE6),
-                                  Color(0xFF3B7DD8),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.blue.withOpacity(0.4),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 24,
-                              minHeight: 24,
-                            ),
-                            child: Text(
-                              _brojDnevnih.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Filter za posiljke sa brojem
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.local_shipping,
-                            color: _selectedFilter == 'posiljka' ? Colors.white : Colors.white70,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black54,
-                              ),
-                            ],
-                          ),
-                          onPressed: () {
-                            final newFilter = _selectedFilter == 'posiljka' ? 'svi' : 'posiljka';
-                            setState(() {
-                              _selectedFilter = newFilter;
-                            });
-                          },
-                          tooltip: 'Filtriraj posiljke',
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFFFF8C00),
-                                  Color(0xFFE65C00),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.orange.withOpacity(0.4),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 24,
-                              minHeight: 24,
-                            ),
-                            child: Text(
-                              _brojPosiljki.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(1, 1),
-                            blurRadius: 3,
-                            color: Colors.black54,
-                          ),
-                        ],
+                    // Radnici
+                    Stack(children: [
+                      IconButton(
+                        icon: Icon(Icons.engineering,
+                            color: _selectedFilter == 'v2_radnici' ? Colors.white : Colors.white70,
+                            shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)]),
+                        onPressed: () =>
+                            setState(() => _selectedFilter = _selectedFilter == 'v2_radnici' ? 'svi' : 'v2_radnici'),
+                        tooltip: 'Radnici',
                       ),
+                      Positioned(
+                          right: 0,
+                          top: 0,
+                          child:
+                              _buildBadge(_brojRadnika, const Color(0xFFFF6B6B), const Color(0xFFFF8E53), Colors.red)),
+                    ]),
+                    // Učenici
+                    Stack(children: [
+                      IconButton(
+                        icon: Icon(Icons.school,
+                            color: _selectedFilter == 'v2_ucenici' ? Colors.white : Colors.white70,
+                            shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)]),
+                        onPressed: () =>
+                            setState(() => _selectedFilter = _selectedFilter == 'v2_ucenici' ? 'svi' : 'v2_ucenici'),
+                        tooltip: 'Učenici',
+                      ),
+                      Positioned(
+                          right: 0,
+                          top: 0,
+                          child:
+                              _buildBadge(_brojUcenika, const Color(0xFF4ECDC4), const Color(0xFF44A08D), Colors.teal)),
+                    ]),
+                    // Dnevni
+                    Stack(children: [
+                      IconButton(
+                        icon: Icon(Icons.today,
+                            color: _selectedFilter == 'v2_dnevni' ? Colors.white : Colors.white70,
+                            shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)]),
+                        onPressed: () =>
+                            setState(() => _selectedFilter = _selectedFilter == 'v2_dnevni' ? 'svi' : 'v2_dnevni'),
+                        tooltip: 'Dnevni',
+                      ),
+                      Positioned(
+                          right: 0,
+                          top: 0,
+                          child:
+                              _buildBadge(_brojDnevnih, const Color(0xFF5C9CE6), const Color(0xFF3B7DD8), Colors.blue)),
+                    ]),
+                    // Pošiljke
+                    Stack(children: [
+                      IconButton(
+                        icon: Icon(Icons.local_shipping,
+                            color: _selectedFilter == 'v2_posiljke' ? Colors.white : Colors.white70,
+                            shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)]),
+                        onPressed: () =>
+                            setState(() => _selectedFilter = _selectedFilter == 'v2_posiljke' ? 'svi' : 'v2_posiljke'),
+                        tooltip: 'Pošiljke',
+                      ),
+                      Positioned(
+                          right: 0,
+                          top: 0,
+                          child: _buildBadge(
+                              _brojPosiljki, const Color(0xFFFF8C00), const Color(0xFFE65C00), Colors.orange)),
+                    ]),
+                    IconButton(
+                      icon: const Icon(Icons.add,
+                          color: Colors.white,
+                          shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)]),
                       onPressed: () => _pokaziDijalogZaDodavanje(),
                       tooltip: 'Dodaj novog putnika',
                     ),
@@ -631,7 +428,6 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
                   final sviPutnici = snapshot.data ?? [];
 
-                  // 📊 INLINE PREBROJAVANJE — bez setState/PostFrameCallback
                   _brojRadnika = sviPutnici.where((p) => p.v2Tabela == 'v2_radnici').length;
                   _brojUcenika = sviPutnici.where((p) => p.v2Tabela == 'v2_ucenici').length;
                   _brojDnevnih = sviPutnici.where((p) => p.v2Tabela == 'v2_dnevni').length;
@@ -641,7 +437,6 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                   final filteredPutnici = _filterPutniciDirect(
                     sviPutnici,
                     _searchController.text,
-                    _selectedFilter,
                   );
 
                   // ??? UCITAJ STVARNA PLACANJA kada se dobiju novi podaci - DEBOUNCED
@@ -733,6 +528,24 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(int count, Color c1, Color c2, Color shadow) {
+    if (count == 0) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [c1, c2]),
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: shadow.withOpacity(0.5), blurRadius: 4, offset: const Offset(0, 2))],
+      ),
+      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -1187,7 +1000,6 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
           if (mounted) {
             setState(() {
               _streamRefreshKey++;
-              // ?? RESET FILTERA: Kada se sačuva V2Putnik, očisti filtere da se svi vide
               _selectedFilter = 'svi';
               _searchController.clear();
             });
@@ -1220,7 +1032,6 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
         onSaved: () {
           if (mounted) {
             setState(() {
-              // ?? RESET FILTERA: Kada se doda novi V2Putnik, očisti filtere da se svi vide
               _selectedFilter = 'svi';
               _searchController.clear();
             });
