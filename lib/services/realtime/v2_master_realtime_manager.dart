@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../globals.dart';
-import 'v2_realtime_config.dart';
 
 /// ════════════════════════════════════════════════════════════════════════════
 /// V2MasterRealtimeManager — čist, novi singleton za v2_ tabele
@@ -379,7 +378,6 @@ class V2MasterRealtimeManager {
   final Map<String, RealtimeChannel> _channels = {};
   final Map<String, StreamController<PostgresChangePayload>> _controllers = {};
   final Map<String, int> _listenerCount = {};
-  final Map<String, int> _reconnectAttempts = {};
   final Map<String, Timer?> _reconnectTimers = {};
 
   /// Pretplati se na promene u tabeli.
@@ -448,13 +446,11 @@ class V2MasterRealtimeManager {
     _controllers[table]?.close();
     _controllers.remove(table);
     _listenerCount.remove(table);
-    _reconnectAttempts.remove(table);
   }
 
   void _handleStatus(String table, RealtimeSubscribeStatus status, dynamic error) {
     switch (status) {
       case RealtimeSubscribeStatus.subscribed:
-        _reconnectAttempts[table] = 0;
         break;
 
       case RealtimeSubscribeStatus.channelError:
@@ -479,16 +475,9 @@ class V2MasterRealtimeManager {
   void _scheduleReconnect(String table) {
     _reconnectTimers[table]?.cancel();
 
-    final attempts = _reconnectAttempts[table] ?? 0;
-    if (attempts >= RealtimeConfig.maxReconnectAttempts) {
-      _reconnectTimers[table] = null;
-      return;
-    }
-
-    _reconnectAttempts[table] = attempts + 1;
-
     final delays = [3, 6, 10];
-    final delay = delays[attempts.clamp(0, delays.length - 1)];
+    final elapsed = (_reconnectTimers.length).clamp(0, delays.length - 1);
+    final delay = delays[elapsed];
 
     _reconnectTimers[table] = Timer(Duration(seconds: delay), () async {
       _reconnectTimers[table] = null;
@@ -591,6 +580,5 @@ class V2MasterRealtimeManager {
     _channels.clear();
     _controllers.clear();
     _listenerCount.clear();
-    _reconnectAttempts.clear();
   }
 }
