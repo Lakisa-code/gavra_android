@@ -77,6 +77,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   StreamSubscription<dynamic>? _networkStatusSubscription;
   Timer? _dispecerTimer; // ?? Tajmer za digitalnog dispecera
 
+  // ?? Cache-based stream (kreiran jednom u initState, ne unutar build())
+  late final Stream<int> _streamBrojZahteva;
+
   final List<String> _dani = DayConstants.dayNamesInternal; // Svi dani (Pon-Ned)
 
   // ?? DINAMICKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
@@ -176,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _selectedDay = _getTodayName();
     _autoSelectNajblizeVreme();
+    _streamBrojZahteva = V2PolasciService.v2StreamBrojZahteva();
     _initializeData();
     _setupRealtimeMonitoring(); // ?? Popravljeno ime metode
     _startDigitalDispecer(); // ?? Pokreni dispecera
@@ -369,8 +373,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Sacuvaj reference pre await
     final scaffoldMessenger = ScaffoldMessenger.of(ctx);
 
-    // Ucitaj putnike kojima treba racun
-    final sviPutnici = await V2PutnikService().getAllAktivniKaoModel();
+    // Ucitaj putnike kojima treba racun iz rm cache-a
+    final sviPutnici = V2PutnikService().getAllAktivniKaoModel();
     final putnici = sviPutnici.where((p) => p.trebaRacun).toList();
 
     if (!mounted) return;
@@ -985,14 +989,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     String? samoDanasAdresaId; // ?? ID adrese samo za danas (za brži geocoding)
     List<Map<String, String>> dostupneAdrese = []; // ?? Lista adresa za dropdown
 
-    // Povuci SVE registrovane putnike iz registrovani_putnici tabele (ucenici, radnici, dnevni)
-    final lista = await V2PutnikService().getAllAktivniKaoModel();
+    // Povuci SVE registrovane putnike iz rm cache-a
+    final lista = V2PutnikService().getAllAktivniKaoModel();
     // ?? Filtrirana lista aktivnih putnika za brzu pretragu
     final aktivniPutnici = lista.where((RegistrovaniPutnik V2Putnik) => V2Putnik.aktivan).toList()
       ..sort((a, b) => a.ime.toLowerCase().compareTo(b.ime.toLowerCase()));
 
     // ?? Ucitaj adrese za selektovani grad
-    final adreseZaGrad = await V2AdresaSupabaseService.getAdreseZaGrad(_selectedGrad);
+    final adreseZaGrad = V2AdresaSupabaseService.getAdreseZaGrad(_selectedGrad);
     dostupneAdrese = adreseZaGrad.map((a) => {'id': a.id, 'naziv': a.naziv}).toList()
       ..sort((a, b) => (a['naziv'] ?? '').compareTo(b['naziv'] ?? ''));
 
@@ -1297,7 +1301,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     });
                                     if (V2Putnik != null) {
                                       // ?? AUTO-POPUNI adresu async - SAMO za selektovani grad
-                                      final adresa = await V2Putnik.getAdresaZaSelektovaniGrad(_selectedGrad);
+                                      final adresa = V2Putnik.getAdresaZaSelektovaniGrad(_selectedGrad);
                                       setStateDialog(() {
                                         adresaController.text = adresa == 'Nema adresa' ? '' : adresa;
                                         // Ocisti "samo danas" opcije kad se promeni V2Putnik
@@ -2372,7 +2376,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           const SizedBox(width: 4),
                           Expanded(
                             child: StreamBuilder<int>(
-                              stream: V2PolasciService.v2StreamBrojZahteva(),
+                              stream: _streamBrojZahteva,
                               builder: (context, snapshot) {
                                 final count = snapshot.data ?? 0;
                                 return Stack(

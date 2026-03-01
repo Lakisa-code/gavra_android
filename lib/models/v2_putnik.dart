@@ -454,8 +454,8 @@ class V2Putnik {
     return Object.hash(ime, grad, polazak);
   }
 
-  // ?? FALLBACK METODA: Ucitaj adresu ako je NULL (fallback za JOIN koji nije radio)
-  Future<String?> getAdresaFallback() async {
+  // ?? FALLBACK METODA: Ucitaj adresu iz rm cache-a ako je NULL
+  String? getAdresaFallback() {
     // Ako vec imamo adresu, vrati je
     if (adresa != null && adresa!.isNotEmpty && adresa != 'Adresa nije definisana') {
       return adresa;
@@ -466,14 +466,10 @@ class V2Putnik {
       return adresa; // vrati šta god imamo (ili null)
     }
 
-    try {
-      // Pokušaj da ucitaš adresu direktno iz baze koristeci UUID
-      final fetchedAdresa = await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaId);
-      if (fetchedAdresa != null && fetchedAdresa.isNotEmpty) {
-        return fetchedAdresa;
-      }
-    } catch (_) {
-      // Ignore error i vrati šta god imamo
+    // Čita direktno iz rm cache-a — sync
+    final fetchedAdresa = V2AdresaSupabaseService.getNazivAdreseByUuid(adresaId);
+    if (fetchedAdresa != null && fetchedAdresa.isNotEmpty) {
+      return fetchedAdresa;
     }
 
     return adresa;

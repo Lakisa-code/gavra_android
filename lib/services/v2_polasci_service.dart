@@ -122,100 +122,80 @@ class V2PolasciService {
     }
   }
 
-  /// Stream za zahteve — enrichuje putnik_ime i broj_telefona iz v2_* cache-a
-  /// [statusFilter] null = samo 'obrada', lista = filtriraj po datim statusima
-  /// [gradFilter] opcioni filter po gradu 'BC'/'VS'
-  static Stream<List<V2Polazak>> v2StreamZahteviObrada({List<String>? statusFilter, String? gradFilter}) {
+  // ---------------------------------------------------------------------------
+  // JAVNI STREAMOVI — čitaju direktno iz V2MasterRealtimeManager cache-a
+  // ---------------------------------------------------------------------------
+
+  /// Čita polasciCache iz mastera, enrichuje iz putnici cacheova — 0 DB upita.
+  ///
+  /// - [statusFilter] = null → samo `'obrada'`; lista → filtriraj po tim statusima
+  /// - [gradFilter] = opcioni filter po gradu (`'BC'` / `'VS'`)
+  static Stream<List<V2Polazak>> v2StreamZahteviObrada({
+    List<String>? statusFilter,
+    String? gradFilter,
+  }) {
+    final rm = V2MasterRealtimeManager.instance;
     final controller = StreamController<List<V2Polazak>>.broadcast();
 
-    Future<void> fetch() async {
-      try {
-        var query = _supabase.from('v2_polasci').select();
-        if (statusFilter != null && statusFilter.isNotEmpty) {
-          query = query.inFilter('status', statusFilter);
-        } else {
-          query = query.eq('status', 'obrada');
-        }
-        if (gradFilter != null) {
-          query = query.eq('grad', gradFilter);
-        }
-        final data = await query.order('created_at', ascending: false);
+    // Čita iz cache-a i emituje — bez ijednog DB upita
+    void emit() {
+      if (controller.isClosed) return;
+      final statusi = statusFilter != null && statusFilter.isNotEmpty ? statusFilter : const ['obrada'];
 
-        final rm = V2MasterRealtimeManager.instance;
+      final result = rm.polasciCache.values.where((row) {
+        if (!statusi.contains(row['status'])) return false;
+        if (gradFilter != null && row['grad'] != gradFilter) return false;
+        return true;
+      }).map((row) {
+        final putnikId = row['putnik_id']?.toString();
+        final putnikTabela = row['putnik_tabela']?.toString();
 
-        final enriched = data.map((json) {
-          final putnikId = json['putnik_id']?.toString();
-          final putnikTabela = json['putnik_tabela']?.toString();
+        // Enrichuj iz putnici cache-a — sve u memoriji
+        final putnikRow = putnikId == null
+            ? null
+            : switch (putnikTabela) {
+                'v2_radnici' => rm.radniciCache[putnikId],
+                'v2_ucenici' => rm.uceniciCache[putnikId],
+                'v2_dnevni' => rm.dnevniCache[putnikId],
+                'v2_posiljke' => rm.posiljkeCache[putnikId],
+                _ => rm.getPutnikById(putnikId),
+              };
 
-          // Nađi putnika u v2_* cache-u po tabeli ili pretragom svih cache-ova
-          Map<String, dynamic>? putnikRow;
-          if (putnikId != null) {
-            if (putnikTabela == 'v2_radnici') {
-              putnikRow = rm.radniciCache[putnikId];
-            } else if (putnikTabela == 'v2_ucenici') {
-              putnikRow = rm.uceniciCache[putnikId];
-            } else if (putnikTabela == 'v2_dnevni') {
-              putnikRow = rm.dnevniCache[putnikId];
-            } else {
-              // putnik_tabela = null ili stari format — pretraži sve cache-ove
-              putnikRow = rm.getPutnikById(putnikId);
-            }
-          }
+        final enriched = putnikRow == null
+            ? row
+            : {
+                ...row,
+                'putnik_ime': putnikRow['ime'],
+                'broj_telefona': putnikRow['broj_telefona'],
+                if (putnikTabela == null) 'putnik_tabela': putnikRow['_tabela'],
+              };
 
-          // Enrichuj json sa imenom i telefonom iz v2_* cache-a
-          final enrichedJson = Map<String, dynamic>.from(json);
-          if (putnikRow != null) {
-            enrichedJson['putnik_ime'] = putnikRow['ime'];
-            enrichedJson['broj_telefona'] = putnikRow['broj_telefona'];
-            // Postavi putnik_tabela iz cache-a ako nedostaje
-            if (putnikTabela == null) {
-              enrichedJson['putnik_tabela'] = putnikRow['_tabela'];
-            }
-          }
+        return V2Polazak.fromJson(enriched);
+      }).toList()
+        ..sort((a, b) {
+          final ca = a.createdAt ?? DateTime(0);
+          final cb = b.createdAt ?? DateTime(0);
+          return cb.compareTo(ca); // najnoviji prvi
+        });
 
-          return V2Polazak.fromJson(enrichedJson);
-        }).toList();
-
-        if (!controller.isClosed) controller.add(enriched);
-      } catch (e) {
-        debugPrint('❌ [V2PolasciService] v2StreamZahteviObrada fetch error: $e');
-      }
+      controller.add(result);
     }
 
-    fetch();
-    final sub = V2MasterRealtimeManager.instance.subscribe('v2_polasci').listen((_) => fetch());
+    // Emituj odmah (cache je već popunjen pri initialize())
+    Future.microtask(emit);
+
+    // Svakim realtime eventom na v2_polasci master ažurira polasciCache,
+    // a mi samo ponovo čitamo iz tog cache-a
+    final sub = rm.subscribe('v2_polasci').listen((_) => emit());
     controller.onCancel = () {
       sub.cancel();
-      V2MasterRealtimeManager.instance.unsubscribe('v2_polasci');
+      rm.unsubscribe('v2_polasci');
     };
-
     return controller.stream;
   }
 
-  /// 🔢 Stream za broj zahteva koji čekaju ručnu obradu (za bedž na Home ekranu - svi tipovi)
-  static Stream<int> v2StreamBrojZahteva() {
-    final controller = StreamController<int>.broadcast();
-
-    Future<void> fetch() async {
-      try {
-        final data = await _supabase.from('v2_polasci').select('id').eq('status', 'obrada');
-        if (!controller.isClosed) {
-          controller.add((data as List).length);
-        }
-      } catch (e) {
-        debugPrint('❌ [V2PolasciService] v2StreamBrojZahteva fetch error: $e');
-      }
-    }
-
-    fetch();
-    final sub = V2MasterRealtimeManager.instance.subscribe('v2_polasci').listen((_) => fetch());
-    controller.onCancel = () {
-      sub.cancel();
-      V2MasterRealtimeManager.instance.unsubscribe('v2_polasci');
-    };
-
-    return controller.stream;
-  }
+  /// Broj zahteva u statusu `'obrada'` — za bedž na Home ekranu.
+  static Stream<int> v2StreamBrojZahteva() => v2StreamZahteviObrada().map((list) => list.length);
 
   /// 🤖 DIGITALNI DISPEČER — replicira dispecer_cron_obrada + obrada v2_polasci logiku
   static Future<int> v2PokreniDispecera() async {

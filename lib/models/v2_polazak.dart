@@ -47,8 +47,16 @@ class V2Polazak {
   });
 
   factory V2Polazak.fromJson(Map<String, dynamic> json) {
-    // Provera da li su podaci o putniku ugneždeni (iz JOIN-a sa v2_radnici/v2_ucenici)
-    final putnikData = json['registrovani_putnici'] as Map<String, dynamic>?;
+    // v2 sistem: nema JOIN-a sa registrovani_putnici (tabela obrisana)
+    // putnikIme, brojTelefona, tipPutnika se enrichuju u servisu iz v2_* cache-a
+    final putnikTabela = json['putnik_tabela'] as String?;
+    final tipPutnika = switch (putnikTabela) {
+      'v2_radnici' => 'radnik',
+      'v2_ucenici' => 'ucenik',
+      'v2_dnevni' => 'dnevni',
+      'v2_posiljke' => 'posiljka',
+      _ => json['tip_putnika'] as String? ?? json['tip'] as String?,
+    };
 
     return V2Polazak(
       id: json['id'] as String,
@@ -68,9 +76,9 @@ class V2Polazak {
       cancelledBy: json['cancelled_by'] as String?,
       pokupljenoBy: json['pokupljeno_by'] as String?,
       approvedBy: json['approved_by'] as String?,
-      putnikIme: putnikData?['putnik_ime'] ?? json['putnik_ime'] as String?,
-      brojTelefona: putnikData?['broj_telefona'] ?? json['broj_telefona'] as String?,
-      tipPutnika: putnikData?['tip'] ?? json['tip_putnika'] ?? json['tip'] as String?,
+      putnikIme: json['putnik_ime'] as String?, // enrichuje se u servisu
+      brojTelefona: json['broj_telefona'] as String?, // enrichuje se u servisu
+      tipPutnika: tipPutnika,
     );
   }
 

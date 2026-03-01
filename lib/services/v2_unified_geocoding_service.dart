@@ -100,7 +100,7 @@ class UnifiedGeocodingService {
 
       // PRIORITET 1: Koordinate iz baze (preko adresaId)
       if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
-        final adresaFromDb = await V2AdresaSupabaseService.getAdresaByUuid(
+        final adresaFromDb = V2AdresaSupabaseService.getAdresaByUuid(
           putnik.adresaId!,
         );
         if (adresaFromDb != null) {

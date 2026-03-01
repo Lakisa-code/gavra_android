@@ -10,6 +10,7 @@ import '../globals.dart';
 import '../helpers/v2_putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../models/v2_registrovani_putnik.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
+import '../services/v2_adresa_supabase_service.dart';
 import '../services/v2_cena_obracun_service.dart';
 import '../services/v2_polasci_service.dart';
 import '../services/v2_putnik_push_service.dart'; // 📱 Push notifikacije za putnike
@@ -326,24 +327,22 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
 
       try {
         if (adresaBcId != null && adresaBcId.isNotEmpty) {
-          final bcResponse =
-              await supabase.from('v2_adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaBcId).maybeSingle();
-          if (bcResponse != null) {
-            adresaBcNaziv = bcResponse['naziv'] as String?;
-            if (grad == 'BC' && bcResponse['gps_lat'] != null && bcResponse['gps_lng'] != null) {
-              putnikLat = _toDouble(bcResponse['gps_lat']);
-              putnikLng = _toDouble(bcResponse['gps_lng']);
+          final bcAdresa = V2AdresaSupabaseService.getAdresaByUuid(adresaBcId);
+          if (bcAdresa != null) {
+            adresaBcNaziv = bcAdresa.naziv;
+            if (grad == 'BC' && bcAdresa.gpsLat != null && bcAdresa.gpsLng != null) {
+              putnikLat = bcAdresa.gpsLat;
+              putnikLng = bcAdresa.gpsLng;
             }
           }
         }
         if (adresaVsId != null && adresaVsId.isNotEmpty) {
-          final vsResponse =
-              await supabase.from('v2_adrese').select('naziv, gps_lat, gps_lng').eq('id', adresaVsId).maybeSingle();
-          if (vsResponse != null) {
-            adresaVsNaziv = vsResponse['naziv'] as String?;
-            if (grad == 'VS' && vsResponse['gps_lat'] != null && vsResponse['gps_lng'] != null) {
-              putnikLat = _toDouble(vsResponse['gps_lat']);
-              putnikLng = _toDouble(vsResponse['gps_lng']);
+          final vsAdresa = V2AdresaSupabaseService.getAdresaByUuid(adresaVsId);
+          if (vsAdresa != null) {
+            adresaVsNaziv = vsAdresa.naziv;
+            if (grad == 'VS' && vsAdresa.gpsLat != null && vsAdresa.gpsLng != null) {
+              putnikLat = vsAdresa.gpsLat;
+              putnikLng = vsAdresa.gpsLng;
             }
           }
         }

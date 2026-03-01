@@ -1,4 +1,4 @@
-?import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../models/v2_vozac.dart';
 import '../services/v2_vozac_service.dart';
@@ -116,7 +116,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
   /// Edituj vozaca
   Future<void> _editVozac(int index) async {
     // Dohvati trenutni vozac stream podatke
-    final vozaci = await _vozacService.getAllVozaci();
+    final vozaci = _vozacService.getAllVozaci();
     if (index < 0 || index >= vozaci.length) return;
 
     final vozac = vozaci[index];

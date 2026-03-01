@@ -46,58 +46,31 @@ class _AdminScreenState extends State<AdminScreen> {
 
   // ?? PIN ZAHTEVI - broj zahteva koji cekaju
   int _brojPinZahteva = 0;
-  // ?? TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnog Timer-a
 
-  //
-  // Statistika pazara
-
-  // Filter za dan - odmah postaviti na trenutni dan
-  late String _selectedDan;
+  // ?? Cache-based streamovi (kreirani jednom u initState)
+  late final Stream<List<V2Putnik>> _streamPutnici;
+  late final Stream<Map<String, double>> _streamPazar;
 
   @override
   void initState() {
     super.initState();
-    final todayName = app_date_utils.DateUtils.getTodayFullName();
-    // Admin screen supports all days now, including weekends
-    _selectedDan = todayName;
 
-    // ??? FORSIRANA INICIJALIZACIJA VOZAC MAPIRANJA
+    // Osvježi lokalne map-ove iz rm.vozaciCache (bez DB upita)
     VozacCache.refresh();
 
-    _loadCurrentDriver();
-    _loadBrojPinZahteva(); // ?? Ucitaj broj PIN zahteva
+    // ?? Kreiraj streamove jednom — direktno na master cache
+    final todayIso = DateTime.now().toIso8601String().split('T')[0];
+    _streamPutnici = _putnikService.streamPutnici();
+    _streamPazar = StatistikaService.streamPazarIzCachea(isoDate: todayIso);
 
-    // Inicijalizuj heads-up i zvuk notifikacije
+    _loadCurrentDriver();
+    _loadBrojPinZahteva();
+
     try {
       LocalNotificationService.initialize(context);
-      // ?? UKLONJENO: listener se sada registruje globalno u main.dart
-      // RealtimeNotificationService.listenForForegroundNotifications(context);
     } catch (e) {
-      // Error handling - logging removed for production
+      // ignore
     }
-
-    FirebaseService.getCurrentDriver().then((driver) {
-      if (driver != null && driver.isNotEmpty) {
-        // RealtimeNotificationService.initialize(); // v2_realtime_notification_service handled elsewhere
-      }
-    }).catchError((Object e) {
-      // Error handling - logging removed for production
-    });
-
-    // Supabase realtime se koristi direktno
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Initialize realtime service
-      try {
-        // Pokreni refresh da osiguramo podatke
-        _putnikService.getAllPutnici().then((data) {
-          // Successfully retrieved passenger data
-        }).catchError((Object e) {
-          // Error handling - logging removed for production
-        });
-      } catch (e) {
-        // Error handling - logging removed for production
-      }
-    });
   }
 
   @override
@@ -107,10 +80,10 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   /// ?? ACTION LOG PICKER DIALOG - Admin bira vozaca za pregled dnevnika akcija
-  void _showActionLogDialog(BuildContext context) async {
+  void _showActionLogDialog(BuildContext context) {
     try {
       final vozacService = V2VozacService();
-      final vozaci = await vozacService.getAllVozaci();
+      final vozaci = vozacService.getAllVozaci();
 
       if (!mounted) return;
 
@@ -175,11 +148,11 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   /// ?? VOZAC PICKER DIALOG - Admin može da vidi ekran bilo kog vozaca
-  void _showVozacPickerDialog(BuildContext context) async {
-    // Asinkrono ucitaj vozace iz baze umesto fallback vrednosti
+  void _showVozacPickerDialog(BuildContext context) {
+    // Ucitaj vozace iz rm cache-a
     try {
       final vozacService = V2VozacService();
-      final vozaci = await vozacService.getAllVozaci();
+      final vozaci = vozacService.getAllVozaci();
 
       if (!mounted) return;
 
@@ -273,7 +246,7 @@ class _AdminScreenState extends State<AdminScreen> {
   void _showGlobalniBezPolaskaDialog() {
     String selectedGrad = 'BC';
     String selectedVreme = '05:00';
-    String selectedDan = _selectedDan; // ?? Inicijalno uzmi trenutno izabrani dan
+    String selectedDan = app_date_utils.DateUtils.getTodayFullName();
     bool isProcessing = false;
 
     showDialog(
@@ -686,53 +659,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                       },
                                     ),
                                   ),
-
-                                  // DROPDOWN DANA
-                                  Expanded(
-                                    child: Container(
-                                      height: 28,
-                                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).glassContainer,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
-                                      ),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<String>(
-                                          value: _selectedDan,
-                                          isExpanded: true,
-                                          icon: const SizedBox.shrink(),
-                                          dropdownColor: Theme.of(context).colorScheme.primary,
-                                          style: const TextStyle(color: Colors.white),
-                                          selectedItemBuilder: (context) {
-                                            return DayConstants.dayNamesInternal.map((d) {
-                                              return Center(
-                                                  child: FittedBox(
-                                                      fit: BoxFit.scaleDown,
-                                                      child: Text(d,
-                                                          style: const TextStyle(
-                                                              color: Colors.white,
-                                                              fontSize: 14,
-                                                              fontWeight: FontWeight.w600))));
-                                            }).toList();
-                                          },
-                                          items: DayConstants.dayNamesInternal.map((dan) {
-                                            return DropdownMenuItem(
-                                                value: dan,
-                                                child: Center(
-                                                    child: Text(dan,
-                                                        style: const TextStyle(
-                                                            fontSize: 14, fontWeight: FontWeight.w600))));
-                                          }).toList(),
-                                          onChanged: (value) {
-                                            if (value != null && mounted) {
-                                              setState(() => _selectedDan = value);
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               );
                             },
@@ -1101,7 +1027,7 @@ class _AdminScreenState extends State<AdminScreen> {
           ),
         ),
         body: StreamBuilder<List<V2Putnik>>(
-          stream: _putnikService.streamPutnici(),
+          stream: _streamPutnici,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               // Loading state - add refresh option to prevent infinite loading
@@ -1141,72 +1067,28 @@ class _AdminScreenState extends State<AdminScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             final allPutnici = snapshot.data!;
-            final filteredPutnici = allPutnici.where((V2Putnik) {
-              // ?? FILTER PO DANU - Samo po danu nedelje
-              // Filtriraj po odabranom danu - case insensitive
-              final shortDayName = _getShortDayName(_selectedDan).toLowerCase();
-              return V2Putnik.dan.toLowerCase() == shortDayName;
-            }).toList();
-            // ?? DUšNICI - putnici sa PLAVOM KARTICOM (nisu mesecni tip) koji nisu platili
-            final filteredDuznici = filteredPutnici.where((V2Putnik) {
-              final nijeMesecni = !V2Putnik.isMesecniTip;
-              if (!nijeMesecni) {
-                return false; // ? FIX: Plava kartica = nije mesecni tip
-              }
 
-              final nijePlatio = V2Putnik.placeno != true; // ? FIX: Koristi placeno flag iz voznje_log
-              final nijeOtkazan = V2Putnik.status != 'otkazan' && V2Putnik.status != 'Otkazano';
-              final pokupljen = V2Putnik.jePokupljen;
+            // Filter po današnjem danu
+            final todayKratica = _getShortDayName(app_date_utils.DateUtils.getTodayFullName()).toLowerCase();
+            final filteredPutnici = allPutnici.where((p) => p.dan.toLowerCase() == todayKratica).toList();
 
-              // ? SVI (admin i vozaci) vide SVE dužnike ž vozaci mogu naplatiti tude dugove
-              return nijePlatio && nijeOtkazan && pokupljen;
+            // Dužnici — pokupljeni, neplaćeni, nisu mesečni, nisu otkazani
+            final filteredDuznici = filteredPutnici.where((p) {
+              if (p.isMesecniTip) return false;
+              return p.placeno != true && p.status != 'otkazan' && p.status != 'Otkazano' && p.jePokupljen;
             }).toList();
 
-            // Izracunaj pazar po vozacima - KORISTI DIREKTNO filteredPutnici UMESTO DATUMA ??
-            // ? ISPRAVKA: Umesto kalkulacije datuma, koristi vec filtrirane putnike po danu
-            // Ovo omogucava prikaz pazara za odabrani dan (Pon, Uto, itd.) direktno
-
-            // ?? KALKULIRAJ DATUM NA OSNOVU DROPDOWN SELEKCIJE
-
-            // Odabran je specifican dan, pronadi taj dan u trenutnoj nedelji
-            final now = DateTime.now();
-            final currentWeekday = now.weekday; // 1=Pon, 2=Uto, 3=Sre, 4=Cet, 5=Pet
-
-            // ? KORISTI CENTRALNU FUNKCIJU IZ DateUtils
-            final targetWeekday = app_date_utils.DateUtils.getDayWeekdayNumber(_selectedDan);
-
-            // ?? USKLADI SA DANAS SCREEN: Ako je odabrani dan isti kao danas, koristi današnji datum
-            final DateTime targetDate;
-            if (targetWeekday == currentWeekday) {
-              // Isti dan kao danas - koristi današnji datum (kao danas screen)
-              targetDate = now;
-            } else {
-              // Standardna logika za ostale dane
-              final daysFromToday = targetWeekday - currentWeekday;
-              targetDate = now.add(Duration(days: daysFromToday));
-            }
-
-            final streamFrom = DateTime(targetDate.year, targetDate.month, targetDate.day, 0, 0, 0);
-            final streamTo = DateTime(targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
-
-            // ??? KORISTI StatistikaService.streamPazarZaSveVozace() - BEZ RxDart
             return StreamBuilder<Map<String, double>>(
-              stream: StatistikaService.streamPazarZaSveVozace(from: streamFrom, to: streamTo),
+              stream: _streamPazar,
               builder: (context, pazarSnapshot) {
                 if (!pazarSnapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
                 final pazarMap = pazarSnapshot.data!;
-
-                // ? IDENTICNA LOGIKA SA DANAS SCREEN: uzmi direktno vrednost iz mape
                 final ukupno = pazarMap['_ukupno'] ?? 0.0;
-
-                // Ukloni '_ukupno' kljuc za cist prikaz
                 final Map<String, double> pazar = Map.from(pazarMap)..remove('_ukupno');
 
-                // ?? FILTER PO VOZACU - Prikaži samo naplate trenutnog vozaca ili sve za admin
-                // ??? KORISTI ADMIN SECURITY SERVICE za filtriranje privilegija
                 if (_currentDriver == null) {
                   return const Center(
                     child: Padding(
@@ -1223,15 +1105,8 @@ class _AdminScreenState extends State<AdminScreen> {
                 );
 
                 final Map<String, Color> vozacBoje = VozacCache.bojeSync;
-                final List<String> vozaciRedosled = [
-                  'Bruda',
-                  'Bilevski',
-                  'Bojan',
-                  'Voja',
-                ];
+                const List<String> vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Voja'];
 
-                // Filter vozace redosled na osnovu trenutnog vozaca
-                // ?? KORISTI ADMIN SECURITY SERVICE za filtriranje vozaca
                 final List<String> prikazaniVozaci = AdminSecurityService.getVisibleDrivers(
                   _currentDriver!,
                   vozaciRedosled,

@@ -13,21 +13,15 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'globals.dart';
 import 'screens/v2_welcome_screen.dart';
 import 'services/realtime/v2_master_realtime_manager.dart'; // 🆕 V2 Master Realtime Manager
-import 'services/v2_adresa_supabase_service.dart';
-import 'services/v2_app_settings_service.dart'; // 🔧 Podešavanja aplikacije (nav bar tip)
 import 'services/v2_firebase_service.dart';
 import 'services/v2_gps_foreground_service.dart'; // 🛰️ Android Foreground Service za GPS tracking
 import 'services/v2_huawei_push_service.dart';
-import 'services/v2_kapacitet_service.dart'; // 🎫 Realtime kapacitet
 import 'services/v2_realtime_gps_service.dart'; // 🛰️ DODATO za cleanup
 import 'services/v2_slobodna_mesta_service.dart';
 import 'services/v2_statistika_istorija_service.dart';
 import 'services/v2_theme_manager.dart'; // 🎨 Novi tema sistem
-import 'services/v2_vozac_service.dart';
-import 'services/v2_vozila_service.dart';
 import 'services/v2_weather_alert_service.dart'; // 🌤️ Vremenske uzbune
 import 'services/v2_weather_service.dart'; // 🌤️ DODATO za cleanup
-import 'utils/v2_vozac_cache.dart'; // 🎯 Jedinstven vozač cache
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -147,40 +141,13 @@ Future<void> _initPushSystems() async {
 
 /// Inicijalizacija ostalih servisa
 Future<void> _initAppServices() async {
-  // Sada nije potrebna provera - Supabase je već inicijalizovan u main() liniji 69
   if (kDebugMode) debugPrint('[Main] Starting app services...');
 
-  // PRVO - Inicijalizuj vozač cache (MORA biti pre stream-ova!)
-  try {
-    await VozacCache.initialize().timeout(const Duration(seconds: 5));
-    if (kDebugMode) debugPrint('[Main] VozacCache initialized');
-  } catch (e) {
-    if (kDebugMode) debugPrint('[Main] VozacCache init failed: $e');
-  }
-
-  // Ostali servisi se mogu pokrenuti paralelno
-  final services = [
-    V2AppSettingsService.initialize().timeout(const Duration(seconds: 3)).catchError((e) {
-      if (kDebugMode) debugPrint('[Main] AppSettings init timeout: $e');
-    }),
-    V2KapacitetService.initializeKapacitetCache().timeout(const Duration(seconds: 3)).catchError((e) {
-      if (kDebugMode) debugPrint('[Main] Kapacitet init timeout: $e');
-    }),
-  ];
-
-  for (var service in services) {
-    unawaited(service);
-  }
-
-  // 🚗 Initialize VozacService stream JEDNOM - pokrenuti stream sa listen() da počne emisija
-  V2VozacService().streamAllVozaci().listen((_) {
-    // Samo slušamo, ne radimo ništa - samo da stream počne da emituje podatke
-  });
-
-  // 🆕 Initialize V2 Master Realtime Manager (jedini globalni singleton)
+  // V2 Master Realtime Manager — jedini koji sluša Supabase.
+  // On ucitava sve cache-ove (vozaci, kapacitet, settings...) i otvara WebSocket.
   unawaited(V2MasterRealtimeManager.instance.initialize());
 
-  // 🚐 Realtime & AI (bez čekanja ikoga)
+  // 🚐 Weather alerts (bez čekanja)
   unawaited(V2WeatherAlertService.checkAndSendWeatherAlerts());
 }
 
@@ -207,13 +174,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 🧹 CLEANUP: Zatvori stream controllere
     WeatherService.dispose();
     RealtimeGpsService.dispose();
-    V2AdresaSupabaseService.dispose();
-    V2VozacService.dispose();
-    V2VozilaService.dispose();
     V2StatistikaIstorijaService.dispose();
     SlobodnaMestaService.dispose();
-    V2AppSettingsService.dispose();
-    V2KapacitetService.stopGlobalRealtimeListener();
     super.dispose();
   }
 

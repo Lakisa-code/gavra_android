@@ -18,6 +18,10 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> with SingleTickerProv
   bool _isLoading = false;
   late final TabController _tabController;
 
+  // Streamovi se kreiraju jednom — ne smiju biti unutar build()
+  late final Stream<List<V2Polazak>> _streamDnevni;
+  late final Stream<List<V2Polazak>> _streamMonitoring;
+
   // Radnici/Učenici — monitoring svih aktivnih statusa
   static const _monitoringStatusi = ['obrada', 'odobreno', 'odbijeno', 'otkazano'];
 
@@ -25,6 +29,8 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> with SingleTickerProv
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _streamDnevni = V2PolasciService.v2StreamZahteviObrada();
+    _streamMonitoring = V2PolasciService.v2StreamZahteviObrada(statusFilter: _monitoringStatusi);
   }
 
   @override
@@ -90,7 +96,7 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> with SingleTickerProv
           children: [
             // Tab 0: Dnevni — ručna obrada admina (samo 'obrada' status)
             StreamBuilder<List<V2Polazak>>(
-              stream: V2PolasciService.v2StreamZahteviObrada(),
+              stream: _streamDnevni,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator(color: Colors.white));
@@ -105,7 +111,7 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> with SingleTickerProv
 
             // Tab 1: Radnici — praćenje toka (svi statusi)
             StreamBuilder<List<V2Polazak>>(
-              stream: V2PolasciService.v2StreamZahteviObrada(statusFilter: _monitoringStatusi),
+              stream: _streamMonitoring,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator(color: Colors.white));
@@ -118,7 +124,7 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> with SingleTickerProv
 
             // Tab 2: Učenici — praćenje toka (svi statusi)
             StreamBuilder<List<V2Polazak>>(
-              stream: V2PolasciService.v2StreamZahteviObrada(statusFilter: _monitoringStatusi),
+              stream: _streamMonitoring,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator(color: Colors.white));
@@ -137,7 +143,7 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> with SingleTickerProv
   // TabBar — badge broji samo 'obrada' zahteve (oni koji čekaju akciju)
   Widget _buildTabBar() {
     return StreamBuilder<List<V2Polazak>>(
-      stream: V2PolasciService.v2StreamZahteviObrada(),
+      stream: _streamDnevni,
       builder: (context, snapshot) {
         final svi = snapshot.data ?? [];
         final dnevniCount = svi.where((z) {

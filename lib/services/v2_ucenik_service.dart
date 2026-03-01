@@ -19,57 +19,39 @@ class V2UcenikService {
   // ---------------------------------------------------------------------------
 
   /// Dohvata sve aktivne učenike
-  static Future<List<RegistrovaniPutnik>> getAktivne() async {
-    try {
-      final rows = await _supabase.from('v2_ucenici').select().eq('status', 'aktivan').order('ime');
-      return rows.map((r) => _fromRow(r)).toList();
-    } catch (e) {
-      debugPrint('❌ [V2UcenikService] getAktivne error: $e');
-      return [];
-    }
+  static List<RegistrovaniPutnik> getAktivne() {
+    final rm = V2MasterRealtimeManager.instance;
+    return rm.uceniciCache.values.where((r) => r['status'] == 'aktivan').map((r) => _fromRow(r)).toList()
+      ..sort((a, b) => a.ime.compareTo(b.ime));
   }
 
   /// Dohvata sve učenike (uključujući neaktivne)
-  static Future<List<RegistrovaniPutnik>> getSve() async {
-    try {
-      final rows = await _supabase.from('v2_ucenici').select().order('ime');
-      return rows.map((r) => _fromRow(r)).toList();
-    } catch (e) {
-      debugPrint('❌ [V2UcenikService] getSve error: $e');
-      return [];
-    }
+  static List<RegistrovaniPutnik> getSve() {
+    final rm = V2MasterRealtimeManager.instance;
+    return rm.uceniciCache.values.map((r) => _fromRow(r)).toList()..sort((a, b) => a.ime.compareTo(b.ime));
   }
 
   /// Dohvata učenika po ID-u
-  static Future<RegistrovaniPutnik?> getById(String id) async {
-    try {
-      final row = await _supabase.from('v2_ucenici').select().eq('id', id).maybeSingle();
-      if (row == null) return null;
-      return _fromRow(row);
-    } catch (e) {
-      debugPrint('❌ [V2UcenikService] getById error: $e');
-      return null;
-    }
+  static RegistrovaniPutnik? getById(String id) {
+    final row = V2MasterRealtimeManager.instance.uceniciCache[id];
+    if (row == null) return null;
+    return _fromRow(row);
   }
 
   /// Dohvata ime učenika po ID-u
-  static Future<String?> getImeById(String id) async {
-    try {
-      final row = await _supabase.from('v2_ucenici').select('ime').eq('id', id).maybeSingle();
-      return row?['ime'] as String?;
-    } catch (e) {
-      return null;
-    }
+  static String? getImeById(String id) {
+    return V2MasterRealtimeManager.instance.uceniciCache[id]?['ime'] as String?;
   }
 
   /// Pronalazi učenika po PIN-u (za autentifikaciju)
-  static Future<RegistrovaniPutnik?> getByPin(String pin) async {
+  static RegistrovaniPutnik? getByPin(String pin) {
+    final rm = V2MasterRealtimeManager.instance;
     try {
-      final row = await _supabase.from('v2_ucenici').select().eq('pin', pin).eq('status', 'aktivan').maybeSingle();
-      if (row == null) return null;
+      final row = rm.uceniciCache.values.firstWhere(
+        (r) => r['pin'] == pin && r['status'] == 'aktivan',
+      );
       return _fromRow(row);
-    } catch (e) {
-      debugPrint('❌ [V2UcenikService] getByPin error: $e');
+    } catch (_) {
       return null;
     }
   }
@@ -152,26 +134,25 @@ class V2UcenikService {
   // 🔴 REALTIME STREAM
   // ---------------------------------------------------------------------------
 
-  /// Stream aktivnih učenika (realtime)
+  /// Stream aktivnih učenika (realtime) — čita iz rm.uceniciCache, nema DB upita
   static Stream<List<RegistrovaniPutnik>> streamAktivne() {
-    late final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
+    final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
+    final rm = V2MasterRealtimeManager.instance;
 
-    Future<void> fetch() async {
-      try {
-        final rows = await _supabase.from('v2_ucenici').select().eq('status', 'aktivan').order('ime');
-        if (!controller.isClosed) {
-          controller.add(rows.map((r) => _fromRow(r)).toList());
-        }
-      } catch (e) {
-        debugPrint('❌ [V2UcenikService] streamAktivne fetch error: $e');
+    void emit() {
+      if (!controller.isClosed) {
+        controller.add(
+          rm.uceniciCache.values.where((r) => r['status'] == 'aktivan').map((r) => _fromRow(r)).toList()
+            ..sort((a, b) => a.ime.compareTo(b.ime)),
+        );
       }
     }
 
-    fetch();
-    final sub = V2MasterRealtimeManager.instance.subscribe('v2_ucenici').listen((_) => fetch());
+    emit();
+    final sub = rm.subscribe('v2_ucenici').listen((_) => emit());
     controller.onCancel = () {
       sub.cancel();
-      V2MasterRealtimeManager.instance.unsubscribe('v2_ucenici');
+      rm.unsubscribe('v2_ucenici');
     };
 
     return controller.stream;

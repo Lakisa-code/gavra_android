@@ -6,16 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/v2_vozac.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_auth_manager.dart';
 import '../services/v2_battery_optimization_service.dart';
 import '../services/v2_biometric_service.dart';
 import '../services/v2_local_notification_service.dart';
 import '../services/v2_permission_service.dart';
 import '../services/v2_theme_manager.dart';
-import '../services/v2_vozac_service.dart';
 import '../utils/v2_vozac_cache.dart';
-import 'v2_o_nama_screen.dart';
 import 'v2_home_screen.dart';
+import 'v2_o_nama_screen.dart';
 import 'v2_putnik_login_screen.dart';
 import 'v2_vozac_login_screen.dart';
 import 'v2_vozac_screen.dart';
@@ -74,31 +74,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     });
   }
 
-  /// Učitaj vozače iz baze
-  Future<void> _loadDrivers() async {
-    try {
-      final vozacService = V2VozacService();
-      final vozaci = await vozacService.getAllVozaci().timeout(
-        const Duration(seconds: 3),
-        onTimeout: () {
-          debugPrint('⏱️ [WelcomeScreen] getAllVozaci timeout - pokazujem prazan ekran');
-          return [];
-        },
-      );
-      if (!mounted) return;
-      setState(() {
-        _drivers = vozaci;
-        _isLoadingDrivers = false;
-      });
-    } catch (e) {
-      // Nema fallback-a - ako Supabase ne radi, prikaži grešku
-      debugPrint(' Greška pri učitavanju vozača: $e');
-      if (!mounted) return;
-      setState(() {
-        _drivers = []; // Prazna lista umesto hardkodovanih podataka
-        _isLoadingDrivers = false;
-      });
-    }
+  /// Učitaj vozače direktno iz master cache-a (0 DB upita)
+  void _loadDrivers() {
+    final rm = V2MasterRealtimeManager.instance;
+    final vozaci = rm.vozaciCache.values.map((row) => Vozac.fromMap(row)).toList()
+      ..sort((a, b) => a.ime.compareTo(b.ime));
+    setState(() {
+      _drivers = vozaci;
+      _isLoadingDrivers = false;
+    });
   }
 
   /// > Inicijalizacija servisa jedan po jedan, bez agresivnih await-ova

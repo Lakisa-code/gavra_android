@@ -11,53 +11,32 @@ import 'realtime/v2_master_realtime_manager.dart';
 /// Kolone: id, ime, status, telefon, adresa_bc_id, adresa_vs_id, cena, created_at, updated_at
 class V2PosiljkaService {
   static SupabaseClient get _supabase => supabase;
+  static V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
   // ---------------------------------------------------------------------------
-  // 📖 ČITANJE
+  // 📖 ČITANJE — iz rm.posiljkeCache (sync, 0 DB upita)
   // ---------------------------------------------------------------------------
 
-  /// Dohvata sve aktivne pošiljke
-  static Future<List<RegistrovaniPutnik>> getAktivne() async {
-    try {
-      final rows = await _supabase.from('v2_posiljke').select().eq('status', 'aktivan').order('ime');
-      return rows.map((r) => _fromRow(r)).toList();
-    } catch (e) {
-      debugPrint('❌ [V2PosiljkaService] getAktivne error: $e');
-      return [];
-    }
+  /// Dohvata sve aktivne pošiljke iz rm cache-a (sync)
+  static List<RegistrovaniPutnik> getAktivne() {
+    return _rm.posiljkeCache.values.map((r) => _fromRow(r)).toList()..sort((a, b) => a.ime.compareTo(b.ime));
   }
 
-  /// Dohvata sve pošiljke (uključujući neaktivne)
-  static Future<List<RegistrovaniPutnik>> getSve() async {
-    try {
-      final rows = await _supabase.from('v2_posiljke').select().order('ime');
-      return rows.map((r) => _fromRow(r)).toList();
-    } catch (e) {
-      debugPrint('❌ [V2PosiljkaService] getSve error: $e');
-      return [];
-    }
+  /// Dohvata sve pošiljke iz rm cache-a (sync) — cache sadrži samo aktivne
+  static List<RegistrovaniPutnik> getSve() {
+    return _rm.posiljkeCache.values.map((r) => _fromRow(r)).toList()..sort((a, b) => a.ime.compareTo(b.ime));
   }
 
-  /// Dohvata pošiljku po ID-u
-  static Future<RegistrovaniPutnik?> getById(String id) async {
-    try {
-      final row = await _supabase.from('v2_posiljke').select().eq('id', id).maybeSingle();
-      if (row == null) return null;
-      return _fromRow(row);
-    } catch (e) {
-      debugPrint('❌ [V2PosiljkaService] getById error: $e');
-      return null;
-    }
+  /// Dohvata pošiljku po ID-u iz rm cache-a (sync)
+  static RegistrovaniPutnik? getById(String id) {
+    final row = _rm.posiljkeCache[id];
+    if (row == null) return null;
+    return _fromRow(row);
   }
 
-  /// Dohvata ime pošiljke po ID-u (brzo, samo ime kolona)
-  static Future<String?> getImeById(String id) async {
-    try {
-      final row = await _supabase.from('v2_posiljke').select('ime').eq('id', id).maybeSingle();
-      return row?['ime'] as String?;
-    } catch (e) {
-      return null;
-    }
+  /// Dohvata ime pošiljke po ID-u iz rm cache-a (sync)
+  static String? getImeById(String id) {
+    return _rm.posiljkeCache[id]?['ime'] as String?;
   }
 
   // ---------------------------------------------------------------------------
@@ -125,31 +104,20 @@ class V2PosiljkaService {
   }
 
   // ---------------------------------------------------------------------------
-  // 🔴 REALTIME STREAM
+  // 🔴 REALTIME STREAM — emit iz rm.posiljkeCache (0 DB upita)
   // ---------------------------------------------------------------------------
 
-  /// Stream aktivnih pošiljki (realtime)
+  /// Stream aktivnih pošiljki (realtime) — emituje direktno iz cache-a
   static Stream<List<RegistrovaniPutnik>> streamAktivne() {
-    late final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
-
-    Future<void> fetch() async {
-      try {
-        final rows = await _supabase.from('v2_posiljke').select().eq('status', 'aktivan').order('ime');
-        if (!controller.isClosed) {
-          controller.add(rows.map((r) => _fromRow(r)).toList());
-        }
-      } catch (e) {
-        debugPrint('❌ [V2PosiljkaService] streamAktivne fetch error: $e');
-      }
-    }
-
-    fetch();
-    final sub = V2MasterRealtimeManager.instance.subscribe('v2_posiljke').listen((_) => fetch());
+    final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
+    controller.add(getAktivne());
+    final sub = _rm.subscribe('v2_posiljke').listen((_) {
+      if (!controller.isClosed) controller.add(getAktivne());
+    });
     controller.onCancel = () {
       sub.cancel();
-      V2MasterRealtimeManager.instance.unsubscribe('v2_posiljke');
+      controller.close();
     };
-
     return controller.stream;
   }
 

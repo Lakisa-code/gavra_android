@@ -47,7 +47,7 @@ class _OdrzavanjeScreenState extends State<OdrzavanjeScreen> {
 
   Future<void> _loadVozila() async {
     setState(() => _isLoading = true);
-    final vozila = await V2VozilaService.getVozila();
+    final vozila = V2VozilaService.getVozila();
     setState(() {
       _vozila = vozila;
       _isLoading = false;

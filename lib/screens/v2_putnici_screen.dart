@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../globals.dart';
 import '../helpers/v2_putnik_statistike_helper.dart';
 import '../models/v2_registrovani_putnik.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_cena_obracun_service.dart';
 import '../services/v2_permission_service.dart';
 import '../services/v2_putnik_service.dart';
@@ -35,15 +36,14 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni', 'posiljka'
 
-  // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon cuvanja
-  int _streamRefreshKey = 0;
-
   // V2 servis instance
   final V2PutnikService _putnikService = V2PutnikService();
 
-  // ?? OPTIMIZACIJA: Connection resilience
-  StreamSubscription<dynamic>? _connectionSubscription;
-  bool _isConnected = true;
+  // 🔄 Master realtime stream — inicijalizovan jednom u initState()
+  late final Stream<List<RegistrovaniPutnik>> _streamPutnici;
+
+  // 🔄 Refresh key za forsiranje novog stream-a nakon izmjene putnika
+  int _streamRefreshKey = 0;
 
   // Mapa placenih meseci po putniku
   Map<String, Set<String>> _placeniMeseci = {};
@@ -74,7 +74,10 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   void initState() {
     super.initState();
     _initializeControllers();
-    _initializeOptimizations();
+    _streamPutnici = _putnikService.streamAktivniPutnici();
+    _searchController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   void _initializeControllers() {
@@ -83,36 +86,6 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     _brojTelefonaController = TextEditingController();
     _brojTelefonaOcaController = TextEditingController();
     _brojTelefonaMajkeController = TextEditingController();
-  }
-
-  // ⚙️ OPTIMIZACIJA: Inicijalizacija debounced search i error handling
-  void _initializeOptimizations() {
-    // Listen za search promene - rebuild UI
-    _searchController.addListener(() {
-      if (mounted) setState(() {});
-    });
-
-    // 🔌 Connection monitoring - prati konekciju ka serveru
-    _setupConnectionMonitoring();
-  }
-
-  // 🔌 PRAVI CONNECTION MONITORING - Periodiski ping server
-  void _setupConnectionMonitoring() {
-    // Periodiski ping server da proveri konekciju (svakih 30 sekundi)
-    _connectionSubscription = Stream.periodic(const Duration(seconds: 30)).listen((_) async {
-      try {
-        // Ping: dohvati jedan red iz v2_radnici
-        await supabase.from('v2_radnici').select('id').limit(1).maybeSingle();
-        if (_isConnected == false && mounted) {
-          setState(() => _isConnected = true);
-        }
-      } catch (e) {
-        // Nema konekcije
-        if (_isConnected == true && mounted) {
-          setState(() => _isConnected = false);
-        }
-      }
-    });
   }
 
   // 🚀 BATCH UCITAVANJE
@@ -126,59 +99,61 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     }
   }
 
-  // 💰 UCITAJ STVARNA PLACANJA iz voznje_log
+  // 💰 UCITAJ STVARNA PLACANJA — batch query (1 DB upit) + dopuna iz statistikaCache
   Future<void> _ucitajStvarnaPlacanja(List<RegistrovaniPutnik> putnici) async {
     try {
-      if (putnici.isEmpty) return; // ? Early exit - nema šta učitavati
+      if (putnici.isEmpty) return;
 
-      // ?? FIX: Ucitaj STVARNE uplate iz voznje_log tabele
       final Map<String, double> placanja = {};
       final Map<String, Set<String>> placeniMeseciMap = {};
 
-      // Dohvati poslednje placanje za svakog putnika
-      for (final V2Putnik in putnici) {
-        try {
-          // Učitaj sve uplate za putnika da bi se znali placeni meseci
-          final allPayments = await supabase
-              .from('v2_statistika_istorija')
-              .select('iznos, placeni_mesec, placena_godina')
-              .eq('putnik_id', V2Putnik.id)
-              .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
-              .not('placeni_mesec', 'is', null)
-              .not('placena_godina', 'is', null);
-
-          // Popuni placene mesece
-          final placeniMeseci = <String>{};
-          for (final payment in allPayments) {
-            final mesec = payment['placeni_mesec'];
-            final godina = payment['placena_godina'];
-            if (mesec != null && godina != null) {
-              placeniMeseci.add('$mesec-$godina');
-            }
-          }
-          placeniMeseciMap[V2Putnik.id] = placeniMeseci;
-
-          // Poslednje placanje za iznos
-          final response = await supabase
-              .from('v2_statistika_istorija')
-              .select('iznos')
-              .eq('putnik_id', V2Putnik.id)
-              .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
-              .order('datum', ascending: false)
-              .limit(1)
-              .maybeSingle();
-
-          if (response != null && response['iznos'] != null) {
-            placanja[V2Putnik.id] = (response['iznos'] as num).toDouble();
-          } else {
-            // Ako nema uplate, stavi 0
-            placanja[V2Putnik.id] = 0.0;
-          }
-        } catch (e) {
-          placanja[V2Putnik.id] = 0.0;
-          placeniMeseciMap[V2Putnik.id] = {};
-        }
+      // Inicijalizuj prazne mape za sve putnike
+      for (final p in putnici) {
+        placanja[p.id] = 0.0;
+        placeniMeseciMap[p.id] = {};
       }
+
+      final putnikIds = putnici.map((p) => p.id).toList();
+
+      // 1️⃣ Iz statistikaCache (danas, 0 DB) — dopuni plaćanja tekućeg dana
+      final rm = V2MasterRealtimeManager.instance;
+      for (final row in rm.statistikaCache.values) {
+        final putnikId = row['putnik_id'] as String?;
+        if (putnikId == null || !placanja.containsKey(putnikId)) continue;
+        final tip = row['tip'] as String?;
+        if (!['uplata', 'uplata_mesecna', 'uplata_dnevna'].contains(tip)) continue;
+        final mesec = row['placeni_mesec'];
+        final godina = row['placena_godina'];
+        if (mesec != null && godina != null) {
+          placeniMeseciMap[putnikId]!.add('$mesec-$godina');
+        }
+        final iznos = (row['iznos'] as num?)?.toDouble() ?? 0.0;
+        if (iznos > placanja[putnikId]!) placanja[putnikId] = iznos;
+      }
+
+      // 2️⃣ Jedan batch DB upit za historijska plaćanja (svi putnici odjednom)
+      try {
+        final histRows = await supabase
+            .from('v2_statistika_istorija')
+            .select('putnik_id, iznos, placeni_mesec, placena_godina')
+            .inFilter('putnik_id', putnikIds)
+            .inFilter('tip', ['uplata', 'uplata_mesecna', 'uplata_dnevna'])
+            .not('placeni_mesec', 'is', null)
+            .not('placena_godina', 'is', null)
+            .order('datum', ascending: false);
+
+        for (final row in histRows) {
+          final putnikId = row['putnik_id'] as String?;
+          if (putnikId == null || !placanja.containsKey(putnikId)) continue;
+          final mesec = row['placeni_mesec'];
+          final godina = row['placena_godina'];
+          if (mesec != null && godina != null) {
+            placeniMeseciMap[putnikId]!.add('$mesec-$godina');
+          }
+          final iznos = (row['iznos'] as num?)?.toDouble() ?? 0.0;
+          if (iznos > placanja[putnikId]!) placanja[putnikId] = iznos;
+        }
+      } catch (_) {}
       if (mounted) {
         // ?? ANTI-REBUILD OPTIMIZATION: Samo update ako su se podaci stvarno promenili
         final existingKeys = _stvarnaPlacanja.keys.toSet();
@@ -222,11 +197,9 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
   @override
   void dispose() {
-    // Cleanup debounce timer
     _paymentUpdateDebounceTimer?.cancel();
-    _connectionSubscription?.cancel();
 
-    // COMPREHENSIVE TEXTCONTROLLER CLEANUP
+    // TEXTCONTROLLER CLEANUP
     try {
       _searchController.dispose();
       _imeController.dispose();
@@ -636,11 +609,10 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
             const SizedBox(height: 16),
 
-            // ?? LISTA PUTNIKA - direktan Supabase realtime stream
+            // 🔄 LISTA PUTNIKA — master realtime cache stream
             Expanded(
               child: StreamBuilder<List<RegistrovaniPutnik>>(
-                // ? REMOVED: ValueKey - ispravljeno memory leak problem sa stream lifecycle-om
-                stream: _putnikService.streamAktivniPutnici(),
+                stream: _streamPutnici,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                     return const Center(
@@ -659,27 +631,11 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
                   final sviPutnici = snapshot.data ?? [];
 
-                  // 📊 PREBROJAVANJE PUTNIKA PO TIPU
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      final radnika = sviPutnici.where((p) => p.v2Tabela == 'v2_radnici').length;
-                      final ucenika = sviPutnici.where((p) => p.v2Tabela == 'v2_ucenici').length;
-                      final dnevnih = sviPutnici.where((p) => p.v2Tabela == 'v2_dnevni').length;
-                      final posiljki = sviPutnici.where((p) => p.v2Tabela == 'v2_posiljke').length;
-
-                      if (_brojRadnika != radnika ||
-                          _brojUcenika != ucenika ||
-                          _brojDnevnih != dnevnih ||
-                          _brojPosiljki != posiljki) {
-                        setState(() {
-                          _brojRadnika = radnika;
-                          _brojUcenika = ucenika;
-                          _brojDnevnih = dnevnih;
-                          _brojPosiljki = posiljki;
-                        });
-                      }
-                    }
-                  });
+                  // 📊 INLINE PREBROJAVANJE — bez setState/PostFrameCallback
+                  _brojRadnika = sviPutnici.where((p) => p.v2Tabela == 'v2_radnici').length;
+                  _brojUcenika = sviPutnici.where((p) => p.v2Tabela == 'v2_ucenici').length;
+                  _brojDnevnih = sviPutnici.where((p) => p.v2Tabela == 'v2_dnevni').length;
+                  _brojPosiljki = sviPutnici.where((p) => p.v2Tabela == 'v2_posiljke').length;
 
                   // Filtriraj lokalno
                   final filteredPutnici = _filterPutniciDirect(

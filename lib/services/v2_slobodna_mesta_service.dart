@@ -120,7 +120,7 @@ class SlobodnaMestaService {
 
     try {
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
-      final kapacitet = await V2KapacitetService.getKapacitet();
+      final kapacitet = V2KapacitetService.getKapacitet();
 
       // Bela Crkva
       final bcKapaciteti = kapacitet['BC'] ?? {};
@@ -148,7 +148,7 @@ class SlobodnaMestaService {
 
     try {
       final putnici = await _putnikService.getPutniciByDayIso(isoDate);
-      final kapacitet = await V2KapacitetService.getKapacitet();
+      final kapacitet = V2KapacitetService.getKapacitet();
 
       // Vrsac - Koristi SVA vremena iz kapaciteta
       final vsKapaciteti = kapacitet['VS'] ?? {};

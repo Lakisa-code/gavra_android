@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/v2_vozac.dart';
-import '../services/v2_vozac_service.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 
 /// VozacCache — jedinstven in-memory cache za sve podatke o vozačima.
 ///
@@ -64,7 +64,8 @@ class VozacCache {
   }
 
   static Future<void> _load() async {
-    final vozaci = await V2VozacService().getAllVozaci();
+    final rm = V2MasterRealtimeManager.instance;
+    final vozaci = rm.vozaciCache.values.map((r) => Vozac.fromMap(r)).toList();
 
     final Map<String, Color> imeToColor = {};
     final Map<String, Color> uuidToColor = {};
@@ -205,7 +206,8 @@ class VozacCache {
     final fromCache = _imeToUuid[ime];
     if (fromCache != null) return fromCache;
     try {
-      final vozaci = await V2VozacService().getAllVozaci();
+      final rm = V2MasterRealtimeManager.instance;
+      final vozaci = rm.vozaciCache.values.map((r) => Vozac.fromMap(r)).toList();
       return vozaci.firstWhere((v) => v.ime == ime).id;
     } catch (_) {
       return null;

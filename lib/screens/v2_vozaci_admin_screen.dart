@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/v2_vozac.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_vozac_service.dart';
 import '../theme.dart';
 import '../utils/v2_app_snack_bar.dart';
@@ -39,9 +42,30 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
 
   final V2VozacService _vozacService = V2VozacService();
 
+  // 🔄 Master realtime stream — inicijalizovan jednom u initState()
+  late final Stream<List<Vozac>> _streamVozaci;
+
   @override
   void initState() {
     super.initState();
+    final rm = V2MasterRealtimeManager.instance;
+    final ctrl = StreamController<List<Vozac>>.broadcast();
+
+    void emit() {
+      if (ctrl.isClosed) return;
+      final vozaci = rm.vozaciCache.values.map((row) => Vozac.fromMap(row)).toList()
+        ..sort((a, b) => a.ime.compareTo(b.ime));
+      ctrl.add(vozaci);
+    }
+
+    Future.microtask(emit);
+    final sub = rm.subscribe('v2_vozaci').listen((_) => emit());
+    ctrl.onCancel = () {
+      sub.cancel();
+      rm.unsubscribe('v2_vozaci');
+    };
+
+    _streamVozaci = ctrl.stream;
   }
 
   @override
@@ -89,11 +113,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
   }
 
   /// Obrisi vozaca
-  Future<void> _deleteVozac(int index) async {
-    // Trebam pristup svim vozacima iz StreamBuilder-a
-    // Za sada emo koristiti prvi vozac kao test
-    // U pravoj implementaciji, trebalo bi prosle�'ivanje vozaca kao parametra
-
+  void _deleteVozac(Vozac vozac) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -114,21 +134,13 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
   }
 
   /// Edituj vozaca
-  Future<void> _editVozac(int index) async {
-    // Dohvati trenutni vozac stream podatke
-    final vozaci = await _vozacService.getAllVozaci();
-    if (index < 0 || index >= vozaci.length) return;
-
-    final vozac = vozaci[index];
-
-    // Popuni formu
+  void _editVozac(Vozac vozac) {
+    // Popuni formu iz cache podataka — bez DB upita
     _imeController.text = vozac.ime;
     _emailController.text = vozac.email ?? '';
     _sifraController.text = vozac.sifra ?? '';
     _telefonController.text = vozac.brojTelefona ?? '';
     _selectedColor = vozac.color ?? Colors.blue;
-
-    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -335,7 +347,7 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
           ),
         ),
         body: StreamBuilder<List<Vozac>>(
-          stream: _vozacService.streamAllVozaci(),
+          stream: _streamVozaci,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
@@ -445,14 +457,14 @@ class _VozaciAdminScreenState extends State<VozaciAdminScreen> {
                                       // Actions - olovka i kanta
                                       IconButton(
                                         icon: Icon(Icons.edit, color: boja, size: 20),
-                                        onPressed: () => _editVozac(index),
+                                        onPressed: () => _editVozac(vozac),
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                         visualDensity: VisualDensity.compact,
                                       ),
                                       IconButton(
                                         icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                                        onPressed: () => _deleteVozac(index),
+                                        onPressed: () => _deleteVozac(vozac),
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                         visualDensity: VisualDensity.compact,

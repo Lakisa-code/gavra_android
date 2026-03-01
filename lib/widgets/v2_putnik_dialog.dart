@@ -80,8 +80,8 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
   /// Ucitaj odobrene adrese iz baze
   Future<void> _loadAdreseFromDatabase() async {
     try {
-      final adreseBC = await V2AdresaSupabaseService.getAdreseZaGrad('BC');
-      final adreseVS = await V2AdresaSupabaseService.getAdreseZaGrad('VS');
+      final adreseBC = V2AdresaSupabaseService.getAdreseZaGrad('BC');
+      final adreseVS = V2AdresaSupabaseService.getAdreseZaGrad('VS');
 
       if (mounted) {
         setState(() {
@@ -168,16 +168,14 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       }
 
       if (idsToFetch.isNotEmpty) {
-        final fetched = await V2AdresaSupabaseService.getAdreseByUuids(idsToFetch);
+        final fetched = V2AdresaSupabaseService.getAdreseByUuids(idsToFetch);
 
         final bcNaziv = V2Putnik.adresaBcId != null
-            ? fetched[V2Putnik.adresaBcId!]?.naziv ??
-                await V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaBcId)
+            ? fetched[V2Putnik.adresaBcId!]?.naziv ?? V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaBcId)
             : null;
 
         final vsNaziv = V2Putnik.adresaVsId != null
-            ? fetched[V2Putnik.adresaVsId!]?.naziv ??
-                await V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaVsId)
+            ? fetched[V2Putnik.adresaVsId!]?.naziv ?? V2AdresaSupabaseService.getNazivAdreseByUuid(V2Putnik.adresaVsId)
             : null;
 
         if (mounted) {

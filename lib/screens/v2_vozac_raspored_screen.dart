@@ -30,7 +30,7 @@ class VozacRasporedScreen extends StatefulWidget {
 }
 
 class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
-  final _putnikService = V2PutnikStreamService();
+  // Write-only servisi (DB mutacije)
   final _rasporedService = V2VozacRasporedService();
   final _vozacPutnikService = V2VozacPutnikService();
 
@@ -40,8 +40,9 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   List<VozacRasporedEntry> _rasporedCache = [];
   List<VozacPutnikEntry> _vozacPutnikCache = [];
 
-  // 🔴 Realtime subscriptions
+  // Realtime subscriptions
   StreamSubscription<PostgresChangePayload>? _rasporedSub;
+  StreamSubscription<PostgresChangePayload>? _vozacPutnikSub;
 
   final List<String> _days = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
 
@@ -72,7 +73,10 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     final today = _getDayAbbreviation(DateTime.now());
     _selectedDay = (today == 'sub' || today == 'ned') ? 'pon' : today;
     _autoSelectNajblizeVreme();
-    _loadAll();
+    // Odmah ucitaj iz rm.cache (bez DB upita)
+    final rm = V2MasterRealtimeManager.instance;
+    _rasporedCache = rm.rasporedCache.values.map((r) => VozacRasporedEntry.fromMap(r)).toList();
+    _vozacPutnikCache = rm.vozacPutnikCache.values.map((r) => VozacPutnikEntry.fromMap(r)).toList();
     _subscribeRealtime();
   }
 
@@ -104,35 +108,28 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   @override
   void dispose() {
     _rasporedSub?.cancel();
+    _vozacPutnikSub?.cancel();
+    V2MasterRealtimeManager.instance.unsubscribe('v2_vozac_raspored');
+    V2MasterRealtimeManager.instance.unsubscribe('v2_vozac_putnik');
     super.dispose();
-  }
-
-  Future<void> _loadAll() async {
-    final results = await Future.wait([
-      _rasporedService.loadAll(),
-      _vozacPutnikService.loadAll(),
-    ]);
-    if (mounted) {
-      setState(() {
-        _rasporedCache = results[0] as List<VozacRasporedEntry>;
-        _vozacPutnikCache = results[1] as List<VozacPutnikEntry>;
-      });
-    }
   }
 
   /// 🔴 Realtime: prati vozac_raspored i vozac_putnik tabele
   void _subscribeRealtime() {
-    _rasporedSub = V2MasterRealtimeManager.instance.subscribe('v2_vozac_raspored').listen((_) {
-      // Reload iz cache-a pri svakoj promjeni
-      final entries =
-          V2MasterRealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
-      if (mounted) setState(() => _rasporedCache = entries);
+    final rm = V2MasterRealtimeManager.instance;
+    _rasporedSub = rm.subscribe('v2_vozac_raspored').listen((_) {
+      if (mounted) {
+        setState(() {
+          _rasporedCache = rm.rasporedCache.values.map((r) => VozacRasporedEntry.fromMap(r)).toList();
+        });
+      }
     });
-    V2MasterRealtimeManager.instance.subscribe('v2_vozac_putnik').listen((_) {
-      // Reload vozac_putnik cache-a pri svakoj promjeni
-      _vozacPutnikService.loadAll().then((data) {
-        if (mounted) setState(() => _vozacPutnikCache = data);
-      });
+    _vozacPutnikSub = rm.subscribe('v2_vozac_putnik').listen((_) {
+      if (mounted) {
+        setState(() {
+          _vozacPutnikCache = rm.vozacPutnikCache.values.map((r) => VozacPutnikEntry.fromMap(r)).toList();
+        });
+      }
     });
   }
 
@@ -453,7 +450,6 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                     Navigator.pop(ctx);
                     final ok = await _vozacPutnikService.delete(putnikId: putnik.id!.toString());
                     if (ok) {
-                      await _loadAll();
                       if (mounted) AppSnackBar.success(context, '🗑️ Individualna dodjela uklonjena');
                     } else {
                       if (mounted) AppSnackBar.error(context, '❌ Greška pri brisanju');
@@ -485,7 +481,6 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                             vreme: _selectedVreme,
                           );
                           if (ok) {
-                            await _loadAll();
                             if (mounted) AppSnackBar.success(context, '✅ $odabranVozac → ${putnik.ime}');
                           } else {
                             if (mounted) AppSnackBar.error(context, '❌ Greška pri dodjeli');
@@ -514,7 +509,6 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
         vreme: vreme,
         vozacId: vozacId,
       ));
-      await _loadAll();
       if (mounted) AppSnackBar.success(context, '✅ $vozacIme → $grad $vreme ($dan)');
     } catch (e) {
       if (mounted) AppSnackBar.error(context, '❌ Greška: $e');
@@ -529,7 +523,6 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     }
     try {
       await _rasporedService.deleteTermin(dan: dan, grad: grad, vreme: vreme, vozacId: vozacId);
-      await _loadAll();
       if (mounted) AppSnackBar.success(context, '🗑️ Dodjela uklonjena: $grad $vreme ($dan)');
     } catch (e) {
       if (mounted) AppSnackBar.error(context, '❌ Greška: $e');
@@ -543,7 +536,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<V2Putnik>>(
-      stream: _putnikService.streamKombinovaniPutniciFiltered(
+      stream: V2PutnikStreamService().streamKombinovaniPutniciFiltered(
         isoDate: _getIsoDateForSelectedDay(),
       ),
       builder: (context, snapshot) {
@@ -568,12 +561,13 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
           }
         }
 
-        // Filtriraj po gradu, vremenu i danu
+        // Filtriraj po gradu, vremenu, danu i statusu (bez otkazanih/bez_polaska)
         final filteredByGradVreme = allPutnici.where((p) {
           final gradMatch = _selectedGrad.isEmpty || p.grad == _selectedGrad;
           final vremeMatch = _selectedVreme.isEmpty || p.polazak == _selectedVreme;
           final danMatch = targetDay.isEmpty || p.dan == targetDay;
-          return gradMatch && vremeMatch && danMatch;
+          final statusMatch = p.status != 'otkazano' && p.status != 'bez_polaska';
+          return gradMatch && vremeMatch && danMatch && statusMatch;
         }).toList();
 
         return Scaffold(

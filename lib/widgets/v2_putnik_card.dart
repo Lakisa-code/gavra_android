@@ -1027,15 +1027,10 @@ class _PutnikCardState extends State<PutnikCard> {
                               ),
                           ],
                         ),
-                        // ?? ADRESA - prikaži adresu sa fallback ucitavanjem ako je NULL
-                        StreamBuilder<String?>(
-                          stream: Stream.fromFuture(_putnik.adresa != null &&
-                                  _putnik.adresa!.isNotEmpty &&
-                                  _putnik.adresa != 'Adresa nije definisana'
-                              ? Future.value(_putnik.adresa) // Ako vec imamo adresu, koristi je odmah
-                              : _putnik.getAdresaFallback()), // Inace ucitaj iz baze
-                          builder: (context, snapshot) {
-                            final displayAdresa = snapshot.data;
+                        // ?? ADRESA - prikaži adresu iz rm cache-a (sync)
+                        Builder(
+                          builder: (context) {
+                            final displayAdresa = _putnik.getAdresaFallback();
 
                             // ?? Prikaži adresu samo ako je dostupna i nije placeholder
                             if (displayAdresa != null &&

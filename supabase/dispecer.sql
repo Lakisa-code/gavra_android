@@ -176,12 +176,12 @@ $$ LANGUAGE plpgsql;
 --   BC - RADNIK   : 5 minuta čekanja, SA provjerom kapaciteta
 --   BC - UČENIK   : (za sutra, zahtjev poslat PRIJE 16:00) → 5 min, BEZ provjere kapaciteta (garantovano mjesto)
 --   BC - UČENIK   : (zahtjev poslat POSLE 16:00) → čeka do 20:00h, SA provjerom kapaciteta
---   BC - POŠILJKA : 5 minuta čekanja, BEZ provjere kapaciteta (ne zauzima mjesto)
+--   BC - POŠILJKA : 10 minuta čekanja, BEZ provjere kapaciteta (ne zauzima mjesto)
 --   BC - default  : 5 minuta čekanja, SA provjerom kapaciteta
 --
 --   VS - RADNIK   : 10 minuta čekanja, SA provjerom kapaciteta
 --   VS - UČENIK   : 10 minuta čekanja, SA provjerom kapaciteta
---   VS - POŠILJKA : 5 minuta čekanja, BEZ provjere kapaciteta (ne zauzima mjesto)
+--   VS - POŠILJKA : 10 minuta čekanja, BEZ provjere kapaciteta (ne zauzima mjesto)
 --   VS - default  : 10 minuta čekanja, SA provjerom kapaciteta
 --
 --   DNEVNI putnici: NIKAD ne prolaze kroz auto-obradu → uvijek status 'manual' (admin odobrava ručno)
@@ -214,9 +214,9 @@ BEGIN
               AND EXTRACT(HOUR FROM p_created_at) >= 16
         THEN
             RETURN QUERY SELECT 0, true; -- Specijalni slučaj, obrađuje se u 20h
-        -- ⛔ BC Pošiljka: 5 min, BEZ provere (ne zauzima mesto)
+        -- ⛔ BC Pošiljka: 10 min, BEZ provere (ne zauzima mesto)
         ELSIF lower(p_tip) = 'posiljka' THEN
-            RETURN QUERY SELECT 5, false;
+            RETURN QUERY SELECT 10, false;
         ELSE
             -- ⛔ BC Default: 5 min, SA proverom kapaciteta
             RETURN QUERY SELECT 5, true;
@@ -230,9 +230,9 @@ BEGIN
         -- ⛔ VS Učenik: 10 min, SA proverom kapaciteta
         ELSIF lower(p_tip) = 'ucenik' THEN
             RETURN QUERY SELECT 10, true;
-        -- ⛔ VS Pošiljka: 5 min, BEZ provere (ne zauzima mesto)
+        -- ⛔ VS Pošiljka: 10 min, BEZ provere (ne zauzima mesto)
         ELSIF lower(p_tip) = 'posiljka' THEN
-            RETURN QUERY SELECT 5, false;
+            RETURN QUERY SELECT 10, false;
         ELSE
             -- ⛔ VS Default: 10 min, SA proverom kapaciteta
             RETURN QUERY SELECT 10, true;

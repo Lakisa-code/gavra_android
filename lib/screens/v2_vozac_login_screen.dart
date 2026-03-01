@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -125,17 +124,12 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     super.dispose();
   }
 
-  /// Učitaj vozače iz Supabase-a, sa fallback na SharedPreferences
+  /// Učitaj vozače iz rm cache-a, sa fallback na SharedPreferences
   Future<List<Map<String, dynamic>>> _loadVozaci() async {
     try {
-      // 🔄 NOVO: Prvo pokušaj da učitaš iz Supabase-a sa timeout-om
+      // ✅ Čita direktno iz rm cache-a — sync, bez timeout-a
       final vozacService = V2VozacService();
-      final vozaciFromDB = await vozacService.getAllVozaci().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('Supabase query timed out');
-        },
-      );
+      final vozaciFromDB = vozacService.getAllVozaci();
 
       // Pretvori u format koji se koristi u login screen-u
       final vozaciMaps = vozaciFromDB.map((v) {

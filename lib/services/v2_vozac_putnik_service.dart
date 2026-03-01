@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../utils/v2_grad_adresa_validator.dart';
 import '../utils/v2_vozac_cache.dart';
+import 'realtime/v2_master_realtime_manager.dart';
 import 'v2_vozac_raspored_service.dart';
 
 /// Model za jedan red iz vozac_putnik tabele.
@@ -63,16 +64,11 @@ class V2VozacPutnikService {
   V2VozacPutnikService._internal();
 
   SupabaseClient get _supabase => supabase;
+  V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
-  /// Učitaj sve individualne dodjele
-  Future<List<VozacPutnikEntry>> loadAll() async {
-    try {
-      final response = await _supabase.from('v2_vozac_putnik').select();
-      return (response as List).map((row) => VozacPutnikEntry.fromMap(row as Map<String, dynamic>)).toList();
-      // ignore: avoid_catches_without_on_clauses
-    } catch (e) {
-      return [];
-    }
+  /// Učitaj sve individualne dodjele iz rm cache-a (sync)
+  List<VozacPutnikEntry> loadAll() {
+    return _rm.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
   }
 
   /// Postavi (ili zamijeni) individualnu dodjelu za putnika.

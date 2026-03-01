@@ -131,6 +131,10 @@ class V2MasterRealtimeManager {
     ]);
 
     _initialized = true;
+
+    // Odmah otvori WebSocket kanale za sve tabele — rm je jedini koji sluša Supabase
+    _subscribeAll();
+
     debugPrint(
       '✅ [V2MasterRealtimeManager] Inicijalizovano: '
       'polasci=${polasciCache.length}, '
@@ -142,6 +146,15 @@ class V2MasterRealtimeManager {
       'vozaci=${vozaciCache.length}, '
       'adrese=${adreseCache.length}',
     );
+  }
+
+  /// Otvori WebSocket kanal za sve poznate tabele odmah pri startu.
+  /// Od ovog trenutka rm prima sve promjene — niko drugi ne treba vlastiti kanal.
+  void _subscribeAll() {
+    for (final table in _tableToCache.keys) {
+      subscribe(table);
+    }
+    debugPrint('📡 [V2MasterRealtimeManager] Otvoreni kanali za ${_tableToCache.length} tabela');
   }
 
   /// Poziva se iz AppLifecycleObserver kad datum nije isti
@@ -232,7 +245,7 @@ class V2MasterRealtimeManager {
             .from('v2_dnevni')
             .select(
               'id, ime, status, telefon, telefon_2, adresa_bc_id, adresa_vs_id, '
-              'cena, broj_mesta, treba_racun, created_at, updated_at',
+              'pin, cena, broj_mesta, treba_racun, created_at, updated_at',
             )
             .eq('status', 'aktivan'),
         _db
@@ -276,16 +289,16 @@ class V2MasterRealtimeManager {
         _db.from('v2_vozila').select('id, registarski_broj, marka, model, godina_proizvodnje, kilometraza, napomena'),
         _db.from('v2_kapacitet_polazaka').select('id, grad, vreme, max_mesta, aktivan').eq('aktivan', true),
         _db.from('v2_adrese').select('id, naziv, grad, gps_lat, gps_lng'),
-        _db.from('v2_vozac_raspored').select(),
-        _db.from('v2_vozac_putnik').select(),
+        _db.from('v2_vozac_raspored').select('id, dan, grad, vreme, vozac_id'),
+        _db.from('v2_vozac_putnik').select('id, putnik_id, vozac_id, dan, grad, vreme'),
         _db
             .from('v2_finansije_troskovi')
             .select('id, naziv, iznos, tip, aktivan, vozac_id, created_at')
             .eq('aktivan', true),
-        _db.from('v2_pumpa_config').select(),
-        _db.from('v2_vozac_lokacije').select().eq('aktivan', true),
-        _db.from('v2_pin_zahtevi').select(),
-        _db.from('v2_app_settings').select(),
+        _db.from('v2_pumpa_config').select('id, kapacitet_litri, alarm_nivo, pocetno_stanje, updated_at'),
+        _db.from('v2_vozac_lokacije').select('id, vozac_id, lat, lng, aktivan, updated_at').eq('aktivan', true),
+        _db.from('v2_pin_zahtevi').select('id, putnik_id, pin, status, created_at, updated_at'),
+        _db.from('v2_app_settings').select('id, kljuc, vrednost, updated_at'),
       ]);
 
       _fillCache(vozaciCache, results[0]);
@@ -321,13 +334,10 @@ class V2MasterRealtimeManager {
     final id = record['id']?.toString();
     if (id == null) return;
     final target = _cacheForTable(table);
-    if (target != null) {
-      // Sačuvaj postojeći _tabela tag ili dodaj novi — realtime payload ne sadrži _tabela
-      final existing = target[id];
-      final tagged = Map<String, dynamic>.from(record);
-      tagged['_tabela'] = existing?['_tabela'] ?? table;
-      target[id] = tagged;
-    }
+    if (target == null) return;
+    // Sačuvaj postojeći _tabela tag — realtime payload ne sadrži _tabela
+    final existingTabela = target[id]?['_tabela'] ?? table;
+    target[id] = {...record, '_tabela': existingTabela};
   }
 
   /// Uklanja red iz cache-a na DELETE event
@@ -335,47 +345,32 @@ class V2MasterRealtimeManager {
     _cacheForTable(table)?.remove(id);
   }
 
-  /// Vraća odgovarajući cache map po imenu tabele
+  /// O(1) lookup: ime tabele → odgovarajući cache map
+  late final Map<String, Map<String, Map<String, dynamic>>> _tableToCache = {
+    'v2_polasci': polasciCache,
+    'v2_statistika_istorija': statistikaCache,
+    'v2_radnici': radniciCache,
+    'v2_ucenici': uceniciCache,
+    'v2_dnevni': dnevniCache,
+    'v2_posiljke': posiljkeCache,
+    'v2_vozaci': vozaciCache,
+    'v2_vozila': vozilaCache,
+    'v2_kapacitet_polazaka': kapacitetCache,
+    'v2_adrese': adreseCache,
+    'v2_vozac_raspored': rasporedCache,
+    'v2_vozac_putnik': vozacPutnikCache,
+    'v2_vozac_lokacije': lokacijeCache,
+    'v2_finansije_troskovi': troskoviCache,
+    'v2_pumpa_config': pumpaCache,
+    'v2_pin_zahtevi': pinCache,
+    'v2_app_settings': settingsCache,
+  };
+
+  /// Vraća odgovarajući cache map po imenu tabele — O(1)
   Map<String, Map<String, dynamic>>? _cacheForTable(String table) {
-    switch (table) {
-      case 'v2_polasci':
-        return polasciCache;
-      case 'v2_statistika_istorija':
-        return statistikaCache;
-      case 'v2_radnici':
-        return radniciCache;
-      case 'v2_ucenici':
-        return uceniciCache;
-      case 'v2_dnevni':
-        return dnevniCache;
-      case 'v2_posiljke':
-        return posiljkeCache;
-      case 'v2_vozaci':
-        return vozaciCache;
-      case 'v2_vozila':
-        return vozilaCache;
-      case 'v2_kapacitet_polazaka':
-        return kapacitetCache;
-      case 'v2_adrese':
-        return adreseCache;
-      case 'v2_vozac_raspored':
-        return rasporedCache;
-      case 'v2_vozac_putnik':
-        return vozacPutnikCache;
-      case 'v2_vozac_lokacije':
-        return lokacijeCache;
-      case 'v2_finansije_troskovi':
-        return troskoviCache;
-      case 'v2_pumpa_config':
-        return pumpaCache;
-      case 'v2_pin_zahtevi':
-        return pinCache;
-      case 'v2_app_settings':
-        return settingsCache;
-      default:
-        debugPrint('⚠️ [V2MasterRealtimeManager] Nepoznata tabela za cache: $table');
-        return null;
-    }
+    final cache = _tableToCache[table];
+    if (cache == null) debugPrint('⚠️ [V2MasterRealtimeManager] Nepoznata tabela za cache: $table');
+    return cache;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -513,7 +508,6 @@ class V2MasterRealtimeManager {
     _reconnectTimers[table] = Timer(Duration(seconds: delay), () async {
       _reconnectTimers[table] = null;
       if ((_listenerCount[table] ?? 0) <= 0) return;
-      if (_channels.containsKey(table)) return;
 
       final existing = _channels[table];
       if (existing != null) {
@@ -523,15 +517,10 @@ class V2MasterRealtimeManager {
         _channels.remove(table);
       }
 
-      // Sačekaj da SDK očisti kanal
-      int retries = 0;
-      final initialCount = _db.getChannels().length;
-      while (retries < 20) {
-        if (_db.getChannels().length < initialCount) break;
-        await Future.delayed(const Duration(milliseconds: 50));
-        retries++;
-      }
+      // Kratka pauza da SDK završi čišćenje kanala
+      await Future.delayed(const Duration(milliseconds: 200));
 
+      if ((_listenerCount[table] ?? 0) <= 0) return; // provjeri ponovo nakon pauze
       _createChannel(table);
     });
   }
@@ -596,9 +585,14 @@ class V2MasterRealtimeManager {
     }
   }
 
-  /// Dodaje '_tabela' tag u red (korisno za putnici cache)
+  /// Dodaje '_tabela' tag i 'broj_telefona' alias u red putnika.
+  /// v2_* tabele čuvaju broj u koloni 'telefon', ali enrichment očekuje 'broj_telefona'.
   static Map<String, dynamic> _tagRow(Map<String, dynamic> row, String tabela) {
-    return {...row, '_tabela': tabela};
+    return {
+      ...row,
+      '_tabela': tabela,
+      'broj_telefona': row['telefon'], // alias za enrichment
+    };
   }
 
   // ──────────────────────────────────────────────────────────────────────────

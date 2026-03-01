@@ -74,7 +74,7 @@ class RealtimeNotificationService {
       // Dinamičko učitavanje admin vozača po imenu, filter po vozac_id (UUID)
       const adminNames = ['Bojan'];
       final vozacService = V2VozacService();
-      final allVozaci = await vozacService.getAllVozaci();
+      final allVozaci = vozacService.getAllVozaci();
       final adminVozacIds = allVozaci.where((v) => adminNames.contains(v.ime)).map((v) => v.id).toList();
 
       if (adminVozacIds.isEmpty) return;

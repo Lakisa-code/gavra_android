@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -20,17 +19,11 @@ class V2VozacService {
 
   SupabaseClient get _supabase => supabase;
 
-  static StreamSubscription? _vozaciSubscription;
-  static final StreamController<List<Vozac>> _vozaciController = StreamController<List<Vozac>>.broadcast();
+  V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
-  /// Dohvata sve vozače
-  Future<List<Vozac>> getAllVozaci() async {
-    final response = await _supabase.from('v2_vozaci').select('id, ime, email, telefon, sifra, boja').order('ime');
-    final vozaci = response.map((json) => Vozac.fromMap(json)).toList();
-    if (kDebugMode && vozaci.isNotEmpty) {
-      debugPrint('✅ [VozacService] Učitano ${vozaci.length} vozača iz Supabase');
-    }
-    return vozaci;
+  /// Dohvata sve vozače iz rm cache-a (sync)
+  List<Vozac> getAllVozaci() {
+    return _rm.vozaciCache.values.map((json) => Vozac.fromMap(json)).toList()..sort((a, b) => a.ime.compareTo(b.ime));
   }
 
   /// Dodaje novog vozača
@@ -46,66 +39,19 @@ class V2VozacService {
   }
 
   /// 🛰️ REALTIME STREAM: Dohvata sve vozače u realnom vremenu
+  /// Emituje direktno iz rm cache-a, bez DB fetcha na svaki event.
   Stream<List<Vozac>> streamAllVozaci() {
-    if (_vozaciSubscription == null) {
-      // Emituj praznu listu odmah ako Supabase nije spreman
-      if (!isSupabaseReady) {
-        if (!_vozaciController.isClosed) {
-          _vozaciController.add([]);
-        }
-        // Periodično proveravaj da li je Supabase postao spreman
-        _waitForSupabaseAndSubscribe();
-      } else {
-        _vozaciSubscription = V2MasterRealtimeManager.instance.subscribe('v2_vozaci').listen((payload) {
-          _refreshVozaciStream();
-        });
-        // Inicijalno učitavanje
-        _refreshVozaciStream();
-      }
-    }
-    return _vozaciController.stream;
-  }
-
-  /// Čeka da Supabase postane spreman, pa se pretplati
-  void _waitForSupabaseAndSubscribe() {
-    const checkInterval = Duration(milliseconds: 500);
-    const maxAttempts = 20; // 10 sekundi maksimum
-    int attempts = 0;
-
-    Timer.periodic(checkInterval, (timer) {
-      attempts++;
-      if (isSupabaseReady || attempts >= maxAttempts) {
-        timer.cancel();
-        if (isSupabaseReady && _vozaciSubscription == null) {
-          _vozaciSubscription = V2MasterRealtimeManager.instance.subscribe('v2_vozaci').listen((payload) {
-            _refreshVozaciStream();
-          });
-          // Inicijalno učitavanje
-          _refreshVozaciStream();
-        }
-      }
+    final controller = StreamController<List<Vozac>>.broadcast();
+    // Inicijalno emitovanje
+    controller.add(getAllVozaci());
+    // Svaki rm event → emit iz cache
+    final sub = _rm.subscribe('v2_vozaci').listen((_) {
+      if (!controller.isClosed) controller.add(getAllVozaci());
     });
-  }
-
-  void _refreshVozaciStream() async {
-    try {
-      final vozaci = await getAllVozaci();
-      if (!_vozaciController.isClosed) {
-        _vozaciController.add(vozaci);
-      }
-    } catch (e) {
-      debugPrint('❌ [VozacService] Greška pri osvežavanju stream-a: $e');
-      // Emituj praznu listu u slučaju greške da se ne zaglavi loading
-      if (!_vozaciController.isClosed) {
-        _vozaciController.add([]);
-      }
-    }
-  }
-
-  /// 🧹 Čisti realtime subscription
-  static void dispose() {
-    _vozaciSubscription?.cancel();
-    _vozaciSubscription = null;
-    _vozaciController.close();
+    controller.onCancel = () {
+      sub.cancel();
+      controller.close();
+    };
+    return controller.stream;
   }
 }

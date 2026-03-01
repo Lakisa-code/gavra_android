@@ -10,43 +10,26 @@ import 'realtime/v2_master_realtime_manager.dart';
 class V2VozilaService {
   static SupabaseClient get _supabase => supabase;
 
-  static StreamSubscription? _vozilaSubscription;
-  static final StreamController<List<Vozilo>> _vozilaController = StreamController<List<Vozilo>>.broadcast();
+  static V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
-  /// Dohvati sva vozila
-  static Future<List<Vozilo>> getVozila() async {
-    try {
-      final response = await _supabase.from('v2_vozila').select().order('registarski_broj');
-      return (response as List).map((row) => Vozilo.fromJson(row)).toList();
-    } catch (e) {
-      return [];
-    }
+  /// Dohvati sva vozila iz rm cache-a (sync)
+  static List<Vozilo> getVozila() {
+    return _rm.vozilaCache.values.map((row) => Vozilo.fromJson(row)).toList()
+      ..sort((a, b) => a.registarskiBroj.compareTo(b.registarskiBroj));
   }
 
-  /// Stream vozila sa realtime osvežavanjem
+  /// Stream vozila sa realtime osvežavanjem — emituje direktno iz cache-a
   static Stream<List<Vozilo>> streamVozila() {
-    if (_vozilaSubscription == null) {
-      _vozilaSubscription = V2MasterRealtimeManager.instance.subscribe('v2_vozila').listen((payload) {
-        _refreshVozilaStream();
-      });
-      // Inicijalno učitavanje
-      _refreshVozilaStream();
-    }
-    return _vozilaController.stream;
-  }
-
-  static void _refreshVozilaStream() async {
-    final vozila = await getVozila();
-    if (!_vozilaController.isClosed) {
-      _vozilaController.add(vozila);
-    }
-  }
-
-  /// 🧹 Čisti realtime subscription
-  static void dispose() {
-    _vozilaSubscription?.cancel();
-    _vozilaSubscription = null;
-    _vozilaController.close();
+    final controller = StreamController<List<Vozilo>>.broadcast();
+    controller.add(getVozila());
+    final sub = _rm.subscribe('v2_vozila').listen((_) {
+      if (!controller.isClosed) controller.add(getVozila());
+    });
+    controller.onCancel = () {
+      sub.cancel();
+      controller.close();
+    };
+    return controller.stream;
   }
 
   /// Ažuriraj kolsku knjigu vozila

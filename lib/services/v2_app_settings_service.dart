@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -13,28 +12,26 @@ import '../services/v2_statistika_istorija_service.dart';
 class V2AppSettingsService {
   V2AppSettingsService._();
 
-  static StreamSubscription? _subscription;
-
-  /// Inicijalizuje listener na v2_app_settings tabelu
+  /// Inicijalizuje podešavanja — čita iz rm.settingsCache (rm već sluša tabelu).
   static Future<void> initialize() async {
-    // Učitaj početne vrednosti
     await _loadSettings();
-
-    // Slušaj promene u realtime
-    _subscription = V2MasterRealtimeManager.instance.subscribe('v2_app_settings').listen((payload) {
-      // Na svaku promenu, ponovo učitaj podešavanja
-      _loadSettings();
-    });
   }
 
-  /// Učitaj sva podešavanja iz baze
+  /// Učitaj sva podešavanja iz rm.settingsCache (nema DB upita)
   static Future<void> _loadSettings() async {
     try {
-      final response = await supabase
-          .from('v2_app_settings')
-          .select('nav_bar_type, min_version, latest_version, store_url_android, store_url_huawei, store_url_ios')
-          .eq('id', 'global')
-          .single();
+      final rm = V2MasterRealtimeManager.instance;
+      // settingsCache: Map<String, Map<String, dynamic>> — ključ je id reda
+      final rows = rm.settingsCache.values;
+      // Tražimo red sa id == 'global'
+      Map<String, dynamic>? response;
+      for (final row in rows) {
+        if (row['id'] == 'global') {
+          response = row;
+          break;
+        }
+      }
+      if (response == null) return;
 
       final navBarType = response['nav_bar_type'] as String? ?? 'letnji';
       navBarTypeNotifier.value = navBarType;
@@ -133,11 +130,5 @@ class V2AppSettingsService {
       await V2StatistikaIstorijaService.logGeneric(
           tip: 'admin_akcija', detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
     } catch (_) {}
-  }
-
-  static void dispose() {
-    _subscription?.cancel();
-    V2MasterRealtimeManager.instance.unsubscribe('v2_app_settings');
-    _subscription = null;
   }
 }

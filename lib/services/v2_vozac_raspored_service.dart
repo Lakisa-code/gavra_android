@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import 'realtime/v2_master_realtime_manager.dart';
 
 /// Model za jedan red iz vozac_raspored tabele.
 ///
@@ -45,21 +46,16 @@ class V2VozacRasporedService {
   V2VozacRasporedService._internal();
 
   SupabaseClient get _supabase => supabase;
+  V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
-  /// Učitaj sve unose iz tabele
-  Future<List<VozacRasporedEntry>> loadAll() async {
-    try {
-      final response = await _supabase.from('v2_vozac_raspored').select();
-      return (response as List).map((row) => VozacRasporedEntry.fromMap(row as Map<String, dynamic>)).toList();
-      // ignore: avoid_catches_without_on_clauses
-    } catch (e) {
-      return [];
-    }
+  /// Učitaj sve unose iz rm cache-a (sync)
+  List<VozacRasporedEntry> loadAll() {
+    return _rm.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
   }
 
-  /// Dodaj ili zameni unos (upsert po dan+grad+vreme+vozac_id)
+  /// Dodaj ili zameni unos (upsert po dan+grad+vreme)
   Future<void> upsert(VozacRasporedEntry entry) async {
-    await _supabase.from('v2_vozac_raspored').upsert(entry.toMap(), onConflict: 'dan,grad,vreme,vozac_id');
+    await _supabase.from('v2_vozac_raspored').upsert(entry.toMap(), onConflict: 'dan,grad,vreme');
   }
 
   /// Obriši unos za termin (dan+grad+vreme+vozac_id)

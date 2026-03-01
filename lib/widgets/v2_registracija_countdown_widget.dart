@@ -26,7 +26,7 @@ class _RegistracijaData {
 
   static Future<void> load() async {
     try {
-      final vozila = await V2VozilaService.getVozila();
+      final vozila = V2VozilaService.getVozila();
 
       Vozilo? najblize;
       int? minDana;

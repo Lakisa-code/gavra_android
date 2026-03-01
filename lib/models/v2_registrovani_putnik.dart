@@ -158,19 +158,19 @@ class RegistrovaniPutnik {
   @override
   String toString() => 'RegistrovaniPutnik(id: $id, ime: $ime, v2Tabela: $v2Tabela, status: $status)';
 
-  Future<String?> getAdresaBelaCrkvaNaziv() async {
+  String? getAdresaBelaCrkvaNaziv() {
     if (adresaBcId == null) return null;
-    return await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaBcId);
+    return V2AdresaSupabaseService.getNazivAdreseByUuid(adresaBcId);
   }
 
-  Future<String?> getAdresaVrsacNaziv() async {
+  String? getAdresaVrsacNaziv() {
     if (adresaVsId == null) return null;
-    return await V2AdresaSupabaseService.getNazivAdreseByUuid(adresaVsId);
+    return V2AdresaSupabaseService.getNazivAdreseByUuid(adresaVsId);
   }
 
-  Future<String> getAdresaZaSelektovaniGrad(String? selektovaniGrad) async {
-    final bcNaziv = await getAdresaBelaCrkvaNaziv();
-    final vsNaziv = await getAdresaVrsacNaziv();
+  String getAdresaZaSelektovaniGrad(String? selektovaniGrad) {
+    final bcNaziv = getAdresaBelaCrkvaNaziv();
+    final vsNaziv = getAdresaVrsacNaziv();
     if (selektovaniGrad?.toLowerCase().contains('bela') == true) {
       if (bcNaziv != null) return bcNaziv;
       if (vsNaziv != null) return vsNaziv;

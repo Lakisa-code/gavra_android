@@ -44,26 +44,6 @@ class V2PutnikService {
     return null;
   }
 
-  /// Dohvata sve putnike iz date tabele (svi statusi)
-  Future<List<Map<String, dynamic>>> getAktivniIzTabele(String tabela) async {
-    final rows = await _supabase
-        .from(tabela)
-        .select('*, adresa_bc:adresa_bc_id(naziv, gps_lat, gps_lng), adresa_vs:adresa_vs_id(naziv, gps_lat, gps_lng)')
-        .order('ime');
-    return rows.map((r) => {...r, '_tabela': tabela}).toList();
-  }
-
-  /// Dohvata sve aktivne putnike iz svih 4 tabela
-  Future<List<Map<String, dynamic>>> getSviAktivni() async {
-    final results = <Map<String, dynamic>>[];
-    for (final tabela in _putnikTabele) {
-      final rows = await getAktivniIzTabele(tabela);
-      results.addAll(rows);
-    }
-    results.sort((a, b) => (a['ime'] as String? ?? '').compareTo(b['ime'] as String? ?? ''));
-    return results;
-  }
-
   /// Vraca sve putnike iz cache-a (bez network poziva)
   List<Map<String, dynamic>> getSviIzCachea() {
     return V2MasterRealtimeManager.instance.getAllPutnici();
@@ -328,17 +308,39 @@ class V2PutnikService {
   // Vraca RegistrovaniPutnik objekat iz v2_ podataka
   // ---------------------------------------------
 
-  /// Dohvata sve aktivne putnike kao RegistrovaniPutnik listu
-  /// (za screene koji još koriste stari model)
-  Future<List<RegistrovaniPutnik>> getAllAktivniKaoModel() async {
-    final svi = await getSviAktivni();
-    return svi.map((row) => RegistrovaniPutnik.fromMap(row)).toList();
+  /// Dohvata sve aktivne putnike kao RegistrovaniPutnik modele — iz rm cache-a (0 DB upita).
+  List<RegistrovaniPutnik> getAllAktivniKaoModel() {
+    return V2MasterRealtimeManager.instance.getAllPutnici().map((row) => RegistrovaniPutnik.fromMap(row)).toList()
+      ..sort((a, b) => a.ime.toLowerCase().compareTo(b.ime.toLowerCase()));
   }
 
-  /// Stream aktivnih putnika kao RegistrovaniPutnik
-  Stream<List<RegistrovaniPutnik>> streamAktivniPutnici() async* {
-    final loaded = await getAllAktivniKaoModel();
-    yield loaded;
+  /// Stream aktivnih putnika direktno iz master cache-a (0 DB upita).
+  /// Re-emituje na svaku promjenu u bilo kojoj od 4 putničke tabele.
+  Stream<List<RegistrovaniPutnik>> streamAktivniPutnici() {
+    final rm = V2MasterRealtimeManager.instance;
+    final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
+
+    void emit() {
+      if (controller.isClosed) return;
+      final putnici = rm.getAllPutnici().map((row) => RegistrovaniPutnik.fromMap(row)).toList()
+        ..sort((a, b) => a.ime.toLowerCase().compareTo(b.ime.toLowerCase()));
+      controller.add(putnici);
+    }
+
+    Future.microtask(emit);
+
+    final subs = _putnikTabele.map((t) => rm.subscribe(t).listen((_) => emit())).toList();
+
+    controller.onCancel = () {
+      for (final s in subs) {
+        s.cancel();
+      }
+      for (final t in _putnikTabele) {
+        rm.unsubscribe(t);
+      }
+    };
+
+    return controller.stream;
   }
 
   // ---------------------------------------------

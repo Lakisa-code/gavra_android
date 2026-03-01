@@ -5,83 +5,66 @@ import '../models/v2_adresa.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 import 'v2_geocoding_service.dart';
 
-/// Servis za rad sa normalizovanim adresama iz Supabase tabele
-/// 🎯 KORISTI UUID REFERENCE umesto TEXT polja
+/// Servis za rad sa normalizovanim adresama iz Supabase tabele.
+/// Read metode čitaju iz rm.adreseCache — nema DB upita.
 class V2AdresaSupabaseService {
-  static StreamSubscription? _adreseSubscription;
-  static final StreamController<List<Adresa>> _adreseController = StreamController<List<Adresa>>.broadcast();
-  static List<Adresa> _cachedAdrese = []; // 🚀 Cache za brže učitavanje
-
-  /// Dobija adresu po UUID-u
-  static Future<Adresa?> getAdresaByUuid(String uuid) async {
-    try {
-      final response =
-          await supabase.from('v2_adrese').select('id, naziv, grad, gps_lat, gps_lng').eq('id', uuid).single();
-
-      final adresa = Adresa.fromMap(response);
-      return adresa;
-    } catch (e) {
-      return null;
-    }
+  /// Dobija adresu po UUID-u — iz rm.adreseCache
+  static Adresa? getAdresaByUuid(String uuid) {
+    final row = V2MasterRealtimeManager.instance.adreseCache[uuid];
+    if (row == null) return null;
+    return Adresa.fromMap(row);
   }
 
-  /// Dobija naziv adrese po UUID-u (optimizovano za UI)
-  static Future<String?> getNazivAdreseByUuid(String? uuid) async {
+  /// Dobija naziv adrese po UUID-u
+  static String? getNazivAdreseByUuid(String? uuid) {
     if (uuid == null || uuid.isEmpty) return null;
-
-    final adresa = await getAdresaByUuid(uuid);
-    return adresa?.naziv;
+    return V2MasterRealtimeManager.instance.adreseCache[uuid]?['naziv'] as String?;
   }
 
-  /// Dobija sve adrese za određeni grad
-  static Future<List<Adresa>> getAdreseZaGrad(String grad) async {
-    try {
-      final response =
-          await supabase.from('v2_adrese').select('id, naziv, grad, gps_lat, gps_lng').eq('grad', grad).order('naziv');
-
-      return response.map((json) => Adresa.fromMap(json)).toList();
-    } catch (e) {
-      return [];
-    }
+  /// Dobija sve adrese za određeni grad — iz rm.adreseCache
+  static List<Adresa> getAdreseZaGrad(String grad) {
+    final rm = V2MasterRealtimeManager.instance;
+    return rm.adreseCache.values.where((r) => r['grad'] == grad).map((r) => Adresa.fromMap(r)).toList()
+      ..sort((a, b) => a.naziv.compareTo(b.naziv));
   }
 
-  /// Dobija sve adrese
-  static Future<List<Adresa>> getSveAdrese() async {
-    try {
-      final response =
-          await supabase.from('v2_adrese').select('id, naziv, grad, gps_lat, gps_lng').order('grad').order('naziv');
-      return response.map((json) => Adresa.fromMap(json)).toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  /// 🛰️ REALTIME STREAM: Prati promene u tabeli 'v2_adrese'
-  static Stream<List<Adresa>> streamSveAdrese() {
-    if (_adreseSubscription == null) {
-      // Učitaj prvi put (ako nema cache)
-      if (_cachedAdrese.isEmpty) {
-        _refreshAdreseStream();
-      } else {
-        // Emituj iz cache-a odmah
-        if (!_adreseController.isClosed) {
-          _adreseController.add(_cachedAdrese);
-        }
-      }
-
-      _adreseSubscription = V2MasterRealtimeManager.instance.subscribe('v2_adrese').listen((payload) {
-        _refreshAdreseStream(); // Ažuriraj samo na promenu
+  /// Dobija sve adrese — iz rm.adreseCache
+  static List<Adresa> getSveAdrese() {
+    final rm = V2MasterRealtimeManager.instance;
+    return rm.adreseCache.values.map((r) => Adresa.fromMap(r)).toList()
+      ..sort((a, b) {
+        final g = (a.grad ?? '').compareTo(b.grad ?? '');
+        return g != 0 ? g : a.naziv.compareTo(b.naziv);
       });
-    }
-    return _adreseController.stream;
   }
 
-  static void _refreshAdreseStream() async {
-    final adrese = await getSveAdrese();
-    _cachedAdrese = adrese; // 💾 Čuva se u memoriji
-    if (!_adreseController.isClosed) {
-      _adreseController.add(adrese);
+  /// Stream svih adresa — emituje iz rm.adreseCache, nema DB upita
+  static Stream<List<Adresa>> streamSveAdrese() {
+    final controller = StreamController<List<Adresa>>.broadcast();
+    final rm = V2MasterRealtimeManager.instance;
+
+    void emit() {
+      if (!controller.isClosed) controller.add(getSveAdrese());
     }
+
+    emit();
+    final sub = rm.subscribe('v2_adrese').listen((_) => emit());
+    controller.onCancel = () {
+      sub.cancel();
+      rm.unsubscribe('v2_adrese');
+    };
+    return controller.stream;
+  }
+
+  /// Batch učitavanje adresa po UUID-ovima — iz rm.adreseCache
+  static Map<String, Adresa> getAdreseByUuids(List<String> uuids) {
+    final rm = V2MasterRealtimeManager.instance;
+    final result = <String, Adresa>{};
+    for (final uuid in uuids) {
+      final row = rm.adreseCache[uuid];
+      if (row != null) result[uuid] = Adresa.fromMap(row);
+    }
+    return result;
   }
 
   /// Pronađi adresu po nazivu i gradu
@@ -172,20 +155,6 @@ class V2AdresaSupabaseService {
     return null;
   }
 
-  /// Batch učitavanje adresa
-  static Future<Map<String, Adresa>> getAdreseByUuids(List<String> uuids) async {
-    final Map<String, Adresa> result = {};
-
-    for (final uuid in uuids) {
-      final adresa = await getAdresaByUuid(uuid);
-      if (adresa != null) {
-        result[uuid] = adresa;
-      }
-    }
-
-    return result;
-  }
-
   /// 🎯 NOVO: Ažuriraj koordinate za postojeću adresu
   /// Koristi se kada Nominatim pronađe koordinate za adresu koja ih nema u bazi
   static Future<bool> updateKoordinate(
@@ -203,12 +172,5 @@ class V2AdresaSupabaseService {
     } catch (e) {
       return false;
     }
-  }
-
-  /// 🧹 Čisti realtime subscription
-  static void dispose() {
-    _adreseSubscription?.cancel();
-    _adreseSubscription = null;
-    _adreseController.close();
   }
 }

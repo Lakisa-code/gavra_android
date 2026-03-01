@@ -17,47 +17,28 @@ class V2DnevniService {
   // ---------------------------------------------------------------------------
 
   /// Dohvata sve aktivne dnevne putnike
-  static Future<List<RegistrovaniPutnik>> getAktivne() async {
-    try {
-      final rows = await _supabase.from('v2_dnevni').select().eq('status', 'aktivan').order('ime');
-      return rows.map((r) => _fromRow(r)).toList();
-    } catch (e) {
-      debugPrint('❌ [V2DnevniService] getAktivne error: $e');
-      return [];
-    }
+  static List<RegistrovaniPutnik> getAktivne() {
+    final rm = V2MasterRealtimeManager.instance;
+    return rm.dnevniCache.values.where((r) => r['status'] == 'aktivan').map((r) => _fromRow(r)).toList()
+      ..sort((a, b) => a.ime.compareTo(b.ime));
   }
 
   /// Dohvata sve dnevne putnike (uključujući neaktivne)
-  static Future<List<RegistrovaniPutnik>> getSve() async {
-    try {
-      final rows = await _supabase.from('v2_dnevni').select().order('ime');
-      return rows.map((r) => _fromRow(r)).toList();
-    } catch (e) {
-      debugPrint('❌ [V2DnevniService] getSve error: $e');
-      return [];
-    }
+  static List<RegistrovaniPutnik> getSve() {
+    final rm = V2MasterRealtimeManager.instance;
+    return rm.dnevniCache.values.map((r) => _fromRow(r)).toList()..sort((a, b) => a.ime.compareTo(b.ime));
   }
 
   /// Dohvata dnevnog putnika po ID-u
-  static Future<RegistrovaniPutnik?> getById(String id) async {
-    try {
-      final row = await _supabase.from('v2_dnevni').select().eq('id', id).maybeSingle();
-      if (row == null) return null;
-      return _fromRow(row);
-    } catch (e) {
-      debugPrint('❌ [V2DnevniService] getById error: $e');
-      return null;
-    }
+  static RegistrovaniPutnik? getById(String id) {
+    final row = V2MasterRealtimeManager.instance.dnevniCache[id];
+    if (row == null) return null;
+    return _fromRow(row);
   }
 
   /// Dohvata ime dnevnog putnika po ID-u
-  static Future<String?> getImeById(String id) async {
-    try {
-      final row = await _supabase.from('v2_dnevni').select('ime').eq('id', id).maybeSingle();
-      return row?['ime'] as String?;
-    } catch (e) {
-      return null;
-    }
+  static String? getImeById(String id) {
+    return V2MasterRealtimeManager.instance.dnevniCache[id]?['ime'] as String?;
   }
 
   // ---------------------------------------------------------------------------
@@ -130,26 +111,25 @@ class V2DnevniService {
   // 🔴 REALTIME STREAM
   // ---------------------------------------------------------------------------
 
-  /// Stream aktivnih dnevnih putnika (realtime)
+  /// Stream aktivnih dnevnih putnika (realtime) — čita iz rm.dnevniCache, nema DB upita
   static Stream<List<RegistrovaniPutnik>> streamAktivne() {
-    late final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
+    final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
+    final rm = V2MasterRealtimeManager.instance;
 
-    Future<void> fetch() async {
-      try {
-        final rows = await _supabase.from('v2_dnevni').select().eq('status', 'aktivan').order('ime');
-        if (!controller.isClosed) {
-          controller.add(rows.map((r) => _fromRow(r)).toList());
-        }
-      } catch (e) {
-        debugPrint('❌ [V2DnevniService] streamAktivne fetch error: $e');
+    void emit() {
+      if (!controller.isClosed) {
+        controller.add(
+          rm.dnevniCache.values.where((r) => r['status'] == 'aktivan').map((r) => _fromRow(r)).toList()
+            ..sort((a, b) => a.ime.compareTo(b.ime)),
+        );
       }
     }
 
-    fetch();
-    final sub = V2MasterRealtimeManager.instance.subscribe('v2_dnevni').listen((_) => fetch());
+    emit();
+    final sub = rm.subscribe('v2_dnevni').listen((_) => emit());
     controller.onCancel = () {
       sub.cancel();
-      V2MasterRealtimeManager.instance.unsubscribe('v2_dnevni');
+      rm.unsubscribe('v2_dnevni');
     };
 
     return controller.stream;

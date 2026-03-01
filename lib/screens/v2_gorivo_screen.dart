@@ -594,7 +594,7 @@ class _GorivoScreenState extends State<GorivoScreen> with SingleTickerProviderSt
   }
 
   void _showDodajTocenjeDialog() async {
-    final vozila = await V2VozilaService.getVozila();
+    final vozila = V2VozilaService.getVozila();
     if (!mounted) return;
 
     final litriCtrl = TextEditingController();

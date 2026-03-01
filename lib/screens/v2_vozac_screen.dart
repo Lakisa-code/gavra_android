@@ -174,30 +174,28 @@ class _VozacScreenState extends State<VozacScreen> {
   }
 
   Future<void> _loadRaspored() async {
-    final results = await Future.wait([
-      V2VozacRasporedService().loadAll(),
-      V2VozacPutnikService().loadAll(),
-    ]);
+    final rm = V2MasterRealtimeManager.instance;
+    final raspored = rm.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
+    final vozacPutnik = rm.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
     if (mounted) {
       setState(() {
-        _rasporedCache = results[0] as List<VozacRasporedEntry>;
-        _vozacPutnikCache = results[1] as List<VozacPutnikEntry>;
+        _rasporedCache = raspored;
+        _vozacPutnikCache = vozacPutnik;
       });
     }
   }
 
-  /// ?? Realtime: prati vozac_raspored i vozac_putnik i osvježava lokalne cache-ove
+  /// 🔄 Realtime: prati vozac_raspored i vozac_putnik i osvježava lokalne cache-ove
   void _subscribeRealtime() {
     _rasporedRealtimeSub?.cancel();
-    _rasporedRealtimeSub = V2MasterRealtimeManager.instance.subscribe('v2_vozac_raspored').listen((_) {
-      final entries =
-          V2MasterRealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
+    final rm = V2MasterRealtimeManager.instance;
+    _rasporedRealtimeSub = rm.subscribe('v2_vozac_raspored').listen((_) {
+      final entries = rm.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
       if (mounted) setState(() => _rasporedCache = entries);
     });
-    V2MasterRealtimeManager.instance.subscribe('v2_vozac_putnik').listen((_) {
-      V2VozacPutnikService().loadAll().then((data) {
-        if (mounted) setState(() => _vozacPutnikCache = data);
-      });
+    rm.subscribe('v2_vozac_putnik').listen((_) {
+      final entries = rm.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
+      if (mounted) setState(() => _vozacPutnikCache = entries);
     });
   }
 
@@ -1300,14 +1298,12 @@ class _VozacScreenState extends State<VozacScreen> {
       child: Row(
         children: [
           Expanded(
-            child: StreamBuilder<double>(
-              stream: StatistikaService.streamPazarZaVozaca(
-                vozac: _currentDriver!,
-                from: dayStart,
-                to: dayEnd,
+            child: StreamBuilder<Map<String, double>>(
+              stream: StatistikaService.streamPazarIzCachea(
+                isoDate: _getWorkingDateIso(),
               ),
               builder: (context, snapshot) {
-                final pazar = snapshot.data ?? 0.0;
+                final pazar = snapshot.data?[_currentDriver!] ?? 0.0;
                 return InkWell(
                   onTap: () {
                     _showStatPopup(
