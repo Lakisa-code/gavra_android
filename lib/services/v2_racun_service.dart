@@ -35,6 +35,8 @@ class V2RacunService {
 
   /// Vraća sledeći broj računa u formatu "X/YYYY" i automatski uvećava brojač u BAZI
   /// Atomska operacija putem optimistic locking - sprečava duplikate između vozača
+  static Future<String> getNextBrojRacuna() => _getNextBrojRacuna();
+
   static Future<String> _getNextBrojRacuna() async {
     final godina = DateTime.now().year;
 
@@ -165,13 +167,23 @@ class V2RacunService {
         final ukupno = podaci['ukupno'] as double;
         final brojRacuna = await _getNextBrojRacuna();
 
+        // Dohvati firma podatke iz v2_racuni
+        Map<String, dynamic>? firma;
+        try {
+          firma = await _supabase
+              .from('v2_racuni')
+              .select('firma_naziv, firma_pib, firma_mb, firma_ziro, firma_adresa')
+              .eq('putnik_id', v2Putnik.id as String)
+              .maybeSingle();
+        } catch (_) {}
+
         final stranica = await _kreirajRacunZaFirmuStranicu(
           brojRacuna: brojRacuna,
-          firmaNaziv: v2Putnik.ime,
-          firmaPib: '',
-          firmaMb: '',
-          firmaZiro: '',
-          firmaAdresa: '',
+          firmaNaziv: firma?['firma_naziv'] as String? ?? v2Putnik.ime,
+          firmaPib: firma?['firma_pib'] as String? ?? '',
+          firmaMb: firma?['firma_mb'] as String? ?? '',
+          firmaZiro: firma?['firma_ziro'] as String? ?? '',
+          firmaAdresa: firma?['firma_adresa'] as String? ?? '',
           putnikIme: v2Putnik.ime,
           opisUsluge: 'Prevoz putnika za $mesecStr',
           cenaPoDanu: cenaPoDanu,

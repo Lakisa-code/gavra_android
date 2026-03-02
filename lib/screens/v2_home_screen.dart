@@ -837,8 +837,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                   Navigator.pop(dialogContext);
 
-                  // Dohvati sledeci broj racuna
-                  final brojRacuna = await V2RacunService.getTrenutniBrojRacuna();
+                  // Dohvati sledeci broj racuna (uvecava sekvencu)
+                  final brojRacuna = await V2RacunService.getNextBrojRacuna();
 
                   // Proveri mounted pre korišćenja context-a
                   if (!ctx.mounted) return;

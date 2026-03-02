@@ -287,8 +287,7 @@ class V2MasterRealtimeManager {
     try {
       final results = await Future.wait([
         _db.from('v2_vozaci').select('id, ime, email, telefon, sifra, boja'),
-        _db.from('v2_vozila').select(
-            'id, registarski_broj, marka, model, godina_proizvodnje, kilometraza, napomena, '
+        _db.from('v2_vozila').select('id, registarski_broj, marka, model, godina_proizvodnje, kilometraza, napomena, '
             'broj_sasije, registracija_vazi_do, '
             'mali_servis_datum, mali_servis_km, veliki_servis_datum, veliki_servis_km, '
             'alternator_datum, alternator_km, akumulator_datum, akumulator_km, '
@@ -636,6 +635,21 @@ class V2MasterRealtimeManager {
       'pin': noviPin,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', id);
+  }
+
+  /// Dohvata podatke firme iz v2_racuni po putnik_id
+  Future<Map<String, dynamic>?> getFirma(String putnikId) async {
+    try {
+      final row = await _db
+          .from('v2_racuni')
+          .select('firma_naziv, firma_pib, firma_mb, firma_ziro, firma_adresa')
+          .eq('putnik_id', putnikId)
+          .maybeSingle();
+      return row;
+    } catch (e) {
+      debugPrint('❌ [RM] getFirma error: $e');
+      return null;
+    }
   }
 
   /// Upsert podataka firme u v2_racuni

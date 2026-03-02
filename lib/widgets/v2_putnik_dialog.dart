@@ -146,9 +146,29 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
 
       // Load addresses asynchronously
       _loadAdreseForEditovanje();
+      // Učitaj firma podatke iz v2_racuni ako treba račun
+      if (v2Putnik.trebaRacun) {
+        _loadFirmaPodatke(v2Putnik.id);
+      }
     } else {
       // Default za novog putnika
       _brojMestaController.text = '1';
+    }
+  }
+
+  Future<void> _loadFirmaPodatke(String putnikId) async {
+    try {
+      final firma = await _rm.getFirma(putnikId);
+      if (firma == null || !mounted) return;
+      setState(() {
+        _firmaNazivController.text = firma['firma_naziv'] as String? ?? '';
+        _firmaPibController.text = firma['firma_pib'] as String? ?? '';
+        _firmaMbController.text = firma['firma_mb'] as String? ?? '';
+        _firmaZiroController.text = firma['firma_ziro'] as String? ?? '';
+        _firmaAdresaController.text = firma['firma_adresa'] as String? ?? '';
+      });
+    } catch (e) {
+      debugPrint('❌ [PutnikDialog] _loadFirmaPodatke error: $e');
     }
   }
 
