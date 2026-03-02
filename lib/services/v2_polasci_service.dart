@@ -819,9 +819,9 @@ class V2PutnikStreamService {
             .inFilter('dan', [danasKratica, sutraKratica])
             .inFilter('status', ['obrada', 'odobreno']);
         await V2StatistikaIstorijaService.logGeneric(
-          tip: 'otkazivanje',
+          tip: status, // 'bolovanje' ili 'godisnji'
           putnikId: putnikId,
-          detalji: 'Auto-otkazano zbog: $status',
+          detalji: 'Polasci automatski ukloneni zbog: $status',
           datum: DateTime.now().toIso8601String().split('T')[0],
         );
       }
