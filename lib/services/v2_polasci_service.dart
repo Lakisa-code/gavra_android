@@ -442,45 +442,14 @@ class V2PutnikStreamService {
       final todayDate = isoDate.split('T')[0];
       final rm = V2MasterRealtimeManager.instance;
 
-      if (rm.loadedDate == todayDate && rm.isInitialized) {
-        return rm.polasciCache.values
-            .map((sr) {
-              final putnikId = sr['putnik_id']?.toString();
-              final vlRows = putnikId != null
-                  ? rm.statistikaCache.values.where((vl) => vl['putnik_id']?.toString() == putnikId).toList()
-                  : <Map<String, dynamic>>[];
-              final rp = putnikId != null ? rm.getPutnikById(putnikId) : null;
-              return _buildPutnik(sr, vlRows, rp, todayDate);
-            })
-            .where((p) => p.status != 'bez_polaska')
-            .toList();
-      }
-
-      // Fallback: direktni DB upit za drugi datum
-      final dan = _isoToDanKratica(todayDate);
-      final srRows = await supabase
-          .from('v2_polasci')
-          .select('id, putnik_id, putnik_tabela, grad, zeljeno_vreme, dodeljeno_vreme, status, '
-              'created_at, updated_at, processed_at, broj_mesta, '
-              'adresa_id, alternative_vreme_1, alternative_vreme_2, '
-              'otkazao, pokupio, dan')
-          .eq('dan', dan)
-          .inFilter('status', ['obrada', 'odobreno', 'otkazano', 'odbijeno', 'bez_polaska', 'pokupljen']);
-      final vlRows = await supabase
-          .from('v2_statistika_istorija')
-          .select('id, putnik_id, datum, tip, iznos, vozac_id, vozac_ime, grad, vreme, created_at')
-          .eq('datum', todayDate);
-      final vlByPutnik = <String, List<Map<String, dynamic>>>{};
-      for (final vl in vlRows) {
-        final pid = vl['putnik_id']?.toString() ?? '';
-        vlByPutnik.putIfAbsent(pid, () => []).add(Map<String, dynamic>.from(vl));
-      }
-      return srRows
+      return rm.polasciCache.values
           .map((sr) {
-            final pid = sr['putnik_id']?.toString();
-            final rp = pid != null ? V2MasterRealtimeManager.instance.getPutnikById(pid) : null;
-            final vls = pid != null ? (vlByPutnik[pid] ?? []) : <Map<String, dynamic>>[];
-            return _buildPutnik(Map<String, dynamic>.from(sr), vls, rp, todayDate);
+            final putnikId = sr['putnik_id']?.toString();
+            final vlRows = putnikId != null
+                ? rm.statistikaCache.values.where((vl) => vl['putnik_id']?.toString() == putnikId).toList()
+                : <Map<String, dynamic>>[];
+            final rp = putnikId != null ? rm.getPutnikById(putnikId) : null;
+            return _buildPutnik(sr, vlRows, rp, todayDate);
           })
           .where((p) => p.status != 'bez_polaska')
           .toList();
