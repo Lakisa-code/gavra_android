@@ -23,6 +23,9 @@ class AuthManager {
   static const String _deviceIdKey = 'device_id';
   static const String _rememberedDevicesKey = 'remembered_devices';
 
+  // In-memory cache — jedan Supabase poziv po sesiji
+  static String? _cachedDriverName;
+
   /// s- DRIVER SESSION MANAGEMENT
 
   /// Postavi trenutnog vozača (bez email auth-a)
@@ -32,6 +35,7 @@ class AuthManager {
       throw ArgumentError('Vozač "$driverName" nije registrovan');
     }
 
+    _cachedDriverName = driverName;
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
 
@@ -127,17 +131,22 @@ class AuthManager {
     }
   }
 
-  /// Dobij trenutnog vozača — UVIJEK iz Supabase (token → vozac_id → ime)
-  /// Fallback na SharedPreferences samo ako nema mreže
+  /// Dobij trenutnog vozača — in-memory cache, pa Supabase, pa SharedPreferences
   static Future<String?> getCurrentDriver() async {
+    // 0. In-memory cache — nema Supabase poziva ako već znamo
+    if (_cachedDriverName != null && _cachedDriverName!.isNotEmpty) {
+      return _cachedDriverName;
+    }
+
     // 1. Pokušaj Supabase (jedini izvor istine)
     try {
       final driverFromSupabase = await _getDriverFromSupabase();
       if (driverFromSupabase != null && driverFromSupabase.isNotEmpty) {
+        _cachedDriverName = driverFromSupabase;
         // Spremi u SharedPreferences kao cache za offline fallback
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_driverKey, driverFromSupabase);
-        return driverFromSupabase;
+        return _cachedDriverName;
       }
     } catch (e) {
       debugPrint('⚠️ [AuthManager] Supabase nedostupan, koristim lokalni cache: $e');
@@ -145,7 +154,11 @@ class AuthManager {
 
     // 2. Offline fallback — stari lokalni podatak
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_driverKey);
+    final fromPrefs = prefs.getString(_driverKey);
+    if (fromPrefs != null && fromPrefs.isNotEmpty) {
+      _cachedDriverName = fromPrefs;
+    }
+    return _cachedDriverName;
   }
 
   /// "Dohvati vozača iz Supabase po FCM/HMS tokenu
@@ -239,7 +252,8 @@ class AuthManager {
 
       final prefs = await SharedPreferences.getInstance();
 
-      // 1. Obriši SharedPreferences - SVE session podatke uključujui zapamene ureaje
+      // 1. Obriši in-memory cache i SharedPreferences
+      _cachedDriverName = null;
       await prefs.remove(_driverKey);
       await prefs.remove(_authSessionKey);
       await prefs.remove(_rememberedDevicesKey);
