@@ -127,34 +127,25 @@ class AuthManager {
     }
   }
 
-  /// Dobij trenutnog vozača - PRVO iz SharedPreferences (brzo, bez mreže),
-  /// pa Supabase sinhronizacija u pozadini (unawaited)
+  /// Dobij trenutnog vozača — UVIJEK iz Supabase (token → vozac_id → ime)
+  /// Fallback na SharedPreferences samo ako nema mreže
   static Future<String?> getCurrentDriver() async {
-    debugPrint(
-        '🔍 [AuthManager] getCurrentDriver POZVAN | stack: ${StackTrace.current.toString().split('\n').take(3).join(' | ')}');
-
-    // 1. Odmah vrati lokalni podatak — nema čekanja na mrežu
-    final prefs = await SharedPreferences.getInstance();
-    final localDriver = prefs.getString(_driverKey);
-
-    // 2. Supabase sinhronizacija u pozadini — ne blokira UI
-    unawaited(_syncDriverFromSupabase(localDriver));
-
-    return localDriver;
-  }
-
-  /// Sinhronizuje vozača iz Supabase u pozadini (ne blokira)
-  static Future<void> _syncDriverFromSupabase(String? currentLocal) async {
+    // 1. Pokušaj Supabase (jedini izvor istine)
     try {
       final driverFromSupabase = await _getDriverFromSupabase();
-      if (driverFromSupabase != null && driverFromSupabase != currentLocal) {
+      if (driverFromSupabase != null && driverFromSupabase.isNotEmpty) {
+        // Spremi u SharedPreferences kao cache za offline fallback
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_driverKey, driverFromSupabase);
-        debugPrint(' [AuthManager] Vozač sinhronizovan iz Supabase: $driverFromSupabase');
+        return driverFromSupabase;
       }
     } catch (e) {
-      debugPrint(' [AuthManager] Supabase sync neuspešan: $e');
+      debugPrint('⚠️ [AuthManager] Supabase nedostupan, koristim lokalni cache: $e');
     }
+
+    // 2. Offline fallback — stari lokalni podatak
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_driverKey);
   }
 
   /// "Dohvati vozača iz Supabase po FCM/HMS tokenu
