@@ -48,7 +48,7 @@ class V2PolasciService {
           .eq('putnik_id', putnikId)
           .eq('grad', gradKey)
           .eq('dan', danKey)
-          .eq('zeljeno_vreme', '$normVreme:00')
+          .eq('zeljeno_vreme', normVreme)
           .maybeSingle();
 
       if (existing != null) {
@@ -57,7 +57,7 @@ class V2PolasciService {
           'broj_mesta': brojMesta,
           if (putnikTabela != null) 'putnik_tabela': putnikTabela,
           if (customAdresaId != null) 'adresa_id': customAdresaId,
-          if (isAdmin) 'dodeljeno_vreme': '$normVreme:00',
+          if (isAdmin) 'dodeljeno_vreme': normVreme,
           'updated_at': nowStr,
         }).eq('id', existing['id']);
         debugPrint('✅ [V2PolasciService] v2PoSaljiZahtev UPDATE $gradKey $normVreme $danKey (isAdmin=$isAdmin)');
@@ -66,8 +66,8 @@ class V2PolasciService {
           'putnik_id': putnikId,
           'grad': gradKey,
           'dan': danKey,
-          'zeljeno_vreme': '$normVreme:00',
-          if (isAdmin) 'dodeljeno_vreme': '$normVreme:00',
+          'zeljeno_vreme': normVreme,
+          if (isAdmin) 'dodeljeno_vreme': normVreme,
           'status': status,
           'broj_mesta': brojMesta,
           if (putnikTabela != null) 'putnik_tabela': putnikTabela,
@@ -767,7 +767,7 @@ class V2PutnikStreamService {
         }).eq('id', requestId);
       } else {
         final gradKey = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
-        final vremeKey = vreme != null ? '\${GradAdresaValidator.normalizeTime(vreme)}:00' : null;
+        final vremeKey = vreme != null ? '\${GradAdresaValidator.normalizeTime(vreme)}' : null;
         String? danKey;
         try {
           final dt = DateTime.parse(targetDatum);
@@ -933,7 +933,7 @@ class V2PutnikStreamService {
             })
             .match({'putnik_id': id.toString(), 'dan': danKey})
             .eq('grad', gradKey)
-            .eq('zeljeno_vreme', '$normalizedTime:00')
+            .eq('zeljeno_vreme', normalizedTime)
             .select();
 
         if (res.isNotEmpty) return;
@@ -948,7 +948,7 @@ class V2PutnikStreamService {
             })
             .match({'putnik_id': id.toString(), 'dan': danKey})
             .eq('grad', gradKey)
-            .eq('dodeljeno_vreme', '$normalizedTime:00')
+            .eq('dodeljeno_vreme', normalizedTime)
             .select();
 
         if (res.isNotEmpty) return;
@@ -1017,7 +1017,7 @@ class V2PutnikStreamService {
       }).match({'dan': danKey}).inFilter('status', ['odobreno', 'obrada']).eq('grad', gradKey);
 
       if (vreme.isNotEmpty && vreme != 'Sva vremena') {
-        query = query.eq('zeljeno_vreme', '\${GradAdresaValidator.normalizeTime(vreme)}:00');
+        query = query.eq('zeljeno_vreme', '\${GradAdresaValidator.normalizeTime(vreme)}');
       }
 
       final res = await query.select();
