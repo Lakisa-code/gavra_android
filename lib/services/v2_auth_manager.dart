@@ -49,43 +49,9 @@ class AuthManager {
     try {
       debugPrint('"" [AuthManager] Ažuriram token za vozača: $driverName');
 
-      // Dohvati vozac_id direktno iz baze
-      Vozac? vozac = VozacCache.getVozacByIme(driverName);
-      String? vozacId = vozac?.id;
-
-      // Fallback: Ako VozacCache nema podatke, probaj direktno iz baze
-      if (vozacId == null) {
-        debugPrint('"" [AuthManager] VozacCache nema podatke, koristim direktno iz baze...');
-
-        // Direktno iz baze
-        try {
-          vozac = VozacCache.getVozacByIme(driverName);
-          vozacId = vozac?.id;
-          if (vozacId != null) {
-            debugPrint('"" [AuthManager] Vozac_id dobijen direktno: $vozacId');
-          }
-        } catch (e) {
-          debugPrint(' [AuthManager] VozacBoja inicijalizacija neuspešna: $e');
-        }
-
-        // Ako i dalje nema podataka, probaj direktno iz baze
-        if (vozacId == null) {
-          debugPrint('"" [AuthManager] VozacBoja nema podatke, pokušavam fallback iz baze...');
-          try {
-            final response = await supabase
-                .from('v2_vozaci')
-                .select('id')
-                .eq('ime', driverName)
-                .single()
-                .timeout(const Duration(seconds: 3));
-
-            vozacId = response['id'] as String?;
-            debugPrint('"" [AuthManager] Fallback vozac_id: $vozacId');
-          } catch (e) {
-            debugPrint(' [AuthManager] Fallback iz baze neuspešan: $e');
-          }
-        }
-      }
+      // Dohvati vozac_id iz VozacCache (pun pri startu kroz RM)
+      final Vozac? vozac = VozacCache.getVozacByIme(driverName);
+      final String? vozacId = vozac?.id;
 
       debugPrint('"" [AuthManager] Final vozac_id: $vozacId');
 
