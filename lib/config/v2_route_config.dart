@@ -1,4 +1,4 @@
-/// 🚐 Route Configuration
+/// Route Configuration
 ///
 /// Vremena polazaka za različite rute i sezone.
 /// Koristi se u kapacitet servisu i navigacionim bar-ovima.
@@ -7,7 +7,7 @@ library;
 class RouteConfig {
   RouteConfig._();
 
-  // 🏙️ BELA CRKVA - Zimski raspored (oktobar-mart) - FALLBACK
+  // BELA CRKVA - Zimski raspored (oktobar-mart) - FALLBACK
   static const List<String> bcVremenaZimski = [
     '05:00',
     '06:00',
@@ -22,7 +22,7 @@ class RouteConfig {
     '18:00',
   ];
 
-  // 🏙️ BELA CRKVA - Letnji raspored (april-septembar) - FALLBACK
+  // BELA CRKVA - Letnji raspored (april-septembar) - FALLBACK
   static const List<String> bcVremenaLetnji = [
     '05:00',
     '06:00',
@@ -36,7 +36,7 @@ class RouteConfig {
     '18:00',
   ];
 
-  // 🏙️ BELA CRKVA - Praznični raspored - FALLBACK
+  // BELA CRKVA - Praznični raspored - FALLBACK
   static const List<String> bcVremenaPraznici = [
     '05:00',
     '06:00',
@@ -45,7 +45,7 @@ class RouteConfig {
     '15:00',
   ];
 
-  // 🌆 Vrsac - Zimski raspored (oktobar-mart) - FALLBACK
+  // Vrsac - Zimski raspored (oktobar-mart) - FALLBACK
   static const List<String> vsVremenaZimski = [
     '06:00',
     '07:00',
@@ -60,7 +60,7 @@ class RouteConfig {
     '19:00',
   ];
 
-  // 🌆 Vrsac - Letnji raspored (april-septembar) - FALLBACK
+  // Vrsac - Letnji raspored (april-septembar) - FALLBACK
   static const List<String> vsVremenaLetnji = [
     '06:00',
     '07:00',
@@ -74,7 +74,7 @@ class RouteConfig {
     '18:00',
   ];
 
-  // 🌆 Vrsac - Praznični raspored - FALLBACK
+  // Vrsac - Praznični raspored - FALLBACK
   static const List<String> vsVremenaPraznici = [
     '06:00',
     '07:00',
@@ -83,21 +83,21 @@ class RouteConfig {
     '15:30',
   ];
 
-  // 🗺️ GEOGRAFSKE KOORDINATE
+  // GEOGRAFSKE KOORDINATE
   static const double belaCrkvaLat = 44.8989;
   static const double belaCrkvaLng = 21.4181;
   static const double vrsacLat = 45.1167;
   static const double vrsacLng = 21.3036;
 
-  // 🛣️ OSRM (OpenStreetMap Routing Machine) KONFIGURACIJA
+  // OSRM (OpenStreetMap Routing Machine) KONFIGURACIJA
   static const String osrmBaseUrl = 'https://router.project-osrm.org';
   static const int osrmMaxRetries = 3;
   static const Duration osrmTimeout = Duration(seconds: 30);
 
-  // 🏠 GEOCODING KONFIGURACIJA
+  // GEOCODING KONFIGURACIJA
   static const Duration nominatimBatchDelay = Duration(milliseconds: 1000);
 
-  /// ⏱️ Dobija delay za retry pokušaj (exponential backoff)
+  /// ⏱ Dobija delay za retry pokušaj (exponential backoff)
   static Duration getRetryDelay(int attempt) {
     // 1s, 2s, 4s, 8s...
     return Duration(seconds: 1 << (attempt - 1));

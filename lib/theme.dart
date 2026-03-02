@@ -4,16 +4,16 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'services/v2_theme_manager.dart';
 
-// 🌍 GLOBALNO REŠENJE ZA SRPSKU DJAKRITIKU (š, đ, č, ć, ž)
+// GLOBALNO REŠENJE ZA SRPSKU DJAKRITIKU (š, đ, č, ć, ž)
 // Unicode normalizacija i font fallback-ovi
 //
 // KORIŠĆENJE:
 //
 // 1. AUTOMATSKI - Svi Text widget-i u app-u koriste srpsku dijakritiku
-//    textTheme: createSerbianTextTheme() - već primenjeno u temi
+// textTheme: createSerbianTextTheme() - već primenjeno u temi
 //
 // 2. EXTENSION - Dodavanje dijakritike postojećem TextStyle-u:
-//    TextStyle().withSerbianSupport()
+// TextStyle().withSerbianSupport()
 //
 // FONT FALLBACK-OVI:
 // - Inter (primarni)
@@ -43,7 +43,7 @@ class SerbianTextStyle {
     TextDecoration? decoration,
     double? letterSpacing,
   }) {
-    // 🌍 KORISTIMO GOOGLE FONTS SA latin-ext PODRŠKOM
+    // KORISTIMO GOOGLE FONTS SA latin-ext PODRŠKOM
     return GoogleFonts.getFont(
       _primaryFont,
       fontSize: fontSize,
@@ -90,7 +90,7 @@ class SerbianTextStyle {
       );
 }
 
-// 🎨 Extension za TextStyle sa dijakritikom
+// Extension za TextStyle sa dijakritikom
 extension SerbianTextStyleExtension on TextStyle {
   /// Dodaje srpsku dijakritiku podršku postojećem TextStyle-u
   TextStyle withSerbianSupport() {
@@ -131,11 +131,11 @@ TextTheme createSerbianTextTheme() {
   );
 }
 
-// 🎨 Extension za kompatibilnost sa starijim Flutter verzijama
+// Extension za kompatibilnost sa starijim Flutter verzijama
 
-// 🎨 SAMO TRIPLE BLUE FASHION TEMA!
+// SAMO TRIPLE BLUE FASHION TEMA!
 
-// ⚡🔷💠 TRIPLE BLUE FASHION - Electric + Ice + Neon kombinacija!
+// TRIPLE BLUE FASHION - Electric + Ice + Neon kombinacija!
 const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
   brightness: Brightness.light,
   // Electric Blue Shine kao glavni
@@ -172,7 +172,7 @@ const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
   onErrorContainer: Color(0xFF991B1B),
 );
 
-// 🖤 DARK STEEL GREY - Sive boje umesto plavih!
+// DARK STEEL GREY - Sive boje umesto plavih!
 const ColorScheme darkSteelGreyColorScheme = ColorScheme(
   brightness: Brightness.dark,
   // Steel Grey kao glavni - sive boje
@@ -209,30 +209,30 @@ const ColorScheme darkSteelGreyColorScheme = ColorScheme(
   onErrorContainer: Color(0xFF991B1B),
 );
 
-// 🎨 CUSTOM COLOR EXTENSIONS za dodatne boje
+// CUSTOM COLOR EXTENSIONS za dodatne boje
 extension CustomColors on ColorScheme {
-  // ✅ Success Colors
+  // Success Colors
   Color get successPrimary => const Color(0xFF4CAF50);
 
-  // 🔴 Danger Colors
+  // Danger Colors
   Color get dangerPrimary => const Color(0xFFEF5350);
 }
 
-// ⚡ Triple Blue Fashion Gradient - 5 boja!
+// Triple Blue Fashion Gradient - 5 boja!
 const LinearGradient tripleBlueFashionGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF0575E6), // Electric Blue Shine - zaVrsetak
+    Color(0xFF0575E6), // Electric Blue Shine - završetak
     Color(0xFF1E3A78), // Blue Ice Metallic - početak
     Color(0xFF4F7CAC), // Blue Ice Metallic - sredina
-    Color(0xFFA8D8E8), // Blue Ice Metallic - zaVrsetak
+    Color(0xFFA8D8E8), // Blue Ice Metallic - završetak
     Color(0xFF12D8FA), // Neon Blue Glow - sredina
   ],
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
-// 🖤 Dark Steel Grey Gradient - SAMO GRADIJENT!
+// Dark Steel Grey Gradient - SAMO GRADIJENT!
 const LinearGradient darkSteelGreyGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
@@ -246,7 +246,7 @@ const LinearGradient darkSteelGreyGradient = LinearGradient(
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
-// ❤️ PASSIONATE ROSE GRADIENT - Electric Red + Ruby + Crimson + Pink Ice + Neon Rose!
+// PASSIONATE ROSE GRADIENT - Electric Red + Ruby + Crimson + Pink Ice + Neon Rose!
 const LinearGradient passionateRoseGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
@@ -260,7 +260,7 @@ const LinearGradient passionateRoseGradient = LinearGradient(
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
-// 💖 DARK PINK GRADIENT - Tamna sa neon pink akcentima!
+// DARK PINK GRADIENT - Tamna sa neon pink akcentima!
 const LinearGradient darkPinkGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
@@ -274,7 +274,7 @@ const LinearGradient darkPinkGradient = LinearGradient(
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
-// ❤️ PASSIONATE ROSE COLOR SCHEME
+// PASSIONATE ROSE COLOR SCHEME
 const ColorScheme passionateRoseColorScheme = ColorScheme(
   brightness: Brightness.light,
 
@@ -296,7 +296,7 @@ const ColorScheme passionateRoseColorScheme = ColorScheme(
   tertiaryContainer: Color(0xFFFFE4E1), // Misty Rose
   onTertiaryContainer: Color(0xFF8B0000),
 
-  // Svetle poVrsine
+  // Svetle površine
   surface: Color(0xFFFFF8F9), // Skoro bela sa pink odsjajem
   onSurface: Color(0xFF1A1A1A),
   surfaceContainerHighest: Color(0xFFFFE4E1), // Misty Rose
@@ -311,7 +311,7 @@ const ColorScheme passionateRoseColorScheme = ColorScheme(
   onErrorContainer: Color(0xFF991B1B),
 );
 
-// 💖 DARK PINK COLOR SCHEME
+// DARK PINK COLOR SCHEME
 const ColorScheme darkPinkColorScheme = ColorScheme(
   brightness: Brightness.dark,
 
@@ -333,7 +333,7 @@ const ColorScheme darkPinkColorScheme = ColorScheme(
   tertiaryContainer: Color(0xFFFFB6C1), // Baby pink
   onTertiaryContainer: Color(0xFF1A0A14),
 
-  // Tamne poVrsine
+  // Tamne površine
   surface: Color(0xFF1A0A14), // Skoro crna
   onSurface: Colors.white,
   surfaceContainerHighest: Color(0xFF2D1F2D),
@@ -348,7 +348,7 @@ const ColorScheme darkPinkColorScheme = ColorScheme(
   onErrorContainer: Color(0xFFFF8888),
 );
 
-// 🎨 TEMA EKSTENZIJA - dodaje gradijent pozadinu
+// TEMA EKSTENZIJA - dodaje gradijent pozadinu
 extension ThemeGradients on ThemeData {
   LinearGradient get backgroundGradient => ThemeManager().currentGradient;
 
@@ -357,7 +357,7 @@ extension ThemeGradients on ThemeData {
   Color get glassBorder => Colors.white.withOpacity(0.13);
 }
 
-// ⚡ Triple Blue Fashion Theme
+// Triple Blue Fashion Theme
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
@@ -377,7 +377,7 @@ final ThemeData tripleBlueFashionTheme = ThemeData(
   ),
 );
 
-// ⚡ Triple Blue Fashion Styles - OSVETLJENI!
+// Triple Blue Fashion Styles - OSVETLJENI!
 class TripleBlueFashionStyles {
   static BoxDecoration cardDecoration = BoxDecoration(
     color: Colors.white,
@@ -462,7 +462,7 @@ class TripleBlueFashionStyles {
   );
 }
 
-// 🖤 Dark Steel Grey Styles - BEZ SHADOW-A!
+// Dark Steel Grey Styles - BEZ SHADOW-A!
 class DarkSteelGreyStyles {
   static BoxDecoration cardDecoration = BoxDecoration(
     color: Colors.white,
@@ -509,7 +509,7 @@ class DarkSteelGreyStyles {
   );
 }
 
-// 💖 Dark Pink Styles - Tamna sa neon pink akcentima!
+// Dark Pink Styles - Tamna sa neon pink akcentima!
 class DarkPinkStyles {
   static BoxDecoration cardDecoration = BoxDecoration(
     color: const Color(0xFF2D1F2D), // Tamno ljubičasta pozadina
@@ -583,7 +583,7 @@ class DarkPinkStyles {
   );
 }
 
-// ❤️ PASSIONATE ROSE Styles - Crvena/ružičasta sa klasičnim sjajom!
+// PASSIONATE ROSE Styles - Crvena/ružičasta sa klasičnim sjajom!
 class PassionateRoseStyles {
   static BoxDecoration cardDecoration = BoxDecoration(
     color: const Color(0xFFFFF8F9), // Skoro bela sa pink odsjajem
