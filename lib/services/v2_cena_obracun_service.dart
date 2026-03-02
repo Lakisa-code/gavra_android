@@ -11,8 +11,8 @@ import '../models/v2_registrovani_putnik.dart';
 /// - UČENIK: Admin postavlja cenu (nema default-a)
 /// - DNEVNI: Admin postavlja cenu (nema default-a)
 /// - POŠILJKA: Admin postavlja cenu (osim "ZUBI" koji ima fiksnih 300 RSD)
-class CenaObracunService {
-  CenaObracunService._();
+class V2CenaObracunService {
+  V2CenaObracunService._();
 
   static SupabaseClient get _supabase => supabase;
 
@@ -105,7 +105,7 @@ class CenaObracunService {
       }
       return rezultati;
     } catch (e) {
-      debugPrint('CenaObracunService.prebrojJediniceMasovno error: $e');
+      debugPrint('V2CenaObracunService.prebrojJediniceMasovno error: $e');
       return {};
     }
   }

@@ -134,7 +134,7 @@ class V2UnifiedGeocodingService {
             error: 'Nema adrese za geocodiranje',
           );
         }
-        final coordsString = await GeocodingService.getKoordinateZaAdresu(
+        final coordsString = await V2GeocodingService.getKoordinateZaAdresu(
           putnik.grad,
           addressToGeocode,
         );

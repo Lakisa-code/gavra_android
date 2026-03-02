@@ -13,7 +13,7 @@ import 'v2_vozac_raspored_service.dart';
 /// za određeni dan/grad/vreme.
 ///
 /// Jedan V2Putnik može imati najviše jednu aktivnu individualnu dodjelu (UNIQUE putnik_id).
-class VozacPutnikEntry {
+class V2VozacPutnikEntry {
   final String? id; // uuid PK, null prije inserata
   final String putnikId; // FK → registrovani_putnici.id
   final String vozacId; // FK → vozaci.id
@@ -21,7 +21,7 @@ class VozacPutnikEntry {
   final String grad; // 'BC' ili 'VS'
   final String vreme; // '07:00', '08:00', ...
 
-  const VozacPutnikEntry({
+  const V2VozacPutnikEntry({
     this.id,
     required this.putnikId,
     required this.vozacId,
@@ -30,10 +30,10 @@ class VozacPutnikEntry {
     required this.vreme,
   });
 
-  factory VozacPutnikEntry.fromMap(Map<String, dynamic> map) {
+  factory V2VozacPutnikEntry.fromMap(Map<String, dynamic> map) {
     final vremeRaw = map['vreme']?.toString() ?? '';
     final vreme = vremeRaw.length > 5 ? vremeRaw.substring(0, 5) : vremeRaw;
-    return VozacPutnikEntry(
+    return V2VozacPutnikEntry(
       id: map['id']?.toString(),
       putnikId: map['putnik_id']?.toString() ?? '',
       vozacId: map['vozac_id']?.toString() ?? '',
@@ -56,7 +56,7 @@ class VozacPutnikEntry {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is VozacPutnikEntry &&
+      other is V2VozacPutnikEntry &&
           runtimeType == other.runtimeType &&
           putnikId == other.putnikId &&
           vozacId == other.vozacId &&
@@ -84,8 +84,8 @@ class V2VozacPutnikService {
   V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
   /// Učitaj sve individualne dodjele iz rm cache-a (sync)
-  List<VozacPutnikEntry> loadAll() {
-    return _rm.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
+  List<V2VozacPutnikEntry> loadAll() {
+    return _rm.vozacPutnikCache.values.map((row) => V2VozacPutnikEntry.fromMap(row)).toList();
   }
 
   /// Postavi (ili zamijeni) individualnu dodjelu za putnika.
@@ -162,19 +162,19 @@ class V2VozacPutnikService {
     required List<T> sviPutnici,
     required String vozacId,
     required String targetDan,
-    required List<VozacPutnikEntry> individualneDodjele,
-    required List<VozacRasporedEntry> raspored,
+    required List<V2VozacPutnikEntry> individualneDodjele,
+    required List<V2VozacRasporedEntry> raspored,
     required String Function(T) getId,
     required String Function(T) getGrad,
     required String Function(T) getPolazak,
   }) {
     // Helper: da li je termin-unos za ovog vozača?
-    bool jeTerminVozacov(VozacRasporedEntry r) {
+    bool jeTerminVozacov(V2VozacRasporedEntry r) {
       return r.vozacId == vozacId;
     }
 
     // Helper: da li je individualna dodjela za ovog vozača?
-    bool jeDodjelajeVozacova(VozacPutnikEntry e) {
+    bool jeDodjelajeVozacova(V2VozacPutnikEntry e) {
       return e.vozacId == vozacId;
     }
 

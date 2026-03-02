@@ -7,8 +7,8 @@ import '../utils/v2_vozac_cache.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 
 /// Servis za statistiku — stream pazara iz realtime cache-a ili DB-a.
-class StatistikaService {
-  StatistikaService._();
+class V2StatistikaService {
+  V2StatistikaService._();
 
   // ── HELPER ────────────────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ class StatistikaService {
         }
         if (!controller.isClosed) controller.add(result);
       } catch (e) {
-        debugPrint('[StatistikaService] emit greška: $e');
+        debugPrint('[V2StatistikaService] emit greška: $e');
         if (!controller.isClosed) controller.add({'_ukupno': 0});
       }
     }

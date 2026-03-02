@@ -75,7 +75,7 @@ class RealtimeNotificationService {
   }) async {
     try {
       // Dinamičko učitavanje admin vozača po imenu iz centralizovanog servisa
-      final adminNames = AdminSecurityService.adminUsers;
+      final adminNames = V2AdminSecurityService.adminUsers;
       final vozacService = V2VozacService();
       final allVozaci = vozacService.getAllVozaci();
       final adminVozacIds = allVozaci.where((v) => adminNames.contains(v.ime)).map((v) => v.id).toList();
@@ -202,24 +202,24 @@ class RealtimeNotificationService {
           notificationType == 'v2_odobreno' ||
           notificationType == 'v2_odbijeno' ||
           notificationType == 'v2_alternativa') {
-        await NotificationNavigationService.navigateToPassengerProfile();
+        await V2NotificationNavigationService.navigateToPassengerProfile();
         return;
       }
 
       if (notificationType == 'vozac_krenuo') {
-        await NotificationNavigationService.navigateToVozacScreen();
+        await V2NotificationNavigationService.navigateToVozacScreen();
         return;
       }
 
       if (notificationType == 'pin_zahtev' || notificationType == 'v2_obrada') {
-        await NotificationNavigationService.navigateToPinZahtevi();
+        await V2NotificationNavigationService.navigateToPinZahtevi();
         return;
       }
 
       final putnikDataString = messageData['V2Putnik'] as String?;
       if (putnikDataString != null) {
         final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
-        await NotificationNavigationService.navigateToPassenger(
+        await V2NotificationNavigationService.navigateToPassenger(
           type: notificationType,
           putnikData: putnikData,
         );

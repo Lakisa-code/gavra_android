@@ -78,7 +78,7 @@ class _AdminScreenState extends State<V2AdminScreen> {
     // ?? Kreiraj streamove jednom — direktno na master cache
     final todayIso = DateTime.now().toIso8601String().split('T')[0];
     _streamPutnici = V2PolasciService.streamPutnici();
-    _streamPazar = StatistikaService.streamPazarIzCachea(isoDate: todayIso);
+    _streamPazar = V2StatistikaService.streamPazarIzCachea(isoDate: todayIso);
 
     _loadCurrentDriver();
 
@@ -921,8 +921,8 @@ class _AdminScreenState extends State<V2AdminScreen> {
                   );
                 }
 
-                final bool isAdmin = AdminSecurityService.isAdmin(_currentDriver!);
-                final Map<String, double> filteredPazar = AdminSecurityService.filterPazarByPrivileges(
+                final bool isAdmin = V2AdminSecurityService.isAdmin(_currentDriver!);
+                final Map<String, double> filteredPazar = V2AdminSecurityService.filterPazarByPrivileges(
                   _currentDriver!,
                   pazar,
                 );
@@ -934,7 +934,7 @@ class _AdminScreenState extends State<V2AdminScreen> {
                 final List<String> vozaciRedosled =
                     V2VozacCache.imenaVozaca.isNotEmpty ? V2VozacCache.imenaVozaca : _defaultVozaciRedosled;
 
-                final List<String> prikazaniVozaci = AdminSecurityService.getVisibleDrivers(
+                final List<String> prikazaniVozaci = V2AdminSecurityService.getVisibleDrivers(
                   _currentDriver!,
                   vozaciRedosled,
                 );

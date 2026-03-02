@@ -1244,7 +1244,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     final ukupnoPlaceno = await V2PutnikStatistikaService.dohvatiUkupnoPlaceno(v2Putnik.id);
 
     // Default cena po danu za input field
-    final cenaPoDanu = CenaObracunService.getCenaPoDanu(v2Putnik);
+    final cenaPoDanu = V2CenaObracunService.getCenaPoDanu(v2Putnik);
     iznosController.text = cenaPoDanu.toStringAsFixed(0);
 
     final tipLower = v2Putnik.v2Tabela;
@@ -1537,7 +1537,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
   // ?? PRIKAŽI DETALJNE STATISTIKE PUTNIKA
   Future<void> _prikaziDetaljneStatistike(V2RegistrovaniPutnik v2Putnik) async {
-    await PutnikStatistikeHelper.prikaziDetaljneStatistike(
+    await V2PutnikStatistikeHelper.prikaziDetaljneStatistike(
       context: context,
       putnikId: v2Putnik.id,
       putnikIme: v2Putnik.ime,

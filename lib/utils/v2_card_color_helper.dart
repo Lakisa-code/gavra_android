@@ -62,14 +62,14 @@ enum CardState {
 ///
 /// ## Primer korišćenja:
 /// ```dart
-/// final decoration = CardColorHelper.getCardDecoration(V2Putnik);
-/// final textColor = CardColorHelper.getTextColorWithTheme(
+/// final decoration = V2CardColorHelper.getCardDecoration(V2Putnik);
+/// final textColor = V2CardColorHelper.getTextColorWithTheme(
 /// V2Putnik,
 /// context,
 /// successPrimary: Theme.of(context).colorScheme.successPrimary,
 /// );
 /// ```
-class CardColorHelper {
+class V2CardColorHelper {
   // ---------------------------------------------------------------------------
   // KONSTANTE BOJA
   // ---------------------------------------------------------------------------

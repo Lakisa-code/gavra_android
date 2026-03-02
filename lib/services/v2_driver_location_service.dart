@@ -18,7 +18,7 @@ class V2DriverLocationService {
 
   static V2DriverLocationService get instance => _instance;
 
-  // RealtimeGpsService garantuje slanje lokacije svakih 30s putem positionStream.
+  // V2RealtimeGpsService garantuje slanje lokacije svakih 30s putem positionStream.
   // Lokacija (lat/lng) → Supabase svake 30s (bez API poziva).
   // ORS ETA korekcija → svake 60s (odvojeni timer, ~900 poziva/dan).
   static const Duration _etaUpdateInterval = Duration(minutes: 1);
@@ -88,7 +88,7 @@ class V2DriverLocationService {
 
     await _sendCurrentLocation();
 
-    // Lokacija (lat/lng) se šalje svake 30s putem RealtimeGpsService (bez API).
+    // Lokacija (lat/lng) se šalje svake 30s putem V2RealtimeGpsService (bez API).
     // ORS ETA se racuna odvojeno svake 60s.
     _etaTimer = Timer.periodic(_etaUpdateInterval, (_) => _refreshEta());
 

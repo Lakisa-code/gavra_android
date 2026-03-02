@@ -314,7 +314,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
 
     // ?? AUTOMATSKI OBRACUN (Inicijalno za tekuci mesec)
     DateTime selectedDate = DateTime.now();
-    Map<String, int> counts = await CenaObracunService.prebrojJediniceMasovno(
+    Map<String, int> counts = await V2CenaObracunService.prebrojJediniceMasovno(
       putnici: putnici,
       mesec: selectedDate.month,
       godina: selectedDate.year,
@@ -341,7 +341,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
         builder: (context, setDialogState) {
           // Funkcija za osvežavanje podataka kada se promeni mesec
           Future<void> osveziPodatke() async {
-            final noviCounts = await CenaObracunService.prebrojJediniceMasovno(
+            final noviCounts = await V2CenaObracunService.prebrojJediniceMasovno(
               putnici: putnici,
               mesec: selectedDate.month,
               godina: selectedDate.year,
@@ -360,7 +360,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
           double ukupno = 0;
           for (var p in putnici) {
             if (selected[p.id] == true) {
-              final cena = CenaObracunService.getCenaPoDanu(p);
+              final cena = V2CenaObracunService.getCenaPoDanu(p);
               ukupno += cena * (brojDana[p.id] ?? 0);
             }
           }
@@ -481,7 +481,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                         children: [
                           // Lista putnika
                           ...putnici.map((p) {
-                            final cena = CenaObracunService.getCenaPoDanu(p);
+                            final cena = V2CenaObracunService.getCenaPoDanu(p);
                             final dana = brojDana[p.id] ?? 0;
                             final iznos = cena * dana;
 
@@ -636,7 +636,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                             final List<Map<String, dynamic>> racuniPodaci = [];
                             for (var p in putnici) {
                               if (selected[p.id] == true) {
-                                final cena = CenaObracunService.getCenaPoDanu(p);
+                                final cena = V2CenaObracunService.getCenaPoDanu(p);
                                 final dana = brojDana[p.id] ?? 0;
                                 racuniPodaci.add({
                                   'V2Putnik': p,
@@ -2299,7 +2299,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                         const SizedBox(width: 4),
                         if (_currentDriver != null &&
                             V2VozacCache.imenaVozaca.contains(_currentDriver) &&
-                            !AdminSecurityService.isAdmin(_currentDriver))
+                            !V2AdminSecurityService.isAdmin(_currentDriver))
                           Expanded(
                             child: _HomeScreenButton(
                               label: 'Ja',
@@ -2312,7 +2312,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                               },
                             ),
                           ),
-                        if (AdminSecurityService.isAdmin(_currentDriver)) ...[
+                        if (V2AdminSecurityService.isAdmin(_currentDriver)) ...[
                           const SizedBox(width: 4),
                           Expanded(
                             child: StreamBuilder<int>(
@@ -2371,7 +2371,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                           ),
                         ],
                         const SizedBox(width: 4),
-                        if (AdminSecurityService.isAdmin(_currentDriver))
+                        if (V2AdminSecurityService.isAdmin(_currentDriver))
                           Expanded(
                             child: _HomeScreenButton(
                               label: 'Admin',
@@ -2616,7 +2616,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
   Color? _getVozacColorForTermin(String grad, String vreme) {
     final dan = _getDayAbbreviation(_selectedDay);
     final entry = V2MasterRealtimeManager.instance.rasporedCache.values
-        .map((row) => VozacRasporedEntry.fromMap(row))
+        .map((row) => V2VozacRasporedEntry.fromMap(row))
         .where((r) => r.dan == dan && r.grad == grad && r.vreme == vreme)
         .firstOrNull;
     if (entry == null) return null;

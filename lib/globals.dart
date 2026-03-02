@@ -52,7 +52,7 @@ bool get isPraznicniMod => praznicniModNotifier.value;
 /// Globalna instanca Config Service
 /// Centralizovano upravljanje svim kredencijalima i konfiguracijom
 /// Koristi se u celoj aplikaciji za pristup kredencijalima
-final ConfigService configService = ConfigService();
+final V2ConfigService configService = V2ConfigService();
 
 /// UPDATE INFO - informacije o dostupnom update-u
 /// null = nema update-a, ili još nije provereno

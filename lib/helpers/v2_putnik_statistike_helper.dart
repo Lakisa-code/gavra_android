@@ -7,8 +7,8 @@ import '../services/v2_polasci_service.dart';
 
 /// Helper za prikazivanje detaljnih statistika putnika
 /// Koristi se i u admin ekranu i u profilu putnika
-class PutnikStatistikeHelper {
-  PutnikStatistikeHelper._();
+class V2PutnikStatistikeHelper {
+  V2PutnikStatistikeHelper._();
 
   /// Prikaži dijalog sa detaljnim statistikama
   static Future<void> prikaziDetaljneStatistike({

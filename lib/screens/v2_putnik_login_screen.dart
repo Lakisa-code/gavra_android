@@ -46,9 +46,9 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
 
   /// ?? Proveri dostupnost biometrije
   Future<void> _checkBiometric() async {
-    final available = await BiometricService.isBiometricAvailable();
-    final enabled = await BiometricService.isBiometricEnabled();
-    final typeText = await BiometricService.getBiometricTypeText();
+    final available = await V2BiometricService.isBiometricAvailable();
+    final enabled = await V2BiometricService.isBiometricEnabled();
+    final typeText = await V2BiometricService.getBiometricTypeText();
 
     if (mounted) {
       setState(() {
@@ -63,10 +63,10 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
   Future<void> _checkSavedLogin() async {
     // ?? Prvo proveri biometrijsku prijavu
     if (_biometricAvailable && _biometricEnabled) {
-      final credentials = await BiometricService.getSavedCredentials();
+      final credentials = await V2BiometricService.getSavedCredentials();
       if (credentials != null) {
         // Pokušaj biometrijsku autentifikaciju
-        final authenticated = await BiometricService.authenticate(
+        final authenticated = await V2BiometricService.authenticate(
           reason: 'Prijavite se pomocu $_biometricTypeText',
         );
 
@@ -429,7 +429,7 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
       // ?? Registruj push token za notifikacije
       if (putnikId != null) {
         final tabela = response['_tabela'] as String? ?? response['putnik_tabela'] as String?;
-        await PutnikPushService.registerPutnikToken(putnikId, putnikTabela: tabela);
+        await V2PutnikPushService.registerPutnikToken(putnikId, putnikTabela: tabela);
       } // ?? Ponudi biometrijsku prijavu ako je dostupna i nije vec ukljucena
       if (showBiometricPrompt && _biometricAvailable && !_biometricEnabled && mounted) {
         await _showBiometricSetupDialog(telefon, pin);
@@ -453,7 +453,7 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
 
   /// ?? Ponudi setup biometrijske prijave
   Future<void> _showBiometricSetupDialog(String phone, String pin) async {
-    final biometricIcon = await BiometricService.getBiometricIcon();
+    final biometricIcon = await V2BiometricService.getBiometricIcon();
 
     if (!mounted) return;
 
@@ -494,7 +494,7 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
     );
 
     if (result == true) {
-      await BiometricService.saveCredentials(phone: phone, pin: pin);
+      await V2BiometricService.saveCredentials(phone: phone, pin: pin);
       _biometricEnabled = true;
     }
   }
@@ -923,13 +923,13 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
 
   /// ?? Login sa biometrijom
   Future<void> _loginWithBiometric() async {
-    final credentials = await BiometricService.getSavedCredentials();
+    final credentials = await V2BiometricService.getSavedCredentials();
     if (credentials == null) {
       setState(() => _errorMessage = 'Nema sacuvanih podataka za biometrijsku prijavu');
       return;
     }
 
-    final authenticated = await BiometricService.authenticate(
+    final authenticated = await V2BiometricService.authenticate(
       reason: 'Prijavite se pomocu $_biometricTypeText',
     );
 

@@ -38,7 +38,7 @@ class V2PutnikList extends StatelessWidget {
   final String? selectedDay;
 
   // Helper metoda za sortiranje putnika po grupama
-  // Prati CardColorHelper prioritet boja:
+  // Prati V2CardColorHelper prioritet boja:
   // Beli (moji→nedodeljeni) → Sivi (tuđi) → Plavi → Zeleni → Crveni → Žuti
   int _putnikSortKey(V2Putnik p, String currentDriver, {bool imaSivih = false}) {
     // ŽUTE - Odsustvo

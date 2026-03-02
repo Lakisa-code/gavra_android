@@ -8,8 +8,8 @@ import '../screens/v2_putnik_profil_screen.dart';
 import '../screens/v2_vozac_screen.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 
-class NotificationNavigationService {
-  NotificationNavigationService._();
+class V2NotificationNavigationService {
+  V2NotificationNavigationService._();
 
   /// Navigiraj na putnikov profil ekran (za "transport_started" ili seat request notifikacije)
   static Future<void> navigateToPassengerProfile() async {

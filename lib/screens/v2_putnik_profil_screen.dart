@@ -133,7 +133,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     final putnikId = _putnikData['id'];
     if (putnikId != null) {
       final tabela = _putnikData['_tabela'] as String? ?? _putnikData['putnik_tabela'] as String?;
-      await PutnikPushService.registerPutnikToken(putnikId, putnikTabela: tabela);
+      await V2PutnikPushService.registerPutnikToken(putnikId, putnikTabela: tabela);
     }
   }
 
@@ -361,7 +361,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
 
       // Obračun dugovanja — iz sveZapisiGodina (nema dodatnih DB upita)
       final putnikModel = V2RegistrovaniPutnik.fromMap(_putnikData);
-      final cenaPoVoznji = CenaObracunService.getCenaPoDanu(putnikModel);
+      final cenaPoVoznji = V2CenaObracunService.getCenaPoDanu(putnikModel);
 
       final sveVoznjeGodina = sveZapisiGodina.where((r) => r['tip'] == 'voznja').toList();
       double ukupnoZaplacanje = 0;
@@ -1621,7 +1621,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
       ),
       child: InkWell(
         onTap: () {
-          PutnikStatistikeHelper.prikaziDetaljneStatistike(
+          V2PutnikStatistikeHelper.prikaziDetaljneStatistike(
             context: context,
             putnikId: _putnikData['id'] ?? '',
             putnikIme: _putnikData['putnik_ime'] ?? 'Nepoznato',

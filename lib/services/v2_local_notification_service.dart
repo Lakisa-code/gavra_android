@@ -21,7 +21,7 @@ import 'v2_wake_lock_service.dart';
 void notificationTapBackground(NotificationResponse notificationResponse) async {
   // 1. Inicijalizuj Supabase jer smo u background isolate-u
   try {
-    // U background isolate-u ConfigService nije dostupan, učitaj direktno iz .env
+    // U background isolate-u V2ConfigService nije dostupan, učitaj direktno iz .env
     await dotenv.load(fileName: '.env');
     final url = dotenv.env['SUPABASE_URL'] ?? '';
     final anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
@@ -403,13 +403,13 @@ class LocalNotificationService {
               notificationType == 'v2_alternativa' ||
               notificationType == 'v2_odobreno' ||
               notificationType == 'v2_odbijeno') {
-            await NotificationNavigationService.navigateToPassengerProfile();
+            await V2NotificationNavigationService.navigateToPassengerProfile();
             return;
           }
 
           // PIN zahtev ili v2 obrada - otvori PIN zahtevi ekran (Admin/Vozac screen)
           if (notificationType == 'pin_zahtev' || notificationType == 'v2_obrada') {
-            await NotificationNavigationService.navigateToPinZahtevi();
+            await V2NotificationNavigationService.navigateToPinZahtevi();
             return;
           }
 
@@ -446,7 +446,7 @@ class LocalNotificationService {
 
       // Handle transport_started notifikacije - otvori putnikov profil
       if (notificationType == 'transport_started') {
-        await NotificationNavigationService.navigateToPassengerProfile();
+        await V2NotificationNavigationService.navigateToPassengerProfile();
         return; // Ne navigiraj dalje
       }
 

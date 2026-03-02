@@ -13,12 +13,12 @@
 //
 // РЕШЕЊЕ: Користи REST API и Web Dashboard уместо database GUI tools
 
-// Supabase credentials — loaded from .env file via ConfigService
+// Supabase credentials — loaded from .env file via V2ConfigService
 // Fallback to compile-time --dart-define if running in background isolate
-// where ConfigService/dotenv may not be available.
+// where V2ConfigService/dotenv may not be available.
 //
 // Priority:
-// 1. ConfigService (dotenv .env file) — main app
+// 1. V2ConfigService (dotenv .env file) — main app
 // 2. String.fromEnvironment (--dart-define) — CI/build pipeline
 // 3. Empty string (will throw at Supabase.initialize)
 const String supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');

@@ -324,7 +324,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
       context: context,
       builder: (ctx) {
         // Sugeriši cenu na osnovu tipa putnika
-        final sugerisanaCena = CenaObracunService.getCenaPoDanu(registrovaniPutnik);
+        final sugerisanaCena = V2CenaObracunService.getCenaPoDanu(registrovaniPutnik);
 
         final tipLower = registrovaniPutnik.v2Tabela;
         final imeLower = registrovaniPutnik.ime.toLowerCase();
@@ -911,7 +911,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
     String displayDodeljenVozac = _putnik.dodeljenVozac ?? '';
 
     // BOJE KARTICE - privremeni V2Putnik sa ispravnim vozacem za kalkulaciju boja
-    final _colorHelper = CardColorHelper();
+    final _colorHelper = V2CardColorHelper();
     final displayPutnik = _putnik.copyWith(dodeljenVozac: displayDodeljenVozac);
 
     final BoxDecoration finalDecoration = _colorHelper.getCardDecorationWithDriver(
@@ -931,7 +931,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
 
     // Prava po vozacu (centralizovano)
     final String driver = widget.currentDriver;
-    final bool isAdmin = AdminSecurityService.isAdmin(driver);
+    final bool isAdmin = V2AdminSecurityService.isAdmin(driver);
     final bool isVozac = V2VozacCache.imenaVozaca.contains(driver);
 
     if (_putnik.ime.toLowerCase().contains('rado') ||
@@ -947,7 +947,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
-        decoration: finalDecoration, // Koristi CardColorHelper
+        decoration: finalDecoration, // Koristi V2CardColorHelper
         child: Padding(
           padding: const EdgeInsets.all(6.0),
           child: Column(
@@ -964,7 +964,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 14,
-                          color: textColor, // Koristi CardColorHelper
+                          color: textColor, // Koristi V2CardColorHelper
                         ),
                       ),
                     ),

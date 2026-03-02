@@ -5,7 +5,7 @@ import '../services/v2_vozila_service.dart';
 
 /// Helper klasa za deljene podatke o registraciji
 class _RegistracijaData {
-  static Vozilo? najblizeVozilo;
+  static V2Vozilo? najblizeVozilo;
   static int? danaDoIsteka;
   static bool isLoading = true;
   static final List<VoidCallback> _listeners = [];
@@ -28,7 +28,7 @@ class _RegistracijaData {
     try {
       final vozila = V2VozilaService.getVozila();
 
-      Vozilo? najblize;
+      V2Vozilo? najblize;
       int? minDana;
 
       for (final v in vozila) {

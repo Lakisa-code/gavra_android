@@ -266,13 +266,13 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
 
         if (!sessionActive) {
           // Sesija je istekla - proveri biometriju ako je uključena
-          final biometricAvailable = await BiometricService.isBiometricAvailable();
-          final biometricEnabled = await BiometricService.isBiometricEnabled();
+          final biometricAvailable = await V2BiometricService.isBiometricAvailable();
+          final biometricEnabled = await V2BiometricService.isBiometricEnabled();
 
           debugPrint('"[V2WelcomeScreen] Biometrija: available=$biometricAvailable, enabled=$biometricEnabled');
 
           if (biometricAvailable && biometricEnabled) {
-            final authenticated = await BiometricService.authenticate(
+            final authenticated = await V2BiometricService.authenticate(
               reason: 'Potvrdi identitet za prijavu kao $correctName',
             );
 

@@ -6,8 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'v2_permission_service.dart';
 
 /// Real-time GPS position service
-class RealtimeGpsService {
-  RealtimeGpsService._();
+class V2RealtimeGpsService {
+  V2RealtimeGpsService._();
   static final _positionController = StreamController<Position>.broadcast();
   static final _speedController = StreamController<double>.broadcast();
   static StreamSubscription<Position>? _positionSubscription;
@@ -49,7 +49,7 @@ class RealtimeGpsService {
         _speedController.add(speedKmh);
       },
       onError: (error) {
-        debugPrint('[RealtimeGpsService] Position stream error: $error');
+        debugPrint('[V2RealtimeGpsService] Position stream error: $error');
       },
     );
   }

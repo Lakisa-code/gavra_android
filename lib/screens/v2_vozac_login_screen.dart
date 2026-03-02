@@ -45,9 +45,9 @@ class _VozacLoginScreenState extends State<V2VozacLoginScreen> {
 
   /// Proveri biometriju i sačuvane kredencijale
   Future<void> _checkBiometric() async {
-    final available = await BiometricService.isBiometricAvailable();
+    final available = await V2BiometricService.isBiometricAvailable();
     final hasCreds = await _hasBiometricCredentials();
-    final icon = await BiometricService.getBiometricIcon();
+    final icon = await V2BiometricService.getBiometricIcon();
 
     if (mounted) {
       setState(() {
@@ -83,7 +83,7 @@ class _VozacLoginScreenState extends State<V2VozacLoginScreen> {
       return;
     }
 
-    final authenticated = await BiometricService.authenticate(
+    final authenticated = await V2BiometricService.authenticate(
       reason: 'Potvrdi identitet za prijavu kao ${widget.vozacIme}',
     );
 

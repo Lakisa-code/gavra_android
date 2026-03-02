@@ -9,7 +9,7 @@ import 'realtime/v2_master_realtime_manager.dart';
 ///
 /// Čuva per-termin raspored: koji vozač vozi cijeli termin (dan+grad+vreme).
 /// Per-V2Putnik individualna dodjela čuva se u vozac_putnik tabeli (VozacPutnikService).
-class VozacRasporedEntry {
+class V2VozacRasporedEntry {
   final String dan;
   final String grad;
   final String vreme;
@@ -17,15 +17,15 @@ class VozacRasporedEntry {
   /// UUID vozača iz tabele vozaci.id — primarni identifikator
   final String vozacId;
 
-  const VozacRasporedEntry({
+  const V2VozacRasporedEntry({
     required this.dan,
     required this.grad,
     required this.vreme,
     required this.vozacId,
   });
 
-  factory VozacRasporedEntry.fromMap(Map<String, dynamic> map) {
-    return VozacRasporedEntry(
+  factory V2VozacRasporedEntry.fromMap(Map<String, dynamic> map) {
+    return V2VozacRasporedEntry(
       dan: map['dan']?.toString() ?? '',
       grad: map['grad']?.toString() ?? '',
       vreme: map['vreme']?.toString() ?? '',
@@ -43,7 +43,7 @@ class VozacRasporedEntry {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is VozacRasporedEntry &&
+      other is V2VozacRasporedEntry &&
           runtimeType == other.runtimeType &&
           dan == other.dan &&
           grad == other.grad &&
@@ -64,12 +64,12 @@ class V2VozacRasporedService {
   V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
   /// Učitaj sve unose iz rm cache-a (sync)
-  List<VozacRasporedEntry> loadAll() {
-    return _rm.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
+  List<V2VozacRasporedEntry> loadAll() {
+    return _rm.rasporedCache.values.map((row) => V2VozacRasporedEntry.fromMap(row)).toList();
   }
 
   /// Dodaj ili zameni unos (upsert po dan+grad+vreme)
-  Future<void> upsert(VozacRasporedEntry entry) async {
+  Future<void> upsert(V2VozacRasporedEntry entry) async {
     try {
       await _supabase.from('v2_vozac_raspored').upsert(entry.toMap(), onConflict: 'dan,grad,vreme');
     } catch (e) {
@@ -110,14 +110,14 @@ class V2VozacRasporedService {
     required List<T> sviPutnici,
     required String vozacId,
     required String targetDan, // 'pon', 'uto', ...
-    required List<VozacRasporedEntry> raspored,
+    required List<V2VozacRasporedEntry> raspored,
     required String Function(T) getId,
     required String Function(T) getGrad,
     required String Function(T) getPolazak,
   }) {
     if (raspored.isEmpty) return sviPutnici;
 
-    bool jeVozacov(VozacRasporedEntry r) => r.vozacId == vozacId;
+    bool jeVozacov(V2VozacRasporedEntry r) => r.vozacId == vozacId;
 
     return sviPutnici.where((p) {
       final grad = getGrad(p).toUpperCase();

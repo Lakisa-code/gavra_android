@@ -1,6 +1,6 @@
 /// Centralizovani servis za upravljanje admin privilegijama.
-class AdminSecurityService {
-  AdminSecurityService._();
+class V2AdminSecurityService {
+  V2AdminSecurityService._();
 
   static const Set<String> _adminUsers = {
     'Bojan',

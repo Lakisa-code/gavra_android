@@ -40,8 +40,8 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
   String _selectedGrad = 'BC';
   String _selectedVreme = '';
   String? _selectedDay;
-  List<VozacRasporedEntry> _rasporedCache = [];
-  List<VozacPutnikEntry> _vozacPutnikCache = [];
+  List<V2VozacRasporedEntry> _rasporedCache = [];
+  List<V2VozacPutnikEntry> _vozacPutnikCache = [];
 
   // Realtime subscriptions
   StreamSubscription<PostgresChangePayload>? _rasporedSub;
@@ -78,8 +78,8 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
     _autoSelectNajblizeVreme();
     // Odmah ucitaj iz rm.cache (bez DB upita)
     final rm = V2MasterRealtimeManager.instance;
-    _rasporedCache = rm.rasporedCache.values.map((r) => VozacRasporedEntry.fromMap(r)).toList();
-    _vozacPutnikCache = rm.vozacPutnikCache.values.map((r) => VozacPutnikEntry.fromMap(r)).toList();
+    _rasporedCache = rm.rasporedCache.values.map((r) => V2VozacRasporedEntry.fromMap(r)).toList();
+    _vozacPutnikCache = rm.vozacPutnikCache.values.map((r) => V2VozacPutnikEntry.fromMap(r)).toList();
     _subscribeRealtime();
   }
 
@@ -121,14 +121,14 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
     _rasporedSub = rm.subscribe('v2_vozac_raspored').listen((_) {
       if (mounted) {
         setState(() {
-          _rasporedCache = rm.rasporedCache.values.map((r) => VozacRasporedEntry.fromMap(r)).toList();
+          _rasporedCache = rm.rasporedCache.values.map((r) => V2VozacRasporedEntry.fromMap(r)).toList();
         });
       }
     });
     _vozacPutnikSub = rm.subscribe('v2_vozac_putnik').listen((_) {
       if (mounted) {
         setState(() {
-          _vozacPutnikCache = rm.vozacPutnikCache.values.map((r) => VozacPutnikEntry.fromMap(r)).toList();
+          _vozacPutnikCache = rm.vozacPutnikCache.values.map((r) => V2VozacPutnikEntry.fromMap(r)).toList();
         });
       }
     });
@@ -164,8 +164,8 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
       });
   }
 
-  /// Helper: vraca VozacRasporedEntry za termin ili null (izbjegava dupliciranu logiku)
-  VozacRasporedEntry? _getRasporedEntry(String grad, String vreme) {
+  /// Helper: vraca V2VozacRasporedEntry za termin ili null (izbjegava dupliciranu logiku)
+  V2VozacRasporedEntry? _getRasporedEntry(String grad, String vreme) {
     final dan = _selectedDay ?? _getDayAbbreviation(DateTime.now());
     return _rasporedCache.where((r) => r.dan == dan && r.grad == grad && r.vreme == vreme).firstOrNull;
   }
@@ -497,7 +497,7 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
       return;
     }
     try {
-      await _rasporedService.upsert(VozacRasporedEntry(
+      await _rasporedService.upsert(V2VozacRasporedEntry(
         dan: dan,
         grad: grad,
         vreme: vreme,

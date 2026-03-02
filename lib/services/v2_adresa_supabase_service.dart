@@ -102,7 +102,7 @@ class V2AdresaSupabaseService {
   /// Geocodira adresu i ažurira koordinate u bazi.
   static Future<V2Adresa?> _geocodeAndUpdateAdresa(V2Adresa adresa, String grad) async {
     try {
-      final coordsString = await GeocodingService.getKoordinateZaAdresu(
+      final coordsString = await V2GeocodingService.getKoordinateZaAdresu(
         grad,
         adresa.naziv,
       );

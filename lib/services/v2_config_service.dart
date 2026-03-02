@@ -2,10 +2,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Upravlja kredencijalima aplikacije (Supabase URL, keys, etc.)
 /// Učitava iz .env fajla (prioritet), sa fallback-om na --dart-define varijable.
-class ConfigService {
-  static final ConfigService _instance = ConfigService._internal();
-  factory ConfigService() => _instance;
-  ConfigService._internal();
+class V2ConfigService {
+  static final V2ConfigService _instance = V2ConfigService._internal();
+  factory V2ConfigService() => _instance;
+  V2ConfigService._internal();
 
   String _supabaseUrl = '';
   String _supabaseAnonKey = '';
@@ -44,13 +44,13 @@ class ConfigService {
 
   /// Vraća Supabase URL. Baca [StateError] ako [initializeBasic] nije pozvan.
   String getSupabaseUrl() {
-    if (!_initialized) throw StateError('ConfigService nije inicijalizovan. Pozovi initializeBasic() prvo.');
+    if (!_initialized) throw StateError('V2ConfigService nije inicijalizovan. Pozovi initializeBasic() prvo.');
     return _supabaseUrl;
   }
 
   /// Vraća Supabase anon key. Baca [StateError] ako [initializeBasic] nije pozvan.
   String getSupabaseAnonKey() {
-    if (!_initialized) throw StateError('ConfigService nije inicijalizovan. Pozovi initializeBasic() prvo.');
+    if (!_initialized) throw StateError('V2ConfigService nije inicijalizovan. Pozovi initializeBasic() prvo.');
     return _supabaseAnonKey;
   }
 }

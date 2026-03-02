@@ -3,8 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
 /// Servis za biometrijsku autentifikaciju (otisak prsta, Face ID)
-class BiometricService {
-  BiometricService._();
+class V2BiometricService {
+  V2BiometricService._();
 
   static final LocalAuthentication _auth = LocalAuthentication();
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();

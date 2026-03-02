@@ -615,7 +615,7 @@ class _GorivoScreenState extends State<V2GorivoScreen> with SingleTickerProvider
     final kmCtrl = TextEditingController();
     final napomenaCtrl = TextEditingController();
     DateTime datum = DateTime.now();
-    Vozilo? selectedVozilo = vozila.isNotEmpty ? vozila.first : null;
+    V2Vozilo? selectedVozilo = vozila.isNotEmpty ? vozila.first : null;
 
     // Zadnja cijena
     final lastCena = await V2GorivoService.getPoslednaCenaPoPLitru();
@@ -635,10 +635,10 @@ class _GorivoScreenState extends State<V2GorivoScreen> with SingleTickerProvider
             _datumRow(datum, (d) => setLocal(() => datum = d)),
             const SizedBox(height: 12),
 
-            // Vozilo dropdown
-            DropdownButtonFormField<Vozilo>(
+            // V2Vozilo dropdown
+            DropdownButtonFormField<V2Vozilo>(
               value: selectedVozilo,
-              decoration: _inputDeco('Vozilo *'),
+              decoration: _inputDeco('V2Vozilo *'),
               items: vozila
                   .map((v) => DropdownMenuItem(
                         value: v,

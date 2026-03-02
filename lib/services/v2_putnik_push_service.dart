@@ -7,8 +7,8 @@ import 'v2_push_token_service.dart';
 
 /// Servis za registraciju push tokena putnika.
 /// Koristi unificirani PushTokenService za registraciju.
-class PutnikPushService {
-  PutnikPushService._();
+class V2PutnikPushService {
+  V2PutnikPushService._();
 
   /// Registruje push token za putnika u push_tokens tabelu.
   /// Koristi unificirani PushTokenService

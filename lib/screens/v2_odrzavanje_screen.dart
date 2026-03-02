@@ -16,9 +16,9 @@ class V2OdrzavanjeScreen extends StatefulWidget {
 }
 
 class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
-  List<Vozilo> _vozila = [];
+  List<V2Vozilo> _vozila = [];
   bool _isLoading = true;
-  Vozilo? _selectedVozilo;
+  V2Vozilo? _selectedVozilo;
   StreamSubscription? _vozilaSubscription;
 
   final _formatBroja = NumberFormat('#,###', 'sr');
@@ -67,7 +67,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
     super.dispose();
   }
 
-  void _selectVozilo(Vozilo? vozilo) {
+  void _selectVozilo(V2Vozilo? vozilo) {
     setState(() {
       _selectedVozilo = vozilo;
     });
@@ -117,13 +117,13 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
   }
 
   // Dani do isteka registracije
-  int? _getDanaDoIsteka(Vozilo vozilo) {
+  int? _getDanaDoIsteka(V2Vozilo vozilo) {
     if (vozilo.registracijaVaziDo == null) return null;
     return vozilo.registracijaVaziDo!.difference(DateTime.now()).inDays;
   }
 
   // Informativna senka za 15-30 dana do isteka (žuta/limeta)
-  List<BoxShadow>? _getRegistracijaSenka(Vozilo vozilo) {
+  List<BoxShadow>? _getRegistracijaSenka(V2Vozilo vozilo) {
     final danaDoIsteka = _getDanaDoIsteka(vozilo);
     if (danaDoIsteka == null) return null;
 
@@ -161,7 +161,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
 
   Widget _buildVoziloDropdown() {
     // Sortiraj: 066 levo, 102 desno, ostali po redu
-    final sortedVozila = List<Vozilo>.from(_vozila)
+    final sortedVozila = List<V2Vozilo>.from(_vozila)
       ..sort((a, b) {
         if (a.registarskiBroj.contains('066')) return -1;
         if (b.registarskiBroj.contains('066')) return 1;
@@ -320,7 +320,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
             _buildEditableField(
               icon: '📋',
               label: 'Registracija važi do',
-              value: Vozilo.formatDatum(v.registracijaVaziDo),
+              value: V2Vozilo.formatDatum(v.registracijaVaziDo),
               valueColor: v.registracijaIstekla
                   ? Colors.red
                   : v.registracijaIstice
@@ -448,7 +448,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
   String _formatServis(DateTime? datum, int? km) {
     if (datum == null && km == null) return '-';
     final parts = <String>[];
-    if (datum != null) parts.add(Vozilo.formatDatum(datum));
+    if (datum != null) parts.add(V2Vozilo.formatDatum(datum));
     if (km != null) parts.add('${_formatBroja.format(km)} km');
     return parts.join(' �?� ');
   }
@@ -456,7 +456,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
   String? _formatGumeSubtitle(DateTime? datum, int? km) {
     if (datum == null && km == null) return null;
     final parts = <String>[];
-    if (datum != null) parts.add('Menjane: ${Vozilo.formatDatum(datum)}');
+    if (datum != null) parts.add('Menjane: ${V2Vozilo.formatDatum(datum)}');
     if (km != null) parts.add('${_formatBroja.format(km)} km');
     return parts.join(' �?� ');
   }

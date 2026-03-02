@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-class GeocodingService {
-  GeocodingService._();
+class V2GeocodingService {
+  V2GeocodingService._();
 
   static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
 
@@ -132,7 +132,7 @@ class GeocodingService {
         }
       }
     } catch (e) {
-      debugPrint('[GeocodingService] Photon error: $e');
+      debugPrint('[V2GeocodingService] Photon error: $e');
     }
     return null;
   }

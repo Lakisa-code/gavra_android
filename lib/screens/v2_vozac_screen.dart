@@ -111,10 +111,10 @@ class _VozacScreenState extends State<V2VozacScreen> {
   String? _currentDriver; // ?? Trenutni vozac
 
   // ??? VOZAC RASPORED - per-termin filter
-  List<VozacRasporedEntry> _rasporedCache = [];
+  List<V2VozacRasporedEntry> _rasporedCache = [];
 
   // ?? VOZAC V2Putnik - per-V2Putnik individualne dodjele
-  List<VozacPutnikEntry> _vozacPutnikCache = [];
+  List<V2VozacPutnikEntry> _vozacPutnikCache = [];
 
   // Status varijable
   bool _isListReordered = false;
@@ -157,8 +157,8 @@ class _VozacScreenState extends State<V2VozacScreen> {
     // ? ODMAH inicijalizuj iz V2MasterRealtimeManager cache-a (vec ucitan pri startu app-a)
     // Sprjecava race condition gdje _rasporedCache ostaje prazan ? filterKombinovan vraca sve putnike
     _rasporedCache =
-        V2MasterRealtimeManager.instance.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
-    _streamPazar = StatistikaService.streamPazarIzCachea(isoDate: _getWorkingDateIso());
+        V2MasterRealtimeManager.instance.rasporedCache.values.map((row) => V2VozacRasporedEntry.fromMap(row)).toList();
+    _streamPazar = V2StatistikaService.streamPazarIzCachea(isoDate: _getWorkingDateIso());
     _initAsync();
   }
 
@@ -177,8 +177,8 @@ class _VozacScreenState extends State<V2VozacScreen> {
 
   Future<void> _loadRaspored() async {
     final rm = V2MasterRealtimeManager.instance;
-    final raspored = rm.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
-    final vozacPutnik = rm.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
+    final raspored = rm.rasporedCache.values.map((row) => V2VozacRasporedEntry.fromMap(row)).toList();
+    final vozacPutnik = rm.vozacPutnikCache.values.map((row) => V2VozacPutnikEntry.fromMap(row)).toList();
     if (mounted) {
       setState(() {
         _rasporedCache = raspored;
@@ -193,11 +193,11 @@ class _VozacScreenState extends State<V2VozacScreen> {
     _vozacPutnikRealtimeSub?.cancel();
     final rm = V2MasterRealtimeManager.instance;
     _rasporedRealtimeSub = rm.subscribe('v2_vozac_raspored').listen((_) {
-      final entries = rm.rasporedCache.values.map((row) => VozacRasporedEntry.fromMap(row)).toList();
+      final entries = rm.rasporedCache.values.map((row) => V2VozacRasporedEntry.fromMap(row)).toList();
       if (mounted) setState(() => _rasporedCache = entries);
     });
     _vozacPutnikRealtimeSub = rm.subscribe('v2_vozac_putnik').listen((_) {
-      final entries = rm.vozacPutnikCache.values.map((row) => VozacPutnikEntry.fromMap(row)).toList();
+      final entries = rm.vozacPutnikCache.values.map((row) => V2VozacPutnikEntry.fromMap(row)).toList();
       if (mounted) setState(() => _vozacPutnikCache = entries);
     });
   }
@@ -205,10 +205,10 @@ class _VozacScreenState extends State<V2VozacScreen> {
   // ??? GPS TRACKING INICIJALIZACIJA
   void _initializeGpsTracking() {
     // Start GPS tracking
-    RealtimeGpsService.startTracking().catchError((Object e) {});
+    V2RealtimeGpsService.startTracking().catchError((Object e) {});
 
     // Subscribe to driver position updates - auriraj lokaciju u realnom vremenu
-    _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {
+    _driverPositionSubscription = V2RealtimeGpsService.positionStream.listen((pos) {
       // ?? Poalji poziciju vozaca u V2DriverLocationService za pracenje uivu
       V2DriverLocationService.instance.forceLocationUpdate(knownPosition: pos);
     });
@@ -628,7 +628,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
   // ? SPEEDOMETER DUGME U APPBAR-U - IDENTICNO KAO DANAS SCREEN
   Widget _buildSpeedometerButton() {
     return StreamBuilder<double>(
-      stream: RealtimeGpsService.speedStream,
+      stream: V2RealtimeGpsService.speedStream,
       builder: (context, speedSnapshot) {
         final speed = speedSnapshot.data ?? 0.0;
         final speedColor = speed >= 90

@@ -15,14 +15,14 @@ class V2VozilaService {
   static V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
   /// Dohvati sva vozila iz rm cache-a (sync)
-  static List<Vozilo> getVozila() {
-    return _rm.vozilaCache.values.map((row) => Vozilo.fromJson(row)).toList()
+  static List<V2Vozilo> getVozila() {
+    return _rm.vozilaCache.values.map((row) => V2Vozilo.fromJson(row)).toList()
       ..sort((a, b) => a.registarskiBroj.compareTo(b.registarskiBroj));
   }
 
   /// Stream vozila sa realtime osvežavanjem — emituje direktno iz cache-a
-  static Stream<List<Vozilo>> streamVozila() {
-    final controller = StreamController<List<Vozilo>>.broadcast();
+  static Stream<List<V2Vozilo>> streamVozila() {
+    final controller = StreamController<List<V2Vozilo>>.broadcast();
     controller.add(getVozila());
     final sub = _rm.subscribe('v2_vozila').listen((_) {
       if (!controller.isClosed) controller.add(getVozila());
@@ -76,7 +76,7 @@ class V2VozilaService {
 }
 
 /// Model za vozilo - Kolska knjiga
-class Vozilo {
+class V2Vozilo {
   final String id;
   final String registarskiBroj;
   final String? marka;
@@ -115,7 +115,7 @@ class Vozilo {
   final String? radio;
   final double? kilometraza;
 
-  Vozilo({
+  V2Vozilo({
     required this.id,
     required this.registarskiBroj,
     this.marka,
@@ -152,8 +152,8 @@ class Vozilo {
     this.kilometraza,
   });
 
-  factory Vozilo.fromJson(Map<String, dynamic> json) {
-    return Vozilo(
+  factory V2Vozilo.fromJson(Map<String, dynamic> json) {
+    return V2Vozilo(
       id: json['id']?.toString() ?? '',
       registarskiBroj: json['registarski_broj']?.toString() ?? '',
       marka: json['marka']?.toString(),
@@ -230,7 +230,7 @@ class Vozilo {
   }
 
   @override
-  bool operator ==(Object other) => identical(this, other) || (other is Vozilo && other.id == id);
+  bool operator ==(Object other) => identical(this, other) || (other is V2Vozilo && other.id == id);
 
   @override
   int get hashCode => id.hashCode;
