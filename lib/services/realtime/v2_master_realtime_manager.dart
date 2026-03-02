@@ -679,7 +679,7 @@ class V2MasterRealtimeManager {
     final row = await _db
         .from(tabela)
         .select(
-            'id,ime,status,telefon,telefon_2,telefon_oca,telefon_majke,adresa_bc_id,adresa_vs_id,pin,email,cena,cena_po_danu,treba_racun,broj_mesta,created_at,updated_at')
+            'id,ime,status,telefon,adresa_bc_id,adresa_vs_id,pin,email,cena_po_danu,treba_racun,broj_mesta,created_at,updated_at')
         .eq('pin', pin)
         .maybeSingle();
     if (row == null) return null;
@@ -694,7 +694,7 @@ class V2MasterRealtimeManager {
       final row = await _db
           .from(tabela)
           .select(
-              'id,ime,status,telefon,telefon_2,telefon_oca,telefon_majke,adresa_bc_id,adresa_vs_id,pin,email,cena,cena_po_danu,treba_racun,broj_mesta,created_at,updated_at')
+              'id,ime,status,telefon,adresa_bc_id,adresa_vs_id,pin,email,cena_po_danu,treba_racun,broj_mesta,created_at,updated_at')
           .eq('id', id)
           .maybeSingle();
       if (row != null) return {...row, '_tabela': tabela};
