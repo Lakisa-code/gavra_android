@@ -314,7 +314,7 @@ class V2TimePickerCell extends StatelessWidget {
     }
 
     final gradCode = isBC ? 'BC' : 'VS';
-    vremena = await RouteService.getVremenaPolazaka(grad: gradCode, sezona: sezona);
+    vremena = await V2RouteService.getVremenaPolazaka(grad: gradCode, sezona: sezona);
 
     showDialog(
       context: context,

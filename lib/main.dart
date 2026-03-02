@@ -169,7 +169,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     // 🧹 CLEANUP: Zatvori stream controllere
-    WeatherService.dispose();
+    V2WeatherService.dispose();
     RealtimeGpsService.dispose();
     V2StatistikaIstorijaService.dispose();
     SlobodnaMestaService.dispose();

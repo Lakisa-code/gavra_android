@@ -1,69 +1,56 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class GeocodingService {
+  GeocodingService._();
+
   static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
 
-  // 🚀 BATCH PROCESSING VARIABLES
+  // BATCH PROCESSING VARIABLES
   static final Map<String, Completer<String?>> _pendingRequests = {};
   static final Set<String> _processingRequests = {};
 
-  // 🚀 OPTIMIZOVANA VERZIJA - SA BATCH PROCESSING
+  // OPTIMIZOVANA VERZIJA - SA BATCH PROCESSING
   static Future<String?> getKoordinateZaAdresu(
     String grad,
     String adresa,
   ) async {
-    final stopwatch = Stopwatch()..start();
+    // PROVERI DA LI JE GRAD DOZVOLJEN (samo Bela Crkva i Vrsac)
+    if (_isCityBlocked(grad)) return null;
+
+    final requestKey = '${grad}_$adresa';
+
+    // BATCH PROCESSING - Spreči duplikate zahteva
+    if (_processingRequests.contains(requestKey)) {
+      // Čekaj postojeći zahtev — koristi ?.future ?? Future.value(null) da izbjegnemo NPE
+      // ako se Completer ukloni između provjere i await
+      return await (_pendingRequests[requestKey]?.future ?? Future.value(null));
+    }
+
+    // Dodaj novi zahtev u queue
+    final completer = Completer<String?>();
+    _pendingRequests[requestKey] = completer;
+    _processingRequests.add(requestKey);
 
     try {
-      // PROVERI DA LI JE GRAD DOZVOLJEN (samo Bela Crkva i Vrsac)
-      if (_isCityBlocked(grad)) {
-        return null;
-      }
+      // PRIMARNO: Photon (Komoot) — bolji za fuzzy pretragu
+      String? coords = await _fetchFromPhoton(grad, adresa);
 
-      final requestKey = '${grad}_$adresa';
+      // Fallback: Nominatim (OSM) — stroga pretraga
+      coords ??= await _fetchFromNominatim(grad, adresa);
 
-      // 🔄 BATCH PROCESSING - Spreči duplikate zahteva
-      if (_processingRequests.contains(requestKey)) {
-        // Čekaj postojeći zahtev
-        if (_pendingRequests.containsKey(requestKey)) {
-          return await _pendingRequests[requestKey]!.future;
-        }
-      }
-
-      // Dodaj novi zahtev u queue
-      final completer = Completer<String?>();
-      _pendingRequests[requestKey] = completer;
-      _processingRequests.add(requestKey);
-
-      // 1. Idi direktno na API
-      try {
-        // PRIMARNO: Photon (Komoot)
-        // Bolji za fuzzy pretragu ("Šipad", "Pumpa"...)
-        String? coords = await _fetchFromPhoton(grad, adresa);
-
-        // Fallback: Nominatim (OSM)
-        // Ako Photon ne nađe, probamo strogu pretragu
-        coords ??= await _fetchFromNominatim(grad, adresa);
-
-        if (coords != null) {
-          _completeRequest(requestKey, coords);
-        } else {
-          _completeRequest(requestKey, null);
-        }
-      } catch (e) {
-        _completeRequest(requestKey, null);
-      }
-
-      return await completer.future;
-    } finally {
-      stopwatch.stop();
+      _completeRequest(requestKey, coords);
+    } catch (e) {
+      _completeRequest(requestKey, null);
     }
+
+    return completer.future;
   }
 
-  // 🔄 HELPER - Complete pending request
+  // Helper — dovrši pending request i ukloni iz mapa
   static void _completeRequest(String requestKey, String? result) {
     final completer = _pendingRequests.remove(requestKey);
     _processingRequests.remove(requestKey);
@@ -92,14 +79,12 @@ class GeocodingService {
           final List<dynamic> results = json.decode(response.body) as List<dynamic>;
 
           if (results.isNotEmpty) {
-            final result = results[0];
-            final lat = result['lat'];
-            final lon = result['lon'];
-            final coords = '$lat,$lon';
-
-            return coords;
-          } else {}
-        } else {}
+            final result = results[0] as Map<String, dynamic>;
+            final lat = result['lat'] as String?;
+            final lon = result['lon'] as String?;
+            if (lat != null && lon != null) return '$lat,$lon';
+          }
+        }
       } catch (e) {
         if (attempt < maxRetries) {
           await Future<void>.delayed(Duration(milliseconds: 500 * attempt));
@@ -136,28 +121,28 @@ class GeocodingService {
         final features = data['features'] as List<dynamic>?;
 
         if (features != null && features.isNotEmpty) {
-          final feature = features[0];
-          final geometry = feature['geometry'];
-          final coordinates = geometry['coordinates'] as List<dynamic>; // [lon, lat]
-
-          final lon = coordinates[0];
-          final lat = coordinates[1];
-
-          return '$lat,$lon';
+          final feature = features[0] as Map<String, dynamic>;
+          final geometry = feature['geometry'] as Map<String, dynamic>?;
+          final coordinates = geometry?['coordinates'] as List<dynamic>?; // [lon, lat]
+          if (coordinates != null && coordinates.length >= 2) {
+            final lon = coordinates[0];
+            final lat = coordinates[1];
+            if (lat != null && lon != null) return '$lat,$lon';
+          }
         }
       }
     } catch (e) {
-      // Silently ignore errors
+      debugPrint('[GeocodingService] Photon error: $e');
     }
     return null;
   }
 
-  /// 🚫 PROVERI DA LI JE GRAD VAN DOZVOLJENE RELACIJE
+  /// Vraca true ako grad NIJE u dozvoljenim opstinama (Vrsac i Bela Crkva)
   static bool _isCityBlocked(String grad) {
     final normalizedGrad = grad.toLowerCase().trim();
 
-    // ✅ DOZVOLJENI GRADOVI: SAMO Bela Crkva i Vrsac opštine
-    final allowedCities = [
+    // Dozvoljeni gradovi: samo Vrsac i Bela Crkva opštine
+    const allowedCities = [
       // Vrsac OPŠTINA
       'vrsac', 'straza', 'straža', 'vojvodinci', 'potporanj', 'oresac',
       'orešac',
@@ -165,8 +150,6 @@ class GeocodingService {
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
       'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva',
     ];
-    return !allowedCities.any(
-      (allowed) => normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
-    );
+    return !allowedCities.any((allowed) => normalizedGrad.contains(allowed));
   }
 }

@@ -15,12 +15,12 @@ class Vozac {
 
   factory Vozac.fromMap(Map<String, dynamic> map) {
     return Vozac(
-      id: map['id'] as String,
-      ime: map['ime'] as String,
-      brojTelefona: map['telefon'] as String?,
-      email: map['email'] as String?,
-      boja: map['boja'] as String?,
-      sifra: map['sifra'] as String?,
+      id: map['id']?.toString() ?? '',
+      ime: map['ime']?.toString() ?? '',
+      brojTelefona: map['telefon']?.toString(),
+      email: map['email']?.toString(),
+      boja: map['boja']?.toString(),
+      sifra: map['sifra']?.toString(),
     );
   }
   final String id;

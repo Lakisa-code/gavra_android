@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../globals.dart';
-import '../screens/v2_pin_zahtevi_screen.dart';
 import '../screens/v2_home_screen.dart';
+import '../screens/v2_pin_zahtevi_screen.dart';
 import '../screens/v2_putnik_profil_screen.dart';
 import '../screens/v2_vozac_screen.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 
 class NotificationNavigationService {
-  /// 🚐 Navigiraj na putnikov profil ekran (za "transport_started" ili seat request notifikacije)
+  NotificationNavigationService._();
+
+  /// Navigiraj na putnikov profil ekran (za "transport_started" ili seat request notifikacije)
   static Future<void> navigateToPassengerProfile() async {
     final context = navigatorKey.currentContext;
     if (context == null) return;
@@ -19,14 +21,14 @@ class NotificationNavigationService {
       final putnikId = prefs.getString('registrovani_putnik_id');
 
       if (putnikId == null) {
-        debugPrint('⚠️ [NavService] Nemam putnik_id u SharedPreferences-u');
+        debugPrint('[NavService] Nemam putnik_id u SharedPreferences-u');
         return;
       }
 
       // Učitaj podatke putnika iz cache-a
       final response = V2MasterRealtimeManager.instance.getPutnikById(putnikId);
       if (response == null) {
-        debugPrint('⚠️ [NavService] V2Putnik $putnikId nije u cache-u');
+        debugPrint('[NavService] V2Putnik $putnikId nije u cache-u');
         return;
       }
 
@@ -40,11 +42,11 @@ class NotificationNavigationService {
         );
       }
     } catch (e) {
-      debugPrint('❌ [NavService] Greška pri navigaciji na profil: $e');
+      debugPrint('[NavService] navigateToPassengerProfile error: $e');
     }
   }
 
-  /// 🚐 Navigiraj na Vozač Screen (za 'vozac_krenuo' notifikaciju)
+  /// Navigiraj na Vozač Screen (za 'vozac_krenuo' notifikaciju)
   static Future<void> navigateToVozacScreen() async {
     final context = navigatorKey.currentContext;
     if (context == null) return;
@@ -57,11 +59,11 @@ class NotificationNavigationService {
         );
       }
     } catch (e) {
-      debugPrint('❌ [NavService] Greška pri navigaciji na VozacScreen: $e');
+      debugPrint('[NavService] navigateToVozacScreen error: $e');
     }
   }
 
-  /// 🔐 Navigiraj na PIN zahtevi ekran (za admina)
+  /// Navigiraj na PIN zahtevi ekran (za admina)
   static Future<void> navigateToPinZahtevi() async {
     final context = navigatorKey.currentContext;
     if (context == null) return;
@@ -75,7 +77,7 @@ class NotificationNavigationService {
         );
       }
     } catch (e) {
-      // Ignoriši greške
+      debugPrint('[NavService] navigateToPinZahtevi error: $e');
     }
   }
 
@@ -125,7 +127,7 @@ class NotificationNavigationService {
                   ),
                 ),
                 const SizedBox(height: 8),
-                if ((putnikDan as String).isNotEmpty)
+                if (putnikDan is String && putnikDan.isNotEmpty)
                   Text(
                     '📅 Dan: $putnikDan',
                     style: const TextStyle(fontSize: 14),
@@ -140,7 +142,7 @@ class NotificationNavigationService {
                     '🏘️ Destinacija: ${putnikData['grad']}',
                     style: const TextStyle(fontSize: 14),
                   ),
-                if (mesecnaKarta as bool)
+                if (mesecnaKarta == true)
                   const Text(
                     '💳 Mesečna karta',
                     style: TextStyle(
@@ -190,10 +192,6 @@ class NotificationNavigationService {
     Map<String, dynamic> putnikData,
     bool mesecnaKarta,
   ) {
-    final putnikIme = putnikData['ime'];
-    final putnikGrad = putnikData['grad'];
-    final putnikVreme = putnikData['polazak'] ?? putnikData['vreme'];
-
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => const HomeScreen(),

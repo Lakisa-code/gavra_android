@@ -10,6 +10,8 @@ import 'realtime/v2_master_realtime_manager.dart';
 /// Servis za upravljanje kapacitetom polazaka.
 /// Cache se čita direktno iz V2MasterRealtimeManager — nema vlastitog DB upita.
 class V2KapacitetService {
+  V2KapacitetService._();
+
   /// Vremena polazaka za Belu Crkvu (prema navBarType)
   static List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
@@ -71,7 +73,8 @@ class V2KapacitetService {
         onConflict: 'grad,vreme',
       );
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[V2KapacitetService] setKapacitet error: $e');
       return false;
     }
   }
@@ -130,7 +133,7 @@ class V2KapacitetService {
   /// Inicijalizuj cache pri startu — sada je no-op jer rm vec ucitava kapacitetCache.
   static Future<void> initializeKapacitetCache() async {
     // rm.initialize() je vec ucitao kapacitetCache — nema posla ovde.
-    if (kDebugMode) debugPrint('ℹ️ [V2KapacitetService] initializeKapacitetCache: no-op (rm handles cache)');
+    debugPrint('[V2KapacitetService] initializeKapacitetCache: no-op (rm handles cache)');
   }
 
   /// Zaustavi globalni listener — sada je no-op jer rm drzi kanal stalno.

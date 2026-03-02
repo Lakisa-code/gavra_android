@@ -10,6 +10,8 @@ import '../utils/v2_vozac_cache.dart';
 /// Tabela: putnik_id, datum, tip (voznja/otkazivanje/uplata), iznos, vozac_id
 /// Sve statistike se čitaju iz ove tabele.
 class V2StatistikaIstorijaService {
+  V2StatistikaIstorijaService._();
+
   static SupabaseClient get _supabase => supabase;
 
   /// Statistike za popis — broj vožnji, otkazivanja i uplata po vozacu za odredeni datum.
@@ -44,29 +46,20 @@ class V2StatistikaIstorijaService {
         switch (tip) {
           case 'voznja':
             voznje++;
-            break;
           case 'otkazivanje':
             otkazivanja++;
-            break;
+          // Stari tip pre migracije - tretiramo kao dnevnu uplatu
           case 'uplata':
-            // STARI TIP PRE MIGRACIJE (sada više ne bi trebao da postoji, ali za svaki slucaj)
-            // Pretpostavljamo da je 'uplata' bila dnevna ako je iznos manji od np. 2000?
-            // Ili ga brojimo u dnevne.
-            naplaceniDnevni++;
-            pazar += iznos;
-            break;
           case 'uplata_dnevna':
             naplaceniDnevni++;
             pazar += iznos;
-            break;
           case 'uplata_mesecna':
             naplaceniMesecni++;
             pazar += iznos;
-            break;
         }
       }
     } catch (e) {
-      // Greška - vrati prazne statistike
+      debugPrint('[V2StatistikaIstorijaService] Greška u getStatistikePoVozacu: $e');
     }
 
     return {
@@ -95,7 +88,6 @@ class V2StatistikaIstorijaService {
           .eq('tip', tip);
 
       if (grad != null) {
-        // ? NOVO: Koristi dedicirane kolone umesto meta JSONB
         final gradKey = GradAdresaValidator.normalizeGrad(grad);
         query = query.eq('grad', gradKey);
       }
@@ -106,6 +98,7 @@ class V2StatistikaIstorijaService {
 
       return await query.maybeSingle();
     } catch (e) {
+      debugPrint('[V2StatistikaIstorijaService] Greška u getLogEntry: $e');
       return null;
     }
   }
@@ -116,16 +109,15 @@ class V2StatistikaIstorijaService {
     required DateTime datum,
     required double iznos,
     String? vozacId,
-    String? vozacImeParam, // ? direktan fallback ako UUID lookup ne uspe
+    String? vozacImeParam, // direktan fallback ako UUID lookup ne uspe
     int? placeniMesec,
     int? placenaGodina,
-    String tipUplate = 'uplata',
+    String tipUplate = 'uplata_dnevna',
     String? tipPlacanja,
     String? status,
     String? grad,
     String? vreme,
   }) async {
-    // ? NOVO: Koristimo dedicirane kolone umesto meta JSONB
     final String? gradKod = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
     final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
@@ -139,20 +131,20 @@ class V2StatistikaIstorijaService {
         try {
           final vozacData = await _supabase.from('v2_vozaci').select('ime').eq('id', vozacId).maybeSingle();
           vozacIme = vozacData?['ime'] as String?;
-          debugPrint('🔍 [dodajUplatu] vozacId=$vozacId → vozac_ime=$vozacIme');
+          debugPrint('[dodajUplatu] vozacId=$vozacId -> vozac_ime=$vozacIme');
         } catch (e) {
-          debugPrint('❌ Greška pri dohvatanju vozac_ime: $e');
+          debugPrint('[V2StatistikaIstorijaService] Greška pri dohvatanju vozac_ime: $e');
         }
       }
-      // ? Poslednji fallback: direktno prosledeno ime
+      // Poslednji fallback: direktno prosledeno ime
       if ((vozacIme == null || vozacIme.isEmpty) && vozacImeParam != null && vozacImeParam.isNotEmpty) {
         vozacIme = vozacImeParam;
       }
     } else if (vozacImeParam != null && vozacImeParam.isNotEmpty) {
       vozacIme = vozacImeParam;
-      debugPrint('ℹ️ [dodajUplatu] vozacId NULL, koristim vozacImeParam=$vozacIme');
+      debugPrint('[dodajUplatu] vozacId NULL, koristim vozacImeParam=$vozacIme');
     } else {
-      debugPrint('⚠️ [dodajUplatu] vozacId je NULL ili prazan!');
+      debugPrint('[V2StatistikaIstorijaService] dodajUplatu: vozacId je NULL ili prazan');
     }
 
     await _supabase.from('v2_statistika_istorija').insert({
@@ -169,12 +161,11 @@ class V2StatistikaIstorijaService {
     });
   }
 
-  /// ? TRAJNO REŠENJE: Stream pazara po vozacima (realtime)
+  /// Stream pazara po vozacima (realtime)
   static Stream<Map<String, double>> streamPazarPoVozacima({required DateTime from, required DateTime to}) {
     final fromStr = from.toIso8601String().split('T')[0];
     final toStr = to.toIso8601String().split('T')[0];
 
-    // ? FIX: Filtriraj stream UVEK po datumu - koristi filter za range
     Stream<List<Map<String, dynamic>>> query;
     if (fromStr == toStr) {
       // Isti dan - koristi eq filter
@@ -211,7 +202,7 @@ class V2StatistikaIstorijaService {
         if (iznos <= 0) continue;
 
         // Konvertuj UUID u ime vozaca - PRVO iz vozac_ime kolone, pa iz cache-a
-        // ? FIX: nikad ne preskacemo uplatu ako postoji vozac_id ž koristimo UUID kao fallback kljuc
+        // Nikad ne preskacemo uplatu ako postoji vozac_id - koristimo UUID kao fallback kljuc
         String vozacIme = record['vozac_ime'] as String? ?? '';
         if (vozacIme.isEmpty && vozacId != null && vozacId.isNotEmpty) {
           vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
@@ -247,7 +238,6 @@ class V2StatistikaIstorijaService {
       final now = DateTime.now();
       final datumStr = (datum != null && datum.isNotEmpty) ? datum : now.toIso8601String().split('T')[0];
 
-      // ? Koristimo dedicirane kolone umesto meta JSONB
       final String? gradKod = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
       final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
@@ -259,6 +249,10 @@ class V2StatistikaIstorijaService {
       }
 
       final datumParsed = DateTime.tryParse(datumStr);
+      if (datumParsed == null) {
+        debugPrint(
+            '[V2StatistikaIstorijaService] logGeneric: neispravan datumStr="$datumStr", placeni_mesec/godina se nece upisati');
+      }
       await _supabase.from('v2_statistika_istorija').insert({
         'tip': tip,
         'putnik_id': putnikId,
@@ -273,7 +267,7 @@ class V2StatistikaIstorijaService {
         if (datumParsed != null) 'placena_godina': datumParsed.year,
       });
     } catch (e, stack) {
-      debugPrint('❌ Greška pri logovanju akcije ($tip): $e\n$stack');
+      debugPrint('[V2StatistikaIstorijaService] Greška pri logovanju akcije ($tip): $e\n$stack');
     }
   }
 
@@ -298,7 +292,7 @@ class V2StatistikaIstorijaService {
 
   /// Logovanje greške pri obradi zahteva.
   static Future<void> logGreska({
-    String? putnikId, // ?? Može biti null za nove putnike koji nisu još sacuvani
+    String? putnikId, // Može biti null za nove putnike koji nisu još sacuvani
     required String greska,
   }) async {
     return logGeneric(tip: 'greska_aplikacije', putnikId: putnikId, detalji: 'Greška: $greska');

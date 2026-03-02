@@ -179,9 +179,9 @@ async function sendToHMS(tokens: string[], title: string, body: string, data?: a
 
         // Ako je token istekao/nevažeći, obriši ga iz baze
         if (resData.code === '80200003' || resData.code === '80300007') {
-            console.log('⚠️ HMS token expired/invalid, deleting from DB...')
+            console.log('HMS token expired/invalid, deleting from DB...')
             if (supabase) {
-                await supabase.from('push_tokens').delete().in('token', tokens)
+                await supabase.from('v2_push_tokens').delete().in('token', tokens)
             }
         }
 

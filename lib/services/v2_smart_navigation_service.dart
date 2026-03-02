@@ -18,6 +18,8 @@ import 'v2_unified_geocoding_service.dart';
 /// - Automatska segmentacija rute kada prelazi limit waypoinata
 /// - Offline mape, poštuje redosled putnika
 class SmartNavigationService {
+  SmartNavigationService._();
+
   /// Vrati krajnju destinaciju na osnovu startCity
   /// startCity je grad ODAKLE putnici krecu (polazište putnika)
   ///
@@ -34,7 +36,7 @@ class SmartNavigationService {
       return Position(
         latitude: RouteConfig.vrsacLat,
         longitude: RouteConfig.vrsacLng,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.fromMillisecondsSinceEpoch(0),
         accuracy: 0,
         altitude: 0,
         heading: 0,
@@ -50,7 +52,7 @@ class SmartNavigationService {
       return Position(
         latitude: RouteConfig.belaCrkvaLat,
         longitude: RouteConfig.belaCrkvaLng,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.fromMillisecondsSinceEpoch(0),
         accuracy: 0,
         altitude: 0,
         heading: 0,
@@ -98,16 +100,15 @@ class SmartNavigationService {
 
       // 3. VRATI OPTIMIZOVANU RUTU
       return NavigationResult.success(
-        message: '✅ Ruta optimizovana',
+        message: 'Ruta optimizovana',
         optimizedPutnici: optimizedRoute,
-        totalDistance: osrmResult.totalDistanceKm != null
-            ? osrmResult.totalDistanceKm! * 1000 // km -> m
-            : await _calculateTotalDistance(currentPosition, optimizedRoute, coordinates),
+        totalDistance:
+            osrmResult.totalDistanceKm ?? _calculateTotalDistance(currentPosition, optimizedRoute, coordinates),
         skippedPutnici: skipped.isNotEmpty ? skipped : null,
         putniciEta: osrmResult.putniciEta,
       );
     } catch (e) {
-      return NavigationResult.error('❌ Greška pri optimizaciji: $e');
+      return NavigationResult.error('Greška pri optimizaciji: $e');
     }
   }
 
@@ -131,7 +132,7 @@ class SmartNavigationService {
       final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(putnici);
 
       if (coordinates.isEmpty) {
-        return NavigationResult.error('❌ Nijedan V2Putnik nema validnu adresu');
+        return NavigationResult.error('Nijedan putnik nema validnu adresu');
       }
 
       // 2. ODREDI KRAJNJU DESTINACIJU
@@ -139,7 +140,7 @@ class SmartNavigationService {
 
       // 3. POKRENI MULTI-PROVIDER NAVIGACIJU
       if (!context.mounted) {
-        return NavigationResult.error('❌ Context nije više aktivan');
+        return NavigationResult.error('Context nije više aktivan');
       }
       final result = await HereWeGoNavigationService.startNavigation(
         context: context,
@@ -158,7 +159,7 @@ class SmartNavigationService {
         return NavigationResult.error(result.message);
       }
     } catch (e) {
-      return NavigationResult.error('❌ Greška: $e');
+      return NavigationResult.error('Greška: $e');
     }
   }
 
@@ -188,24 +189,25 @@ class SmartNavigationService {
     );
   }
 
-  /// Izracunaj ukupnu distancu optimizovane rute
-  static Future<double> _calculateTotalDistance(
+  /// Izracunaj ukupnu distancu optimizovane rute (u kilometrima)
+  static double _calculateTotalDistance(
     Position start,
     List<V2Putnik> route,
     Map<V2Putnik, Position> coordinates,
-  ) async {
+  ) {
     if (route.isEmpty) return 0.0;
 
     double totalDistance = 0.0;
     Position currentPos = start;
 
     for (final v2Putnik in route) {
-      final nextPos = coordinates[v2Putnik]!;
+      final nextPos = coordinates[v2Putnik];
+      if (nextPos == null) continue;
       totalDistance += _calculateDistance(currentPos, nextPos);
       currentPos = nextPos;
     }
 
-    return totalDistance / 1000; // Konvertuj u kilometre
+    return totalDistance / 1000; // m -> km
   }
 }
 
@@ -249,4 +251,15 @@ class NavigationResult {
   final double? totalDistance;
   final List<V2Putnik>? skippedPutnici;
   final Map<String, int>? putniciEta;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NavigationResult &&
+          runtimeType == other.runtimeType &&
+          success == other.success &&
+          message == other.message;
+
+  @override
+  int get hashCode => Object.hash(success, message);
 }

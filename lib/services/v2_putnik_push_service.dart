@@ -5,52 +5,44 @@ import 'v2_firebase_service.dart';
 import 'v2_huawei_push_service.dart';
 import 'v2_push_token_service.dart';
 
-/// 📱 Servis za registraciju push tokena putnika
-/// Koristi unificirani PushTokenService za registraciju
+/// Servis za registraciju push tokena putnika.
+/// Koristi unificirani PushTokenService za registraciju.
 class PutnikPushService {
-  /// Registruje push token za putnika u push_tokens tabelu
+  PutnikPushService._();
+
+  /// Registruje push token za putnika u push_tokens tabelu.
   /// Koristi unificirani PushTokenService
   static Future<bool> registerPutnikToken(dynamic putnikId, {String? putnikTabela}) async {
     try {
-      if (kDebugMode) {
-        debugPrint('📱 [PutnikPush] Registrujem token za putnika: $putnikId');
-      }
+      debugPrint('[PutnikPush] Registrujem token za putnika: $putnikId');
 
       String? token;
       String? provider;
 
-      // Prvo pokušaj FCM (GMS uređaji)
+      // Prvo pokusaj FCM (GMS uredjaji)
       token = await FirebaseService.getFCMToken();
       if (token != null && token.isNotEmpty) {
         provider = 'fcm';
-        if (kDebugMode) {
-          debugPrint('✅ [PutnikPush] FCM token dobijen: ${token.substring(0, 20)}...');
-        }
+        debugPrint('[PutnikPush] FCM token dobijen: ${token.substring(0, token.length.clamp(0, 20))}...');
       } else {
-        if (kDebugMode) {
-          debugPrint('⚠️ [PutnikPush] FCM token nije dostupan, pokušavam HMS...');
-        }
-        // Fallback na HMS (Huawei uređaji)
+        debugPrint('[PutnikPush] FCM token nije dostupan, pokusavam HMS...');
+        // Fallback na HMS (Huawei uredjaji)
         token = await HuaweiPushService().initialize();
         if (token != null && token.isNotEmpty) {
           provider = 'huawei';
-          if (kDebugMode) {
-            debugPrint('✅ [PutnikPush] HMS token dobijen: ${token.substring(0, 20)}...');
-          }
+          debugPrint('[PutnikPush] HMS token dobijen: ${token.substring(0, token.length.clamp(0, 20))}...');
         }
       }
 
       if (token == null || provider == null) {
-        if (kDebugMode) {
-          debugPrint('❌ [PutnikPush] Nijedan push provider nije dostupan!');
-        }
+        debugPrint('[PutnikPush] Nijedan push provider nije dostupan!');
         return false;
       }
 
-      // Koristi prosleđenu putnikTabela, fallback na cache
+      // Koristi prosledjenu putnikTabela, fallback na cache
       final resolvedTabela = putnikTabela ??
-          (V2MasterRealtimeManager.instance.getPutnikById(putnikId?.toString() ?? '')?['putnik_tabela'] as String?);
-      if (kDebugMode) debugPrint('📝 [PutnikPush] putnikTabela: $resolvedTabela');
+          V2MasterRealtimeManager.instance.getPutnikById(putnikId?.toString() ?? '')?['putnik_tabela']?.toString();
+      debugPrint('[PutnikPush] putnikTabela: $resolvedTabela');
 
       // Koristi unificirani PushTokenService
       final success = await V2PushTokenService.registerToken(
@@ -60,12 +52,10 @@ class PutnikPushService {
         putnikTabela: resolvedTabela,
       );
 
-      if (kDebugMode) {
-        debugPrint('${success ? "✅" : "❌"} [PutnikPush] Registracija ${success ? "uspešna" : "neuspešna"}');
-      }
+      debugPrint('[PutnikPush] Registracija ${success ? 'uspesna' : 'neuspesna'}');
       return success;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [PutnikPush] Greška pri registraciji: $e');
+      debugPrint('[PutnikPush] Greška pri registraciji: $e');
       return false;
     }
   }

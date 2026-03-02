@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +14,8 @@ import '../utils/v2_app_snack_bar.dart';
 
 /// Servis za generisanje i štampanje računa za fizička lica
 class V2RacunService {
+  V2RacunService._();
+
   // ========== FONTOVI SA PODRŠKOM ZA SRPSKA SLOVA ==========
   static pw.Font get regularFont => pw.Font.helvetica();
   static pw.Font get boldFont => pw.Font.helveticaBold();
@@ -35,9 +37,7 @@ class V2RacunService {
 
   /// Vraća sledeći broj računa u formatu "X/YYYY" i automatski uvećava brojač u BAZI
   /// Atomska operacija putem optimistic locking - sprečava duplikate između vozača
-  static Future<String> getNextBrojRacuna() => _getNextBrojRacuna();
-
-  static Future<String> _getNextBrojRacuna() async {
+  static Future<String> getNextBrojRacuna() async {
     final godina = DateTime.now().year;
 
     try {
@@ -94,7 +94,8 @@ class V2RacunService {
       final trenutniBroj = response?['poslednji_broj'] as int? ?? 0;
       return '${trenutniBroj + 1}/$godina';
     } catch (e) {
-      return '❌/$godina';
+      debugPrint('V2RacunService.getTrenutniBrojRacuna error: $e');
+      return '?/$godina';
     }
   }
 
@@ -162,10 +163,10 @@ class V2RacunService {
 
       for (final podaci in racuniPodaci) {
         final v2Putnik = podaci['V2Putnik'];
-        final brojDana = podaci['brojDana'] as int;
-        final cenaPoDanu = podaci['cenaPoDanu'] as double;
-        final ukupno = podaci['ukupno'] as double;
-        final brojRacuna = await _getNextBrojRacuna();
+        final brojDana = (podaci['brojDana'] as num).toInt();
+        final cenaPoDanu = (podaci['cenaPoDanu'] as num).toDouble();
+        final ukupno = (podaci['ukupno'] as num).toDouble();
+        final brojRacuna = await getNextBrojRacuna();
 
         // Dohvati firma podatke iz v2_racuni
         Map<String, dynamic>? firma;
@@ -173,17 +174,19 @@ class V2RacunService {
           firma = await _supabase
               .from('v2_racuni')
               .select('firma_naziv, firma_pib, firma_mb, firma_ziro, firma_adresa')
-              .eq('putnik_id', v2Putnik.id as String)
+              .eq('putnik_id', v2Putnik.id?.toString() ?? '')
               .maybeSingle();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('V2RacunService: greška pri dohvatanju firma podataka: $e');
+        }
 
         final stranica = await _kreirajRacunZaFirmuStranicu(
           brojRacuna: brojRacuna,
-          firmaNaziv: firma?['firma_naziv'] as String? ?? v2Putnik.ime,
-          firmaPib: firma?['firma_pib'] as String? ?? '',
-          firmaMb: firma?['firma_mb'] as String? ?? '',
-          firmaZiro: firma?['firma_ziro'] as String? ?? '',
-          firmaAdresa: firma?['firma_adresa'] as String? ?? '',
+          firmaNaziv: firma?['firma_naziv']?.toString() ?? v2Putnik.ime,
+          firmaPib: firma?['firma_pib']?.toString() ?? '',
+          firmaMb: firma?['firma_mb']?.toString() ?? '',
+          firmaZiro: firma?['firma_ziro']?.toString() ?? '',
+          firmaAdresa: firma?['firma_adresa']?.toString() ?? '',
           putnikIme: v2Putnik.ime,
           opisUsluge: 'Prevoz putnika za $mesecStr',
           cenaPoDanu: cenaPoDanu,

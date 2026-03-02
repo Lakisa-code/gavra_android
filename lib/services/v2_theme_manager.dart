@@ -6,7 +6,9 @@ import 'v2_theme_registry.dart';
 // THEME MANAGER - Upravljanje trenutnom temom
 class ThemeManager extends ChangeNotifier {
   factory ThemeManager() => _instance;
-  ThemeManager._internal();
+  ThemeManager._internal() {
+    _currentTheme = ThemeRegistry.getTheme(_currentThemeId) ?? ThemeRegistry.defaultTheme;
+  }
   static final ThemeManager _instance = ThemeManager._internal();
 
   static const String _themePrefsKey = 'selected_theme_id';
@@ -22,10 +24,7 @@ class ThemeManager extends ChangeNotifier {
   ValueNotifier<ThemeData> get themeNotifier => _themeNotifier;
 
   /// Trenutna tema definicija
-  ThemeDefinition get currentTheme {
-    _currentTheme ??= ThemeRegistry.getTheme(_currentThemeId) ?? ThemeRegistry.defaultTheme;
-    return _currentTheme!;
-  }
+  ThemeDefinition get currentTheme => _currentTheme!;
 
   /// Trenutni ThemeData
   ThemeData get currentThemeData => currentTheme.themeData;
@@ -53,7 +52,7 @@ class ThemeManager extends ChangeNotifier {
         _currentTheme = defaultTheme;
       }
     } catch (e) {
-      // Ako je greška, koristi default
+      debugPrint('[ThemeManager] Greška pri učitavanju teme, koristi default: $e');
       final defaultTheme = ThemeRegistry.defaultTheme;
       _currentThemeId = defaultTheme.id;
       _currentTheme = defaultTheme;
@@ -69,23 +68,19 @@ class ThemeManager extends ChangeNotifier {
       throw Exception('Tema $themeId ne postoji!');
     }
 
-    final oldThemeId = _currentThemeId;
-    _currentThemeId = themeId;
-    _currentTheme = ThemeRegistry.getTheme(themeId);
-
-    // Sačuvaj izbor u SharedPreferences
+    // Sačuvaj izbor u SharedPreferences PRE nego ažuriramo state
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themePrefsKey, themeId);
     } catch (e) {
-      // Greška pri čuvanju - nastavi dalje
+      debugPrint('[ThemeManager] Greška pri čuvanju teme: $e');
     }
 
-    // Analytics - loguj promenu teme
-    await _logThemeChange(oldThemeId, themeId);
+    _currentThemeId = themeId;
+    _currentTheme = ThemeRegistry.getTheme(themeId);
 
     // Obavesti listenere
-    _themeNotifier.value = currentThemeData; // Ažuriraj ValueNotifier
+    _themeNotifier.value = currentThemeData;
     notifyListeners();
   }
 
@@ -97,8 +92,9 @@ class ThemeManager extends ChangeNotifier {
     await changeTheme(themeNames[nextIndex]);
   }
 
-  /// Loguj promenu teme (placeholder)
-  Future<void> _logThemeChange(String oldThemeId, String newThemeId) async {
-    // Analytics uklonjen - placeholder za buduće logovanje
+  @override
+  void dispose() {
+    _themeNotifier.dispose();
+    super.dispose();
   }
 }

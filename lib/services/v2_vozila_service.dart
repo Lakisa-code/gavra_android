@@ -1,13 +1,15 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 
-/// 🚗 VOZILA SERVICE - Kolska knjiga
-/// Evidencija vozila i njihovo tehničko stanje
+/// Servis za upravljanje vozilima — kolska knjiga i tehničko stanje.
 class V2VozilaService {
+  V2VozilaService._();
+
   static SupabaseClient get _supabase => supabase;
 
   static V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
@@ -38,6 +40,7 @@ class V2VozilaService {
       await _supabase.from('v2_vozila').update(podaci).eq('id', id);
       return true;
     } catch (e) {
+      debugPrint('[V2VozilaService] Greška u updateKolskaKnjiga(): $e');
       return false;
     }
   }
@@ -66,6 +69,7 @@ class V2VozilaService {
       });
       return true;
     } catch (e) {
+      debugPrint('[V2VozilaService] Greška u addIstorijuServisa(): $e');
       return false;
     }
   }
@@ -151,38 +155,38 @@ class Vozilo {
   factory Vozilo.fromJson(Map<String, dynamic> json) {
     return Vozilo(
       id: json['id']?.toString() ?? '',
-      registarskiBroj: json['registarski_broj'] as String? ?? '',
-      marka: json['marka'] as String?,
-      model: json['model'] as String?,
-      godinaProizvodnje: json['godina_proizvodnje'] as int?,
-      brojSasije: json['broj_sasije'] as String?,
+      registarskiBroj: json['registarski_broj']?.toString() ?? '',
+      marka: json['marka']?.toString(),
+      model: json['model']?.toString(),
+      godinaProizvodnje: (json['godina_proizvodnje'] as num?)?.toInt(),
+      brojSasije: json['broj_sasije']?.toString(),
       registracijaVaziDo: _parseDate(json['registracija_vazi_do']),
       maliServisDatum: _parseDate(json['mali_servis_datum']),
-      maliServisKm: json['mali_servis_km'] as int?,
+      maliServisKm: (json['mali_servis_km'] as num?)?.toInt(),
       velikiServisDatum: _parseDate(json['veliki_servis_datum']),
-      velikiServisKm: json['veliki_servis_km'] as int?,
+      velikiServisKm: (json['veliki_servis_km'] as num?)?.toInt(),
       alternatorDatum: _parseDate(json['alternator_datum']),
-      alternatorKm: json['alternator_km'] as int?,
+      alternatorKm: (json['alternator_km'] as num?)?.toInt(),
       gumeDatum: _parseDate(json['gume_datum']),
-      gumeOpis: json['gume_opis'] as String?,
+      gumeOpis: json['gume_opis']?.toString(),
       gumePrednjeDatum: _parseDate(json['gume_prednje_datum']),
-      gumePrednjeOpis: json['gume_prednje_opis'] as String?,
-      gumePrednjeKm: json['gume_prednje_km'] as int?,
+      gumePrednjeOpis: json['gume_prednje_opis']?.toString(),
+      gumePrednjeKm: (json['gume_prednje_km'] as num?)?.toInt(),
       gumeZadnjeDatum: _parseDate(json['gume_zadnje_datum']),
-      gumeZadnjeOpis: json['gume_zadnje_opis'] as String?,
-      gumeZadnjeKm: json['gume_zadnje_km'] as int?,
+      gumeZadnjeOpis: json['gume_zadnje_opis']?.toString(),
+      gumeZadnjeKm: (json['gume_zadnje_km'] as num?)?.toInt(),
       akumulatorDatum: _parseDate(json['akumulator_datum']),
-      akumulatorKm: json['akumulator_km'] as int?,
+      akumulatorKm: (json['akumulator_km'] as num?)?.toInt(),
       plociceDatum: _parseDate(json['plocice_datum']),
-      plociceKm: json['plocice_km'] as int?,
+      plociceKm: (json['plocice_km'] as num?)?.toInt(),
       plocicePrednjeDatum: _parseDate(json['plocice_prednje_datum']),
-      plocicePrednjeKm: json['plocice_prednje_km'] as int?,
+      plocicePrednjeKm: (json['plocice_prednje_km'] as num?)?.toInt(),
       plociceZadnjeDatum: _parseDate(json['plocice_zadnje_datum']),
-      plociceZadnjeKm: json['plocice_zadnje_km'] as int?,
+      plociceZadnjeKm: (json['plocice_zadnje_km'] as num?)?.toInt(),
       trapDatum: _parseDate(json['trap_datum']),
-      trapKm: json['trap_km'] as int?,
-      radio: json['radio'] as String?,
-      napomena: json['napomena'] as String?,
+      trapKm: (json['trap_km'] as num?)?.toInt(),
+      radio: json['radio']?.toString(),
+      napomena: json['napomena']?.toString(),
       kilometraza: (json['kilometraza'] as num?)?.toDouble(),
     );
   }
@@ -224,4 +228,10 @@ class Vozilo {
     if (datum == null) return '-';
     return '${datum.day}.${datum.month}.${datum.year}';
   }
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || (other is Vozilo && other.id == id);
+
+  @override
+  int get hashCode => id.hashCode;
 }

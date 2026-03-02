@@ -14,10 +14,10 @@ import '../utils/v2_app_snack_bar.dart';
 import '../utils/v2_grad_adresa_validator.dart';
 import '../utils/v2_text_utils.dart';
 
-class PrintingService {
-  static final V2PutnikStreamService _putnikService = V2PutnikStreamService();
+class V2PrintingService {
+  V2PrintingService._();
 
-  // ========== FONTOVI SA PODRŠKOM ZA SRPSKA SLOVA ==========
+  // ========== FONTOVI SA PODRS KOM ZA SRPSKA SLOVA ==========
   static pw.Font get regularFont => pw.Font.helvetica();
   static pw.Font get boldFont => pw.Font.helveticaBold();
 
@@ -28,15 +28,9 @@ class PrintingService {
     BuildContext context,
   ) async {
     try {
-      String? isoDate;
-      try {
-        isoDate = DateTime.now().toIso8601String().split('T')[0];
-      } catch (e) {
-        debugPrint('❌ Error parsing ISO date for printing: $e');
-        isoDate = DateTime.now().toIso8601String().split('T')[0];
-      }
+      final isoDate = DateTime.now().toIso8601String().split('T')[0];
 
-      List<V2Putnik> sviPutnici = await _putnikService
+      List<V2Putnik> sviPutnici = await V2PutnikStreamService()
           .streamKombinovaniPutniciFiltered(
             isoDate: isoDate,
             grad: selectedGrad,
@@ -59,23 +53,6 @@ class PrintingService {
         return map[fullDayName.toLowerCase()] ?? fullDayName.toLowerCase().substring(0, 3);
       }
 
-      String normalizeTime(String? time) {
-        if (time == null || time.isEmpty) return '';
-
-        String normalized = time.trim();
-
-        if (normalized.contains(':') && normalized.split(':').length == 3) {
-          List<String> parts = normalized.split(':');
-          normalized = '${parts[0]}:${parts[1]}';
-        }
-
-        if (normalized.startsWith('0')) {
-          normalized = normalized.substring(1);
-        }
-
-        return normalized;
-      }
-
       final danBaza = getDayAbbreviation(selectedDay);
 
       List<V2Putnik> putnici = sviPutnici.where((v2Putnik) {
@@ -89,8 +66,10 @@ class PrintingService {
 
           final putnikPolazak = v2Putnik.polazak.toString().trim();
           final selectedVremeStr = selectedVreme.trim();
-          final odgovarajuciPolazak = normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
-              (normalizeTime(putnikPolazak).startsWith(normalizeTime(selectedVremeStr)));
+          final odgovarajuciPolazak =
+              GradAdresaValidator.normalizeTime(putnikPolazak) == GradAdresaValidator.normalizeTime(selectedVremeStr) ||
+                  GradAdresaValidator.normalizeTime(putnikPolazak)
+                      .startsWith(GradAdresaValidator.normalizeTime(selectedVremeStr));
 
           final odgovarajuciDan = v2Putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
 
@@ -104,7 +83,7 @@ class PrintingService {
               normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
           final odgovara = gradMatch &&
-              normalizeTime(v2Putnik.polazak) == normalizeTime(selectedVreme) &&
+              GradAdresaValidator.normalizeTime(v2Putnik.polazak) == GradAdresaValidator.normalizeTime(selectedVreme) &&
               v2Putnik.dan.toLowerCase().contains(danBaza.toLowerCase()) &&
               normalizedStatus != 'obrisan';
 
@@ -197,7 +176,7 @@ class PrintingService {
 
               pw.SizedBox(height: 40),
 
-              // ========== PODACI O VOžNJI ==========
+              // ========== PODACI O VOZNJI ==========
               _buildInfoRow('Datum:', danas),
               pw.SizedBox(height: 8),
               _buildInfoRow('Narucilac:', '______________________'),

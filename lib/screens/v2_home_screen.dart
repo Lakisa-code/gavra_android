@@ -303,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final scaffoldMessenger = ScaffoldMessenger.of(ctx);
 
     // Ucitaj putnike kojima treba racun iz rm cache-a
-    final sviPutnici = await V2ProfilService.getAllAktivniKaoModel();
+    final sviPutnici = V2ProfilService.getAllAktivniKaoModel();
     final putnici = sviPutnici.where((p) => p.trebaRacun).toList();
 
     if (!mounted) return;
@@ -927,8 +927,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     List<Map<String, String>> dostupneAdrese = []; // ?? Lista adresa za dropdown
 
     // Povuci SVE registrovane putnike iz rm cache-a
-    final lista = await V2ProfilService.getAllAktivniKaoModel();
-    // ?? Filtrirana lista aktivnih putnika za brzu pretragu
+    final lista = V2ProfilService.getAllAktivniKaoModel();
+    // Filtrirana lista aktivnih putnika za brzu pretragu
     final aktivniPutnici = lista.where((RegistrovaniPutnik v2Putnik) => v2Putnik.aktivan).toList()
       ..sort((a, b) => a.ime.toLowerCase().compareTo(b.ime.toLowerCase()));
 
@@ -2394,7 +2394,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             offset: const Offset(0, -150),
                             onSelected: (value) async {
                               if (value == 'spisak') {
-                                await PrintingService.printPutniksList(
+                                await V2PrintingService.printPutniksList(
                                   _selectedDay,
                                   _selectedVreme,
                                   _selectedGrad,

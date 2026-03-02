@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,8 +8,9 @@ import '../globals.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 import 'v2_realtime_notification_service.dart';
 
-/// 📨 Servis za upravljanje PIN zahtevima putnika
+/// Servis za upravljanje PIN zahtevima putnika
 class V2PinZahtevService {
+  V2PinZahtevService._();
   static SupabaseClient get _supabase => supabase;
 
   static StreamSubscription<PostgresChangePayload>? _pinZahteviSubscription;
@@ -41,7 +43,7 @@ class V2PinZahtevService {
         if (putnikTabela != null) 'putnik_tabela': putnikTabela,
       });
 
-      // 🔔 Pošalji notifikaciju adminima
+      // Pošalji notifikaciju adminima
       await RealtimeNotificationService.sendNotificationToAdmins(
         title: '🔔 Novi zahtev za PIN',
         body: 'V2Putnik traži PIN za pristup aplikaciji',
@@ -50,11 +52,12 @@ class V2PinZahtevService {
 
       return true;
     } catch (e) {
+      debugPrint('[V2PinZahtevService] posaljiZahtev error: $e');
       return false;
     }
   }
 
-  /// 🛰️ REALTIME STREAM: Prati nove zahteve za PIN
+  /// Realtime stream: Prati nove zahteve za PIN
   static Stream<List<Map<String, dynamic>>> streamZahteviKojiCekaju() {
     // Inicijalizuj subscription ako ne postoji
     if (_pinZahteviSubscription == null) {
@@ -67,7 +70,7 @@ class V2PinZahtevService {
   /// Pokreni realtime listener koristeći RealtimeManager
   static void _startRealtimeListener() {
     _pinZahteviSubscription = V2MasterRealtimeManager.instance.subscribe('v2_pin_zahtevi').listen((payload) {
-      debugPrint('🔔 [PinZahtevService] Primljena realtime promena: ${payload.eventType}');
+      debugPrint('[PinZahtevService] Primljena realtime promena: ${payload.eventType}');
       _fetchAndEmitZahtevi();
     });
 
@@ -120,7 +123,8 @@ class V2PinZahtevService {
       final zahtev = V2MasterRealtimeManager.instance.pinCache[zahtevId];
       if (zahtev == null) return false;
 
-      final putnikId = zahtev['putnik_id'] as String;
+      final putnikId = zahtev['putnik_id'] as String?;
+      if (putnikId == null) return false;
       final putnikTabela = zahtev['putnik_tabela'] as String? ?? '';
 
       // UPDATE pin na pravoj v2_ tabeli
@@ -135,6 +139,7 @@ class V2PinZahtevService {
 
       return true;
     } catch (e) {
+      debugPrint('[V2PinZahtevService] odobriZahtev error: $e');
       return false;
     }
   }
@@ -148,14 +153,14 @@ class V2PinZahtevService {
 
       return true;
     } catch (e) {
+      debugPrint('[V2PinZahtevService] odbijZahtev error: $e');
       return false;
     }
   }
 
-  /// Generiši nasumičan 4-cifreni PIN (1000–9999)
+  /// Generisi nasumičan 4-cifreni PIN
   static String generatePin() {
-    // ignore: avoid_js_rounded_ints
-    return (1000 + (DateTime.now().microsecondsSinceEpoch % 9000)).toString();
+    return (1000 + Random.secure().nextInt(9000)).toString();
   }
 
   static bool imaZahtevKojiCeka(String putnikId) {
@@ -174,22 +179,16 @@ class V2PinZahtevService {
       }
       return true;
     } catch (e) {
+      debugPrint('[V2PinZahtevService] azurirajEmail error: $e');
       return false;
     }
   }
 
-  static String _tabelaToTip(String tabela) {
-    switch (tabela) {
-      case 'v2_radnici':
-        return 'radnik';
-      case 'v2_ucenici':
-        return 'ucenik';
-      case 'v2_dnevni':
-        return 'dnevni';
-      case 'v2_posiljke':
-        return 'posiljka';
-      default:
-        return tabela;
-    }
-  }
+  static String _tabelaToTip(String tabela) => switch (tabela) {
+        'v2_radnici' => 'radnik',
+        'v2_ucenici' => 'ucenik',
+        'v2_dnevni' => 'dnevni',
+        'v2_posiljke' => 'posiljka',
+        _ => tabela,
+      };
 }

@@ -10,7 +10,7 @@ import '../utils/v2_vozac_cache.dart';
 import 'v2_auth_manager.dart';
 import 'v2_local_notification_service.dart';
 import 'v2_push_token_service.dart';
-import 'v2_realtime_notification_service.dart'; // <--- Dodato ovde
+import 'v2_realtime_notification_service.dart';
 
 /// Lightweight wrapper around the `huawei_push` plugin.
 ///
@@ -28,7 +28,7 @@ class HuaweiPushService {
   bool _messageListenerRegistered = false;
   String? _currentToken;
 
-  // ??? ZAŠTITA OD VIŠESTRUKOG POZIVANJA
+  // Zastita od visestrukog pozivanja
   bool _initialized = false;
   bool _initializing = false;
 
@@ -44,13 +44,13 @@ class HuaweiPushService {
   /// Initialize and request token. This method is safe to call even when
   /// HMS is not available on the device — it will simply return null.
   Future<String?> initialize() async {
-    // ?? iOS ne podržava Huawei Push - preskoci
+    // iOS ne podrzava Huawei Push - preskoci
     if (Platform.isIOS) {
-      debugPrint('🔍 [HuaweiPush] iOS detected, skipping Huawei Push');
+      debugPrint('[HuaweiPush] iOS detected, skipping Huawei Push');
       return null;
     }
 
-    // ??? Provera da li je HMS dostupan (zaštita od HMSSDK logova na non-Huawei uredajima)
+    // Provera da li je HMS dostupan (zastita od HMSSDK logova na non-Huawei uredajima)
     try {
       if (Platform.isAndroid) {
         final deviceInfo = DeviceInfoPlugin();
@@ -68,19 +68,19 @@ class HuaweiPushService {
         }
       }
     } catch (e) {
-      debugPrint('❌ [HuaweiPush] Error checking manufacturer: $e');
+      debugPrint('[HuaweiPush] Error checking manufacturer: $e');
     }
 
-    // ??? Ako je vec inicijalizovan, vrati null
+    // Ako je vec inicijalizovan, vrati null
     if (_initialized) {
-      debugPrint('ℹ️ [HuaweiPush] Already initialized');
+      debugPrint('[HuaweiPush] Already initialized');
       return null;
     }
 
-    // ??? Ako je inicijalizacija u toku, sacekaj
+    // Ako je inicijalizacija u toku, sacekaj
     if (_initializing) {
-      debugPrint('⏳ [HuaweiPush] Initialization already in progress...');
-      // Cekaj do 5 sekundi da se zaVrsi tekuca inicijalizacija
+      debugPrint('[HuaweiPush] Initialization already in progress...');
+      // Cekaj do 5 sekundi da se zavrsi tekuca inicijalizacija
       for (int i = 0; i < 50; i++) {
         await Future.delayed(const Duration(milliseconds: 100));
         if (_initialized) return null;
@@ -88,7 +88,7 @@ class HuaweiPushService {
       return null;
     }
 
-    debugPrint('🚀 [HuaweiPush] Starting Huawei Push initialization...');
+    debugPrint('[HuaweiPush] Starting Huawei Push initialization...');
     _initializing = true;
 
     try {
@@ -104,13 +104,13 @@ class HuaweiPushService {
           }
         },
         onError: (dynamic error) {
-          debugPrint('❌ [HuaweiPush] Token error: $error — tražim novi token...');
-          // Token istekao ili nevažeci — zatraži novi
+          debugPrint('[HuaweiPush] Token error: $error - trazim novi token...');
+          // Token istekao ili nevazeci — zatrazi novi
           Future.delayed(const Duration(seconds: 5), () => Push.getToken('HCM'));
         },
       );
 
-      // ?? SUBSCRIBE TO MESSAGE STREAM - slušaj dolazne push notifikacije
+      // Subscribe to message stream - slušaj dolazne push notifikacije
       _setupMessageListener();
 
       // The plugin can return a token synchronously via `Push.getToken()` or
@@ -118,35 +118,35 @@ class HuaweiPushService {
       // that we can log any token and register it immediately.
       // First, try to get token directly (synchronous return from SDK)
       try {
-        debugPrint('📶 [HuaweiPush] Reading App ID and AGConnect values...');
+        debugPrint('[HuaweiPush] Reading App ID and AGConnect values...');
         // Read the App ID and AGConnect values from `agconnect-services.json`
         try {
           final appId = await Push.getAppId();
-          debugPrint('📱 [HuaweiPush] App ID: $appId');
+          debugPrint('[HuaweiPush] App ID: $appId');
         } catch (e) {
-          debugPrint('❌ [HuaweiPush] Failed to get App ID: $e');
+          debugPrint('[HuaweiPush] Failed to get App ID: $e');
         }
 
         try {
           await Push.getAgConnectValues();
-          debugPrint('✅ [HuaweiPush] AGConnect values loaded successfully');
+          debugPrint('[HuaweiPush] AGConnect values loaded successfully');
         } catch (e) {
-          debugPrint('❌ [HuaweiPush] Failed to get AGConnect values: $e');
+          debugPrint('[HuaweiPush] Failed to get AGConnect values: $e');
         }
 
         // Request the token explicitly: the Push.getToken requires a scope
         // parameter and does not return the token; the token is emitted on
         // Push.getTokenStream. Requesting the token explicitly increases the
         // chance of getting a token quickly.
-        // ??? POZIVA SE SAMO JEDNOM PRI PRVOJ INICIJALIZACIJI
+        // Poziva se samo jednom pri prvoj inicijalizaciji
         try {
-          debugPrint('🔑 [HuaweiPush] Requesting token with HCM scope...');
+          debugPrint('[HuaweiPush] Requesting token with HCM scope...');
           Push.getToken('HCM');
         } catch (e) {
-          debugPrint('❌ [HuaweiPush] Failed to request token: $e');
+          debugPrint('[HuaweiPush] Failed to request token: $e');
           // If we get error 907135000, HMS is not available
           if (e.toString().contains('907135000')) {
-            debugPrint('⚠️ [HuaweiPush] HMS Core not available (error 907135000), skipping Huawei Push');
+            debugPrint('[HuaweiPush] HMS Core not available (error 907135000), skipping Huawei Push');
             _initialized = true;
             _initializing = false;
             return null;
@@ -160,26 +160,26 @@ class HuaweiPushService {
       // non-null stream value so that initialization can report a token when
       // one is available immediately after startup.
       try {
-        debugPrint('⏳ [HuaweiPush] Waiting for token on stream (5s timeout)...');
+        debugPrint('[HuaweiPush] Waiting for token on stream (5s timeout)...');
         // Wait longer for the token to appear on the stream, as the SDK may
         // emit the token with a delay while contacting Huawei servers.
-        // ??? SMANJEN TIMEOUT sa 15 na 5 sekundi
+        // Timeout: 5 sekundi
         final firstValue = await Push.getTokenStream.first.timeout(const Duration(seconds: 5));
         if (firstValue.isNotEmpty) {
-          debugPrint('✅ [HuaweiPush] Token received on stream: ${firstValue.substring(0, 10)}...');
+          debugPrint('[HuaweiPush] Token received on stream: ${firstValue.substring(0, 10)}...');
           _currentToken = firstValue;
           await _registerTokenWithServer(firstValue);
           _initialized = true;
           _initializing = false;
           return firstValue;
         } else {
-          debugPrint('⚠️ [HuaweiPush] Empty token received on stream');
+          debugPrint('[HuaweiPush] Empty token received on stream');
         }
       } catch (e) {
-        debugPrint('⚠️ [HuaweiPush] No token received on stream within 5s: $e');
+        debugPrint('[HuaweiPush] No token received on stream within 5s: $e');
         // If HMS is not available, don't keep trying
         if (e.toString().contains('907135000') || e.toString().contains('HMS')) {
-          debugPrint('ℹ️ [HuaweiPush] HMS not available, marking as initialized (null token)');
+          debugPrint('[HuaweiPush] HMS not available, marking as initialized (null token)');
           _initialized = true;
           _initializing = false;
           return null;
@@ -198,7 +198,7 @@ class HuaweiPushService {
     }
   }
 
-  /// ?? SETUP MESSAGE LISTENER - sluša dolazne Huawei push poruke
+  /// Pokreni listener za dolazne Huawei push poruke
   void _setupMessageListener() {
     if (_messageListenerRegistered) return;
     _messageListenerRegistered = true;
@@ -212,39 +212,36 @@ class HuaweiPushService {
           Map<String, dynamic> data = {};
           if (message.data != null) {
             try {
-              data = jsonDecode(message.data!);
+              data = jsonDecode(message.data!) as Map<String, dynamic>;
             } catch (_) {
-              // Ako nije JSON, možda je direktno mapa u nekoj verziji plugina
-              // ali huawei_push obicno šalje string
+              // Ako nije JSON, mozda je direktno mapa u nekoj verziji plugina
+              // ali huawei_push obicno salje string
             }
           }
 
           RealtimeNotificationService.onForegroundNotification(data);
 
           // Get notification details
-          final title = message.notification?.title ?? data['title'] ?? 'Gavra Notification';
-          final body = message.notification?.body ?? data['body'] ?? data['message'] ?? 'Nova notifikacija';
+          final title = message.notification?.title ?? (data['title'] as String?) ?? 'Gavra Notification';
+          final body = message.notification?.body ??
+              (data['body'] as String?) ??
+              (data['message'] as String?) ??
+              'Nova notifikacija';
 
-          // Prikaži lokalnu notifikaciju
+          // Prikazi lokalnu notifikaciju
           await LocalNotificationService.showRealtimeNotification(
             title: title,
             body: body,
             payload: jsonEncode(data),
           );
         } catch (e) {
-          if (kDebugMode) {
-            debugPrint('❌ [HuaweiPush] Greška pri obradi poruke: $e');
-          }
+          debugPrint('[HuaweiPush] Greska pri obradi poruke: $e');
         }
       });
 
-      if (kDebugMode) {
-        debugPrint('✅ [HuaweiPush] Message listener registrovan');
-      }
+      debugPrint('[HuaweiPush] Message listener registrovan');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [HuaweiPush] Greška pri registraciji listenera: $e');
-      }
+      debugPrint('[HuaweiPush] Greska pri registraciji listenera: $e');
     }
   }
 
@@ -260,15 +257,19 @@ class HuaweiPushService {
 
     // Registruj samo ako je vozac ulogovan
     if (driverName == null || driverName.isEmpty) {
-      debugPrint('⚠️ [HuaweiPushService] Vozac nije ulogovan - preskacem HMS registraciju');
+      debugPrint('[HuaweiPushService] Vozac nije ulogovan - preskacem HMS registraciju');
       return;
     }
 
-    await V2PushTokenService.registerToken(
-      token: token,
-      provider: 'huawei',
-      vozacId: VozacCache.getUuidByIme(driverName),
-    );
+    try {
+      await V2PushTokenService.registerToken(
+        token: token,
+        provider: 'huawei',
+        vozacId: VozacCache.getUuidByIme(driverName),
+      );
+    } catch (e) {
+      debugPrint('[HuaweiPushService] _registerTokenWithServer error: $e');
+    }
   }
 
   /// Pokušaj registracije pending tokena (ako postoji)

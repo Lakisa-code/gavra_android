@@ -216,6 +216,43 @@ class AuthManager {
     }
   }
 
+  // ── REMEMBERED DEVICE ──────────────────────────────────────────────────────────
+
+  static const String _rememberedEmailKey = 'remembered_email';
+  static const String _rememberedDriverNameKey = 'remembered_driver_name';
+
+  /// Zapamti uređaj — snima email i ime vozača za auto-login.
+  static Future<void> rememberDevice(String email, String driverName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_rememberedEmailKey, email);
+    await prefs.setString(_rememberedDriverNameKey, driverName);
+    debugPrint('[AuthManager] Uređaj zapamćen: email=$email, driver=$driverName');
+  }
+
+  /// Vrati zapamćene kredencijale uređaja ili null ako nisu sačuvani.
+  static Future<Map<String, String>?> getRememberedDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString(_rememberedEmailKey);
+    final driverName = prefs.getString(_rememberedDriverNameKey);
+    if (email == null || driverName == null) return null;
+    return {'email': email, 'driverName': driverName};
+  }
+
+  /// Provjeri da li je sesija aktivna (timestamp unutar 30 dana).
+  static Future<bool> isSessionActive() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sessionStr = prefs.getString(_authSessionKey);
+    if (sessionStr == null) return false;
+    try {
+      final sessionTime = DateTime.parse(sessionStr);
+      final age = DateTime.now().toUtc().difference(sessionTime);
+      return age.inDays < 30;
+    } catch (e) {
+      debugPrint('[AuthManager] Greška pri parsiranju session timestampa: $e');
+      return false;
+    }
+  }
+
   // ── PRIVATE HELPERS ─────────────────────────────────────────────────────────────
 
   static Future<void> _saveDriverSession(String driverName) async {

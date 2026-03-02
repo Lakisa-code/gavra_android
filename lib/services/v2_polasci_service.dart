@@ -14,9 +14,11 @@ import 'v2_statistika_istorija_service.dart';
 
 /// Servis za upravljanje aktivnim zahtevima za sedišta (v2_polasci tabela)
 class V2PolasciService {
+  V2PolasciService._();
+
   static SupabaseClient get _supabase => supabase;
 
-  /// ✅ UNIFIKOVANA ULAZNA TAČKA — koriste je svi akteri (V2Putnik, admin, vozač)
+  /// UNIFIKOVANA ULAZNA TAČKA — koriste je svi akteri (V2Putnik, admin, vozač)
   ///
   /// Model: dan + grad + zeljeno_vreme → upsert u v2_polasci
   ///
@@ -76,7 +78,7 @@ class V2PolasciService {
           if (customAdresaId != null) 'adresa_id': customAdresaId,
           'updated_at': nowStr,
         }).eq('id', existing['id']);
-        debugPrint('✅ [V2PolasciService] v2PoSaljiZahtev UPDATE $gradKey $normVreme $danKey (isAdmin=$isAdmin)');
+        debugPrint('[V2PolasciService] v2PoSaljiZahtev UPDATE $gradKey $normVreme $danKey (isAdmin=$isAdmin)');
       } else {
         await _supabase.from('v2_polasci').insert({
           'putnik_id': putnikId,
@@ -91,10 +93,10 @@ class V2PolasciService {
           'created_at': nowStr,
           'updated_at': nowStr,
         });
-        debugPrint('✅ [V2PolasciService] v2PoSaljiZahtev INSERT $gradKey $normVreme $danKey (isAdmin=$isAdmin)');
+        debugPrint('[V2PolasciService] v2PoSaljiZahtev INSERT $gradKey $normVreme $danKey (isAdmin=$isAdmin)');
       }
     } catch (e) {
-      debugPrint('❌ [V2PolasciService] v2PoSaljiZahtev error: $e');
+      debugPrint('[V2PolasciService] v2PoSaljiZahtev error: $e');
       rethrow;
     }
   }
@@ -120,7 +122,7 @@ class V2PolasciService {
 
       return true;
     } catch (e) {
-      debugPrint('❌ [V2PolasciService] Error approving request: $e');
+      debugPrint('[V2PolasciService] Error approving request: $e');
       return false;
     }
   }
@@ -137,7 +139,7 @@ class V2PolasciService {
 
       return true;
     } catch (e) {
-      debugPrint('❌ [V2PolasciService] Error rejecting request: $e');
+      debugPrint('[V2PolasciService] Error rejecting request: $e');
       return false;
     }
   }
@@ -216,7 +218,7 @@ class V2PolasciService {
   /// Broj zahteva u statusu `'obrada'` — za bedž na Home ekranu.
   static Stream<int> v2StreamBrojZahteva() => v2StreamZahteviObrada().map((list) => list.length);
 
-  /// 🎫 Prihvata alternativni termin - ODMAH ODOBRAVA
+  /// Prihvata alternativni termin - ODMAH ODOBRAVA
   static Future<bool> v2PrihvatiAlternativu({
     String? requestId,
     required String putnikId,
@@ -252,7 +254,7 @@ class V2PolasciService {
       }
       return true;
     } catch (e) {
-      debugPrint('❌ [V2PolasciService] Error accepting alternative: $e');
+      debugPrint('[V2PolasciService] Error accepting alternative: $e');
       return false;
     }
   }
@@ -392,7 +394,7 @@ class V2PutnikStreamService {
   SupabaseClient get supabase => globals_file.supabase;
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 📡 STREAM METODE — emituju direktno iz RM cache-a
+  // STREAM METODE — emituju direktno iz RM cache-a
   // ──────────────────────────────────────────────────────────────────────────
 
   /// Stream kombinovanih putnika sa opcionim filterima (isoDate, grad, vreme, vozacId).
@@ -446,11 +448,11 @@ class V2PutnikStreamService {
 
   /// Eksplicitan refresh — no-op jer stream automatski reaguje na RM promjene.
   void refreshAllActiveStreams() {
-    debugPrint('🔄 [V2PutnikStreamService] refreshAllActiveStreams — RM stream se sam ažurira');
+    debugPrint('[V2PutnikStreamService] refreshAllActiveStreams — RM stream se sam ažurira');
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 🔍 READ METODE
+  // READ METODE
   // ──────────────────────────────────────────────────────────────────────────
 
   Future<List<V2Putnik>> getPutniciByDayIso(String isoDate) async {
@@ -470,7 +472,7 @@ class V2PutnikStreamService {
           .where((p) => p.status != 'bez_polaska')
           .toList();
     } catch (e) {
-      debugPrint('⚠️ [PutnikService] Error fetching by day: $e');
+      debugPrint('[PutnikService] Error fetching by day: $e');
       return [];
     }
   }
@@ -520,7 +522,7 @@ class V2PutnikStreamService {
       final svi = await getPutniciByDayIso(danasStr);
       return svi.where((p) => idStrings.contains(p.id?.toString())).toList();
     } catch (e) {
-      debugPrint('⚠️ [PutnikService] Error in getPutniciByIds: $e');
+      debugPrint('[PutnikService] Error in getPutniciByIds: $e');
       return [];
     }
   }
@@ -530,7 +532,7 @@ class V2PutnikStreamService {
       final String danasStr = (isoDate ?? DateTime.now().toIso8601String()).split('T')[0];
       return await getPutniciByDayIso(danasStr);
     } catch (e) {
-      debugPrint('⚠️ [PutnikService] Error in getAllPutnici: $e');
+      debugPrint('[PutnikService] Error in getAllPutnici: $e');
       return [];
     }
   }
@@ -677,7 +679,7 @@ class V2PutnikStreamService {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ✏️ WRITE METODE
+  // WRITE METODE
   // ──────────────────────────────────────────────────────────────────────────
 
   final Map<String, DateTime> _lastActionTime = {};
@@ -694,15 +696,15 @@ class V2PutnikStreamService {
   String nowToString() => DateTime.now().toUtc().toIso8601String();
 
   Future<void> v2DodajPutnika(V2Putnik putnik) async {
-    debugPrint('🔍 [PutnikService] v2DodajPutnika: ime="${putnik.ime}"');
+    debugPrint('[PutnikService] v2DodajPutnika: ime="${putnik.ime}"');
 
     final allPutnici = V2MasterRealtimeManager.instance.getAllPutnici();
     final found = allPutnici.where((r) => r['ime']?.toString() == putnik.ime).firstOrNull;
 
-    debugPrint('🔍 [PutnikService] Cache lookup: ${found != null ? 'FOUND id=\${found[\'id\']}' : 'NOT FOUND'}');
+    debugPrint('[PutnikService] Cache lookup: ${found != null ? "FOUND id=${found['id']}" : 'NOT FOUND'}');
 
     if (found == null) {
-      throw Exception('Putnik "\${putnik.ime}" nije pronađen u bazi ili nije aktivan');
+      throw Exception('Putnik "${putnik.ime}" nije pronađen u bazi ili nije aktivan');
     }
     final putnikId = found['id'].toString();
 
@@ -731,7 +733,7 @@ class V2PutnikStreamService {
         final vozacData = await supabase.from('v2_vozaci').select('id').eq('ime', driver).maybeSingle();
         vozacId = vozacData?['id'] as String?;
       } catch (e) {
-        debugPrint('⚠️ [PutnikService] v2OznaciPokupljen: Greška pri dohvatanju vozača "$driver": $e');
+        debugPrint('[PutnikService] v2OznaciPokupljen: Greška pri dohvatanju vozača "$driver": $e');
       }
     }
 
@@ -745,7 +747,7 @@ class V2PutnikStreamService {
         }).eq('id', requestId);
       } else {
         final gradKey = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
-        final vremeKey = vreme != null ? '\${GradAdresaValidator.normalizeTime(vreme)}' : null;
+        final vremeKey = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
         String? danKey;
         try {
           final dt = DateTime.parse(targetDatum);
@@ -753,7 +755,7 @@ class V2PutnikStreamService {
           danKey = dani[dt.weekday - 1];
         } catch (_) {}
         if (gradKey == null || vremeKey == null || danKey == null) {
-          debugPrint('⛔ [PutnikService] v2OznaciPokupljen: Nedostaje grad, vreme ili dan!');
+          debugPrint('[PutnikService] v2OznaciPokupljen: Nedostaje grad, vreme ili dan!');
         } else {
           await supabase
               .from('v2_polasci')
@@ -770,7 +772,7 @@ class V2PutnikStreamService {
         }
       }
     } catch (e) {
-      debugPrint('⚠️ [PutnikService] v2OznaciPokupljen: Greška pri update v2_polasci: $e');
+      debugPrint('[PutnikService] v2OznaciPokupljen: Greška pri update v2_polasci: $e');
     }
 
     final existing = await V2StatistikaIstorijaService.getLogEntry(
@@ -804,7 +806,7 @@ class V2PutnikStreamService {
           'updated_at': nowToString(),
         }).eq('id', putnikId);
       } else {
-        debugPrint('⚠️ [PutnikService] v2OznaciStatus: Putnik $putnikId nije u v2_ cache-u!');
+        debugPrint('[PutnikService] v2OznaciStatus: Putnik $putnikId nije u v2_ cache-u!');
       }
 
       if (status == 'bolovanje' || status == 'godisnji') {
@@ -828,7 +830,7 @@ class V2PutnikStreamService {
         );
       }
     } catch (e) {
-      debugPrint('❌ [PutnikService] Error setting bolovanje/godisnji: $e');
+      debugPrint('[PutnikService] Error setting bolovanje/godisnji: $e');
       rethrow;
     }
   }
@@ -860,7 +862,7 @@ class V2PutnikStreamService {
         datum: datum,
       );
     } catch (e) {
-      debugPrint('⚠️ [PutnikService] Greška pri logovanju otkazivanja: $e');
+      debugPrint('[PutnikService] Greška pri logovanju otkazivanja: $e');
     }
 
     if (requestId != null && requestId.isNotEmpty) {
@@ -877,7 +879,7 @@ class V2PutnikStreamService {
             .select('id');
         if (res.isNotEmpty) return;
       } catch (e) {
-        debugPrint('⚠️ [PutnikService] v2OtkaziPutnika: Error matching by requestId: $e');
+        debugPrint('[PutnikService] v2OtkaziPutnika: Error matching by requestId: $e');
       }
     }
 
@@ -938,7 +940,7 @@ class V2PutnikStreamService {
         if (res.isNotEmpty) return;
       }
     } catch (e) {
-      debugPrint('❌ [PutnikService] v2OtkaziPutnika ERROR: $e');
+      debugPrint('[PutnikService] v2OtkaziPutnika ERROR: $e');
       rethrow;
     }
   }
@@ -960,7 +962,7 @@ class V2PutnikStreamService {
         final vozacData = await supabase.from('v2_vozaci').select('id').eq('ime', driver).maybeSingle();
         vozacId = vozacData?['id'] as String?;
       } catch (e) {
-        debugPrint('⚠️ [PutnikService] v2OznaciPlaceno: Greška pri dohvatanju vozača "$driver": $e');
+        debugPrint('[PutnikService] v2OznaciPlaceno: Greška pri dohvatanju vozača "$driver": $e');
       }
     }
 
@@ -1001,23 +1003,25 @@ class V2PutnikStreamService {
       }).match({'dan': danKey}).inFilter('status', ['odobreno', 'obrada']).eq('grad', gradKey);
 
       if (vreme.isNotEmpty && vreme != 'Sva vremena') {
-        query = query.eq('zeljeno_vreme', '\${GradAdresaValidator.normalizeTime(vreme)}');
+        query = query.eq('zeljeno_vreme', GradAdresaValidator.normalizeTime(vreme));
       }
 
       final res = await query.select('id');
-      debugPrint('🚫 [PutnikService] globalniBezPolaska: updated \${res.length} rows');
+      debugPrint('[PutnikService] globalniBezPolaska: updated ${res.length} rows');
       return res.length;
     } catch (e) {
-      debugPrint('❌ [PutnikService] globalniBezPolaska ERROR: $e');
+      debugPrint('[PutnikService] globalniBezPolaska ERROR: $e');
       return 0;
     }
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📊  STATISTIKA / PLAĆANJA — direktni upiti na v2_statistika_istorija
+// STATISTIKA / PLAĆANJA — direktni upiti na v2_statistika_istorija
 // ─────────────────────────────────────────────────────────────────────────────
 class V2PutnikStatistikaService {
+  V2PutnikStatistikaService._();
+
   static SupabaseClient get _db => supabase;
 
   /// Dohvata sva plaćanja za putnika iz v2_statistika_istorija
@@ -1040,7 +1044,7 @@ class V2PutnikStatistikaService {
               })
           .toList();
     } catch (e) {
-      debugPrint('❌ [V2PutnikStatistikaService] dohvatiPlacanja: $e');
+      debugPrint('[V2PutnikStatistikaService] dohvatiPlacanja: $e');
       return [];
     }
   }
@@ -1059,6 +1063,7 @@ class V2PutnikStatistikaService {
       }
       return ukupno;
     } catch (e) {
+      debugPrint('[V2PutnikStatistikaService] dohvatiUkupnoPlaceno: $e');
       return 0.0;
     }
   }
@@ -1092,7 +1097,7 @@ class V2PutnikStatistikaService {
       );
       return true;
     } catch (e) {
-      debugPrint('❌ [V2PutnikStatistikaService] upisPlacanjaULog: $e');
+      debugPrint('[V2PutnikStatistikaService] upisPlacanjaULog: $e');
       rethrow;
     }
   }

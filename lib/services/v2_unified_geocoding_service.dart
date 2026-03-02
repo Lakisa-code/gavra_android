@@ -1,12 +1,13 @@
 /// UNIFIED GEOCODING SERVICE
 /// Centralizovani servis za geocoding sa:
 /// - Paralelnim fetch-om koordinata
-/// - Prioritetnim redosledom (Baza ? Memory ? Disk ? API)
+/// - Prioritetnim redosledom (Baza -> Nominatim API)
 /// - Progress callback za UI
 library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../config/v2_route_config.dart';
@@ -36,6 +37,14 @@ class GeocodingResult {
   final String? error;
 
   bool get success => position != null;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GeocodingResult && runtimeType == other.runtimeType && putnik == other.putnik && source == other.source;
+
+  @override
+  int get hashCode => Object.hash(putnik, source);
 }
 
 /// UNIFIED GEOCODING SERVICE
@@ -116,9 +125,15 @@ class UnifiedGeocodingService {
         }
       }
 
-      // PRIORITET 3: Nominatim API
+      // PRIORITET 2: Nominatim API
       if (position == null) {
-        final addressToGeocode = realAddressName ?? putnik.adresa!;
+        final addressToGeocode = realAddressName ?? putnik.adresa ?? '';
+        if (addressToGeocode.isEmpty) {
+          return GeocodingResult(
+            putnik: putnik,
+            error: 'Nema adrese za geocodiranje',
+          );
+        }
         final coordsString = await GeocodingService.getKoordinateZaAdresu(
           putnik.grad,
           addressToGeocode,
@@ -188,16 +203,16 @@ class UnifiedGeocodingService {
 
       return _createPosition(lat, lng);
     } catch (e) {
+      debugPrint('[UnifiedGeocodingService] Greška pri parsiranju koordinata "$coords": $e');
       return null;
     }
   }
 
-  /// Kreiraj Position objekat
   static Position _createPosition(double lat, double lng) {
     return Position(
       latitude: lat,
       longitude: lng,
-      timestamp: DateTime.now(),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(0),
       accuracy: 0,
       altitude: 0,
       altitudeAccuracy: 0,
@@ -230,30 +245,26 @@ class UnifiedGeocodingService {
         );
       }
     } catch (e) {
-      // ?? Ignore
+      debugPrint('[UnifiedGeocodingService] Greška pri snimanju koordinata: $e');
     }
   }
 
-  /// IzVrsava taskove sekvencijalno sa pauzom izmedu zahteva
   static Future<List<GeocodingResult>> _executeWithRateLimit(
     List<Future<GeocodingResult> Function()> tasks, {
     required Duration delay,
   }) async {
-    // ? OPTIMIZACIJA 1: Parallelizuj geocodiranje sa rate limiting
-    // Umesto sekvencijalnog await (50-100 sek za 50 putnika),
-    // paralelizuj sa delayom izmedu nominatim API poziva
+    // Paralelizuj geocodiranje sa rate limiting.
+    // Podeli zadatke na grupe od max 5 istovremenih poziva da izbegnemo rate limit.
 
     if (tasks.isEmpty) return [];
 
-    // Podeli zadatke na grupe da izbegnemo rate limit
-    const maxConcurrent = 5; // Max istovremenih geocoding poziva
+    const maxConcurrent = 5;
     final List<GeocodingResult> allResults = [];
 
     for (int batchStart = 0; batchStart < tasks.length; batchStart += maxConcurrent) {
       final batchEnd = (batchStart + maxConcurrent).clamp(0, tasks.length);
       final batch = tasks.sublist(batchStart, batchEnd);
 
-      // ? Paralelizuj sve u batch-u istovremeno
       final batchResults = await Future.wait(
         batch.map((taskFn) => taskFn()),
       );
@@ -269,7 +280,4 @@ class UnifiedGeocodingService {
 
     return allResults;
   }
-
-  // -----------------------------------------------------------------------
-  // STATISTIKE I DEBUG
 }

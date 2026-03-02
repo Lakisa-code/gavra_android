@@ -2,76 +2,65 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
 
-/// ?? HAPTIC FEEDBACK SERVICE
-/// Dodaje tactile response za bolje user experience
+/// Haptic feedback servis za tactile response
 class HapticService {
-  /// ?? Light impact - za obicne tap-ove
+  HapticService._();
+
+  /// Light impact - za obicne tap-ove
   static void lightImpact() {
     try {
       HapticFeedback.lightImpact();
-    } catch (e) {
-      // ?? Ignore
-    }
+    } catch (_) {}
   }
 
-  /// ?? Medium impact - za vašnije akcije
+  /// Medium impact - za vaznije akcije
   static void mediumImpact() {
     try {
       HapticFeedback.mediumImpact();
-    } catch (e) {
-      // ?? Ignore
-    }
+    } catch (_) {}
   }
 
-  /// ? Heavy impact - za kriticne akcije
+  /// Heavy impact - za kriticne akcije
   static void heavyImpact() {
     try {
       HapticFeedback.heavyImpact();
-    } catch (e) {
-      // ?? Ignore
-    }
+    } catch (_) {}
   }
 
-  /// ? Selection click - za picker wheel i slicno
+  /// Selection click - za picker wheel i slicno
   static void selectionClick() {
     try {
       HapticFeedback.selectionClick();
-    } catch (e) {
-      // ?? Ignore
-    }
+    } catch (_) {}
   }
 
-  /// ?? Success feedback - kad se nešto uspešno zaVrsi
+  /// Success feedback - dupli light impact (bip-bip)
   static void success() {
     try {
       HapticFeedback.lightImpact();
       Future.delayed(const Duration(milliseconds: 100), () {
-        HapticFeedback.lightImpact();
+        try {
+          HapticFeedback.lightImpact();
+        } catch (_) {}
       });
-    } catch (e) {
-      // ?? Ignore
-    }
+    } catch (_) {}
   }
 
-  /// ? Error feedback - za greške
+  /// Error feedback - za greske
   static void error() {
     try {
       HapticFeedback.heavyImpact();
-    } catch (e) {
-      // ?? Ignore
-    }
+    } catch (_) {}
   }
 
-  /// ?? POKUPLJEN VIBRACIJA - jaca vibracija kad se V2Putnik pokupi
-  /// Koristi Vibration paket za duše trajanje (200ms)
+  /// Jaca vibracija kad se V2Putnik pokupi — dva kratka pulsa (150ms + 150ms)
   static Future<void> putnikPokupljen() async {
     try {
       // Proveri da li uredaj podržava vibraciju
       final hasVibrator = await Vibration.hasVibrator();
       if (hasVibrator == true) {
         // Dva kratka pulsa - "bip-bip" efekat
-        await Vibration.vibrate(
-            pattern: [0, 150, 100, 150], intensities: [0, 255, 0, 255]);
+        await Vibration.vibrate(pattern: [0, 150, 100, 150], intensities: [0, 255, 0, 255]);
       } else {
         // Fallback na haptic feedback
         HapticFeedback.heavyImpact();
@@ -85,7 +74,7 @@ class HapticService {
   }
 }
 
-/// ?? ENHANCED ELEVATED BUTTON sa haptic feedback
+/// Elevated button sa haptic feedback-om
 class HapticElevatedButton extends StatelessWidget {
   const HapticElevatedButton({
     super.key,
@@ -106,26 +95,19 @@ class HapticElevatedButton extends StatelessWidget {
       onPressed: onPressed == null
           ? null
           : () {
-              // Trigger haptic
               switch (hapticType) {
                 case HapticType.light:
                   HapticService.lightImpact();
-                  break;
                 case HapticType.medium:
                   HapticService.mediumImpact();
-                  break;
                 case HapticType.heavy:
                   HapticService.heavyImpact();
-                  break;
                 case HapticType.selection:
                   HapticService.selectionClick();
-                  break;
                 case HapticType.success:
                   HapticService.success();
-                  break;
                 case HapticType.error:
                   HapticService.error();
-                  break;
               }
               onPressed?.call();
             },
@@ -134,7 +116,7 @@ class HapticElevatedButton extends StatelessWidget {
   }
 }
 
-/// ?? Tipovi haptic feedback-a
+/// Tipovi haptic feedback-a
 enum HapticType {
   light,
   medium,

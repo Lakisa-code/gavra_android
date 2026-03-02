@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Model za vremensku prognozu
-class WeatherData {
+class V2WeatherData {
   final double temperature;
   final int weatherCode;
   final bool isDay;
@@ -14,12 +14,12 @@ class WeatherData {
   final double? tempMin;
   final double? tempMax;
   final double? precipitationSum; // mm padavina
-  final int? precipitationProbability; // procenat verovatnoće padavina (0-100%)
+  final int? precipitationProbability; // procenat verovatnoce padavina (0-100%)
   final int? dailyWeatherCode;
-  // Sat kad počinju padavine
+  // Sat kad pocinjju padavine
   final String? precipitationStartTime;
 
-  WeatherData({
+  V2WeatherData({
     required this.temperature,
     required this.weatherCode,
     required this.isDay,
@@ -32,33 +32,31 @@ class WeatherData {
     this.precipitationStartTime,
   });
 
-  /// Da li se očekuje kiša danas
+  /// Da li se ocekuje kisa danas
   bool get willRain =>
       (precipitationSum ?? 0) > 0.5 || (dailyWeatherCode != null && dailyWeatherCode! >= 51 && dailyWeatherCode! <= 82);
 
-  /// Da li se očekuje sneg danas
+  /// Da li se ocekuje sneg danas
   bool get willSnow => (dailyWeatherCode != null &&
       ((dailyWeatherCode! >= 71 && dailyWeatherCode! <= 77) || (dailyWeatherCode! >= 85 && dailyWeatherCode! <= 86)));
 
-  /// Konvertuj weather code u ikonu (sa dan/noć podrškom)
-  /// Za maglu vraća 'FOG_ASSET' da bi UI mogao da prikaže sliku
+  /// Konvertuj weather code u ikonu (sa dan/noc podrskom)
+  /// Za maglu vraca 'FOG_ASSET' da bi UI mogao da prikaze sliku
   static String getIconForCode(int code, {bool isDay = true}) {
-    // WMO Weather interpretation codes
-    // https://open-meteo.com/en/docs
-    if (code == 0) return isDay ? '☀️' : '🌙'; // Clear sky
-    if (code == 1) return isDay ? '🌤️' : '🌙'; // Mainly clear
-    if (code == 2) return isDay ? '⛅' : '☁️'; // Partly cloudy
-    if (code == 3) return '☁️'; // Overcast
-    if (code >= 45 && code <= 48) return 'FOG_ASSET'; // Fog - koristi sliku
-    if (code >= 51 && code <= 55) return '🌧️'; // Drizzle
-    if (code >= 56 && code <= 57) return '🌧️❄️'; // Freezing drizzle
-    if (code >= 61 && code <= 65) return '🌧️'; // Rain
-    if (code >= 66 && code <= 67) return '🌧️❄️'; // Freezing rain
-    if (code >= 71 && code <= 77) return '❄️'; // Snow
-    if (code >= 80 && code <= 82) return '🌧️'; // Rain showers
-    if (code >= 85 && code <= 86) return '❄️'; // Snow showers
-    if (code >= 95 && code <= 99) return '⛈️'; // Thunderstorm
-    return '🌡️'; // Default
+    if (code == 0) return isDay ? '☀️' : '🌙';
+    if (code == 1) return isDay ? '🌤️' : '🌙';
+    if (code == 2) return isDay ? '⛅' : '☁️';
+    if (code == 3) return '☁️';
+    if (code >= 45 && code <= 48) return 'FOG_ASSET';
+    if (code >= 51 && code <= 55) return '🌧️';
+    if (code >= 56 && code <= 57) return '🌧️❄️';
+    if (code >= 61 && code <= 65) return '🌧️';
+    if (code >= 66 && code <= 67) return '🌧️❄️';
+    if (code >= 71 && code <= 77) return '❄️';
+    if (code >= 80 && code <= 82) return '🌧️';
+    if (code >= 85 && code <= 86) return '❄️';
+    if (code >= 95 && code <= 99) return '⛈️';
+    return '🌡️';
   }
 
   /// Da li ikona treba da bude asset slika
@@ -69,10 +67,24 @@ class WeatherData {
     if (icon == 'FOG_ASSET') return 'assets/weather/fog.png';
     return '';
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is V2WeatherData &&
+          runtimeType == other.runtimeType &&
+          temperature == other.temperature &&
+          weatherCode == other.weatherCode &&
+          isDay == other.isDay;
+
+  @override
+  int get hashCode => Object.hash(temperature, weatherCode, isDay);
 }
 
-/// Servis za vremensku prognozu koristeći Open-Meteo API (besplatan, bez API ključa)
-class WeatherService {
+/// Servis za vremensku prognozu koristeci Open-Meteo API (besplatan, bez API kljuca)
+class V2WeatherService {
+  V2WeatherService._();
+
   // Koordinate gradova
   static const Map<String, Map<String, double>> _gradKoordinate = {
     'BC': {'lat': 44.8989, 'lon': 21.4181}, // Bela Crkva
@@ -80,17 +92,17 @@ class WeatherService {
   };
 
   // Stream controlleri za real-time temperature
-  static final _bcController = StreamController<WeatherData?>.broadcast();
-  static final _vsController = StreamController<WeatherData?>.broadcast();
+  static final _bcController = StreamController<V2WeatherData?>.broadcast();
+  static final _vsController = StreamController<V2WeatherData?>.broadcast();
 
   /// Stream za BC
-  static Stream<WeatherData?> get bcWeatherStream => _bcController.stream;
+  static Stream<V2WeatherData?> get bcWeatherStream => _bcController.stream;
 
   /// Stream za VS
-  static Stream<WeatherData?> get vsWeatherStream => _vsController.stream;
+  static Stream<V2WeatherData?> get vsWeatherStream => _vsController.stream;
 
   /// Dohvati kompletne vremenske podatke za grad
-  static Future<WeatherData?> getWeatherData(String grad) async {
+  static Future<V2WeatherData?> getWeatherData(String grad) async {
     try {
       final coords = _gradKoordinate[grad];
       if (coords == null) return null;
@@ -163,17 +175,17 @@ class WeatherService {
                   break;
                 }
               } catch (e) {
-                debugPrint('⚠️ Error fetching weather: $e');
+                debugPrint('[V2WeatherService] Greška pri parsiranju hourly vremena: $e');
               }
             }
           }
         }
 
-        final weatherData = WeatherData(
+        final weatherData = V2WeatherData(
           temperature: temp,
           weatherCode: code,
           isDay: isDay,
-          icon: WeatherData.getIconForCode(code, isDay: isDay),
+          icon: V2WeatherData.getIconForCode(code, isDay: isDay),
           tempMin: tempMin,
           tempMax: tempMax,
           precipitationSum: precipSum,
@@ -184,22 +196,22 @@ class WeatherService {
 
         // Emituj na stream
         if (grad == 'BC') {
-          _bcController.add(weatherData);
+          if (!_bcController.isClosed) _bcController.add(weatherData);
         } else if (grad == 'VS') {
-          _vsController.add(weatherData);
+          if (!_vsController.isClosed) _vsController.add(weatherData);
         }
 
         return weatherData;
       }
     } catch (e) {
-      // Greška
+      debugPrint('[V2WeatherService] Greška u getWeatherData($grad): $e');
       return null;
     }
 
     return null;
   }
 
-  /// Osveži podatke za oba grada
+  /// Osvezi podatke za oba grada
   static Future<void> refreshAll() async {
     await Future.wait([
       getWeatherData('BC'),

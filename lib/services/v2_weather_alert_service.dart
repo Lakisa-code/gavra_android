@@ -6,13 +6,15 @@ import 'v2_push_token_service.dart';
 import 'v2_realtime_notification_service.dart';
 import 'v2_weather_service.dart';
 
-/// ??? Servis za automatska upozorenja o opasnim vremenskim uslovima
-/// šalje push notifikacije vozacima kada se ocekuje:
-/// - ?? Sneg
-/// - ?? Ledena kiša (freezing rain)
-/// - ?? Nevreme (grmljavina)
-/// - ??? Gusta magla
+/// Servis za automatska upozorenja o opasnim vremenskim uslovima.
+/// Šalje push notifikacije vozačima kada se očekuje:
+/// - Sneg
+/// - Ledena kiša (freezing rain)
+/// - Nevreme (grmljavina)
+/// - Gusta magla
 class V2WeatherAlertService {
+  V2WeatherAlertService._();
+
   static SupabaseClient get _supabase => supabase;
 
   /// Glavna funkcija - proverava prognozu i šalje upozorenje ako treba
@@ -21,15 +23,13 @@ class V2WeatherAlertService {
     try {
       // Proveri da li je vec poslato danas
       if (await _isAlertAlreadySentToday()) {
-        if (kDebugMode) {
-          debugPrint('ℹ️ [WeatherAlert] Upozorenje vec poslato danas');
-        }
+        debugPrint('[WeatherAlert] Upozorenje vec poslato danas');
         return;
       }
 
       // Dohvati prognozu za oba grada
-      final bcWeather = await WeatherService.getWeatherData('BC');
-      final vsWeather = await WeatherService.getWeatherData('VS');
+      final bcWeather = await V2WeatherService.getWeatherData('BC');
+      final vsWeather = await V2WeatherService.getWeatherData('VS');
 
       // Proveri da li ima opasnih uslova
       final alerts = <String>[];
@@ -47,9 +47,7 @@ class V2WeatherAlertService {
       }
 
       if (alerts.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('✅ [WeatherAlert] Nema opasnih vremenskih uslova');
-        }
+        debugPrint('[WeatherAlert] Nema opasnih vremenskih uslova');
         return;
       }
 
@@ -59,40 +57,38 @@ class V2WeatherAlertService {
       // Oznaci da je poslato
       await _markAlertSent(alerts.join(', '));
 
-      if (kDebugMode) {
-        debugPrint('✅ [WeatherAlert] Poslato upozorenje: ${alerts.join(', ')}');
-      }
+      debugPrint('[WeatherAlert] Poslato upozorenje: ${alerts.join(', ')}');
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [WeatherAlert] Greška: $e');
+      debugPrint('[WeatherAlert] Greška: $e');
     }
   }
 
   /// Proverava da li prognoza sadrži opasne uslove
-  static List<String> _checkForDangerousWeather(WeatherData weather, String grad) {
+  static List<String> _checkForDangerousWeather(V2WeatherData weather, String grad) {
     final alerts = <String>[];
     final code = weather.dailyWeatherCode ?? weather.weatherCode;
 
-    // ?? SNEG (71-77, 85-86)
+    // Sneg (71-77, 85-86)
     if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
       alerts.add('❄️ Sneg u $grad');
     }
 
-    // ?? LEDENA KIŠA (56-57, 66-67) - POSEBNO OPASNO
+    // Ledena kiša (56-57, 66-67) - posebno opasno
     if ((code >= 56 && code <= 57) || (code >= 66 && code <= 67)) {
       alerts.add('🌨️ Ledena kiša u $grad - OPREZ!');
     }
 
-    // ?? NEVREME/GRMLJAVINA (95-99)
+    // Nevreme/grmljavina (95-99)
     if (code >= 95 && code <= 99) {
       alerts.add('⚡ Nevreme u $grad');
     }
 
-    // ??? GUSTA MAGLA (45-48)
+    // Gusta magla (45-48)
     if (code >= 45 && code <= 48) {
       alerts.add('🌫️ Gusta magla u $grad');
     }
 
-    // ??? JAKA KIŠA (65, 82) - samo najjaci intenzitet
+    // Jaka kiša (65, 82) - samo najjaci intenzitet
     if (code == 65 || code == 82) {
       alerts.add('🌧️ Jaka kiša u $grad');
     }
@@ -115,9 +111,7 @@ class V2WeatherAlertService {
       return response != null;
     } catch (e) {
       // Ako tabela ne postoji, vrati false
-      if (kDebugMode) {
-        debugPrint('❌ [WeatherAlert] Greška pri proveri loga: $e');
-      }
+      debugPrint('[WeatherAlert] Greška pri proveri loga: $e');
       return false;
     }
   }
@@ -129,7 +123,7 @@ class V2WeatherAlertService {
       final vozacTokens = await V2PushTokenService.getTokensForVozaci();
 
       if (vozacTokens.isEmpty) {
-        if (kDebugMode) debugPrint('⚠️ [WeatherAlert] Nema vozackih tokena');
+        debugPrint('[WeatherAlert] Nema vozackih tokena');
         return;
       }
 
@@ -148,11 +142,9 @@ class V2WeatherAlertService {
         },
       );
 
-      if (kDebugMode) {
-        debugPrint('✅ [WeatherAlert] Poslato ${vozacTokens.length} vozacima');
-      }
+      debugPrint('[WeatherAlert] Poslato ${vozacTokens.length} vozacima');
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [WeatherAlert] Greška pri slanju: $e');
+      debugPrint('[WeatherAlert] Greška pri slanju: $e');
     }
   }
 
@@ -178,7 +170,7 @@ class V2WeatherAlertService {
         'alert_types': alertTypes,
       });
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [WeatherAlert] Greška pri upisu loga: $e');
+      debugPrint('[WeatherAlert] Greška pri upisu loga: $e');
     }
   }
 }

@@ -5,17 +5,19 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/v2_putnik.dart';
-import '../utils/v2_device_utils.dart'; // DODAJ OVO
+import '../utils/v2_device_utils.dart';
 
-/// ?? HERE WEGO NAVIGATION SERVICE
+/// HERE WeGo navigacijski servis
 /// Koristi ISKLJUCIVO HERE WeGo za navigaciju - OBAVEZNA INSTALACIJA
 class HereWeGoNavigationService {
+  HereWeGoNavigationService._();
+
   // HERE WeGo konstante
   static const String appScheme = 'here.directions';
   static const String webScheme = 'https://share.here.com';
   static const int maxWaypoints = 10;
 
-  /// ?? Pokreni navigaciju sa HERE WeGo
+  /// Pokreni navigaciju sa HERE WeGo
   static Future<HereWeGoNavResult> startNavigation({
     required BuildContext context,
     required List<V2Putnik> putnici,
@@ -34,7 +36,7 @@ class HereWeGoNavigationService {
         if (shouldInstall) {
           await _openStore();
         }
-        return HereWeGoNavResult.error('📲 Molimo instalirajte HERE WeGo aplikaciju pre nastavka.');
+        return HereWeGoNavResult.error('Molimo instalirajte HERE WeGo aplikaciju pre nastavka.');
       }
 
       // FILTRIRAJ PUTNIKE SA VALIDNIM KOORDINATAMA
@@ -67,7 +69,7 @@ class HereWeGoNavigationService {
     }
   }
 
-  /// ?? Proveri da li je HERE WeGo instaliran
+  /// Proveri da li je HERE WeGo instaliran
   static Future<bool> _isHereWeGoInstalled() async {
     try {
       // Proveravamo više poznatih šema da budemo sigurni
@@ -86,7 +88,7 @@ class HereWeGoNavigationService {
     }
   }
 
-  /// ?? Dijalog za instalaciju
+  /// Dijalog za instalaciju HERE WeGo
   static Future<bool> _showInstallDialog(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
@@ -120,7 +122,7 @@ class HereWeGoNavigationService {
         false;
   }
 
-  /// ?? Otvori Store za download
+  /// Otvori Store za preuzimanje HERE WeGo
   static Future<void> _openStore() async {
     String url = '';
 
@@ -148,7 +150,7 @@ class HereWeGoNavigationService {
     }
   }
 
-  /// ?? Gradi HERE WeGo URL za navigaciju
+  /// Gradi HERE WeGo URL za navigaciju
   static String _buildUrl(List<Position> waypoints, Position destination) {
     final StringBuffer url = StringBuffer();
 
@@ -166,7 +168,7 @@ class HereWeGoNavigationService {
     return url.toString();
   }
 
-  /// ?? Pokreni HERE WeGo navigaciju
+  /// Pokreni HERE WeGo navigaciju
   static Future<HereWeGoNavResult> _launchNavigation({
     required List<V2Putnik> putnici,
     required Map<V2Putnik, Position> coordinates,
@@ -197,7 +199,7 @@ class HereWeGoNavigationService {
         final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
         if (success) {
           return HereWeGoNavResult.success(
-            message: '✅ HERE WeGo: ${putnici.length} putnika',
+            message: 'HERE WeGo: ${putnici.length} putnika',
             launchedPutnici: putnici,
             remainingPutnici: [],
           );
@@ -209,7 +211,7 @@ class HereWeGoNavigationService {
     }
   }
 
-  /// ?? Segmentirana navigacija (više od 10 putnika)
+  /// Segmentirana navigacija (vise od 10 putnika)
   static Future<HereWeGoNavResult> _launchSegmentedNavigation({
     required BuildContext context,
     required List<V2Putnik> putnici,
@@ -258,14 +260,14 @@ class HereWeGoNavigationService {
         final shouldContinue = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text('Segment $currentSegment/${segments.length} zaVrsen'),
+            title: Text('Segment $currentSegment/${segments.length} završen'),
             content: Text(
               'Pokupljeno: ${launchedPutnici.length} putnika\n'
               'Preostalo: $remainingCount putnika\n\n'
               'Nastaviti sa sledecim segmentom?',
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ZaVrsi')),
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Završi')),
               ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Nastavi')),
             ],
           ),
@@ -273,7 +275,7 @@ class HereWeGoNavigationService {
 
         if (shouldContinue != true) {
           return HereWeGoNavResult.partial(
-            message: 'Navigacija zaVrsena posle segmenta $currentSegment',
+            message: 'Navigacija završena posle segmenta $currentSegment',
             launchedPutnici: launchedPutnici,
             remainingPutnici: segments.skip(currentSegment).expand((s) => s).toList(),
           );
@@ -282,14 +284,14 @@ class HereWeGoNavigationService {
     }
 
     return HereWeGoNavResult.success(
-      message: '✅ HERE WeGo: svih ${launchedPutnici.length} putnika',
+      message: 'HERE WeGo: svih ${launchedPutnici.length} putnika',
       launchedPutnici: launchedPutnici,
       remainingPutnici: [],
     );
   }
 }
 
-/// ?? Rezultat HERE WeGo navigacije
+/// Rezultat HERE WeGo navigacije
 class HereWeGoNavResult {
   HereWeGoNavResult._({
     required this.success,

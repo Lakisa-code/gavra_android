@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
+import '../utils/v2_grad_adresa_validator.dart';
 import 'realtime/v2_master_realtime_manager.dart';
 
 /// Model za jedan red iz vozac_raspored tabele.
@@ -24,10 +26,10 @@ class VozacRasporedEntry {
 
   factory VozacRasporedEntry.fromMap(Map<String, dynamic> map) {
     return VozacRasporedEntry(
-      dan: map['dan'] as String,
-      grad: map['grad'] as String,
-      vreme: map['vreme'] as String,
-      vozacId: map['vozac_id'] as String,
+      dan: map['dan']?.toString() ?? '',
+      grad: map['grad']?.toString() ?? '',
+      vreme: map['vreme']?.toString() ?? '',
+      vozacId: map['vozac_id']?.toString() ?? '',
     );
   }
 
@@ -37,6 +39,19 @@ class VozacRasporedEntry {
         'vreme': vreme,
         'vozac_id': vozacId,
       };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VozacRasporedEntry &&
+          runtimeType == other.runtimeType &&
+          dan == other.dan &&
+          grad == other.grad &&
+          vreme == other.vreme &&
+          vozacId == other.vozacId;
+
+  @override
+  int get hashCode => Object.hash(dan, grad, vreme, vozacId);
 }
 
 /// Servis za učitavanje i upravljanje vozac_raspored tabelom
@@ -55,7 +70,11 @@ class V2VozacRasporedService {
 
   /// Dodaj ili zameni unos (upsert po dan+grad+vreme)
   Future<void> upsert(VozacRasporedEntry entry) async {
-    await _supabase.from('v2_vozac_raspored').upsert(entry.toMap(), onConflict: 'dan,grad,vreme');
+    try {
+      await _supabase.from('v2_vozac_raspored').upsert(entry.toMap(), onConflict: 'dan,grad,vreme');
+    } catch (e) {
+      debugPrint('[V2VozacRasporedService] Greška u upsert(): $e');
+    }
   }
 
   /// Obriši unos za termin (dan+grad+vreme+vozac_id)
@@ -65,13 +84,17 @@ class V2VozacRasporedService {
     required String vreme,
     required String vozacId,
   }) async {
-    await _supabase
-        .from('v2_vozac_raspored')
-        .delete()
-        .eq('dan', dan)
-        .eq('grad', grad)
-        .eq('vreme', vreme)
-        .eq('vozac_id', vozacId);
+    try {
+      await _supabase
+          .from('v2_vozac_raspored')
+          .delete()
+          .eq('dan', dan)
+          .eq('grad', grad)
+          .eq('vreme', vreme)
+          .eq('vozac_id', vozacId);
+    } catch (e) {
+      debugPrint('[V2VozacRasporedService] Greška u deleteTermin(): $e');
+    }
   }
 
   /// Filter logika: koji putnici pripadaju vozaču?
@@ -82,7 +105,7 @@ class V2VozacRasporedService {
   ///   - Ako nema unosa za termin → V2Putnik je vidljiv svima
   ///   - Ako postoji unos → prikaži samo vozaču koji je dodeljen tom terminu
   ///
-  /// [vozacId] = UUID (preferiran), [vozac] = ime (fallback)
+  /// [vozacId] = UUID vozača
   static List<T> filterPutniciZaVozaca<T>({
     required List<T> sviPutnici,
     required String vozacId,
@@ -94,17 +117,16 @@ class V2VozacRasporedService {
   }) {
     if (raspored.isEmpty) return sviPutnici;
 
-    // Helper: da li je unos za ovog vozača? Poredi po UUID
-    bool jeVozacov(VozacRasporedEntry r) {
-      return r.vozacId == vozacId;
-    }
+    bool jeVozacov(VozacRasporedEntry r) => r.vozacId == vozacId;
 
     return sviPutnici.where((p) {
-      final grad = getGrad(p);
-      final vreme = getPolazak(p);
+      final grad = getGrad(p).toUpperCase();
+      final vreme = GradAdresaValidator.normalizeTime(getPolazak(p));
 
-      // Koji vozači su dodeljeni ovom terminu?
-      final terminEntries = raspored.where((r) => r.dan == targetDan && r.grad == grad && r.vreme == vreme).toList();
+      final terminEntries = raspored
+          .where((r) =>
+              r.dan == targetDan && r.grad.toUpperCase() == grad && GradAdresaValidator.normalizeTime(r.vreme) == vreme)
+          .toList();
 
       if (terminEntries.isEmpty) return true; // nema unosa → vidljivo svima
 

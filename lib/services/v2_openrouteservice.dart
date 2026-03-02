@@ -1,9 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
-/// 🗺️ OPENROUTESERVICE - Za realtime ETA
+/// OpenRouteService - Za realtime ETA
 /// Koristi OpenRouteService Directions API za izračunavanje ETA tokom vožnje
 /// API Key se čita iz environment varijable
 ///
@@ -11,15 +12,14 @@ import 'package:http/http.dart' as http;
 class OpenRouteService {
   OpenRouteService._();
 
-  static const String _baseUrl =
-      'https://api.openrouteservice.org/v2/directions/driving-car';
+  static const String _baseUrl = 'https://api.openrouteservice.org/v2/directions/driving-car';
 
   // API key - hardkodiran jer je besplatan i nema sigurnosni rizik
   // Ako treba promeniti, promeni ovde
   static const String _apiKey =
       'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjAyNjhjZTg0YzQ5ZTRjMGE5YmJmNmI2NmNmM2IwOTIwIiwiaCI6Im11cm11cjY0In0=';
 
-  /// 🆕 REALTIME ETA: Koristi Directions API za brzo osvežavanje ETA tokom vožnje
+  /// Realtime ETA: Koristi Directions API za brzo osvežavanje ETA tokom vožnje
   /// Poziva se periodično (svakih 2 min) dok vozač vozi
   static Future<RealtimeEtaResult> getRealtimeEta({
     required Position currentPosition,
@@ -86,7 +86,9 @@ class OpenRouteService {
       double cumulativeSec = 0;
 
       for (int i = 0; i < segments.length && i < validPutnici.length; i++) {
-        final segment = segments[i] as Map<String, dynamic>;
+        final raw = segments[i];
+        if (raw is! Map<String, dynamic>) continue;
+        final segment = raw;
         final duration = (segment['duration'] as num?)?.toDouble() ?? 0;
         cumulativeSec += duration;
         putniciEta[validPutnici[i]] = (cumulativeSec / 60).round();
@@ -94,6 +96,7 @@ class OpenRouteService {
 
       return RealtimeEtaResult.success(putniciEta);
     } catch (e) {
+      debugPrint('[OpenRouteService] getRealtimeEta error: $e');
       return RealtimeEtaResult.failure('Greška: $e');
     }
   }
@@ -118,4 +121,11 @@ class RealtimeEtaResult {
   factory RealtimeEtaResult.failure(String error) {
     return RealtimeEtaResult._(success: false, error: error);
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is RealtimeEtaResult && success == other.success && error == other.error;
+
+  @override
+  int get hashCode => Object.hash(success, error);
 }

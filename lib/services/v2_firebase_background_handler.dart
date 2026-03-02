@@ -17,7 +17,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     final payload = Map<String, dynamic>.from(message.data);
     await backgroundNotificationHandler(payload);
   } catch (e) {
-    debugPrint('�Y"� Error in Firebase background handler: $e');
+    debugPrint('[FirebaseBackground] Error in background handler: $e');
   }
 }
 
@@ -26,20 +26,16 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> backgroundNotificationHandler(Map<String, dynamic> payload) async {
   try {
     final title = payload['title'] as String? ?? 'Gavra Notification';
-    final body = payload['body'] as String? ??
-        (payload['message'] as String?) ??
-        'Nova notifikacija';
+    final body = payload['body'] as String? ?? (payload['message'] as String?) ?? 'Nova notifikacija';
 
-    // �Y>�️ FIX: Umesto samo payload['data'], prosle�'ujemo ceo payload.
-    // FCM postavlja sve podatke direktno u message.data, tako da je payload ve�? 'data' mapa.
+    // FIX: Umesto samo payload['data'], prosljeđujemo ceo payload.
+    // FCM postavlja sve podatke direktno u message.data, tako da je payload već 'data' mapa.
     await LocalNotificationService.showNotificationFromBackground(
       title: title,
       body: body,
       payload: jsonEncode(payload),
     );
   } catch (e) {
-    debugPrint('�s�️ Error handling background notification: $e');
+    debugPrint('[FirebaseBackground] Error handling background notification: $e');
   }
 }
-
-

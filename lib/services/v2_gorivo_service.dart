@@ -4,9 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import 'v2_finansije_service.dart';
 
-/// ⛽ GORIVO SERVICE
-/// Upravljanje kućnom pumpom goriva: punjenja, točenja, stanje, statistike
+/// Upravljanje kucnom pumpom goriva: punjenja, tocenja, stanje, statistike
 class V2GorivoService {
+  V2GorivoService._();
+
   static SupabaseClient get _db => supabase;
 
   // ─────────────────────────────────────────────────────────────
@@ -23,7 +24,7 @@ class V2GorivoService {
           .single();
       return PumpaStanje.fromJson(response);
     } catch (e) {
-      debugPrint('❌ [Gorivo] getStanje error: $e');
+      debugPrint('[GorivoService] getStanje error: $e');
       return null;
     }
   }
@@ -36,7 +37,7 @@ class V2GorivoService {
   }) async {
     try {
       final Map<String, dynamic> data = {
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       };
       if (kapacitet != null) data['kapacitet_litri'] = kapacitet;
       if (alarmNivo != null) data['alarm_nivo'] = alarmNivo;
@@ -45,7 +46,7 @@ class V2GorivoService {
       await _db.from('v2_pumpa_config').update(data);
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] updateConfig error: $e');
+      debugPrint('[GorivoService] updateConfig error: $e');
       return false;
     }
   }
@@ -65,7 +66,7 @@ class V2GorivoService {
           .limit(limit);
       return (response as List).map((r) => PumpaPunjenje.fromJson(r)).toList();
     } catch (e) {
-      debugPrint('❌ [Gorivo] getPunjenja error: $e');
+      debugPrint('[GorivoService] getPunjenja error: $e');
       return [];
     }
   }
@@ -85,10 +86,10 @@ class V2GorivoService {
         'ukupno_cena': (cenaPoPLitru != null) ? litri * cenaPoPLitru : null,
         'napomena': napomena,
       });
-      debugPrint('✅ [Gorivo] Punjenje dodato: $litri L');
+      debugPrint('[GorivoService] Punjenje dodato: $litri L');
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] addPunjenje error: $e');
+      debugPrint('[GorivoService] addPunjenje error: $e');
       return false;
     }
   }
@@ -99,7 +100,7 @@ class V2GorivoService {
       await _db.from('v2_pumpa_punjenja').delete().eq('id', id);
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] deletePunjenje error: $e');
+      debugPrint('[GorivoService] deletePunjenje error: $e');
       return false;
     }
   }
@@ -122,7 +123,7 @@ class V2GorivoService {
           .limit(limit);
       return (response as List).map((r) => PumpaTocenje.fromJson(r)).toList();
     } catch (e) {
-      debugPrint('❌ [Gorivo] getTocenja error: $e');
+      debugPrint('[GorivoService] getTocenja error: $e');
       return [];
     }
   }
@@ -162,10 +163,10 @@ class V2GorivoService {
         );
       }
 
-      debugPrint('✅ [Gorivo] Točenje dodato: $litri L za vozilo $voziloId');
+      debugPrint('[GorivoService] Tocenje dodato: $litri L za vozilo $voziloId');
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] addTocenje error: $e');
+      debugPrint('[GorivoService] addTocenje error: $e');
       return false;
     }
   }
@@ -176,7 +177,7 @@ class V2GorivoService {
       await _db.from('v2_pumpa_tocenja').delete().eq('id', id);
       return true;
     } catch (e) {
-      debugPrint('❌ [Gorivo] deleteTocenje error: $e');
+      debugPrint('[GorivoService] deleteTocenje error: $e');
       return false;
     }
   }
@@ -201,8 +202,7 @@ class V2GorivoService {
         query = query.lte('datum', do_.toIso8601String().split('T')[0]);
       }
 
-      final response = await query;
-      final List data = response as List;
+      final data = await query;
 
       // Agregiraj po vozilu
       final Map<String, VoziloStatistika> mapa = {};
@@ -235,7 +235,7 @@ class V2GorivoService {
       lista.sort((a, b) => b.ukupnoLitri.compareTo(a.ukupnoLitri));
       return lista;
     } catch (e) {
-      debugPrint('❌ [Gorivo] getStatistikePoVozilu error: $e');
+      debugPrint('[GorivoService] getStatistikePoVozilu error: $e');
       return [];
     }
   }
@@ -254,6 +254,7 @@ class V2GorivoService {
       if (response == null) return null;
       return (response['cena_po_litru'] as num?)?.toDouble();
     } catch (e) {
+      debugPrint('[GorivoService] getPoslednaCenaPoPLitru error: $e');
       return null;
     }
   }
@@ -294,6 +295,29 @@ class PumpaStanje {
 
   bool get ispodAlarma => trenutnoStanje <= alarmNivo;
   bool get prazna => trenutnoStanje <= 0;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PumpaStanje &&
+          kapacitetLitri == other.kapacitetLitri &&
+          alarmNivo == other.alarmNivo &&
+          pocetnoStanje == other.pocetnoStanje &&
+          ukupnoPunjeno == other.ukupnoPunjeno &&
+          ukupnoUtroseno == other.ukupnoUtroseno &&
+          trenutnoStanje == other.trenutnoStanje &&
+          procenatPune == other.procenatPune;
+
+  @override
+  int get hashCode => Object.hash(
+        kapacitetLitri,
+        alarmNivo,
+        pocetnoStanje,
+        ukupnoPunjeno,
+        ukupnoUtroseno,
+        trenutnoStanje,
+        procenatPune,
+      );
 }
 
 class PumpaPunjenje {
@@ -324,6 +348,12 @@ class PumpaPunjenje {
         napomena: j['napomena'] as String?,
         createdAt: DateTime.parse(j['created_at'] as String).toLocal(),
       );
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is PumpaPunjenje && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class PumpaTocenje {
@@ -373,6 +403,12 @@ class PumpaTocenje {
     }
     return 'Nepoznato vozilo';
   }
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is PumpaTocenje && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class VoziloStatistika {
@@ -400,4 +436,15 @@ class VoziloStatistika {
         ukupnoLitri: ukupnoLitri ?? this.ukupnoLitri,
         brojTocenja: brojTocenja ?? this.brojTocenja,
       );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VoziloStatistika &&
+          voziloId == other.voziloId &&
+          ukupnoLitri == other.ukupnoLitri &&
+          brojTocenja == other.brojTocenja;
+
+  @override
+  int get hashCode => Object.hash(voziloId, ukupnoLitri, brojTocenja);
 }

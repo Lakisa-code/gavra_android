@@ -6,7 +6,7 @@ import '../utils/v2_putnik_helpers.dart';
 import 'v2_kapacitet_service.dart';
 import 'v2_polasci_service.dart';
 
-/// ?? Model za slobodna mesta po polasku
+/// Model za slobodna mesta po polasku
 class SlobodnaMesta {
   final String grad;
   final String vreme;
@@ -27,9 +27,25 @@ class SlobodnaMesta {
   int get slobodna => maxMesta - zauzetaMesta;
   bool get imaMesta => slobodna > 0;
   bool get jePuno => slobodna <= 0;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SlobodnaMesta &&
+          grad == other.grad &&
+          vreme == other.vreme &&
+          maxMesta == other.maxMesta &&
+          zauzetaMesta == other.zauzetaMesta &&
+          uceniciCount == other.uceniciCount &&
+          aktivan == other.aktivan;
+
+  @override
+  int get hashCode => Object.hash(grad, vreme, maxMesta, zauzetaMesta, uceniciCount, aktivan);
 }
 
 class SlobodnaMestaService {
+  SlobodnaMestaService._();
+
   static final _putnikService = V2PutnikStreamService();
 
   /// Pretvara ISO datum u skracenicu dana ('pon', 'uto', itd.)
@@ -49,12 +65,12 @@ class SlobodnaMestaService {
 
     int count = 0;
     for (final p in putnici) {
-      // ??? AKO RADIMO UPDATE: Iskljuci putnika koga menjamo da ne bi sam sebi zauzimao mesto
+      // AKO RADIMO UPDATE: Iskljuci putnika koga menjamo da ne bi sam sebi zauzimao mesto
       if (excludePutnikId != null && p.id?.toString() == excludePutnikId.toString()) {
         continue;
       }
 
-      // ?? REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
+      // Koristi PutnikHelpers za konzistentnu logiku
       // Ne racuna: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
       if (!PutnikHelpers.shouldCountInSeats(p)) continue;
 
@@ -78,6 +94,7 @@ class SlobodnaMestaService {
   static int _countUceniciZaPolazak(List<V2Putnik> putnici, String grad, String vreme, String isoDate,
       {String? excludePutnikId}) {
     final normalizedGrad = GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
+    final targetVreme = GradAdresaValidator.normalizeTime(vreme);
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
@@ -97,7 +114,7 @@ class SlobodnaMestaService {
 
       // Proveri vreme
       final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-      if (normVreme != vreme) continue;
+      if (normVreme != targetVreme) continue;
 
       // Proveri grad
       if ((normalizedGrad == 'BC' && p.grad == 'BC') || (normalizedGrad == 'VS' && p.grad == 'VS')) {
@@ -118,16 +135,23 @@ class SlobodnaMestaService {
       'VS': [],
     };
 
+    List<V2Putnik> putnici;
+    Map<String, dynamic> kapacitet;
     try {
-      final putnici = await _putnikService.getPutniciByDayIso(isoDate);
-      final kapacitet = V2KapacitetService.getKapacitet();
+      putnici = await _putnikService.getPutniciByDayIso(isoDate);
+      kapacitet = V2KapacitetService.getKapacitet();
+    } catch (e) {
+      debugPrint('[SlobodnaMestaService] getSlobodnaMesta: greska pri ucitavanju podataka: $e');
+      return result;
+    }
 
+    try {
       // Bela Crkva
-      final bcKapaciteti = kapacitet['BC'] ?? {};
-      final bcVremenaSorted = bcKapaciteti.keys.toList()..sort();
+      final bcKapaciteti = kapacitet['BC'] as Map? ?? {};
+      final bcVremenaSorted = bcKapaciteti.keys.cast<String>().toList()..sort();
 
       for (final vreme in bcVremenaSorted) {
-        final maxMesta = bcKapaciteti[vreme] ?? 8;
+        final maxMesta = (bcKapaciteti[vreme] as num?)?.toInt() ?? 8;
         final zauzeto = _countPutniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludePutnikId);
         final ucenici = _countUceniciZaPolazak(putnici, 'BC', vreme, isoDate, excludePutnikId: excludePutnikId);
 
@@ -143,19 +167,16 @@ class SlobodnaMestaService {
         );
       }
     } catch (e) {
-      debugPrint('❌ getSlobodnaMesta BC error: $e');
+      debugPrint('[SlobodnaMestaService] getSlobodnaMesta BC error: $e');
     }
 
     try {
-      final putnici = await _putnikService.getPutniciByDayIso(isoDate);
-      final kapacitet = V2KapacitetService.getKapacitet();
-
-      // Vrsac - Koristi SVA vremena iz kapaciteta
-      final vsKapaciteti = kapacitet['VS'] ?? {};
-      final vsVremenaSorted = vsKapaciteti.keys.toList()..sort();
+      // Vrsac
+      final vsKapaciteti = kapacitet['VS'] as Map? ?? {};
+      final vsVremenaSorted = vsKapaciteti.keys.cast<String>().toList()..sort();
 
       for (final vreme in vsVremenaSorted) {
-        final maxMesta = vsKapaciteti[vreme] ?? 8;
+        final maxMesta = (vsKapaciteti[vreme] as num?)?.toInt() ?? 8;
         final zauzeto = _countPutniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludePutnikId);
         final ucenici = _countUceniciZaPolazak(putnici, 'VS', vreme, isoDate, excludePutnikId: excludePutnikId);
 
@@ -171,7 +192,7 @@ class SlobodnaMestaService {
         );
       }
     } catch (e) {
-      debugPrint('❌ getSlobodnaMesta VS error: $e');
+      debugPrint('[SlobodnaMestaService] getSlobodnaMesta VS error: $e');
     }
 
     return result;
@@ -180,17 +201,17 @@ class SlobodnaMestaService {
   /// Proveri da li ima slobodnih mesta za odredeni polazak
   static Future<bool> imaSlobodnihMesta(String grad, String vreme,
       {String? datum, String? tipPutnika, int brojMesta = 1, String? excludeId}) async {
-    // ?? POŠILJKE: Ne zauzimaju mesto, pa uvek ima "mesta" za njih
+    // POSILJKE: Ne zauzimaju mesto, pa uvek ima "mesta" za njih
     if (tipPutnika == 'posiljka') {
       return true;
     }
 
-    // ?? BC LOGIKA: Ucenici u Beloj Crkvi se auto-prihvataju (bez provere kapaceta)
+    // BC LOGIKA: Ucenici u Beloj Crkvi se auto-prihvataju (bez provere kapaciteta)
     if (grad.toUpperCase() == 'BC' && tipPutnika == 'ucenik') {
       return true;
     }
 
-    // ??? NORMALIZACIJA ULAZNOG VREMENA
+    // NORMALIZACIJA ULAZNOG VREMENA
     final targetVreme = GradAdresaValidator.normalizeTime(vreme);
 
     final slobodna = await getSlobodnaMesta(datum: datum, excludeId: excludeId);
@@ -198,7 +219,7 @@ class SlobodnaMestaService {
     if (lista == null) return false;
 
     for (final s in lista) {
-      // ??? NORMALIZACIJA VREMENA IZ LISTE (Kapacitet table može imati "6:00" umesto "06:00")
+      // NORMALIZACIJA VREMENA IZ LISTE (Kapacitet table moze imati "6:00" umesto "06:00")
       final currentVreme = GradAdresaValidator.normalizeTime(s.vreme);
       if (currentVreme == targetVreme) {
         return s.slobodna >= brojMesta;
@@ -207,6 +228,6 @@ class SlobodnaMestaService {
     return false;
   }
 
-  /// ?? Cisti realtime subscriptions
+  /// Cisti realtime subscriptions
   static void dispose() {}
 }

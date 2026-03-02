@@ -1,17 +1,11 @@
 import '../config/v2_route_config.dart';
 
-/// 🚐 Servis za dobavljanje satnih redoslijeda
+/// Servis za dobavljanje satnih redoslijeda
 /// Koristi fiksne redoslijede iz RouteConfig-a na osnovu aktivnog režima (zimski/letnji/praznici)
-class RouteService {
-  static final RouteService _instance = RouteService._internal();
+class V2RouteService {
+  V2RouteService._();
 
-  RouteService._internal();
-
-  factory RouteService() {
-    return _instance;
-  }
-
-  /// 🚐 Dobija vremena polazaka za grad i sezonu direktno iz konfiguracije
+  /// Dobija vremena polazaka za grad i sezonu direktno iz konfiguracije
   static List<String> getVremenaPolazakaSync({
     required String grad,
     required String sezona,
@@ -28,7 +22,7 @@ class RouteService {
     }
   }
 
-  /// 🚐 Kompatibilnost sa postojećim async pozivima (vraća odmah bez baze)
+  /// Kompatibilnost sa postojećim async pozivima (vraća odmah bez baze)
   static Future<List<String>> getVremenaPolazaka({
     required String grad,
     required String sezona,

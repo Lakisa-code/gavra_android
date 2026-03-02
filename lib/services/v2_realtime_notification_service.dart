@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import '../globals.dart';
 import 'v2_admin_security_service.dart';
@@ -11,18 +11,20 @@ import 'v2_notification_navigation_service.dart';
 import 'v2_vozac_service.dart';
 
 class RealtimeNotificationService {
-  // ? STREAM ZA IN-APP NOTIFIKACIJE
+  RealtimeNotificationService._();
+
+  // Stream za in-app notifikacije
   static final StreamController<Map<String, dynamic>> _notificationStreamController =
       StreamController<Map<String, dynamic>>.broadcast();
 
   static Stream<Map<String, dynamic>> get notificationStream => _notificationStreamController.stream;
 
-  /// ?? Poziva se kada stigne notifikacija dok je aplikacija u foreground-u
+  /// Poziva se kada stigne notifikacija dok je aplikacija u foreground-u
   static void onForegroundNotification(Map<String, dynamic> data) {
     _notificationStreamController.add(data);
   }
 
-  /// ?? Pošalji push notifikaciju na specificne tokene
+  /// Pošalji push notifikaciju na specifične tokene
   static Future<bool> sendPushNotification({
     required String title,
     required String body,
@@ -60,12 +62,12 @@ class RealtimeNotificationService {
         return false;
       }
     } catch (e) {
-      debugPrint('❌ [RealtimeNotification.sendPushNotification] Error: $e');
+      debugPrint('[RealtimeNotification.sendPushNotification] Error: $e');
       return false;
     }
   }
 
-  /// ?? Pošalji notifikaciju samo adminima (Bojan)
+  /// Pošalji notifikaciju samo adminima
   static Future<void> sendNotificationToAdmins({
     required String title,
     required String body,
@@ -83,12 +85,12 @@ class RealtimeNotificationService {
       final response =
           await supabase.from('v2_push_tokens').select('token, provider').inFilter('vozac_id', adminVozacIds);
 
-      if ((response as List).isEmpty) return;
+      if (response.isEmpty) return;
 
-      final tokens = (response)
+      final tokens = response
           .map<Map<String, dynamic>>((t) => {
-                'token': t['token'] as String,
-                'provider': t['provider'] as String,
+                'token': t['token']?.toString() ?? '',
+                'provider': t['provider']?.toString() ?? '',
               })
           .toList();
 
@@ -99,11 +101,11 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
-      debugPrint('❌ [RealtimeNotification.sendNotificationToAdmins] Error: $e');
+      debugPrint('[RealtimeNotification.sendNotificationToAdmins] Error: $e');
     }
   }
 
-  /// ?? Pošalji push notifikaciju putniku
+  /// Pošalji push notifikaciju putniku
   static Future<bool> sendNotificationToPutnik({
     required String putnikId,
     required String title,
@@ -113,15 +115,15 @@ class RealtimeNotificationService {
     try {
       final response = await supabase.from('v2_push_tokens').select('token, provider').eq('putnik_id', putnikId);
 
-      if ((response as List).isEmpty) {
-        debugPrint('⚠️ [RealtimeNotification] Nema tokena za putnika $putnikId');
+      if (response.isEmpty) {
+        debugPrint('[RealtimeNotification] Nema tokena za putnika $putnikId');
         return false;
       }
 
-      final tokens = (response)
+      final tokens = response
           .map<Map<String, dynamic>>((t) => {
-                'token': t['token'] as String,
-                'provider': t['provider'] as String,
+                'token': t['token']?.toString() ?? '',
+                'provider': t['provider']?.toString() ?? '',
               })
           .toList();
 
@@ -132,7 +134,7 @@ class RealtimeNotificationService {
         data: data,
       );
     } catch (e) {
-      debugPrint('❌ [RealtimeNotification.sendNotificationToPutnik] Error: $e');
+      debugPrint('[RealtimeNotification.sendNotificationToPutnik] Error: $e');
       return false;
     }
   }
@@ -145,22 +147,21 @@ class RealtimeNotificationService {
 
       await _handleNotificationTap(messageData);
     } catch (e) {
-      debugPrint('❌ [RealtimeNotification.handleInitialMessage] Error: $e');
+      debugPrint('[RealtimeNotification.handleInitialMessage] Error: $e');
     }
   }
 
-  static Future<void> initialize() async {
-    // Inicijalizacija se Vrsi u FirebaseService
-  }
+  /// Inicijalizacija se vrsi u FirebaseService — ova metoda je no-op.
+  static Future<void> initialize() async {}
 
   static bool _foregroundListenerRegistered = false;
 
-  /// ?? DEPRECATED: Notifikacije se sada inicijalizuju globalno u FirebaseService/HuaweiPushService.
-  /// Ova metoda ne radi ništa kako bi se sprecili dupli listeneri.
-  static void listenForForegroundNotifications(BuildContext context) {
+  /// DEPRECATED: Notifikacije se sada inicijalizuju globalno u FirebaseService/HuaweiPushService.
+  /// Ova metoda ne radi ništa kako bi se sprečili dupli listeneri.
+  static void listenForForegroundNotifications() {
     if (_foregroundListenerRegistered) return;
     _foregroundListenerRegistered = true;
-    debugPrint('ℹ️ [RealtimeNotification] Globalni listener je vec postavljen u main.dart, preskacem lokalni.');
+    debugPrint('[RealtimeNotification] Globalni listener je vec postavljen u main.dart, preskacem lokalni.');
   }
 
   static Future<void> subscribeToDriverTopics(String? driverId) async {
@@ -171,7 +172,7 @@ class RealtimeNotificationService {
       await messaging.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
       await messaging.subscribeToTopic('gavra_all_drivers');
     } catch (e) {
-      debugPrint('❌ [RealtimeNotification.subscribeToDriverTopics] Error: $e');
+      debugPrint('[RealtimeNotification.subscribeToDriverTopics] Error: $e');
     }
   }
 
@@ -188,7 +189,7 @@ class RealtimeNotificationService {
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
-      debugPrint('❌ [RealtimeNotification.requestNotificationPermissions] Error: $e');
+      debugPrint('[RealtimeNotification.requestNotificationPermissions] Error: $e');
       return false;
     }
   }
@@ -219,12 +220,12 @@ class RealtimeNotificationService {
       if (putnikDataString != null) {
         final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
         await NotificationNavigationService.navigateToPassenger(
-          type: notificationType as String,
+          type: notificationType,
           putnikData: putnikData,
         );
       }
     } catch (e) {
-      debugPrint('❌ [RealtimeNotification._handleNotificationTap] Error: $e');
+      debugPrint('[RealtimeNotification._handleNotificationTap] Error: $e');
     }
   }
 }

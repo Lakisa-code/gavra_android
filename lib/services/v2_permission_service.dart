@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// foundation import not needed here
-import '../globals.dart'; // Import za navigatorKey
+import '../globals.dart';
 import '../services/v2_theme_manager.dart';
 
-/// 🔐 CENTRALIZOVANI SERVIS ZA SVE DOZVOLE
+/// Centralizovani servis za sve dozvole
 class PermissionService {
-  /// 🚀 INICIJALNO ZAHTEVANJE SVIH DOZVOLA (poziva se u main.dart)
+  PermissionService._();
+
+  /// Inicijalno zahtevanje svih dozvola (poziva se u main.dart)
   static Future<bool> requestAllPermissionsOnFirstLaunch(
     BuildContext context,
   ) async {
-    // 📸 SCREENSHOT MODE - preskoči permissions dialog za testiranje
+    // SCREENSHOT MODE - preskoči permissions dialog za testiranje
     const isScreenshotMode = bool.fromEnvironment('SCREENSHOT_MODE', defaultValue: false);
     if (isScreenshotMode) {
       return true; // Preskoči dialog u screenshot modu
@@ -31,14 +32,7 @@ class PermissionService {
   }
 
   /// Proveri da li su sve dozvole već date
-  static Future<bool> checkAllPermissionsGranted() async {
-    final location = await Permission.location.status;
-    final contacts = await Permission.contacts.status;
-    final notification = await Permission.notification.status;
-
-    // Ako su sve dozvole grantovane, ne prikazuj dialog
-    return location.isGranted && contacts.isGranted && notification.isGranted;
-  }
+  static Future<bool> checkAllPermissionsGranted() => _checkIfAllPermissionsGranted();
 
   /// Proveri da li su sve dozvole već date
   static Future<bool> _checkIfAllPermissionsGranted() async {
@@ -50,7 +44,7 @@ class PermissionService {
     return location.isGranted && contacts.isGranted && notification.isGranted;
   }
 
-  /// 📱 DIALOG ZA POČETNO PODEŠAVANJE DOZVOLA
+  /// Dialog za početno podešavanje dozvola
   static Future<bool> _showPermissionSetupDialog(BuildContext context) async {
     if (!context.mounted) return false;
 
@@ -77,7 +71,7 @@ class PermissionService {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -86,10 +80,10 @@ class PermissionService {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                     ),
                   ),
                   child: ConstrainedBox(
@@ -103,7 +97,7 @@ class PermissionService {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Icon(
@@ -127,7 +121,7 @@ class PermissionService {
                             'Za potpunu funkcionalnost aplikacije potrebne su sledeće dozvole:',
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -138,7 +132,7 @@ class PermissionService {
                             'Dozvole se zahtevaju samo jednom. Možete ih kasnije promeniti u podešavanjima telefona.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -160,7 +154,7 @@ class PermissionService {
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.4),
+                                      color: Colors.white.withValues(alpha: 0.4),
                                       width: 1.5,
                                     ),
                                   ),
@@ -198,13 +192,13 @@ class PermissionService {
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                       colors: [
-                                        Colors.red.shade300.withOpacity(0.6),
-                                        Colors.red.shade400.withOpacity(0.6),
+                                        Colors.red.shade300.withValues(alpha: 0.6),
+                                        Colors.red.shade400.withValues(alpha: 0.6),
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.3),
+                                      color: Colors.white.withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: TextButton(
@@ -240,7 +234,7 @@ class PermissionService {
         false;
   }
 
-  /// 🎨 LISTA DOZVOLA SA LEPŠIM DIZAJNOM
+  /// Lista dozvola sa opisima
   static List<Widget> _buildPermissionList() {
     final permissions = [
       {
@@ -275,10 +269,10 @@ class PermissionService {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
               ),
             ),
             child: Row(
@@ -286,7 +280,7 @@ class PermissionService {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: (permission['color'] as Color).withOpacity(0.8),
+                    color: (permission['color'] as Color).withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -312,7 +306,7 @@ class PermissionService {
                         permission['subtitle'] as String,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -325,7 +319,7 @@ class PermissionService {
         .toList();
   }
 
-  /// ✅ BATCH PERMISSION REQUEST - Optimizovano za jedan klik
+  /// Batch permission request - optimizovano za jedan klik
   static Future<bool> requestAllPermissions() async {
     try {
       final locationStatus =
@@ -349,11 +343,12 @@ class PermissionService {
 
       return allCriticalGranted;
     } catch (e) {
+      debugPrint('[PermissionService] requestAllPermissions error: $e');
       return false;
     }
   }
 
-  /// 🛰️ SPECIJALNO ZAHTEVANJE LOKACIJSKIH DOZVOLA
+  /// Specijalno zahtevanje lokacijskih dozvola
   static Future<bool> _requestLocationPermission() async {
     try {
       LocationPermission permission = await Geolocator.checkPermission();
@@ -363,11 +358,12 @@ class PermissionService {
 
       return permission != LocationPermission.denied && permission != LocationPermission.deniedForever;
     } catch (e) {
+      debugPrint('[PermissionService] _requestLocationPermission error: $e');
       return false;
     }
   }
 
-  /// 📍 BRZA PROVERA LOKACIJSKE DOZVOLE
+  /// Brza provera lokacijske dozvole
   static Future<bool> _isLocationPermissionGranted() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -377,11 +373,12 @@ class PermissionService {
           permission != LocationPermission.denied &&
           permission != LocationPermission.deniedForever;
     } catch (e) {
+      debugPrint('[PermissionService] _isLocationPermissionGranted error: $e');
       return false;
     }
   }
 
-  /// 🚗 INSTANT GPS ZA NAVIGACIJU (bez dodatnih dialoga)
+  /// Instant GPS za navigaciju (bez dodatnih dialoga)
   static Future<bool> ensureGpsForNavigation() async {
     try {
       final isReady = await _isLocationPermissionGranted();
@@ -404,7 +401,7 @@ class PermissionService {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 8),
                     ),
@@ -413,10 +410,10 @@ class PermissionService {
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Column(
@@ -425,7 +422,7 @@ class PermissionService {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.8),
+                          color: Colors.orange.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -448,7 +445,7 @@ class PermissionService {
                         'Za navigaciju treba da uključite GPS u podešavanjima.\n\nTapnite "Uključi GPS" da otvorite podešavanja.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -458,10 +455,10 @@ class PermissionService {
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
+                                  color: Colors.white.withValues(alpha: 0.3),
                                 ),
                               ),
                               child: TextButton(
@@ -480,10 +477,10 @@ class PermissionService {
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.25),
+                                color: Colors.white.withValues(alpha: 0.25),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.4),
+                                  color: Colors.white.withValues(alpha: 0.4),
                                 ),
                               ),
                               child: ElevatedButton(
@@ -530,11 +527,12 @@ class PermissionService {
           permission != LocationPermission.denied &&
           permission != LocationPermission.deniedForever;
     } catch (e) {
+      debugPrint('[PermissionService] ensureGpsForNavigation error: $e');
       return false;
     }
   }
 
-  /// 📞 HUAWEI SPECIFIČNA LOGIKA - Phone permission
+  /// Huawei specifična logika - Phone permission
   static Future<bool> ensurePhonePermissionHuawei() async {
     try {
       final status = await Permission.phone.status;
@@ -550,11 +548,12 @@ class PermissionService {
 
       return result.isGranted || result.isLimited;
     } catch (e) {
+      debugPrint('[PermissionService] ensurePhonePermissionHuawei error: $e');
       return true;
     }
   }
 
-  /// 🎨 SAFE GRADIENT - Fallback za startup kad ThemeManager nije inicijalizovan
+  /// Safe gradient - fallback za startup kad ThemeManager nije inicijalizovan
   static LinearGradient _getSafeGradient() {
     try {
       return ThemeManager().currentGradient;

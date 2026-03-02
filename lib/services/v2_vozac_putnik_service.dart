@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -30,14 +31,14 @@ class VozacPutnikEntry {
   });
 
   factory VozacPutnikEntry.fromMap(Map<String, dynamic> map) {
-    final vremeRaw = map['vreme'] as String;
+    final vremeRaw = map['vreme']?.toString() ?? '';
     final vreme = vremeRaw.length > 5 ? vremeRaw.substring(0, 5) : vremeRaw;
     return VozacPutnikEntry(
-      id: map['id'] as String?,
-      putnikId: map['putnik_id'] as String,
-      vozacId: map['vozac_id'] as String,
-      dan: map['dan'] as String,
-      grad: map['grad'] as String,
+      id: map['id']?.toString(),
+      putnikId: map['putnik_id']?.toString() ?? '',
+      vozacId: map['vozac_id']?.toString() ?? '',
+      dan: map['dan']?.toString() ?? '',
+      grad: map['grad']?.toString() ?? '',
       vreme: vreme,
     );
   }
@@ -51,6 +52,20 @@ class VozacPutnikEntry {
         'vreme': vreme,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VozacPutnikEntry &&
+          runtimeType == other.runtimeType &&
+          putnikId == other.putnikId &&
+          vozacId == other.vozacId &&
+          dan == other.dan &&
+          grad == other.grad &&
+          vreme == other.vreme;
+
+  @override
+  int get hashCode => Object.hash(putnikId, vozacId, dan, grad, vreme);
 }
 
 /// Servis za upravljanje per-V2Putnik individualnom dodjelom vozača.
@@ -104,8 +119,8 @@ class V2VozacPutnikService {
         onConflict: 'putnik_id', // UNIQUE constraint
       );
       return true;
-      // ignore: avoid_catches_without_on_clauses
     } catch (e) {
+      debugPrint('[V2VozacPutnikService] Greška u set(): $e');
       return false;
     }
   }
@@ -115,15 +130,18 @@ class V2VozacPutnikService {
     try {
       await _supabase.from('v2_vozac_putnik').delete().eq('putnik_id', putnikId);
       return true;
-      // ignore: avoid_catches_without_on_clauses
     } catch (e) {
+      debugPrint('[V2VozacPutnikService] Greška u delete(): $e');
       return false;
     }
   }
 
-  /// Briše sve individualne dodjele za datog vozača.
   Future<void> deleteForVozac({required String vozacId}) async {
-    await _supabase.from('v2_vozac_putnik').delete().eq('vozac_id', vozacId);
+    try {
+      await _supabase.from('v2_vozac_putnik').delete().eq('vozac_id', vozacId);
+    } catch (e) {
+      debugPrint('[V2VozacPutnikService] Greška u deleteForVozac(): $e');
+    }
   }
 
   /// Kombinirani filter: per-V2Putnik individualna dodjela + per-termin raspored.
@@ -186,7 +204,7 @@ class V2VozacPutnikService {
               r.grad.toUpperCase() == grad.toUpperCase() &&
               GradAdresaValidator.normalizeTime(r.vreme) == vreme)
           .toList();
-      if (terminEntries.isEmpty) return false; // nema raspodele → V2Putnik nije vidljiv
+      if (terminEntries.isEmpty) return true; // nema rasporeda za termin → vidljivo svima
       return terminEntries.any(jeTerminVozacov);
     }).toList();
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -28,17 +29,27 @@ class V2VozacService {
 
   /// Dodaje novog vozača
   Future<Vozac> addVozac(Vozac vozac) async {
-    final response = await _supabase.from('v2_vozaci').insert(vozac.toMap()).select().single();
-    return Vozac.fromMap(response);
+    try {
+      final response = await _supabase.from('v2_vozaci').insert(vozac.toMap()).select().single();
+      return Vozac.fromMap(response);
+    } catch (e) {
+      debugPrint('[V2VozacService] Greška u addVozac(): $e');
+      rethrow;
+    }
   }
 
   /// Ažurira postojećeg vozača
   Future<Vozac> updateVozac(Vozac vozac) async {
-    final response = await _supabase.from('v2_vozaci').update(vozac.toMap()).eq('id', vozac.id).select().single();
-    return Vozac.fromMap(response);
+    try {
+      final response = await _supabase.from('v2_vozaci').update(vozac.toMap()).eq('id', vozac.id).select().single();
+      return Vozac.fromMap(response);
+    } catch (e) {
+      debugPrint('[V2VozacService] Greška u updateVozac(): $e');
+      rethrow;
+    }
   }
 
-  /// 🛰️ REALTIME STREAM: Dohvata sve vozače u realnom vremenu
+  /// Realtime stream: dohvata sve vozače u realnom vremenu.
   /// Emituje direktno iz rm cache-a, bez DB fetcha na svaki event.
   Stream<List<Vozac>> streamAllVozaci() {
     final controller = StreamController<List<Vozac>>.broadcast();

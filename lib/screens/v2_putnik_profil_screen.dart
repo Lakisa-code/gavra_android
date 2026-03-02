@@ -72,7 +72,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     // ❌ UKLONJENO: Client-side pending resolution - sada se radi putem Supabase cron jobs
     // _checkAndResolvePendingRequests();
     // ❌ UKLONJENO: _cleanupOldSeatRequests() - metoda je bila prazan stub
-    WeatherService.refreshAll(); // 🌤️ Učitaj vremensku prognozu
+    V2WeatherService.refreshAll();
     _setupRealtimeListener(); // 🎯 Sluša promene statusa u realtime
     _loadActiveRequests();
   }
@@ -719,9 +719,9 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
 
   // 🌤️ KOMPAKTAN PRIKAZ TEMPERATURE ZA GRAD (isti kao na danas_screen)
   Widget _buildWeatherCompact(String grad) {
-    final stream = grad == 'BC' ? WeatherService.bcWeatherStream : WeatherService.vsWeatherStream;
+    final stream = grad == 'BC' ? V2WeatherService.bcWeatherStream : V2WeatherService.vsWeatherStream;
 
-    return StreamBuilder<WeatherData?>(
+    return StreamBuilder<V2WeatherData?>(
       stream: stream,
       builder: (context, snapshot) {
         final data = snapshot.data;
@@ -740,8 +740,8 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
 
         // Widget za ikonu - slika ili emoji (usklađene veličine)
         Widget iconWidget;
-        if (WeatherData.isAssetIcon(icon)) {
-          iconWidget = Image.asset(WeatherData.getAssetPath(icon), width: 32, height: 32);
+        if (V2WeatherData.isAssetIcon(icon)) {
+          iconWidget = Image.asset(V2WeatherData.getAssetPath(icon), width: 32, height: 32);
         } else {
           iconWidget = Text(icon, style: const TextStyle(fontSize: 14));
         }
@@ -770,7 +770,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
   }
 
   // 🌤️ DIJALOG ZA DETALJNU VREMENSKU PROGNOZU
-  void _showWeatherDialog(String grad, WeatherData? data) {
+  void _showWeatherDialog(String grad, V2WeatherData? data) {
     showDialog<void>(
       context: context,
       builder: (context) => Dialog(
@@ -872,8 +872,8 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              if (WeatherData.isAssetIcon(data.icon))
-                                Image.asset(WeatherData.getAssetPath(data.icon), width: 80, height: 80)
+                              if (V2WeatherData.isAssetIcon(data.icon))
+                                Image.asset(V2WeatherData.getAssetPath(data.icon), width: 80, height: 80)
                               else
                                 Text(data.icon, style: const TextStyle(fontSize: 60)),
                               const SizedBox(width: 16),

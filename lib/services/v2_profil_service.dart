@@ -13,6 +13,8 @@ import 'realtime/v2_master_realtime_manager.dart';
 /// Zajednički CRUD i stream metode primaju [tabela] kao parametar.
 /// Specifični create metodi za svaku tabelu enkapsuliraju različite kolone.
 class V2ProfilService {
+  V2ProfilService._();
+
   static SupabaseClient get _supabase => supabase;
   static V2MasterRealtimeManager get _rm => V2MasterRealtimeManager.instance;
 
@@ -32,7 +34,7 @@ class V2ProfilService {
   }
 
   // ---------------------------------------------------------------------------
-  // 📖 ČITANJE — iz RM cache-a (sync, 0 DB upita)
+  // CITANJE — iz RM cache-a (sync, 0 DB upita)
   // ---------------------------------------------------------------------------
 
   /// Dohvata sve aktivne putnike iz date tabele
@@ -60,7 +62,7 @@ class V2ProfilService {
 
   /// Dohvata ime putnika po ID-u iz date tabele
   static String? getImeById(String id, String tabela) {
-    return _cacheForTabela(tabela)[id]?['ime'] as String?;
+    return _cacheForTabela(tabela)[id]?['ime']?.toString();
   }
 
   /// Pronalazi putnika po PIN-u (za autentifikaciju)
@@ -76,7 +78,7 @@ class V2ProfilService {
   }
 
   // ---------------------------------------------------------------------------
-  // ✏️ AŽURIRANJE / BRISANJE — generičke metode za sve tabele
+  // AZURIRANJE / BRISANJE — genericke metode za sve tabele
   // ---------------------------------------------------------------------------
 
   /// Ažurira putnika u datoj tabeli
@@ -86,7 +88,7 @@ class V2ProfilService {
       await _supabase.from(tabela).update(updates).eq('id', id);
       return true;
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] update ($tabela) error: $e');
+      debugPrint('[V2ProfilService] update ($tabela) error: $e');
       return false;
     }
   }
@@ -96,19 +98,19 @@ class V2ProfilService {
     return update(id, tabela, {'status': status});
   }
 
-  /// Briše putnika iz date tabele (trajno)
+  /// Brise putnika iz date tabele (trajno)
   static Future<bool> delete(String id, String tabela) async {
     try {
       await _supabase.from(tabela).delete().eq('id', id);
       return true;
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] delete ($tabela) error: $e');
+      debugPrint('[V2ProfilService] delete ($tabela) error: $e');
       return false;
     }
   }
 
   // ---------------------------------------------------------------------------
-  // 📡 STREAM — emituje direktno iz RM cache-a
+  // STREAM — emituje direktno iz RM cache-a
   // ---------------------------------------------------------------------------
 
   /// Stream aktivnih putnika iz date tabele (realtime, 0 DB upita)
@@ -123,14 +125,14 @@ class V2ProfilService {
     final sub = _rm.subscribe(tabela).listen((_) => emit());
     controller.onCancel = () {
       sub.cancel();
-      _rm.unsubscribe(tabela);
+      controller.close();
     };
 
     return controller.stream;
   }
 
   // ---------------------------------------------------------------------------
-  // 🏗️ CREATE — specifične metode po tabeli (različite kolone)
+  // CREATE — specificne metode po tabeli (razlicite kolone)
   // ---------------------------------------------------------------------------
 
   /// Kreira novog radnika (v2_radnici)
@@ -168,12 +170,12 @@ class V2ProfilService {
           .single();
       return _fromRow(row, 'v2_radnici');
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] createRadnik error: $e');
+      debugPrint('[V2ProfilService] createRadnik error: $e');
       return null;
     }
   }
 
-  /// Kreira novog učenika (v2_ucenici)
+  /// Kreira novog ucenika (v2_ucenici)
   static Future<RegistrovaniPutnik?> createUcenik({
     required String ime,
     String? telefon,
@@ -210,7 +212,7 @@ class V2ProfilService {
           .single();
       return _fromRow(row, 'v2_ucenici');
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] createUcenik error: $e');
+      debugPrint('[V2ProfilService] createUcenik error: $e');
       return null;
     }
   }
@@ -244,12 +246,12 @@ class V2ProfilService {
           .single();
       return _fromRow(row, 'v2_dnevni');
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] createDnevni error: $e');
+      debugPrint('[V2ProfilService] createDnevni error: $e');
       return null;
     }
   }
 
-  /// Kreira novu pošiljku (v2_posiljke)
+  /// Kreira novu posiljku (v2_posiljke)
   static Future<RegistrovaniPutnik?> createPosiljka({
     required String ime,
     String? telefon,
@@ -276,13 +278,13 @@ class V2ProfilService {
           .single();
       return _fromRow(row, 'v2_posiljke');
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] createPosiljka error: $e');
+      debugPrint('[V2ProfilService] createPosiljka error: $e');
       return null;
     }
   }
 
   // ---------------------------------------------------------------------------
-  // 🔧 HELPER
+  // HELPER
   // ---------------------------------------------------------------------------
 
   static RegistrovaniPutnik _fromRow(Map<String, dynamic> r, String tabela) {
@@ -290,20 +292,20 @@ class V2ProfilService {
   }
 
   // ---------------------------------------------------------------------------
-  // 🔍 LOOKUP — svi cache-ovi objedinjeno
+  // LOOKUP — svi cache-ovi objedinjeno
   // ---------------------------------------------------------------------------
 
-  /// Vraća sve aktivne putnike iz sva 4 cache-a kao modele (0 DB upita)
-  static Future<List<RegistrovaniPutnik>> getAllAktivniKaoModel() async {
+  /// Vraca sve aktivne putnike iz sva 4 cache-a kao modele (0 DB upita)
+  static List<RegistrovaniPutnik> getAllAktivniKaoModel() {
     return _rm
         .getAllPutnici()
         .where((r) => r['status'] == 'aktivan')
-        .map((r) => _fromRow(r, r['_tabela'] as String? ?? 'v2_radnici'))
+        .map((r) => _fromRow(r, r['_tabela']?.toString() ?? 'v2_radnici'))
         .toList()
       ..sort((a, b) => a.ime.compareTo(b.ime));
   }
 
-  /// Traži putnika po ID-u kroz sva 4 cache-a, vraća raw Map (za RegistrovaniPutnik.fromMap)
+  /// Trazi putnika po ID-u kroz sva 4 cache-a, vraca raw Map (za RegistrovaniPutnik.fromMap)
   static Future<Map<String, dynamic>?> findPutnikById(String id) async {
     final row = _rm.getPutnikById(id);
     if (row != null) return row;
@@ -312,19 +314,21 @@ class V2ProfilService {
       try {
         final res = await _supabase.from(tabela).select().eq('id', id).maybeSingle();
         if (res != null) return {...res, '_tabela': tabela};
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[V2ProfilService] findPutnikById fallback ($tabela) error: $e');
+      }
     }
     return null;
   }
 
   // ---------------------------------------------------------------------------
-  // 📊 STATISTIKA — čita iz v2_statistika_istorija
+  // STATISTIKA — cita iz v2_statistika_istorija
   // ---------------------------------------------------------------------------
 
-  /// Dohvata sva plaćanja (tip='uplata' ili 'uplata_dnevna') za putnika
+  /// Dohvata sva placanja (tip='uplata_dnevna') za putnika
   static Future<List<Map<String, dynamic>>> dohvatiPlacanja(String putnikId) async {
     try {
-      // Pokušaj iz cache-a prvo
+      // Pokusaj iz cache-a prvo
       final izCache = _rm.statistikaCache.values
           .where((r) => r['putnik_id']?.toString() == putnikId && (r['tip'] == 'uplata' || r['tip'] == 'uplata_dnevna'))
           .toList();
@@ -338,7 +342,7 @@ class V2ProfilService {
           .inFilter('tip', ['uplata', 'uplata_dnevna']).order('datum', ascending: false);
       return List<Map<String, dynamic>>.from(res);
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] dohvatiPlacanja error: $e');
+      debugPrint('[V2ProfilService] dohvatiPlacanja error: $e');
       return [];
     }
   }
@@ -356,12 +360,12 @@ class V2ProfilService {
           .gte('datum', mesecStart);
       return res.length;
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] izracunajBrojVoznji error: $e');
+      debugPrint('[V2ProfilService] izracunajBrojVoznji error: $e');
       return 0;
     }
   }
 
-  /// Broji otkazivanja (tip='otkazivanje') za putnika u tekućem mjesecu
+  /// Broji otkazivanja (tip='otkazivanje') za putnika u tekucem mjesecu
   static Future<int> izracunajBrojOtkazivanja(String putnikId) async {
     try {
       final now = DateTime.now();
@@ -374,7 +378,7 @@ class V2ProfilService {
           .gte('datum', mesecStart);
       return res.length;
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] izracunajBrojOtkazivanja error: $e');
+      debugPrint('[V2ProfilService] izracunajBrojOtkazivanja error: $e');
       return 0;
     }
   }
@@ -403,7 +407,7 @@ class V2ProfilService {
         'putnik_id': putnikId,
         'putnik_ime': putnikIme,
         'putnik_tabela': putnikTabela,
-        'tip': 'uplata',
+        'tip': 'uplata_dnevna',
         'iznos': iznos,
         'vozac_id': vozacId,
         'vozac_ime': vozacIme,
@@ -414,7 +418,7 @@ class V2ProfilService {
       });
       return true;
     } catch (e) {
-      debugPrint('❌ [V2ProfilService] upisPlacanjaULog error: $e');
+      debugPrint('[V2ProfilService] upisPlacanjaULog error: $e');
       return false;
     }
   }
