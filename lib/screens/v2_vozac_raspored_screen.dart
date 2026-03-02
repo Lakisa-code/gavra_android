@@ -745,7 +745,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
 
     switch (navType) {
       case 'praznici':
-        return BottomNavBarPraznici(
+        return V2BottomNavBarPraznici(
           sviPolasci: _sviPolasci,
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,
@@ -757,7 +757,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
           getVozacColor: _getVozacColorForTermin,
         );
       case 'zimski':
-        return BottomNavBarZimski(
+        return V2BottomNavBarZimski(
           sviPolasci: _sviPolasci,
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,
@@ -769,7 +769,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
           getVozacColor: _getVozacColorForTermin,
         );
       default:
-        return BottomNavBarLetnji(
+        return V2BottomNavBarLetnji(
           sviPolasci: _sviPolasci,
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,

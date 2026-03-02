@@ -4,8 +4,8 @@ import '../config/v2_route_config.dart';
 import '../services/v2_theme_manager.dart';
 import '../theme.dart';
 
-class BottomNavBarLetnji extends StatefulWidget {
-  const BottomNavBarLetnji({
+class V2BottomNavBarLetnji extends StatefulWidget {
+  const V2BottomNavBarLetnji({
     super.key,
     required this.sviPolasci,
     required this.selectedGrad,
@@ -16,9 +16,9 @@ class BottomNavBarLetnji extends StatefulWidget {
     this.isSlotLoading,
     this.bcVremena,
     this.vsVremena,
-    this.selectedDan, // 🆕
-    this.showVozacBoja = false, // 🆕 Default je false (samo za Dodeli ekran)
-    this.getVozacColor, // 🆕 Callback za boju vozača po terminu
+    this.selectedDan,
+    this.showVozacBoja = false, // Default je false (samo za Dodeli ekran)
+    this.getVozacColor, // Callback za boju vozaca po terminu
   });
   final List<String> sviPolasci;
   final String selectedGrad;
@@ -29,15 +29,15 @@ class BottomNavBarLetnji extends StatefulWidget {
   final bool Function(String grad, String vreme)? isSlotLoading;
   final List<String>? bcVremena;
   final List<String>? vsVremena;
-  final String? selectedDan; // 🆕
-  final bool showVozacBoja; // 🆕
-  final Color? Function(String grad, String vreme)? getVozacColor; // 🆕
+  final String? selectedDan;
+  final bool showVozacBoja;
+  final Color? Function(String grad, String vreme)? getVozacColor;
 
   @override
-  State<BottomNavBarLetnji> createState() => _BottomNavBarLetnjiState();
+  State<V2BottomNavBarLetnji> createState() => _BottomNavBarLetnjiState();
 }
 
-class _BottomNavBarLetnjiState extends State<BottomNavBarLetnji> {
+class _BottomNavBarLetnjiState extends State<V2BottomNavBarLetnji> {
   final ScrollController _bcScrollController = ScrollController();
   final ScrollController _vsScrollController = ScrollController();
 
@@ -50,7 +50,7 @@ class _BottomNavBarLetnjiState extends State<BottomNavBarLetnji> {
   }
 
   @override
-  void didUpdateWidget(BottomNavBarLetnji oldWidget) {
+  void didUpdateWidget(V2BottomNavBarLetnji oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedVreme != widget.selectedVreme || oldWidget.selectedGrad != widget.selectedGrad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -189,7 +189,7 @@ class _PolazakRow extends StatelessWidget {
     this.getKapacitet,
     this.isSlotLoading,
     this.scrollController,
-    this.selectedDan, // 🆕
+    this.selectedDan,
     this.showVozacBoja = false,
     this.getVozacColor,
   });
@@ -204,7 +204,7 @@ class _PolazakRow extends StatelessWidget {
   final bool Function(String grad, String vreme)? isSlotLoading;
   final ScrollController? scrollController;
   final String currentThemeId;
-  final String? selectedDan; // 🆕
+  final String? selectedDan;
   final bool showVozacBoja;
   final Color? Function(String grad, String vreme)? getVozacColor;
 
@@ -231,7 +231,7 @@ class _PolazakRow extends StatelessWidget {
               child: Row(
                 children: vremena.map((vreme) {
                   final bool selected = selectedGrad == grad && selectedVreme == vreme;
-                  // 🆕 Boja vozača za termin (iz raspored cache-a)
+                  // Boja vozaca za termin (iz raspored cache-a)
                   final vozacBorderColor = showVozacBoja ? getVozacColor?.call(grad, vreme) : null;
                   final hasVozac = vozacBorderColor != null;
 
@@ -257,7 +257,7 @@ class _PolazakRow extends StatelessWidget {
                                 : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          // 🆕 Ako ima dodeljen vozač, koristi njegovu boju za border
+                          // Ako ima dodeljen vozac, koristi njegovu boju za border
                           color: hasVozac
                               ? vozacBorderColor
                               : selected

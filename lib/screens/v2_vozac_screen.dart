@@ -893,7 +893,7 @@ class _VozacScreenState extends State<VozacScreen> {
           Widget buildNavBarForType(String navType) {
             switch (navType) {
               case 'praznici':
-                return BottomNavBarPraznici(
+                return V2BottomNavBarPraznici(
                   sviPolasci: _sviPolasci,
                   selectedGrad: _selectedGrad,
                   selectedVreme: _selectedVreme,
@@ -904,7 +904,7 @@ class _VozacScreenState extends State<VozacScreen> {
                   vsVremena: vsVremenaToShow,
                 );
               case 'zimski':
-                return BottomNavBarZimski(
+                return V2BottomNavBarZimski(
                   sviPolasci: _sviPolasci,
                   selectedGrad: _selectedGrad,
                   selectedVreme: _selectedVreme,
@@ -915,7 +915,7 @@ class _VozacScreenState extends State<VozacScreen> {
                   vsVremena: vsVremenaToShow,
                 );
               default:
-                return BottomNavBarLetnji(
+                return V2BottomNavBarLetnji(
                   sviPolasci: _sviPolasci,
                   selectedGrad: _selectedGrad,
                   selectedVreme: _selectedVreme,
@@ -981,10 +981,10 @@ class _VozacScreenState extends State<VozacScreen> {
                     if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
                       return Column(
                         children: [
-                          ShimmerWidgets.vozacHeaderShimmer(context),
+                          V2ShimmerWidgets.vozacHeaderShimmer(context),
                           const SizedBox(height: 8),
-                          ShimmerWidgets.statistikaShimmer(context),
-                          Expanded(child: ShimmerWidgets.putnikListShimmer(itemCount: 5)),
+                          V2ShimmerWidgets.statistikaShimmer(context),
+                          Expanded(child: V2ShimmerWidgets.putnikListShimmer(itemCount: 5)),
                         ],
                       );
                     }
@@ -1058,7 +1058,7 @@ class _VozacScreenState extends State<VozacScreen> {
                       children: [
                         // KOCKE - Pazar, Dugovi
                         _buildStatsRow(sviPutnici, mojiPutnici),
-                        // Lista putnika - koristi PutnikList sa stream-om kao DanasScreen
+                        // Lista putnika - koristi V2PutnikList sa stream-om kao DanasScreen
                         Expanded(
                           child: putnici.isEmpty
                               ? Center(
@@ -1082,7 +1082,7 @@ class _VozacScreenState extends State<VozacScreen> {
                                     ],
                                   ),
                                 )
-                              : PutnikList(
+                              : V2PutnikList(
                                   putnici: putnici,
                                   useProvidedOrder: _isListReordered,
                                   currentDriver:
@@ -1147,7 +1147,7 @@ class _VozacScreenState extends State<VozacScreen> {
           ),
         ),
         // DESNO - VREME
-        ClockTicker(
+        V2ClockTicker(
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,

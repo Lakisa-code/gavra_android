@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-/// ClockTicker - a lightweight widget that updates once per second and
+/// V2ClockTicker - a lightweight widget that updates once per second and
 /// only rebuilds itself (the time text), reducing rebuild impact on
 /// surrounding widgets. It pauses updates when the app is in background.
-class ClockTicker extends StatefulWidget {
-  const ClockTicker({
+class V2ClockTicker extends StatefulWidget {
+  const V2ClockTicker({
     super.key,
     this.style,
     this.showSeconds = true,
@@ -16,10 +16,10 @@ class ClockTicker extends StatefulWidget {
   final bool showSeconds;
 
   @override
-  State<ClockTicker> createState() => _ClockTickerState();
+  State<V2ClockTicker> createState() => _ClockTickerState();
 }
 
-class _ClockTickerState extends State<ClockTicker> with WidgetsBindingObserver {
+class _ClockTickerState extends State<V2ClockTicker> with WidgetsBindingObserver {
   Timer? _timer;
   DateTime _now = DateTime.now();
 
@@ -43,9 +43,7 @@ class _ClockTickerState extends State<ClockTicker> with WidgetsBindingObserver {
   }
 
   void _stopTimer() {
-    try {
-      _timer?.cancel();
-    } catch (_) {}
+    _timer?.cancel();
     _timer = null;
   }
 

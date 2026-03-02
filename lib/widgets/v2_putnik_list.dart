@@ -4,10 +4,10 @@ import '../models/v2_putnik.dart';
 import '../utils/v2_putnik_helpers.dart';
 import 'v2_putnik_card.dart';
 
-/// Widget koji prikazuje listu putnika koristeći PutnikCard za svaki element.
+/// Widget koji prikazuje listu putnika koristeći V2PutnikCard za svaki element.
 
-class PutnikList extends StatelessWidget {
-  const PutnikList({
+class V2PutnikList extends StatelessWidget {
+  const V2PutnikList({
     super.key,
     this.putnici,
     this.putniciStream,
@@ -180,7 +180,7 @@ class PutnikList extends StatelessWidget {
                 redniBroj = _pocetniRedniBroj(prikaz, index);
               }
 
-              return PutnikCard(
+              return V2PutnikCard(
                 putnik: v2Putnik,
                 showActions: showActions,
                 currentDriver: currentDriver,
@@ -265,7 +265,7 @@ class PutnikList extends StatelessWidget {
             if (_imaRedniBroj(v2Putnik)) {
               redniBroj = _pocetniRedniBroj(prikaz, index);
             }
-            return PutnikCard(
+            return V2PutnikCard(
               putnik: v2Putnik,
               showActions: showActions,
               currentDriver: currentDriver,
@@ -306,7 +306,7 @@ class PutnikList extends StatelessWidget {
           if (_imaRedniBroj(v2Putnik)) {
             redniBroj = _pocetniRedniBroj(filteredPutnici, index);
           }
-          return PutnikCard(
+          return V2PutnikCard(
             putnik: v2Putnik,
             showActions: showActions,
             currentDriver: currentDriver,

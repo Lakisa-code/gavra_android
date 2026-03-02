@@ -1883,7 +1883,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             decoration: BoxDecoration(
               gradient: ThemeManager().currentGradient, // ?? Dinamicki gradijent iz tema
             ),
-            child: ShimmerWidgets.putnikListShimmer(itemCount: 8),
+            child: V2ShimmerWidgets.putnikListShimmer(itemCount: 8),
           ),
           // ?? DODAJ BOTTOM NAVIGATION BAR I U LOADING STANJU!
           bottomNavigationBar: ValueListenableBuilder<String>(
@@ -2030,8 +2030,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             targetDayAbbr: targetDayAbbr,
           );
 
-          // ?? UKLONJEN DUPLI SORT - PutnikList sada sortira konzistentno sa VozacScreen
-          // Sortiranje se Vrsi u PutnikList widgetu sa istom logikom za sva tri ekrana
+          // Uklonjen dupli sort - V2PutnikList sada sortira konzistentno sa VozacScreen
+          // Sortiranje se vrsi u V2PutnikList widgetu sa istom logikom za sva tri ekrana
           final putniciZaPrikaz = sviPutniciBezDuplikata;
 
           // Funkcija za brojanje putnika po gradu, vremenu i danu
@@ -2078,7 +2078,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           Row(
                             children: [
                               // LEVO - Tablica vozila (ako istice registracija)
-                              const RegistracijaTablicaWidget(),
+                              const V2RegistracijaTablicaWidget(),
                               const SizedBox(width: 8),
                               // SREDINA - "R E Z E R V A C I J E"
                               Expanded(
@@ -2112,7 +2112,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                               const SizedBox(width: 8),
                               // DESNO - Brojac dana do isteka registracije
-                              const RegistracijaBrojacWidget(),
+                              const V2RegistracijaBrojacWidget(),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -2586,7 +2586,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                             ),
                           )
-                        : PutnikList(
+                        : V2PutnikList(
                             putnici: putniciZaPrikaz,
                             currentDriver: _currentDriver!,
                             selectedGrad: _selectedGrad,
@@ -2638,7 +2638,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     switch (navType) {
       case 'praznici':
-        return BottomNavBarPraznici(
+        return V2BottomNavBarPraznici(
           sviPolasci: _sviPolasci,
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,
@@ -2650,7 +2650,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           getVozacColor: _getVozacColorForTermin,
         );
       case 'zimski':
-        return BottomNavBarZimski(
+        return V2BottomNavBarZimski(
           sviPolasci: _sviPolasci,
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,
@@ -2662,7 +2662,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           getVozacColor: _getVozacColorForTermin,
         );
       default: // 'letnji' ili nepoznato
-        return BottomNavBarLetnji(
+        return V2BottomNavBarLetnji(
           sviPolasci: _sviPolasci,
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,

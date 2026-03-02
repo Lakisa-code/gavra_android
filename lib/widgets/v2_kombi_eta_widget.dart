@@ -11,8 +11,8 @@ import '../utils/v2_grad_adresa_validator.dart';
 /// - Uvek vidljiv sa informativnom porukom
 /// - Kada vozač startuje rutu: prikazuje ETA uživo
 /// - Kada vozač pokupi putnika: prikazuje vreme pokupljenja pa se gasi
-class KombiEtaWidget extends StatefulWidget {
-  const KombiEtaWidget({
+class V2KombiEtaWidget extends StatefulWidget {
+  const V2KombiEtaWidget({
     super.key,
     required this.putnikIme,
     required this.grad,
@@ -28,10 +28,10 @@ class KombiEtaWidget extends StatefulWidget {
   final String? vreme; // Termin polaska putnika npr. '7:00'
 
   @override
-  State<KombiEtaWidget> createState() => _KombiEtaWidgetState();
+  State<V2KombiEtaWidget> createState() => _KombiEtaWidgetState();
 }
 
-class _KombiEtaWidgetState extends State<KombiEtaWidget> {
+class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
   StreamSubscription? _subscription;
   StreamSubscription? _putnikSubscription;
   Timer? _pollingTimer;
@@ -54,32 +54,32 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     _subscription?.cancel();
     _putnikSubscription?.cancel();
     V2MasterRealtimeManager.instance.unsubscribe('v2_vozac_lokacije');
-    // ✅ NE pozivamo unsubscribe('v2_polasci') — profil ekran već drži taj
+    // NE pozivamo unsubscribe('v2_polasci') — profil ekran vec drzi taj
     // channel otvoren (registrovan u _setupRealtimeListener). Dovoljno je
     // otkazati dart StreamSubscription iznad. Bez ovog fixa _listenerCount bi
-    // pao na 1 i channel bi ostao otvoren sa dead stream-om bez slušaoca.
+    // pao na 1 i channel bi ostao otvoren sa dead stream-om bez slusaoca.
     super.dispose();
   }
 
-  /// 🗄️ Čita aktivne lokacije vozača iz in-memory cache-a (0 DB upita).
-  /// Cache se puni pri startu i ažurira automatski na svaki realtime event.
+  /// Cita aktivne lokacije vozaca iz in-memory cache-a (0 DB upita).
+  /// Cache se puni pri startu i azurira automatski na svaki realtime event.
   /// Fallback DB upit se radi samo ako je cache prazan (npr. odmah pri startu
-  /// pre nego što se RealtimeManager inicijalizovao).
+  /// pre nego sto se RealtimeManager inicijalizovao).
   Future<void> _loadGpsData() async {
     try {
       final normalizedGrad = GradAdresaValidator.normalizeGrad(widget.grad);
       final normVreme = widget.vreme != null ? GradAdresaValidator.normalizeTime(widget.vreme!) : null;
 
-      // 🚀 PRIMARNI PUT: čitaj iz lokacijeCache (0 DB upita)
+      // PRIMARNI PUT: citaj iz lokacijeCache (0 DB upita)
       final cacheValues = V2MasterRealtimeManager.instance.lokacijeCache.values.toList();
       List<dynamic> list;
       if (cacheValues.isNotEmpty) {
         // Cache je popunjen — filtriraj direktno iz memorije
         list = cacheValues.where((row) => row['aktivan'] == true).toList();
       } else {
-        // 🔁 FALLBACK: cache još nije popunjen (prva sekunda pri startu)
+        // FALLBACK: cache jos nije popunjen (prva sekunda pri startu)
         // Radi jedan DB upit i popuni lokacijeCache
-        debugPrint('⚠️ [KombiEta] lokacijeCache prazan — fallback DB upit');
+        debugPrint('[KombiEta] lokacijeCache prazan — fallback DB upit');
         final data = await supabase
             .from('v2_vozac_lokacije')
             .select('id,vozac_id,lat,lng,grad,vreme_polaska,smer,putnici_eta,aktivan,updated_at')
@@ -128,15 +128,15 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       int? eta;
       if (putniciEta != null) {
-        // 1️⃣ Exact match po putnikId (vozač treba da čuva ID kao ključ)
+        // 1. Exact match po putnikId (vozac treba da cuva ID kao kljuc)
         if (widget.putnikId != null && putniciEta.containsKey(widget.putnikId)) {
           eta = putniciEta[widget.putnikId] as int?;
         }
-        // 2️⃣ Exact match po imenu (stari format, vozač čuva ime kao ključ)
+        // 2. Exact match po imenu (stari format, vozac cuva ime kao kljuc)
         if (eta == null && putniciEta.containsKey(widget.putnikIme)) {
           eta = putniciEta[widget.putnikIme] as int?;
         }
-        // 3️⃣ Case-insensitive exact match po imenu
+        // 3. Case-insensitive exact match po imenu
         if (eta == null) {
           for (final entry in putniciEta.entries) {
             if (entry.key.toLowerCase() == widget.putnikIme.toLowerCase()) {
@@ -145,7 +145,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
             }
           }
         }
-        // ❌ Fuzzy contains match uklonjen — bio nestabilan i mogao je
+        // Fuzzy contains match uklonjen — bio nestabilan i mogao je
         // da vrati ETA drugog putnika (npr. "Ana" bi matchovala "Anabela")
       }
 
@@ -176,9 +176,9 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   void _startListening() {
     _loadGpsData();
     _loadPokupljenjeIzBaze();
-    // ⏱️ Polling je sada samo fallback ako realtime padne.
-    // Realtime event → _loadGpsData() čita iz cache-a (0 DB upita).
-    // Interval produžen: 30s → 5min jer nema potrebe za čestim upitima.
+    // Polling je sada samo fallback ako realtime padne.
+    // Realtime event → _loadGpsData() cita iz cache-a (0 DB upita).
+    // Interval produžen: 30s → 5min jer nema potrebe za cestim upitima.
     _pollingTimer = Timer.periodic(const Duration(minutes: 5), (_) => _loadGpsData());
     _subscription = V2MasterRealtimeManager.instance.subscribe('v2_vozac_lokacije').listen(
           (payload) => _loadGpsData(),
@@ -187,7 +187,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     if (widget.putnikId != null) {
       _putnikSubscription = V2MasterRealtimeManager.instance.subscribe('v2_polasci').listen(
         (payload) {
-          // ✅ Filtriraj payload — reaguj samo na promene za OVOG putnika
+          // Filtriraj payload — reaguj samo na promene za OVOG putnika
           final record = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
           final payloadPutnikId = record['putnik_id']?.toString();
           // Ako payload ne odgovara ovom putniku — ignoriši
@@ -240,13 +240,13 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         });
       }
     } catch (e) {
-      debugPrint('⚠️ [KombiEta] Greška pri čitanju v2_polasci: $e');
+      debugPrint('[KombiEta] Greška pri čitanju v2_polasci: $e');
     }
   }
 
   // Faza 1 — uvek vidljiv default info widget
   Widget _buildFaza1() {
-    // ✅ Prikaži sledeću vožnju ako je poznata (umesto generičke poruke)
+    // Prikazi sledecu voznju ako je poznata (umesto genericke poruke)
     if (widget.sledecaVoznja != null && widget.sledecaVoznja!.isNotEmpty) {
       return _buildContainer(
         Colors.white,

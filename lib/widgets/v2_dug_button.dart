@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart'; // Dodato za glassmorphism
 
-class DugButton extends StatelessWidget {
-  // novi parametar za prikaz kao kocka
-
-  const DugButton({
+class V2DugButton extends StatelessWidget {
+  const V2DugButton({
     super.key,
     required this.brojDuznika,
     this.onTap,
@@ -77,8 +75,7 @@ class DugButton extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 4),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: backgroundColor ??
-                Theme.of(context).glassContainer, // Glassmorphism
+            color: backgroundColor ?? Theme.of(context).glassContainer, // Glassmorphism
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: Theme.of(context).glassBorder, // Transparentni border

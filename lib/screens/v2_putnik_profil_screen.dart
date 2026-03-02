@@ -1217,7 +1217,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
                     // 2. Vozač startovao rutu: Realtime ETA praćenje
                     // 3. Pokupljen: "Pokupljeni ste u HH:MM" (stoji 60 min) - ČITA IZ BAZE!
                     // 4. Nakon 60 min: "Vaša sledeća vožnja: dan, vreme"
-                    KombiEtaWidget(
+                    V2KombiEtaWidget(
                       putnikIme: fullName,
                       grad: grad,
                       sledecaVoznja: _sledecaVoznjaInfo,

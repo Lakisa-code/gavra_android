@@ -7,8 +7,8 @@ import '../theme.dart';
 /// Bottom navigation bar za praznike/specijalne dane
 /// BC: 5:00, 6:00, 12:00, 13:00, 15:00
 /// VS: 6:00, 7:00, 13:00, 14:00, 15:30
-class BottomNavBarPraznici extends StatefulWidget {
-  const BottomNavBarPraznici({
+class V2BottomNavBarPraznici extends StatefulWidget {
+  const V2BottomNavBarPraznici({
     super.key,
     required this.sviPolasci,
     required this.selectedGrad,
@@ -37,10 +37,10 @@ class BottomNavBarPraznici extends StatefulWidget {
   final Color? Function(String grad, String vreme)? getVozacColor;
 
   @override
-  State<BottomNavBarPraznici> createState() => _BottomNavBarPrazniciState();
+  State<V2BottomNavBarPraznici> createState() => _BottomNavBarPrazniciState();
 }
 
-class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
+class _BottomNavBarPrazniciState extends State<V2BottomNavBarPraznici> {
   final ScrollController _bcScrollController = ScrollController();
   final ScrollController _vsScrollController = ScrollController();
 
@@ -53,7 +53,7 @@ class _BottomNavBarPrazniciState extends State<BottomNavBarPraznici> {
   }
 
   @override
-  void didUpdateWidget(BottomNavBarPraznici oldWidget) {
+  void didUpdateWidget(V2BottomNavBarPraznici oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedVreme != widget.selectedVreme || oldWidget.selectedGrad != widget.selectedGrad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -227,7 +227,7 @@ class _PolazakRow extends StatelessWidget {
               child: Row(
                 children: vremena.map((vreme) {
                   final bool selected = selectedGrad == grad && selectedVreme == vreme;
-                  // 🆕 Boja vozača za termin (iz raspored cache-a)
+                  // Boja vozaca za termin (iz raspored cache-a)
                   final vozacBorderColor = showVozacBoja ? getVozacColor?.call(grad, vreme) : null;
                   final hasVozac = vozacBorderColor != null;
 

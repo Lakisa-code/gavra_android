@@ -1050,7 +1050,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               )
                               .toList(),
                         ),
-                        DugButton(
+                        V2DugButton(
                           brojDuznika: filteredDuznici.length,
                           onTap: () {
                             Navigator.push(

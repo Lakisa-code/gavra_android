@@ -75,15 +75,15 @@ class _RegistracijaData {
   }
 }
 
-/// ️ TABLICA WIDGET - samo slika tablice (leva strana)
-class RegistracijaTablicaWidget extends StatefulWidget {
-  const RegistracijaTablicaWidget({super.key});
+/// Tablica widget - samo slika tablice (leva strana)
+class V2RegistracijaTablicaWidget extends StatefulWidget {
+  const V2RegistracijaTablicaWidget({super.key});
 
   @override
-  State<RegistracijaTablicaWidget> createState() => _RegistracijaTablicaWidgetState();
+  State<V2RegistracijaTablicaWidget> createState() => _RegistracijaTablicaWidgetState();
 }
 
-class _RegistracijaTablicaWidgetState extends State<RegistracijaTablicaWidget> {
+class _RegistracijaTablicaWidgetState extends State<V2RegistracijaTablicaWidget> {
   @override
   void initState() {
     super.initState();
@@ -139,14 +139,14 @@ class _RegistracijaTablicaWidgetState extends State<RegistracijaTablicaWidget> {
 }
 
 /// "S BROJA WIDGET - samo broj dana (desna strana)
-class RegistracijaBrojacWidget extends StatefulWidget {
-  const RegistracijaBrojacWidget({super.key});
+class V2RegistracijaBrojacWidget extends StatefulWidget {
+  const V2RegistracijaBrojacWidget({super.key});
 
   @override
-  State<RegistracijaBrojacWidget> createState() => _RegistracijaBrojacWidgetState();
+  State<V2RegistracijaBrojacWidget> createState() => _RegistracijaBrojacWidgetState();
 }
 
-class _RegistracijaBrojacWidgetState extends State<RegistracijaBrojacWidget> {
+class _RegistracijaBrojacWidgetState extends State<V2RegistracijaBrojacWidget> {
   @override
   void initState() {
     super.initState();

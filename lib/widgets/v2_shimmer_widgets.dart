@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-/// 🌟 SHIMMER LOADING WIDGETS
+/// Shimmer loading widgets
 /// Profesionalni loading effects za sve liste i kartice
-class ShimmerWidgets {
-  /// 💳 Shimmer za V2Putnik kartice
+class V2ShimmerWidgets {
+  V2ShimmerWidgets._();
+
+  /// Shimmer za V2Putnik kartice
   static Widget putnikCardShimmer(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

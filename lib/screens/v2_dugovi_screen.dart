@@ -187,7 +187,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                                   style: TextStyle(color: Colors.white70),
                                 ),
                               )
-                            : PutnikList(
+                            : V2PutnikList(
                                 putnici: filteredDugovi,
                                 currentDriver: widget.currentDriver,
                                 isDugovanjaMode: true,

@@ -50,7 +50,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
   final TextEditingController _brojMestaController = TextEditingController();
   final TextEditingController _cenaPoDanuController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  // ?? Kontroleri za podatke o firmi (racun)
+  // Kontroleri za podatke o firmi (racun)
   final TextEditingController _firmaNazivController = TextEditingController();
   final TextEditingController _firmaPibController = TextEditingController();
   final TextEditingController _firmaMbController = TextEditingController();
@@ -96,7 +96,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     }
   }
 
-  /// ?? Srpsko sortiranje - pravilno sortira c, c, š, š, d
+  /// Srpsko sortiranje - pravilno sortira c, c, š, š, d
   int _serbianCompare(String a, String b) {
     // Normalizuj za sortiranje: zameni srpske karaktere
     String normalize(String s) {
@@ -168,7 +168,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         _firmaAdresaController.text = firma['firma_adresa'] as String? ?? '';
       });
     } catch (e) {
-      debugPrint('❌ [PutnikDialog] _loadFirmaPodatke error: $e');
+      debugPrint('[PutnikDialog] _loadFirmaPodatke error: $e');
     }
   }
 
@@ -250,14 +250,14 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
 
       super.dispose();
     } catch (e) {
-      debugPrint('❌ Error disposing V2PutnikDialog: $e');
+      debugPrint('Error disposing V2PutnikDialog: $e');
       super.dispose();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ?? Izracunaj dostupnu visinu uzimajuci u obzir tastatur?
+    // Izracunaj dostupnu visinu uzimajuci u obzir tastatur?
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
     final availableHeight = screenHeight - keyboardHeight;
@@ -567,7 +567,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
                   style: const TextStyle(color: Colors.black),
                 ),
                 const SizedBox(height: 16),
-                // ?? EMAIL POLJE - sve tabele
+                // EMAIL POLJE - sve tabele
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -584,7 +584,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
                   style: const TextStyle(color: Colors.black),
                 ),
                 const SizedBox(height: 16),
-                // ?? CHECKBOX ZA RACUN
+                // CHECKBOX ZA RACUN
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -665,7 +665,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     );
   }
 
-  /// ?? Popup za unos podataka firme
+  /// Popup za unos podataka firme
   void _showFirmaDialog() {
     showDialog(
       context: context,
@@ -1059,7 +1059,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     );
   }
 
-  /// ?? Polje za telefon sa dugmetom za biranje iz imenika
+  /// Polje za telefon sa dugmetom za biranje iz imenika
   Widget _buildPhoneFieldWithContactPicker({
     required TextEditingController controller,
     required String label,
@@ -1095,7 +1095,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
           ),
         ),
         const SizedBox(width: 8),
-        // ?? Dugme za biranje iz imenika
+        // Dugme za biranje iz imenika
         Material(
           color: Colors.green,
           borderRadius: BorderRadius.circular(12),
@@ -1235,7 +1235,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       return 'Ime putnika mora imati najmanje 2 karaktera';
     }
 
-    // ?? Validacija broja telefona
+    // Validacija broja telefona
     final telefon = _brojTelefonaController.text.trim();
     if (telefon.isEmpty) {
       return 'Broj telefona je obavezan';
@@ -1257,7 +1257,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     return null;
   }
 
-  /// ?? Validacija formata srpskog broja telefona
+  /// Validacija formata srpskog broja telefona
   String? _validatePhoneNumber(String telefon) {
     // Ukloni razmake, crtice, zagrade
     final cleaned = telefon.replaceAll(RegExp(r'[\s\-\(\)]'), '');
@@ -1300,7 +1300,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     return null;
   }
 
-  /// ?? Provera da li broj telefona vec postoji u bazi
+  /// Provera da li broj telefona vec postoji u bazi
   Future<String?> _checkDuplicatePhone() async {
     final telefon = _brojTelefonaController.text.trim();
     if (telefon.isEmpty) return null;
@@ -1350,7 +1350,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     setState(() => _isLoading = true);
 
     try {
-      // ?? Provera duplikata broja telefona
+      // Provera duplikata broja telefona
       final duplicateError = await _checkDuplicatePhone();
       if (duplicateError != null) {
         if (mounted) {
@@ -1398,16 +1398,16 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         }
       }
     } catch (e) {
-      debugPrint('❌ Greška pri cuvanju putnika: $e');
+      debugPrint('Greška pri cuvanju putnika: $e');
 
-      // ?? LOG GRESKE ZA ADMINA
+      // LOG GRESKE ZA ADMINA
       try {
         await V2StatistikaIstorijaService.logGreska(
           putnikId: widget.existingPutnik?.id,
           greska: '[$_tip | ${_imeController.text}] ${e.toString()}',
         );
       } catch (e) {
-        debugPrint('❌ Error logging user action: $e');
+        debugPrint('Error logging user action: $e');
       }
 
       if (mounted) {
@@ -1570,7 +1570,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
       ),
       child: Column(
         children: [
-          // ?? Handle for dragging
+          // Handle for dragging
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12),
@@ -1582,7 +1582,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
               ),
             ),
           ),
-          // ?? Search Header
+          // Search Header
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(
@@ -1610,7 +1610,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
               ],
             ),
           ),
-          // ?? Search Bar
+          // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: TextField(
@@ -1639,7 +1639,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          // ?? Contacts List
+          // Contacts List
           Expanded(
             child: _filteredContacts.isEmpty
                 ? Center(
