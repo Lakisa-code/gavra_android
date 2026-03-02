@@ -1,14 +1,16 @@
 import 'v2_grad_adresa_validator.dart';
 
-enum RegistrovaniStatus { active, canceled, vacation, unknown }
+enum V2RegistrovaniStatus { active, canceled, vacation, unknown }
 
-class RegistrovaniHelpers {
+class V2RegistrovaniHelpers {
+  V2RegistrovaniHelpers._();
+
   // Normalize time using GradAdresaValidator for consistency across the app
   static String? normalizeTime(String? raw) {
     return GradAdresaValidator.normalizeTime(raw);
   }
 
-  // ⚠️ SSOT: Polasci po danu se sada čuvaju ISKLJUČIVO u v2_polasci tabeli.
+  // SSOT: Polasci po danu se sada čuvaju ISKLJUČIVO u v2_polasci tabeli.
   // Ove metode su zadržane radi kompatibilnosti interfejsa.
 
   // Get polazak for a day and place ('bc' or 'vs') from v2_polasci
@@ -54,26 +56,26 @@ class RegistrovaniHelpers {
   }
 
   // Status converter
-  static RegistrovaniStatus statusFromString(String? raw) {
-    if (raw == null) return RegistrovaniStatus.unknown;
+  static V2RegistrovaniStatus statusFromString(String? raw) {
+    if (raw == null) return V2RegistrovaniStatus.unknown;
     final s = raw.toLowerCase().trim();
-    if (s.isEmpty) return RegistrovaniStatus.unknown;
+    if (s.isEmpty) return V2RegistrovaniStatus.unknown;
 
     final map = {
-      'otkazano': RegistrovaniStatus.canceled,
-      'otkazan': RegistrovaniStatus.canceled,
-      'otkazana': RegistrovaniStatus.canceled,
-      'otkaz': RegistrovaniStatus.canceled,
-      'godišnji': RegistrovaniStatus.vacation,
-      'godisnji': RegistrovaniStatus.vacation,
-      'godisnji_odmor': RegistrovaniStatus.vacation,
-      'aktivan': RegistrovaniStatus.active,
-      'active': RegistrovaniStatus.active,
-      'placeno': RegistrovaniStatus.active,
+      'otkazano': V2RegistrovaniStatus.canceled,
+      'otkazan': V2RegistrovaniStatus.canceled,
+      'otkazana': V2RegistrovaniStatus.canceled,
+      'otkaz': V2RegistrovaniStatus.canceled,
+      'godišnji': V2RegistrovaniStatus.vacation,
+      'godisnji': V2RegistrovaniStatus.vacation,
+      'godisnji_odmor': V2RegistrovaniStatus.vacation,
+      'aktivan': V2RegistrovaniStatus.active,
+      'active': V2RegistrovaniStatus.active,
+      'placeno': V2RegistrovaniStatus.active,
     };
     for (final k in map.keys) {
       if (s.contains(k)) return map[k]!;
     }
-    return RegistrovaniStatus.unknown;
+    return V2RegistrovaniStatus.unknown;
   }
 }

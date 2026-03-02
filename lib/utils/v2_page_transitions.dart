@@ -37,6 +37,8 @@ class SmoothPageRoute<T> extends PageRouteBuilder<T> {
 
 // Helper funkcije za lako korišćenje
 class AnimatedNavigation {
+  AnimatedNavigation._();
+
   static Future<T?> pushSmooth<T extends Object?>(
     BuildContext context,
     Widget page,
@@ -47,8 +49,7 @@ class AnimatedNavigation {
     );
   }
 
-  static Future<T?>
-      pushReplacementSmooth<T extends Object?, TO extends Object?>(
+  static Future<T?> pushReplacementSmooth<T extends Object?, TO extends Object?>(
     BuildContext context,
     Widget page,
   ) {

@@ -1,16 +1,18 @@
 import '../models/v2_putnik.dart';
 
-/// 🎯 V2Putnik HELPERS - Centralizovane funkcije za proveru statusa putnika
+/// V2Putnik HELPERS - Centralizovane funkcije za proveru statusa putnika
 ///
 /// Ove funkcije koriste V2Putnik getters za potpunu proveru, uključujući:
 /// - jeOtkazan (proverava obrisan, otkazanZaPolazak, status)
 /// - jeOdsustvo (proverava bolovanje, godišnji)
 ///
-/// ## Razlike od TextUtils.isStatusActive:
-/// - TextUtils.isStatusActive proverava SAMO string status
-/// - PutnikHelpers.shouldCountInSeats koristi V2Putnik getters za potpunu proveru
-class PutnikHelpers {
-  /// 🔢 Da li V2Putnik treba da se RAČUNA u broju zauzetih mesta
+/// ## Razlike od V2TextUtils.isStatusActive:
+/// - V2TextUtils.isStatusActive proverava SAMO string status
+/// - V2PutnikHelpers.shouldCountInSeats koristi V2Putnik getters za potpunu proveru
+class V2PutnikHelpers {
+  V2PutnikHelpers._();
+
+  /// Da li V2Putnik treba da se RAČUNA u broju zauzetih mesta
   ///
   /// Ne računa:
   /// - Otkazane (jeOtkazan: obrisan, otkazanZaPolazak, status='otkazano')
@@ -34,7 +36,7 @@ class PutnikHelpers {
     return true;
   }
 
-  /// 🔢 Da li V2Putnik treba da ima REDNI BROJ u listi
+  /// Da li V2Putnik treba da ima REDNI BROJ u listi
   ///
   /// Isto kao shouldCountInSeats - putnici koji se ne broje u mesta
   /// ne treba da imaju redni broj
@@ -42,9 +44,7 @@ class PutnikHelpers {
     return shouldCountInSeats(p);
   }
 
-  /// 🗺️ Da li V2Putnik treba da bude uključen u OPTIMIZACIJU RUTE
-  ///
-  /// 📅 HELPER: Vraća radni ISO datum (yyyy-MM-dd)
+  /// Vraća radni ISO datum (yyyy-MM-dd)
   static String getWorkingDateIso() {
     return DateTime.now().toIso8601String().split('T')[0];
   }

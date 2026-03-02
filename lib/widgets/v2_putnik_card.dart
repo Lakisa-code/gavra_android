@@ -97,10 +97,10 @@ class _PutnikCardState extends State<PutnikCard> {
     return '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
   }
 
-  // ?? UNIVERZALNA METODA ZA PLACANJE - custom cena za sve tipove putnika
+  // Univerzalna metoda za placanje - custom cena za sve tipove putnika
   Future<void> _handlePayment() async {
-    // ??? FIX: Validacija vozaca pre pokušaja placanja - koristi VozacCache
-    final vozacUuid = VozacCache.getUuidByIme(widget.currentDriver);
+    // Validacija vozaca pre pokusaja placanja - koristi V2VozacCache
+    final vozacUuid = V2VozacCache.getUuidByIme(widget.currentDriver);
     if (vozacUuid == null) {
       if (mounted) {
         AppSnackBar.error(context, 'Greška: Vozac nije definisan u sistemu');
@@ -932,7 +932,7 @@ class _PutnikCardState extends State<PutnikCard> {
     // Prava po vozacu (centralizovano)
     final String driver = widget.currentDriver;
     final bool isAdmin = AdminSecurityService.isAdmin(driver);
-    final bool isVozac = VozacCache.imenaVozaca.contains(driver);
+    final bool isVozac = V2VozacCache.imenaVozaca.contains(driver);
 
     if (_putnik.ime.toLowerCase().contains('rado') ||
         _putnik.ime.toLowerCase().contains('radovic') ||
@@ -1433,9 +1433,9 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Pokupljen: ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacCache.getColorByUuid(_putnik.pokupioVozacId) != Colors.grey
-                                ? VozacCache.getColorByUuid(_putnik.pokupioVozacId)
-                                : VozacCache.getColor(_putnik.pokupioVozac ?? _putnik.vozac),
+                            color: V2VozacCache.getColorByUuid(_putnik.pokupioVozacId) != Colors.grey
+                                ? V2VozacCache.getColorByUuid(_putnik.pokupioVozacId)
+                                : V2VozacCache.getColor(_putnik.pokupioVozac ?? _putnik.vozac),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1447,9 +1447,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Placeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacCache.getColorByUuid(_putnik.naplatioVozacId) != Colors.grey
-                                  ? VozacCache.getColorByUuid(_putnik.naplatioVozacId)
-                                  : VozacCache.getColor(_putnik.naplatioVozac),
+                              color: V2VozacCache.getColorByUuid(_putnik.naplatioVozacId) != Colors.grey
+                                  ? V2VozacCache.getColorByUuid(_putnik.naplatioVozacId)
+                                  : V2VozacCache.getColor(_putnik.naplatioVozac),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1463,9 +1463,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             fontSize: 13,
                             color: (_putnik.otkazaoVozac == null || _putnik.otkazaoVozac == 'V2Putnik')
                                 ? Colors.red.shade900
-                                : (VozacCache.getColorByUuid(_putnik.otkazaoVozacId) != Colors.grey
-                                    ? VozacCache.getColorByUuid(_putnik.otkazaoVozacId)
-                                    : VozacCache.getColor(_putnik.otkazaoVozac)),
+                                : (V2VozacCache.getColorByUuid(_putnik.otkazaoVozacId) != Colors.grey
+                                    ? V2VozacCache.getColorByUuid(_putnik.otkazaoVozacId)
+                                    : V2VozacCache.getColor(_putnik.otkazaoVozac)),
                             fontWeight: FontWeight.w600,
                           ),
                         ),

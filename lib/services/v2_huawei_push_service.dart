@@ -265,7 +265,7 @@ class HuaweiPushService {
       await V2PushTokenService.registerToken(
         token: token,
         provider: 'huawei',
-        vozacId: VozacCache.getUuidByIme(driverName),
+        vozacId: V2VozacCache.getUuidByIme(driverName),
       );
     } catch (e) {
       debugPrint('[HuaweiPushService] _registerTokenWithServer error: $e');

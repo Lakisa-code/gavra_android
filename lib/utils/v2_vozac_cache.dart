@@ -1,23 +1,23 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/v2_vozac.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
 
-/// VozacCache — jedinstven in-memory cache za sve podatke o vozačima.
+/// V2VozacCache — jedinstven in-memory cache za sve podatke o vozačima.
 ///
 /// Zamjenjuje `VozacBoja` i `VozacMappingService`.
-/// Inicijalizuj jednom pri startu: `await VozacCache.initialize()`.
+/// Inicijalizuj jednom pri startu: `await V2VozacCache.initialize()`.
 ///
 /// ## API:
-/// - `VozacCache.getColorByUuid(uuid)` — boja po UUID-u, fallback = grey
-/// - `VozacCache.getColor(imeIliUuid)` — boja po imenu ili UUID (auto-detect)
-/// - `VozacCache.getImeByUuid(uuid)` — ime po UUID-u, null ako ne postoji
-/// - `VozacCache.getUuidByIme(ime)` — UUID po imenu, null ako ne postoji
-/// - `VozacCache.isValidIme(ime)` — provjera da li je ime registrovan vozač
-/// - `VozacCache.vozaci` — lista svih Vozac objekata
-/// - `VozacCache.imenaVozaca` — lista svih imena
-class VozacCache {
+/// - `V2VozacCache.getColorByUuid(uuid)` — boja po UUID-u, fallback = grey
+/// - `V2VozacCache.getColor(imeIliUuid)` — boja po imenu ili UUID (auto-detect)
+/// - `V2VozacCache.getImeByUuid(uuid)` — ime po UUID-u, null ako ne postoji
+/// - `V2VozacCache.getUuidByIme(ime)` — UUID po imenu, null ako ne postoji
+/// - `V2VozacCache.isValidIme(ime)` — provjera da li je ime registrovan vozač
+/// - `V2VozacCache.vozaci` — lista svih Vozac objekata
+/// - `V2VozacCache.imenaVozaca` — lista svih imena
+class V2VozacCache {
+  V2VozacCache._();
   // ═══════════════════════════════════════════════════════════════════════════
   // INTERNA STANJA
   // ═══════════════════════════════════════════════════════════════════════════
@@ -50,7 +50,7 @@ class VozacCache {
       await _load();
     } catch (e) {
       _clear();
-      if (kDebugMode) debugPrint('❌ [VozacCache] initialize failed: $e');
+      debugPrint('[V2VozacCache] initialize failed: $e');
     }
   }
 
@@ -59,7 +59,7 @@ class VozacCache {
     try {
       await _load();
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ [VozacCache] refresh failed: $e');
+      debugPrint('[V2VozacCache] refresh failed: $e');
     }
   }
 
@@ -90,9 +90,7 @@ class VozacCache {
     _uuidToIme = Map.unmodifiable(uuidToIme);
     _isInitialized = true;
 
-    if (kDebugMode) {
-      debugPrint('✅ [VozacCache] Loaded ${vozaci.length} vozača');
-    }
+    debugPrint('[V2VozacCache] Loaded ${vozaci.length} vozača');
   }
 
   static void _clear() {

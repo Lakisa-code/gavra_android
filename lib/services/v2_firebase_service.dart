@@ -133,7 +133,7 @@ class FirebaseService {
     // Registruj ako imamo bilo koga
     try {
       if (driverName != null && driverName.isNotEmpty) {
-        final vozacId = VozacCache.getUuidByIme(driverName);
+        final vozacId = V2VozacCache.getUuidByIme(driverName);
         await V2PushTokenService.registerToken(
           token: token,
           provider: 'fcm',

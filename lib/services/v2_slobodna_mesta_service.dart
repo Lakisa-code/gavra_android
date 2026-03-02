@@ -70,9 +70,9 @@ class SlobodnaMestaService {
         continue;
       }
 
-      // Koristi PutnikHelpers za konzistentnu logiku
+      // Koristi V2PutnikHelpers za konzistentnu logiku
       // Ne racuna: otkazane (jeOtkazan), odsustvo (jeOdsustvo)
-      if (!PutnikHelpers.shouldCountInSeats(p)) continue;
+      if (!V2PutnikHelpers.shouldCountInSeats(p)) continue;
 
       // Filtriraj po dan kraticama (v2_polasci nema datum kolonu)
       if (!p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase())) continue;
@@ -104,7 +104,7 @@ class SlobodnaMestaService {
       }
 
       // Isti filteri kao za putnike (bez otkazanih, itd)
-      if (!PutnikHelpers.shouldCountInSeats(p)) continue;
+      if (!V2PutnikHelpers.shouldCountInSeats(p)) continue;
 
       // Filter: SAMO UCENICI
       if (p.tipPutnika != 'ucenik') continue;

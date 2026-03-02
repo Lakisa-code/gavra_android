@@ -27,7 +27,7 @@ class AuthManager {
   /// Postavi trenutnog vozača (bez email auth-a).
   static Future<void> setCurrentDriver(String driverName) async {
     // Validacija samo ako je cache već inicijalizovan (izbjegava race condition pri startu)
-    if (VozacCache.isInitialized && !VozacCache.isValidIme(driverName)) {
+    if (V2VozacCache.isInitialized && !V2VozacCache.isValidIme(driverName)) {
       throw ArgumentError('Vozač "$driverName" nije registrovan');
     }
 
@@ -43,7 +43,7 @@ class AuthManager {
   /// Podržava i FCM (Google) i HMS (Huawei) tokene.
   static Future<void> _updatePushTokenWithUserId(String driverName) async {
     try {
-      final Vozac? vozac = VozacCache.getVozacByIme(driverName);
+      final Vozac? vozac = V2VozacCache.getVozacByIme(driverName);
       final String? vozacId = vozac?.id;
 
       if (vozacId == null || vozacId.isEmpty || driverName.isEmpty) {
@@ -166,7 +166,7 @@ class AuthManager {
       try {
         final currentDriver = await getCurrentDriver();
         if (currentDriver != null) {
-          final Vozac? vozac = VozacCache.getVozacByIme(currentDriver);
+          final Vozac? vozac = V2VozacCache.getVozacByIme(currentDriver);
           if (vozac?.id != null) {
             await V2PushTokenService.clearToken(vozacId: vozac!.id);
           }

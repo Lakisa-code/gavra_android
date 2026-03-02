@@ -22,7 +22,7 @@ import 'v2_vozac_screen.dart';
 
 Widget _getScreenForDriver(String driverName) {
   // Vozači koji koriste VozacScreen umesto HomeScreen
-  if (VozacCache.prefersVozacScreen(driverName)) {
+  if (V2VozacCache.prefersVozacScreen(driverName)) {
     return const VozacScreen();
   }
   return const HomeScreen();
@@ -129,9 +129,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       final email = rememberedDevice['email']!;
       // "" FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
       try {
-        final driverName = VozacCache.getImeByEmail(email);
+        final driverName = V2VozacCache.getImeByEmail(email);
         // Ne dozvoli auto-login ako vozač nije prepoznat
-        if (driverName == null || !VozacCache.isValidIme(driverName)) {
+        if (driverName == null || !V2VozacCache.isValidIme(driverName)) {
           // Ostani na welcome/login i ne auto-login
           return;
         }
@@ -255,8 +255,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       final rememberedEmail = rememberedDevice['email']!;
       final rememberedName = rememberedDevice['driverName']!;
 
-      // "" FORSIRAJ REFRESH: Koristi VozacCache mapiranje za ispravno ime
-      final correctName = VozacCache.getImeByEmail(rememberedEmail) ?? rememberedName;
+      // "" FORSIRAJ REFRESH: Koristi V2VozacCache mapiranje za ispravno ime
+      final correctName = V2VozacCache.getImeByEmail(rememberedEmail) ?? rememberedName;
 
       if (correctName == driverName) {
         // '? BIOMETRIJA: Traži samo ako sesija nije aktivna (vrati se posle dužeg vremena)
@@ -725,7 +725,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                VozacCache.getIconForDriver(driver.ime),
+                                V2VozacCache.getIconForDriver(driver.ime),
                                 color: Colors.white,
                                 size: 22,
                               ),

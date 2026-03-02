@@ -26,8 +26,8 @@ import '../utils/v2_app_snack_bar.dart';
 import '../utils/v2_grad_adresa_validator.dart'; // ??? Za validaciju gradova
 import '../utils/v2_putnik_count_helper.dart'; // ?? Za brojanje putnika po gradu
 import '../utils/v2_putnik_helpers.dart'; // ??? Centralizovani helperi
-import '../utils/v2_text_utils.dart'; // ?? Za TextUtils.isStatusActive
-import '../utils/v2_vozac_cache.dart'; // ?? Za validaciju vozaca
+import '../utils/v2_text_utils.dart'; // Za V2TextUtils.isStatusActive
+import '../utils/v2_vozac_cache.dart'; // Za validaciju vozaca
 import '../widgets/v2_bottom_nav_bar_letnji.dart';
 import '../widgets/v2_bottom_nav_bar_praznici.dart';
 import '../widgets/v2_bottom_nav_bar_zimski.dart';
@@ -70,7 +70,7 @@ class _VozacScreenState extends State<VozacScreen> {
   bool _isOptimizing = false; // ? Loading state specificno za optimizaciju rute
 
   /// ?? HELPER: Vraca radni datum - vikendom vraca naredni ponedeljak
-  String _getWorkingDateIso() => PutnikHelpers.getWorkingDateIso();
+  String _getWorkingDateIso() => V2PutnikHelpers.getWorkingDateIso();
 
   /// ?? HELPER: Dobij dodeljena vremena za trenutnog vozaca.
   ///
@@ -81,7 +81,7 @@ class _VozacScreenState extends State<VozacScreen> {
     if (_currentDriver == null) return [];
 
     final dodeljena = <Map<String, String>>[];
-    final currentVozacId = VozacCache.getUuidByIme(_currentDriver ?? '');
+    final currentVozacId = V2VozacCache.getUuidByIme(_currentDriver ?? '');
     final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
 
     // Izvor 1: termini iz raspored cache-a za ovog vozaca i današnji dan
@@ -423,7 +423,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // OPTIMIZACIJA RUTE
   void _optimizeCurrentRoute(List<V2Putnik> putnici, {bool isAlreadyOptimized = false}) async {
     // Proveri da li je ulogovan i valjan vozac
-    if (_currentDriver == null || !VozacCache.isValidIme(_currentDriver)) {
+    if (_currentDriver == null || !V2VozacCache.isValidIme(_currentDriver)) {
       if (mounted) {
         AppSnackBar.warning(context, 'Morate biti ulogovani i ovlašceni da biste koristili optimizaciju rute.');
       }
@@ -567,13 +567,13 @@ class _VozacScreenState extends State<VozacScreen> {
       final pTime = GradAdresaValidator.normalizeTime(p.polazak);
       if (pTime != normFilterTime) return false;
       if (p.jeOtkazan || p.jeBezPolaska || p.jePokupljen || p.jeOdsustvo) return false;
-      if (!TextUtils.isStatusActive(p.status)) return false;
+      if (!V2TextUtils.isStatusActive(p.status)) return false;
       // Iskljuci putnike u obradi (još nisu obrađeni)
       if (p.status?.toLowerCase() == 'obrada') return false;
       return true;
     }).toList();
 
-    final bool isDriverValid = _currentDriver != null && VozacCache.isValidIme(_currentDriver);
+    final bool isDriverValid = _currentDriver != null && V2VozacCache.isValidIme(_currentDriver);
     final bool canPress = !_isOptimizing && isDriverValid;
 
     final baseColor = _isGpsTracking ? Colors.orange : (_isRouteOptimized ? Colors.green : Colors.white);
@@ -684,7 +684,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // ??? DUGME ZA NAVIGACIJU - OTVARA HERE WeGo SA REDOSLEDOM IZ OPTIMIZOVANE RUTE
   Widget _buildMapsButton() {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
-    final bool isDriverValid = _currentDriver != null && VozacCache.isValidIme(_currentDriver);
+    final bool isDriverValid = _currentDriver != null && V2VozacCache.isValidIme(_currentDriver);
     final bool canPress = hasOptimizedRoute && isDriverValid;
     final baseColor = hasOptimizedRoute ? Colors.blue : Colors.white;
 
@@ -735,7 +735,7 @@ class _VozacScreenState extends State<VozacScreen> {
       final putniciRedosled = _optimizedRoute.map((p) => p.ime).toList();
 
       await V2DriverLocationService.instance.startTracking(
-        vozacId: VozacCache.getUuidByIme(_currentDriver!) ?? _currentDriver!,
+        vozacId: V2VozacCache.getUuidByIme(_currentDriver!) ?? _currentDriver!,
         vozacIme: _currentDriver!,
         grad: _selectedGrad,
         vremePolaska: _selectedVreme,
@@ -855,13 +855,13 @@ class _VozacScreenState extends State<VozacScreen> {
             ? const Stream.empty()
             : _putnikService.streamKombinovaniPutniciFiltered(
                 isoDate: _getWorkingDateIso(),
-                vozacId: VozacCache.getUuidByIme(_currentDriver ?? ''),
+                vozacId: V2VozacCache.getUuidByIme(_currentDriver ?? ''),
               ),
         builder: (context, snapshot) {
           // -- Zajednicki podaci za body i nav bar --------------------------
           final sviPutnici = snapshot.data ?? <V2Putnik>[];
           final targetDan = _isoDateToDayAbbr(_getWorkingDateIso());
-          final currentVozacId = VozacCache.getUuidByIme(_currentDriver ?? '');
+          final currentVozacId = V2VozacCache.getUuidByIme(_currentDriver ?? '');
           final mojiPutnici = _currentDriver == null
               ? sviPutnici
               : V2VozacPutnikService.filterKombinovan<V2Putnik>(
@@ -882,7 +882,7 @@ class _VozacScreenState extends State<VozacScreen> {
           final vsVremenaToShow =
               (dodeljenaVremena.where((v) => v['grad'] == 'VS').map((v) => v['vreme']!).toList()..sort());
 
-          final countHelper = PutnikCountHelper.fromPutnici(
+          final countHelper = V2PutnikCountHelper.fromPutnici(
             putnici: mojiPutnici,
             targetDateIso: _getWorkingDateIso(),
             targetDayAbbr: targetDan,
@@ -1121,7 +1121,7 @@ class _VozacScreenState extends State<VozacScreen> {
     // ?? Izracunaj boju za dan (ako smo u admin preview modu)
     final isPreview = widget.previewAsDriver != null && widget.previewAsDriver!.isNotEmpty;
     final driverColor =
-        isPreview ? VozacCache.getColor(widget.previewAsDriver!) : Theme.of(context).colorScheme.onPrimary;
+        isPreview ? V2VozacCache.getColor(widget.previewAsDriver!) : Theme.of(context).colorScheme.onPrimary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

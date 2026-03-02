@@ -155,8 +155,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       await _initializeCurrentDriver();
       // ?? If the current driver is missing or invalid, redirect to welcome/login
-      // Preskočiti redirect ako VozacCache još nije inicijalizovan (race condition)
-      if (_currentDriver == null || (VozacCache.isInitialized && !VozacCache.isValidIme(_currentDriver))) {
+      // Preskočiti redirect ako V2VozacCache još nije inicijalizovan (race condition)
+      if (_currentDriver == null || (V2VozacCache.isInitialized && !V2VozacCache.isValidIme(_currentDriver))) {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
@@ -1583,18 +1583,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // STRIKTNA VALIDACIJA VOZACA - PROVERI NULL, EMPTY I VALID DRIVER
                                         if (_currentDriver == null ||
                                             _currentDriver!.isEmpty ||
-                                            !VozacCache.isValidIme(_currentDriver)) {
+                                            !V2VozacCache.isValidIme(_currentDriver)) {
                                           if (!dialogCtx.mounted) return;
                                           AppSnackBar.error(dialogCtx,
                                               '❌ GREŠKA: Vozac "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.');
                                           return;
                                         }
 
-                                        // ? Validacija vozaca koristi VozacCache.isValidIme()
+                                        // ? Validacija vozaca koristi V2VozacCache.isValidIme()
 
                                         // ?? PROVERA KAPACITETA - da li ima slobodnih mesta
                                         // ?? SAMO ZA PUTNIKE - vozaci mogu dodavati bez ogranicenja
-                                        final isVozac = VozacCache.isValidIme(_currentDriver);
+                                        final isVozac = V2VozacCache.isValidIme(_currentDriver);
                                         if (!isVozac) {
                                           final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
                                             _selectedGrad,
@@ -1977,7 +1977,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           // Additional filters for display (applies time/grad/status and is used
           // to build the visible list). This operates on the putniciZaDan list.
           final filtered = putniciZaDan.where((v2Putnik) {
-            final normalizedStatus = TextUtils.normalizeText(v2Putnik.status ?? '');
+            final normalizedStatus = V2TextUtils.normalizeText(v2Putnik.status ?? '');
             final imaVreme = v2Putnik.polazak.toString().trim().isNotEmpty;
             final imaGrad = v2Putnik.grad.toString().trim().isNotEmpty;
             final imaDan = v2Putnik.dan.toString().trim().isNotEmpty;
@@ -2023,8 +2023,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
           final countCandidates = uniqueForCounts.values.toList();
 
-          // ?? REFAKTORISANO: Koristi PutnikCountHelper za centralizovano brojanje
-          final countHelper = PutnikCountHelper.fromPutnici(
+          // REFAKTORISANO: Koristi V2PutnikCountHelper za centralizovano brojanje
+          final countHelper = V2PutnikCountHelper.fromPutnici(
             putnici: countCandidates,
             targetDateIso: targetDateIso,
             targetDayAbbr: targetDayAbbr,
@@ -2127,7 +2127,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     height: 33,
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: VozacCache.getColor(_currentDriver), // opaque (100%)
+                                      color: V2VozacCache.getColor(_currentDriver), // opaque (100%)
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: Theme.of(context).glassBorder,
@@ -2301,7 +2301,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(width: 4),
                         if (_currentDriver != null &&
-                            VozacCache.imenaVozaca.contains(_currentDriver) &&
+                            V2VozacCache.imenaVozaca.contains(_currentDriver) &&
                             !AdminSecurityService.isAdmin(_currentDriver))
                           Expanded(
                             child: _HomeScreenButton(
@@ -2623,7 +2623,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         .where((r) => r.dan == dan && r.grad == grad && r.vreme == vreme)
         .firstOrNull;
     if (entry == null) return null;
-    return VozacCache.getColor(entry.vozacId);
+    return V2VozacCache.getColor(entry.vozacId);
   }
 
   Widget _buildBottomNavBar(String navType, int Function(String, String) getPutnikCount) {

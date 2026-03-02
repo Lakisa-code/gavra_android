@@ -2,14 +2,14 @@ import '../models/v2_putnik.dart';
 import 'v2_grad_adresa_validator.dart';
 import 'v2_putnik_helpers.dart';
 
-/// 🎯 HELPER ZA BROJANJE PUTNIKA PO GRADU I VREMENU
+/// HELPER ZA BROJANJE PUTNIKA PO GRADU I VREMENU
 /// Centralizovana logika za konzistentno brojanje putnika na svim ekranima
-class PutnikCountHelper {
+class V2PutnikCountHelper {
   /// Rezultat brojanja putnika po gradovima
   final Map<String, int> brojPutnikaBC;
   final Map<String, int> brojPutnikaVS;
 
-  PutnikCountHelper._({
+  V2PutnikCountHelper._({
     required this.brojPutnikaBC,
     required this.brojPutnikaVS,
   });
@@ -18,7 +18,7 @@ class PutnikCountHelper {
   /// [putnici] - lista svih putnika
   /// [targetDateIso] - ISO datum (yyyy-MM-dd) za koji se broji
   /// [targetDayAbbr] - skraćenica dana (pon, uto, sre...) za fallback
-  factory PutnikCountHelper.fromPutnici({
+  factory V2PutnikCountHelper.fromPutnici({
     required List<V2Putnik> putnici,
     required String targetDateIso,
     required String targetDayAbbr,
@@ -28,10 +28,10 @@ class PutnikCountHelper {
     final brojPutnikaVS = <String, int>{};
 
     for (final p in putnici) {
-      // 🛡️ KORISTIMO centralizovanu logiku za utvrđivanje ko zauzima mesto
-      // Napomena: PutnikHelpers.shouldCountInSeats uključuje đake (ucenik) što je ovde poželjno
+      // KORISTIMO centralizovanu logiku za utvrđivanje ko zauzima mesto
+      // Napomena: V2PutnikHelpers.shouldCountInSeats uključuje đake (ucenik) što je ovde požljno
       // jer za Nav Bar želimo da vidimo punu fizičku popunjenost vozila.
-      if (!PutnikHelpers.shouldCountInSeats(p)) continue;
+      if (!V2PutnikHelpers.shouldCountInSeats(p)) continue;
 
       // Provera dana — koristimo sr.dan (kratica: pon, uto...) jer datum nije pouzdano polje
       final dayMatch = p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
@@ -47,7 +47,7 @@ class PutnikCountHelper {
       }
     }
 
-    return PutnikCountHelper._(
+    return V2PutnikCountHelper._(
       brojPutnikaBC: brojPutnikaBC,
       brojPutnikaVS: brojPutnikaVS,
     );

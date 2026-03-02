@@ -74,7 +74,7 @@ class _AdminScreenState extends State<AdminScreen> {
     super.initState();
 
     // Osvježi lokalne map-ove iz rm.vozaciCache (bez DB upita)
-    VozacCache.refresh();
+    V2VozacCache.refresh();
 
     // ?? Kreiraj streamove jednom — direktno na master cache
     final todayIso = DateTime.now().toIso8601String().split('T')[0];
@@ -929,11 +929,11 @@ class _AdminScreenState extends State<AdminScreen> {
                 );
                 final double mojUkupanPazar = filteredPazar.values.fold(0.0, (sum, val) => sum + val);
 
-                final Map<String, Color> vozacBoje = VozacCache.bojeSync;
-                // Preferiraj dinamičku listu iz VozacCache, ali ako je cache prazan,
+                final Map<String, Color> vozacBoje = V2VozacCache.bojeSync;
+                // Preferiraj dinamičku listu iz V2VozacCache, ali ako je cache prazan,
                 // koristimo legacy redosled kao fallback (ne menjamo UX neočekivano).
                 final List<String> vozaciRedosled =
-                    VozacCache.imenaVozaca.isNotEmpty ? VozacCache.imenaVozaca : _defaultVozaciRedosled;
+                    V2VozacCache.imenaVozaca.isNotEmpty ? V2VozacCache.imenaVozaca : _defaultVozaciRedosled;
 
                 final List<String> prikazaniVozaci = AdminSecurityService.getVisibleDrivers(
                   _currentDriver!,

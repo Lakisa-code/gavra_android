@@ -25,7 +25,7 @@ class V2StatistikaIstorijaService {
 
     try {
       // Dohvati UUID vozaca
-      final vozacUuid = VozacCache.getUuidByIme(vozacIme);
+      final vozacUuid = V2VozacCache.getUuidByIme(vozacIme);
       if (vozacUuid == null || vozacUuid.isEmpty) {
         return {'voznje': 0, 'otkazivanja': 0, 'uplate': 0, 'mesecne': 0, 'pazar': 0.0};
       }
@@ -125,7 +125,7 @@ class V2StatistikaIstorijaService {
     String? vozacIme;
     if (vozacId != null && vozacId.isNotEmpty) {
       // Prvo pokušaj iz lokalnog cache-a (brže, bez mrežnog zahteva)
-      vozacIme = VozacCache.getImeByUuid(vozacId);
+      vozacIme = V2VozacCache.getImeByUuid(vozacId);
       // Ako nije u cache-u, dohvati iz baze
       if (vozacIme == null || vozacIme.isEmpty) {
         try {
@@ -205,7 +205,7 @@ class V2StatistikaIstorijaService {
         // Nikad ne preskacemo uplatu ako postoji vozac_id - koristimo UUID kao fallback kljuc
         String vozacIme = record['vozac_ime'] as String? ?? '';
         if (vozacIme.isEmpty && vozacId != null && vozacId.isNotEmpty) {
-          vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
+          vozacIme = V2VozacCache.getImeByUuid(vozacId) ?? vozacId;
         }
         if (vozacIme.isEmpty) continue;
 
@@ -245,7 +245,7 @@ class V2StatistikaIstorijaService {
       // Fallback: DB trigger sync_vozac_ime_on_log ce popuniti ako ostane null
       String? vozacIme = vozacImeOverride;
       if (vozacIme == null && vozacId != null && vozacId.isNotEmpty) {
-        vozacIme = VozacCache.getImeByUuid(vozacId);
+        vozacIme = V2VozacCache.getImeByUuid(vozacId);
       }
 
       final datumParsed = DateTime.tryParse(datumStr);

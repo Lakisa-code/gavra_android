@@ -850,7 +850,7 @@ class V2PutnikStreamService {
     try {
       String? vozacUuid;
       if (driver != null) {
-        vozacUuid = VozacCache.getUuidByIme(driver);
+        vozacUuid = V2VozacCache.getUuidByIme(driver);
       }
       await V2StatistikaIstorijaService.logGeneric(
         tip: 'otkazivanje',
@@ -1082,8 +1082,8 @@ class V2PutnikStatistikaService {
     try {
       String? vozacId;
       if (vozacIme.isNotEmpty) {
-        vozacId = VozacCache.getUuidByIme(vozacIme);
-        vozacId ??= await VozacCache.getUuidByImeAsync(vozacIme);
+        vozacId = V2VozacCache.getUuidByIme(vozacIme);
+        vozacId ??= await V2VozacCache.getUuidByImeAsync(vozacIme);
       }
       await V2StatistikaIstorijaService.dodajUplatu(
         putnikId: putnikId,

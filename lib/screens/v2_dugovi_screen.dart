@@ -28,7 +28,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
   void initState() {
     super.initState();
     _streamDugovi = _putnikService.streamKombinovaniPutniciFiltered(
-      isoDate: PutnikHelpers.getWorkingDateIso(),
+      isoDate: V2PutnikHelpers.getWorkingDateIso(),
     );
     _setupDebouncedSearch();
   }

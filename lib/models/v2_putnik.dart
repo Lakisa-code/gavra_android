@@ -70,7 +70,7 @@ class V2Putnik {
       grad: grad,
       adresa: _v2AdresaNaziv(map, grad),
       adresaId: _v2AdresaId(map, grad),
-      obrisan: !RegistrovaniHelpers.isActiveFromMap(map),
+      obrisan: !V2RegistrovaniHelpers.isActiveFromMap(map),
       brojTelefona: map['telefon'] as String?,
       brojMesta: (map['broj_mesta'] as int?) ?? 1,
       tipPutnika: tipPutnika,
@@ -137,7 +137,7 @@ class V2Putnik {
     final bool isPaid = req['placeno_iz_loga'] == true;
 
     // ? FIX: Koristi centralizovanu normalizaciju vremena
-    final vreme = RegistrovaniHelpers.normalizeTime(vremeRaw) ?? '05:00';
+    final vreme = V2RegistrovaniHelpers.normalizeTime(vremeRaw) ?? '05:00';
 
     final tip = p['tip'] as String?;
     final isDnevni = tip == 'dnevni' || tip == 'posiljka';
@@ -308,8 +308,8 @@ class V2Putnik {
     final danKratica = _dayAbbreviations[DateTime.now().weekday - 1];
 
     // Proveri koji polazak postoji za danas
-    final bcPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'bc');
-    final vsPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'vs');
+    final bcPolazak = V2RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'bc');
+    final vsPolazak = V2RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'vs');
 
     // Ako ima BC polazak danas, V2Putnik putuje IZ Bela Crkva (pokupljaš ga tamo)
     if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {

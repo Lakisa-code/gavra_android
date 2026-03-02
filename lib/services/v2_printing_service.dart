@@ -56,11 +56,11 @@ class V2PrintingService {
       final danBaza = getDayAbbreviation(selectedDay);
 
       List<V2Putnik> putnici = sviPutnici.where((v2Putnik) {
-        final normalizedStatus = TextUtils.normalizeText(v2Putnik.status ?? '');
+        final normalizedStatus = V2TextUtils.normalizeText(v2Putnik.status ?? '');
 
         if (v2Putnik.mesecnaKarta == true) {
-          final normalizedPutnikGrad = TextUtils.normalizeText(v2Putnik.grad);
-          final normalizedGrad = TextUtils.normalizeText(selectedGrad);
+          final normalizedPutnikGrad = V2TextUtils.normalizeText(v2Putnik.grad);
+          final normalizedGrad = V2TextUtils.normalizeText(selectedGrad);
           final odgovarajuciGrad =
               normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
@@ -77,8 +77,8 @@ class V2PrintingService {
 
           return result;
         } else {
-          final normalizedPutnikGrad = TextUtils.normalizeText(v2Putnik.grad);
-          final normalizedGrad = TextUtils.normalizeText(selectedGrad);
+          final normalizedPutnikGrad = V2TextUtils.normalizeText(v2Putnik.grad);
+          final normalizedGrad = V2TextUtils.normalizeText(selectedGrad);
           final gradMatch =
               normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 

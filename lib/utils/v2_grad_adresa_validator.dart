@@ -3,14 +3,16 @@ import 'v2_text_utils.dart';
 /// UTIL ZA VALIDACIJU GRADOVA I ADRESA
 /// Ogranicava aplikaciju na opštine Bela Crkva i Vrsac
 class GradAdresaValidator {
-  /// ? PROVERI DA LI JE GRAD BELA CRKVA (ili BC skracenica)
+  GradAdresaValidator._();
+
+  /// Proveri da li je grad Bela Crkva (ili BC skracenica)
   static bool isBelaCrkva(String? grad) {
     if (grad == null || grad.trim().isEmpty) return false;
     final normalized = normalizeString(grad);
     return normalized.contains('bela') || normalized == 'bc';
   }
 
-  /// ? PROVERI DA LI JE GRAD Vrsac (ili VS skracenica)
+  /// Proveri da li je grad Vrsac (ili VS skracenica)
   static bool isVrsac(String? grad) {
     if (grad == null || grad.trim().isEmpty) return false;
     final normalized = normalizeString(grad); // uvek lowercase
@@ -35,27 +37,18 @@ class GradAdresaValidator {
     return false; // Gradovi se ne poklapaju
   }
 
-  /// ?? NORMALIZUJ SRPSKE KARAKTERE
-  /// Koristi TextUtils.normalizeText() kao bazu i dodaje specificne zamene
+  /// Normalizuj srpske karaktere
+  /// Koristi V2TextUtils.normalizeText() kao bazu i dodaje specificne zamene
   static String normalizeString(String? input) {
     if (input == null) {
       return '';
     }
 
-    // Koristi centralizovanu normalizaciju iz TextUtils
-    String normalized = TextUtils.normalizeText(input);
-
-    // Dodatne specificne zamene za ovaj validator
-    normalized = normalized
-        .replaceAll('Vrsac', 'Vrsac') // vec normalizovano
-        .replaceAll('cetvrtak', 'cetvrtak') // vec normalizovano
-        .replaceAll('cet', 'cet') // vec normalizovano
-        .replaceAll('posta', 'posta'); // vec normalizovano
-
-    return normalized;
+    // Koristi centralizovanu normalizaciju iz V2TextUtils
+    return V2TextUtils.normalizeText(input);
   }
 
-  /// NORMALIZUJ GRAD ? uvek vraca 'BC' ili 'VS'
+  /// Normalizuj grad - uvek vraca 'BC' ili 'VS'
   /// Ovo je jedini ispravan nacin da se grad normalizuje u cijeloj aplikaciji.
   /// DB trigger garantuje da se u bazi uvek cuva 'BC' ili 'VS'.
   static String normalizeGrad(String? grad) {

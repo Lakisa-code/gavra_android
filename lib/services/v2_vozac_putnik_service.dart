@@ -101,7 +101,7 @@ class V2VozacPutnikService {
   }) async {
     if (vozacIme.isEmpty) return delete(putnikId: putnikId);
 
-    final vozacId = VozacCache.getUuidByIme(vozacIme);
+    final vozacId = V2VozacCache.getUuidByIme(vozacIme);
     if (vozacId == null) {
       return false; // vozač ne postoji u cache-u
     }

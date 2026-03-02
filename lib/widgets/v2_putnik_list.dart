@@ -98,9 +98,9 @@ class PutnikList extends StatelessWidget {
   }
 
   // Helper za proveru da li V2Putnik treba da ima redni broj
-  // 🔧 REFAKTORISANO: Koristi PutnikHelpers za konzistentnu logiku
+  // REFAKTORISANO: Koristi V2PutnikHelpers za konzistentnu logiku
   bool _imaRedniBroj(V2Putnik p) {
-    return PutnikHelpers.shouldHaveOrdinalNumber(p);
+    return V2PutnikHelpers.shouldHaveOrdinalNumber(p);
   }
 
   // Vraća početni redni broj za putnika (prvi broj od njegovih mesta)

@@ -1,5 +1,7 @@
 /// Utilities za rad sa tekstom u aplikaciji
-class TextUtils {
+class V2TextUtils {
+  V2TextUtils._();
+
   /// Normalizuje tekst - konvertuje kvačice u obična slova
   /// Ovo omogućava poređenje "godišnji" i "godisnji" kao istih
   static String normalizeText(String text) {

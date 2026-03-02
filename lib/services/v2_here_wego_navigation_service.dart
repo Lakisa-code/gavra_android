@@ -127,7 +127,7 @@ class HereWeGoNavigationService {
     String url = '';
 
     if (Platform.isAndroid) {
-      final isHuawei = await DeviceUtils.isHuaweiDevice();
+      final isHuawei = await V2DeviceUtils.isHuaweiDevice();
 
       if (isHuawei) {
         // AppGallery link za HERE WeGo

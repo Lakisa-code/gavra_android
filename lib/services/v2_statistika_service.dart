@@ -25,7 +25,7 @@ class StatistikaService {
       String vozacIme = (row['vozac_ime'] as String?) ?? '';
       if (vozacIme.isEmpty) {
         final vozacId = row['vozac_id']?.toString() ?? '';
-        if (vozacId.isNotEmpty) vozacIme = VozacCache.getImeByUuid(vozacId) ?? vozacId;
+        if (vozacId.isNotEmpty) vozacIme = V2VozacCache.getImeByUuid(vozacId) ?? vozacId;
       }
       if (vozacIme.isEmpty) continue;
       pazar[vozacIme] = (pazar[vozacIme] ?? 0) + iznos;

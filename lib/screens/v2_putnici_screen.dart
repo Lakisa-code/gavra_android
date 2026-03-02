@@ -1355,7 +1355,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     // Ako imamo ime vozaca iz strema, koristimo njegovu boju
-                                                    color: VozacCache.getColor(
+                                                    color: V2VozacCache.getColor(
                                                       vozacIme,
                                                       fallback: Colors.green.shade600,
                                                     ),
@@ -1367,7 +1367,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                                                   'Naplatio: $vozacIme',
                                                   style: TextStyle(
                                                     fontSize: 11,
-                                                    color: VozacCache.getColor(
+                                                    color: V2VozacCache.getColor(
                                                       vozacIme,
                                                     ),
                                                     fontWeight: FontWeight.w500,

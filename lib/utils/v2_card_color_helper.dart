@@ -76,7 +76,7 @@ class CardColorHelper {
 
   // 🟡 ODSUSTVO (godišnji/bolovanje) - NAJVEĆI PRIORITET
   static const Color odsustvoBackground = Color(0xFFFFF59D);
-  static const Color odsustueBorder = Color(0xFFFFC107); // ignore: constant_identifier_names
+  static const Color odsusuvoBorder = Color(0xFFFFC107);
   static const Color odsustvoText = Color(0xFFF57C00); // Colors.orange[700]
 
   // 🔴 OTKAZANO - DRUGI PRIORITET
@@ -98,7 +98,7 @@ class CardColorHelper {
   static const Color tudjiBorder = Color(0xFF757575); // Grey[600]
   static const Color tudjiText = Color(0xFF424242); // Grey[800]
 
-  // ? NEPOKUPLJENO - DEFAULT
+  // ⚪ NEPOKUPLJENO - DEFAULT
   static const Color defaultBackground = Colors.white;
   static const Color defaultBorder = Colors.grey;
   static const Color defaultText = Colors.black;
@@ -118,7 +118,7 @@ class CardColorHelper {
       return CardState.otkazano;
     }
     if (putnik.jePokupljen) {
-      // ?? PRAVI FIX: Proveravamo `placeno` polje umesto iznosa
+      // PRAVI FIX: Proveravamo `placeno` polje umesto iznosa
       final bool isPlaceno = putnik.placeno == true;
       final bool isMesecniTip = putnik.isMesecniTip;
       if (isPlaceno || isMesecniTip) {
@@ -126,7 +126,7 @@ class CardColorHelper {
       }
       return CardState.pokupljeno;
     }
-    // ?? TUĐI putnik: ima vozaca, vozac nije trenutni i nije "Nedodeljen"
+    // TUĐI putnik: ima vozaca, vozac nije trenutni i nije "Nedodeljen"
     if (putnik.dodeljenVozac != null &&
         putnik.dodeljenVozac!.isNotEmpty &&
         putnik.dodeljenVozac != 'Nedodeljen' &&
@@ -263,7 +263,7 @@ class CardColorHelper {
   Color _getBorderForState(CardState state) {
     switch (state) {
       case CardState.odsustvo:
-        return odsustueBorder.withOpacity(0.6);
+        return odsusuvoBorder.withOpacity(0.6);
       case CardState.otkazano:
         return otkazanoBorder.withOpacity(0.25);
       case CardState.placeno:
@@ -284,7 +284,7 @@ class CardColorHelper {
   Color _getShadowForState(CardState state) {
     switch (state) {
       case CardState.odsustvo:
-        return odsustueBorder.withOpacity(0.2);
+        return odsusuvoBorder.withOpacity(0.2);
       case CardState.otkazano:
         return otkazanoBorder.withOpacity(0.08);
       case CardState.placeno:
@@ -331,8 +331,4 @@ class CardColorHelper {
         return const Color(0xFF757575).withOpacity(0.8);
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // DEBUG HELPER
-  // ---------------------------------------------------------------------------
 }

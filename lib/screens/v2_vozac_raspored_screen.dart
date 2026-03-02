@@ -174,14 +174,14 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   Color? _getVozacColorForTermin(String grad, String vreme) {
     final entry = _getRasporedEntry(grad, vreme);
     if (entry == null) return null;
-    return VozacCache.getColor(entry.vozacId);
+    return V2VozacCache.getColor(entry.vozacId);
   }
 
   /// 🚗 Naziv vozača dodijeljenog terminu
   String? _getVozacZaTermin(String grad, String vreme) {
     final entry = _getRasporedEntry(grad, vreme);
     if (entry == null) return null;
-    return VozacCache.getImeByUuid(entry.vozacId);
+    return V2VozacCache.getImeByUuid(entry.vozacId);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -194,7 +194,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
     final trenutni = _getVozacZaTermin(grad, vreme);
     String? odabranVozac = trenutni;
 
-    final vozaci = VozacCache.imenaVozaca;
+    final vozaci = V2VozacCache.imenaVozaca;
     if (vozaci.isEmpty) {
       if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozača');
       return;
@@ -241,7 +241,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
               // Lista vozača
               ...vozaci.map((ime) {
                 final isSelected = odabranVozac == ime;
-                final color = VozacCache.getColor(ime);
+                final color = V2VozacCache.getColor(ime);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: InkWell(
@@ -337,10 +337,10 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
           (e) => e.putnikId == putnik.id?.toString(),
         )
         .firstOrNull;
-    final trenutni = trenutniEntry != null ? VozacCache.getImeByUuid(trenutniEntry.vozacId) : null;
+    final trenutni = trenutniEntry != null ? V2VozacCache.getImeByUuid(trenutniEntry.vozacId) : null;
     String? odabranVozac = trenutni;
 
-    final vozaci = VozacCache.imenaVozaca;
+    final vozaci = V2VozacCache.imenaVozaca;
     if (vozaci.isEmpty) {
       if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozača');
       return;
@@ -392,7 +392,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
               // Lista vozača
               ...vozaci.map((ime) {
                 final isSelected = odabranVozac == ime;
-                final color = VozacCache.getColor(ime);
+                final color = V2VozacCache.getColor(ime);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: InkWell(
@@ -491,7 +491,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   }
 
   Future<void> _spasiTermin(String dan, String grad, String vreme, String vozacIme) async {
-    final vozacId = VozacCache.getUuidByIme(vozacIme);
+    final vozacId = V2VozacCache.getUuidByIme(vozacIme);
     if (vozacId == null) {
       if (mounted) AppSnackBar.error(context, '❌ Vozač nije pronađen u sistemu');
       return;
@@ -510,7 +510,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   }
 
   Future<void> _ukloniTermin(String dan, String grad, String vreme, String vozacIme) async {
-    final vozacId = VozacCache.getUuidByIme(vozacIme);
+    final vozacId = V2VozacCache.getUuidByIme(vozacIme);
     if (vozacId == null) {
       if (mounted) AppSnackBar.error(context, '❌ Vozač nije pronađen u sistemu');
       return;
@@ -544,7 +544,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
         final allPutnici = snapshot.data ?? [];
         final targetDay = _selectedDay ?? _getDayAbbreviation(DateTime.now());
 
-        final countHelper = PutnikCountHelper.fromPutnici(
+        final countHelper = V2PutnikCountHelper.fromPutnici(
           putnici: allPutnici,
           targetDateIso: isoDate,
           targetDayAbbr: targetDay,
@@ -669,14 +669,14 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
                                   _vozacPutnikCache.where((e) => e.putnikId == p.id?.toString()).firstOrNull;
                               // Boja: individualna dodjela ima prioritet nad termin bojom
                               final vozacColor = individualnaEntry != null
-                                  ? VozacCache.getColorByUuid(individualnaEntry.vozacId)
+                                  ? V2VozacCache.getColorByUuid(individualnaEntry.vozacId)
                                   : _getVozacColorForTermin(_selectedGrad, _selectedVreme);
                               return _PutnikRasporedTile(
                                 putnik: p,
                                 vozacColor: vozacColor,
                                 terminJeDodeljen: terminJeDodeljen,
                                 vozacPutnikIme: individualnaEntry != null
-                                    ? VozacCache.getImeByUuid(individualnaEntry.vozacId)
+                                    ? V2VozacCache.getImeByUuid(individualnaEntry.vozacId)
                                     : null,
                                 onTap: () => _showPutnikAssignDialog(p),
                               );
@@ -701,7 +701,7 @@ class _VozacRasporedScreenState extends State<VozacRasporedScreen> {
   /// 🟡 Traka ispod day chips-a: vozač za selektovani termin + tap za izmjenu
   Widget _buildTerminInfoRow(String dan) {
     final vozac = _getVozacZaTermin(_selectedGrad, _selectedVreme);
-    final color = vozac != null ? VozacCache.getColor(vozac) : Colors.white24;
+    final color = vozac != null ? V2VozacCache.getColor(vozac) : Colors.white24;
 
     return GestureDetector(
       onTap: () => _showTerminAssignDialog(_selectedGrad, _selectedVreme),

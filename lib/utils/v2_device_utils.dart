@@ -1,17 +1,18 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 
-/// 🔧 DEVICE UTILITIES
 /// Detekcija Huawei uređaja i provera instaliranih aplikacija
-class DeviceUtils {
+class V2DeviceUtils {
+  V2DeviceUtils._();
+
   static final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
-  // 📱 Keširane vrednosti
+  // Keširane vrednosti
   static bool? _isHuaweiDevice;
-  static String? _deviceManufacturer;
 
-  /// 🔍 Proveri da li je uređaj Huawei/Honor
+  /// Proveri da li je uređaj Huawei/Honor
   static Future<bool> isHuaweiDevice() async {
     if (_isHuaweiDevice != null) return _isHuaweiDevice!;
 
@@ -22,12 +23,13 @@ class DeviceUtils {
 
     try {
       final androidInfo = await _deviceInfo.androidInfo;
-      _deviceManufacturer = androidInfo.manufacturer.toLowerCase();
+      final manufacturer = androidInfo.manufacturer.toLowerCase();
 
-      _isHuaweiDevice = _deviceManufacturer!.contains('huawei') || _deviceManufacturer!.contains('honor');
+      _isHuaweiDevice = manufacturer.contains('huawei') || manufacturer.contains('honor');
 
       return _isHuaweiDevice!;
     } catch (e) {
+      debugPrint('V2DeviceUtils.isHuaweiDevice error: $e');
       _isHuaweiDevice = false;
       return false;
     }

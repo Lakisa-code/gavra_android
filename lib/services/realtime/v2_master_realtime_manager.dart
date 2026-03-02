@@ -316,8 +316,8 @@ class V2MasterRealtimeManager {
       _fillCache(pinCache, results[9]);
       _fillCache(settingsCache, results[10]);
 
-      // Osvježi VozacCache i AppSettings nakon što su SVI cache-ovi popunjeni
-      await VozacCache.initialize();
+      // Osvježi V2VozacCache i AppSettings nakon što su SVI cache-ovi popunjeni
+      await V2VozacCache.initialize();
       await V2AppSettingsService.initialize();
 
       debugPrint(
