@@ -1,13 +1,12 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'services/v2_config_service.dart'; // ?? Centralizovani kredencijali
+import 'services/v2_config_service.dart'; // Centralizovani kredencijali
 
-/// OGLOBALNE VARIJABLE ZA GAVRA ANDROID
+/// Globalne varijable za Gavra Android
 ///
-/// Ovaj fajl sadrži globalne varijable koje se koriste kroz celu aplikaciju.
-/// Kreiran je da bi se smanjilo coupling izmeu servisa i main.dart fajla.
+/// Ovaj fajl sadrzi globalne varijable koje se koriste kroz celu aplikaciju.
+/// Kreiran je da bi se smanjilo coupling izmedju servisa i main.dart fajla.
 
 /// Global navigator key za pristup navigation context-u iz servisa
 /// Koristi se u:
@@ -27,25 +26,22 @@ bool get isSupabaseReady {
     Supabase.instance.client;
     return true;
   } catch (e) {
-    if (kDebugMode) {
-      // Izbegavamo previše spama ali logujemo problem jednom
-      debugPrint(' [Globals] Supabase client NOT ready: $e');
-    }
+    debugPrint('[Globals] Supabase client NOT ready: $e');
     return false;
   }
 }
 
-/// sO NAV BAR TYPE - tip bottom navigation bara
+/// NAV BAR TYPE - tip bottom navigation bara
 /// 'zimski' = zimski raspored
 /// 'letnji' = letnji raspored
 /// 'praznici' = praznični raspored
 final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('letnji');
 
-/// ️ ZIMSKI MOD - Proverava da li je zimski red vožnje aktivan SADA
+/// ZIMSKI MOD - Proverava da li je zimski red voznje aktivan SADA
 bool get isWinter => navBarTypeNotifier.value == 'zimski';
 
-/// Z" PRAZNINI MOD - specijalni red vožnje (DEPRECATED - koristi navBarTypeNotifier)
-/// Kada je true, koristi se BottomNavBarPraznici sa smanjenim brojem polazaka
+/// PRAZNICNI MOD - specijalni red voznje (DEPRECATED - koristi navBarTypeNotifier)
+/// Kada je true, koristi se V2BottomNavBarPraznici sa smanjenim brojem polazaka
 /// BC: 5:00, 6:00, 12:00, 13:00, 15:00
 /// VS: 6:00, 7:00, 13:00, 14:00, 15:30
 final ValueNotifier<bool> praznicniModNotifier = ValueNotifier<bool>(false);
@@ -53,12 +49,12 @@ final ValueNotifier<bool> praznicniModNotifier = ValueNotifier<bool>(false);
 /// Helper za proveru prazničnog moda
 bool get isPraznicniMod => praznicniModNotifier.value;
 
-/// "GLOBALNA INSTANCA CONFIG SERVICE
+/// Globalna instanca Config Service
 /// Centralizovano upravljanje svim kredencijalima i konfiguracijom
 /// Koristi se u celoj aplikaciji za pristup kredencijalima
 final ConfigService configService = ConfigService();
 
-/// "" UPDATE INFO - informacije o dostupnom update-u
+/// UPDATE INFO - informacije o dostupnom update-u
 /// null = nema update-a, ili još nije provereno
 class UpdateInfo {
   final String latestVersion;
