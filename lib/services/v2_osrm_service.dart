@@ -93,11 +93,11 @@ class V2OsrmService {
     String coordsString, {
     bool hasEndDestination = false,
   }) async {
-    for (int attempt = 1; attempt <= RouteConfig.osrmMaxRetries; attempt++) {
+    for (int attempt = 1; attempt <= V2RouteConfig.osrmMaxRetries; attempt++) {
       try {
         // Ako imamo fiksnu krajnju destinaciju, dodaj destination=last
         final destinationParam = hasEndDestination ? '&destination=last' : '';
-        final url = '${RouteConfig.osrmBaseUrl}/trip/v1/driving/$coordsString'
+        final url = '${V2RouteConfig.osrmBaseUrl}/trip/v1/driving/$coordsString'
             '?source=first'
             '&roundtrip=false'
             '$destinationParam'
@@ -108,7 +108,7 @@ class V2OsrmService {
         final response = await http.get(
           Uri.parse(url),
           headers: {'Accept': 'application/json'},
-        ).timeout(RouteConfig.osrmTimeout);
+        ).timeout(V2RouteConfig.osrmTimeout);
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body) as Map<String, dynamic>;
@@ -121,8 +121,8 @@ class V2OsrmService {
         debugPrint('[V2OsrmService] _callOsrmWithRetry attempt $attempt error: $e');
       }
 
-      if (attempt < RouteConfig.osrmMaxRetries) {
-        final delay = RouteConfig.getRetryDelay(attempt);
+      if (attempt < V2RouteConfig.osrmMaxRetries) {
+        final delay = V2RouteConfig.getRetryDelay(attempt);
         await Future.delayed(delay);
       }
     }

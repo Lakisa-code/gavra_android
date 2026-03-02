@@ -89,12 +89,12 @@ class _PinZahteviScreenState extends State<V2PinZahteviScreen> {
         await launchUrl(smsUri);
       } else {
         if (mounted) {
-          AppSnackBar.warning(context, 'Ne mogu da otvorim SMS aplikaciju');
+          V2AppSnackBar.warning(context, 'Ne mogu da otvorim SMS aplikaciju');
         }
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška pri otvaranju SMS: $e');
+        V2AppSnackBar.error(context, 'Greška pri otvaranju SMS: $e');
       }
     }
   }
@@ -170,7 +170,7 @@ class _PinZahteviScreenState extends State<V2PinZahteviScreen> {
                 if (pinController.text.length == 4) {
                   Navigator.pop(context, pinController.text);
                 } else {
-                  AppSnackBar.warning(context, 'PIN mora imati 4 cifre');
+                  V2AppSnackBar.warning(context, 'PIN mora imati 4 cifre');
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -191,13 +191,13 @@ class _PinZahteviScreenState extends State<V2PinZahteviScreen> {
 
       if (!mounted) return;
       if (success) {
-        AppSnackBar.success(context, '✅ PIN $rezultat dodeljen putniku $ime');
+        V2AppSnackBar.success(context, '✅ PIN $rezultat dodeljen putniku $ime');
         // Automatski otvori SMS da pošalje PIN
         if (brojTelefona.isNotEmpty) {
           await _posaljiPinSms(brojTelefona, rezultat, ime);
         }
       } else {
-        AppSnackBar.error(context, 'Greška pri dodeli PIN-a');
+        V2AppSnackBar.error(context, 'Greška pri dodeli PIN-a');
       }
     }
   }
@@ -241,9 +241,9 @@ class _PinZahteviScreenState extends State<V2PinZahteviScreen> {
       final success = await V2PinZahtevService.odbijZahtev(zahtevId);
       if (!mounted) return;
       if (success) {
-        AppSnackBar.warning(context, 'Zahtev od $ime je odbijen');
+        V2AppSnackBar.warning(context, 'Zahtev od $ime je odbijen');
       } else {
-        AppSnackBar.error(context, 'Greška pri odbijanju');
+        V2AppSnackBar.error(context, 'Greška pri odbijanju');
       }
     }
   }

@@ -31,11 +31,11 @@ class V2SmartNavigationService {
   ///
   /// Dakle: endDestination je SUPROTNI grad od startCity
   static Position? _getEndDestination(String startCity) {
-    if (GradAdresaValidator.isBelaCrkva(startCity)) {
+    if (V2GradAdresaValidator.isBelaCrkva(startCity)) {
       // Putnici krecu IZ Bele Crkve -> vozac ih vozi U Vrsac
       return Position(
-        latitude: RouteConfig.vrsacLat,
-        longitude: RouteConfig.vrsacLng,
+        latitude: V2RouteConfig.vrsacLat,
+        longitude: V2RouteConfig.vrsacLng,
         timestamp: DateTime.fromMillisecondsSinceEpoch(0),
         accuracy: 0,
         altitude: 0,
@@ -47,11 +47,11 @@ class V2SmartNavigationService {
       );
     }
 
-    if (GradAdresaValidator.isVrsac(startCity)) {
+    if (V2GradAdresaValidator.isVrsac(startCity)) {
       // Putnici krecu IZ Vrsca -> vozac ih vozi U Belu Crkvu
       return Position(
-        latitude: RouteConfig.belaCrkvaLat,
-        longitude: RouteConfig.belaCrkvaLng,
+        latitude: V2RouteConfig.belaCrkvaLat,
+        longitude: V2RouteConfig.belaCrkvaLng,
         timestamp: DateTime.fromMillisecondsSinceEpoch(0),
         accuracy: 0,
         altitude: 0,
@@ -170,7 +170,7 @@ class V2SmartNavigationService {
   /// Dobij trenutnu GPS poziciju vozaca
   static Future<Position> _getCurrentPosition() async {
     // Centralizovana provera GPS dozvola (ukljucuje i GPS service check)
-    final hasPermission = await PermissionService.ensureGpsForNavigation();
+    final hasPermission = await V2PermissionService.ensureGpsForNavigation();
     if (!hasPermission) {
       throw Exception('GPS dozvole nisu odobrene ili GPS nije ukljucen');
     }

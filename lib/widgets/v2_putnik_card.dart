@@ -103,7 +103,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
     final vozacUuid = V2VozacCache.getUuidByIme(widget.currentDriver);
     if (vozacUuid == null) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška: Vozac nije definisan u sistemu');
+        V2AppSnackBar.error(context, 'Greška: Vozac nije definisan u sistemu');
       }
       return;
     }
@@ -245,7 +245,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
       // Provjeri da li V2Putnik ima valjan ID
       if (_putnik.id == null || _putnik.id.toString().isEmpty) {
         if (mounted) {
-          AppSnackBar.error(context, 'V2Putnik nema valjan ID - ne može se naplatiti');
+          V2AppSnackBar.error(context, 'V2Putnik nema valjan ID - ne može se naplatiti');
         }
         return;
       }
@@ -257,7 +257,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
       );
 
       if (mounted) {
-        AppSnackBar.payment(context, 'Naplaceno $brojMesta mesta - Ukupno: ${ukupnaSuma.toStringAsFixed(0)} RSD');
+        V2AppSnackBar.payment(context, 'Naplaceno $brojMesta mesta - Ukupno: ${ukupnaSuma.toStringAsFixed(0)} RSD');
       }
     }
   }
@@ -271,7 +271,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
 
     if (registrovaniPutnik == null) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška: Mesecni V2Putnik "${_putnik.ime}" nije pronaden');
+        V2AppSnackBar.error(context, 'Greška: Mesecni V2Putnik "${_putnik.ime}" nije pronaden');
       }
       return;
     }
@@ -735,7 +735,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
       // Provjeri da li V2Putnik ima valjan ID
       if (_putnik.id == null || _putnik.id.toString().isEmpty) {
         if (mounted) {
-          AppSnackBar.error(context, 'V2Putnik nema valjan ID - ne može se naplatiti');
+          V2AppSnackBar.error(context, 'V2Putnik nema valjan ID - ne može se naplatiti');
         }
         return;
       }
@@ -747,7 +747,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
         V2HapticService.lightImpact();
       } catch (e) {
         if (mounted) {
-          AppSnackBar.error(context, 'Greška pri placanju: $e');
+          V2AppSnackBar.error(context, 'Greška pri placanju: $e');
         }
       }
     }
@@ -826,11 +826,11 @@ class _PutnikCardState extends State<V2PutnikCard> {
           _putnik = _putnik.copyWith(placeno: true);
         });
 
-        AppSnackBar.payment(context, 'Placanje uspešno evidentirano: $iznos RSD');
+        V2AppSnackBar.payment(context, 'Placanje uspešno evidentirano: $iznos RSD');
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška pri placanju: $e');
+        V2AppSnackBar.error(context, 'Greška pri placanju: $e');
       }
     } finally {
       // OBAVEZNO OSLOBODI LOCK
@@ -872,11 +872,11 @@ class _PutnikCardState extends State<V2PutnikCard> {
           widget.onChanged!();
         }
 
-        AppSnackBar.success(context, 'Pokupljen: ${_putnik.ime}');
+        V2AppSnackBar.success(context, 'Pokupljen: ${_putnik.ime}');
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška pri pokupljenju: $e');
+        V2AppSnackBar.error(context, 'Greška pri pokupljenju: $e');
       }
     } finally {
       // OBAVEZNO OSLOBODI LOCK
@@ -1176,12 +1176,12 @@ class _PutnikCardState extends State<V2PutnikCard> {
                                                   // Dugme za navigaciju - uvek prikaži, koordinate ce se dobiti po potrebi
                                                   TextButton.icon(
                                                     onPressed: () async {
-                                                      // INSTANT GPS - koristi novi PermissionService
+                                                      // INSTANT GPS - koristi novi V2PermissionService
                                                       final hasPermission =
-                                                          await PermissionService.ensureGpsForNavigation();
+                                                          await V2PermissionService.ensureGpsForNavigation();
                                                       if (!hasPermission) {
                                                         if (mounted && context.mounted) {
-                                                          AppSnackBar.error(
+                                                          V2AppSnackBar.error(
                                                               context, '⚠️ GPS dozvole su potrebne za navigaciju');
                                                         }
                                                         return;
@@ -1191,7 +1191,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
                                                       try {
                                                         // Pokaži loading sa dušim timeout-om
                                                         if (mounted && context.mounted) {
-                                                          AppSnackBar.info(context, '🗺️ Pripremam navigaciju...');
+                                                          V2AppSnackBar.info(context, '🗺️ Pripremam navigaciju...');
                                                         }
 
                                                         // Dobij koordinate - UNIFIKOVANO za sve putnike
@@ -1208,19 +1208,19 @@ class _PutnikCardState extends State<V2PutnikCard> {
 
                                                           if (koordinate != null) {
                                                             // Uspešno - pokaži pozitivnu poruku
-                                                            AppSnackBar.success(context, '🧭 Otvaram navigaciju...');
+                                                            V2AppSnackBar.success(context, '🧭 Otvaram navigaciju...');
                                                             await _otvoriNavigaciju(
                                                               koordinate,
                                                             );
                                                           } else {
                                                             // Neuspešno - prikaži detaljniju grešku
-                                                            AppSnackBar.warning(context,
+                                                            V2AppSnackBar.warning(context,
                                                                 '⚠️ Lokacija nije pronadena\nAdresa: ${_putnik.adresa}\n🔄 Pokušajte ponovo za 10 sekundi');
                                                           }
                                                         }
                                                       } catch (e) {
                                                         if (mounted && context.mounted) {
-                                                          AppSnackBar.error(context, '❌ Greška: ${e.toString()}');
+                                                          V2AppSnackBar.error(context, '❌ Greška: ${e.toString()}');
                                                         }
                                                       }
                                                     },
@@ -1602,7 +1602,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
 
       if (uspeh) {
         if (mounted) {
-          AppSnackBar.payment(context, '💰 Placanje od ${iznos.toStringAsFixed(0)} RSD za $mesec je sacuvano');
+          V2AppSnackBar.payment(context, '💰 Placanje od ${iznos.toStringAsFixed(0)} RSD za $mesec je sacuvano');
         }
       } else {
         // FIX: Baci exception da _executePayment ne prikaže uspešnu poruku
@@ -1610,7 +1610,7 @@ class _PutnikCardState extends State<V2PutnikCard> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, '❌ Greška: $e');
+        V2AppSnackBar.error(context, '❌ Greška: $e');
       }
     }
   }
@@ -1763,13 +1763,13 @@ class _PutnikCardState extends State<V2PutnikCard> {
           setState(() {
             _putnik = _putnik.copyWith(status: 'otkazano');
           });
-          AppSnackBar.error(context, 'V2Putnik oznacen kao otkazan.');
+          V2AppSnackBar.error(context, 'V2Putnik oznacen kao otkazan.');
           // Pozovi callback da parent zna da se lista promenila
           widget.onChanged?.call();
         }
       } catch (e) {
         if (mounted) {
-          AppSnackBar.error(context, 'Greška: $e');
+          V2AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }

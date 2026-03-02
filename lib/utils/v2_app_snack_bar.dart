@@ -22,15 +22,15 @@ import 'package:flutter/material.dart';
 // dugo    (long)   → 5 sekundi — objašnjenje / blokada
 //
 // UPOTREBA:
-// AppSnackBar.success(context, ' Sačuvano!');
-// AppSnackBar.error(context, 'Greška: $e');
-// AppSnackBar.warning(context, '⏳ Zahtev je u obradi...');
-// AppSnackBar.info(context, 'ℹ Rezervacije su moguće samo za danas i sutra.');
+// V2AppSnackBar.success(context, ' Sačuvano!');
+// V2AppSnackBar.error(context, 'Greška: $e');
+// V2AppSnackBar.warning(context, '⏳ Zahtev je u obradi...');
+// V2AppSnackBar.info(context, 'ℹ Rezervacije su moguće samo za danas i sutra.');
 //
 // KRAJ SPECIFIKACIJE 
 
-class AppSnackBar {
-  AppSnackBar._(); // Ne instancirati
+class V2AppSnackBar {
+  V2AppSnackBar._(); // Ne instancirati
 
   // ─── Boje ────────────────────────────────────────────────────
   static const Color _colorSuccess = Color(0xFF4CAF50); // zelena

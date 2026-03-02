@@ -92,10 +92,10 @@ class _VozaciAdminScreenState extends State<V2VozaciAdminScreen> {
     try {
       await _vozacService.addVozac(noviVozac);
       if (!mounted) return;
-      AppSnackBar.info(context, 'V2Vozac dodan');
+      V2AppSnackBar.info(context, 'V2Vozac dodan');
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.error(context, 'Greska: $e');
+      V2AppSnackBar.error(context, 'Greska: $e');
       return;
     }
 
@@ -107,7 +107,7 @@ class _VozaciAdminScreenState extends State<V2VozaciAdminScreen> {
 
     if (mounted) {
       Navigator.pop(context);
-      AppSnackBar.success(context, 'V2Vozac ${noviVozac.ime} dodat!');
+      V2AppSnackBar.success(context, 'V2Vozac ${noviVozac.ime} dodat!');
     }
   }
 
@@ -161,10 +161,10 @@ class _VozaciAdminScreenState extends State<V2VozaciAdminScreen> {
             await _vozacService.updateVozac(updatedVozac);
             if (!mounted) return;
             Navigator.pop(context);
-            AppSnackBar.info(context, 'V2Vozac azuriran');
+            V2AppSnackBar.info(context, 'V2Vozac azuriran');
           } catch (e) {
             if (!mounted) return;
-            AppSnackBar.error(context, 'Greska: $e');
+            V2AppSnackBar.error(context, 'Greska: $e');
           }
         },
       ),

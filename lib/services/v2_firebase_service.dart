@@ -13,7 +13,7 @@ import 'v2_local_notification_service.dart';
 import 'v2_push_token_service.dart';
 import 'v2_realtime_notification_service.dart';
 
-class FirebaseService {
+class V2FirebaseService {
   static String? _currentDriver;
   static StreamSubscription<String>? _tokenRefreshSubscription;
 
@@ -31,17 +31,17 @@ class FirebaseService {
       try {
         await messaging.requestPermission();
       } catch (e) {
-        debugPrint('[FirebaseService] Error requesting FCM permission: $e');
+        debugPrint('[V2FirebaseService] Error requesting FCM permission: $e');
       }
     } catch (e) {
-      debugPrint('[FirebaseService] initialize error: $e');
+      debugPrint('[V2FirebaseService] initialize error: $e');
     }
   }
 
-  /// Dobija trenutnog vozaca - DELEGIRA NA AuthManager
-  /// AuthManager cita iz Supabase (push_tokens tabela) kao izvor istine
+  /// Dobija trenutnog vozaca - DELEGIRA NA V2AuthManager
+  /// V2AuthManager cita iz Supabase (push_tokens tabela) kao izvor istine
   static Future<String?> getCurrentDriver() async {
-    _currentDriver = await AuthManager.getCurrentDriver();
+    _currentDriver = await V2AuthManager.getCurrentDriver();
     return _currentDriver;
   }
 
@@ -62,7 +62,7 @@ class FirebaseService {
       final messaging = FirebaseMessaging.instance;
       return await messaging.getToken();
     } catch (e) {
-      debugPrint('[FirebaseService] getFCMToken error: $e');
+      debugPrint('[V2FirebaseService] getFCMToken error: $e');
       return null;
     }
   }
@@ -79,7 +79,7 @@ class FirebaseService {
       try {
         await messaging.requestPermission();
       } catch (e) {
-        debugPrint('[FirebaseService] Error requesting FCM permission (init): $e');
+        debugPrint('[V2FirebaseService] Error requesting FCM permission (init): $e');
       }
 
       // Get token
@@ -94,7 +94,7 @@ class FirebaseService {
             await _registerTokenWithServer(newToken);
           },
           onError: (error) {
-            debugPrint('[FirebaseService] Token refresh error: $error');
+            debugPrint('[V2FirebaseService] Token refresh error: $error');
           },
         );
 
@@ -103,7 +103,7 @@ class FirebaseService {
 
       return null;
     } catch (e) {
-      debugPrint('[FirebaseService] initializeAndRegisterToken error: $e');
+      debugPrint('[V2FirebaseService] initializeAndRegisterToken error: $e');
       return null;
     }
   }
@@ -116,7 +116,7 @@ class FirebaseService {
     String? putnikIme;
 
     try {
-      driverName = await AuthManager.getCurrentDriver();
+      driverName = await V2AuthManager.getCurrentDriver();
 
       // Ako nije vozac, proveri da li je V2Putnik
       if (driverName == null || driverName.isEmpty) {
@@ -127,7 +127,7 @@ class FirebaseService {
         putnikIme = prefs.getString('registrovani_putnik_ime');
       }
     } catch (e) {
-      debugPrint('[FirebaseService] Error getting current user for FCM: $e');
+      debugPrint('[V2FirebaseService] Error getting current user for FCM: $e');
     }
 
     // Registruj ako imamo bilo koga
@@ -146,10 +146,10 @@ class FirebaseService {
           putnikId: putnikId,
         );
       } else {
-        debugPrint('[FirebaseService] Korisnik nije ulogovan - FCM token nije registrovan na serveru');
+        debugPrint('[V2FirebaseService] Korisnik nije ulogovan - FCM token nije registrovan na serveru');
       }
     } catch (e) {
-      debugPrint('[FirebaseService] _registerTokenWithServer error: $e');
+      debugPrint('[V2FirebaseService] _registerTokenWithServer error: $e');
     }
   }
 
@@ -167,7 +167,7 @@ class FirebaseService {
     FirebaseMessaging.onMessage.listen(
       (RemoteMessage message) {
         // Emituj dogadjaj unutar aplikacije
-        RealtimeNotificationService.onForegroundNotification(message.data);
+        V2RealtimeNotificationService.onForegroundNotification(message.data);
 
         // Show a local notification when app is foreground
         try {
@@ -177,14 +177,14 @@ class FirebaseService {
               (message.data['body'] as String?) ??
               (message.data['message'] as String?) ??
               'Nova notifikacija';
-          LocalNotificationService.showRealtimeNotification(
+          V2LocalNotificationService.showRealtimeNotification(
               title: title, body: body, payload: message.data.isNotEmpty ? jsonEncode(message.data) : null);
         } catch (e) {
-          debugPrint('[FirebaseService] showRealtimeNotification error: $e');
+          debugPrint('[V2FirebaseService] showRealtimeNotification error: $e');
         }
       },
       onError: (error) {
-        debugPrint('[FirebaseService] onMessage stream error: $error');
+        debugPrint('[V2FirebaseService] onMessage stream error: $error');
       },
     );
 
@@ -192,13 +192,13 @@ class FirebaseService {
       (RemoteMessage message) {
         try {
           // Navigate or handle tap
-          RealtimeNotificationService.handleInitialMessage(message.data);
+          V2RealtimeNotificationService.handleInitialMessage(message.data);
         } catch (e) {
-          debugPrint('[FirebaseService] onMessageOpenedApp error: $e');
+          debugPrint('[V2FirebaseService] onMessageOpenedApp error: $e');
         }
       },
       onError: (error) {
-        debugPrint('[FirebaseService] onMessageOpenedApp stream error: $error');
+        debugPrint('[V2FirebaseService] onMessageOpenedApp stream error: $error');
       },
     );
   }

@@ -185,7 +185,7 @@ class _KapacitetScreenState extends State<V2KapacitetScreen> with SingleTickerPr
                               if (value != null && value > 0 && value <= 20) {
                                 Navigator.pop(ctx, value);
                               } else {
-                                AppSnackBar.error(context, 'Unesite broj između 1 i 20');
+                                V2AppSnackBar.error(context, 'Unesite broj između 1 i 20');
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -218,9 +218,9 @@ class _KapacitetScreenState extends State<V2KapacitetScreen> with SingleTickerPr
       final success = await V2KapacitetService.setKapacitet(grad, vreme, result);
       if (!mounted) return;
       if (success) {
-        AppSnackBar.success(context, '✅ $grad $vreme = $result mesta');
+        V2AppSnackBar.success(context, '✅ $grad $vreme = $result mesta');
       } else {
-        AppSnackBar.error(context, '❌ Greška pri čuvanju');
+        V2AppSnackBar.error(context, '❌ Greška pri čuvanju');
       }
     }
   }
@@ -264,7 +264,7 @@ class _KapacitetScreenState extends State<V2KapacitetScreen> with SingleTickerPr
                                 final success = await V2KapacitetService.setKapacitet(grad, vreme, maxMesta - 1);
                                 if (!mounted) return;
                                 if (!success) {
-                                  AppSnackBar.error(context, '❌ Greška pri čuvanju');
+                                  V2AppSnackBar.error(context, '❌ Greška pri čuvanju');
                                 }
                               }
                             : null,
@@ -296,7 +296,7 @@ class _KapacitetScreenState extends State<V2KapacitetScreen> with SingleTickerPr
                                 final success = await V2KapacitetService.setKapacitet(grad, vreme, maxMesta + 1);
                                 if (!mounted) return;
                                 if (!success) {
-                                  AppSnackBar.error(context, '❌ Greška pri čuvanju');
+                                  V2AppSnackBar.error(context, '❌ Greška pri čuvanju');
                                 }
                               }
                             : null,
@@ -324,7 +324,7 @@ class _KapacitetScreenState extends State<V2KapacitetScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: ThemeManager().currentGradient,
+        gradient: V2ThemeManager().currentGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,

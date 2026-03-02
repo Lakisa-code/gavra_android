@@ -69,11 +69,11 @@ class _AdreseScreenState extends State<V2AdreseScreen> {
         await supabase.from('v2_adrese').insert(insertData);
 
         if (mounted) {
-          AppSnackBar.success(context, '✅ V2Adresa dodana');
+          V2AppSnackBar.success(context, '✅ V2Adresa dodana');
         }
       } catch (e) {
         if (mounted) {
-          AppSnackBar.error(context, 'Greška: $e');
+          V2AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }
@@ -109,11 +109,11 @@ class _AdreseScreenState extends State<V2AdreseScreen> {
         await supabase.from('v2_adrese').update(updateData).eq('id', adresa.id);
 
         if (mounted) {
-          AppSnackBar.success(context, '✅ V2Adresa ažurirana');
+          V2AppSnackBar.success(context, '✅ V2Adresa ažurirana');
         }
       } catch (e) {
         if (mounted) {
-          AppSnackBar.error(context, 'Greška: $e');
+          V2AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }
@@ -144,14 +144,14 @@ class _AdreseScreenState extends State<V2AdreseScreen> {
     try {
       await supabase.from('v2_adrese').delete().eq('id', adresa.id);
       if (mounted) {
-        AppSnackBar.warning(context, '🗑️ V2Adresa obrisana');
+        V2AppSnackBar.warning(context, '🗑️ V2Adresa obrisana');
       }
     } catch (e) {
       if (mounted) {
         final msg = e.toString().contains('23503') || e.toString().toLowerCase().contains('foreign key')
             ? '❌ V2Adresa se koristi i ne može se obrisati'
             : '❌ Greška: $e';
-        AppSnackBar.error(context, msg);
+        V2AppSnackBar.error(context, msg);
       }
     }
   }
@@ -487,7 +487,7 @@ class _AdresaDialogState extends State<_AdresaDialog> {
           onPressed: () {
             final naziv = _nazivController.text.trim();
             if (naziv.isEmpty) {
-              AppSnackBar.warning(context, 'Naziv je obavezan');
+              V2AppSnackBar.warning(context, 'Naziv je obavezan');
               return;
             }
 
@@ -496,14 +496,14 @@ class _AdresaDialogState extends State<_AdresaDialog> {
             if (_latitudeController.text.trim().isNotEmpty) {
               latitude = double.tryParse(_latitudeController.text.trim());
               if (latitude == null || latitude < -90 || latitude > 90) {
-                AppSnackBar.error(context, 'Latitude mora biti između -90 i 90');
+                V2AppSnackBar.error(context, 'Latitude mora biti između -90 i 90');
                 return;
               }
             }
             if (_longitudeController.text.trim().isNotEmpty) {
               longitude = double.tryParse(_longitudeController.text.trim());
               if (longitude == null || longitude < -180 || longitude > 180) {
-                AppSnackBar.error(context, 'Longitude mora biti između -180 i 180');
+                V2AppSnackBar.error(context, 'Longitude mora biti između -180 i 180');
                 return;
               }
             }

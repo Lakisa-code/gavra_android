@@ -30,7 +30,7 @@ Future<void> backgroundNotificationHandler(Map<String, dynamic> payload) async {
 
     // FIX: Umesto samo payload['data'], prosljeđujemo ceo payload.
     // FCM postavlja sve podatke direktno u message.data, tako da je payload već 'data' mapa.
-    await LocalNotificationService.showNotificationFromBackground(
+    await V2LocalNotificationService.showNotificationFromBackground(
       title: title,
       body: body,
       payload: jsonEncode(payload),

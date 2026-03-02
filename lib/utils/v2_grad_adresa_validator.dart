@@ -2,8 +2,8 @@ import 'v2_text_utils.dart';
 
 /// UTIL ZA VALIDACIJU GRADOVA I ADRESA
 /// Ogranicava aplikaciju na opštine Bela Crkva i Vrsac
-class GradAdresaValidator {
-  GradAdresaValidator._();
+class V2GradAdresaValidator {
+  V2GradAdresaValidator._();
 
   /// Proveri da li je grad Bela Crkva (ili BC skracenica)
   static bool isBelaCrkva(String? grad) {

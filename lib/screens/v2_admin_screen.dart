@@ -90,7 +90,7 @@ class _AdminScreenState extends State<V2AdminScreen> {
     });
 
     try {
-      LocalNotificationService.initialize(context);
+      V2LocalNotificationService.initialize(context);
     } catch (e) {
       // ignore
     }
@@ -112,7 +112,7 @@ class _AdminScreenState extends State<V2AdminScreen> {
       if (!mounted) return;
 
       if (vozaci.isEmpty) {
-        AppSnackBar.error(context, '⚠️ Nema ucitanih vozaca');
+        V2AppSnackBar.error(context, '⚠️ Nema ucitanih vozaca');
         return;
       }
 
@@ -165,14 +165,14 @@ class _AdminScreenState extends State<V2AdminScreen> {
     } catch (e) {
       debugPrint('❌ Error loading drivers: $e');
       if (!mounted) return;
-      AppSnackBar.error(context, '❌ Greška pri ucitavanju vozaca');
+      V2AppSnackBar.error(context, '❌ Greška pri ucitavanju vozaca');
     }
   }
 
   void _loadCurrentDriver() {
-    // FirebaseService.getCurrentDriver() interno provjerava AuthManager in-memory
+    // V2FirebaseService.getCurrentDriver() interno provjerava V2AuthManager in-memory
     // cache kao fast path (bez Supabase poziva ako je vec ulogovan)
-    FirebaseService.getCurrentDriver().then((driver) {
+    V2FirebaseService.getCurrentDriver().then((driver) {
       if (mounted) {
         setState(() {
           _currentDriver = driver;
@@ -202,18 +202,18 @@ class _AdminScreenState extends State<V2AdminScreen> {
         List<String> vremena;
         if (selectedGrad == 'BC') {
           if (navType == 'praznici')
-            vremena = ['Sva vremena', ...RouteConfig.bcVremenaPraznici];
+            vremena = ['Sva vremena', ...V2RouteConfig.bcVremenaPraznici];
           else if (navType == 'zimski')
-            vremena = ['Sva vremena', ...RouteConfig.bcVremenaZimski];
+            vremena = ['Sva vremena', ...V2RouteConfig.bcVremenaZimski];
           else
-            vremena = ['Sva vremena', ...RouteConfig.bcVremenaLetnji];
+            vremena = ['Sva vremena', ...V2RouteConfig.bcVremenaLetnji];
         } else {
           if (navType == 'praznici')
-            vremena = ['Sva vremena', ...RouteConfig.vsVremenaPraznici];
+            vremena = ['Sva vremena', ...V2RouteConfig.vsVremenaPraznici];
           else if (navType == 'zimski')
-            vremena = ['Sva vremena', ...RouteConfig.vsVremenaZimski];
+            vremena = ['Sva vremena', ...V2RouteConfig.vsVremenaZimski];
           else
-            vremena = ['Sva vremena', ...RouteConfig.vsVremenaLetnji];
+            vremena = ['Sva vremena', ...V2RouteConfig.vsVremenaLetnji];
         }
 
         if (!vremena.contains(selectedVreme)) {
@@ -292,7 +292,7 @@ class _AdminScreenState extends State<V2AdminScreen> {
 
                       if (mounted) {
                         Navigator.pop(context);
-                        AppSnackBar.success(
+                        V2AppSnackBar.success(
                             context,
                             selectedVreme == 'Sva vremena'
                                 ? '✅ Uspešno uklonjeno $count putnika za ceo dan ($selectedGrad) - $selectedDan'
@@ -393,7 +393,7 @@ class _AdminScreenState extends State<V2AdminScreen> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: ThemeManager().currentGradient, // Theme-aware gradijent
+        gradient: V2ThemeManager().currentGradient, // Theme-aware gradijent
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent, // Transparentna pozadina

@@ -15,7 +15,7 @@ import 'v2_push_token_service.dart';
 /// Centralizovani auth manager.
 /// Upravlja lokalnim auth operacijama kroz SharedPreferences.
 /// Koristi push token recognition i session management bez Supabase Auth.
-class AuthManager {
+class V2AuthManager {
   static const String _driverKey = 'current_driver';
   static const String _authSessionKey = 'auth_session';
 
@@ -33,7 +33,7 @@ class AuthManager {
 
     _cachedDriverName = driverName;
     await _saveDriverSession(driverName);
-    await FirebaseService.setCurrentDriver(driverName);
+    await V2FirebaseService.setCurrentDriver(driverName);
 
     // Ažuriraj push token u pozadini — ne blokira login flow
     _updatePushTokenWithUserId(driverName);
@@ -47,39 +47,39 @@ class AuthManager {
       final String? vozacId = vozac?.id;
 
       if (vozacId == null || vozacId.isEmpty || driverName.isEmpty) {
-        debugPrint('[AuthManager] Vozač nije identifikovan — preskačem registraciju tokena');
+        debugPrint('[V2AuthManager] Vozač nije identifikovan — preskačem registraciju tokena');
         return;
       }
 
       // 1. FCM token (Google/Samsung uređaji)
-      final fcmToken = await FirebaseService.getFCMToken();
+      final fcmToken = await V2FirebaseService.getFCMToken();
       if (fcmToken != null && fcmToken.isNotEmpty) {
-        debugPrint('[AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
+        debugPrint('[V2AuthManager] FCM token: ${fcmToken.substring(0, 30)}...');
         final success = await V2PushTokenService.registerToken(
           token: fcmToken,
           provider: 'fcm',
           vozacId: vozacId,
         );
-        debugPrint('[AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
+        debugPrint('[V2AuthManager] FCM registracija: ${success ? "USPEH" : "NEUSPEH"}');
       }
 
       // 2. HMS token (Huawei uređaji)
       try {
-        final hmsToken = await HuaweiPushService().getHMSToken();
+        final hmsToken = await V2HuaweiPushService().getHMSToken();
         if (hmsToken != null && hmsToken.isNotEmpty) {
-          debugPrint('[AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
+          debugPrint('[V2AuthManager] HMS token: ${hmsToken.substring(0, 10)}...');
           final success = await V2PushTokenService.registerToken(
             token: hmsToken,
             provider: 'huawei',
             vozacId: vozacId,
           );
-          debugPrint('[AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
+          debugPrint('[V2AuthManager] HMS registracija: ${success ? "USPEH" : "NEUSPEH"}');
         }
       } catch (e) {
-        debugPrint('[AuthManager] HMS nije dostupan: $e');
+        debugPrint('[V2AuthManager] HMS nije dostupan: $e');
       }
     } catch (e) {
-      debugPrint('[AuthManager] Greška pri ažuriranju tokena: $e');
+      debugPrint('[V2AuthManager] Greška pri ažuriranju tokena: $e');
     }
   }
 
@@ -101,7 +101,7 @@ class AuthManager {
         return _cachedDriverName;
       }
     } catch (e) {
-      debugPrint('⚠️ [AuthManager] Supabase nedostupan, koristim lokalni cache: $e');
+      debugPrint('⚠️ [V2AuthManager] Supabase nedostupan, koristim lokalni cache: $e');
     }
 
     // 2. Offline fallback — stari lokalni podatak
@@ -118,13 +118,13 @@ class AuthManager {
     String? token;
 
     try {
-      token = await FirebaseService.getFCMToken();
+      token = await V2FirebaseService.getFCMToken();
 
       if (token == null || token.isEmpty) {
         try {
-          token = await HuaweiPushService().getHMSToken();
+          token = await V2HuaweiPushService().getHMSToken();
         } catch (e) {
-          debugPrint('[AuthManager] Greška pri čitanju HMS tokena: $e');
+          debugPrint('[V2AuthManager] Greška pri čitanju HMS tokena: $e');
         }
       }
 
@@ -145,7 +145,7 @@ class AuthManager {
         }
       }
     } catch (e) {
-      debugPrint('[AuthManager] Greška pri čitanju iz Supabase: $e');
+      debugPrint('[V2AuthManager] Greška pri čitanju iz Supabase: $e');
     }
     return null;
   }
@@ -172,21 +172,21 @@ class AuthManager {
           }
         }
       } catch (e) {
-        debugPrint('[AuthManager] Greška pri brisanju push tokena: $e');
+        debugPrint('[V2AuthManager] Greška pri brisanju push tokena: $e');
       }
 
       // 3. Očisti Firebase session
       try {
-        await FirebaseService.clearCurrentDriver();
+        await V2FirebaseService.clearCurrentDriver();
       } catch (e) {
-        debugPrint('[AuthManager] Greška pri čišćenju Firebase sesije: $e');
+        debugPrint('[V2AuthManager] Greška pri čišćenju Firebase sesije: $e');
       }
 
       // 4. Očisti PIN zahtevi subscription
       try {
         V2PinZahtevService.dispose();
       } catch (e) {
-        debugPrint('[AuthManager] Greška pri dispose PinZahtevService: $e');
+        debugPrint('[V2AuthManager] Greška pri dispose PinZahtevService: $e');
       }
 
       // 5. Navigiraj na V2WelcomeScreen — koristi globalnu navigatorKey
@@ -202,7 +202,7 @@ class AuthManager {
         );
       }
     } catch (e) {
-      debugPrint('[AuthManager] Greška tokom logout-a: $e');
+      debugPrint('[V2AuthManager] Greška tokom logout-a: $e');
       try {
         if (navigatorKey.currentState != null) {
           navigatorKey.currentState!.pushAndRemoveUntil(
@@ -211,7 +211,7 @@ class AuthManager {
           );
         }
       } catch (e2) {
-        debugPrint('[AuthManager] Greška u logout error handler-u: $e2');
+        debugPrint('[V2AuthManager] Greška u logout error handler-u: $e2');
       }
     }
   }
@@ -226,7 +226,7 @@ class AuthManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_rememberedEmailKey, email);
     await prefs.setString(_rememberedDriverNameKey, driverName);
-    debugPrint('[AuthManager] Uređaj zapamćen: email=$email, driver=$driverName');
+    debugPrint('[V2AuthManager] Uređaj zapamćen: email=$email, driver=$driverName');
   }
 
   /// Vrati zapamćene kredencijale uređaja ili null ako nisu sačuvani.
@@ -248,7 +248,7 @@ class AuthManager {
       final age = DateTime.now().toUtc().difference(sessionTime);
       return age.inDays < 30;
     } catch (e) {
-      debugPrint('[AuthManager] Greška pri parsiranju session timestampa: $e');
+      debugPrint('[V2AuthManager] Greška pri parsiranju session timestampa: $e');
       return false;
     }
   }

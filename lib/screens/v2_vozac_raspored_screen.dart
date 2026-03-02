@@ -51,16 +51,16 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
 
   List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
-    if (navType == 'praznici') return RouteConfig.bcVremenaPraznici;
-    if (navType == 'zimski') return RouteConfig.bcVremenaZimski;
-    return RouteConfig.bcVremenaLetnji;
+    if (navType == 'praznici') return V2RouteConfig.bcVremenaPraznici;
+    if (navType == 'zimski') return V2RouteConfig.bcVremenaZimski;
+    return V2RouteConfig.bcVremenaLetnji;
   }
 
   List<String> get vsVremena {
     final navType = navBarTypeNotifier.value;
-    if (navType == 'praznici') return RouteConfig.vsVremenaPraznici;
-    if (navType == 'zimski') return RouteConfig.vsVremenaZimski;
-    return RouteConfig.vsVremenaLetnji;
+    if (navType == 'praznici') return V2RouteConfig.vsVremenaPraznici;
+    if (navType == 'zimski') return V2RouteConfig.vsVremenaZimski;
+    return V2RouteConfig.vsVremenaLetnji;
   }
 
   List<String> get _sviPolasci {
@@ -196,7 +196,7 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
 
     final vozaci = V2VozacCache.imenaVozaca;
     if (vozaci.isEmpty) {
-      if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozača');
+      if (mounted) V2AppSnackBar.warning(context, 'Nema registrovanih vozača');
       return;
     }
 
@@ -342,7 +342,7 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
 
     final vozaci = V2VozacCache.imenaVozaca;
     if (vozaci.isEmpty) {
-      if (mounted) AppSnackBar.warning(context, 'Nema registrovanih vozača');
+      if (mounted) V2AppSnackBar.warning(context, 'Nema registrovanih vozača');
       return;
     }
 
@@ -444,9 +444,9 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
                     Navigator.pop(ctx);
                     final ok = await _vozacPutnikService.delete(putnikId: putnik.id!.toString());
                     if (ok) {
-                      if (mounted) AppSnackBar.success(context, '🗑️ Individualna dodjela uklonjena');
+                      if (mounted) V2AppSnackBar.success(context, '🗑️ Individualna dodjela uklonjena');
                     } else {
-                      if (mounted) AppSnackBar.error(context, '❌ Greška pri brisanju');
+                      if (mounted) V2AppSnackBar.error(context, '❌ Greška pri brisanju');
                     }
                   },
                   icon: const Icon(Icons.person_remove_outlined, color: Colors.redAccent, size: 18),
@@ -475,9 +475,9 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
                             vreme: _selectedVreme,
                           );
                           if (ok) {
-                            if (mounted) AppSnackBar.success(context, '✅ $odabranVozac → ${putnik.ime}');
+                            if (mounted) V2AppSnackBar.success(context, '✅ $odabranVozac → ${putnik.ime}');
                           } else {
-                            if (mounted) AppSnackBar.error(context, '❌ Greška pri dodjeli');
+                            if (mounted) V2AppSnackBar.error(context, '❌ Greška pri dodjeli');
                           }
                         },
                   child: const Text('Potvrdi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -493,7 +493,7 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
   Future<void> _spasiTermin(String dan, String grad, String vreme, String vozacIme) async {
     final vozacId = V2VozacCache.getUuidByIme(vozacIme);
     if (vozacId == null) {
-      if (mounted) AppSnackBar.error(context, '❌ Vozač nije pronađen u sistemu');
+      if (mounted) V2AppSnackBar.error(context, '❌ Vozač nije pronađen u sistemu');
       return;
     }
     try {
@@ -503,23 +503,23 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
         vreme: vreme,
         vozacId: vozacId,
       ));
-      if (mounted) AppSnackBar.success(context, '✅ $vozacIme → $grad $vreme ($dan)');
+      if (mounted) V2AppSnackBar.success(context, '✅ $vozacIme → $grad $vreme ($dan)');
     } catch (e) {
-      if (mounted) AppSnackBar.error(context, '❌ Greška: $e');
+      if (mounted) V2AppSnackBar.error(context, '❌ Greška: $e');
     }
   }
 
   Future<void> _ukloniTermin(String dan, String grad, String vreme, String vozacIme) async {
     final vozacId = V2VozacCache.getUuidByIme(vozacIme);
     if (vozacId == null) {
-      if (mounted) AppSnackBar.error(context, '❌ Vozač nije pronađen u sistemu');
+      if (mounted) V2AppSnackBar.error(context, '❌ Vozač nije pronađen u sistemu');
       return;
     }
     try {
       await _rasporedService.deleteTermin(dan: dan, grad: grad, vreme: vreme, vozacId: vozacId);
-      if (mounted) AppSnackBar.success(context, '🗑️ Dodjela uklonjena: $grad $vreme ($dan)');
+      if (mounted) V2AppSnackBar.success(context, '🗑️ Dodjela uklonjena: $grad $vreme ($dan)');
     } catch (e) {
-      if (mounted) AppSnackBar.error(context, '❌ Greška: $e');
+      if (mounted) V2AppSnackBar.error(context, '❌ Greška: $e');
     }
   }
 
@@ -561,7 +561,7 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
 
         // Filtriraj po gradu, vremenu, danu i statusu (bez otkazanih/bez_polaska)
         final filteredByGradVreme = allPutnici.where((p) {
-          final gradMatch = _selectedGrad.isEmpty || GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
+          final gradMatch = _selectedGrad.isEmpty || V2GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
           final vremeMatch = _selectedVreme.isEmpty || p.polazak == _selectedVreme;
           final danMatch = targetDay.isEmpty || p.dan == targetDay;
           final statusMatch = p.status != 'otkazano' && p.status != 'bez_polaska';

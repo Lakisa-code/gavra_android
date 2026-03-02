@@ -16,11 +16,11 @@ class V2KapacitetService {
   static List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
     if (navType == 'praznici') {
-      return RouteConfig.bcVremenaPraznici;
+      return V2RouteConfig.bcVremenaPraznici;
     } else if (navType == 'zimski') {
-      return RouteConfig.bcVremenaZimski;
+      return V2RouteConfig.bcVremenaZimski;
     } else {
-      return RouteConfig.bcVremenaLetnji;
+      return V2RouteConfig.bcVremenaLetnji;
     }
   }
 
@@ -28,21 +28,21 @@ class V2KapacitetService {
   static List<String> get vsVremena {
     final navType = navBarTypeNotifier.value;
     if (navType == 'praznici') {
-      return RouteConfig.vsVremenaPraznici;
+      return V2RouteConfig.vsVremenaPraznici;
     } else if (navType == 'zimski') {
-      return RouteConfig.vsVremenaZimski;
+      return V2RouteConfig.vsVremenaZimski;
     } else {
-      return RouteConfig.vsVremenaLetnji;
+      return V2RouteConfig.vsVremenaLetnji;
     }
   }
 
   /// Sva moguca vremena (zimska + letnja + praznicna) - za kapacitet tabelu
   static List<String> get svaVremenaBc {
-    return {...RouteConfig.bcVremenaZimski, ...RouteConfig.bcVremenaLetnji, ...RouteConfig.bcVremenaPraznici}.toList();
+    return {...V2RouteConfig.bcVremenaZimski, ...V2RouteConfig.bcVremenaLetnji, ...V2RouteConfig.bcVremenaPraznici}.toList();
   }
 
   static List<String> get svaVremenaVs {
-    return {...RouteConfig.vsVremenaZimski, ...RouteConfig.vsVremenaLetnji, ...RouteConfig.vsVremenaPraznici}.toList();
+    return {...V2RouteConfig.vsVremenaZimski, ...V2RouteConfig.vsVremenaLetnji, ...V2RouteConfig.vsVremenaPraznici}.toList();
   }
 
   /// Dohvati vremena za grad (sezonski)
@@ -116,14 +116,14 @@ class V2KapacitetService {
   /// Dohvati kapacitet za grad/vreme (čita iz rm.kapacitetCache — nema DB upita).
   /// Vraca default 8 ako nije dostupno.
   static int getKapacitetSync(String grad, String vreme) {
-    final normalizedVreme = GradAdresaValidator.normalizeTime(vreme);
+    final normalizedVreme = V2GradAdresaValidator.normalizeTime(vreme);
     final gradKey = grad == 'BC' ? 'BC' : 'VS';
 
     final rm = V2MasterRealtimeManager.instance;
     for (final row in rm.kapacitetCache.values) {
       final rowGrad = row['grad'] as String? ?? '';
       final rawVreme = row['vreme'] as String? ?? '';
-      if (rowGrad == gradKey && GradAdresaValidator.normalizeTime(rawVreme) == normalizedVreme) {
+      if (rowGrad == gradKey && V2GradAdresaValidator.normalizeTime(rawVreme) == normalizedVreme) {
         return (row['max_mesta'] as int?) ?? 8;
       }
     }

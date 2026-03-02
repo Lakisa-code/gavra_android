@@ -1,7 +1,7 @@
 import '../config/v2_route_config.dart';
 
 /// Servis za dobavljanje satnih redoslijeda
-/// Koristi fiksne redoslijede iz RouteConfig-a na osnovu aktivnog režima (zimski/letnji/praznici)
+/// Koristi fiksne redoslijede iz V2RouteConfig-a na osnovu aktivnog režima (zimski/letnji/praznici)
 class V2RouteService {
   V2RouteService._();
 
@@ -13,12 +13,12 @@ class V2RouteService {
     final isBc = grad == 'BC';
 
     if (sezona == 'praznici') {
-      return isBc ? RouteConfig.bcVremenaPraznici : RouteConfig.vsVremenaPraznici;
+      return isBc ? V2RouteConfig.bcVremenaPraznici : V2RouteConfig.vsVremenaPraznici;
     } else if (sezona == 'zimski') {
-      return isBc ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+      return isBc ? V2RouteConfig.bcVremenaZimski : V2RouteConfig.vsVremenaZimski;
     } else {
       // letnji ili default
-      return isBc ? RouteConfig.bcVremenaLetnji : RouteConfig.vsVremenaLetnji;
+      return isBc ? V2RouteConfig.bcVremenaLetnji : V2RouteConfig.vsVremenaLetnji;
     }
   }
 

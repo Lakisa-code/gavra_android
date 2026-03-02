@@ -37,7 +37,7 @@ class V2PutnikCountHelper {
       final dayMatch = p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
       if (!dayMatch) continue;
 
-      final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+      final normVreme = V2GradAdresaValidator.normalizeTime(p.polazak);
 
       // Koristi direktno poređenje - p.grad je uvek 'BC' ili 'VS'
       if (p.grad == 'BC') {
@@ -55,7 +55,7 @@ class V2PutnikCountHelper {
 
   /// Dohvati broj putnika za grad i vreme
   int getCount(String grad, String vreme) {
-    final normVreme = GradAdresaValidator.normalizeTime(vreme);
+    final normVreme = V2GradAdresaValidator.normalizeTime(vreme);
     if (grad == 'BC') return brojPutnikaBC[normVreme] ?? 0;
     if (grad == 'VS') return brojPutnikaVS[normVreme] ?? 0;
     return 0;

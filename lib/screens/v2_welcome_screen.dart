@@ -89,7 +89,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
   Future<void> _initServicesRecursively() async {
     try {
       // 1. Notifikacije
-      unawaited(LocalNotificationService.initialize(context));
+      unawaited(V2LocalNotificationService.initialize(context));
 
       // 2. Auto-login (dozvole su ve tražene pri prvom startu aplikacije)
       if (mounted) {
@@ -122,7 +122,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
     await _stopAudio();
 
     // "PRVO PROVERI REMEMBERED DEVICE
-    final rememberedDevice = await AuthManager.getRememberedDevice();
+    final rememberedDevice = await V2AuthManager.getRememberedDevice();
     debugPrint('🚀 [V2WelcomeScreen] rememberedDevice=$rememberedDevice');
     if (rememberedDevice != null) {
       // Auto-login sa zapamenim ureajem
@@ -137,7 +137,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
         }
 
         // Postavi driver session
-        await AuthManager.setCurrentDriver(driverName);
+        await V2AuthManager.setCurrentDriver(driverName);
 
         if (!mounted) return;
 
@@ -155,8 +155,8 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
       }
     }
 
-    // Koristi AuthManager za session management
-    final activeDriver = await AuthManager.getCurrentDriver();
+    // Koristi V2AuthManager za session management
+    final activeDriver = await V2AuthManager.getCurrentDriver();
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
       // Vozač je ve logovan - direktno na odgovarajui ekran
@@ -250,7 +250,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
     // Uklonjena striktna validacija vozača - dozvoljava sve vozače
 
     // "PRVO PROVERI REMEMBERED DEVICE za ovog vozača
-    final rememberedDevice = await AuthManager.getRememberedDevice();
+    final rememberedDevice = await V2AuthManager.getRememberedDevice();
     if (rememberedDevice != null) {
       final rememberedEmail = rememberedDevice['email']!;
       final rememberedName = rememberedDevice['driverName']!;
@@ -261,7 +261,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
       if (correctName == driverName) {
         // '? BIOMETRIJA: Traži samo ako sesija nije aktivna (vrati se posle dužeg vremena)
         debugPrint('"[V2WelcomeScreen] Proveravam sesiju za $correctName...');
-        final sessionActive = await AuthManager.isSessionActive();
+        final sessionActive = await V2AuthManager.isSessionActive();
         debugPrint('"[V2WelcomeScreen] Sesija aktivna: $sessionActive');
 
         if (!sessionActive) {
@@ -292,7 +292,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
 
         // Ovaj vozač je zapamen na ovom ureaju - DIREKTNO AUTO-LOGIN
         debugPrint('"[V2WelcomeScreen] Postavljam sesiju za $correctName');
-        await AuthManager.setCurrentDriver(correctName);
+        await V2AuthManager.setCurrentDriver(correctName);
 
         if (!mounted) return;
 
@@ -327,7 +327,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          gradient: ThemeManager().currentGradient,
+          gradient: V2ThemeManager().currentGradient,
         ),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -391,7 +391,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
                     opacity: _fadeAnimation,
                     child: GestureDetector(
                       onTap: () async {
-                        await ThemeManager().nextTheme();
+                        await V2ThemeManager().nextTheme();
                         if (mounted) setState(() {});
                       },
                       child: ShaderMask(
@@ -768,9 +768,9 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
   /// "Zahtev za dozvolama ako su potrebne
   Future<void> _requestPermissionsIfNeeded() async {
     try {
-      final permissionsChecked = await PermissionService.checkAllPermissionsGranted();
+      final permissionsChecked = await V2PermissionService.checkAllPermissionsGranted();
       if (!permissionsChecked && mounted) {
-        await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+        await V2PermissionService.requestAllPermissionsOnFirstLaunch(context);
       }
     } catch (e) {
       debugPrint('[V2WelcomeScreen] Permission request failed: $e');

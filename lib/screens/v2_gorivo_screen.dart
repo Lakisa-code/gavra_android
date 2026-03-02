@@ -574,7 +574,7 @@ class _GorivoScreenState extends State<V2GorivoScreen> with SingleTickerProvider
                 onPressed: () async {
                   final litri = double.tryParse(litriCtrl.text);
                   if (litri == null || litri <= 0) {
-                    AppSnackBar.warning(context, 'Unesi broj litara!');
+                    V2AppSnackBar.warning(context, 'Unesi broj litara!');
                     return;
                   }
                   final ok = await V2GorivoService.addPunjenje(
@@ -587,9 +587,9 @@ class _GorivoScreenState extends State<V2GorivoScreen> with SingleTickerProvider
                   Navigator.pop(ctx);
                   if (ok) setState(_loadAll);
                   if (ok) {
-                    AppSnackBar.success(context, '✅ Punjenje dodato: $litri L');
+                    V2AppSnackBar.success(context, '✅ Punjenje dodato: $litri L');
                   } else {
-                    AppSnackBar.error(context, '❌ Greška pri dodavanju');
+                    V2AppSnackBar.error(context, '❌ Greška pri dodavanju');
                   }
                 },
                 icon: const Icon(Icons.add),
@@ -669,11 +669,11 @@ class _GorivoScreenState extends State<V2GorivoScreen> with SingleTickerProvider
                 onPressed: () async {
                   final litri = double.tryParse(litriCtrl.text);
                   if (litri == null || litri <= 0) {
-                    AppSnackBar.warning(context, 'Unesi broj litara!');
+                    V2AppSnackBar.warning(context, 'Unesi broj litara!');
                     return;
                   }
                   if (selectedVozilo == null) {
-                    AppSnackBar.warning(context, 'Izaberi vozilo!');
+                    V2AppSnackBar.warning(context, 'Izaberi vozilo!');
                     return;
                   }
                   final ok = await V2GorivoService.addTocenje(
@@ -688,9 +688,9 @@ class _GorivoScreenState extends State<V2GorivoScreen> with SingleTickerProvider
                   Navigator.pop(ctx);
                   if (ok) setState(_loadAll);
                   if (ok) {
-                    AppSnackBar.success(context, '✅ Točenje zabeleženo: $litri L — ${selectedVozilo!.registarskiBroj}');
+                    V2AppSnackBar.success(context, '✅ Točenje zabeleženo: $litri L — ${selectedVozilo!.registarskiBroj}');
                   } else {
-                    AppSnackBar.error(context, '❌ Greška pri dodavanju');
+                    V2AppSnackBar.error(context, '❌ Greška pri dodavanju');
                   }
                 },
                 icon: const Icon(Icons.local_gas_station),
@@ -749,9 +749,9 @@ class _GorivoScreenState extends State<V2GorivoScreen> with SingleTickerProvider
                 Navigator.pop(ctx);
                 if (ok) setState(_loadAll);
                 if (ok) {
-                  AppSnackBar.success(context, '✅ Podešavanja sačuvana');
+                  V2AppSnackBar.success(context, '✅ Podešavanja sačuvana');
                 } else {
-                  AppSnackBar.error(context, '❌ Greška pri čuvanju');
+                  V2AppSnackBar.error(context, '❌ Greška pri čuvanju');
                 }
               },
               icon: const Icon(Icons.save),

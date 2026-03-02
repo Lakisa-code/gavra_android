@@ -88,11 +88,11 @@ class V2StatistikaIstorijaService {
           .eq('tip', tip);
 
       if (grad != null) {
-        final gradKey = GradAdresaValidator.normalizeGrad(grad);
+        final gradKey = V2GradAdresaValidator.normalizeGrad(grad);
         query = query.eq('grad', gradKey);
       }
       if (vreme != null) {
-        final normVreme = GradAdresaValidator.normalizeTime(vreme);
+        final normVreme = V2GradAdresaValidator.normalizeTime(vreme);
         query = query.eq('vreme', normVreme);
       }
 
@@ -118,8 +118,8 @@ class V2StatistikaIstorijaService {
     String? grad,
     String? vreme,
   }) async {
-    final String? gradKod = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
-    final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
+    final String? gradKod = grad != null ? V2GradAdresaValidator.normalizeGrad(grad) : null;
+    final String? vremeNormalizovano = vreme != null ? V2GradAdresaValidator.normalizeTime(vreme) : null;
 
     // Dohvati vozac_ime direktno iz baze (garantovano)
     String? vozacIme;
@@ -238,8 +238,8 @@ class V2StatistikaIstorijaService {
       final now = DateTime.now();
       final datumStr = (datum != null && datum.isNotEmpty) ? datum : now.toIso8601String().split('T')[0];
 
-      final String? gradKod = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
-      final String? vremeNormalizovano = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
+      final String? gradKod = grad != null ? V2GradAdresaValidator.normalizeGrad(grad) : null;
+      final String? vremeNormalizovano = vreme != null ? V2GradAdresaValidator.normalizeTime(vreme) : null;
 
       // Dohvati vozac_ime iz cache-a (bez async DB query)
       // Fallback: DB trigger sync_vozac_ime_on_log ce popuniti ako ostane null

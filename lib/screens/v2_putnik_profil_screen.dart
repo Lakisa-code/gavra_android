@@ -710,11 +710,11 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
                 ? 'Postavljeni ste na godišnji odmor'
                 : 'Postavljeni ste na bolovanje';
 
-        AppSnackBar.info(context, poruka);
+        V2AppSnackBar.info(context, poruka);
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška: $e');
+        V2AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }
@@ -983,7 +983,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
               icon: const Icon(Icons.palette, color: Colors.white),
               tooltip: 'Tema',
               onPressed: () async {
-                await ThemeManager().nextTheme();
+                await V2ThemeManager().nextTheme();
                 if (mounted) setState(() {});
               },
             ),
@@ -1532,7 +1532,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
         );
       } catch (e) {
         debugPrint('❌ _updatePolazak (bez_polaska): $e');
-        if (mounted) AppSnackBar.error(context, 'Greška pri uklanjanju polaska.');
+        if (mounted) V2AppSnackBar.error(context, 'Greška pri uklanjanju polaska.');
         return;
       }
     } else {
@@ -1555,7 +1555,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
         );
       } catch (e) {
         debugPrint('❌ _updatePolazak: $e');
-        if (mounted) AppSnackBar.error(context, 'Greška pri čuvanju promene.');
+        if (mounted) V2AppSnackBar.error(context, 'Greška pri čuvanju promene.');
         return;
       }
     }
@@ -1563,7 +1563,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     await _loadActiveRequests();
     await _refreshPutnikData();
     if (mounted) {
-      AppSnackBar.success(
+      V2AppSnackBar.success(
           context, 'Polazak ažuriran: $dan $gradKey${novoVreme != null ? " $novoVreme" : " uklonjen"}.');
     }
   }

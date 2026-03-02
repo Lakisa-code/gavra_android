@@ -44,7 +44,7 @@ class V2PinZahtevService {
       });
 
       // Pošalji notifikaciju adminima
-      await RealtimeNotificationService.sendNotificationToAdmins(
+      await V2RealtimeNotificationService.sendNotificationToAdmins(
         title: '🔔 Novi zahtev za PIN',
         body: 'V2Putnik traži PIN za pristup aplikaciji',
         data: {'type': 'pin_zahtev', 'putnik_id': putnikId},

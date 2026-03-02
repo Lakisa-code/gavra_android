@@ -318,10 +318,10 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> with SingleTickerProv
   Future<void> _approveZahtev(String id, V2Polazak zahtev) async {
     setState(() => _isLoading = true);
     try {
-      final currentDriver = await AuthManager.getCurrentDriver();
+      final currentDriver = await V2AuthManager.getCurrentDriver();
       final success = await V2PolasciService.v2OdobriZahtev(id, approvedBy: currentDriver);
       if (success && mounted) {
-        AppSnackBar.success(context, '✅ Zahtev uspešno odobren');
+        V2AppSnackBar.success(context, '✅ Zahtev uspešno odobren');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -331,10 +331,10 @@ class _V2PolasciScreenState extends State<V2PolasciScreen> with SingleTickerProv
   Future<void> _rejectZahtev(String id) async {
     setState(() => _isLoading = true);
     try {
-      final currentDriver = await AuthManager.getCurrentDriver();
+      final currentDriver = await V2AuthManager.getCurrentDriver();
       final success = await V2PolasciService.v2OdbijZahtev(id, rejectedBy: currentDriver);
       if (success && mounted) {
-        AppSnackBar.error(context, '❌ Zahtev je odbijen');
+        V2AppSnackBar.error(context, '❌ Zahtev je odbijen');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

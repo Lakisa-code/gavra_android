@@ -62,9 +62,9 @@ class _BottomNavBarLetnjiState extends State<V2BottomNavBarLetnji> {
   void _scrollToSelected() {
     const double itemWidth = 60.0; // width + margin
 
-    // Koristi prosleđena vremena ili fallback na RouteConfig
-    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaLetnji;
-    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaLetnji;
+    // Koristi prosleđena vremena ili fallback na V2RouteConfig
+    final bcVremena = widget.bcVremena ?? V2RouteConfig.bcVremenaLetnji;
+    final vsVremena = widget.vsVremena ?? V2RouteConfig.vsVremenaLetnji;
 
     if (widget.selectedGrad == 'BC') {
       final index = bcVremena.indexOf(widget.selectedVreme);
@@ -98,10 +98,10 @@ class _BottomNavBarLetnjiState extends State<V2BottomNavBarLetnji> {
 
   @override
   Widget build(BuildContext context) {
-    final currentThemeId = ThemeManager().currentThemeId;
-    // Koristi prosleđena vremena ili fallback na RouteConfig
-    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaLetnji;
-    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaLetnji;
+    final currentThemeId = V2ThemeManager().currentThemeId;
+    // Koristi prosleđena vremena ili fallback na V2RouteConfig
+    final bcVremena = widget.bcVremena ?? V2RouteConfig.bcVremenaLetnji;
+    final vsVremena = widget.vsVremena ?? V2RouteConfig.vsVremenaLetnji;
 
     return Container(
       decoration: BoxDecoration(

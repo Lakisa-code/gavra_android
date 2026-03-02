@@ -85,7 +85,7 @@ class V2UnifiedGeocodingService {
 
     final results = await _executeWithRateLimit(
       tasks,
-      delay: RouteConfig.nominatimBatchDelay,
+      delay: V2RouteConfig.nominatimBatchDelay,
     );
 
     for (final result in results) {

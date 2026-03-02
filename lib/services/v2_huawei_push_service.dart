@@ -18,10 +18,10 @@ import 'v2_realtime_notification_service.dart';
 /// - initialize HMS runtime hooks
 /// - obtain device token (HMS) and register it with the backend (via Supabase function)
 /// - listen for incoming push messages and display local notifications
-class HuaweiPushService {
-  static final HuaweiPushService _instance = HuaweiPushService._internal();
-  factory HuaweiPushService() => _instance;
-  HuaweiPushService._internal();
+class V2HuaweiPushService {
+  static final V2HuaweiPushService _instance = V2HuaweiPushService._internal();
+  factory V2HuaweiPushService() => _instance;
+  V2HuaweiPushService._internal();
 
   StreamSubscription<String?>? _tokenSub;
   StreamSubscription<RemoteMessage>? _messageSub;
@@ -219,7 +219,7 @@ class HuaweiPushService {
             }
           }
 
-          RealtimeNotificationService.onForegroundNotification(data);
+          V2RealtimeNotificationService.onForegroundNotification(data);
 
           // Get notification details
           final title = message.notification?.title ?? (data['title'] as String?) ?? 'Gavra Notification';
@@ -229,7 +229,7 @@ class HuaweiPushService {
               'Nova notifikacija';
 
           // Prikazi lokalnu notifikaciju
-          await LocalNotificationService.showRealtimeNotification(
+          await V2LocalNotificationService.showRealtimeNotification(
             title: title,
             body: body,
             payload: jsonEncode(data),
@@ -250,15 +250,15 @@ class HuaweiPushService {
   Future<void> _registerTokenWithServer(String token) async {
     String? driverName;
     try {
-      driverName = await AuthManager.getCurrentDriver();
+      driverName = await V2AuthManager.getCurrentDriver();
     } catch (e) {
-      debugPrint('[HuaweiPushService] getCurrentDriver error: $e');
+      debugPrint('[V2HuaweiPushService] getCurrentDriver error: $e');
       driverName = null;
     }
 
     // Registruj samo ako je vozac ulogovan
     if (driverName == null || driverName.isEmpty) {
-      debugPrint('[HuaweiPushService] Vozac nije ulogovan - preskacem HMS registraciju');
+      debugPrint('[V2HuaweiPushService] Vozac nije ulogovan - preskacem HMS registraciju');
       return;
     }
 
@@ -269,7 +269,7 @@ class HuaweiPushService {
         vozacId: V2VozacCache.getUuidByIme(driverName),
       );
     } catch (e) {
-      debugPrint('[HuaweiPushService] _registerTokenWithServer error: $e');
+      debugPrint('[V2HuaweiPushService] _registerTokenWithServer error: $e');
     }
   }
 

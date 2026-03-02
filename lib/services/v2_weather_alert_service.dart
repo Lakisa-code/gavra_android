@@ -132,7 +132,7 @@ class V2WeatherAlertService {
       final body = _createAlertMessage(alerts);
 
       // Pošalji push
-      await RealtimeNotificationService.sendPushNotification(
+      await V2RealtimeNotificationService.sendPushNotification(
         title: title,
         body: body,
         tokens: vozacTokens.map((t) => {'token': t['token']!, 'provider': t['provider']!}).toList(),

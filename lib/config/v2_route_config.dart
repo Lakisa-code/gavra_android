@@ -4,8 +4,8 @@
 /// Koristi se u kapacitet servisu i navigacionim bar-ovima.
 library;
 
-class RouteConfig {
-  RouteConfig._();
+class V2RouteConfig {
+  V2RouteConfig._();
 
   // BELA CRKVA - Zimski raspored (oktobar-mart) - FALLBACK
   static const List<String> bcVremenaZimski = [

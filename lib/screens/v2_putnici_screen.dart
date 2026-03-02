@@ -967,11 +967,11 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
           'bolovanje' => '${v2Putnik.ime} je na bolovanju',
           _ => 'Status promenjen',
         };
-        AppSnackBar.success(context, poruka);
+        V2AppSnackBar.success(context, poruka);
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška pri promeni statusa');
+        V2AppSnackBar.error(context, 'Greška pri promeni statusa');
       }
     }
   }
@@ -1095,13 +1095,13 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
         final success = await _rm.deletePutnik(v2Putnik.id, v2Putnik.v2Tabela);
 
         if (success && mounted) {
-          AppSnackBar.success(context, '${v2Putnik.ime} je uspešno obrisan');
+          V2AppSnackBar.success(context, '${v2Putnik.ime} je uspešno obrisan');
         } else if (mounted) {
-          AppSnackBar.error(context, 'Greška pri brisanju putnika');
+          V2AppSnackBar.error(context, 'Greška pri brisanju putnika');
         }
       } catch (e) {
         if (mounted) {
-          AppSnackBar.error(context, 'Greška: $e');
+          V2AppSnackBar.error(context, 'Greška: $e');
         }
       }
     }
@@ -1158,7 +1158,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     }
 
     if (opcije.isEmpty) {
-      AppSnackBar.info(context, 'Nema dostupnih kontakata');
+      V2AppSnackBar.info(context, 'Nema dostupnih kontakata');
       return;
     }
 
@@ -1198,10 +1198,10 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   Future<void> _pozovi(String brojTelefona) async {
     try {
       // ?? HUAWEI KOMPATIBILNO - koristi Huawei specificnu logiku (konzistentno sa putnik_card)
-      final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
+      final hasPermission = await V2PermissionService.ensurePhonePermissionHuawei();
       if (!hasPermission) {
         if (mounted) {
-          AppSnackBar.error(context, '❌ Dozvola za pozive je potrebna');
+          V2AppSnackBar.error(context, '❌ Dozvola za pozive je potrebna');
         }
         return;
       }
@@ -1211,12 +1211,12 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
         await launchUrl(phoneUrl, mode: LaunchMode.externalApplication);
       } catch (e) {
         if (mounted) {
-          AppSnackBar.error(context, '❌ Nije moguće pozivanje sa ovog uređaja');
+          V2AppSnackBar.error(context, '❌ Nije moguće pozivanje sa ovog uređaja');
         }
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška pri pozivanju: $e');
+        V2AppSnackBar.error(context, 'Greška pri pozivanju: $e');
       }
     }
   }
@@ -1517,7 +1517,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                       Navigator.of(context).pop();
                       await _sacuvajPlacanje(v2Putnik, iznos, selectedMonth);
                     } else {
-                      AppSnackBar.error(context, 'Unesite valjan iznos');
+                      V2AppSnackBar.error(context, 'Unesite valjan iznos');
                     }
                   },
                   icon: Icon(ukupnoPlaceno > 0 ? Icons.add : Icons.save),
@@ -1575,16 +1575,16 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
       if (uspeh) {
         if (mounted) {
-          AppSnackBar.payment(context, '✅ Dodato plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec');
+          V2AppSnackBar.payment(context, '✅ Dodato plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec');
         }
       } else {
         if (mounted) {
-          AppSnackBar.error(context, 'Greška pri čuvanju plaćanja');
+          V2AppSnackBar.error(context, 'Greška pri čuvanju plaćanja');
         }
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška: $e');
+        V2AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }

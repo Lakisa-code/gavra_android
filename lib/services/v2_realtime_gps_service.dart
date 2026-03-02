@@ -21,7 +21,7 @@ class V2RealtimeGpsService {
   /// Pokreće GPS tracking
   static Future<void> startTracking() async {
     // CENTRALIZOVANA PROVERA GPS DOZVOLA
-    final hasPermission = await PermissionService.ensureGpsForNavigation();
+    final hasPermission = await V2PermissionService.ensureGpsForNavigation();
     if (!hasPermission) {
       throw Exception('GPS dozvole nisu odobrene');
     }

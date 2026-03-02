@@ -188,7 +188,7 @@ class V2TimePickerCell extends StatelessWidget {
 
         // VREME POLASKA JE NASTUPILO
         if (_isTimePassed()) {
-          AppSnackBar.warning(context, '🔒 Vreme polaska je nastupilo. Izmene nisu moguće do subote.');
+          V2AppSnackBar.warning(context, '🔒 Vreme polaska je nastupilo. Izmene nisu moguće do subote.');
           return;
         }
 
@@ -196,19 +196,19 @@ class V2TimePickerCell extends StatelessWidget {
 
         // BLOKADA ZA OBRADA STATUS
         if (isObrada && hasTime) {
-          AppSnackBar.warning(context, '⏳ Vaš zahtev za ovo vreme je već u obradi. Molimo sačekajte odgovor.');
+          V2AppSnackBar.warning(context, '⏳ Vaš zahtev za ovo vreme je već u obradi. Molimo sačekajte odgovor.');
           return;
         }
 
         // BLOKADA ZA ODBIJENO STATUS
         if (isOdbijeno) {
-          AppSnackBar.error(context, '❌ Ovaj termin je popunjen. Izaberite neko drugo slobodno vreme.');
+          V2AppSnackBar.error(context, '❌ Ovaj termin je popunjen. Izaberite neko drugo slobodno vreme.');
           return;
         }
 
         // EKSPLICITNA PORUKA DNEVNIM PUTNICIMA AKO JE ZAKLJUČANO
         if ((tipPutnika == 'dnevni' || tipPrikazivanja == 'DNEVNI') && isLocked) {
-          AppSnackBar.blocked(context,
+          V2AppSnackBar.blocked(context,
               'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌');
           return;
         }
@@ -217,7 +217,7 @@ class V2TimePickerCell extends StatelessWidget {
           final msg = hasTime
               ? '🔒 Vreme polaska je nastupilo. Izmene nisu moguće do subote.'
               : '🔒 Zakazivanje za ovo vreme je prošlo. Od subote kreće novi ciklus.';
-          AppSnackBar.warning(context, msg);
+          V2AppSnackBar.warning(context, msg);
           return;
         }
 
@@ -230,7 +230,7 @@ class V2TimePickerCell extends StatelessWidget {
           if (dayDate != null) {
             final dayOnly = DateTime(dayDate.year, dayDate.month, dayDate.day);
             if (!dayOnly.isAtSameMomentAs(todayOnly) && !dayOnly.isAtSameMomentAs(tomorrowOnly)) {
-              AppSnackBar.blocked(context,
+              V2AppSnackBar.blocked(context,
                   'Zbog optimizacije kapaciteta, rezervacije za dnevne putnike su moguće samo za tekući dan i sutrašnji dan. Hvala na razumevanju! 🚌');
               return;
             }
@@ -325,7 +325,7 @@ class V2TimePickerCell extends StatelessWidget {
           child: Container(
             width: 320,
             decoration: BoxDecoration(
-              gradient: ThemeManager().currentGradient,
+              gradient: V2ThemeManager().currentGradient,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -403,9 +403,9 @@ class V2TimePickerCell extends StatelessWidget {
                           if (value != null && value!.isNotEmpty) {
                             Navigator.of(dialogContext).pop();
                             onChanged(null);
-                            AppSnackBar.warning(context, 'Vožnja otkazana. Evidentirano kao otkazivanje.');
+                            V2AppSnackBar.warning(context, 'Vožnja otkazana. Evidentirano kao otkazivanje.');
                           } else {
-                            AppSnackBar.info(context, 'Vreme polaska je već prazno.');
+                            V2AppSnackBar.info(context, 'Vreme polaska je već prazno.');
                             if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                           }
                         },

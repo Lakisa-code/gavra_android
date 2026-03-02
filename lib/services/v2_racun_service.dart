@@ -136,7 +136,7 @@ class V2RacunService {
       await OpenFilex.open(file.path);
     } catch (e) {
       if (context.mounted) {
-        AppSnackBar.error(context, '❌ Greška pri štampanju računa: $e');
+        V2AppSnackBar.error(context, '❌ Greška pri štampanju računa: $e');
       }
     }
   }
@@ -149,7 +149,7 @@ class V2RacunService {
   }) async {
     if (racuniPodaci.isEmpty) {
       if (context.mounted) {
-        AppSnackBar.warning(context, 'Nema računa za štampanje');
+        V2AppSnackBar.warning(context, 'Nema računa za štampanje');
       }
       return;
     }
@@ -207,11 +207,11 @@ class V2RacunService {
       await OpenFilex.open(file.path);
 
       if (context.mounted) {
-        AppSnackBar.success(context, '✅ Generisano ${racuniPodaci.length} računa za firme');
+        V2AppSnackBar.success(context, '✅ Generisano ${racuniPodaci.length} računa za firme');
       }
     } catch (e) {
       if (context.mounted) {
-        AppSnackBar.error(context, '❌ Greška: $e');
+        V2AppSnackBar.error(context, '❌ Greška: $e');
       }
     }
   }

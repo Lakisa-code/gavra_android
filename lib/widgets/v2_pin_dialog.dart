@@ -51,12 +51,12 @@ class _V2PinDialogState extends State<V2PinDialog> {
       });
 
       if (mounted) {
-        AppSnackBar.success(context, 'PIN sačuvan!');
+        V2AppSnackBar.success(context, 'PIN sačuvan!');
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppSnackBar.error(context, 'Greška: $e');
+        V2AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }
@@ -64,12 +64,12 @@ class _V2PinDialogState extends State<V2PinDialog> {
   /// Pošalji PIN putem SMS-a
   Future<void> _sendSms() async {
     if (widget.brojTelefona == null || widget.brojTelefona!.isEmpty) {
-      AppSnackBar.warning(context, 'V2Putnik nema broj telefona!');
+      V2AppSnackBar.warning(context, 'V2Putnik nema broj telefona!');
       return;
     }
 
     if (_pin == null || _pin!.isEmpty) {
-      AppSnackBar.warning(context, 'Prvo generiši PIN!');
+      V2AppSnackBar.warning(context, 'Prvo generiši PIN!');
       return;
     }
 
@@ -91,7 +91,7 @@ class _V2PinDialogState extends State<V2PinDialog> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, 'Greška: $e');
+        V2AppSnackBar.error(context, 'Greška: $e');
       }
     }
   }
@@ -100,7 +100,7 @@ class _V2PinDialogState extends State<V2PinDialog> {
   void _copyPin() {
     if (_pin != null && _pin!.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: _pin!));
-      AppSnackBar.info(context, 'PIN kopiran!');
+      V2AppSnackBar.info(context, 'PIN kopiran!');
     }
   }
 

@@ -10,8 +10,8 @@ import 'v2_admin_security_service.dart';
 import 'v2_notification_navigation_service.dart';
 import 'v2_vozac_service.dart';
 
-class RealtimeNotificationService {
-  RealtimeNotificationService._();
+class V2RealtimeNotificationService {
+  V2RealtimeNotificationService._();
 
   // Stream za in-app notifikacije
   static final StreamController<Map<String, dynamic>> _notificationStreamController =
@@ -57,7 +57,7 @@ class RealtimeNotificationService {
         return true;
       } else {
         // ?? UKLONJENO: Fallback na lokalnu notifikaciju (korisnik želi iskljucivo Supabase/Push)
-        // await LocalNotificationService.showRealtimeNotification(
+        // await V2LocalNotificationService.showRealtimeNotification(
         // title: title, body: body, payload: jsonEncode(data ?? {}));
         return false;
       }
@@ -151,12 +151,12 @@ class RealtimeNotificationService {
     }
   }
 
-  /// Inicijalizacija se vrsi u FirebaseService — ova metoda je no-op.
+  /// Inicijalizacija se vrsi u V2FirebaseService — ova metoda je no-op.
   static Future<void> initialize() async {}
 
   static bool _foregroundListenerRegistered = false;
 
-  /// DEPRECATED: Notifikacije se sada inicijalizuju globalno u FirebaseService/HuaweiPushService.
+  /// DEPRECATED: Notifikacije se sada inicijalizuju globalno u V2FirebaseService/V2HuaweiPushService.
   /// Ova metoda ne radi ništa kako bi se sprečili dupli listeneri.
   static void listenForForegroundNotifications() {
     if (_foregroundListenerRegistered) return;

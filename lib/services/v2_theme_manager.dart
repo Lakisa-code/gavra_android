@@ -4,12 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'v2_theme_registry.dart';
 
 // THEME MANAGER - Upravljanje trenutnom temom
-class ThemeManager extends ChangeNotifier {
-  factory ThemeManager() => _instance;
-  ThemeManager._internal() {
+class V2ThemeManager extends ChangeNotifier {
+  factory V2ThemeManager() => _instance;
+  V2ThemeManager._internal() {
     _currentTheme = V2ThemeRegistry.getTheme(_currentThemeId) ?? V2ThemeRegistry.defaultTheme;
   }
-  static final ThemeManager _instance = ThemeManager._internal();
+  static final V2ThemeManager _instance = V2ThemeManager._internal();
 
   static const String _themePrefsKey = 'selected_theme_id';
 
@@ -52,7 +52,7 @@ class ThemeManager extends ChangeNotifier {
         _currentTheme = defaultTheme;
       }
     } catch (e) {
-      debugPrint('[ThemeManager] Greška pri učitavanju teme, koristi default: $e');
+      debugPrint('[V2ThemeManager] Greška pri učitavanju teme, koristi default: $e');
       final defaultTheme = V2ThemeRegistry.defaultTheme;
       _currentThemeId = defaultTheme.id;
       _currentTheme = defaultTheme;
@@ -73,7 +73,7 @@ class ThemeManager extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themePrefsKey, themeId);
     } catch (e) {
-      debugPrint('[ThemeManager] Greška pri čuvanju teme: $e');
+      debugPrint('[V2ThemeManager] Greška pri čuvanju teme: $e');
     }
 
     _currentThemeId = themeId;

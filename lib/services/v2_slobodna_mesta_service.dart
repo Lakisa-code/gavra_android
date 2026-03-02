@@ -59,8 +59,8 @@ class V2SlobodnaMestaService {
   /// Izracunaj broj zauzetih mesta za odredeni grad/vreme/datum
   static int _countPutniciZaPolazak(List<V2Putnik> putnici, String grad, String vreme, String isoDate,
       {String? excludePutnikId}) {
-    final normalizedGrad = GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
-    final targetVreme = GradAdresaValidator.normalizeTime(vreme);
+    final normalizedGrad = V2GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
+    final targetVreme = V2GradAdresaValidator.normalizeTime(vreme);
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
@@ -78,7 +78,7 @@ class V2SlobodnaMestaService {
       if (!p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase())) continue;
 
       // Proveri vreme - OBA MORAJU BITI NORMALIZOVANA
-      final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+      final normVreme = V2GradAdresaValidator.normalizeTime(p.polazak);
       if (normVreme != targetVreme) continue;
 
       // Proveri grad
@@ -93,8 +93,8 @@ class V2SlobodnaMestaService {
 
   static int _countUceniciZaPolazak(List<V2Putnik> putnici, String grad, String vreme, String isoDate,
       {String? excludePutnikId}) {
-    final normalizedGrad = GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
-    final targetVreme = GradAdresaValidator.normalizeTime(vreme);
+    final normalizedGrad = V2GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
+    final targetVreme = V2GradAdresaValidator.normalizeTime(vreme);
     final targetDayAbbr = _isoDateToDayAbbr(isoDate);
 
     int count = 0;
@@ -113,7 +113,7 @@ class V2SlobodnaMestaService {
       if (!p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase())) continue;
 
       // Proveri vreme
-      final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+      final normVreme = V2GradAdresaValidator.normalizeTime(p.polazak);
       if (normVreme != targetVreme) continue;
 
       // Proveri grad
@@ -212,7 +212,7 @@ class V2SlobodnaMestaService {
     }
 
     // NORMALIZACIJA ULAZNOG VREMENA
-    final targetVreme = GradAdresaValidator.normalizeTime(vreme);
+    final targetVreme = V2GradAdresaValidator.normalizeTime(vreme);
 
     final slobodna = await getSlobodnaMesta(datum: datum, excludeId: excludeId);
     final lista = slobodna[grad.toUpperCase()];
@@ -220,7 +220,7 @@ class V2SlobodnaMestaService {
 
     for (final s in lista) {
       // NORMALIZACIJA VREMENA IZ LISTE (Kapacitet table moze imati "6:00" umesto "06:00")
-      final currentVreme = GradAdresaValidator.normalizeTime(s.vreme);
+      final currentVreme = V2GradAdresaValidator.normalizeTime(s.vreme);
       if (currentVreme == targetVreme) {
         return s.slobodna >= brojMesta;
       }

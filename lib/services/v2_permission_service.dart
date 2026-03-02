@@ -6,8 +6,8 @@ import '../globals.dart';
 import '../services/v2_theme_manager.dart';
 
 /// Centralizovani servis za sve dozvole
-class PermissionService {
-  PermissionService._();
+class V2PermissionService {
+  V2PermissionService._();
 
   /// Inicijalno zahtevanje svih dozvola (poziva se u main.dart)
   static Future<bool> requestAllPermissionsOnFirstLaunch(
@@ -343,7 +343,7 @@ class PermissionService {
 
       return allCriticalGranted;
     } catch (e) {
-      debugPrint('[PermissionService] requestAllPermissions error: $e');
+      debugPrint('[V2PermissionService] requestAllPermissions error: $e');
       return false;
     }
   }
@@ -358,7 +358,7 @@ class PermissionService {
 
       return permission != LocationPermission.denied && permission != LocationPermission.deniedForever;
     } catch (e) {
-      debugPrint('[PermissionService] _requestLocationPermission error: $e');
+      debugPrint('[V2PermissionService] _requestLocationPermission error: $e');
       return false;
     }
   }
@@ -373,7 +373,7 @@ class PermissionService {
           permission != LocationPermission.denied &&
           permission != LocationPermission.deniedForever;
     } catch (e) {
-      debugPrint('[PermissionService] _isLocationPermissionGranted error: $e');
+      debugPrint('[V2PermissionService] _isLocationPermissionGranted error: $e');
       return false;
     }
   }
@@ -527,7 +527,7 @@ class PermissionService {
           permission != LocationPermission.denied &&
           permission != LocationPermission.deniedForever;
     } catch (e) {
-      debugPrint('[PermissionService] ensureGpsForNavigation error: $e');
+      debugPrint('[V2PermissionService] ensureGpsForNavigation error: $e');
       return false;
     }
   }
@@ -548,15 +548,15 @@ class PermissionService {
 
       return result.isGranted || result.isLimited;
     } catch (e) {
-      debugPrint('[PermissionService] ensurePhonePermissionHuawei error: $e');
+      debugPrint('[V2PermissionService] ensurePhonePermissionHuawei error: $e');
       return true;
     }
   }
 
-  /// Safe gradient - fallback za startup kad ThemeManager nije inicijalizovan
+  /// Safe gradient - fallback za startup kad V2ThemeManager nije inicijalizovan
   static LinearGradient _getSafeGradient() {
     try {
-      return ThemeManager().currentGradient;
+      return V2ThemeManager().currentGradient;
     } catch (e) {
       return const LinearGradient(
         begin: Alignment.topLeft,

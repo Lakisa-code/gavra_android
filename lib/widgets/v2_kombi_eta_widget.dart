@@ -67,8 +67,8 @@ class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
   /// pre nego sto se RealtimeManager inicijalizovao).
   Future<void> _loadGpsData() async {
     try {
-      final normalizedGrad = GradAdresaValidator.normalizeGrad(widget.grad);
-      final normVreme = widget.vreme != null ? GradAdresaValidator.normalizeTime(widget.vreme!) : null;
+      final normalizedGrad = V2GradAdresaValidator.normalizeGrad(widget.grad);
+      final normVreme = widget.vreme != null ? V2GradAdresaValidator.normalizeTime(widget.vreme!) : null;
 
       // PRIMARNI PUT: citaj iz lokacijeCache (0 DB upita)
       final cacheValues = V2MasterRealtimeManager.instance.lokacijeCache.values.toList();
@@ -97,10 +97,10 @@ class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
 
       final filteredList = list.where((driver) {
         final driverGrad = (driver as Map<String, dynamic>)['grad'] as String? ?? '';
-        if (GradAdresaValidator.normalizeGrad(driverGrad) != normalizedGrad) return false;
+        if (V2GradAdresaValidator.normalizeGrad(driverGrad) != normalizedGrad) return false;
         if (normVreme != null) {
           final driverVreme = driver['vreme_polaska'] as String? ?? '';
-          if (GradAdresaValidator.normalizeTime(driverVreme) != normVreme) return false;
+          if (V2GradAdresaValidator.normalizeTime(driverVreme) != normVreme) return false;
         }
         return true;
       }).toList();
@@ -204,7 +204,7 @@ class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
     try {
       const dani = ['ned', 'pon', 'uto', 'sre', 'cet', 'pet', 'sub'];
       final danasKratica = dani[DateTime.now().weekday % 7];
-      final normVreme = widget.vreme != null ? GradAdresaValidator.normalizeTime(widget.vreme!) : null;
+      final normVreme = widget.vreme != null ? V2GradAdresaValidator.normalizeTime(widget.vreme!) : null;
 
       var query = supabase
           .from('v2_polasci')
@@ -215,7 +215,7 @@ class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
 
       // Filtriraj po gradu ako je poznat
       if (widget.grad.isNotEmpty) {
-        query = query.eq('grad', GradAdresaValidator.normalizeGrad(widget.grad));
+        query = query.eq('grad', V2GradAdresaValidator.normalizeGrad(widget.grad));
       }
       // Filtriraj po terminu polaska ako je poznat — sprečava lažni "pokupljen" iz druge vožnje
       if (normVreme != null) {

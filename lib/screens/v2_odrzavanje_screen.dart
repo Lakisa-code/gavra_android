@@ -558,7 +558,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
               Navigator.pop(context);
               if (success) {
                 _loadVozila();
-                AppSnackBar.success(context, '�o. Sačuvano');
+                V2AppSnackBar.success(context, '�o. Sačuvano');
               }
             },
             child: const Text('Sačuvaj'),
@@ -585,7 +585,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
       if (success) {
         _loadVozila();
         if (mounted) {
-          AppSnackBar.success(context, '�o. Sačuvano');
+          V2AppSnackBar.success(context, '�o. Sačuvano');
         }
       }
     }
@@ -700,7 +700,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
                         Navigator.pop(context);
                         if (success) {
                           _loadVozila();
-                          AppSnackBar.success(context, '�o. Sačuvano');
+                          V2AppSnackBar.success(context, '�o. Sačuvano');
                         }
                       },
                       icon: const Icon(Icons.save),
@@ -918,7 +918,7 @@ class _OdrzavanjeScreenState extends State<V2OdrzavanjeScreen> {
                         Navigator.pop(context);
                         if (success) {
                           _loadVozila();
-                          AppSnackBar.success(context, '�o. Sačuvano');
+                          V2AppSnackBar.success(context, '�o. Sačuvano');
                         }
                       },
                       icon: const Icon(Icons.save),

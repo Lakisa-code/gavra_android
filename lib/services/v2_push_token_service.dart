@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 
 /// Unificirani servis za registraciju push tokena.
-/// Zamenjuje dupliciranu logiku iz FirebaseService, HuaweiPushService i V2PutnikPushService.
+/// Zamenjuje dupliciranu logiku iz V2FirebaseService, V2HuaweiPushService i V2PutnikPushService.
 ///
 /// Svi tokeni (FCM i HMS, vozači i putnici) se registruju na isti način:
 /// - Direktan UPSERT u push_tokens tabelu

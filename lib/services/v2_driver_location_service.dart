@@ -77,7 +77,7 @@ class V2DriverLocationService {
 
     _currentVozacId = vozacId;
     _currentVozacIme = vozacIme;
-    _currentGrad = GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
+    _currentGrad = V2GradAdresaValidator.normalizeGrad(grad); // 'BC' ili 'VS'
     _currentVremePolaska = vremePolaska;
     _currentSmer = smer;
     _currentPutniciEta = putniciEta != null ? Map.from(putniciEta) : null;
@@ -196,7 +196,7 @@ class V2DriverLocationService {
   }
 
   Future<bool> _checkLocationPermission() async {
-    return await PermissionService.ensureGpsForNavigation();
+    return await V2PermissionService.ensureGpsForNavigation();
   }
 
   /// Prikaži ongoing notifikaciju u status baru

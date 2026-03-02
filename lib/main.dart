@@ -87,9 +87,9 @@ Future<void> _initPushSystems() async {
       debugPrint('[Main] Detected GMS (Google Play Services)');
       try {
         await Firebase.initializeApp().timeout(const Duration(seconds: 5));
-        await FirebaseService.initialize();
-        FirebaseService.setupFCMListeners();
-        unawaited(FirebaseService.initializeAndRegisterToken());
+        await V2FirebaseService.initialize();
+        V2FirebaseService.setupFCMListeners();
+        unawaited(V2FirebaseService.initializeAndRegisterToken());
         debugPrint('[Main] FCM initialized successfully');
       } catch (e) {
         debugPrint('[Main] FCM initialization failed: $e');
@@ -97,9 +97,9 @@ Future<void> _initPushSystems() async {
     } else {
       debugPrint('[Main] GMS not available, trying HMS (Huawei Mobile Services)');
       try {
-        final hmsToken = await HuaweiPushService().initialize().timeout(const Duration(seconds: 5));
+        final hmsToken = await V2HuaweiPushService().initialize().timeout(const Duration(seconds: 5));
         if (hmsToken != null) {
-          await HuaweiPushService().tryRegisterPendingToken();
+          await V2HuaweiPushService().tryRegisterPendingToken();
           debugPrint('[Main] HMS initialized successfully');
         } else {
           debugPrint('[Main] HMS initialization returned null token');
@@ -113,7 +113,7 @@ Future<void> _initPushSystems() async {
     // Try HMS as last resort
     try {
       debugPrint('[Main] Last resort: trying HMS');
-      await HuaweiPushService().initialize().timeout(const Duration(seconds: 2));
+      await V2HuaweiPushService().initialize().timeout(const Duration(seconds: 2));
     } catch (e2) {
       debugPrint('[Main] All push services failed: $e2');
     }
@@ -165,7 +165,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // When app is resumed, try registering pending tokens (if any)
     if (state == AppLifecycleState.resumed) {
       try {
-        HuaweiPushService().tryRegisterPendingToken();
+        V2HuaweiPushService().tryRegisterPendingToken();
       } catch (e) {
         debugPrint('[Main] HMS pending token registration failed: $e');
       }
@@ -176,8 +176,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     try {
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      // Inicijalizuj ThemeManager
-      await ThemeManager().initialize();
+      // Inicijalizuj V2ThemeManager
+      await V2ThemeManager().initialize();
     } catch (e) {
       debugPrint('[Main] App init failed: $e');
     }
@@ -186,7 +186,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<ThemeData>(
-      valueListenable: ThemeManager().themeNotifier,
+      valueListenable: V2ThemeManager().themeNotifier,
       builder: (context, themeData, child) {
         return MaterialApp(
           navigatorKey: navigatorKey,

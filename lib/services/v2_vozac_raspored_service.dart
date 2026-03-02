@@ -121,11 +121,11 @@ class V2VozacRasporedService {
 
     return sviPutnici.where((p) {
       final grad = getGrad(p).toUpperCase();
-      final vreme = GradAdresaValidator.normalizeTime(getPolazak(p));
+      final vreme = V2GradAdresaValidator.normalizeTime(getPolazak(p));
 
       final terminEntries = raspored
           .where((r) =>
-              r.dan == targetDan && r.grad.toUpperCase() == grad && GradAdresaValidator.normalizeTime(r.vreme) == vreme)
+              r.dan == targetDan && r.grad.toUpperCase() == grad && V2GradAdresaValidator.normalizeTime(r.vreme) == vreme)
           .toList();
 
       if (terminEntries.isEmpty) return true; // nema unosa → vidljivo svima

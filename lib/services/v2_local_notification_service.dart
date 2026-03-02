@@ -34,10 +34,10 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
   }
 
   // 2. Prosledi hendleru
-  await LocalNotificationService.handleNotificationTap(notificationResponse);
+  await V2LocalNotificationService.handleNotificationTap(notificationResponse);
 }
 
-class LocalNotificationService {
+class V2LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   static final Map<String, DateTime> _recentNotificationIds = {};
@@ -474,13 +474,13 @@ class LocalNotificationService {
         }
 
         if (bgColor == Colors.green) {
-          AppSnackBar.success(context, message);
+          V2AppSnackBar.success(context, message);
         } else if (bgColor == Colors.red) {
-          AppSnackBar.error(context, message);
+          V2AppSnackBar.error(context, message);
         } else if (bgColor == Colors.orange) {
-          AppSnackBar.warning(context, message);
+          V2AppSnackBar.warning(context, message);
         } else {
-          AppSnackBar.info(context, message);
+          V2AppSnackBar.info(context, message);
         }
       }
     } catch (e) {
@@ -529,7 +529,7 @@ class LocalNotificationService {
 
       if (polazak != null) {
         final gradRaw = polazak['grad']?.toString() ?? '';
-        final grad = GradAdresaValidator.normalizeGrad(gradRaw);
+        final grad = V2GradAdresaValidator.normalizeGrad(gradRaw);
         final zeljenoVremeStr = polazak['zeljeno_vreme']?.toString() ?? '';
         final vreme = zeljenoVremeStr.length >= 5 ? zeljenoVremeStr.substring(0, 5) : null;
 
@@ -611,7 +611,7 @@ class LocalNotificationService {
       }
 
       // Pošalji push notifikaciju putniku
-      await RealtimeNotificationService.sendNotificationToPutnik(
+      await V2RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ Mesto osigurano!',
         body: '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',
@@ -664,7 +664,7 @@ class LocalNotificationService {
       }
 
       // Pošalji push notifikaciju putniku
-      await RealtimeNotificationService.sendNotificationToPutnik(
+      await V2RealtimeNotificationService.sendNotificationToPutnik(
         putnikId: putnikId,
         title: '✅ [VS] Termin potvrđen',
         body: '✅ Mesto osigurano! Vaša rezervacija za $termin je potvrđena. Želimo vam ugodnu vožnju! 🚌',

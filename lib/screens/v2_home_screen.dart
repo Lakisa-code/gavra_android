@@ -78,22 +78,22 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
   List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
     if (navType == 'praznici') {
-      return RouteConfig.bcVremenaPraznici;
+      return V2RouteConfig.bcVremenaPraznici;
     } else if (navType == 'zimski') {
-      return RouteConfig.bcVremenaZimski;
+      return V2RouteConfig.bcVremenaZimski;
     } else {
-      return RouteConfig.bcVremenaLetnji;
+      return V2RouteConfig.bcVremenaLetnji;
     }
   }
 
   List<String> get vsVremena {
     final navType = navBarTypeNotifier.value;
     if (navType == 'praznici') {
-      return RouteConfig.vsVremenaPraznici;
+      return V2RouteConfig.vsVremenaPraznici;
     } else if (navType == 'zimski') {
-      return RouteConfig.vsVremenaZimski;
+      return V2RouteConfig.vsVremenaZimski;
     } else {
-      return RouteConfig.vsVremenaLetnji;
+      return V2RouteConfig.vsVremenaLetnji;
     }
   }
 
@@ -170,21 +170,21 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
 
       // Inicijalizuj lokalne notifikacije za heads-up i zvuk
       if (mounted) {
-        LocalNotificationService.initialize(context);
+        V2LocalNotificationService.initialize(context);
         // ?? UKLONJENO: listener se sada registruje globalno u main.dart
-        // RealtimeNotificationService.listenForForegroundNotifications(context);
+        // V2RealtimeNotificationService.listenForForegroundNotifications(context);
       }
 
       // ?? Auto-update removed per request
 
       // Inicijalizuj realtime notifikacije za aktivnog vozaca
-      FirebaseService.getCurrentDriver().then((driver) {
+      V2FirebaseService.getCurrentDriver().then((driver) {
         if (driver != null && driver.isNotEmpty) {
           // First request notification permissions
-          RealtimeNotificationService.requestNotificationPermissions().then((hasPermissions) {
-            RealtimeNotificationService.initialize().then((_) {
+          V2RealtimeNotificationService.requestNotificationPermissions().then((hasPermissions) {
+            V2RealtimeNotificationService.initialize().then((_) {
               // Subscribe to Firebase topics for this driver
-              RealtimeNotificationService.subscribeToDriverTopics(driver);
+              V2RealtimeNotificationService.subscribeToDriverTopics(driver);
             });
           });
         }
@@ -208,7 +208,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
   }
 
   Future<void> _initializeCurrentDriver() async {
-    final driver = await FirebaseService.getCurrentDriver();
+    final driver = await V2FirebaseService.getCurrentDriver();
 
     if (mounted) {
       setState(() {
@@ -308,7 +308,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
     if (!mounted) return;
 
     if (putnici.isEmpty) {
-      AppSnackBar.warning(context, 'Nema putnika kojima treba racun');
+      V2AppSnackBar.warning(context, 'Nema putnika kojima treba racun');
       return;
     }
 
@@ -648,7 +648,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                             }
 
                             if (racuniPodaci.isEmpty) {
-                              AppSnackBar.warning(context, 'Izaberite bar jednog putnika');
+                              V2AppSnackBar.warning(context, 'Izaberite bar jednog putnika');
                               return;
                             }
 
@@ -769,16 +769,16 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                 onPressed: () async {
                   // Validacija
                   if (imeController.text.trim().isEmpty) {
-                    AppSnackBar.warning(context, 'Unesite ime kupca');
+                    V2AppSnackBar.warning(context, 'Unesite ime kupca');
                     return;
                   }
                   if (opisController.text.trim().isEmpty) {
-                    AppSnackBar.warning(context, 'Unesite opis usluge');
+                    V2AppSnackBar.warning(context, 'Unesite opis usluge');
                     return;
                   }
                   final iznos = double.tryParse(iznosController.text.trim());
                   if (iznos == null || iznos <= 0) {
-                    AppSnackBar.warning(context, 'Unesite validan iznos');
+                    V2AppSnackBar.warning(context, 'Unesite validan iznos');
                     return;
                   }
 
@@ -900,7 +900,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
 
       // ?? IzVrsi logout
       try {
-        await AuthManager.logout(context);
+        await V2AuthManager.logout(context);
       } catch (e) {
         debugPrint('❌ Logout error: $e');
         // Ako logout fail, pokreni navigaciju rucno
@@ -1569,12 +1569,12 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                                   : () async {
                                       // Validacija - mora biti odabrani V2Putnik
                                       if (selectedPutnik == null) {
-                                        AppSnackBar.error(dialogCtx, '⚠️ Morate odabrati putnika iz liste');
+                                        V2AppSnackBar.error(dialogCtx, '⚠️ Morate odabrati putnika iz liste');
                                         return;
                                       }
 
                                       if (_selectedVreme.isEmpty || _selectedGrad.isEmpty) {
-                                        AppSnackBar.error(dialogCtx, '⚠️ Greška: Nije odabrano vreme polaska');
+                                        V2AppSnackBar.error(dialogCtx, '⚠️ Greška: Nije odabrano vreme polaska');
                                         return;
                                       }
 
@@ -1584,7 +1584,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                                             _currentDriver!.isEmpty ||
                                             !V2VozacCache.isValidIme(_currentDriver)) {
                                           if (!dialogCtx.mounted) return;
-                                          AppSnackBar.error(dialogCtx,
+                                          V2AppSnackBar.error(dialogCtx,
                                               '❌ GREŠKA: Vozac "$_currentDriver" nije registrovan. Molimo ponovo se ulogujte.');
                                           return;
                                         }
@@ -1601,7 +1601,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                                           );
                                           if (!imaMesta) {
                                             if (!dialogCtx.mounted) return;
-                                            AppSnackBar.error(dialogCtx,
+                                            V2AppSnackBar.error(dialogCtx,
                                                 '⚠️ Termin $_selectedVreme ($_selectedGrad) je PUN! Izaberite drugo vreme.');
                                             return;
                                           }
@@ -1673,7 +1673,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
 
                                         // ? Koristimo rootContext jer je dialog context vec pop-ovan
                                         if (rootContext.mounted) {
-                                          AppSnackBar.success(rootContext, '✅ Putnik je uspešno dodat');
+                                          V2AppSnackBar.success(rootContext, '✅ Putnik je uspešno dodat');
                                         }
                                       } catch (e) {
                                         // ensure dialog loading is cleared
@@ -1683,7 +1683,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
 
                                         if (!dialogCtx.mounted) return;
 
-                                        AppSnackBar.error(dialogCtx, '❌ Greška pri dodavanju: $e');
+                                        V2AppSnackBar.error(dialogCtx, '❌ Greška pri dodavanju: $e');
                                       }
                                     },
                               child: isDialogLoading
@@ -1880,7 +1880,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
           ),
           body: Container(
             decoration: BoxDecoration(
-              gradient: ThemeManager().currentGradient, // ?? Dinamicki gradijent iz tema
+              gradient: V2ThemeManager().currentGradient, // ?? Dinamicki gradijent iz tema
             ),
             child: V2ShimmerWidgets.putnikListShimmer(itemCount: 8),
           ),
@@ -1981,16 +1981,16 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
             final imaGrad = v2Putnik.grad.toString().trim().isNotEmpty;
             final imaDan = v2Putnik.dan.toString().trim().isNotEmpty;
             final danBaza = _selectedDay;
-            final normalizedPutnikDan = GradAdresaValidator.normalizeString(v2Putnik.dan);
-            final normalizedDanBaza = GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
+            final normalizedPutnikDan = V2GradAdresaValidator.normalizeString(v2Putnik.dan);
+            final normalizedDanBaza = V2GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
             final odgovarajuciDan = normalizedPutnikDan.contains(normalizedDanBaza);
-            final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
+            final odgovarajuciGrad = V2GradAdresaValidator.isGradMatch(
               v2Putnik.grad,
               v2Putnik.adresa,
               _selectedGrad,
             );
-            final odgovarajuceVreme = GradAdresaValidator.normalizeTime(v2Putnik.polazak) ==
-                GradAdresaValidator.normalizeTime(_selectedVreme);
+            final odgovarajuceVreme = V2GradAdresaValidator.normalizeTime(v2Putnik.polazak) ==
+                V2GradAdresaValidator.normalizeTime(_selectedVreme);
             // Iskljuci bez_polaska i obrada - admin ih je eksplicitno uklonio
             // Otkazani ostaju u listi - prikazuju se crveni na dnu
             final prikazi = imaVreme &&
@@ -2047,7 +2047,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
 
           return Container(
             decoration: BoxDecoration(
-              gradient: ThemeManager().currentGradient, // Dinamicki gradijent iz tema
+              gradient: V2ThemeManager().currentGradient, // Dinamicki gradijent iz tema
             ),
             child: Scaffold(
               backgroundColor: Colors.transparent, // Transparentna pozadina
@@ -2163,7 +2163,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                                 flex: 25,
                                 child: InkWell(
                                   onTap: () async {
-                                    await ThemeManager().nextTheme();
+                                    await V2ThemeManager().nextTheme();
                                     if (mounted) setState(() {});
                                   },
                                   borderRadius: BorderRadius.circular(12),
@@ -2482,7 +2482,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                               if (value == 'logout') {
                                 _logout();
                               } else if (value == 'sifra') {
-                                final vozac = await AuthManager.getCurrentDriver();
+                                final vozac = await V2AuthManager.getCurrentDriver();
                                 if (!mounted || vozac == null) return;
                                 if (context.mounted) {
                                   Navigator.push(

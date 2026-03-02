@@ -41,10 +41,10 @@ class _ONamaScreenState extends State<V2ONamaScreen> {
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     // HUAWEI KOMPATIBILNO - koristi centralizovanu proveru dozvola
-    final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
+    final hasPermission = await V2PermissionService.ensurePhonePermissionHuawei();
     if (!hasPermission) {
       if (mounted) {
-        AppSnackBar.error(context, 'Dozvola za pozive je potrebna');
+        V2AppSnackBar.error(context, 'Dozvola za pozive je potrebna');
       }
       return;
     }
@@ -77,7 +77,7 @@ class _ONamaScreenState extends State<V2ONamaScreen> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: ThemeManager().currentGradient,
+        gradient: V2ThemeManager().currentGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,

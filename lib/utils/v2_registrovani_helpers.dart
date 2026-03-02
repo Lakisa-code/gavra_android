@@ -5,9 +5,9 @@ enum V2RegistrovaniStatus { active, canceled, vacation, unknown }
 class V2RegistrovaniHelpers {
   V2RegistrovaniHelpers._();
 
-  // Normalize time using GradAdresaValidator for consistency across the app
+  // Normalize time using V2GradAdresaValidator for consistency across the app
   static String? normalizeTime(String? raw) {
-    return GradAdresaValidator.normalizeTime(raw);
+    return V2GradAdresaValidator.normalizeTime(raw);
   }
 
   // SSOT: Polasci po danu se sada čuvaju ISKLJUČIVO u v2_polasci tabeli.

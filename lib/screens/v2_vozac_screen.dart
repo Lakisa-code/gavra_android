@@ -126,22 +126,22 @@ class _VozacScreenState extends State<V2VozacScreen> {
   List<String> get _bcVremena {
     final navType = navBarTypeNotifier.value;
     if (navType == 'praznici') {
-      return RouteConfig.bcVremenaPraznici;
+      return V2RouteConfig.bcVremenaPraznici;
     } else if (navType == 'zimski') {
-      return RouteConfig.bcVremenaZimski;
+      return V2RouteConfig.bcVremenaZimski;
     } else {
-      return RouteConfig.bcVremenaLetnji;
+      return V2RouteConfig.bcVremenaLetnji;
     }
   }
 
   List<String> get _vsVremena {
     final navType = navBarTypeNotifier.value;
     if (navType == 'praznici') {
-      return RouteConfig.vsVremenaPraznici;
+      return V2RouteConfig.vsVremenaPraznici;
     } else if (navType == 'zimski') {
-      return RouteConfig.vsVremenaZimski;
+      return V2RouteConfig.vsVremenaZimski;
     } else {
-      return RouteConfig.vsVremenaLetnji;
+      return V2RouteConfig.vsVremenaLetnji;
     }
   }
 
@@ -226,11 +226,11 @@ class _VozacScreenState extends State<V2VozacScreen> {
   // ?? INICIJALIZACIJA NOTIFIKACIJA - IDENTICNO KAO DANAS SCREEN
   void _initializeNotifications() {
     // Inicijalizuj heads-up i zvuk notifikacije
-    LocalNotificationService.initialize(context);
+    V2LocalNotificationService.initialize(context);
 
     // ? LISTEN ZA IN-APP DOGAĐAJE (Automatski Popis)
     _notificationSubscription?.cancel();
-    _notificationSubscription = RealtimeNotificationService.notificationStream.listen((data) {
+    _notificationSubscription = V2RealtimeNotificationService.notificationStream.listen((data) {
       if (data['type'] == 'automated_popis' && mounted) {
         var stats = data['stats'];
         if (stats != null) {
@@ -250,9 +250,9 @@ class _VozacScreenState extends State<V2VozacScreen> {
     });
 
     // Inicijalizuj realtime notifikacije za vozaca
-    FirebaseService.getCurrentDriver().then((driver) {
+    V2FirebaseService.getCurrentDriver().then((driver) {
       if (driver != null && driver.isNotEmpty) {
-        RealtimeNotificationService.initialize();
+        V2RealtimeNotificationService.initialize();
       }
     });
   }
@@ -268,7 +268,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
       return;
     }
 
-    _currentDriver = await FirebaseService.getCurrentDriver();
+    _currentDriver = await V2FirebaseService.getCurrentDriver();
 
     if (mounted) {
       setState(() {});
@@ -344,7 +344,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
   }
 
   Future<void> _logout() async {
-    await AuthManager.logout(context);
+    await V2AuthManager.logout(context);
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -385,7 +385,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
         setState(() {
           _optimizedRoute = pokupljeniIOtkazani; // ? ZADR?I pokupljene u listi
         });
-        AppSnackBar.success(context, '✅ Svi putnici su pokupljeni!');
+        V2AppSnackBar.success(context, '✅ Svi putnici su pokupljeni!');
       }
       return;
     }
@@ -412,7 +412,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
           if (!mounted) return;
 
           final sledeci = result.optimizedPutnici!.isNotEmpty ? result.optimizedPutnici!.first.ime : 'N/A';
-          AppSnackBar.info(context, '🔄 Ruta ažurirana! Sledeci: $sledeci (${preostaliPutnici.length} preostalo)');
+          V2AppSnackBar.info(context, '🔄 Ruta ažurirana! Sledeci: $sledeci (${preostaliPutnici.length} preostalo)');
         }
       }
     } catch (e) {
@@ -425,7 +425,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
     // Proveri da li je ulogovan i valjan vozac
     if (_currentDriver == null || !V2VozacCache.isValidIme(_currentDriver)) {
       if (mounted) {
-        AppSnackBar.warning(context, 'Morate biti ulogovani i ovlašceni da biste koristili optimizaciju rute.');
+        V2AppSnackBar.warning(context, 'Morate biti ulogovani i ovlašceni da biste koristili optimizaciju rute.');
       }
       return;
     }
@@ -441,7 +441,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
       if (putnici.isEmpty) {
         if (mounted) {
           setState(() => _isOptimizing = false);
-          AppSnackBar.warning(context, '⚠️ Nema putnika sa adresama za reorder');
+          V2AppSnackBar.warning(context, '⚠️ Nema putnika sa adresama za reorder');
         }
         return;
       }
@@ -457,7 +457,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
       final routeString = _optimizedRoute.take(3).map((p) => p.adresa?.split(',').first ?? p.ime).join(' → ');
 
       if (mounted) {
-        AppSnackBar.success(context,
+        V2AppSnackBar.success(context,
             '✅ Lista putnika optimizovana (server) za $_selectedGrad $_selectedVreme!\n➡️ Sledeci: $routeString${_optimizedRoute.length > 3 ? "..." : ""}');
       }
       return;
@@ -483,7 +483,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
         setState(() {
           _isOptimizing = false;
         });
-        AppSnackBar.warning(context, '⚠️ Nema putnika sa adresama za optimizaciju');
+        V2AppSnackBar.warning(context, '⚠️ Nema putnika sa adresama za optimizaciju');
       }
       return;
     }
@@ -523,7 +523,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
         final hasSkipped = skipped != null && skipped.isNotEmpty;
 
         if (mounted) {
-          AppSnackBar.success(context, '✅ RUTA OPTIMIZOVANA za $_selectedGrad $_selectedVreme!');
+          V2AppSnackBar.success(context, '✅ RUTA OPTIMIZOVANA za $_selectedGrad $_selectedVreme!');
 
           // ? OPTIMIZACIJA 3: Zameni blokirajuci AlertDialog sa Snackbar-om
           // Korisnik vidi notifikaciju ali NIJE BLOKIRAN da nastavi sa akcijama
@@ -533,7 +533,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
               final skippedNames = skipped.take(5).map((p) => p.ime).join(', ');
               final moreText = skipped.length > 5 ? ' +${skipped.length - 5} više' : '';
 
-              AppSnackBar.warning(context, '⚠️ ${skipped.length} putnika BEZ adrese: $skippedNames$moreText');
+              V2AppSnackBar.warning(context, '⚠️ ${skipped.length} putnika BEZ adrese: $skippedNames$moreText');
             }
           }
         }
@@ -544,7 +544,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
             _isOptimizing = false;
             // NE postavljaj _isRouteOptimized = true jer ruta NIJE optimizovana!
           });
-          AppSnackBar.error(context, '❌ Optimizacija neuspešna: ${result.message}');
+          V2AppSnackBar.error(context, '❌ Optimizacija neuspešna: ${result.message}');
         }
       }
     } catch (e) {
@@ -554,7 +554,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
           _isRouteOptimized = false;
           _isListReordered = false;
         });
-        AppSnackBar.error(context, '❌ Greška pri optimizaciji: $e');
+        V2AppSnackBar.error(context, '❌ Greška pri optimizaciji: $e');
       }
     }
   }
@@ -562,9 +562,9 @@ class _VozacScreenState extends State<V2VozacScreen> {
   // DUGME ZA GPS TRACKING / OPTIMIZACIJU
   // Prima listu putnika direktno iz glavnog streama - nema duplog streama
   Widget _buildOptimizeButton(List<V2Putnik> mojiAktivniPutnici) {
-    final normFilterTime = GradAdresaValidator.normalizeTime(_selectedVreme);
+    final normFilterTime = V2GradAdresaValidator.normalizeTime(_selectedVreme);
     final filtriraniPutnici = mojiAktivniPutnici.where((p) {
-      final pTime = GradAdresaValidator.normalizeTime(p.polazak);
+      final pTime = V2GradAdresaValidator.normalizeTime(p.polazak);
       if (pTime != normFilterTime) return false;
       if (p.jeOtkazan || p.jeBezPolaska || p.jePokupljen || p.jeOdsustvo) return false;
       if (!V2TextUtils.isStatusActive(p.status)) return false;
@@ -748,21 +748,21 @@ class _VozacScreenState extends State<V2VozacScreen> {
             setState(() {
               _isGpsTracking = false;
             });
-            AppSnackBar.success(context, '✅ Svi putnici pokupljeni! Tracking automatski zaustavljen.');
+            V2AppSnackBar.success(context, '✅ Svi putnici pokupljeni! Tracking automatski zaustavljen.');
           }
         },
       );
 
       if (mounted) {
         setState(() => _isGpsTracking = true);
-        AppSnackBar.success(context, '📍 GPS tracking pokrenut! Putnici dobijaju realtime lokaciju.');
+        V2AppSnackBar.success(context, '📍 GPS tracking pokrenut! Putnici dobijaju realtime lokaciju.');
       }
 
       // Pošalji push notifikacije putnicima - vozac krenuo + ETA
       _sendVozacKrenulNotifikacije();
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, '❌ Greška pri pokretanju GPS trackinga: $e');
+        V2AppSnackBar.error(context, '❌ Greška pri pokretanju GPS trackinga: $e');
       }
     }
   }
@@ -775,7 +775,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
       setState(() {
         _isGpsTracking = false;
       });
-      AppSnackBar.warning(context, '⚠️ GPS tracking zaustavljen');
+      V2AppSnackBar.warning(context, '⚠️ GPS tracking zaustavljen');
     }
   }
 
@@ -797,7 +797,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
       final etaTekst = etaMinuta != null ? 'Dolazak za oko $etaMinuta min.' : 'Vozac je krenuo po vas!';
 
       futures.add(
-        RealtimeNotificationService.sendNotificationToPutnik(
+        V2RealtimeNotificationService.sendNotificationToPutnik(
           putnikId: putnikId,
           title: '🚌 $_currentDriver krece!',
           body: etaTekst,
@@ -829,16 +829,16 @@ class _VozacScreenState extends State<V2VozacScreen> {
 
       if (result.success) {
         if (mounted) {
-          AppSnackBar.success(context, '✅ ${result.message}');
+          V2AppSnackBar.success(context, '✅ ${result.message}');
         }
       } else {
         if (mounted) {
-          AppSnackBar.error(context, '❌ ${result.message}');
+          V2AppSnackBar.error(context, '❌ ${result.message}');
         }
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, '❌ Greška pri otvaranju navigacije: $e');
+        V2AppSnackBar.error(context, '❌ Greška pri otvaranju navigacije: $e');
       }
     }
   }
@@ -847,7 +847,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: ThemeManager().currentGradient,
+        gradient: V2ThemeManager().currentGradient,
       ),
       child: StreamBuilder<List<V2Putnik>>(
         // ?? EGRESS OPT: JEDAN stream ž body i nav bar koriste iste podatke
@@ -991,12 +991,12 @@ class _VozacScreenState extends State<V2VozacScreen> {
                     final filteredByGradVreme = mojiPutnici.where((p) {
                       // Filter po gradu
                       final gradMatch =
-                          _selectedGrad.isEmpty || GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
+                          _selectedGrad.isEmpty || V2GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
 
                       // Filter po vremenu
                       final vremeMatch = _selectedVreme.isEmpty ||
-                          GradAdresaValidator.normalizeTime(p.polazak) ==
-                              GradAdresaValidator.normalizeTime(_selectedVreme);
+                          V2GradAdresaValidator.normalizeTime(p.polazak) ==
+                              V2GradAdresaValidator.normalizeTime(_selectedVreme);
 
                       // Sakrij putnike u obradi
                       final isObrada = p.status?.toLowerCase() == 'obrada';

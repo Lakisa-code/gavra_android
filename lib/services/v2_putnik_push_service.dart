@@ -20,14 +20,14 @@ class V2PutnikPushService {
       String? provider;
 
       // Prvo pokusaj FCM (GMS uredjaji)
-      token = await FirebaseService.getFCMToken();
+      token = await V2FirebaseService.getFCMToken();
       if (token != null && token.isNotEmpty) {
         provider = 'fcm';
         debugPrint('[PutnikPush] FCM token dobijen: ${token.substring(0, token.length.clamp(0, 20))}...');
       } else {
         debugPrint('[PutnikPush] FCM token nije dostupan, pokusavam HMS...');
         // Fallback na HMS (Huawei uredjaji)
-        token = await HuaweiPushService().initialize();
+        token = await V2HuaweiPushService().initialize();
         if (token != null && token.isNotEmpty) {
           provider = 'huawei';
           debugPrint('[PutnikPush] HMS token dobijen: ${token.substring(0, token.length.clamp(0, 20))}...');

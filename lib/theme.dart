@@ -350,7 +350,7 @@ const ColorScheme darkPinkColorScheme = ColorScheme(
 
 // TEMA EKSTENZIJA - dodaje gradijent pozadinu
 extension ThemeGradients on ThemeData {
-  LinearGradient get backgroundGradient => ThemeManager().currentGradient;
+  LinearGradient get backgroundGradient => V2ThemeManager().currentGradient;
 
   // Glassmorphism kontejner boje
   Color get glassContainer => Colors.transparent;

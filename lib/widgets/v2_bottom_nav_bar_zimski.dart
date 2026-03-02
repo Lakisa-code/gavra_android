@@ -63,8 +63,8 @@ class _BottomNavBarZimskiState extends State<V2BottomNavBarZimski> {
     const double itemWidth = 60.0; // width + margin
 
     // Koristi prosleđena vremena ili fallback na Zimski raspored
-    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaZimski;
-    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaZimski;
+    final bcVremena = widget.bcVremena ?? V2RouteConfig.bcVremenaZimski;
+    final vsVremena = widget.vsVremena ?? V2RouteConfig.vsVremenaZimski;
 
     if (widget.selectedGrad == 'BC') {
       final index = bcVremena.indexOf(widget.selectedVreme);
@@ -99,9 +99,9 @@ class _BottomNavBarZimskiState extends State<V2BottomNavBarZimski> {
   @override
   Widget build(BuildContext context) {
     // Koristi prosleđena vremena ili fallback na Zimski raspored
-    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaZimski;
-    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaZimski;
-    final currentThemeId = ThemeManager().currentThemeId;
+    final bcVremena = widget.bcVremena ?? V2RouteConfig.bcVremenaZimski;
+    final vsVremena = widget.vsVremena ?? V2RouteConfig.vsVremenaZimski;
+    final currentThemeId = V2ThemeManager().currentThemeId;
 
     return Container(
       decoration: BoxDecoration(

@@ -104,7 +104,7 @@ class _PromenaSifreScreenState extends State<V2PromenaSifreScreen> {
 
       if (!mounted) return;
 
-      AppSnackBar.success(context, 'Šifra uspešno promenjena!');
+      V2AppSnackBar.success(context, 'Šifra uspešno promenjena!');
 
       Navigator.pop(context);
     } catch (e) {
@@ -116,7 +116,7 @@ class _PromenaSifreScreenState extends State<V2PromenaSifreScreen> {
 
   void _showError(String message) {
     if (mounted) {
-      AppSnackBar.error(context, message);
+      V2AppSnackBar.error(context, message);
     }
   }
 

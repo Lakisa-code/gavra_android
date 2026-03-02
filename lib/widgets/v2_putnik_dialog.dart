@@ -741,7 +741,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () {
               if (_firmaNazivController.text.trim().isEmpty || _firmaPibController.text.trim().isEmpty) {
-                AppSnackBar.warning(dialogContext, 'Unesite naziv firme i PIB');
+                V2AppSnackBar.warning(dialogContext, 'Unesite naziv firme i PIB');
                 return;
               }
               Navigator.pop(dialogContext);
@@ -1110,7 +1110,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
                   final contacts = await FlutterContacts.getContacts(withProperties: true);
                   if (contacts.isEmpty) {
                     if (mounted) {
-                      AppSnackBar.warning(context, 'Nema kontakata u imeniku');
+                      V2AppSnackBar.warning(context, 'Nema kontakata u imeniku');
                     }
                     return;
                   }
@@ -1132,7 +1132,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
 
                     if (contacts.isEmpty) {
                       if (mounted) {
-                        AppSnackBar.warning(context, 'Nema kontakata u imeniku');
+                        V2AppSnackBar.warning(context, 'Nema kontakata u imeniku');
                       }
                       return;
                     }
@@ -1143,13 +1143,13 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
                     }
                   } else {
                     if (mounted) {
-                      AppSnackBar.warning(context, 'Dozvola za pristup kontaktima je odbijena');
+                      V2AppSnackBar.warning(context, 'Dozvola za pristup kontaktima je odbijena');
                     }
                   }
                 }
               } catch (e) {
                 if (mounted) {
-                  AppSnackBar.error(context, 'Greška pri izboru kontakta: $e');
+                  V2AppSnackBar.error(context, 'Greška pri izboru kontakta: $e');
                 }
               }
             },
@@ -1343,7 +1343,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
   Future<void> _savePutnik() async {
     final validationError = _validateForm();
     if (validationError != null) {
-      AppSnackBar.warning(context, validationError);
+      V2AppSnackBar.warning(context, validationError);
       return;
     }
 
@@ -1354,7 +1354,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       final duplicateError = await _checkDuplicatePhone();
       if (duplicateError != null) {
         if (mounted) {
-          AppSnackBar.warning(context, duplicateError);
+          V2AppSnackBar.warning(context, duplicateError);
         }
         setState(() => _isLoading = false);
         return;
@@ -1394,7 +1394,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         Navigator.of(context).pop();
         if (widget.onSaved != null) widget.onSaved!();
         if (parentContext.mounted) {
-          AppSnackBar.success(parentContext, '✅ V2Putnik uspešno sacuvan!');
+          V2AppSnackBar.success(parentContext, '✅ V2Putnik uspešno sacuvan!');
         }
       }
     } catch (e) {
@@ -1415,7 +1415,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
         if (errorMsg.contains('Exception:')) {
           errorMsg = errorMsg.split('Exception:').last.trim();
         }
-        AppSnackBar.error(context, 'Greška: $errorMsg');
+        V2AppSnackBar.error(context, 'Greška: $errorMsg');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

@@ -78,7 +78,7 @@ class _VozacLoginScreenState extends State<V2VozacLoginScreen> {
 
     if (savedData == null) {
       if (mounted) {
-        AppSnackBar.warning(context, '❌ Nema sačuvanih kredencijala. Prijavi se prvo ručno.');
+        V2AppSnackBar.warning(context, '❌ Nema sačuvanih kredencijala. Prijavi se prvo ručno.');
       }
       return;
     }
@@ -89,7 +89,7 @@ class _VozacLoginScreenState extends State<V2VozacLoginScreen> {
 
     if (!authenticated) {
       if (mounted) {
-        AppSnackBar.error(context, '❌ Biometrijska autentifikacija nije uspela');
+        V2AppSnackBar.error(context, '❌ Biometrijska autentifikacija nije uspela');
       }
       return;
     }
@@ -225,10 +225,10 @@ class _VozacLoginScreenState extends State<V2VozacLoginScreen> {
       }
 
       // SVE OK - LOGIN USPEŠAN
-      await AuthManager.setCurrentDriver(widget.vozacIme);
+      await V2AuthManager.setCurrentDriver(widget.vozacIme);
 
       // Zapamti uređaj
-      await AuthManager.rememberDevice(email, widget.vozacIme);
+      await V2AuthManager.rememberDevice(email, widget.vozacIme);
 
       // Sačuvaj za biometriju
       if (saveBiometric && _biometricAvailable) {
@@ -274,13 +274,13 @@ class _VozacLoginScreenState extends State<V2VozacLoginScreen> {
   void _showError(String message) {
     setState(() => _isLoading = false);
     if (mounted) {
-      AppSnackBar.error(context, message);
+      V2AppSnackBar.error(context, message);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = ThemeManager();
+    final themeManager = V2ThemeManager();
     final currentTheme = themeManager.currentTheme;
     final isDark = currentTheme.colorScheme.brightness == Brightness.dark;
 

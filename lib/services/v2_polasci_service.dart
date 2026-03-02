@@ -37,8 +37,8 @@ class V2PolasciService {
     String? putnikTabela, // v2_radnici / v2_ucenici / v2_dnevni / v2_posiljke
   }) async {
     try {
-      final gradKey = GradAdresaValidator.normalizeGrad(grad);
-      final normVreme = GradAdresaValidator.normalizeTime(vreme);
+      final gradKey = V2GradAdresaValidator.normalizeGrad(grad);
+      final normVreme = V2GradAdresaValidator.normalizeTime(vreme);
       final danKey = dan.toLowerCase();
       final nowStr = DateTime.now().toUtc().toIso8601String();
       final status = isAdmin ? 'odobreno' : 'obrada';
@@ -227,7 +227,7 @@ class V2PolasciService {
     required String dan,
   }) async {
     try {
-      final gradKey = GradAdresaValidator.normalizeGrad(grad);
+      final gradKey = V2GradAdresaValidator.normalizeGrad(grad);
       final danKey = dan.toLowerCase();
       final nowStr = DateTime.now().toUtc().toIso8601String();
 
@@ -551,16 +551,16 @@ class V2PutnikStreamService {
     }
 
     final sviPutnici = await getPutniciByDayIso(todayDate);
-    final gradNorm = grad == null ? null : GradAdresaValidator.normalizeGrad(grad).toUpperCase();
-    final vremeNorm = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
+    final gradNorm = grad == null ? null : V2GradAdresaValidator.normalizeGrad(grad).toUpperCase();
+    final vremeNorm = vreme != null ? V2GradAdresaValidator.normalizeTime(vreme) : null;
     final danKratica = _isoToDanKratica(todayDate);
 
     return sviPutnici.where((p) {
       if (gradNorm != null) {
-        if (GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() != gradNorm) return false;
+        if (V2GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() != gradNorm) return false;
       }
       if (vremeNorm != null) {
-        if (GradAdresaValidator.normalizeTime(p.polazak) != vremeNorm) return false;
+        if (V2GradAdresaValidator.normalizeTime(p.polazak) != vremeNorm) return false;
       }
       if (vozacId != null) {
         final putnikIdStr = p.id?.toString() ?? '';
@@ -568,9 +568,9 @@ class V2PutnikStreamService {
             .where((vp) =>
                 vp['putnik_id']?.toString() == putnikIdStr &&
                 vp['dan']?.toString() == danKratica &&
-                vp['grad']?.toString().toUpperCase() == GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() &&
-                GradAdresaValidator.normalizeTime(vp['vreme']?.toString()) ==
-                    GradAdresaValidator.normalizeTime(p.polazak))
+                vp['grad']?.toString().toUpperCase() == V2GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() &&
+                V2GradAdresaValidator.normalizeTime(vp['vreme']?.toString()) ==
+                    V2GradAdresaValidator.normalizeTime(p.polazak))
             .toList();
         if (individualnaDodjela.isNotEmpty) {
           return individualnaDodjela.any((vp) => vp['vozac_id']?.toString() == vozacId);
@@ -578,8 +578,8 @@ class V2PutnikStreamService {
         final rasporedZaTermin = rm.rasporedCache.values
             .where((vr) =>
                 vr['dan']?.toString() == danKratica &&
-                vr['grad']?.toString().toUpperCase() == GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() &&
-                vr['vreme']?.toString() == GradAdresaValidator.normalizeTime(p.polazak))
+                vr['grad']?.toString().toUpperCase() == V2GradAdresaValidator.normalizeGrad(p.grad).toUpperCase() &&
+                vr['vreme']?.toString() == V2GradAdresaValidator.normalizeTime(p.polazak))
             .toList();
         if (rasporedZaTermin.isEmpty) return false;
         return rasporedZaTermin.any((vr) => vr['vozac_id']?.toString() == vozacId);
@@ -747,8 +747,8 @@ class V2PutnikStreamService {
           if (driver != null) 'pokupio': driver,
         }).eq('id', requestId);
       } else {
-        final gradKey = grad != null ? GradAdresaValidator.normalizeGrad(grad) : null;
-        final vremeKey = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
+        final gradKey = grad != null ? V2GradAdresaValidator.normalizeGrad(grad) : null;
+        final vremeKey = vreme != null ? V2GradAdresaValidator.normalizeTime(vreme) : null;
         String? danKey;
         try {
           final dt = DateTime.parse(targetDatum);
@@ -905,8 +905,8 @@ class V2PutnikStreamService {
       danKey = dani[DateTime.now().weekday - 1];
     }
 
-    final gradKey = GradAdresaValidator.normalizeGrad(finalGrad);
-    final normalizedTime = GradAdresaValidator.normalizeTime(finalVreme);
+    final gradKey = V2GradAdresaValidator.normalizeGrad(finalGrad);
+    final normalizedTime = V2GradAdresaValidator.normalizeTime(finalVreme);
 
     try {
       if (normalizedTime.isNotEmpty) {
@@ -984,7 +984,7 @@ class V2PutnikStreamService {
     required String vreme,
   }) async {
     try {
-      final gradKey = GradAdresaValidator.normalizeGrad(grad);
+      final gradKey = V2GradAdresaValidator.normalizeGrad(grad);
       const _danMap = {
         'ponedeljak': 'pon',
         'utorak': 'uto',
@@ -1004,7 +1004,7 @@ class V2PutnikStreamService {
       }).match({'dan': danKey}).inFilter('status', ['odobreno', 'obrada']).eq('grad', gradKey);
 
       if (vreme.isNotEmpty && vreme != 'Sva vremena') {
-        query = query.eq('zeljeno_vreme', GradAdresaValidator.normalizeTime(vreme));
+        query = query.eq('zeljeno_vreme', V2GradAdresaValidator.normalizeTime(vreme));
       }
 
       final res = await query.select('id');

@@ -182,7 +182,7 @@ class V2VozacPutnikService {
       final id = getId(p);
       final grad = getGrad(p);
       // Normalizuj vreme za konzistentno poređenje ('07:00:00' → '07:00')
-      final vreme = GradAdresaValidator.normalizeTime(getPolazak(p));
+      final vreme = V2GradAdresaValidator.normalizeTime(getPolazak(p));
 
       // 1. Provjeri per-V2Putnik individualnu dodjelu
       final putnikDodjele = individualneDodjele
@@ -190,7 +190,7 @@ class V2VozacPutnikService {
               e.putnikId == id &&
               e.dan == targetDan &&
               e.grad.toUpperCase() == grad.toUpperCase() &&
-              GradAdresaValidator.normalizeTime(e.vreme) == vreme)
+              V2GradAdresaValidator.normalizeTime(e.vreme) == vreme)
           .toList();
       if (putnikDodjele.isNotEmpty) {
         // Individualna dodjela postoji za ovaj dan+grad+vreme — prikaži samo ako je dodeljen MENI
@@ -202,7 +202,7 @@ class V2VozacPutnikService {
           .where((r) =>
               r.dan == targetDan &&
               r.grad.toUpperCase() == grad.toUpperCase() &&
-              GradAdresaValidator.normalizeTime(r.vreme) == vreme)
+              V2GradAdresaValidator.normalizeTime(r.vreme) == vreme)
           .toList();
       if (terminEntries.isEmpty) return true; // nema rasporeda za termin → vidljivo svima
       return terminEntries.any(jeTerminVozacov);
