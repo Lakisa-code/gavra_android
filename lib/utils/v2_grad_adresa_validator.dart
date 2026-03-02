@@ -1,5 +1,4 @@
 import 'v2_text_utils.dart';
-import 'v2_time_validator.dart';
 
 /// UTIL ZA VALIDACIJU GRADOVA I ADRESA
 /// Ogranicava aplikaciju na opštine Bela Crkva i Vrsac
@@ -69,12 +68,19 @@ class GradAdresaValidator {
   /// NORMALIZUJ VREME - konvertuj "05:00:00" ili "5:00" u "05:00" (HH:MM format)
   /// Delegira na TimeValidator.normalizeTimeFormat() za konzistentnost
   static String normalizeTime(String? time) {
-    if (time == null || time.isEmpty) {
-      return '';
+    if (time == null || time.isEmpty) return '';
+    final t = time.trim();
+    // HH:MM:SS -> HH:MM
+    final parts = t.split(':');
+    if (parts.length >= 2) {
+      final h = parts[0].padLeft(2, '0');
+      final m = parts[1].padLeft(2, '0');
+      return '$h:$m';
     }
-
-    // Koristi TimeValidator za standardizovan format
-    final normalized = TimeValidator.normalizeTimeFormat(time);
-    return normalized ?? '';
+    // Samo sati
+    if (parts.length == 1 && int.tryParse(parts[0]) != null) {
+      return '${parts[0].padLeft(2, '0')}:00';
+    }
+    return t;
   }
 }

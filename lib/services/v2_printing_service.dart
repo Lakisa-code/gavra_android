@@ -9,9 +9,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../models/v2_putnik.dart';
-import '../services/v2_putnik_stream_service.dart';
+import '../services/v2_polasci_service.dart';
 import '../utils/v2_app_snack_bar.dart';
-import '../utils/v2_date_utils.dart' as app_date_utils;
 import '../utils/v2_grad_adresa_validator.dart';
 import '../utils/v2_text_utils.dart';
 
@@ -46,7 +45,18 @@ class PrintingService {
           .first;
 
       String getDayAbbreviation(String fullDayName) {
-        return app_date_utils.DateUtils.getDayAbbreviation(fullDayName);
+        const map = {
+          'ponedeljak': 'pon',
+          'utorak': 'uto',
+          'sreda': 'sre',
+          'cetvrtak': 'cet',
+          'četvrtak': 'cet',
+          'petak': 'pet',
+          'subota': 'sub',
+          'nedelja': 'ned',
+          'nedjelja': 'ned',
+        };
+        return map[fullDayName.toLowerCase()] ?? fullDayName.toLowerCase().substring(0, 3);
       }
 
       String normalizeTime(String? time) {

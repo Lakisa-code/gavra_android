@@ -10,7 +10,7 @@ import '../models/v2_registrovani_putnik.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_cena_obracun_service.dart';
 import '../services/v2_permission_service.dart';
-import '../services/v2_putnik_service.dart';
+import '../services/v2_polasci_service.dart';
 import '../theme.dart';
 import '../utils/v2_app_snack_bar.dart';
 import '../utils/v2_vozac_cache.dart';
@@ -36,8 +36,8 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'svi';
 
-  // V2 servis instance
-  final V2PutnikService _putnikService = V2PutnikService();
+  // V2 servis - koristi V2MasterRealtimeManager za write ops, V2PutnikStatistikaService za placanja
+  final _rm = V2MasterRealtimeManager.instance;
 
   // 🔄 Master realtime stream — inicijalizovan jednom u initState()
   late final Stream<List<RegistrovaniPutnik>> _streamPutnici;
@@ -74,7 +74,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   void initState() {
     super.initState();
     _initializeControllers();
-    _streamPutnici = _putnikService.streamAktivniPutnici();
+    _streamPutnici = _rm.streamAktivniPutnici();
     _searchController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -968,7 +968,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
   Future<void> _postaviStatus(RegistrovaniPutnik v2Putnik, String noviStatus) async {
     try {
-      await _putnikService.updatePutnik(
+      await _rm.updatePutnik(
         v2Putnik.id,
         {'status': noviStatus},
         v2Putnik.v2Tabela,
@@ -1108,7 +1108,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
     if (potvrda == true && mounted) {
       try {
-        final success = await _putnikService.deletePutnik(v2Putnik.id, v2Putnik.v2Tabela);
+        final success = await _rm.deletePutnik(v2Putnik.id, v2Putnik.v2Tabela);
 
         if (success) {
           // logic simplified slightly if not needing immediate mount check
@@ -1249,7 +1249,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
     String selectedMonth = _getCurrentMonthYear(); // Default current month
 
     // ?? FIX: Ucitaj stvarni ukupni iznos iz baze
-    final ukupnoPlaceno = await _putnikService.dohvatiUkupnoPlaceno(v2Putnik.id);
+    final ukupnoPlaceno = await V2PutnikStatistikaService.dohvatiUkupnoPlaceno(v2Putnik.id);
 
     // Default cena po danu za input field
     final cenaPoDanu = CenaObracunService.getCenaPoDanu(v2Putnik);
@@ -1339,8 +1339,9 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                                       ),
                                       // ?? REALTIME: Vozac i datum poslednjeg placanja iz voznje_log
                                       StreamBuilder<Map<String, dynamic>?>(
-                                        stream: Stream.fromFuture(_putnikService.dohvatiPlacanja(v2Putnik.id))
-                                            .map((lista) => lista.isNotEmpty ? lista.first : null),
+                                        stream:
+                                            Stream.fromFuture(V2PutnikStatistikaService.dohvatiPlacanja(v2Putnik.id))
+                                                .map((lista) => lista.isNotEmpty ? lista.first : null),
                                         builder: (context, snapshot) {
                                           final placanje = snapshot.data;
                                           if (placanje == null) {
@@ -1570,7 +1571,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
       // ?? Konvertuj string meseca u datume
       final Map<String, dynamic> datumi = _konvertujMesecUDatume(mesec);
 
-      final uspeh = await _putnikService.upisPlacanjaULog(
+      final uspeh = await V2PutnikStatistikaService.upisPlacanjaULog(
         putnikId: v2Putnik.id,
         putnikIme: v2Putnik.ime,
         putnikTabela: v2Putnik.v2Tabela,

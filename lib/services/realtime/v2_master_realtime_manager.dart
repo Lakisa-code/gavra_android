@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../globals.dart';
+import '../../models/v2_registrovani_putnik.dart';
 import '../../services/v2_app_settings_service.dart';
 import '../../utils/v2_vozac_cache.dart';
 
@@ -567,6 +568,152 @@ class V2MasterRealtimeManager {
       '_tabela': tabela,
       'broj_telefona': row['telefon'], // alias za enrichment
     };
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // ✍️  WRITE OPERACIJE — jedino mesto za direktne upite ka bazi
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const List<String> putnikTabele = ['v2_radnici', 'v2_ucenici', 'v2_dnevni', 'v2_posiljke'];
+
+  /// Ažurira putnika u datoj tabeli
+  Future<Map<String, dynamic>> updatePutnik(
+    String id,
+    Map<String, dynamic> updates,
+    String tabela,
+  ) async {
+    final data = Map<String, dynamic>.from(updates);
+    data['updated_at'] = DateTime.now().toUtc().toIso8601String();
+    data.remove('_tabela');
+    data.remove('tip');
+    final row = await _db.from(tabela).update(data).eq('id', id).select().single();
+    return {...row, '_tabela': tabela};
+  }
+
+  /// Kreira novog putnika u datoj tabeli
+  Future<Map<String, dynamic>> createPutnik(
+    Map<String, dynamic> data,
+    String tabela,
+  ) async {
+    final d = Map<String, dynamic>.from(data);
+    d['created_at'] = DateTime.now().toUtc().toIso8601String();
+    d['updated_at'] = DateTime.now().toUtc().toIso8601String();
+    d.remove('_tabela');
+    d.remove('tip');
+    if (d['id'] == null) d.remove('id');
+    final row = await _db.from(tabela).insert(d).select().single();
+    return {...row, '_tabela': tabela};
+  }
+
+  /// Briše putnika i sve vezane podatke (trajno)
+  Future<bool> deletePutnik(String id, String tabela) async {
+    try {
+      await _db.from('v2_pin_zahtevi').delete().eq('putnik_id', id);
+      await _db.from('v2_polasci').delete().eq('putnik_id', id);
+      await _db.from('v2_vozac_putnik').delete().eq('putnik_id', id);
+      await _db.from(tabela).delete().eq('id', id);
+      return true;
+    } catch (e) {
+      debugPrint('❌ [V2MasterRealtimeManager] deletePutnik error: $e');
+      return false;
+    }
+  }
+
+  /// Ažurira PIN putnika
+  Future<void> updatePin(String id, String noviPin, String tabela) async {
+    await _db.from(tabela).update({
+      'pin': noviPin,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', id);
+  }
+
+  /// Upsert podataka firme u v2_racuni
+  Future<void> upsertFirma({
+    required String putnikId,
+    required String putnikTabela,
+    required String firmaNaziv,
+    String? firmaPib,
+    String? firmaMb,
+    String? firmaZiro,
+    String? firmaAdresa,
+  }) async {
+    await _db.from('v2_racuni').upsert({
+      'putnik_id': putnikId,
+      'putnik_tabela': putnikTabela,
+      'firma_naziv': firmaNaziv,
+      'firma_pib': firmaPib,
+      'firma_mb': firmaMb,
+      'firma_ziro': firmaZiro,
+      'firma_adresa': firmaAdresa,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }, onConflict: 'putnik_id');
+  }
+
+  /// Dohvata putnika po PIN-u iz date tabele
+  Future<Map<String, dynamic>?> getByPin(String pin, String tabela) async {
+    final row = await _db.from(tabela).select().eq('pin', pin).maybeSingle();
+    if (row == null) return null;
+    return {...row, '_tabela': tabela};
+  }
+
+  /// Dohvata putnika iz bilo koje od 4 tabele — prvo cache, pa DB
+  Future<Map<String, dynamic>?> findPutnikById(String id) async {
+    final cached = getPutnikById(id);
+    if (cached != null) return cached;
+    for (final tabela in putnikTabele) {
+      final row = await _db.from(tabela).select().eq('id', id).maybeSingle();
+      if (row != null) return {...row, '_tabela': tabela};
+    }
+    return null;
+  }
+
+  /// Dohvata putnika po telefonu (pretražuje sve tabele)
+  Future<Map<String, dynamic>?> findByTelefon(String telefon) async {
+    if (telefon.isEmpty) return null;
+    final normalized = _normalizePhone(telefon);
+    for (final tabela in putnikTabele) {
+      final svi = await _db.from(tabela).select();
+      for (final row in svi) {
+        final t = row['telefon'] as String? ?? '';
+        final t2 = row['telefon_2'] as String? ?? '';
+        if ((t.isNotEmpty && _normalizePhone(t) == normalized) ||
+            (t2.isNotEmpty && _normalizePhone(t2) == normalized)) {
+          return {...row, '_tabela': tabela};
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Stream aktivnih putnika iz cache-a — 0 DB upita
+  Stream<List<RegistrovaniPutnik>> streamAktivniPutnici() {
+    final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
+    void emit() {
+      if (controller.isClosed) return;
+      final putnici = getAllPutnici().map((row) => RegistrovaniPutnik.fromMap(row)).toList()
+        ..sort((a, b) => a.ime.toLowerCase().compareTo(b.ime.toLowerCase()));
+      controller.add(putnici);
+    }
+
+    Future.microtask(emit);
+
+    final subs = putnikTabele.map((t) => subscribe(t).listen((_) => emit())).toList();
+    controller.onCancel = () {
+      for (final s in subs) {
+        s.cancel();
+      }
+    };
+    return controller.stream;
+  }
+
+  static String _normalizePhone(String telefon) {
+    var cleaned = telefon.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (cleaned.startsWith('+381')) {
+      cleaned = '0${cleaned.substring(4)}';
+    } else if (cleaned.startsWith('00381')) {
+      cleaned = '0${cleaned.substring(5)}';
+    }
+    return cleaned;
   }
 
   // ──────────────────────────────────────────────────────────────────────────

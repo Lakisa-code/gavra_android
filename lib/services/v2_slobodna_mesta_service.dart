@@ -4,7 +4,7 @@ import '../models/v2_putnik.dart';
 import '../utils/v2_grad_adresa_validator.dart';
 import '../utils/v2_putnik_helpers.dart';
 import 'v2_kapacitet_service.dart';
-import 'v2_putnik_stream_service.dart';
+import 'v2_polasci_service.dart';
 
 /// ?? Model za slobodna mesta po polasku
 class SlobodnaMesta {

@@ -1,4 +1,3 @@
-import '../constants/v2_day_constants.dart';
 import '../services/v2_adresa_supabase_service.dart'; // DODATO za fallback ucitavanje adrese
 import '../utils/v2_registrovani_helpers.dart';
 
@@ -194,12 +193,12 @@ class V2Putnik {
     );
   }
 
+  static const _dayAbbreviations = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+
   static String _getDayNameFromIso(String isoDate) {
     try {
       final dt = DateTime.parse(isoDate);
-      // ? FIX: Vrati KRATICU (pet) umesto punog imena (Petak) - zbog client-side filtera
-      final index = DayConstants.weekdayToIndex(dt.weekday);
-      return DayConstants.dayAbbreviations[index];
+      return _dayAbbreviations[dt.weekday - 1];
     } catch (_) {
       return '';
     }
@@ -210,11 +209,9 @@ class V2Putnik {
   static String _getIsoDateForDan(String danKratica) {
     if (danKratica.isEmpty) return '';
     try {
-      final abbrs = DayConstants.dayAbbreviations;
-      final idx = abbrs.indexWhere((a) => a.toLowerCase() == danKratica.toLowerCase());
+      final idx = _dayAbbreviations.indexWhere((a) => a.toLowerCase() == danKratica.toLowerCase());
       if (idx < 0) return '';
-      // DayConstants: 0=pon(1), 1=uto(2), ... 4=pet(5), weekday je 1-7 (1=Mon)
-      final targetWeekday = idx + 1; // 1=Monday...5=Friday
+      final targetWeekday = idx + 1; // 1=Monday...7=Sunday
       final now = DateTime.now();
       for (int i = 0; i < 7; i++) {
         final d = now.add(Duration(days: i));
@@ -308,8 +305,7 @@ class V2Putnik {
   // HELPER METODE za mapiranje
   static String _v2GradIzProfila(Map<String, dynamic> map) {
     // Odredi grad na osnovu AKTIVNOG polaska za danas
-    final index = DayConstants.weekdayToIndex(DateTime.now().weekday);
-    final danKratica = DayConstants.dayAbbreviations[index];
+    final danKratica = _dayAbbreviations[DateTime.now().weekday - 1];
 
     // Proveri koji polazak postoji za danas
     final bcPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'bc');

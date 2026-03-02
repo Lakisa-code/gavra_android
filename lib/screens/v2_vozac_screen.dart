@@ -14,7 +14,7 @@ import '../services/v2_driver_location_service.dart'; // ?? Za ETA tracking
 import '../services/v2_firebase_service.dart'; // ?? Za vozaca
 import '../services/v2_kapacitet_service.dart'; // ?? Za broj mesta
 import '../services/v2_local_notification_service.dart'; // ?? Za lokalne notifikacije
-import '../services/v2_putnik_stream_service.dart';
+import '../services/v2_polasci_service.dart';
 import '../services/v2_realtime_gps_service.dart'; // ??? Za GPS tracking
 import '../services/v2_realtime_notification_service.dart'; // ?? Za realtime notifikacije
 import '../services/v2_smart_navigation_service.dart';

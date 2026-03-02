@@ -4,8 +4,8 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/v2_registrovani_putnik.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_adresa_supabase_service.dart';
-import '../services/v2_putnik_service.dart';
 import '../services/v2_statistika_istorija_service.dart';
 import '../theme.dart';
 import '../utils/v2_app_snack_bar.dart';
@@ -36,7 +36,7 @@ class V2PutnikDialog extends StatefulWidget {
 }
 
 class _V2PutnikDialogState extends State<V2PutnikDialog> {
-  final V2PutnikService _putnikService = V2PutnikService();
+  final _rm = V2MasterRealtimeManager.instance;
 
   // Form controllers
   final TextEditingController _imeController = TextEditingController();
@@ -1291,7 +1291,7 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
     final normalized = _normalizePhoneNumber(telefon);
 
     try {
-      final existing = await V2PutnikService().findByTelefon(telefon);
+      final existing = await V2MasterRealtimeManager.instance.findByTelefon(telefon);
       if (existing != null) {
         final existingId = existing['id'] as String;
         // U edit modu preskoci ako je isti V2Putnik
@@ -1350,16 +1350,16 @@ class _V2PutnikDialogState extends State<V2PutnikDialog> {
       if (widget.isEditing) {
         putnikId = widget.existingPutnik!.id;
         putnikTabela = widget.existingPutnik!.v2Tabela;
-        await _putnikService.updatePutnik(putnikId, putnikData, putnikTabela);
+        await _rm.updatePutnik(putnikId, putnikData, putnikTabela);
       } else {
         putnikTabela = putnikData['_tabela'] as String? ?? 'v2_radnici';
-        final row = await _putnikService.createPutnik(putnikData, putnikTabela);
+        final row = await _rm.createPutnik(putnikData, putnikTabela);
         putnikId = row['id'] as String;
       }
 
       // Upsert firme u v2_racuni
       if (_trebaRacun && _firmaNazivController.text.trim().isNotEmpty) {
-        await _putnikService.upsertFirma(
+        await _rm.upsertFirma(
           putnikId: putnikId,
           putnikTabela: putnikTabela,
           firmaNaziv: _firmaNazivController.text.trim(),

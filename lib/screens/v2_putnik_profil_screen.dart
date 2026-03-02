@@ -5,7 +5,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../constants/v2_day_constants.dart';
 import '../globals.dart';
 import '../helpers/v2_putnik_statistike_helper.dart'; // 📊 Zajednički dijalog za statistike
 import '../models/v2_registrovani_putnik.dart';
@@ -14,7 +13,6 @@ import '../services/v2_adresa_supabase_service.dart';
 import '../services/v2_cena_obracun_service.dart';
 import '../services/v2_polasci_service.dart';
 import '../services/v2_putnik_push_service.dart'; // 📱 Push notifikacije za putnike
-import '../services/v2_putnik_service.dart';
 import '../services/v2_theme_manager.dart';
 import '../services/v2_weather_service.dart'; // 🌤️ Vremenska prognoza
 import '../theme.dart';
@@ -229,7 +227,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
       }
 
       // Fallback: pretraži sve v2 tabele
-      final response = await V2PutnikService().findPutnikById(putnikId);
+      final response = await V2MasterRealtimeManager.instance.findPutnikById(putnikId);
 
       if (response != null && mounted) {
         setState(() {
@@ -453,9 +451,11 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
       if (_polasci.isEmpty) return null;
 
       final now = DateTime.now();
+      const _abbrs = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      const _names = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
       final daniPuniNaziv = <String, String>{};
-      for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
-        daniPuniNaziv[DayConstants.dayAbbreviations[i]] = DayConstants.dayNamesInternal[i];
+      for (int i = 0; i < _abbrs.length; i++) {
+        daniPuniNaziv[_abbrs[i]] = _names[i];
       }
 
       // Sortiraj zahteve po redosledu dana u sedmici (od danas na dalje)
@@ -735,7 +735,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
       if (putnikId == null) return;
 
       final tabela = _putnikData['_tabela'] as String? ?? 'v2_radnici';
-      await V2PutnikService().updatePutnik(
+      await V2MasterRealtimeManager.instance.updatePutnik(
         putnikId,
         {'status': noviStatus},
         tabela,
@@ -1379,8 +1379,9 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     final tipPrikazivanja = _putnikData['tip_prikazivanja'] as String? ?? 'standard';
 
     // 🆕 Inicijalizuj polasci mapu sa praznim vrednostima za svih 7 dana
+    const _abbrs = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     Map<String, Map<String, dynamic>> polasci = {};
-    for (final shortDay in DayConstants.dayAbbreviations) {
+    for (final shortDay in _abbrs) {
       polasci[shortDay] = {
         'bc': null,
         'vs': null,
@@ -1455,12 +1456,13 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     }
 
     // Prikazujemo samo radne dane
-    final dani = DayConstants.dayAbbreviations.where((d) => d != 'sub' && d != 'ned').toList();
+    const _names2 = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+    final dani = _abbrs.where((d) => d != 'sub' && d != 'ned').toList();
     final daniLabels = <String, String>{};
-    for (int i = 0; i < DayConstants.dayAbbreviations.length; i++) {
-      final short = DayConstants.dayAbbreviations[i];
+    for (int i = 0; i < _abbrs.length; i++) {
+      final short = _abbrs[i];
       if (short == 'sub' || short == 'ned') continue;
-      final long = (i < DayConstants.dayNamesInternal.length) ? DayConstants.dayNamesInternal[i] : short;
+      final long = (i < _names2.length) ? _names2[i] : short;
       daniLabels[short] = long;
     }
 

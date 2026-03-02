@@ -8,7 +8,7 @@ import '../globals.dart';
 import '../models/v2_putnik.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_kapacitet_service.dart';
-import '../services/v2_putnik_stream_service.dart';
+import '../services/v2_polasci_service.dart';
 import '../services/v2_vozac_putnik_service.dart';
 import '../services/v2_vozac_raspored_service.dart';
 import '../theme.dart';

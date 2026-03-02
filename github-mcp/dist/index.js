@@ -111,7 +111,7 @@ async function listSecrets() {
         const secretsList = response.data.secrets
             .map((secret) => `• ${secret.name} (updated: ${new Date(secret.updated_at).toLocaleDateString()})`)
             .join("\n");
-        return `📋 Secrets in ${REPO_OWNER}/${REPO_NAME}:\n\n${secretsList}`;
+        return `🔐 Repository secrets:\n${secretsList}`;
     }
     catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -176,14 +176,15 @@ async function main() {
             tools: {},
         },
     });
-    server.setRequestHandler(ListToolsRequestSchema, async () => ({
-        tools,
-    }));
+    server.setRequestHandler(ListToolsRequestSchema, async () => {
+        return {
+            tools,
+        };
+    });
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
-        const name = request.params.name;
-        const args = request.params.arguments || {};
+        const { name, arguments: args } = request.params;
         try {
-            const result = await handleToolCall(name, args);
+            const result = await handleToolCall(name, args || {});
             return {
                 content: [
                     {

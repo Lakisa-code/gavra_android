@@ -2,10 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_biometric_service.dart';
 import '../services/v2_pin_zahtev_service.dart';
 import '../services/v2_putnik_push_service.dart';
-import '../services/v2_putnik_service.dart';
 import '../theme.dart';
 import 'v2_putnik_profil_screen.dart';
 
@@ -124,7 +124,7 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
       final normalizedInput = _normalizePhone(telefon);
 
       // Traži putnika po telefonu kroz sve v2_ tabele
-      final found = await V2PutnikService().findByTelefon(telefon);
+      final found = await V2MasterRealtimeManager.instance.findByTelefon(telefon);
 
       Map<String, dynamic>? response;
       if (found != null) {
@@ -366,7 +366,7 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
       final tabele = ['v2_radnici', 'v2_ucenici', 'v2_dnevni', 'v2_posiljke'];
       List<Map<String, dynamic>> matches = [];
       for (final tabela in tabele) {
-        final found = await V2PutnikService().getByPin(pin, tabela);
+        final found = await V2MasterRealtimeManager.instance.getByPin(pin, tabela);
         if (found != null) {
           final storedPhone = found['telefon'] as String? ?? '';
           if (_normalizePhone(storedPhone) == normalizedInput) {

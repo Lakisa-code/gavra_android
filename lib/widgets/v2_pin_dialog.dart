@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../services/v2_putnik_service.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../utils/v2_app_snack_bar.dart';
 
 /// PIN DIALOG za mesečne putnike
@@ -50,7 +50,7 @@ class _V2PinDialogState extends State<V2PinDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await V2PutnikService().updatePin(widget.putnikId, newPin, widget.putnikTabela);
+      await V2MasterRealtimeManager.instance.updatePin(widget.putnikId, newPin, widget.putnikTabela);
 
       setState(() {
         _pin = newPin;

@@ -295,7 +295,8 @@ class V2ProfilService {
 
   /// Vraća sve aktivne putnike iz sva 4 cache-a kao modele (0 DB upita)
   static Future<List<RegistrovaniPutnik>> getAllAktivniKaoModel() async {
-    return _rm.getAllPutnici()
+    return _rm
+        .getAllPutnici()
         .where((r) => r['status'] == 'aktivan')
         .map((r) => _fromRow(r, r['_tabela'] as String? ?? 'v2_radnici'))
         .toList()
@@ -325,18 +326,16 @@ class V2ProfilService {
     try {
       // Pokušaj iz cache-a prvo
       final izCache = _rm.statistikaCache.values
-          .where((r) =>
-              r['putnik_id']?.toString() == putnikId &&
-              (r['tip'] == 'uplata' || r['tip'] == 'uplata_dnevna'))
+          .where((r) => r['putnik_id']?.toString() == putnikId && (r['tip'] == 'uplata' || r['tip'] == 'uplata_dnevna'))
           .toList();
       if (izCache.isNotEmpty) return izCache;
       // Fallback: DB upit za sve datume
       final res = await _supabase
           .from('v2_statistika_istorija')
-          .select('id, putnik_id, datum, tip, iznos, vozac_id, vozac_ime, grad, vreme, created_at, placeni_mesec, placena_godina')
+          .select(
+              'id, putnik_id, datum, tip, iznos, vozac_id, vozac_ime, grad, vreme, created_at, placeni_mesec, placena_godina')
           .eq('putnik_id', putnikId)
-          .inFilter('tip', ['uplata', 'uplata_dnevna'])
-          .order('datum', ascending: false);
+          .inFilter('tip', ['uplata', 'uplata_dnevna']).order('datum', ascending: false);
       return List<Map<String, dynamic>>.from(res);
     } catch (e) {
       debugPrint('❌ [V2ProfilService] dohvatiPlacanja error: $e');
@@ -398,10 +397,7 @@ class V2ProfilService {
       // Pronađi vozac_id po imenu ako je dato
       String? vozacId;
       if (vozacIme != null) {
-        vozacId = _rm.vozaciCache.values
-            .where((v) => v['ime']?.toString() == vozacIme)
-            .firstOrNull?['id']
-            ?.toString();
+        vozacId = _rm.vozaciCache.values.where((v) => v['ime']?.toString() == vozacIme).firstOrNull?['id']?.toString();
       }
       await _supabase.from('v2_statistika_istorija').insert({
         'putnik_id': putnikId,

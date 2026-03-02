@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../globals.dart';
 import '../models/v2_registrovani_putnik.dart';
+import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_cena_obracun_service.dart';
-import '../services/v2_putnik_service.dart';
+import '../services/v2_polasci_service.dart';
 
 /// 📊 Helper za prikazivanje detaljnih statistika putnika
 /// Koristi se i u admin ekranu i u profilu putnika
@@ -200,8 +201,7 @@ class PutnikStatistikeHelper {
   // 💰 DOHVATI PLAĆENE MESECE ZA PUTNIKA
   static Future<Set<String>> _getPlaceniMeseci(String putnikId) async {
     try {
-      final V2PutnikService service = V2PutnikService();
-      final svaPlacanja = await service.dohvatiPlacanja(putnikId);
+      final svaPlacanja = await V2PutnikStatistikaService.dohvatiPlacanja(putnikId);
       final Set<String> placeni = {};
 
       for (var placanje in svaPlacanja) {
@@ -408,7 +408,7 @@ class PutnikStatistikeHelper {
           const Divider(),
           // 🔥 REALTIME: Datum, iznos i vozač poslednjeg plaćanja
           StreamBuilder<Map<String, dynamic>?>(
-            stream: Stream.fromFuture(V2PutnikService().dohvatiPlacanja(putnikId))
+            stream: Stream.fromFuture(V2PutnikStatistikaService.dohvatiPlacanja(putnikId))
                 .map((l) => l.isNotEmpty ? l.first : null),
             builder: (context, snapshot) {
               final placanje = snapshot.data;
@@ -595,7 +595,7 @@ class PutnikStatistikeHelper {
   static Future<Map<String, dynamic>> _getStatistikeForPeriod(String putnikId, String period, String tipPutnika) async {
     try {
       final placeniMeseci = await _getPlaceniMeseci(putnikId);
-      final putnikMap = await V2PutnikService().findPutnikById(putnikId);
+      final putnikMap = await V2MasterRealtimeManager.instance.findPutnikById(putnikId);
       final putnikObj = putnikMap != null ? RegistrovaniPutnik.fromMap(putnikMap) : null;
 
       Map<String, dynamic> stats = {};
