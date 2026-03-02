@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -2039,9 +2038,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
             try {
               return countHelper.getCount(grad, vreme);
             } catch (e) {
-              if (kDebugMode) {
-                debugPrint('❌ [Home] Error in getPutnikCount: $e');
-              }
+              debugPrint('[V2HomeScreen] getPutnikCount error: $e');
               return 0;
             }
           }

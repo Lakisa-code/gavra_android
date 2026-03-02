@@ -509,7 +509,8 @@ class V2PutnikStreamService {
       }
       if (rp != null) return V2Putnik.v2FromProfil(rp);
       return null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[PolasciService] getPutnikById error: $e');
       return null;
     }
   }

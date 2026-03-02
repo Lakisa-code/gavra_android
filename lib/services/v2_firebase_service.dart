@@ -179,7 +179,9 @@ class FirebaseService {
               'Nova notifikacija';
           LocalNotificationService.showRealtimeNotification(
               title: title, body: body, payload: message.data.isNotEmpty ? jsonEncode(message.data) : null);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[FirebaseService] showRealtimeNotification error: $e');
+        }
       },
       onError: (error) {
         debugPrint('[FirebaseService] onMessage stream error: $error');

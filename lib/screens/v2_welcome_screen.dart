@@ -352,8 +352,8 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
                             _isAudioPlaying = true;
                           }
                         } catch (e) {
-      debugPrint('[V2WelcomeScreen] Error: $e');
-    }
+                          debugPrint('[V2WelcomeScreen] Error: $e');
+                        }
                       },
                       child: AnimatedBuilder(
                         animation: _pulseController,
@@ -773,9 +773,7 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
         await PermissionService.requestAllPermissionsOnFirstLaunch(context);
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(' [V2WelcomeScreen] Permission request failed: $e');
-      }
+      debugPrint('[V2WelcomeScreen] Permission request failed: $e');
     }
   }
 

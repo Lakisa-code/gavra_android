@@ -251,7 +251,8 @@ class HuaweiPushService {
     String? driverName;
     try {
       driverName = await AuthManager.getCurrentDriver();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[HuaweiPushService] getCurrentDriver error: $e');
       driverName = null;
     }
 

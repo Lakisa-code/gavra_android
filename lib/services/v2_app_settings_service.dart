@@ -118,6 +118,8 @@ class V2AppSettingsService {
     try {
       await V2StatistikaIstorijaService.logGeneric(
           tip: 'admin_akcija', detalji: 'Promenjen red vožnje na: ${type.toUpperCase()}');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[AppSettingsService] logGeneric error: $e');
+    }
   }
 }

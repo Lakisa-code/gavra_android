@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -398,7 +397,7 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
         // ... (ocisti saved credentials ako treba)
       }
     } catch (e) {
-      if (kDebugMode) print('Login error: $e');
+      debugPrint('[V2PutnikLoginScreen] Login error: $e');
       setState(() => _errorMessage = 'Greška pri povezivanju: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);

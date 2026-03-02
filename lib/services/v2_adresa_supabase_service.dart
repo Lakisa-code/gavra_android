@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../globals.dart';
 import '../models/v2_adresa.dart';
 import 'realtime/v2_master_realtime_manager.dart';
@@ -122,7 +124,9 @@ class V2AdresaSupabaseService {
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[AdresaSupabaseService] getAdresaByVozacIGrad error: $e');
+    }
     return null;
   }
 
