@@ -458,9 +458,11 @@ class V2PutnikStreamService {
   Future<List<V2Putnik>> getPutniciByDayIso(String isoDate) async {
     try {
       final todayDate = isoDate.split('T')[0];
+      final targetDan = _isoToDanKratica(todayDate);
       final rm = V2MasterRealtimeManager.instance;
 
       return rm.polasciCache.values
+          .where((sr) => sr['dan']?.toString() == targetDan)
           .map((sr) {
             final putnikId = sr['putnik_id']?.toString();
             final vlRows = putnikId != null

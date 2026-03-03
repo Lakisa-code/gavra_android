@@ -18,7 +18,7 @@ import '../../utils/v2_vozac_cache.dart';
 /// 4. Inicijalizuje se JEDNOM iz main.dart — ne iz servisa
 ///
 /// CACHE MAPA:
-/// polasciCache     ← v2_polasci          (dnevni, filter po danas)
+/// polasciCache     ← v2_polasci          (sedmični, svi aktivni dani)
 /// statistikaCache  ← v2_statistika_istorija (dnevni, filter po danas)
 /// radniciCache     ← v2_radnici           (statički, svi aktivni)
 /// uceniciCache     ← v2_ucenici           (statički, svi aktivni)
@@ -49,7 +49,7 @@ class V2MasterRealtimeManager {
   // ──────────────────────────────────────────────────────────────────────────
 
   // --- Dnevni (čisti se na novi dan) ---
-  /// v2_polasci za tekući dan
+  /// v2_polasci — svi aktivni dani (pon–pet)
   final Map<String, Map<String, dynamic>> polasciCache = {};
 
   /// v2_statistika_istorija za tekući dan
@@ -167,7 +167,6 @@ class V2MasterRealtimeManager {
 
   Future<void> _loadPolasciCache() async {
     try {
-      final dan = _todayKratica();
       final rows = await _db
           .from('v2_polasci')
           .select(
@@ -176,7 +175,6 @@ class V2MasterRealtimeManager {
             'alternative_vreme_1, alternative_vreme_2, adresa_id, '
             'otkazao, odobrio, pokupio, dan',
           )
-          .eq('dan', dan)
           .inFilter('status', [
         'obrada',
         'odobreno',
@@ -188,7 +186,7 @@ class V2MasterRealtimeManager {
       for (final row in rows) {
         polasciCache[row['id'].toString()] = Map<String, dynamic>.from(row);
       }
-      debugPrint('📦 [V2MasterRealtimeManager] polasciCache: ${polasciCache.length} (dan=$dan)');
+      debugPrint('📦 [V2MasterRealtimeManager] polasciCache: ${polasciCache.length} (svi dani)');
     } catch (e) {
       debugPrint('❌ [V2MasterRealtimeManager] _loadPolasciCache: $e');
     }
@@ -558,11 +556,6 @@ class V2MasterRealtimeManager {
   // ──────────────────────────────────────────────────────────────────────────
 
   static String _today() => DateTime.now().toIso8601String().split('T')[0];
-
-  static String _todayKratica() {
-    const map = {1: 'pon', 2: 'uto', 3: 'sre', 4: 'cet', 5: 'pet', 6: 'sub', 7: 'ned'};
-    return map[DateTime.now().weekday]!;
-  }
 
   /// Popuni cache mapu iz liste redova
   static void _fillCache(Map<String, Map<String, dynamic>> cache, List rows) {
