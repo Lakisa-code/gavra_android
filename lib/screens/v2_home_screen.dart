@@ -918,6 +918,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
     final adresaController = TextEditingController();
     final telefonController = TextEditingController(); // ?? OPCIONO: Broj telefona
     final searchPutnikController = TextEditingController(); // ?? Za pretragu putnika
+    bool dialogActive = true; // guard: false nakon dispose
     V2RegistrovaniPutnik? selectedPutnik; // ?? Izabrani V2Putnik iz liste
     int brojMesta = 1; // ?? Broj rezervisanih mesta (default 1)
     bool promeniAdresuSamoDanas = false; // ?? Opcija za promenu adrese samo za danas
@@ -1230,6 +1231,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                                       )
                                       .toList(),
                                   onChanged: (V2RegistrovaniPutnik? v2Putnik) async {
+                                    if (!dialogActive) return;
                                     setStateDialog(() {
                                       selectedPutnik = v2Putnik;
                                       telefonController.text = v2Putnik?.telefon ?? '';
@@ -1238,6 +1240,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
                                     if (v2Putnik != null) {
                                       // ?? AUTO-POPUNI adresu async - SAMO za selektovani grad
                                       final adresa = v2Putnik.getAdresaZaSelektovaniGrad(_selectedGrad);
+                                      if (!dialogActive) return;
                                       setStateDialog(() {
                                         adresaController.text = adresa == 'Nema adresa' ? '' : adresa;
                                         // Ocisti "samo danas" opcije kad se promeni V2Putnik
@@ -1759,6 +1762,7 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
         },
       ),
     ).then((_) {
+      dialogActive = false;
       adresaController.dispose();
       telefonController.dispose();
       searchPutnikController.dispose();
