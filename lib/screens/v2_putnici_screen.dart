@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../globals.dart';
 import '../helpers/v2_putnik_statistike_helper.dart';
 import '../models/v2_registrovani_putnik.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
+import '../services/v2_auth_manager.dart';
 import '../services/v2_cena_obracun_service.dart';
 import '../services/v2_permission_service.dart';
 import '../services/v2_polasci_service.dart';
@@ -132,8 +132,8 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
           if (iznos > placanja[putnikId]!) placanja[putnikId] = iznos;
         }
       } catch (e) {
-      debugPrint('[V2PutniciScreen] Error: $e');
-    }
+        debugPrint('[V2PutniciScreen] Error: $e');
+      }
       if (mounted) {
         // ?? ANTI-REBUILD OPTIMIZATION: Samo update ako su se podaci stvarno promenili
         final existingKeys = _stvarnaPlacanja.keys.toSet();
@@ -1674,7 +1674,7 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
   }
 
   Future<String> _getCurrentDriverName() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('ime_vozaca') ?? 'Gavra';
+    final name = await V2AuthManager.getCurrentDriver();
+    return name ?? '';
   }
 }
