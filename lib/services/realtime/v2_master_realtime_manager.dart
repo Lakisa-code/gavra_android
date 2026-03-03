@@ -172,7 +172,7 @@ class V2MasterRealtimeManager {
           .select(
             'id, putnik_id, putnik_tabela, grad, zeljeno_vreme, dodeljeno_vreme, '
             'status, created_at, updated_at, processed_at, broj_mesta, '
-            'alternative_vreme_1, alternative_vreme_2, adresa_id, '
+            'alternativno_vreme_1, alternativno_vreme_2, adresa_id, '
             'otkazao, odobrio, pokupio, dan',
           )
           .inFilter('status', [
