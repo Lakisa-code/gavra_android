@@ -1763,9 +1763,12 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
       ),
     ).then((_) {
       dialogActive = false;
-      adresaController.dispose();
-      telefonController.dispose();
-      searchPutnikController.dispose();
+      // Odlozi dispose za jedan frame da DropdownSearch widget stigne da se unmount-uje
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        adresaController.dispose();
+        telefonController.dispose();
+        searchPutnikController.dispose();
+      });
     });
   }
 

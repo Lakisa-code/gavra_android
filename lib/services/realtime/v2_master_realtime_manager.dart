@@ -146,6 +146,13 @@ class V2MasterRealtimeManager {
     );
   }
 
+  /// Forsira refresh polasciCache bez promjene dana (npr. nakon ručnog dodavanja termina)
+  Future<void> refreshPolasciCache() async {
+    polasciCache.clear();
+    await _loadPolasciCache();
+    debugPrint('🔄 [V2MasterRealtimeManager] polasciCache osvežen: ${polasciCache.length}');
+  }
+
   /// Poziva se iz AppLifecycleObserver kad datum nije isti
   Future<void> refreshForNewDay() async {
     final today = _today();

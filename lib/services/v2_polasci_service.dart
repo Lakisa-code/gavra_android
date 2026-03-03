@@ -448,7 +448,8 @@ class V2PutnikStreamService {
 
   /// Eksplicitan refresh — no-op jer stream automatski reaguje na RM promjene.
   void refreshAllActiveStreams() {
-    debugPrint('[V2PutnikStreamService] refreshAllActiveStreams — RM stream se sam ažurira');
+    debugPrint('[V2PutnikStreamService] refreshAllActiveStreams — osvežavam polasciCache...');
+    V2MasterRealtimeManager.instance.refreshPolasciCache();
   }
 
   // ──────────────────────────────────────────────────────────────────────────

@@ -177,7 +177,9 @@ class V2RegistrovaniPutnik {
   String getAdresaZaSelektovaniGrad(String? selektovaniGrad) {
     final bcNaziv = getAdresaBelaCrkvaNaziv();
     final vsNaziv = getAdresaVrsacNaziv();
-    if (selektovaniGrad?.toLowerCase().contains('bela') == true) {
+    final grad = selektovaniGrad?.toUpperCase() ?? '';
+    final isBC = grad == 'BC' || grad.contains('BELA');
+    if (isBC) {
       if (bcNaziv != null) return bcNaziv;
       if (vsNaziv != null) return vsNaziv;
     } else {
