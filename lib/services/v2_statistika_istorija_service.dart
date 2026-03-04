@@ -270,10 +270,10 @@ class V2StatistikaIstorijaService {
       await rm.refreshPolasciCache();
       emit();
     });
-    final sub = rm.subscribe('v2_polasci').listen((_) => emit());
+    final sub = rm.onCacheChanged.where((t) => t == 'v2_polasci').listen((_) => emit());
     controller.onCancel = () {
       sub.cancel();
-      rm.unsubscribe('v2_polasci');
+      controller.close();
     };
     return controller.stream;
   }

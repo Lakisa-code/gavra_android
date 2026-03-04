@@ -32,8 +32,8 @@ class V2KombiEtaWidget extends StatefulWidget {
 }
 
 class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
-  StreamSubscription? _subscription;
-  StreamSubscription? _putnikSubscription;
+  StreamSubscription<String>? _subscription;
+  StreamSubscription<String>? _putnikSubscription;
   Timer? _pollingTimer;
   int? _etaMinutes;
   bool _isLoading = true;
@@ -53,10 +53,6 @@ class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
     _pollingTimer?.cancel();
     _subscription?.cancel();
     _putnikSubscription?.cancel();
-    final rm = V2MasterRealtimeManager.instance;
-    rm.unsubscribe('v2_vozac_lokacije');
-    // unsubscribe v2_polasci samo ako smo se i subscribovali (kad postoji putnikId)
-    if (widget.putnikId != null) rm.unsubscribe('v2_polasci');
     super.dispose();
   }
 
@@ -179,22 +175,13 @@ class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
     // Realtime event → _loadGpsData() cita iz cache-a (0 DB upita).
     // Interval produžen: 30s → 5min jer nema potrebe za cestim upitima.
     _pollingTimer = Timer.periodic(const Duration(minutes: 5), (_) => _loadGpsData());
-    _subscription = V2MasterRealtimeManager.instance.subscribe('v2_vozac_lokacije').listen(
-          (payload) => _loadGpsData(),
-          onError: (_) {},
-        );
+    _subscription = V2MasterRealtimeManager.instance.onCacheChanged
+        .where((t) => t == 'v2_vozac_lokacije')
+        .listen((_) => _loadGpsData());
     if (widget.putnikId != null) {
-      _putnikSubscription = V2MasterRealtimeManager.instance.subscribe('v2_polasci').listen(
-        (payload) {
-          // Filtriraj payload — reaguj samo na promene za OVOG putnika
-          final record = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
-          final payloadPutnikId = record['putnik_id']?.toString();
-          // Ako payload ne odgovara ovom putniku — ignoriši
-          if (payloadPutnikId != null && payloadPutnikId != widget.putnikId) return;
-          _loadPokupljenjeIzBaze();
-        },
-        onError: (_) {},
-      );
+      _putnikSubscription = V2MasterRealtimeManager.instance.onCacheChanged
+          .where((t) => t == 'v2_polasci')
+          .listen((_) => _loadPokupljenjeIzBaze());
     }
   }
 

@@ -53,7 +53,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
   String? _sledecaVoznjaInfo; // 🆕 Format: "Ponedeljak, 7:00 BC"
 
   // 🆕 Realtime subscription za seat request approvals
-  StreamSubscription? _polasciSubscription;
+  StreamSubscription<String>? _polasciSubscription;
 
   @override
   void initState() {
@@ -89,7 +89,6 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     WidgetsBinding.instance.removeObserver(this);
     navBarTypeNotifier.removeListener(_onSeasonChanged);
     _polasciSubscription?.cancel(); // Zatvori Polasci listener
-    V2MasterRealtimeManager.instance.unsubscribe('v2_polasci');
     super.dispose();
   }
 
@@ -141,11 +140,10 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     if (putnikId == null) return;
 
     // Jedan subscriber na v2_polasci — jedina RT tabela relevantna za profil putnika
-    _polasciSubscription = V2MasterRealtimeManager.instance.subscribe('v2_polasci').where((payload) {
-      final record = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
-      return record['putnik_id']?.toString() == putnikId;
-    }).listen((payload) {
-      debugPrint('🆕 [Realtime] v2_polasci promena za putnika $putnikId: ${payload.eventType}');
+    _polasciSubscription = V2MasterRealtimeManager.instance.onCacheChanged
+        .where((t) => t == 'v2_polasci')
+        .listen((_) {
+      debugPrint('🆕 [Realtime] v2_polasci cache promena za putnika $putnikId');
       _loadActiveRequests();
       _refreshPutnikData();
     });

@@ -13,7 +13,7 @@ class V2PinZahtevService {
   V2PinZahtevService._();
   static SupabaseClient get _supabase => supabase;
 
-  static StreamSubscription<PostgresChangePayload>? _pinZahteviSubscription;
+  static StreamSubscription<String>? _pinZahteviSubscription;
   static final StreamController<List<Map<String, dynamic>>> _zahteviController =
       StreamController<List<Map<String, dynamic>>>.broadcast();
 
@@ -69,8 +69,9 @@ class V2PinZahtevService {
 
   /// Pokreni realtime listener koristeći RealtimeManager
   static void _startRealtimeListener() {
-    _pinZahteviSubscription = V2MasterRealtimeManager.instance.subscribe('v2_pin_zahtevi').listen((payload) {
-      debugPrint('[PinZahtevService] Primljena realtime promena: ${payload.eventType}');
+    _pinZahteviSubscription =
+        V2MasterRealtimeManager.instance.onCacheChanged.where((t) => t == 'v2_pin_zahtevi').listen((_) {
+      debugPrint('[PinZahtevService] Primljena cache promena za v2_pin_zahtevi');
       _fetchAndEmitZahtevi();
     });
 

@@ -107,11 +107,10 @@ class V2KapacitetService {
     }
 
     controller.onListen = emit; // emituj tek kad listener postoji
-    final sub = rm.subscribe('v2_kapacitet_polazaka').listen((_) => emit());
+    final sub = rm.onCacheChanged.where((t) => t == 'v2_kapacitet_polazaka').listen((_) => emit());
     controller.onCancel = () {
       sub.cancel();
-      // Ne pozivamo rm.unsubscribe — v2_kapacitet_polazaka je statička tabela
-      // čiji kanal drži initialize() trajno otvoren.
+      controller.close();
     };
     return controller.stream;
   }
