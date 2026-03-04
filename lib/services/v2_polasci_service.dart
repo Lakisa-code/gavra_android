@@ -721,8 +721,10 @@ class V2PutnikStreamService {
         'datum_akcije': targetDatum,
       };
 
+      bool polasciUpdated = false;
       if (requestId != null && requestId.isNotEmpty) {
-        await supabase.from('v2_polasci').update(payload).eq('id', requestId);
+        final res = await supabase.from('v2_polasci').update(payload).eq('id', requestId).select('id');
+        polasciUpdated = res.isNotEmpty;
       } else {
         final gradKey = grad != null ? V2GradAdresaValidator.normalizeGrad(grad) : null;
         final vremeKey = vreme != null ? V2GradAdresaValidator.normalizeTime(vreme) : null;
@@ -736,16 +738,23 @@ class V2PutnikStreamService {
           debugPrint('[PutnikService] v2OznaciPokupljen: Nedostaje grad, vreme ili dan!');
           return;
         }
-        await supabase
+        final res = await supabase
             .from('v2_polasci')
             .update(payload)
             .eq('putnik_id', id.toString())
             .eq('dan', danKey)
             .eq('grad', gradKey)
-            .eq('zeljeno_vreme', vremeKey);
+            .eq('zeljeno_vreme', vremeKey)
+            .select('id');
+        polasciUpdated = res.isNotEmpty;
+      }
+      if (!polasciUpdated) {
+        debugPrint('[PutnikService] v2OznaciPokupljen: v2_polasci update nije pronašao red, preskačem statistiku.');
+        return;
       }
     } catch (e) {
       debugPrint('[PutnikService] v2OznaciPokupljen: Greška pri update v2_polasci: $e');
+      return;
     }
 
     final existing = await V2StatistikaIstorijaService.getLogEntry(
@@ -820,11 +829,93 @@ class V2PutnikStreamService {
     String? requestId,
     String status = 'otkazano',
   }) async {
-    try {
-      String? vozacUuid;
-      if (driver != null) {
-        vozacUuid = V2VozacCache.getUuidByIme(driver);
+    String? vozacUuid;
+    if (driver != null) {
+      vozacUuid = V2VozacCache.getUuidByIme(driver);
+    }
+
+    final updatePayload = {
+      'status': status,
+      'processed_at': nowToString(),
+      'updated_at': nowToString(),
+      if (driver != null) 'otkazao': driver,
+    };
+
+    bool polasciUpdated = false;
+
+    if (requestId != null && requestId.isNotEmpty) {
+      try {
+        final res = await supabase
+            .from('v2_polasci')
+            .update(updatePayload)
+            .eq('id', requestId)
+            .select('id');
+        polasciUpdated = res.isNotEmpty;
+      } catch (e) {
+        debugPrint('[PutnikService] v2OtkaziPutnika: Error matching by requestId: $e');
       }
+    }
+
+    if (!polasciUpdated) {
+      final finalDan = selectedDan;
+      final finalVreme = selectedVreme ?? vreme;
+      final finalGrad = selectedGrad ?? grad;
+
+      String danKey;
+      if (finalDan != null && finalDan.isNotEmpty) {
+        danKey = finalDan.toLowerCase();
+      } else if (datum != null) {
+        try {
+          final dt = DateTime.parse(datum);
+          const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          danKey = dani[dt.weekday - 1];
+        } catch (_) {
+          const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          danKey = dani[DateTime.now().weekday - 1];
+        }
+      } else {
+        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        danKey = dani[DateTime.now().weekday - 1];
+      }
+
+      final gradKey = V2GradAdresaValidator.normalizeGrad(finalGrad);
+      final normalizedTime = V2GradAdresaValidator.normalizeTime(finalVreme);
+
+      try {
+        if (normalizedTime.isNotEmpty) {
+          var res = await supabase
+              .from('v2_polasci')
+              .update(updatePayload)
+              .match({'putnik_id': id.toString(), 'dan': danKey})
+              .eq('grad', gradKey)
+              .eq('zeljeno_vreme', normalizedTime)
+              .select('id');
+
+          if (res.isNotEmpty) {
+            polasciUpdated = true;
+          } else {
+            res = await supabase
+                .from('v2_polasci')
+                .update(updatePayload)
+                .match({'putnik_id': id.toString(), 'dan': danKey})
+                .eq('grad', gradKey)
+                .eq('dodeljeno_vreme', normalizedTime)
+                .select('id');
+            polasciUpdated = res.isNotEmpty;
+          }
+        }
+      } catch (e) {
+        debugPrint('[PutnikService] v2OtkaziPutnika ERROR: $e');
+        rethrow;
+      }
+    }
+
+    if (!polasciUpdated) {
+      debugPrint('[PutnikService] v2OtkaziPutnika: v2_polasci update nije pronašao red, preskačem statistiku.');
+      return;
+    }
+
+    try {
       await V2StatistikaIstorijaService.logGeneric(
         tip: 'otkazivanje',
         putnikId: id.toString(),
@@ -836,85 +927,6 @@ class V2PutnikStreamService {
       );
     } catch (e) {
       debugPrint('[PutnikService] Greška pri logovanju otkazivanja: $e');
-    }
-
-    if (requestId != null && requestId.isNotEmpty) {
-      try {
-        final res = await supabase
-            .from('v2_polasci')
-            .update({
-              'status': status,
-              'processed_at': nowToString(),
-              'updated_at': nowToString(),
-              if (driver != null) 'otkazao': driver,
-            })
-            .eq('id', requestId)
-            .select('id');
-        if (res.isNotEmpty) return;
-      } catch (e) {
-        debugPrint('[PutnikService] v2OtkaziPutnika: Error matching by requestId: $e');
-      }
-    }
-
-    final finalDan = selectedDan;
-    final finalVreme = selectedVreme ?? vreme;
-    final finalGrad = selectedGrad ?? grad;
-
-    String danKey;
-    if (finalDan != null && finalDan.isNotEmpty) {
-      danKey = finalDan.toLowerCase();
-    } else if (datum != null) {
-      try {
-        final dt = DateTime.parse(datum);
-        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-        danKey = dani[dt.weekday - 1];
-      } catch (_) {
-        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-        danKey = dani[DateTime.now().weekday - 1];
-      }
-    } else {
-      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      danKey = dani[DateTime.now().weekday - 1];
-    }
-
-    final gradKey = V2GradAdresaValidator.normalizeGrad(finalGrad);
-    final normalizedTime = V2GradAdresaValidator.normalizeTime(finalVreme);
-
-    try {
-      if (normalizedTime.isNotEmpty) {
-        var res = await supabase
-            .from('v2_polasci')
-            .update({
-              'status': status,
-              'processed_at': nowToString(),
-              'updated_at': nowToString(),
-              if (driver != null) 'otkazao': driver,
-            })
-            .match({'putnik_id': id.toString(), 'dan': danKey})
-            .eq('grad', gradKey)
-            .eq('zeljeno_vreme', normalizedTime)
-            .select('id');
-
-        if (res.isNotEmpty) return;
-
-        res = await supabase
-            .from('v2_polasci')
-            .update({
-              'status': status,
-              'processed_at': nowToString(),
-              'updated_at': nowToString(),
-              if (driver != null) 'otkazao': driver,
-            })
-            .match({'putnik_id': id.toString(), 'dan': danKey})
-            .eq('grad', gradKey)
-            .eq('dodeljeno_vreme', normalizedTime)
-            .select('id');
-
-        if (res.isNotEmpty) return;
-      }
-    } catch (e) {
-      debugPrint('[PutnikService] v2OtkaziPutnika ERROR: $e');
-      rethrow;
     }
   }
 
@@ -938,16 +950,23 @@ class V2PutnikStreamService {
     }
 
     // Upiši direktno u v2_polasci (nove kolone Faza 2)
+    bool polasciUpdated = false;
+
     if (requestId != null && requestId.isNotEmpty) {
-      await supabase.from('v2_polasci').update({
-        'placen': true,
-        'placen_iznos': iznos.toDouble(),
-        if (vozacId != null) 'placen_vozac_id': vozacId,
-        if (driver != null) 'placen_vozac_ime': driver,
-        'datum_akcije': nowToString(),
-        'placen_tip': tipPutnika ?? 'dnevni',
-        'updated_at': nowToString(),
-      }).eq('id', requestId);
+      final res = await supabase
+          .from('v2_polasci')
+          .update({
+            'placen': true,
+            'placen_iznos': iznos.toDouble(),
+            if (vozacId != null) 'placen_vozac_id': vozacId,
+            if (driver != null) 'placen_vozac_ime': driver,
+            'datum_akcije': nowToString(),
+            'placen_tip': tipPutnika ?? 'dnevni',
+            'updated_at': nowToString(),
+          })
+          .eq('id', requestId)
+          .select('id');
+      polasciUpdated = res.isNotEmpty;
     } else if (selectedDan != null && selectedVreme != null && grad != null) {
       final gradKey = V2GradAdresaValidator.normalizeGrad(grad);
       final vremeKey = V2GradAdresaValidator.normalizeTime(selectedVreme);
@@ -961,7 +980,7 @@ class V2PutnikStreamService {
         'nedelja': 'ned',
       };
       final danKey = daniMap[selectedDan.toLowerCase()] ?? selectedDan.toLowerCase();
-      await supabase
+      final res = await supabase
           .from('v2_polasci')
           .update({
             'placen': true,
@@ -975,7 +994,16 @@ class V2PutnikStreamService {
           .eq('putnik_id', id.toString())
           .eq('dan', danKey)
           .eq('grad', gradKey)
-          .eq('zeljeno_vreme', vremeKey);
+          .eq('zeljeno_vreme', vremeKey)
+          .select('id');
+      polasciUpdated = res.isNotEmpty;
+    }
+
+    // Upiši u statistiku SAMO ako je v2_polasci uspješno ažuriran
+    if (!polasciUpdated) {
+      debugPrint(
+          '[v2OznaciPlaceno] v2_polasci nije ažuriran — statistika se ne upisuje (id=$id, requestId=$requestId)');
+      return;
     }
 
     await V2StatistikaIstorijaService.dodajUplatu(
@@ -1099,7 +1127,31 @@ class V2PutnikStatistikaService {
       }
       final datumStr = datum.toIso8601String().split('T')[0];
 
-      // Arhiva
+      // Operativna — pazar tekuceg dana (PRVO v2_polasci)
+      final rm = V2MasterRealtimeManager.instance;
+      final srRow = rm.polasciCache.values.where((r) => r['putnik_id']?.toString() == putnikId).firstOrNull;
+      if (srRow == null) {
+        debugPrint('[upisPlacanjaULog] Nema srRow u cache-u za putnikId=$putnikId — uplata se ne upisuje');
+        return false;
+      }
+
+      await _db.from('v2_polasci').update({
+        'placen': true,
+        'placen_iznos': iznos,
+        if (vozacId != null) 'placen_vozac_id': vozacId,
+        if (vozacIme.isNotEmpty) 'placen_vozac_ime': vozacIme,
+        'datum_akcije': datumStr,
+        'placen_tip': const {
+              'v2_radnici': 'radnik',
+              'v2_ucenici': 'ucenik',
+              'v2_dnevni': 'dnevni',
+              'v2_posiljke': 'posiljka',
+            }[putnikTabela] ??
+            'radnik',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', srRow['id'].toString());
+
+      // Arhiva — SAMO nakon uspješnog v2_polasci update-a
       await V2StatistikaIstorijaService.dodajUplatu(
         putnikId: putnikId,
         datum: datum,
@@ -1110,27 +1162,6 @@ class V2PutnikStatistikaService {
         placenaGodina: placenaGodina ?? datum.year,
         tipUplate: 'uplata',
       );
-
-      // Operativna — pazar tekuceg dana
-      final rm = V2MasterRealtimeManager.instance;
-      final srRow = rm.polasciCache.values.where((r) => r['putnik_id']?.toString() == putnikId).firstOrNull;
-      if (srRow != null) {
-        await _db.from('v2_polasci').update({
-          'placen': true,
-          'placen_iznos': iznos,
-          if (vozacId != null) 'placen_vozac_id': vozacId,
-          if (vozacIme.isNotEmpty) 'placen_vozac_ime': vozacIme,
-          'datum_akcije': datumStr,
-          'placen_tip': const {
-                'v2_radnici': 'radnik',
-                'v2_ucenici': 'ucenik',
-                'v2_dnevni': 'dnevni',
-                'v2_posiljke': 'posiljka',
-              }[putnikTabela] ??
-              'radnik',
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('id', srRow['id'].toString());
-      }
 
       return true;
     } catch (e) {
