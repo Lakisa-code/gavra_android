@@ -1261,6 +1261,10 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
     if (!mounted) return;
 
+    // Future se kreira jednom pre showDialog — ne ponovo na svakom rebuildu StatefulBuilder-a
+    final futurePoslednjePlacanje = V2PutnikStatistikaService.dohvatiPlacanja(v2Putnik.id)
+        .then((lista) => lista.isNotEmpty ? lista.first : null);
+
     showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -1332,10 +1336,9 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
                                           color: Colors.green.shade700,
                                         ),
                                       ),
-                                      // ?? Posjednje plaćanje — FutureBuilder (jednom, ne na svakom rebuildu)
+                                      // Posjednje plaćanje — FutureBuilder (jednom, ne na svakom rebuildu)
                                       FutureBuilder<Map<String, dynamic>?>(
-                                        future: V2PutnikStatistikaService.dohvatiPlacanja(v2Putnik.id)
-                                            .then((lista) => lista.isNotEmpty ? lista.first : null),
+                                        future: futurePoslednjePlacanje,
                                         builder: (context, snapshot) {
                                           final placanje = snapshot.data;
                                           if (placanje == null) {

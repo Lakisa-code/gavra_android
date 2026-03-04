@@ -665,8 +665,8 @@ class _FinansijeScreenState extends State<V2FinansijeScreen> {
             ),
           ],
         ),
-        content: StreamBuilder<Map<String, dynamic>>(
-          stream: Stream.fromFuture(V2FinansijeService.getIzvestajZaPeriod(from, to)),
+        content: FutureBuilder<Map<String, dynamic>>(
+          future: V2FinansijeService.getIzvestajZaPeriod(from, to),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));

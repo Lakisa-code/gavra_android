@@ -47,6 +47,10 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
   StreamSubscription<PostgresChangePayload>? _rasporedSub;
   StreamSubscription<PostgresChangePayload>? _vozacPutnikSub;
 
+  // Stream se kreira jednom i reciklira dok isoDate ne promeni
+  Stream<List<V2Putnik>>? _putnikStream;
+  String? _cachedIsoDate;
+
   final List<String> _days = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
 
   List<String> get bcVremena {
@@ -544,10 +548,16 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
     // Izracunaj jednom - koristi se za stream, countHelper i filter
     final isoDate = _getIsoDateForSelectedDay();
 
-    return StreamBuilder<List<V2Putnik>>(
-      stream: _putnikStreamService.streamKombinovaniPutniciFiltered(
+    // Kreira stream samo kad se promeni datum (ne na svakom rebuildu)
+    if (_putnikStream == null || _cachedIsoDate != isoDate) {
+      _cachedIsoDate = isoDate;
+      _putnikStream = _putnikStreamService.streamKombinovaniPutniciFiltered(
         isoDate: isoDate,
-      ),
+      );
+    }
+
+    return StreamBuilder<List<V2Putnik>>(
+      stream: _putnikStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
           return const Center(child: CircularProgressIndicator(color: Colors.white));

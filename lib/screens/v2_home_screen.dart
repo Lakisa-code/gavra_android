@@ -69,6 +69,10 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
   // ?? Cache-based stream (kreiran jednom u initState, ne unutar build())
   late final Stream<int> _streamBrojZahteva;
 
+  // ?? putnici stream — kreira se samo kad se promeni _selectedDay (ne na svakom rebuildu)
+  Stream<List<V2Putnik>>? _streamPutnici;
+  String? _cachedPutniciDay;
+
   // ?? DINAMICKA VREMENA - prate navBarTypeNotifier (praznici/zimski/letnji)
   List<String> get bcVremena {
     final navType = navBarTypeNotifier.value;
@@ -1903,10 +1907,18 @@ class _HomeScreenState extends State<V2HomeScreen> with TickerProviderStateMixin
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: StreamBuilder<List<V2Putnik>>(
-        stream: V2PolasciService.streamKombinovaniPutniciFiltered(
-          isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
-          // grad i vreme NAMERNO IZOSTAVLJENI - treba nam SVA vremena za bottom nav bar
-        ),
+        // Kreira stream samo kad se promeni dan (ne na svakom rebuildu)
+        stream: () {
+          final isoDate = _getTargetDateIsoFromSelectedDay(_selectedDay);
+          if (_streamPutnici == null || _cachedPutniciDay != _selectedDay) {
+            _cachedPutniciDay = _selectedDay;
+            _streamPutnici = V2PolasciService.streamKombinovaniPutniciFiltered(
+              isoDate: isoDate,
+              // grad i vreme NAMERNO IZOSTAVLJENI - treba nam SVA vremena za bottom nav bar
+            );
+          }
+          return _streamPutnici!;
+        }(),
         builder: (context, snapshot) {
           // ?? DEBUG: Log state information
           // ?? NOVO: Error handling sa specialized widgets
