@@ -271,7 +271,10 @@ class V2StatistikaIstorijaService {
       emit();
     });
     final sub = rm.subscribe('v2_polasci').listen((_) => emit());
-    controller.onCancel = () => sub.cancel();
+    controller.onCancel = () {
+      sub.cancel();
+      rm.unsubscribe('v2_polasci');
+    };
     return controller.stream;
   }
 }

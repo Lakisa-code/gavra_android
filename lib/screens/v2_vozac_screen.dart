@@ -219,6 +219,9 @@ class _VozacScreenState extends State<V2VozacScreen> {
     _notificationSubscription?.cancel(); // ? CLEANUP
     _rasporedRealtimeSub?.cancel(); // ?? Realtime raspored
     _vozacPutnikRealtimeSub?.cancel(); // ?? Realtime vozac_putnik
+    final rm = V2MasterRealtimeManager.instance;
+    rm.unsubscribe('v2_vozac_raspored');
+    rm.unsubscribe('v2_vozac_putnik');
     super.dispose();
   }
 

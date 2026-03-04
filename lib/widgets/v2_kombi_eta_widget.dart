@@ -53,11 +53,10 @@ class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
     _pollingTimer?.cancel();
     _subscription?.cancel();
     _putnikSubscription?.cancel();
-    V2MasterRealtimeManager.instance.unsubscribe('v2_vozac_lokacije');
-    // NE pozivamo unsubscribe('v2_polasci') — profil ekran vec drzi taj
-    // channel otvoren (registrovan u _setupRealtimeListener). Dovoljno je
-    // otkazati dart StreamSubscription iznad. Bez ovog fixa _listenerCount bi
-    // pao na 1 i channel bi ostao otvoren sa dead stream-om bez slusaoca.
+    final rm = V2MasterRealtimeManager.instance;
+    rm.unsubscribe('v2_vozac_lokacije');
+    // unsubscribe v2_polasci samo ako smo se i subscribovali (kad postoji putnikId)
+    if (widget.putnikId != null) rm.unsubscribe('v2_polasci');
     super.dispose();
   }
 

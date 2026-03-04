@@ -88,6 +88,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
     WidgetsBinding.instance.removeObserver(this);
     navBarTypeNotifier.removeListener(_onSeasonChanged);
     _polasciSubscription?.cancel(); // Zatvori Polasci listener
+    V2MasterRealtimeManager.instance.unsubscribe('v2_polasci');
     super.dispose();
   }
 

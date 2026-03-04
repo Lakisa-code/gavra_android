@@ -112,6 +112,9 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
   void dispose() {
     _rasporedSub?.cancel();
     _vozacPutnikSub?.cancel();
+    final rm = V2MasterRealtimeManager.instance;
+    rm.unsubscribe('v2_vozac_raspored');
+    rm.unsubscribe('v2_vozac_putnik');
     super.dispose();
   }
 
