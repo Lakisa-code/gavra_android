@@ -221,27 +221,149 @@ class _WelcomeScreenState extends State<V2WelcomeScreen> with TickerProviderStat
       barrierDismissible: !info.isForced,
       builder: (ctx) => PopScope(
         canPop: !info.isForced,
-        child: AlertDialog(
-          title: Text(info.isForced ? '🔴 Obavezno ažuriranje' : '🆕 Dostupna nova verzija'),
-          content: Text(
-            info.isForced
-                ? 'Ova verzija aplikacije više nije podržana.\nMolimo ažurirajte na verziju ${info.latestVersion} da biste nastavili sa korišćenjem.'
-                : 'Dostupna je nova verzija ${info.latestVersion}.\nPreporucujemo da ažurirate aplikaciju.',
-          ),
-          actions: [
-            if (!info.isForced)
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Kasnije'),
-              ),
-            ElevatedButton(
-              onPressed: () {
-                V2AppSettingsService.openStore();
-                if (!info.isForced) Navigator.of(ctx).pop();
-              },
-              child: const Text('Ažuriraj'),
+        child: Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: info.isForced
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                    )
+                  : const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1A1A2E), Color(0xFF0F3460)],
+                    ),
+              boxShadow: [
+                BoxShadow(
+                  color: (info.isForced ? Colors.red : Colors.blue).withValues(alpha: 0.3),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-          ],
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Ikona
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: (info.isForced ? Colors.red : Colors.blue).withValues(alpha: 0.15),
+                      border: Border.all(
+                        color: (info.isForced ? Colors.red : Colors.blue).withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      info.isForced ? Icons.system_update : Icons.new_releases_rounded,
+                      color: info.isForced ? Colors.redAccent : Colors.blueAccent,
+                      size: 36,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Naslov
+                  Text(
+                    info.isForced ? 'Obavezno ažuriranje' : 'Nova verzija dostupna',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  // Verzija badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: (info.isForced ? Colors.red : Colors.blue).withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: (info.isForced ? Colors.red : Colors.blue).withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Text(
+                      'v${info.latestVersion}',
+                      style: TextStyle(
+                        color: info.isForced ? Colors.redAccent : Colors.blueAccent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Poruka
+                  Text(
+                    info.isForced
+                        ? 'Ova verzija aplikacije više nije podržana. Molimo ažurirajte da biste nastavili sa korišćenjem.'
+                        : 'Preporučujemo da ažurirate aplikaciju radi boljih performansi i novih funkcija.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+                  // Dugmad
+                  Row(
+                    children: [
+                      if (!info.isForced) ...[
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                              ),
+                            ),
+                            child: Text(
+                              'Kasnije',
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 15),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            V2AppSettingsService.openStore();
+                            if (!info.isForced) Navigator.of(ctx).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: info.isForced ? Colors.redAccent : Colors.blueAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Ažuriraj',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
