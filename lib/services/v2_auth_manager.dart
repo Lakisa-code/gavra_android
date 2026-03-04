@@ -7,11 +7,11 @@ import '../globals.dart';
 import '../models/v2_vozac.dart';
 import '../screens/v2_welcome_screen.dart';
 import '../utils/v2_vozac_cache.dart';
+import 'realtime/v2_master_realtime_manager.dart';
 import 'v2_firebase_service.dart';
 import 'v2_huawei_push_service.dart';
 import 'v2_pin_zahtev_service.dart';
 import 'v2_push_token_service.dart';
-import 'realtime/v2_master_realtime_manager.dart';
 
 /// Centralizovani auth manager.
 /// Upravlja lokalnim auth operacijama kroz SharedPreferences.
@@ -162,10 +162,14 @@ class V2AuthManager {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // 1. Obriši in-memory cache i SharedPreferences
+      // 1. Obriši in-memory cache i SharedPreferences (vozač + putnik sesija)
       _cachedDriverName = null;
       await prefs.remove(_driverKey);
       await prefs.remove(_authSessionKey);
+      await prefs.remove('registrovani_putnik_telefon');
+      await prefs.remove('registrovani_putnik_pin');
+      await prefs.remove('registrovani_putnik_id');
+      await prefs.remove('registrovani_putnik_ime');
 
       // 2. Obriši push tokene iz Supabase baze
       try {

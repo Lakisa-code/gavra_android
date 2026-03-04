@@ -433,14 +433,15 @@ class _V2PutnikLoginScreenState extends State<V2PutnikLoginScreen> {
       }
 
       if (mounted) {
-        // Idi na profil ekran
-        Navigator.pushReplacement(
+        // Idi na profil ekran — ukloni ceo stack da back ne vraća na login/welcome
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
             builder: (context) => V2PutnikProfilScreen(
               putnikData: response,
             ),
           ),
+          (route) => false,
         );
       }
     } catch (e) {
