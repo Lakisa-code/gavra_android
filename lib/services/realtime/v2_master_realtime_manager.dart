@@ -795,16 +795,11 @@ class V2MasterRealtimeManager {
 
     Future.microtask(emit);
 
-    final subs = putnikTabele.map((t) => subscribe(t).listen((_) => emit())).toList();
+    // putnikTabele su statičke — kanali su uvijek otvoreni, onCacheChanged je dovoljan
     final cacheSub = _onCacheChanged.where((t) => putnikTabele.contains(t)).listen((_) => emit());
     controller.onCancel = () {
-      for (final s in subs) {
-        s.cancel();
-      }
-      for (final t in putnikTabele) {
-        unsubscribe(t);
-      }
       cacheSub.cancel();
+      controller.close();
     };
     return controller.stream;
   }
