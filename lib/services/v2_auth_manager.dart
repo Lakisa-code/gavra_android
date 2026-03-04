@@ -11,6 +11,7 @@ import 'v2_firebase_service.dart';
 import 'v2_huawei_push_service.dart';
 import 'v2_pin_zahtev_service.dart';
 import 'v2_push_token_service.dart';
+import 'realtime/v2_master_realtime_manager.dart';
 
 /// Centralizovani auth manager.
 /// Upravlja lokalnim auth operacijama kroz SharedPreferences.
@@ -139,6 +140,10 @@ class V2AuthManager {
 
       if (tokenRow != null && tokenRow['vozac_id'] != null) {
         final vozacId = tokenRow['vozac_id'] as String;
+        // Čitaj iz cache-a — 0 DB querija
+        final ime = V2MasterRealtimeManager.instance.vozaciCache[vozacId]?['ime'] as String?;
+        if (ime != null && ime.isNotEmpty) return ime;
+        // Fallback: DB upit ako cache nije spreman
         final vozacRow = await supabase.from('v2_vozaci').select('ime').eq('id', vozacId).maybeSingle();
         if (vozacRow != null && vozacRow['ime'] != null) {
           return vozacRow['ime'] as String;

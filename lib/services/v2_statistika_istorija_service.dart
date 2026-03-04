@@ -71,15 +71,10 @@ class V2StatistikaIstorijaService {
     if (vozacId != null && vozacId.isNotEmpty) {
       // Prvo pokušaj iz lokalnog cache-a (brže, bez mrežnog zahteva)
       vozacIme = V2VozacCache.getImeByUuid(vozacId);
-      // Ako nije u cache-u, dohvati iz baze
+      // Ako nije u VozacCache-u, pokušaj iz rm.vozaciCache — 0 DB querija
       if (vozacIme == null || vozacIme.isEmpty) {
-        try {
-          final vozacData = await _supabase.from('v2_vozaci').select('ime').eq('id', vozacId).maybeSingle();
-          vozacIme = vozacData?['ime'] as String?;
-          debugPrint('[dodajUplatu] vozacId=$vozacId -> vozac_ime=$vozacIme');
-        } catch (e) {
-          debugPrint('[V2StatistikaIstorijaService] Greška pri dohvatanju vozac_ime: $e');
-        }
+        vozacIme = V2MasterRealtimeManager.instance.vozaciCache[vozacId]?['ime'] as String?;
+        if (vozacIme != null) debugPrint('[dodajUplatu] vozacId=$vozacId -> vozac_ime=$vozacIme (iz rm.vozaciCache)');
       }
       // Poslednji fallback: direktno prosledeno ime
       if ((vozacIme == null || vozacIme.isEmpty) && vozacImeParam != null && vozacImeParam.isNotEmpty) {

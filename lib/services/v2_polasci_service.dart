@@ -706,12 +706,9 @@ class V2PutnikStreamService {
 
     String? vozacId;
     if (driver != null) {
-      try {
-        final vozacData = await supabase.from('v2_vozaci').select('id').eq('ime', driver).maybeSingle();
-        vozacId = vozacData?['id'] as String?;
-      } catch (e) {
-        debugPrint('[PutnikService] v2OznaciPokupljen: Greška pri dohvatanju vozača "$driver": $e');
-      }
+      // Čitaj iz cache-a — 0 DB querija
+      final rm = V2MasterRealtimeManager.instance;
+      vozacId = rm.vozaciCache.values.firstWhere((v) => v['ime'] == driver, orElse: () => {})['id'] as String?;
     }
 
     try {
@@ -934,12 +931,9 @@ class V2PutnikStreamService {
 
     String? vozacId;
     if (driver != null) {
-      try {
-        final vozacData = await supabase.from('v2_vozaci').select('id').eq('ime', driver).maybeSingle();
-        vozacId = vozacData?['id'] as String?;
-      } catch (e) {
-        debugPrint('[PutnikService] v2OznaciPlaceno: Greška pri dohvatanju vozača "$driver": $e');
-      }
+      // Čitaj iz cache-a — 0 DB querija
+      final rm = V2MasterRealtimeManager.instance;
+      vozacId = rm.vozaciCache.values.firstWhere((v) => v['ime'] == driver, orElse: () => {})['id'] as String?;
     }
 
     // Upiši direktno u v2_polasci (nove kolone Faza 2)

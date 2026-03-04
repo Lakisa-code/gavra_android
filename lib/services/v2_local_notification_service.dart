@@ -505,18 +505,12 @@ class V2LocalNotificationService {
       const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
       final danKratica = dani[danas.weekday - 1];
 
-      // Traži putnika po imenu u svim v2_ tabelama
-      final tabele = ['v2_radnici', 'v2_ucenici', 'v2_dnevni', 'v2_posiljke'];
+      // Traži putnika po imenu iz cache-a — 0 DB querija
       String? putnikId;
-      for (final tabela in tabele) {
-        final row =
-            await supabase.from(tabela).select('id').eq('ime', putnikIme).neq('status', 'neaktivan').maybeSingle();
-        if (row != null) {
-          putnikId = row['id'] as String;
-          break;
-        }
-      }
-
+      final rm = V2MasterRealtimeManager.instance;
+      final cached = rm.getAllPutnici().where((p) =>
+          p['ime'] == putnikIme && p['status'] != 'neaktivan').firstOrNull;
+      putnikId = cached?['id'] as String?;
       if (putnikId == null) return null;
 
       // Nađi njegovu današnju vožnju u v2_polasci
