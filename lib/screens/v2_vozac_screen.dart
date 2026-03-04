@@ -55,8 +55,8 @@ class _VozacScreenState extends State<V2VozacScreen> {
 
   StreamSubscription<Position>? _driverPositionSubscription;
   StreamSubscription<Map<String, dynamic>>? _notificationSubscription; // ? ZA AUTOMATSKI POPIS
-  StreamSubscription<PostgresChangePayload>? _rasporedRealtimeSub; // ?? Realtime raspored
-  StreamSubscription<PostgresChangePayload>? _vozacPutnikRealtimeSub; // ?? Realtime vozac_putnik
+  StreamSubscription<String>? _rasporedRealtimeSub; // ?? Realtime raspored
+  StreamSubscription<String>? _vozacPutnikRealtimeSub; // ?? Realtime vozac_putnik
 
   Stream<Map<String, double>>? _streamPazar;
 
@@ -191,11 +191,11 @@ class _VozacScreenState extends State<V2VozacScreen> {
     _rasporedRealtimeSub?.cancel();
     _vozacPutnikRealtimeSub?.cancel();
     final rm = V2MasterRealtimeManager.instance;
-    _rasporedRealtimeSub = rm.subscribe('v2_vozac_raspored').listen((_) {
+    _rasporedRealtimeSub = rm.onCacheChanged.where((t) => t == 'v2_vozac_raspored').listen((_) {
       final entries = rm.rasporedCache.values.map((row) => V2VozacRasporedEntry.fromMap(row)).toList();
       if (mounted) setState(() => _rasporedCache = entries);
     });
-    _vozacPutnikRealtimeSub = rm.subscribe('v2_vozac_putnik').listen((_) {
+    _vozacPutnikRealtimeSub = rm.onCacheChanged.where((t) => t == 'v2_vozac_putnik').listen((_) {
       final entries = rm.vozacPutnikCache.values.map((row) => V2VozacPutnikEntry.fromMap(row)).toList();
       if (mounted) setState(() => _vozacPutnikCache = entries);
     });
@@ -219,9 +219,6 @@ class _VozacScreenState extends State<V2VozacScreen> {
     _notificationSubscription?.cancel(); // ? CLEANUP
     _rasporedRealtimeSub?.cancel(); // ?? Realtime raspored
     _vozacPutnikRealtimeSub?.cancel(); // ?? Realtime vozac_putnik
-    final rm = V2MasterRealtimeManager.instance;
-    rm.unsubscribe('v2_vozac_raspored');
-    rm.unsubscribe('v2_vozac_putnik');
     super.dispose();
   }
 

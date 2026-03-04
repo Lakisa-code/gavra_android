@@ -44,8 +44,8 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
   List<V2VozacPutnikEntry> _vozacPutnikCache = [];
 
   // Realtime subscriptions
-  StreamSubscription<PostgresChangePayload>? _rasporedSub;
-  StreamSubscription<PostgresChangePayload>? _vozacPutnikSub;
+  StreamSubscription<String>? _rasporedSub;
+  StreamSubscription<String>? _vozacPutnikSub;
 
   // Stream se kreira jednom i reciklira dok isoDate ne promeni
   Stream<List<V2Putnik>>? _putnikStream;
@@ -116,23 +116,20 @@ class _VozacRasporedScreenState extends State<V2VozacRasporedScreen> {
   void dispose() {
     _rasporedSub?.cancel();
     _vozacPutnikSub?.cancel();
-    final rm = V2MasterRealtimeManager.instance;
-    rm.unsubscribe('v2_vozac_raspored');
-    rm.unsubscribe('v2_vozac_putnik');
     super.dispose();
   }
 
   /// Realtime: prati vozac_raspored i vozac_putnik tabele
   void _subscribeRealtime() {
     final rm = V2MasterRealtimeManager.instance;
-    _rasporedSub = rm.subscribe('v2_vozac_raspored').listen((_) {
+    _rasporedSub = rm.onCacheChanged.where((t) => t == 'v2_vozac_raspored').listen((_) {
       if (mounted) {
         setState(() {
           _rasporedCache = rm.rasporedCache.values.map((r) => V2VozacRasporedEntry.fromMap(r)).toList();
         });
       }
     });
-    _vozacPutnikSub = rm.subscribe('v2_vozac_putnik').listen((_) {
+    _vozacPutnikSub = rm.onCacheChanged.where((t) => t == 'v2_vozac_putnik').listen((_) {
       if (mounted) {
         setState(() {
           _vozacPutnikCache = rm.vozacPutnikCache.values.map((r) => V2VozacPutnikEntry.fromMap(r)).toList();
