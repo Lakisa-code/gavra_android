@@ -58,7 +58,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
   StreamSubscription<PostgresChangePayload>? _rasporedRealtimeSub; // ?? Realtime raspored
   StreamSubscription<PostgresChangePayload>? _vozacPutnikRealtimeSub; // ?? Realtime vozac_putnik
 
-  late final Stream<Map<String, double>> _streamPazar;
+  Stream<Map<String, double>>? _streamPazar;
 
   String _selectedGrad = 'BC';
   String _selectedVreme = ''; // Ce biti postavljen u _selectClosestDeparture()
@@ -158,7 +158,6 @@ class _VozacScreenState extends State<V2VozacScreen> {
     // Sprjecava race condition gdje _rasporedCache ostaje prazan ? filterKombinovan vraca sve putnike
     _rasporedCache =
         V2MasterRealtimeManager.instance.rasporedCache.values.map((row) => V2VozacRasporedEntry.fromMap(row)).toList();
-    _streamPazar = V2StatistikaIstorijaService.streamPazarIzCachea(isoDate: _getWorkingDateIso());
     _initAsync();
   }
 
@@ -262,7 +261,9 @@ class _VozacScreenState extends State<V2VozacScreen> {
     if (widget.previewAsDriver != null && widget.previewAsDriver!.isNotEmpty) {
       _currentDriver = widget.previewAsDriver;
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _streamPazar ??= V2StatistikaIstorijaService.streamPazarIzCachea(isoDate: _getWorkingDateIso());
+        });
         _selectClosestDeparture();
       }
       return;
@@ -271,7 +272,10 @@ class _VozacScreenState extends State<V2VozacScreen> {
     _currentDriver = await V2FirebaseService.getCurrentDriver();
 
     if (mounted) {
-      setState(() {});
+      setState(() {
+        // Kreira stream tek nakon sto je _currentDriver poznat
+        _streamPazar ??= V2StatistikaIstorijaService.streamPazarIzCachea(isoDate: _getWorkingDateIso());
+      });
       // ?? Nakon što je vozac inicijalizovan, izaberi najbliži polazak
       _selectClosestDeparture();
     }
@@ -1290,7 +1294,7 @@ class _VozacScreenState extends State<V2VozacScreen> {
             child: StreamBuilder<Map<String, double>>(
               stream: _streamPazar,
               builder: (context, snapshot) {
-                final pazar = snapshot.data?[_currentDriver!] ?? 0.0;
+                final pazar = _currentDriver != null ? (snapshot.data?[_currentDriver!] ?? 0.0) : 0.0;
                 return InkWell(
                   onTap: () {
                     _showStatPopup(
