@@ -29,3 +29,25 @@ jobs:
           echo "== Check for generated export_options.plist =="
           if [ -f "$HOME/export_options.plist" ]; then echo "export_options exists"; else echo "no export_options yet"; fi
           echo "== End diagnostics =="
+
+      - name: Save diagnostics to file
+        run: |
+          mkdir -p diagnostics
+          {
+            echo "== Show provisioning profiles dir =="
+            ls -la "/Users/runner/Library/MobileDevice/Provisioning Profiles" || true
+            echo "== Show certificates directory =="
+            ls -la "/Users/runner/Library/Developer/Xcode/UserData/Certificates" || true
+            echo "== security find-identity =="
+            security find-identity -p codesigning -v || true
+            echo "== list keychains =="
+            security list-keychains || true
+            echo "== Check for generated export_options.plist =="
+            if [ -f "$HOME/export_options.plist" ]; then echo "export_options exists"; else echo "no export_options yet"; fi
+          } > diagnostics/diagnostics.txt 2>&1
+
+      - name: Upload diagnostics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-diagnostics
+          path: diagnostics/diagnostics.txt
