@@ -410,6 +410,9 @@ class V2PolasciService {
 
   static final V2PutnikStreamService _svc = V2PutnikStreamService();
 
+  static Future<void> v2OznaciStatus(String putnikId, String status, String actor) =>
+      _svc.v2OznaciStatus(putnikId, status, actor);
+
   static Stream<List<V2Putnik>> v2StreamPutnici() => _svc.v2StreamPutnici();
 
   static Stream<List<V2Putnik>> streamKombinovaniPutniciFiltered({

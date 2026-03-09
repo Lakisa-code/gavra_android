@@ -302,15 +302,6 @@ class _KombiEtaWidgetState extends State<V2KombiEtaWidget> {
       );
     }
 
-    if (_isActive) {
-      return _buildContainer(
-        Colors.orange.shade700,
-        icon: Icons.schedule,
-        title: 'VOZAČ KREĆE USKORO',
-        message: _vozacIme != null ? 'Vozač: $_vozacIme' : 'Kombi je na putu',
-      );
-    }
-
     return _buildFaza1();
   }
 

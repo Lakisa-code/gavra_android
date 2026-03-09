@@ -284,119 +284,220 @@ class V2BatteryOptimizationService {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogCtx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.battery_alert, color: Colors.orange[700], size: 28),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Omogući notifikacije',
-                style: TextStyle(fontSize: 18),
-              ),
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
             ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$manufacturerName telefoni automatski blokiraju pozadinske notifikacije radi uštede baterije.',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.withValues(alpha: 0.3),
+                blurRadius: 24,
+                spreadRadius: 2,
               ),
-              child: const Row(
-                children: [
-                  Icon(Icons.lightbulb_outline, color: Colors.orange, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Ovo omogućava da vam ekran zasvetli kad stigne poruka.',
-                      style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ],
+            border: Border.all(
+              color: Colors.orange.withValues(alpha: 0.25),
+              width: 1.5,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 68,
+                  height: 68,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.orange.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.45),
+                      width: 2,
                     ),
                   ),
-                ],
-              ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: Colors.orange,
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                // Naslov
+                const Text(
+                  'Omogući notifikacije',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                // Opis
+                Text(
+                  '$manufacturerName telefoni automatski blokiraju pozadinske notifikacije radi uštede baterije.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 14),
+                // Info box
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lightbulb_rounded, color: Colors.orange, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Ovo omogućava da vam ekran zasvetli kad stigne poruka.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.orange.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Koraci
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Kliknite "Dozvoli" i pratite korake:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildStep('1', 'Nađite Gavra 013 u listi'),
+                      _buildStep('2', 'Isključite "Upravljaj automatski"'),
+                      _buildStep('3', 'Uključite SVE opcije'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Dugmici
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () async {
+                          await markDismissedPermanently();
+                          if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white38,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        child: const Text('Ne prikazuj više', style: TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () async {
+                        await markShown();
+                        if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white54,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      child: const Text('Kasnije'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await markShown();
+                      if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
+                      await openBatterySettings(manufacturer: manufacturer);
+                    },
+                    icon: const Icon(Icons.settings_rounded, size: 18),
+                    label: const Text('Otvori podešavanja'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Kliknite "Dozvoli" i pratite korake:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            _buildStep('1', 'Nađite Gavra 013 u listi'),
-            _buildStep('2', 'Isključite "Upravljaj automatski"'),
-            _buildStep('3', 'Uključite SVE opcije'),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await markDismissedPermanently();
-              if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
-            },
-            child: const Text('Ne prikazuj više'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await markShown();
-              if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
-            },
-            child: const Text('Kasnije'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              await markShown();
-              if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
-              await openBatterySettings(manufacturer: manufacturer);
-            },
-            icon: const Icon(Icons.settings, size: 18),
-            label: const Text('Otvori podešavanja'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
       ),
     );
   }
 
   static Widget _buildStep(String number, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-              color: Colors.blue,
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.2),
               shape: BoxShape.circle,
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.6), width: 1.5),
             ),
             child: Center(
               child: Text(
                 number,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Colors.orange,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 13)),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+            ),
           ),
         ],
       ),

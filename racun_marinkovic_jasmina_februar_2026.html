@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="sr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Račun br. 1/2026 – Marinković Jasmina</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 13px;
+            color: #222;
+            background: #f0f0f0;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20mm 18mm 18mm 18mm;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        /* HEADER */
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #1a3a6e;
+            padding-bottom: 14px;
+            margin-bottom: 18px;
+        }
+
+        .firm-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a3a6e;
+            letter-spacing: 0.5px;
+        }
+
+        .firm-sub {
+            font-size: 11px;
+            color: #555;
+            margin-top: 3px;
+        }
+
+        .racun-box {
+            text-align: right;
+        }
+
+        .racun-broj {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1a3a6e;
+        }
+
+        .racun-meta {
+            font-size: 11px;
+            color: #555;
+            margin-top: 3px;
+        }
+
+        /* SEKCIJE */
+        .sections-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            border: 1px solid #cdd5e0;
+            border-radius: 6px;
+            padding: 12px 14px;
+        }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        .section p {
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .section .bold {
+            font-weight: 700;
+            font-size: 13px;
+            color: #111;
+        }
+
+        /* NASLOV RAČUNA */
+        .racun-naslov {
+            text-align: center;
+            margin: 18px 0 6px;
+        }
+
+        .racun-naslov h2 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1a3a6e;
+            letter-spacing: 1px;
+        }
+
+        .racun-naslov .mesec {
+            font-size: 13px;
+            color: #555;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        /* DATUMI */
+        .datumi-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 14px 0;
+            font-size: 12px;
+            color: #444;
+        }
+
+        /* TABELA */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        thead tr {
+            background: #1a3a6e;
+            color: #fff;
+        }
+
+        thead th {
+            padding: 9px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        thead th:last-child,
+        thead th:nth-child(3),
+        thead th:nth-child(4) {
+            text-align: right;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e0e6ef;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f7f9fc;
+        }
+
+        tbody td {
+            padding: 9px 10px;
+            font-size: 12px;
+        }
+
+        tbody td:last-child,
+        tbody td:nth-child(3),
+        tbody td:nth-child(4) {
+            text-align: right;
+        }
+
+        tfoot td {
+            padding: 9px 10px;
+            font-size: 12px;
+        }
+
+        .total-row td {
+            background: #1a3a6e;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            border-top: 2px solid #1a3a6e;
+        }
+
+        .total-row td:last-child {
+            text-align: right;
+        }
+
+        /* NAPOMENE */
+        .napomene {
+            border: 1px solid #e0e6ef;
+            border-radius: 6px;
+            background: #f7f9fc;
+            padding: 10px 14px;
+            margin-top: 18px;
+            font-size: 11px;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .napomene strong {
+            color: #1a3a6e;
+        }
+
+        /* POTPIS */
+        .potpis-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 36px;
+            padding-top: 10px;
+            border-top: 1px solid #cdd5e0;
+        }
+
+        .potpis-box {
+            text-align: center;
+            width: 180px;
+        }
+
+        .potpis-linija {
+            border-top: 1px solid #333;
+            margin-bottom: 5px;
+        }
+
+        .potpis-box span {
+            font-size: 11px;
+            color: #555;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            .page {
+                margin: 0;
+                box-shadow: none;
+                padding: 15mm;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- HEADER -->
+        <div class="header-row">
+            <div>
+                <div class="firm-name">PR LIMO SERVIS GAVRA 013</div>
+                <div class="firm-sub">Mihajla Pupina 74, 26340 Bela Crkva</div>
+                <div class="firm-sub">PIB: 102853497 &nbsp;|&nbsp; MB: 55572178</div>
+                <div class="firm-sub">Žiro račun: 340-11436537-92</div>
+                <div class="firm-sub">Tel: 064/116-2560 &nbsp;|&nbsp; gavriconi19@gmail.com</div>
+            </div>
+            <div class="racun-box">
+                <div class="racun-broj">RAČUN br. 1/2026</div>
+                <div class="racun-meta">Datum izdavanja: 08.03.2026.</div>
+                <div class="racun-meta">Datum prometa: 28.02.2026.</div>
+            </div>
+        </div>
+
+        <!-- IZDAVALAC + KUPAC -->
+        <div class="sections-row">
+            <div class="section">
+                <div class="section-title">Izdavalac</div>
+                <p class="bold">PR Limo servis Gavra 013</p>
+                <p>Mihajla Pupina 74, 26340 Bela Crkva</p>
+                <p>PIB: 102853497 &nbsp;|&nbsp; MB: 55572178</p>
+                <p>Žiro račun: 340-11436537-92</p>
+                <p>Vlasnik: Bojan Gavrilović</p>
+            </div>
+            <div class="section">
+                <div class="section-title">Kupac / Korisnik</div>
+                <p class="bold">ŽITOBANAT D.O.O. VRŠAC</p>
+                <p>PIB: 102084390 &nbsp;|&nbsp; MB: 08195722</p>
+            </div>
+        </div>
+
+        <!-- NASLOV -->
+        <div class="racun-naslov">
+            <h2>RAČUN br. 1/2026</h2>
+            <div class="mesec">za mesec: februar 2026. &nbsp;|&nbsp; Korisnik: Marinković Jasmina</div>
+        </div>
+
+        <!-- TABELA -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:36px">#</th>
+                    <th>Opis usluge</th>
+                    <th style="width:70px">Jed. mera</th>
+                    <th style="width:60px">Kol.</th>
+                    <th style="width:90px">Cena/jed.</th>
+                    <th style="width:100px">Ukupno</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1.</td>
+                    <td>Prevoz putnika – februar 2026.</td>
+                    <td>dan</td>
+                    <td>20</td>
+                    <td>700,00 RSD</td>
+                    <td>14.000,00 RSD</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="5"
+                        style="text-align:right; padding-right:10px; font-size:12px; color:#555; border-top:1px solid #cdd5e0;">
+                        Ukupno bez PDV-a:
+                    </td>
+                    <td style="text-align:right; border-top:1px solid #cdd5e0;">14.000,00 RSD</td>
+                </tr>
+                <tr>
+                    <td colspan="5" style="text-align:right; padding-right:10px; font-size:12px; color:#555;">
+                        PDV (nije u sistemu PDV-a):
+                    </td>
+                    <td style="text-align:right;">0,00 RSD</td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="5" style="text-align:right; padding-right:10px;">ZA UPLATU:</td>
+                    <td>14.000,00 RSD</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- NAPOMENE -->
+        <div class="napomene">
+            <strong>Napomene:</strong><br>
+            • Poreski obveznik nije u sistemu PDV-a.<br>
+            • Račun je punovažan bez pečata i potpisa u skladu sa Zakonom o privrednim društvima.<br>
+            • Uplata na žiro račun: <strong>340-11436537-92</strong>, poziv na broj: <strong>1/2026</strong>
+        </div>
+
+        <!-- POTPIS -->
+        <div class="potpis-row">
+            <div class="potpis-box">
+                <div class="potpis-linija"></div>
+                <span>Bojan Gavrilović, vlasnik</span>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

@@ -5,6 +5,7 @@ import '../helpers/v2_putnik_statistike_helper.dart';
 import '../models/v2_registrovani_putnik.dart';
 import '../services/realtime/v2_master_realtime_manager.dart';
 import '../services/v2_permission_service.dart';
+import '../services/v2_polasci_service.dart';
 import '../theme.dart';
 import '../utils/v2_app_snack_bar.dart';
 import '../widgets/v2_pin_dialog.dart';
@@ -715,11 +716,9 @@ class _V2PutniciScreenState extends State<V2PutniciScreen> {
 
   Future<void> _postaviStatus(V2RegistrovaniPutnik v2Putnik, String noviStatus) async {
     try {
-      await _rm.v2UpdatePutnik(
-        v2Putnik.id,
-        {'status': noviStatus},
-        v2Putnik.v2Tabela,
-      );
+      // v2OznaciStatus upisuje status i automatski otkazuje polasci
+      // za danas/sutra kada je status bolovanje ili godisnji
+      await V2PolasciService.v2OznaciStatus(v2Putnik.id, noviStatus, 'admin');
       if (mounted) {
         final poruka = switch (noviStatus) {
           'aktivan' => '${v2Putnik.ime} je aktiviran',

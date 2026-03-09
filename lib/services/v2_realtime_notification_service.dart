@@ -204,7 +204,7 @@ class V2RealtimeNotificationService {
       }
 
       if (notificationType == 'vozac_krenuo') {
-        await V2NotificationNavigationService.navigateToVozacScreen();
+        await V2NotificationNavigationService.navigateToPassengerProfile();
         return;
       }
 

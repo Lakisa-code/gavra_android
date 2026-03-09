@@ -486,7 +486,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
   /// Dugme za postavljanje bolovanja/godišnjeg - SAMO za radnike
   Widget _buildOdsustvoButton() {
     final status = _putnikData['status']?.toString().toLowerCase() ?? 'aktivan';
-    final jeNaOdsustvu = status == 'bolovanje' || status == 'godisnji';
+    final jeNaOdsustvu = status == 'bolovanje' || status == 'godisnji' || status == 'godišnji';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -612,11 +612,10 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
       if (putnikId == null) return;
 
       final tabela = _putnikData['_tabela'] as String? ?? 'v2_radnici';
-      await V2MasterRealtimeManager.instance.v2UpdatePutnik(
-        putnikId,
-        {'status': noviStatus},
-        tabela,
-      );
+
+      // v2OznaciStatus upisuje status u tabelu i automatski otkazuje
+      // polasci za danas/sutra kada je status bolovanje ili godisnji
+      await V2PolasciService.v2OznaciStatus(putnikId, noviStatus, 'putnik');
 
       // Sačuvaj stari status pre setState (za audit log)
       final stariStatus = _putnikData['status']?.toString();
@@ -681,7 +680,7 @@ class _V2PutnikProfilScreenState extends State<V2PutnikProfilScreen> with Widget
         if (V2WeatherData.isAssetIcon(icon)) {
           iconWidget = Image.asset(V2WeatherData.getAssetPath(icon), width: 32, height: 32);
         } else {
-          iconWidget = Text(icon, style: const TextStyle(fontSize: 14));
+          iconWidget = Text(icon, style: const TextStyle(fontSize: 28));
         }
 
         return GestureDetector(
