@@ -3,15 +3,13 @@ name: iOS Provisioning Diagnostics (branch-trigger)
 on:
   push:
     branches:
-      - ci/ios-diagnostics-20260309
+      - 'ci/ios-diagnostics-20260309'
 
 jobs:
   diagnostics:
-    name: Diagnostics: certs & provisioning
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Show runner info
         run: |
@@ -21,13 +19,13 @@ jobs:
       - name: Diagnostics: certificates & provisioning profiles
         run: |
           echo "== Show provisioning profiles dir =="
-          ls -la /Users/runner/Library/MobileDevice/Provisioning\ Profiles || true
+          ls -la "/Users/runner/Library/MobileDevice/Provisioning Profiles" || true
           echo "== Show certificates directory =="
-          ls -la /Users/runner/Library/Developer/Xcode/UserData/Certificates || true
+          ls -la "/Users/runner/Library/Developer/Xcode/UserData/Certificates" || true
           echo "== security find-identity =="
           security find-identity -p codesigning -v || true
           echo "== list keychains =="
           security list-keychains || true
           echo "== Check for generated export_options.plist =="
-          [ -f $HOME/export_options.plist ] && echo "export_options exists" || echo "no export_options yet"
+          if [ -f "$HOME/export_options.plist" ]; then echo "export_options exists"; else echo "no export_options yet"; fi
           echo "== End diagnostics =="
