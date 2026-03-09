@@ -101,6 +101,20 @@ jobs:
       - name: Setup code signing
         run: xcode-project use-profiles
 
+      - name: Diagnostics: certificates & provisioning profiles
+        run: |
+          echo "== Show provisioning profiles dir =="
+          ls -la /Users/runner/Library/MobileDevice/Provisioning\ Profiles || true
+          echo "== Show certificates directory =="
+          ls -la /Users/runner/Library/Developer/Xcode/UserData/Certificates || true
+          echo "== security find-identity =="
+          security find-identity -p codesigning -v || true
+          echo "== list keychains =="
+          security list-keychains || true
+          echo "== Check for generated export_options.plist =="
+          [ -f $HOME/export_options.plist ] && echo "export_options exists" || echo "no export_options yet"
+          echo "== End diagnostics =="
+
       - name: Create ExportOptions.plist
         run: |
           PROVISIONING_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | xargs basename | sed 's/.mobileprovision//')
