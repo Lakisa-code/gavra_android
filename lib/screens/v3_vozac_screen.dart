@@ -884,38 +884,19 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
 
           if (optimizedIndices != null && optimizedIndices.length == resolved.length) {
             final optimizedResolved = <V3RouteWaypoint>[];
-            _optimizedPutnikIds.clear();
             for (final index in optimizedIndices) {
               optimizedResolved.add(resolved[index]);
-              _optimizedPutnikIds.add(resolved[index].id);
             }
             resolved = optimizedResolved;
             debugPrint('[ORS] Putnici uspešno reoptimizovani!');
-            // Re-sortiraj `_mojiPutnici` odmah nakon optimizacije
+            // Više se ne mešamo u redosled fiksiranim ID-jevima, oslanjamo se na live ETA
             if (mounted) {
-              _applyOptimizedOrderToPutnici();
               V3StateUtils.safeSetState(this, () {});
             }
           }
         } catch (e) {
           debugPrint('[ORS] Optimizacija preskočena/greška: $e');
         }
-      } else if (_optimizedPutnikIds.isNotEmpty) {
-        // Ako već imamo optimizaciju, primeni isti redosled bez ponovnog API poziva
-        final optimizedResolved = <V3RouteWaypoint>[];
-        for (final id in _optimizedPutnikIds) {
-          final foundIndex = resolved.indexWhere((w) => w.id == id);
-          if (foundIndex != -1) {
-            optimizedResolved.add(resolved[foundIndex]);
-          }
-        }
-        // Dodaj preostale koji nisu bili u optimizovanom nizu
-        for (final wp in resolved) {
-          if (!_optimizedPutnikIds.contains(wp.id)) {
-            optimizedResolved.add(wp);
-          }
-        }
-        resolved = optimizedResolved;
       }
     }
     // --- KRAJ NOVE LOGIKE ---
@@ -957,8 +938,8 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
   }
 
   Future<void> _handleOpenMap() async {
-    if (!_isNavigating && _optimizedPutnikIds.isEmpty) {
-      if (mounted) V3AppSnackBar.warning(context, 'Prvo započnite vožnju (START) da bi se ruta optimizovala.');
+    if (!_isNavigating) {
+      if (mounted) V3AppSnackBar.warning(context, 'Prvo započnite vožnju (START) da bi se ruta prosledila na mapu.');
       return;
     }
 
@@ -1212,14 +1193,14 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
                                 child: _buildAppBarBtn(
                                   context: context,
                                   label: 'MAPA',
-                                  color: (!_isNavigating && _optimizedPutnikIds.isEmpty)
+                                  color: (!_isNavigating)
                                       ? Colors.grey // Inaktivno dok se ne klikne START
                                       : Colors.blue,
                                   height: appBarButtonHeight,
                                   onTap: () {
-                                    if (!_isNavigating && _optimizedPutnikIds.isEmpty) {
+                                    if (!_isNavigating) {
                                       V3AppSnackBar.warning(
-                                          context, 'Prvo kliknite START za izabrani termin da ruta bude optimizovana.');
+                                          context, 'Prvo kliknite START za izabrani termin da ruta bude prosleđena na mapu.');
                                       return;
                                     }
                                     _handleOpenMap();
