@@ -3,30 +3,32 @@ library;
 
 class V3PumpaStanje {
   final String id;
-
-  final String naziv;
-
   final double kapacitetLitri;
-
   final double trenutnoStanje;
-
+  final double alarmNivoLitri;
   final double stanjeBrojacPistolj;
+  final double cenaPoLitru;
+  final double dugIznos;
 
   V3PumpaStanje({
     required this.id,
-    this.naziv = 'Kucna Pumpa',
     this.kapacitetLitri = 0,
     required this.trenutnoStanje,
+    this.alarmNivoLitri = 500,
     this.stanjeBrojacPistolj = 0,
+    this.cenaPoLitru = 0,
+    this.dugIznos = 0,
   });
 
   factory V3PumpaStanje.fromJson(Map<String, dynamic> json) {
     return V3PumpaStanje(
       id: json['id']?.toString() ?? '',
-      naziv: json['naziv'] as String? ?? 'Kucna Pumpa',
       kapacitetLitri: (json['kapacitet_litri'] as num?)?.toDouble() ?? 0,
       trenutnoStanje: (json['trenutno_stanje_litri'] as num?)?.toDouble() ?? 0,
+      alarmNivoLitri: (json['alarm_nivo_litri'] as num?)?.toDouble() ?? 500,
       stanjeBrojacPistolj: (json['brojac_pistolj_litri'] as num?)?.toDouble() ?? 0,
+      cenaPoLitru: (json['cena_po_litru'] as num?)?.toDouble() ?? 0,
+      dugIznos: (json['dug_iznos'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -34,7 +36,10 @@ class V3PumpaStanje {
         if (id.isNotEmpty) 'id': id,
         'kapacitet_litri': kapacitetLitri,
         'trenutno_stanje_litri': trenutnoStanje,
+        'alarm_nivo_litri': alarmNivoLitri,
         'brojac_pistolj_litri': stanjeBrojacPistolj,
+        'cena_po_litru': cenaPoLitru,
+        'dug_iznos': dugIznos,
       };
 }
 

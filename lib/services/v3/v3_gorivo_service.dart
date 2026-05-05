@@ -7,6 +7,31 @@ import 'repositories/v3_gorivo_repository.dart';
 class V3GorivoService {
   static final V3GorivoRepository _repo = V3GorivoRepository();
 
+  /// Kreira početni red u tabeli `v3_gorivo` ako tabela nema podataka
+  static Future<bool> ensureInitialData() async {
+    try {
+      final existing = await _repo.selectFirst();
+      if (existing.isNotEmpty) {
+        return true;
+      }
+
+      final row = await _repo.insertReturning({
+        'kapacitet_litri': 3000,
+        'trenutno_stanje_litri': 0,
+        'alarm_nivo_litri': 500,
+        'brojac_pistolj_litri': 0,
+        'cena_po_litru': 0,
+        'dug_iznos': 0,
+      });
+
+      V3MasterRealtimeManager.instance.v3UpsertToCache('v3_gorivo', row);
+      return true;
+    } catch (e) {
+      debugPrint('[V3GorivoService] ensureInitialData error: $e');
+      return false;
+    }
+  }
+
   /// Dohvata stanje pumpe iz cache-a (tabela: v3_gorivo)
   static V3PumpaStanje? getStanjeSync() {
     final cache = V3MasterRealtimeManager.instance.gorivoCache;
@@ -61,6 +86,31 @@ class V3GorivoService {
       return true;
     } catch (e) {
       debugPrint('[V3GorivoService] updateRezevoar error: $e');
+      return false;
+    }
+  }
+
+  /// Ažurira sva polja goriva koja se uređuju iz UI forme
+  static Future<bool> updateAllFields({
+    required String id,
+    required double kapacitetLitri,
+    required double alarmNivoLitri,
+    required double brojacPistoljLitri,
+    required double cenaPoLitru,
+    required double dugIznos,
+  }) async {
+    try {
+      final row = await _repo.updateByIdReturning(id, {
+        'kapacitet_litri': kapacitetLitri,
+        'alarm_nivo_litri': alarmNivoLitri,
+        'brojac_pistolj_litri': brojacPistoljLitri,
+        'cena_po_litru': cenaPoLitru,
+        'dug_iznos': dugIznos,
+      });
+      V3MasterRealtimeManager.instance.v3UpsertToCache('v3_gorivo', row);
+      return true;
+    } catch (e) {
+      debugPrint('[V3GorivoService] updateAllFields error: $e');
       return false;
     }
   }

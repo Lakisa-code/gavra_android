@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,7 +14,6 @@ import '../services/v3/v3_closed_auth_service.dart';
 import '../services/v3/v3_driver_push_notification_service.dart';
 import '../services/v3/v3_navigation_app_launcher_service.dart';
 import '../services/v3/v3_operativna_nedelja_service.dart';
-import '../services/v3/v3_ors_route_service.dart';
 import '../services/v3/v3_putnik_adresa_resolver_service.dart';
 import '../services/v3/v3_route_models.dart';
 import '../services/v3/v3_route_waypoint_resolver_service.dart';
