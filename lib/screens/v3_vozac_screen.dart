@@ -462,33 +462,9 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
       allSelectedRowsById.putIfAbsent(entryId, () => row);
     }
 
-    // B: Ako postoji aktivan slot za ovaj grad/vreme/datum, dodaj SVE putnike
-    // iz operativnaNedeljaCache za taj slot (pokriva putnike dodane naknadno).
-    final hasActiveSlot = _assignedSlotRows.any((slot) {
-      final slotDatum = (slot[V3TrenutnaDodelaSlotService.colDatum] ?? '').trim();
-      final slotGrad = (slot[V3TrenutnaDodelaSlotService.colGrad] ?? '').trim().toUpperCase();
-      final slotVreme = V3TimeUtils.normalizeToHHmm(slot[V3TrenutnaDodelaSlotService.colVreme]);
-      return slotDatum == _selectedDatumIso && slotGrad == _selectedGrad && slotVreme == selectedVNorm;
-    });
-
-    if (hasActiveSlot) {
-      for (final raw in rm.operativnaNedeljaCache.values) {
-        final rowDatum = V3DateUtils.parseIsoDatePart(raw['datum'] as String? ?? '');
-        final rowGrad = raw['grad']?.toString().toUpperCase() ?? '';
-        final rowVreme = V3TimeUtils.normalizeToHHmm(raw['polazak_at']?.toString());
-        final putnikId = raw['created_by']?.toString();
-        if (rowDatum != _selectedDatumIso) continue;
-        if (rowGrad != _selectedGrad) continue;
-        if (rowVreme != selectedVNorm) continue;
-        if (putnikId == null || putnikId.isEmpty) continue;
-        if (raw['otkazano_at'] != null) continue;
-        final entryId = raw['id']?.toString();
-        if (entryId == null || entryId.isEmpty) continue;
-        final row = Map<String, dynamic>.from(raw);
-        row['vreme'] = row['vreme'] ?? row['polazak_at'];
-        allSelectedRowsById.putIfAbsent(entryId, () => row);
-      }
-    }
+    // Isključeno usisavanje svih putnika putem dodeljenog slota da se ne bi
+    // mešali putnici ako dva vozača imaju vožnju u isto vreme i grad.
+    // Dodeljivanje sada radi strictly preko individualne dodele u _assignedOperativnaIds.
 
     // 3. Za svaki red izgradimo _PutnikEntry iz operativna_nedelja
     final putnici = <_PutnikEntry>[];
@@ -710,32 +686,6 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
     ).where(hasActivePutnik)) {
       final id = row['id']?.toString();
       if (id != null && id.isNotEmpty) rowsById.putIfAbsent(id, () => row);
-    }
-
-    // Ako postoji aktivan slot, dodaj i putnike iz cache-a
-    final hasActiveSlot = _assignedSlotRows.any((slot) {
-      final slotDatum = (slot[V3TrenutnaDodelaSlotService.colDatum] ?? '').trim();
-      final slotGrad = (slot[V3TrenutnaDodelaSlotService.colGrad] ?? '').trim().toUpperCase();
-      final slotVreme = V3TimeUtils.normalizeToHHmm(slot[V3TrenutnaDodelaSlotService.colVreme]);
-      return slotDatum == _selectedDatumIso && slotGrad == gradUp && slotVreme == vremeNorm;
-    });
-
-    if (hasActiveSlot) {
-      for (final raw in rm.operativnaNedeljaCache.values) {
-        final rowDatum = V3DateUtils.parseIsoDatePart(raw['datum'] as String? ?? '');
-        final rowGrad = raw['grad']?.toString().toUpperCase() ?? '';
-        final rowVreme = V3TimeUtils.normalizeToHHmm(raw['polazak_at']?.toString());
-        if (rowDatum != _selectedDatumIso) continue;
-        if (rowGrad != gradUp) continue;
-        if (rowVreme != vremeNorm) continue;
-        if (raw['otkazano_at'] != null) continue;
-        if (!hasActivePutnik(raw)) continue;
-        final id = raw['id']?.toString();
-        if (id == null || id.isEmpty) continue;
-        final row = Map<String, dynamic>.from(raw);
-        row['vreme'] = row['vreme'] ?? row['polazak_at'];
-        rowsById.putIfAbsent(id, () => row);
-      }
     }
 
     return V3StatusPolicy.countOccupiedSeatsForSlot<Map<String, dynamic>>(
@@ -1199,8 +1149,8 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
                                   height: appBarButtonHeight,
                                   onTap: () {
                                     if (!_isNavigating) {
-                                      V3AppSnackBar.warning(
-                                          context, 'Prvo kliknite START za izabrani termin da ruta bude prosleđena na mapu.');
+                                      V3AppSnackBar.warning(context,
+                                          'Prvo kliknite START za izabrani termin da ruta bude prosleđena na mapu.');
                                       return;
                                     }
                                     _handleOpenMap();
