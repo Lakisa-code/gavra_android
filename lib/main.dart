@@ -558,11 +558,19 @@ Future<void> _initIosFcmHandlers() async {
   final initFuture = () async {
     final firebaseReady = await _ensureFirebaseInitialized();
     if (!firebaseReady) {
-      debugPrint('⚠️ [FCM][iOS] Preskačem FCM handlers: Firebase nije spreman.');
+      debugPrint('⚠️ [FCM][iOS] Preskačem FCM handlers: Firebase nije spreman.');
       return;
     }
 
     final messaging = FirebaseMessaging.instance;
+
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    debugPrint('[FCM][iOS] Dozvola za notifikacije status: ${settings.authorizationStatus}');
+
     await messaging.setForegroundNotificationPresentationOptions(
       alert: true,
       badge: true,
