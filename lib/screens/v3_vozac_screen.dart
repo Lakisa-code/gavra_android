@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../models/v3_putnik.dart';
@@ -78,6 +79,8 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
   bool _autoStopInProgress = false;
   bool _isNavigating = false;
   final List<String> _optimizedPutnikIds = [];
+  Map<String, int> _etaSecondsCache = {};
+  Timer? _etaPollTimer;
 
   int _timeToMinutes(String hhmm) {
     final parts = hhmm.split(':');
@@ -221,7 +224,23 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
   List<_PutnikEntry> _sortPutniciForDisplay(
     List<_PutnikEntry> putnici,
   ) {
-    return List<_PutnikEntry>.from(putnici);
+    if (_etaSecondsCache.isEmpty) {
+      return List<_PutnikEntry>.from(putnici);
+    }
+    final sorted = List<_PutnikEntry>.from(putnici);
+    sorted.sort((a, b) {
+      // Završeni (pokupljeni/otkazani) ostaju prepoznati - ali neka prvo ide sveže vreme
+      final isCompletedA = _isPutnikEntryCompleted(a);
+      final isCompletedB = _isPutnikEntryCompleted(b);
+      if (isCompletedA != isCompletedB) {
+        return isCompletedA ? 1 : -1;
+      }
+
+      final etaA = _etaSecondsCache[a.putnik.id] ?? 999999;
+      final etaB = _etaSecondsCache[b.putnik.id] ?? 999999;
+      return etaA.compareTo(etaB);
+    });
+    return sorted;
   }
 
   @override
@@ -232,14 +251,56 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
     _isNavigating = V3VozacLocationTrackingService.instance.isRunning;
     _optimizedPutnikIds.clear(); // Reset optimizacije za novi termin
     _startTrenutnaDodelaRealtime();
+    _startEtaPolling();
     _initData();
   }
 
   @override
   void dispose() {
+    _etaPollTimer?.cancel();
+    _etaPollTimer = null;
     unawaited(_trenutnaDodelaRevisionSub?.cancel());
     _trenutnaDodelaRevisionSub = null;
     super.dispose();
+  }
+
+  void _startEtaPolling() {
+    _fetchEtas();
+    _etaPollTimer = Timer.periodic(const Duration(seconds: 15), (_) => _fetchEtas());
+  }
+
+  Future<void> _fetchEtas() async {
+    final vozac = _efektivniVozac;
+    if (vozac == null || !(vozac.id?.toString().isNotEmpty ?? false)) return;
+    final vozacId = vozac.id.toString();
+
+    try {
+      final rows = await Supabase.instance.client
+          .from('v3_eta_results')
+          .select('putnik_id, eta_seconds')
+          .eq('vozac_id', vozacId);
+
+      final newMap = <String, int>{};
+      for (final r in rows) {
+        final pId = r['putnik_id']?.toString() ?? '';
+        final eta = int.tryParse(r['eta_seconds']?.toString() ?? '') ?? 999999;
+        if (pId.isNotEmpty) {
+          newMap[pId] = eta;
+        }
+      }
+
+      if (mounted) {
+        V3StateUtils.safeSetState(this, () {
+          _etaSecondsCache = newMap;
+          if (_mojiPutnici.isNotEmpty) {
+            _mojiPutnici = _sortPutniciForDisplay(_mojiPutnici);
+            _applyOptimizedOrderToPutnici();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[V3VozacScreen] eta poll error: $e');
+    }
   }
 
   Future<void> _initData() async {
@@ -768,7 +829,15 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
   void _applyOptimizedOrderToPutnici() {
     if (_optimizedPutnikIds.isEmpty) return;
 
+    // Kad je aktivna navigacija nakon klika, zadržavamo strogi nalog ORS optimizacije
     _mojiPutnici.sort((a, b) {
+      // Završeni svakako idu na dno
+      final isCompletedA = _isPutnikEntryCompleted(a);
+      final isCompletedB = _isPutnikEntryCompleted(b);
+      if (isCompletedA != isCompletedB) {
+        return isCompletedA ? 1 : -1;
+      }
+
       int indexA = _optimizedPutnikIds.indexOf(a.putnik.id);
       int indexB = _optimizedPutnikIds.indexOf(b.putnik.id);
 
