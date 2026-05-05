@@ -802,7 +802,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
       ({
         List<V3RouteWaypoint> waypointsToOpen,
         int unresolvedCount,
-      })?> _buildHereRouteWaypoints({bool doOptimize = false}) async {
+      })?> _buildHereRouteWaypoints() async {
     final resolveResult = await _resolveWaypointsForCurrentOrder();
     var resolved = resolveResult.waypoints;
     final unresolvedCount = resolveResult.unresolvedCount;
@@ -814,72 +814,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
       return null;
     }
 
-    // --- NOVA LOGIKA: OPEN ROUTE SERVICE OPTIMIZACIJA NA START ---
-    if (resolved.length > 1) {
-      if (doOptimize) {
-        try {
-          Position? currentPos = await Geolocator.getLastKnownPosition();
-          currentPos ??= await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.medium,
-              timeLimit: Duration(seconds: 5),
-            ),
-          );
-
-          final driverCoord = V3RouteCoordinate(latitude: currentPos.latitude, longitude: currentPos.longitude);
-          final optimizedIndices = await V3OrsRouteService().optimizeWaypoints(
-            driverLocation: driverCoord,
-            waypoints: resolved,
-          );
-
-          if (optimizedIndices != null && optimizedIndices.length == resolved.length) {
-            final optimizedResolved = <V3RouteWaypoint>[];
-            for (final index in optimizedIndices) {
-              optimizedResolved.add(resolved[index]);
-            }
-            resolved = optimizedResolved;
-            debugPrint('[ORS] Putnici uspešno reoptimizovani!');
-            // Više se ne mešamo u redosled fiksiranim ID-jevima, oslanjamo se na live ETA
-            if (mounted) {
-              V3StateUtils.safeSetState(this, () {});
-            }
-          }
-        } catch (e) {
-          debugPrint('[ORS] Optimizacija preskočena/greška: $e');
-        }
-      }
-    }
-    // --- KRAJ NOVE LOGIKE ---
-
     final fixedDestination = await _resolveFixedOppositeDestination();
     final waypointsToOpen = <V3RouteWaypoint>[
       ...resolved,
       if (fixedDestination != null) fixedDestination,
     ];
-
-    // Sačuvaj waypoints u trenutno aktivan slot da server može da koristi fallback koordinate.
-    if (_selectedDatumIso.isNotEmpty && _selectedGrad.isNotEmpty && _selectedVreme.isNotEmpty) {
-      final waypointsJson = waypointsToOpen
-          .map((w) => <String, dynamic>{
-                'id': w.id,
-                'lat': w.coordinate.latitude,
-                'lng': w.coordinate.longitude,
-              })
-          .toList();
-      final currentVozacId = (V3VozacService.currentVozac?.id ?? '').toString().trim();
-      try {
-        await V3TrenutnaDodelaSlotService.updateWaypointsJson(
-          datumIso: _selectedDatumIso,
-          grad: _selectedGrad,
-          vreme: _selectedVreme,
-          vozacId: currentVozacId,
-          waypoints: waypointsJson,
-        );
-        debugPrint('[HERE] updateWaypointsJson OK');
-      } catch (e) {
-        debugPrint('[HERE] updateWaypointsJson failed: $e');
-      }
-    }
 
     return (
       waypointsToOpen: waypointsToOpen,
@@ -898,7 +837,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
       return;
     }
 
-    final preparedRoute = await _buildHereRouteWaypoints(doOptimize: false);
+    final preparedRoute = await _buildHereRouteWaypoints();
     if (preparedRoute == null) return;
     final waypointsToOpen = preparedRoute.waypointsToOpen;
 
@@ -954,11 +893,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
           vreme: _selectedVreme,
         );
       } catch (e) {
-        debugPrint('[START] push notify failed: $e');
+        debugPrint('[START] notify passengers / upsert slot error: $e');
       }
     }
 
-    final preparedRoute = await _buildHereRouteWaypoints(doOptimize: true);
+    final preparedRoute = await _buildHereRouteWaypoints();
     debugPrint('[START] prepared route result: $preparedRoute');
     if (preparedRoute == null || !mounted) {
       debugPrint('[START] => prepared route null or not mounted, returning');
@@ -1274,7 +1213,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
             builder: (context, rules, _) {
               final weekRange = V3DanHelper.schedulingWeekRange();
               final today = V3DanHelper.dateOnly(DateTime.now());
-              final hasNeradni = rules.any((rule) {
+              final hasNeradan = rules.any((rule) {
                 final dateIso = V3DateUtils.parseIsoDatePart(rule['date'] ?? '');
                 final date = DateTime.tryParse(dateIso);
                 if (date == null) return false;
@@ -1285,7 +1224,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
 
               return Column(
                 children: [
-                  if (hasNeradni)
+                  if (hasNeradan)
                     const Padding(
                       padding: EdgeInsets.fromLTRB(12, 6, 12, 0),
                       child: V3NeradniDaniBanner(),
