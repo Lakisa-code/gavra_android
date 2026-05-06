@@ -25,8 +25,9 @@ class _V3VremeDolaskaWidgetState extends State<V3VremeDolaskaWidget> {
   static const String _colEtaSeconds = 'eta_seconds';
   static const String _colComputedAt = 'computed_at';
 
-  // ETA se smatra zastarelom ako je starija od 2 sata
-  static const Duration _staleThreshold = Duration(hours: 2);
+  // ETA se smatra zastarelom ako nema svežeg update-a duže vreme.
+  // Ovo sprečava da ETA widget ostane "zalepljen" kada lokacije prestanu da stižu.
+  static const Duration _staleThreshold = Duration(minutes: 15);
 
   RealtimeChannel? _realtimeChannel;
   Timer? _pollTimer;
