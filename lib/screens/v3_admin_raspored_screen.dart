@@ -283,6 +283,12 @@ class _V3AdminRasporedScreenState extends State<V3AdminRasporedScreen> {
       items: entries,
       grad: grad,
       vreme: vreme,
+      includeItem: (entry) {
+        final tip = (V3MasterRealtimeManager.instance.putniciCache[entry.putnikId]?['tip_putnika'] as String?)
+            ?.toLowerCase()
+            .trim();
+        return tip != 'posiljka';
+      },
       gradOf: (entry) => entry.grad,
       vremeOf: (entry) => entry.polazakAt,
       statusOf: (entry) => entry.statusFinal,

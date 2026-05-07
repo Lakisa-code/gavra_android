@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
 
       const { data: occupiedRows, error: occupiedError } = await client
         .from("v3_operativna_nedelja")
-        .select("id")
+        .select("id, created_by")
         .eq("datum", datumIso)
         .eq("grad", grad)
         .eq("polazak_at", selectedHHmm)
@@ -208,7 +208,34 @@ Deno.serve(async (req) => {
         return json(200, { ok: false, reason: "accept_update_error", warning: occupiedError.message });
       }
 
-      const occupied = Array.isArray(occupiedRows) ? occupiedRows.length : 0;
+      const occupiedRowsList = Array.isArray(occupiedRows) ? occupiedRows : [];
+      const putnikIds = occupiedRowsList
+        .map((r) => String(r?.created_by ?? "").trim())
+        .filter((id) => id.length > 0);
+
+      let posiljkaIds = new Set<string>();
+      if (putnikIds.length > 0) {
+        const { data: authRows, error: authError } = await client
+          .from("v3_auth")
+          .select("id, tip")
+          .in("id", putnikIds);
+
+        if (authError) {
+          return json(200, { ok: false, reason: "accept_update_error", warning: authError.message });
+        }
+
+        posiljkaIds = new Set(
+          (Array.isArray(authRows) ? authRows : [])
+            .filter((row) => String(row?.tip ?? "").trim().toLowerCase() === "posiljka")
+            .map((row) => String(row?.id ?? "").trim())
+            .filter((id) => id.length > 0),
+        );
+      }
+
+      const occupied = occupiedRowsList.filter((r) => {
+        const id = String(r?.created_by ?? "").trim();
+        return !posiljkaIds.has(id);
+      }).length;
       if (occupied >= maxMesta) {
         return json(200, {
           ok: false,

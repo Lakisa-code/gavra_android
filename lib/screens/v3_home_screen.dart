@@ -833,6 +833,12 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
               items: sviZapisi,
               grad: grad,
               vreme: vreme,
+              includeItem: (entry) {
+                final tip = (V3MasterRealtimeManager.instance.putniciCache[entry.putnikId]?['tip_putnika'] as String?)
+                    ?.toLowerCase()
+                    .trim();
+                return tip != 'posiljka';
+              },
               gradOf: (entry) => entry.grad,
               vremeOf: (entry) => entry.polazakAt,
               statusOf: (entry) => entry.statusFinal,

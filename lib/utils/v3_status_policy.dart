@@ -335,11 +335,14 @@ class V3StatusPolicy {
     required String? Function(T item) vremeOf,
     required String? Function(T item) statusOf,
     required Object? Function(T item) otkazanoAtOf,
+    bool Function(T item)? includeItem,
   }) {
     final gradNorm = grad.trim().toUpperCase();
     final vremeNorm = V3TimeUtils.normalizeToHHmm(vreme);
 
     return items.where((item) {
+      if (includeItem != null && !includeItem(item)) return false;
+
       final itemGrad = (gradOf(item) ?? '').trim().toUpperCase();
       if (itemGrad != gradNorm) return false;
 

@@ -690,6 +690,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
       items: rowsById.values,
       grad: gradUp,
       vreme: vremeNorm,
+      includeItem: (row) {
+        final putnikId = row['created_by']?.toString() ?? '';
+        final tip = (rm.putniciCache[putnikId]?['tip_putnika'] as String?)?.toLowerCase().trim();
+        return tip != 'posiljka';
+      },
       gradOf: (row) => row['grad']?.toString(),
       vremeOf: (row) => row['vreme']?.toString() ?? row['polazak_at']?.toString(),
       statusOf: (row) => row['status']?.toString(),
