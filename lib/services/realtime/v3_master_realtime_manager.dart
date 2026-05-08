@@ -62,40 +62,12 @@ class V3MasterRealtimeManager {
       final row = Map<String, dynamic>.from(entry);
       row['vreme'] = row['vreme'] ?? row['polazak_at'];
       row['polazak_vreme'] = row['polazak_at'];
-      row['nav_bar_type'] = row['nav_bar_type'] ?? 'zimski';
       operativnaAssignedCache[id] = row;
     }
   }
 
   /// Primenjuje vrednosti iz v3_app_settings na globalne notifiere
   void _applyAppSettings(Map<String, dynamic> row) {
-    final now = DateTime.now();
-
-    // nav_bar_type (sa podrškom za zakazani prelaz)
-    final navType = resolveEffectiveNavBarType(
-      currentType: row['nav_bar_type']?.toString(),
-      nextType: row['nav_bar_type_next']?.toString(),
-      effectiveAt: row['nav_bar_type_effective_at'],
-      now: now,
-    );
-    if (navType != null) {
-      navBarTypeNotifier.value = navType;
-    }
-
-    _navTypeSwitchTimer?.cancel();
-    _navTypeSwitchTimer = null;
-
-    final nextType = row['nav_bar_type_next']?.toString().toLowerCase();
-    final effectiveAt = _tryParseDateTime(row['nav_bar_type_effective_at']);
-    if (nextType != null && ['zimski', 'custom'].contains(nextType) && effectiveAt != null) {
-      final delay = effectiveAt.difference(now);
-      if (!delay.isNegative && delay > Duration.zero) {
-        _navTypeSwitchTimer = Timer(delay, () {
-          navBarTypeNotifier.value = nextType;
-        });
-      }
-    }
-
     // rasporedi polazaka
     List<String> _toList(dynamic val) {
       if (val == null) return [];
@@ -117,21 +89,6 @@ class V3MasterRealtimeManager {
 
       return result;
     }
-
-    final updated = Map<String, List<String>>.from(rasporedNotifier.value);
-    bool changed = false;
-
-    for (final key in [
-      'bc_zimski',
-      'vs_zimski',
-    ]) {
-      if (row.containsKey(key)) {
-        updated[key] = _toList(row[key]);
-        changed = true;
-      }
-    }
-
-    if (changed) rasporedNotifier.value = updated;
 
     final customByDayUpdated = {
       'bc': Map<String, List<String>>.from(customRasporedByDayNotifier.value['bc'] ?? {}),
@@ -185,7 +142,6 @@ class V3MasterRealtimeManager {
   }
 
   Stream<Map<String, int>> get onRevisions => _eventBus.onRevisions;
-  Timer? _navTypeSwitchTimer;
 
   Future<void>? _initInFlight;
   bool _isInitialized = false;

@@ -58,7 +58,7 @@ class _BottomNavBarSlotoviState extends State<V3BottomNavBarSlotovi> {
   void _scrollToSelected() {
     const double itemWidth = 60.0; // width + margin
 
-    // Koristi prosleđena vremena ili fallback na Zimski raspored
+    // Koristi prosleđena vremena iz aktivnog custom rasporeda
     final bcVremena = widget.bcVremena ?? [];
     final vsVremena = widget.vsVremena ?? [];
 
@@ -94,7 +94,7 @@ class _BottomNavBarSlotoviState extends State<V3BottomNavBarSlotovi> {
 
   @override
   Widget build(BuildContext context) {
-    // Koristi prosleđena vremena ili fallback na Zimski raspored
+    // Koristi prosleđena vremena iz aktivnog custom rasporeda
     final bcVremena = widget.bcVremena ?? [];
     final vsVremena = widget.vsVremena ?? [];
     final currentThemeId = V3ThemeManager().currentThemeId;

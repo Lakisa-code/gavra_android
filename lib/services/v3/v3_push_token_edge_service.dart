@@ -38,7 +38,6 @@ class V3PushTokenEdgeService {
     final incomingInstallationId = (installationId ?? '').trim();
     final incomingPlatform = _resolvePlatform();
     final incomingAppVersion = await _resolveAppVersion();
-    final safePushToken2 = (pushToken2 ?? '').trim();
 
     if (targetId.isEmpty) {
       throw Exception('Nedostaje v3_auth_id za upis login kolona.');
@@ -55,7 +54,6 @@ class V3PushTokenEdgeService {
         if (safePushToken.isNotEmpty) 'incoming_push_token': safePushToken,
         if (incomingPlatform.isNotEmpty) 'incoming_platform': incomingPlatform,
         if (incomingAppVersion.isNotEmpty) 'incoming_app_version': incomingAppVersion,
-        if (safePushToken2.isNotEmpty) 'push_token_2': safePushToken2,
       },
     );
 

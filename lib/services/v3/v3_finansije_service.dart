@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../models/v3_dug.dart';
 import '../../models/v3_finansije.dart';
@@ -26,6 +27,7 @@ class V3NaplataInfo {
 
 class V3FinansijeService {
   V3FinansijeService._();
+  static const Uuid _uuid = Uuid();
   static final V3FinansijeRepository _repo = V3FinansijeRepository();
   static final Set<String> _mesecnaNaplataLocks = <String>{};
   static final Set<String> _naplataPoReferenciLocks = <String>{};
@@ -240,14 +242,19 @@ class V3FinansijeService {
     required String putnikId,
     required String tipPutnika,
     required DateTime datum,
+    String? dogadjajId,
+    String? operativnaId,
     String? evidentiraoBy,
   }) async {
     final safePutnikId = putnikId.trim();
     if (safePutnikId.isEmpty) return;
 
     final tip = tipPutnika.trim().toLowerCase();
+    if (tip == 'vozac') return;
     final isPoDanu = tip == 'radnik' || tip == 'ucenik';
     final dayKey = V3DateUtils.parseIsoDatePart(datum.toIso8601String());
+    final safeDogadjajId = (dogadjajId ?? operativnaId ?? '').trim();
+    final safeOperativnaId = (operativnaId ?? '').trim();
 
     final cache = V3MasterRealtimeManager.instance.getCache('v3_finansije').values;
 
@@ -269,6 +276,7 @@ class V3FinansijeService {
         'iznos': 0,
         'putnik_v3_auth_id': safePutnikId,
         'naplaceno_by': (evidentiraoBy ?? '').trim().isEmpty ? null : evidentiraoBy,
+        'dogadjaj_id': safeDogadjajId.isEmpty ? null : safeDogadjajId,
         'broj_voznji': 1,
         'mesec': datum.month,
         'godina': datum.year,
@@ -277,15 +285,47 @@ class V3FinansijeService {
       return;
     }
 
+    if (safeDogadjajId.isNotEmpty) {
+      final existsByDogadjajId = cache.any((row) {
+        if (!_isRealizacijaPrihod(row)) return false;
+        if ((row['putnik_v3_auth_id']?.toString() ?? '') != safePutnikId) return false;
+        return (row['dogadjaj_id']?.toString() ?? '') == safeDogadjajId;
+      });
+      if (existsByDogadjajId) return;
+    } else if (safeOperativnaId.isNotEmpty) {
+      final existsByOperativnaId = cache.any((row) {
+        if (!_isRealizacijaPrihod(row)) return false;
+        if ((row['putnik_v3_auth_id']?.toString() ?? '') != safePutnikId) return false;
+        return (row['operativna_id']?.toString() ?? '') == safeOperativnaId;
+      });
+      if (existsByOperativnaId) return;
+    }
+
     final nazivVoznja = _realizacijaVoznjaNazivZaDan(datum);
-    final existsVoznja = cache.any((row) {
+
+    final existingDaily = cache.where((row) {
       if (!_isRealizacijaPrihod(row)) return false;
       if ((row['putnik_v3_auth_id']?.toString() ?? '') != safePutnikId) return false;
       if ((row['godina'] as num?)?.toInt() != datum.year) return false;
       if ((row['mesec'] as num?)?.toInt() != datum.month) return false;
       return (row['naziv']?.toString() ?? '') == nazivVoznja;
-    });
-    if (existsVoznja) return;
+    }).toList();
+
+    if (existingDaily.isNotEmpty) {
+      existingDaily.sort((a, b) => _createdAtOrEpoch(b).compareTo(_createdAtOrEpoch(a)));
+      final latest = existingDaily.first;
+      final latestId = latest['id']?.toString() ?? '';
+      if (latestId.isNotEmpty) {
+        final currentBroj = (latest['broj_voznji'] as num?)?.toInt() ?? 0;
+        final updated = await _repo.updateByIdReturning(latestId, {
+          'broj_voznji': currentBroj + 1,
+          if (safeDogadjajId.isNotEmpty) 'dogadjaj_id': safeDogadjajId,
+          if (safeOperativnaId.isNotEmpty) 'operativna_id': safeOperativnaId,
+        });
+        V3MasterRealtimeManager.instance.v3UpsertToCache('v3_finansije', updated);
+        return;
+      }
+    }
 
     final row2 = await _repo.insertReturning({
       'naziv': nazivVoznja,
@@ -294,6 +334,8 @@ class V3FinansijeService {
       'iznos': 0,
       'putnik_v3_auth_id': safePutnikId,
       'naplaceno_by': (evidentiraoBy ?? '').trim().isEmpty ? null : evidentiraoBy,
+      'dogadjaj_id': safeDogadjajId.isEmpty ? null : safeDogadjajId,
+      'operativna_id': safeOperativnaId.isEmpty ? null : safeOperativnaId,
       'broj_voznji': 1,
       'mesec': datum.month,
       'godina': datum.year,
@@ -472,6 +514,7 @@ class V3FinansijeService {
         'tip': 'prihod',
         'iznos': iznos,
         'putnik_v3_auth_id': putnikId,
+        'dogadjaj_id': _uuid.v4(),
         'naplaceno_by': naplacenoBy,
         'broj_voznji': brojVoznji,
         'mesec': mesec,
@@ -515,40 +558,14 @@ class V3FinansijeService {
         'tip': 'prihod',
         'iznos': iznos,
         'putnik_v3_auth_id': putnikId,
+        'dogadjaj_id': _uuid.v4(),
         'naplaceno_by': naplacenoBy,
         'broj_voznji': 1,
         'mesec': datum.month,
         'godina': datum.year,
       };
 
-      final existing = await _repo.findMesecnuNaplatu(
-        putnikId: putnikId,
-        mesec: datum.month,
-        godina: datum.year,
-      );
-      Map<String, dynamic> row;
-      if (existing != null && existing['id'] != null) {
-        row = await _repo.updateByIdReturning(existing['id'] as String, payload);
-      } else {
-        try {
-          row = await _repo.insertReturning(payload);
-        } on Object catch (insertErr) {
-          final isConflict = insertErr.toString().contains('23505') || insertErr.toString().contains('duplicate key');
-          if (!isConflict) rethrow;
-          // Race condition — zapis se pojavio između find i insert, pokušaj update
-          debugPrint('[V3FinansijeService] sacuvajNaplatuZaMesec: insert conflict, retry find+update');
-          final retry = await _repo.findMesecnuNaplatu(
-            putnikId: putnikId,
-            mesec: datum.month,
-            godina: datum.year,
-          );
-          if (retry != null && retry['id'] != null) {
-            row = await _repo.updateByIdReturning(retry['id'] as String, payload);
-          } else {
-            rethrow;
-          }
-        }
-      }
+      final row = await _repo.insertReturning(payload);
       V3MasterRealtimeManager.instance.v3UpsertToCache('v3_finansije', row);
     } catch (e) {
       debugPrint('[V3FinansijeService] sacuvajNaplatuZaMesec error: $e');

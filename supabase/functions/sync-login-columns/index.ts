@@ -69,7 +69,6 @@ Deno.serve(async (req) => {
     const incomingPushToken = firstNonEmpty(
       payload.incoming_push_token,
       payload.push_token,
-      payload.push_token_2,
     );
     const incomingInstallationId = firstNonEmpty(
       payload.incoming_installation_id,

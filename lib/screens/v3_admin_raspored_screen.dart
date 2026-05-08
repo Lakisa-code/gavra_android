@@ -807,7 +807,7 @@ class _V3AdminRasporedScreenState extends State<V3AdminRasporedScreen> {
             valueListenable: navBarTypeNotifier,
             builder: (context, navType, _) {
               final commonProps = _buildNavBarProps();
-              // Zimski raspored widget generički hendluje i zimsku i custom varijantu
+              // Raspored widget generički hendluje custom varijante
               return V3BottomNavBarSlotovi(
                 selectedGrad: commonProps.selectedGrad,
                 selectedVreme: commonProps.selectedVreme,

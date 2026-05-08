@@ -1269,7 +1269,7 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
           );
         }
 
-        // Svi rasporedi (zimski, custom) se prosleđuju jedinstvenom layout widgetu
+        // Aktivni custom raspored se prosleđuje jedinstvenom layout widgetu
         return V3BottomNavBarSlotovi(
           selectedGrad: _selectedGrad,
           selectedVreme: _selectedVreme,

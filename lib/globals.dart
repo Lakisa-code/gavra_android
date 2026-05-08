@@ -59,54 +59,8 @@ Future<bool> ensureSupabaseReady() async {
 }
 
 /// NAV BAR TYPE - tip bottom navigation bara
-/// 'zimski' = zimski raspored (podrazumevani/osnovni raspored)
-/// 'custom' = ručno podešen raspored koji se uređuje po danima
-final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('');
-
-const Set<String> _allowedNavBarTypes = {'zimski', 'custom'};
-
-DateTime? _parseSettingsDateTime(dynamic value) {
-  if (value == null) return null;
-  if (value is DateTime) return value;
-  if (value is String && value.trim().isNotEmpty) return DateTime.tryParse(value);
-  return null;
-}
-
-/// Računa efektivni nav bar tip iz v3_app_settings.
-///
-/// Pravila:
-/// - Ako postoji validan `nextType` i `effectiveAt` je prošao, vraća `nextType`.
-/// - U suprotnom vraća validan `currentType`.
-/// - Ako nijedan nije validan, vraća null.
-String? resolveEffectiveNavBarType({
-  required String? currentType,
-  String? nextType,
-  dynamic effectiveAt,
-  DateTime? now,
-}) {
-  final current = currentType?.toLowerCase();
-  final next = nextType?.toLowerCase();
-  final effective = _parseSettingsDateTime(effectiveAt);
-  final tsNow = now ?? DateTime.now();
-
-  if (next != null && _allowedNavBarTypes.contains(next) && effective != null && !tsNow.isBefore(effective)) {
-    return next;
-  }
-
-  if (current != null && _allowedNavBarTypes.contains(current)) {
-    return current;
-  }
-
-  return null;
-}
-
-/// RASPORED NOTIFIER - vremena polazaka iz baze (v3_app_settings)
-/// Ključevi: 'bc_zimski', 'vs_zimski'
-/// Puni se pri startu i ažurira realtime kad admin promeni rasporede u bazi
-final ValueNotifier<Map<String, List<String>>> rasporedNotifier = ValueNotifier<Map<String, List<String>>>({
-  'bc_zimski': ['05:00', '06:00', '07:00', '08:00', '09:00', '11:00', '12:00', '13:00', '14:00', '15:30', '18:00'],
-  'vs_zimski': ['06:00', '07:00', '08:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:30', '17:00', '19:00'],
-});
+/// Podržan je isključivo `custom` raspored.
+final ValueNotifier<String> navBarTypeNotifier = ValueNotifier<String>('custom');
 
 const List<String> _customWorkdayNames = ['Ponedeljak', 'Utorak', 'Sreda', 'Cetvrtak', 'Petak'];
 
@@ -201,12 +155,10 @@ bool isNeradanDan({
   return getNeradanDanRazlog(datumIso: datumIso, grad: grad) != null;
 }
 
-/// Helper - vraća listu polazaka za grad i sezonu iz rasporedNotifier.
-/// Kada je sezona `custom` i prosleđen je [day], čita iz dnevnog custom rasporeda.
+/// Helper - vraća listu polazaka za grad iz dnevnog custom rasporeda.
+/// Parametar [sezona] je zadržan samo radi kompatibilnosti pozivaoca.
 List<String> getRasporedVremena(String grad, String sezona, {String? day}) {
   final normalizedGrad = grad.toLowerCase();
-  final normalizedSezona = sezona.toLowerCase();
-  final effectiveSezona = _allowedNavBarTypes.contains(normalizedSezona) ? normalizedSezona : 'zimski';
 
   if (day != null && day.trim().isNotEmpty) {
     final normalizedDay = V3DanHelper.normalizeToWorkdayFull(day);
@@ -221,28 +173,20 @@ List<String> getRasporedVremena(String grad, String sezona, {String? day}) {
     }
   }
 
-  if (effectiveSezona == 'custom') {
-    final cityMap = customRasporedByDayNotifier.value[normalizedGrad];
+  final cityMap = customRasporedByDayNotifier.value[normalizedGrad];
 
-    if (day != null && day.trim().isNotEmpty) {
-      final normalizedDay = V3DanHelper.normalizeToWorkdayFull(day);
-      if (normalizedDay.isNotEmpty && cityMap != null) {
-        final dayTimes = cityMap[normalizedDay];
-        if (dayTimes != null && dayTimes.isNotEmpty) {
-          return dayTimes;
-        }
+  if (day != null && day.trim().isNotEmpty) {
+    final normalizedDay = V3DanHelper.normalizeToWorkdayFull(day);
+    if (normalizedDay.isNotEmpty && cityMap != null) {
+      final dayTimes = cityMap[normalizedDay];
+      if (dayTimes != null && dayTimes.isNotEmpty) {
+        return dayTimes;
       }
     }
-
-    return rasporedNotifier.value['${normalizedGrad}_zimski'] ?? <String>[];
   }
 
-  final key = '${normalizedGrad}_${effectiveSezona}';
-  return rasporedNotifier.value[key] ?? [];
+  return <String>[];
 }
-
-/// ZIMSKI MOD - Proverava da li je zimski red voznje aktivan SADA
-bool get isWinter => navBarTypeNotifier.value == 'zimski';
 
 /// Globalna instanca Config Service
 /// Centralizovano upravljanje svim kredencijalima i konfiguracijom

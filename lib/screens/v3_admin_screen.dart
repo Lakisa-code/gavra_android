@@ -1291,9 +1291,7 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
                     Expanded(
                       child: ValueListenableBuilder<String>(
                         valueListenable: navBarTypeNotifier,
-                        builder: (context, navType, _) {
-                          const labels = {'zimski': '⚙️', 'custom': '🛠️'};
-                          const allowedNavTypes = {'zimski', 'custom'};
+                        builder: (context, __, ___) {
                           return _NavBtn(
                             color: Colors.blueGrey,
                             onTap: () async {
@@ -1317,9 +1315,6 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
                                     height: V3ContainerUtils.responsiveHeight(context, 28),
                                     child: Text('Tip rasporeda', style: TextStyle(color: Colors.white54, fontSize: 12)),
                                   ),
-                                  const PopupMenuItem(
-                                      value: 'zimski',
-                                      child: Text('⚙️  Zimski', style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'custom',
                                       child: Text('🛠️  Custom', style: TextStyle(color: Colors.white))),
@@ -1350,60 +1345,8 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
                                 }
                                 return;
                               }
-                              if (!allowedNavTypes.contains(val)) {
-                                return;
-                              }
-                              final action = await V3DialogHelper.showDialogBuilder<String>(
-                                context: context,
-                                builder: (dialogContext) => AlertDialog(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  title: const Text('Primena rasporeda', style: TextStyle(color: Colors.white)),
-                                  content: Text(
-                                    'Kako želiš da primeniš "$val" režim?',
-                                    style: const TextStyle(color: Colors.white70),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.of(dialogContext).pop(),
-                                      child: const Text('Otkaži'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.of(dialogContext).pop('tomorrow'),
-                                      child: const Text('Od sutra'),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () => Navigator.of(dialogContext).pop('now'),
-                                      child: const Text('Primeni odmah'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (action == null) return;
-
-                              try {
-                                if (action == 'now') {
-                                  navBarTypeNotifier.value = val;
-                                  await V3AppSettingsService.updateGlobal({
-                                    'nav_bar_type': val,
-                                    'nav_bar_type_next': null,
-                                    'nav_bar_type_effective_at': null,
-                                  });
-                                  debugPrint('[AdminScreen] nav_bar_type sačuvan odmah: $val');
-                                } else {
-                                  final now = DateTime.now();
-                                  final sutraPocetak =
-                                      DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
-                                  await V3AppSettingsService.updateGlobal({
-                                    'nav_bar_type_next': val,
-                                    'nav_bar_type_effective_at': sutraPocetak.toIso8601String(),
-                                  });
-                                  debugPrint('[AdminScreen] nav_bar_type zakazan od sutra: $val @ $sutraPocetak');
-                                }
-                              } catch (e) {
-                                debugPrint('[AdminScreen] Greška pri čuvanju nav_bar_type: $e');
-                              }
                             },
-                            child: Text(labels[navType] ?? '⚙️', style: const TextStyle(fontSize: 20)),
+                            child: const Text('🛠️', style: TextStyle(fontSize: 20)),
                           );
                         },
                       ),

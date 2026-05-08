@@ -140,12 +140,17 @@ class _V3PutnikCardState extends State<V3PutnikCard> {
       final currentVozac = V3VozacService.currentVozac;
       if (currentVozac == null) throw 'Niste logovani u V3 sistem';
       await V3ZahtevService.oznaciPokupljen(pokupljenBy: currentVozac.id, operativnaId: widget.entry?.id);
-      await V3FinansijeService.evidentirajRealizacijuPriPokupljanju(
-        putnikId: widget.putnik.id,
-        tipPutnika: widget.putnik.tipPutnika,
-        datum: widget.entry?.datum ?? widget.zahtev?.datum ?? DateTime.now(),
-        evidentiraoBy: currentVozac.id,
-      );
+      final tipPutnika = widget.putnik.tipPutnika.trim().toLowerCase();
+      if (tipPutnika != 'vozac') {
+        await V3FinansijeService.evidentirajRealizacijuPriPokupljanju(
+          putnikId: widget.putnik.id,
+          tipPutnika: widget.putnik.tipPutnika,
+          datum: widget.entry?.datum ?? widget.zahtev?.datum ?? DateTime.now(),
+          dogadjajId: widget.entry?.id,
+          operativnaId: widget.entry?.id,
+          evidentiraoBy: currentVozac.id,
+        );
+      }
       await V2HapticService.putnikPokupljen();
       if (mounted) {
         V3AppSnackBar.success(context, 'Vožnja evidentirana');
@@ -248,6 +253,14 @@ class _V3PutnikCardState extends State<V3PutnikCard> {
     V3StateUtils.safeSetState(this, () => _isProcessing = true);
 
     final tip = widget.putnik.tipPutnika;
+    if (tip.trim().toLowerCase() == 'vozac') {
+      _globalProcessingLock = false;
+      V3StateUtils.safeSetState(this, () => _isProcessing = false);
+      if (mounted) {
+        V3AppSnackBar.warning(context, 'Vozač ne ulazi u putničku naplatu.');
+      }
+      return;
+    }
     final isPoDanuModel = _isPoDanuModel(tip);
     final defaults = _resolvePaymentDefaults(tipPutnika: tip, isPoDanuModel: isPoDanuModel);
 

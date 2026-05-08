@@ -1079,24 +1079,13 @@ Future<void> _initAppServices() async {
 
   Map<String, dynamic>? settings;
 
-  // Učitaj nav_bar_type iz baze
+  // Učitaj globalna app podešavanja iz baze
   try {
     settings = await V3AppSettingsService.loadGlobal(
-      selectColumns: 'nav_bar_type, nav_bar_type_next, nav_bar_type_effective_at, '
+      selectColumns:
           'latest_version_android, min_supported_version_android, force_update_android, store_url_android, maintenance_mode_android, maintenance_title_android, maintenance_message_android, '
           'latest_version_ios, min_supported_version_ios, force_update_ios, store_url_ios, maintenance_mode_ios, maintenance_title_ios, maintenance_message_ios',
     );
-
-    final navType = resolveEffectiveNavBarType(
-      currentType: settings['nav_bar_type']?.toString(),
-      nextType: settings['nav_bar_type_next']?.toString(),
-      effectiveAt: settings['nav_bar_type_effective_at'],
-    );
-
-    if (navType != null) {
-      navBarTypeNotifier.value = navType;
-      debugPrint('[main] efektivni nav_bar_type učitan iz baze: $navType');
-    }
   } catch (e) {
     debugPrint('⚠️ [main] Greška pri učitavanju app_settings: $e');
   }
