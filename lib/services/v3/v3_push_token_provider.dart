@@ -97,52 +97,32 @@ class V3PushTokenProvider {
         await messaging.setAutoInitEnabled(true);
       } catch (_) {}
 
-      final currentSettings = await messaging.getNotificationSettings().timeout(
-            const Duration(seconds: 2),
-          );
+      // Omogućavamo pop-up asinhrono, ne blokirajući aplikaciju nikakvim pauziranjem ili timeout-om
+      try {
+        messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      } catch (_) {}
 
-      NotificationSettings settings = currentSettings;
-
-      if (currentSettings.authorizationStatus == AuthorizationStatus.notDetermined) {
-        settings = await messaging
-            .requestPermission(
-              alert: true,
-              badge: true,
-              sound: true,
-            )
-            .timeout(const Duration(seconds: 5));
-      }
-
-      if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        debugPrint('[PushTokenProvider] iOS permission denied for push notifications.');
-        return null;
-      }
-
-      // Firebase docs (iOS SDK 10.4.0+): APNs token mora biti prisutan PRE getToken()
+      // Ne gubimo puno vremena na APNs, ako postoji učita ga
       String? apnsToken;
-      for (var attempt = 1; attempt <= 5; attempt++) {
-        apnsToken = await messaging.getAPNSToken().timeout(const Duration(seconds: 5), onTimeout: () => null);
+      for (var attempt = 1; attempt <= 3; attempt++) {
+        apnsToken = await messaging.getAPNSToken().timeout(const Duration(seconds: 2), onTimeout: () => null);
         if ((apnsToken ?? '').trim().isNotEmpty) break;
-        if (attempt < 5) {
-          await Future<void>.delayed(const Duration(seconds: 1));
+        if (attempt < 3) {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
         }
       }
 
       final safeApnsToken = (apnsToken ?? '').trim();
-      final apnsPresent = safeApnsToken.isNotEmpty;
-      debugPrint('[PushTokenProvider] iOS APNs token present=$apnsPresent (attempts=5)');
-      if (!apnsPresent) {
-        debugPrint('⚠️ [PushTokenProvider] iOS APNs token nije prisutan nakon 5 pokušaja — preskačem getToken().');
-        // Ne pozivamo getToken() bez APNs tokena — vratiće null ili neispravan token
-        final fallbackToken = (await _storage.read(key: _lastFcmTokenStorageKey) ?? '').trim();
-        if (fallbackToken.isNotEmpty) {
-          debugPrint('[PushTokenProvider] iOS using last known FCM token fallback (no APNs).');
-          return V3PushTokenResult(token: fallbackToken, apnsToken: null);
-        }
-        return null;
+      if (safeApnsToken.isNotEmpty) {
+        await _writeTokenSafely(_lastApnsTokenStorageKey, safeApnsToken);
       }
-      await _writeTokenSafely(_lastApnsTokenStorageKey, safeApnsToken);
 
+      // Prelazimo na dobavljanje Firebase tokena.
+      // Ignorišemo greške APNs-a kakve god bile i probamo generisanje Firebase tokena
       String? token;
       for (var attempt = 1; attempt <= 3; attempt++) {
         token = await messaging.getToken().timeout(const Duration(seconds: 4), onTimeout: () => null);
