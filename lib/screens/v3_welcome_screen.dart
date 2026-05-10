@@ -162,6 +162,28 @@ class _V3WelcomeScreenState extends State<V3WelcomeScreen> with TickerProviderSt
     }
   }
 
+  bool _hasMissingPassengerAddresses(Map<String, dynamic> putnik) {
+    final bc = putnik['adresa_bc_id']?.toString().trim() ?? '';
+    final vs = putnik['adresa_vs_id']?.toString().trim() ?? '';
+    return bc.isEmpty || vs.isEmpty;
+  }
+
+  String _extractPassengerPhone(Map<String, dynamic> putnik) {
+    final phone = (putnik['telefon_1'] ?? putnik['telefon'] ?? '').toString().trim();
+    return V3ClosedAuthService.normalizePhone(phone);
+  }
+
+  void _openPassengerAddressCompletionFlow(String initialPhone) {
+    _safePushReplacement(
+      V3SmsLoginScreen(
+        title: 'Prijava',
+        initialPhone: initialPhone,
+        biometricKey: _biometricPhoneKey,
+        onVerified: _onLoginVerified,
+      ),
+    );
+  }
+
   Future<void> _tryBiometricAutoLogin() async {
     try {
       const secureStorage = FlutterSecureStorage();
@@ -223,6 +245,13 @@ class _V3WelcomeScreenState extends State<V3WelcomeScreen> with TickerProviderSt
       final restored = await V3ClosedAuthService.restorePutnikFromManualSmsSession();
 
       if (!mounted || restored == null) return false;
+
+      if (_hasMissingPassengerAddresses(restored)) {
+        await _stopAudio();
+        if (!mounted) return false;
+        _openPassengerAddressCompletionFlow(_extractPassengerPhone(restored));
+        return true;
+      }
 
       await _stopAudio();
       if (!mounted) return false;
@@ -472,6 +501,11 @@ class _V3WelcomeScreenState extends State<V3WelcomeScreen> with TickerProviderSt
 
       if (putnik == null) {
         _showSafeSnackBar('❌ UUID nije mapiran ni na vozača ni na putnika.');
+        return;
+      }
+
+      if (_hasMissingPassengerAddresses(putnik)) {
+        _openPassengerAddressCompletionFlow(_extractPassengerPhone(putnik));
         return;
       }
 

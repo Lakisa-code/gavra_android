@@ -61,6 +61,9 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
   V3Adresa? _selectedBcAdresa;
   V3Adresa? _selectedVsAdresa;
   String _missingProfileMessage = '';
+  bool _addressOnlyOnboarding = false;
+  bool _requireBcAddress = false;
+  bool _requireVsAddress = false;
   bool _isBackendReady = false;
 
   // Biometrija
@@ -196,7 +199,7 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
     }
 
     if (!mounted) return;
-    await _finalize(skipBiometricSave: true);
+    await _advanceAfterPhoneAuth(skipBiometricSave: true);
   }
 
   // ─── Korak 1: Proveri telefon + pošalji SMS ────────────────────
@@ -249,8 +252,9 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
     }
   }
 
-  Future<void> _advanceAfterPhoneAuth() async {
+  Future<void> _advanceAfterPhoneAuth({bool skipBiometricSave = false}) async {
     final phone = V3ClosedAuthService.normalizePhone(_normalizedPhone ?? '');
+    final authId = (_targetAuthId ?? '').trim();
     if (phone.isEmpty) {
       if (mounted) {
         V3AppSnackBar.error(context, '❌ Sesija je istekla. Počni ponovo.');
@@ -258,8 +262,79 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
       }
       return;
     }
+    if (authId.isEmpty) {
+      if (mounted) {
+        V3AppSnackBar.error(context, '❌ UUID naloga nedostaje. Prijavi se ponovo.');
+        _resetToStep1();
+      }
+      return;
+    }
+
+    final putnik = await V3PutnikService.getActiveById(authId);
     if (!mounted) return;
-    await _finalize();
+
+    if (putnik != null) {
+      final missingBc = (putnik['adresa_bc_id']?.toString().trim() ?? '').isEmpty;
+      final missingVs = (putnik['adresa_vs_id']?.toString().trim() ?? '').isEmpty;
+
+      if (missingBc || missingVs) {
+        final bcId = putnik['adresa_bc_id']?.toString().trim() ?? '';
+        final vsId = putnik['adresa_vs_id']?.toString().trim() ?? '';
+
+        setState(() {
+          _addressOnlyOnboarding = true;
+          _requireBcAddress = missingBc;
+          _requireVsAddress = missingVs;
+          _selectedBcAdresa = bcId.isEmpty ? null : V3AdresaService.getAdresaById(bcId);
+          _selectedVsAdresa = vsId.isEmpty ? null : V3AdresaService.getAdresaById(vsId);
+          _missingProfileMessage = missingBc && missingVs
+              ? 'Dopunite adrese za BC i VS da nastavite.'
+              : missingBc
+                  ? 'Dopunite adresu za BC da nastavite.'
+                  : 'Dopunite adresu za VS da nastavite.';
+          _step = _SmsStep.unosProfila;
+        });
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    await _finalize(skipBiometricSave: skipBiometricSave);
+  }
+
+  String? _trimToNull(Object? value) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
+  }
+
+  V3Putnik _buildPutnikFromExistingRow(
+    Map<String, dynamic> existing, {
+    required String phoneFallback,
+    String? imePrezimeOverride,
+    String? tipPutnikaOverride,
+    String? adresaBcIdOverride,
+    String? adresaVsIdOverride,
+  }) {
+    final fallbackPhone = phoneFallback.trim();
+    final existingPhone1 = _trimToNull(existing['telefon_1']);
+    final overrideIme = (imePrezimeOverride ?? '').trim();
+    final overrideTip = (tipPutnikaOverride ?? '').trim();
+
+    return V3Putnik(
+      id: existing['id']?.toString() ?? '',
+      imePrezime: overrideIme.isNotEmpty ? overrideIme : (existing['ime_prezime']?.toString().trim() ?? ''),
+      telefon1: existingPhone1 ?? (fallbackPhone.isEmpty ? null : fallbackPhone),
+      telefon2: _trimToNull(existing['telefon_2']),
+      tipPutnika: overrideTip.isNotEmpty ? overrideTip : ((existing['tip_putnika']?.toString().trim() ?? 'radnik')),
+      adresaBcId: _trimToNull(adresaBcIdOverride) ?? _trimToNull(existing['adresa_bc_id']),
+      adresaVsId: _trimToNull(adresaVsIdOverride) ?? _trimToNull(existing['adresa_vs_id']),
+      adresaBcId2: _trimToNull(existing['adresa_bc_id_2']),
+      adresaVsId2: _trimToNull(existing['adresa_vs_id_2']),
+      cenaPoDanu: (existing['cena_po_danu'] as num?)?.toDouble() ?? 0.0,
+      cenaPoPokupljenju: (existing['cena_po_pokupljenju'] as num?)?.toDouble() ?? 0.0,
+      pushToken: _trimToNull(existing['push_token']),
+      pushToken2: _trimToNull(existing['push_token_2']),
+    );
   }
 
   Future<void> _saveOnboarding() async {
@@ -269,19 +344,30 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
     final phone = V3ClosedAuthService.normalizePhone(_normalizedPhone ?? '');
     final authId = (_targetAuthId ?? '').trim();
 
-    if (ime.isEmpty || prezime.isEmpty) {
-      V3AppSnackBar.warning(context, 'Unesite ime i prezime.');
-      return;
-    }
+    if (!_addressOnlyOnboarding) {
+      if (ime.isEmpty || prezime.isEmpty) {
+        V3AppSnackBar.warning(context, 'Unesite ime i prezime.');
+        return;
+      }
 
-    if (_selectedTip.isEmpty) {
-      V3AppSnackBar.warning(context, 'Izaberite tip putnika.');
-      return;
-    }
+      if (_selectedTip.isEmpty) {
+        V3AppSnackBar.warning(context, 'Izaberite tip putnika.');
+        return;
+      }
 
-    if (_selectedBcAdresa == null || _selectedVsAdresa == null) {
-      V3AppSnackBar.warning(context, 'Izaberite po jednu adresu za BC i VS.');
-      return;
+      if (_selectedBcAdresa == null || _selectedVsAdresa == null) {
+        V3AppSnackBar.warning(context, 'Izaberite po jednu adresu za BC i VS.');
+        return;
+      }
+    } else {
+      if (_requireBcAddress && _selectedBcAdresa == null) {
+        V3AppSnackBar.warning(context, 'Izaberi BC adresu.');
+        return;
+      }
+      if (_requireVsAddress && _selectedVsAdresa == null) {
+        V3AppSnackBar.warning(context, 'Izaberi VS adresu.');
+        return;
+      }
     }
 
     if (phone.isEmpty) {
@@ -310,19 +396,32 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
         return;
       }
 
-      final putnik = V3Putnik(
-        id: (existing['id'] as String?) ?? '',
-        imePrezime: fullName,
-        telefon1: phone,
-        tipPutnika: _selectedTip,
-        adresaBcId: _selectedBcAdresa?.id,
-        adresaVsId: _selectedVsAdresa?.id,
+      final existingBcId = existing['adresa_bc_id']?.toString().trim() ?? '';
+      final existingVsId = existing['adresa_vs_id']?.toString().trim() ?? '';
+
+      final targetBcId = _addressOnlyOnboarding
+          ? (_requireBcAddress ? (_selectedBcAdresa?.id ?? '') : existingBcId)
+          : (_selectedBcAdresa?.id ?? '');
+      final targetVsId = _addressOnlyOnboarding
+          ? (_requireVsAddress ? (_selectedVsAdresa?.id ?? '') : existingVsId)
+          : (_selectedVsAdresa?.id ?? '');
+
+      final putnik = _buildPutnikFromExistingRow(
+        existing,
+        phoneFallback: phone,
+        imePrezimeOverride: _addressOnlyOnboarding ? null : fullName,
+        tipPutnikaOverride: _addressOnlyOnboarding ? null : _selectedTip,
+        adresaBcIdOverride: targetBcId,
+        adresaVsIdOverride: targetVsId,
       );
 
       await V3PutnikService.addUpdatePutnik(putnik);
 
       final refreshed = await V3PutnikService.getActiveById(authId);
-      final missingAfterSave = _missingRequiredProfileFields(refreshed);
+      final missingAfterSave = _missingRequiredProfileFields(
+        refreshed,
+        includeIdentityFields: !_addressOnlyOnboarding,
+      );
       if (missingAfterSave.isNotEmpty) {
         if (!mounted) return;
         V3AppSnackBar.error(context, '❌ Upis nije kompletan. Nedostaje: ${missingAfterSave.join(', ')}.');
@@ -399,13 +498,19 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
       _selectedBcAdresa = null;
       _selectedVsAdresa = null;
       _missingProfileMessage = '';
+      _addressOnlyOnboarding = false;
+      _requireBcAddress = false;
+      _requireVsAddress = false;
       _statusMessage = '';
     });
   }
 
-  List<String> _missingRequiredProfileFields(Map<String, dynamic>? putnik) {
+  List<String> _missingRequiredProfileFields(
+    Map<String, dynamic>? putnik, {
+    bool includeIdentityFields = true,
+  }) {
     if (putnik == null) {
-      return const ['ime', 'tip', 'adresa BC', 'adresa VS'];
+      return includeIdentityFields ? const ['ime', 'tip', 'adresa BC', 'adresa VS'] : const ['adresa BC', 'adresa VS'];
     }
 
     final missing = <String>[];
@@ -414,8 +519,10 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
     final bc = putnik['adresa_bc_id']?.toString().trim() ?? '';
     final vs = putnik['adresa_vs_id']?.toString().trim() ?? '';
 
-    if (ime.isEmpty) missing.add('ime');
-    if (tip.isEmpty) missing.add('tip');
+    if (includeIdentityFields) {
+      if (ime.isEmpty) missing.add('ime');
+      if (tip.isEmpty) missing.add('tip');
+    }
     if (bc.isEmpty) missing.add('adresa BC');
     if (vs.isEmpty) missing.add('adresa VS');
     return missing;
@@ -578,6 +685,9 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
   Widget _buildProfileStep() {
     final adreseBc = V3AdresaService.getAdreseZaGrad('BC');
     final adreseVs = V3AdresaService.getAdreseZaGrad('VS');
+    final showIdentityFields = !_addressOnlyOnboarding;
+    final showBcDropdown = !_addressOnlyOnboarding || _requireBcAddress;
+    final showVsDropdown = !_addressOnlyOnboarding || _requireVsAddress;
 
     if (_selectedBcAdresa != null) {
       _selectedBcAdresa = adreseBc
@@ -602,169 +712,176 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
               _missingProfileMessage.isEmpty ? 'Unesite podatke za nalog ($_normalizedPhone).' : _missingProfileMessage,
         ),
         const SizedBox(height: 24),
-        TextField(
-          controller: _imeController,
-          enabled: !_isLoading,
-          textCapitalization: TextCapitalization.words,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Ime',
-            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.1),
-            prefixIcon: const Icon(Icons.badge_outlined, color: Colors.amber),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.amber, width: 2),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _prezimeController,
-          enabled: !_isLoading,
-          textCapitalization: TextCapitalization.words,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Prezime',
-            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.1),
-            prefixIcon: const Icon(Icons.account_circle_outlined, color: Colors.amber),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.amber, width: 2),
+        if (showIdentityFields) ...[
+          TextField(
+            controller: _imeController,
+            enabled: !_isLoading,
+            textCapitalization: TextCapitalization.words,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Ime',
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.1),
+              prefixIcon: const Icon(Icons.badge_outlined, color: Colors.amber),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.amber, width: 2),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          value: _selectedTip,
-          dropdownColor: const Color(0xFF1E1E1E),
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Kategorija',
-            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.1),
-            prefixIcon: const Icon(Icons.category_outlined, color: Colors.amber),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.amber, width: 2),
-            ),
-          ),
-          items: const [
-            DropdownMenuItem(value: '', child: Text('Izaberite kategoriju')),
-            DropdownMenuItem(value: 'radnik', child: Text('👷 Radnik')),
-            DropdownMenuItem(value: 'ucenik', child: Text('🎒 Učenik')),
-            DropdownMenuItem(value: 'dnevni', child: Text('📅 Dnevni')),
-            DropdownMenuItem(value: 'posiljka', child: Text('📦 Pošiljka')),
-          ],
-          onChanged: _isLoading
-              ? null
-              : (value) {
-                  if (value == null) return;
-                  setState(() => _selectedTip = value);
-                },
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<V3Adresa>(
-          value: _selectedBcAdresa,
-          isExpanded: true,
-          dropdownColor: const Color(0xFF1E1E1E),
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Adresa BC *',
-            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.1),
-            prefixIcon: const Icon(Icons.location_city_outlined, color: Colors.amber),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.amber, width: 2),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _prezimeController,
+            enabled: !_isLoading,
+            textCapitalization: TextCapitalization.words,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Prezime',
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.1),
+              prefixIcon: const Icon(Icons.account_circle_outlined, color: Colors.amber),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.amber, width: 2),
+              ),
             ),
           ),
-          items: adreseBc
-              .map((a) => DropdownMenuItem<V3Adresa>(
-                    value: a,
-                    child: Text(a.naziv),
-                  ))
-              .toList(),
-          onChanged: _isLoading
-              ? null
-              : (value) {
-                  setState(() => _selectedBcAdresa = value);
-                },
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<V3Adresa>(
-          value: _selectedVsAdresa,
-          isExpanded: true,
-          dropdownColor: const Color(0xFF1E1E1E),
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Adresa VS *',
-            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.1),
-            prefixIcon: const Icon(Icons.location_on_outlined, color: Colors.amber),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _selectedTip,
+            dropdownColor: const Color(0xFF1E1E1E),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Kategorija',
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.1),
+              prefixIcon: const Icon(Icons.category_outlined, color: Colors.amber),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.amber, width: 2),
+              ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.amber, width: 2),
-            ),
+            items: const [
+              DropdownMenuItem(value: '', child: Text('Izaberite kategoriju')),
+              DropdownMenuItem(value: 'radnik', child: Text('👷 Radnik')),
+              DropdownMenuItem(value: 'ucenik', child: Text('🎒 Učenik')),
+              DropdownMenuItem(value: 'dnevni', child: Text('📅 Dnevni')),
+              DropdownMenuItem(value: 'posiljka', child: Text('📦 Pošiljka')),
+            ],
+            onChanged: _isLoading
+                ? null
+                : (value) {
+                    if (value == null) return;
+                    setState(() => _selectedTip = value);
+                  },
           ),
-          items: adreseVs
-              .map((a) => DropdownMenuItem<V3Adresa>(
-                    value: a,
-                    child: Text(a.naziv),
-                  ))
-              .toList(),
-          onChanged: _isLoading
-              ? null
-              : (value) {
-                  setState(() => _selectedVsAdresa = value);
-                },
-        ),
+          const SizedBox(height: 12),
+        ],
+        if (showBcDropdown) ...[
+          DropdownButtonFormField<V3Adresa>(
+            value: _selectedBcAdresa,
+            isExpanded: true,
+            dropdownColor: const Color(0xFF1E1E1E),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Adresa BC *',
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.1),
+              prefixIcon: const Icon(Icons.location_city_outlined, color: Colors.amber),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.amber, width: 2),
+              ),
+            ),
+            items: adreseBc
+                .map((a) => DropdownMenuItem<V3Adresa>(
+                      value: a,
+                      child: Text(a.naziv),
+                    ))
+                .toList(),
+            onChanged: _isLoading
+                ? null
+                : (value) {
+                    setState(() => _selectedBcAdresa = value);
+                  },
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (showVsDropdown) ...[
+          DropdownButtonFormField<V3Adresa>(
+            value: _selectedVsAdresa,
+            isExpanded: true,
+            dropdownColor: const Color(0xFF1E1E1E),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Adresa VS *',
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.1),
+              prefixIcon: const Icon(Icons.location_on_outlined, color: Colors.amber),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white30),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.amber, width: 2),
+              ),
+            ),
+            items: adreseVs
+                .map((a) => DropdownMenuItem<V3Adresa>(
+                      value: a,
+                      child: Text(a.naziv),
+                    ))
+                .toList(),
+            onChanged: _isLoading
+                ? null
+                : (value) {
+                    setState(() => _selectedVsAdresa = value);
+                  },
+          ),
+          const SizedBox(height: 12),
+        ],
         if (_statusMessage.isNotEmpty) ...[
           const SizedBox(height: 12),
           _buildStatusMessage(_statusMessage),

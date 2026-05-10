@@ -112,14 +112,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    const now = new Date().toISOString();
     const patch: Record<string, string> = {
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     };
 
     if (slot === 1) {
       if (incomingPushToken) patch.push_token = incomingPushToken;
       patch.installation_id = incomingInstallationIdResolved;
-      patch.last_seen_at = new Date().toISOString();
+      patch.last_seen_at = now;
       if (incomingPlatform) patch.platform = incomingPlatform;
       if (incomingAppVersion) patch.app_version = incomingAppVersion;
     }
@@ -127,15 +128,12 @@ Deno.serve(async (req) => {
     if (slot === 2) {
       if (incomingPushToken) patch.push_token_2 = incomingPushToken;
       patch.installation_id_2 = incomingInstallationIdResolved;
-      patch.last_seen_at_2 = new Date().toISOString();
+      patch.last_seen_at_2 = now;
       if (incomingPlatform) patch.platform_2 = incomingPlatform;
       if (incomingAppVersion) patch.app_version_2 = incomingAppVersion;
     }
 
     const columns = Object.keys(patch);
-    if (columns.length === 0) {
-      return json(200, { ok: false, updated: false, reason: "no_columns_to_update" });
-    }
 
     const { error: updateError } = await client.from("v3_auth").update(patch).eq("id", userId);
 
