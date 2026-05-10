@@ -1205,7 +1205,13 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
 
   Widget _buildBody() {
     final vozacBoja = _getVozacBojaRaw(_efektivniVozac);
-    final redniBrojevi = List<int>.generate(_mojiPutnici.length, (index) => index + 1);
+    int redniCounter = 0;
+    final redniBrojevi = _mojiPutnici.map<int?>((pz) {
+      final tip = pz.putnik.tipPutnika.toLowerCase().trim();
+      if (tip == 'posiljka') return null;
+      redniCounter += 1;
+      return redniCounter;
+    }).toList(growable: false);
 
     return Column(
       children: [

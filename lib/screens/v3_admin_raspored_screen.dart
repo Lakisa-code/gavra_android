@@ -759,7 +759,20 @@ class _V3AdminRasporedScreenState extends State<V3AdminRasporedScreen> {
                                         itemCount: zapisi.length,
                                         itemBuilder: (_, i) {
                                           final z = zapisi[i];
-                                          final redniBroj = i + 1;
+                                          int redniCounter = 0;
+                                          for (int j = 0; j <= i; j++) {
+                                            final kandidat = zapisi[j];
+                                            final kandidatPutnik = V3PutnikService.getPutnikById(kandidat.putnikId) ??
+                                                V3Putnik(
+                                                  id: kandidat.putnikId,
+                                                  imePrezime: 'Nepoznat putnik',
+                                                  tipPutnika: 'dnevni',
+                                                );
+                                            final kandidatTip = kandidatPutnik.tipPutnika.toLowerCase().trim();
+                                            if (kandidatTip != 'posiljka') {
+                                              redniCounter += 1;
+                                            }
+                                          }
                                           final terminDodeljen = vozacTermin != null;
                                           final indivVozac =
                                               _getVozacZaPutnika(z.putnikId, _selectedGrad, slotVreme(z));
@@ -775,6 +788,8 @@ class _V3AdminRasporedScreenState extends State<V3AdminRasporedScreen> {
                                                 imePrezime: 'Nepoznat putnik',
                                                 tipPutnika: 'dnevni',
                                               );
+                                          final tip = putnik.tipPutnika.toLowerCase().trim();
+                                          final int? redniBroj = tip == 'posiljka' ? null : redniCounter;
                                           return Padding(
                                             padding: const EdgeInsets.only(bottom: 6),
                                             child: V3PutnikCard(

@@ -1187,6 +1187,18 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
                         child: ValueListenableBuilder<List<Map<String, String>>>(
                           valueListenable: neradniDaniNotifier,
                           builder: (context, rules, _) {
+                            int redniCounter = 0;
+                            final redniBrojevi = <int?>[];
+                            for (final row in resolvedZapisi) {
+                              final tip = row.putnik.tipPutnika.toLowerCase().trim();
+                              if (tip == 'posiljka') {
+                                redniBrojevi.add(null);
+                              } else {
+                                redniCounter += 1;
+                                redniBrojevi.add(redniCounter);
+                              }
+                            }
+
                             return resolvedZapisi.isEmpty
                                 ? Center(
                                     child: Container(
@@ -1218,8 +1230,7 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
                                       final vozacBoja = indivVozac != null
                                           ? V3CardColorPolicy.vozacColorOr(indivVozac.boja)
                                           : getVozacColorForTermin(grad, vreme);
-
-                                      final redniBroj = i + 1;
+                                      final redniBroj = redniBrojevi[i];
 
                                       return Padding(
                                         padding: const EdgeInsets.only(bottom: 8),
