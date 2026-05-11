@@ -17,6 +17,17 @@ function coordStr(lat: number, lng: number): string {
   return `${lng},${lat}`;
 }
 
+function normalizeDate(value: unknown): string {
+  return String(value ?? "").trim().split("T")[0];
+}
+
+function normalizeTime(value: unknown): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  const timePart = raw.includes("T") ? raw.split("T")[1] : raw;
+  return timePart.slice(0, 8);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return json(200, { ok: false, reason: "method_not_allowed" });
@@ -48,7 +59,7 @@ Deno.serve(async (req) => {
     // 1. Pronađi aktivan slot za ovog vozača
     const { data: slotRow, error: slotError } = await client
       .from("v3_trenutna_dodela_slot")
-      .select("datum, grad, vreme, waypoints_json")
+      .select("datum, grad, vreme")
       .eq("vozac_v3_auth_id", vozacId)
       .eq("status", "aktivan")
       .maybeSingle();
@@ -62,7 +73,9 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, reason: "no_active_slot", updated: 0 });
     }
 
-    const { grad } = slotRow;
+    const slotGrad = String(slotRow.grad ?? "").trim().toUpperCase();
+    const slotDatum = normalizeDate(slotRow.datum);
+    const slotVreme = normalizeTime(slotRow.vreme);
 
     // 2. Pronađi aktivne dodele (putnik_id + termin_id)
     const { data: dodelaRows, error: dodelaError } = await client
@@ -84,7 +97,7 @@ Deno.serve(async (req) => {
     // 3. Dohvati termin podatke direktno po termin_id (tačan red, bez mešanja termina)
     const { data: operativnaRows, error: operativnaError } = await client
       .from("v3_operativna_nedelja")
-      .select("id, created_by, pokupljen_at, otkazano_at, adresa_override_id, koristi_sekundarnu")
+      .select("id, created_by, datum, grad, polazak_at, pokupljen_at, otkazano_at, adresa_override_id, koristi_sekundarnu")
       .in("id", allTerminIds);
 
     if (operativnaError) {
@@ -92,27 +105,42 @@ Deno.serve(async (req) => {
     }
 
     // Mapa termin_id → operativna red
-    const terminMap: Record<string, { putnikId: string; pokupljenAt: string | null; otkazanoAt: string | null; adresaOverrideId: string | null; koristiSekundarnu: boolean }> = {};
+    const terminMap: Record<string, {
+      putnikId: string;
+      pokupljenAt: string | null;
+      otkazanoAt: string | null;
+      adresaOverrideId: string | null;
+      koristiSekundarnu: boolean;
+      matchesSlot: boolean;
+    }> = {};
     for (const row of (operativnaRows ?? [])) {
       const terminId = String(row.id ?? "").trim();
       if (!terminId) continue;
+
+      const rowGrad = String(row.grad ?? "").trim().toUpperCase();
+      const rowDatum = normalizeDate(row.datum);
+      const rowVreme = normalizeTime(row.polazak_at);
+      const matchesSlot = rowGrad === slotGrad && rowDatum === slotDatum && rowVreme === slotVreme;
+
       terminMap[terminId] = {
         putnikId: String(row.created_by ?? "").trim(),
         pokupljenAt: row.pokupljen_at ?? null,
         otkazanoAt: row.otkazano_at ?? null,
         adresaOverrideId: row.adresa_override_id ? String(row.adresa_override_id) : null,
         koristiSekundarnu: row.koristi_sekundarnu === true,
+        matchesSlot,
       };
     }
 
     const adresaOverrideMap: Record<string, string> = {};   // putnikId → adresa_override_id
     const koristiSekundarnaMap: Record<string, boolean> = {}; // putnikId → koristi_sekundarnu
 
-    // 4. Preostali putnici — nisu pokupljeni NI otkazani (po tačnom terminu)
+    // 4. Preostali putnici — nisu pokupljeni NI otkazani i pripadaju aktivnom slotu
     const remainingDodele = dodelaRows.filter((r) => {
       const terminId = String(r.termin_id ?? "").trim();
       const termin = terminMap[terminId];
-      if (!termin) return true; // nema podataka — ostavljamo u listi
+      if (!termin) return false;
+      if (!termin.matchesSlot) return false;
       return !termin.pokupljenAt && !termin.otkazanoAt;
     });
 
@@ -130,7 +158,7 @@ Deno.serve(async (req) => {
     if (remainingDodele.length === 0) {
       // Svi su pokupljeni ili otkazani — obriši ETA zapise
       await client.from("v3_eta_results").delete().eq("vozac_id", vozacId);
-      return json(200, { ok: true, reason: "all_picked_up", updated: 0 });
+      return json(200, { ok: true, reason: "no_remaining_in_active_slot", updated: 0 });
     }
 
     const remainingPutnikIds = remainingDodele
@@ -153,7 +181,7 @@ Deno.serve(async (req) => {
     }
 
     // 6. Odredi adresa_id za svakog preostalog putnika na osnovu grado + koristi_sekundarnu + override
-    const gradNorm = String(grad ?? "").trim().toUpperCase();
+    const gradNorm = slotGrad;
     const adresaIds = new Set<string>();
     const putnikAdresaIdMap: Record<string, string> = {}; // putnikId → adresaId
 
@@ -201,23 +229,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 8. Fallback — za putnike kojima nema koordinata iz adresa, pokušaj iz waypoints_json
-    const waypointsJson: Array<{ id: string; lat: number; lng: number }> =
-      Array.isArray(slotRow.waypoints_json) ? slotRow.waypoints_json : [];
-    const waypointFallbackMap: Record<string, { lat: number; lng: number }> = {};
-    for (const wp of waypointsJson) {
-      waypointFallbackMap[String(wp.id)] = { lat: Number(wp.lat), lng: Number(wp.lng) };
-    }
-
-    // 9. Gradi listu preostalih waypointa sa koordinatama
+    // 8. Gradi listu preostalih waypointa sa koordinatama iz adresa
     type WpEntry = { putnikId: string; lat: number; lng: number };
     const remainingWaypoints: WpEntry[] = [];
 
     for (const pid of remainingPutnikIds) {
       const adresaId = putnikAdresaIdMap[pid];
       const fromAdresa = adresaId ? adresaCoordMap[adresaId] : undefined;
-      const fromFallback = waypointFallbackMap[pid];
-      const coord = fromAdresa ?? fromFallback;
+      const coord = fromAdresa;
       if (!coord) {
         console.warn(`[v3-compute-eta] putnik ${pid} nema koordinate — preskačem`);
         continue;
@@ -229,7 +248,7 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, reason: "no_coords_for_remaining", updated: 0 });
     }
 
-    // 10. OSRM /trip: vozač (source=first) → preostali putnici, re-optimizuj redosled
+    // 9. OSRM /trip: vozač (source=first) → preostali putnici, re-optimizuj redosled
     const tripCoords = [
       coordStr(driverLat, driverLng),
       ...remainingWaypoints.map((w) => coordStr(w.lat, w.lng)),
@@ -256,7 +275,7 @@ Deno.serve(async (req) => {
       return json(200, { ok: false, reason: "osrm_code_error", code: osrmData.code });
     }
 
-    // 11. Parsiraj optimizovani redosled iz waypoints[].waypoint_index
+    // 10. Parsiraj optimizovani redosled iz waypoints[].waypoint_index
     // OSRM /trip vraća waypoints sa waypoint_index koji označava poziciju u optimalnom obilasku
     // Indeks 0 je vozač (source=first), ignorišemo ga
     const rawWaypoints = osrmData.waypoints;
@@ -283,7 +302,7 @@ Deno.serve(async (req) => {
       }))
       .sort((a: any, b: any) => a.optimizedPos - b.optimizedPos);
 
-    // 12. Izračunaj kumulativni ETA u optimalnom redosledu
+    // 11. Izračunaj kumulativni ETA u optimalnom redosledu
     // legs[0] = vozač → prvi putnik, legs[1] = prvi → drugi, itd.
     const now = new Date().toISOString();
     const upsertRows: Array<{
@@ -319,7 +338,7 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, reason: "no_eta_rows", updated: 0 });
     }
 
-    // 13. UPSERT u v3_eta_results
+    // 12. UPSERT u v3_eta_results
     const { error: upsertError } = await client
       .from("v3_eta_results")
       .upsert(upsertRows, { onConflict: "putnik_id,vozac_id" });

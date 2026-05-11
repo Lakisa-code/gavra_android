@@ -264,7 +264,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
 
   void _startEtaPolling() {
     _fetchEtas();
-    _etaPollTimer = Timer.periodic(const Duration(seconds: 15), (_) => _fetchEtas());
+    _etaPollTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchEtas());
   }
 
   Future<void> _fetchEtas() async {
@@ -287,9 +287,14 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
         }
       }
 
+      final optimizedIds = newMap.entries.toList(growable: false)..sort((a, b) => a.value.compareTo(b.value));
+
       if (mounted) {
         V3StateUtils.safeSetState(this, () {
           _etaSecondsCache = newMap;
+          _optimizedPutnikIds
+            ..clear()
+            ..addAll(optimizedIds.map((entry) => entry.key));
           if (_mojiPutnici.isNotEmpty) {
             _mojiPutnici = _sortPutniciForDisplay(_mojiPutnici);
             _applyOptimizedOrderToPutnici();
