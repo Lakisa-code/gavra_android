@@ -53,33 +53,38 @@ class V3RolePermissionService {
   // ─────────────────────────────────────────────────────────────────────
 
   static Future<void> _requestPushOnce(String key) async {
-    final alreadyPrompted = await _storage.read(key: key) == 'true';
-    if (alreadyPrompted) return;
-
-    // Na iOS-u push dozvolu tražimo kroz Firebase u istom login trenutku
-    // kao i Android, da tok bude platformski konzistentan.
+    // Proveravamo stvarni status dozvole kroz Firebase za iOS
     if (Platform.isIOS) {
       try {
-        final settings = await FirebaseMessaging.instance.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-        debugPrint('[Permissions][iOS] Push dozvola status: ${settings.authorizationStatus}');
+        var settings = await FirebaseMessaging.instance.getNotificationSettings();
+        
+        // Ako je denied (od ranije odbijeno) ili notDetermined (nikad nije pitao)
+        if (settings.authorizationStatus == AuthorizationStatus.denied ||
+            settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+          
+          settings = await FirebaseMessaging.instance.requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+          
+          debugPrint('[Permissions][iOS] Push dozvola novi status: ${settings.authorizationStatus}');
+        } else {
+          debugPrint('[Permissions][iOS] Push dozvola već postoji: ${settings.authorizationStatus}');
+        }
       } catch (e) {
         debugPrint('[Permissions][iOS] Push dozvola greška: $e');
-      } finally {
-        await _storage.write(key: key, value: 'true');
       }
       return;
     }
 
     try {
-      await Permission.notification.request();
+      final status = await Permission.notification.status;
+      if (status.isDenied || status.isPermanentlyDenied) {
+        await Permission.notification.request();
+      }
     } catch (e) {
       debugPrint('[Permissions] Push dozvola greška: $e');
-    } finally {
-      await _storage.write(key: key, value: 'true');
     }
   }
 
