@@ -248,15 +248,20 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, reason: "no_coords_for_remaining", updated: 0 });
     }
 
-    // 9. OSRM /trip: vozač (source=first) → preostali putnici, re-optimizuj redosled
+    // 9. OSRM /trip: vozač (source=first) → preostali putnici → suprotni grad (destination=last)
+    // Odredi koordinate suprotnog grada
+    const destLat = gradNorm === "BC" ? 45.1196 : 44.8994; // BC -> Vršac, VS -> Bela Crkva
+    const destLng = gradNorm === "BC" ? 21.3050 : 21.4165;
+
     const tripCoords = [
       coordStr(driverLat, driverLng),
       ...remainingWaypoints.map((w) => coordStr(w.lat, w.lng)),
+      coordStr(destLat, destLng)
     ].join(";");
 
     const osrmUrl =
       `${osrmBaseUrl}/trip/v1/driving/${tripCoords}` +
-      `?source=first&roundtrip=false&steps=false&overview=false`;
+      `?source=first&destination=last&roundtrip=false&steps=false&overview=false`;
 
     let osrmResponse: Response;
     try {
@@ -294,8 +299,9 @@ Deno.serve(async (req) => {
     }
 
     // Sortiraj putničke waypoints (indeks 1..N) po waypoint_index → dobijamo optimalan redosled
+    // Izbacujemo i zadnji element jer je on destinacioni suprotni grad
     const putnikWpIndexed = rawWaypoints
-      .slice(1) // preskoči vozača (index 0)
+      .slice(1, -1) // preskoči vozača (index 0) i destinaciju (poslednji element)
       .map((wp: any, i: number) => ({
         originalIndex: i, // indeks u remainingWaypoints
         optimizedPos: Number(wp.waypoint_index ?? i + 1),
