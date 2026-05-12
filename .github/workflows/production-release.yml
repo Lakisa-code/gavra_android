@@ -166,7 +166,7 @@ jobs:
           serviceAccountJson: android/play-service-account.json
           packageName: com.gavra013.gavra_android
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: production
+          tracks: production
           status: completed
 
       - name: Upload AAB artifact
