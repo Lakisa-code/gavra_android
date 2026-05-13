@@ -9,4 +9,8 @@ class V3RacunRepository {
         .order('redni_broj', ascending: false)
         .limit(1);
   }
+
+  Future<void> insertRacun(Map<String, dynamic> payload) async {
+    await supabase.from('v3_racuni').insert(payload);
+  }
 }

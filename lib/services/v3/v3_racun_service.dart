@@ -101,6 +101,21 @@ class V3RacunService {
         datumIzdavanja: DateTime.now(),
       );
       await _openPDF(pdfBytes, 'Racun_$brojRacuna'.replaceAll('/', '_'));
+
+      try {
+        await _repository.insertRacun({
+          'firma_naziv': imePrezimeKupca.trim(),
+          'firma_adresa': adresaKupca.trim(),
+          'firma_pib': null,
+          'firma_mb': null,
+          'firma_ziro': null,
+          'redni_broj': _extractRedniBroj(brojRacuna),
+          'godina': _extractGodina(brojRacuna),
+          'status': 'kreirano',
+        });
+      } catch (e) {
+        debugPrint('⚠️ [Racun] Upis u v3_racuni nije uspeo (fizičko lice): $e');
+      }
     } catch (e) {
       if (context.mounted) {
         V3AppSnackBar.error(context, '❌ Greška pri štampanju računa: $e');
@@ -123,6 +138,7 @@ class V3RacunService {
     try {
       await _ensureAssets();
       final pdf = pw.Document();
+      final upisPayloads = <Map<String, dynamic>>[];
       final theme = pw.ThemeData.withFont(
         base: _regular,
         bold: _bold,
@@ -139,6 +155,8 @@ class V3RacunService {
         final firmaNaziv = r['firma_naziv']?.toString() ?? imePutnika;
         final firmaAdresa = r['firma_adresa']?.toString() ?? '---';
         final firmaPib = r['firma_pib']?.toString() ?? '';
+        final firmaMb = r['firma_mb']?.toString();
+        final firmaZiro = r['firma_ziro']?.toString();
 
         final opis = 'Prevoz putnika na relaciji $imePutnika';
 
@@ -157,11 +175,30 @@ class V3RacunService {
             cena: cenaPoVoznji,
           ),
         );
+
+        upisPayloads.add({
+          'firma_naziv': firmaNaziv,
+          'firma_adresa': firmaAdresa,
+          'firma_pib': firmaPib.isEmpty ? null : firmaPib,
+          'firma_mb': (firmaMb == null || firmaMb.trim().isEmpty) ? null : firmaMb.trim(),
+          'firma_ziro': (firmaZiro == null || firmaZiro.trim().isEmpty) ? null : firmaZiro.trim(),
+          'redni_broj': _extractRedniBroj(brojRacuna),
+          'godina': _extractGodina(brojRacuna),
+          'status': 'kreirano',
+        });
       }
 
       final pdfBytes = await pdf.save();
       final mesec = DateFormat('MM_yyyy').format(datumPrometa);
       await _openPDF(pdfBytes, 'Racuni_firme_$mesec');
+
+      for (final payload in upisPayloads) {
+        try {
+          await _repository.insertRacun(payload);
+        } catch (e) {
+          debugPrint('⚠️ [Racun] Upis u v3_racuni nije uspeo (firma): $e');
+        }
+      }
     } catch (e) {
       if (context.mounted) {
         V3AppSnackBar.error(context, '❌ Greška pri štampanju: $e');
@@ -408,5 +445,20 @@ class V3RacunService {
     final file = File('${tempDir.path}/${name}_${DateFormat('ddMMyyyy').format(DateTime.now())}.pdf');
     await file.writeAsBytes(bytes, flush: true);
     await OpenFilex.open(file.path);
+  }
+
+  static int? _extractRedniBroj(String brojRacuna) {
+    final parts = brojRacuna.trim().split('/');
+    if (parts.isEmpty) return null;
+    return int.tryParse(parts.first.trim());
+  }
+
+  static int _extractGodina(String brojRacuna) {
+    final parts = brojRacuna.trim().split('/');
+    if (parts.length >= 2) {
+      final parsed = int.tryParse(parts[1].trim());
+      if (parsed != null) return parsed;
+    }
+    return DateTime.now().year;
   }
 }
