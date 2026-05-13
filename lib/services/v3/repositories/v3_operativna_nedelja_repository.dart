@@ -24,4 +24,18 @@ class V3OperativnaNedeljaRepository {
         .isFilter('otkazano_at', null)
         .select();
   }
+
+  Future<List<dynamic>> selectByPutnikDatumGradAktivni({
+    required String putnikId,
+    required String datumIso,
+    required String grad,
+  }) {
+    return supabase
+        .from('v3_operativna_nedelja')
+        .select()
+        .eq('created_by', putnikId)
+        .eq('datum', datumIso)
+        .eq('grad', grad)
+        .isFilter('otkazano_at', null);
+  }
 }

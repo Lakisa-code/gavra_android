@@ -7,6 +7,8 @@ import '../../utils/v3_string_utils.dart';
 import '../../utils/v3_uuid_utils.dart';
 import '../realtime/v3_master_realtime_manager.dart';
 import 'repositories/v3_operativna_nedelja_repository.dart';
+import 'v3_trenutna_dodela_service.dart';
+import 'v3_trenutna_dodela_slot_service.dart';
 
 class V3OperativnaNedeljaEntry {
   final String id;
@@ -98,6 +100,65 @@ class V3OperativnaNedeljaService {
   V3OperativnaNedeljaService._();
   static final V3OperativnaNedeljaRepository _repo = V3OperativnaNedeljaRepository();
 
+  static Future<void> syncTerminDodelaFromSlotForRow({
+    required Map<String, dynamic> operativnaRow,
+    String? updatedBy,
+  }) async {
+    final terminId = (operativnaRow['id']?.toString() ?? '').trim();
+    final putnikId = (operativnaRow['created_by']?.toString() ?? '').trim();
+    final datumIso = V3DateUtils.parseIsoDatePart(operativnaRow['datum'] as String? ?? '');
+    final grad = (operativnaRow['grad']?.toString() ?? '').trim();
+    final vreme = (operativnaRow['polazak_at']?.toString() ?? operativnaRow['vreme']?.toString() ?? '').trim();
+
+    if (terminId.isEmpty || putnikId.isEmpty || datumIso.isEmpty || grad.isEmpty || vreme.isEmpty) return;
+
+    final canAssign = V3StatusPolicy.canAssign(
+      status: operativnaRow['status']?.toString(),
+      otkazanoAt: operativnaRow['otkazano_at'],
+      pokupljenAt: operativnaRow['pokupljen_at'],
+    );
+
+    if (!canAssign) {
+      await V3TrenutnaDodelaService.deleteByTerminId(terminId);
+      return;
+    }
+
+    final slotAssignments = await V3TrenutnaDodelaSlotService.loadActiveVozacBySlotKey(
+      datumIso: datumIso,
+    );
+
+    final slotKey = V3TrenutnaDodelaSlotService.slotKey(
+      datumIso: datumIso,
+      grad: grad,
+      vreme: vreme,
+    );
+    final vozacId = (slotAssignments[slotKey] ?? '').trim();
+
+    if (vozacId.isEmpty) {
+      await V3TrenutnaDodelaService.deleteByTerminId(terminId);
+      return;
+    }
+
+    await V3TrenutnaDodelaService.upsertActiveTerminDodela(
+      terminId: terminId,
+      putnikId: putnikId,
+      vozacId: vozacId,
+      updatedBy: updatedBy,
+    );
+  }
+
+  static Future<void> syncTerminDodelaFromSlotForRows({
+    required Iterable<Map<String, dynamic>> operativnaRows,
+    String? updatedBy,
+  }) async {
+    for (final row in operativnaRows) {
+      await syncTerminDodelaFromSlotForRow(
+        operativnaRow: row,
+        updatedBy: updatedBy,
+      );
+    }
+  }
+
   static bool _isOperativnaAktivna(Map<String, dynamic> row) {
     return !V3StatusPolicy.isTimestampSet(row['otkazano_at']);
   }
@@ -172,6 +233,14 @@ class V3OperativnaNedeljaService {
           'adresa_override_id': adresaIdOverride, // null = briše override
         });
         V3MasterRealtimeManager.instance.v3UpsertToCache('v3_operativna_nedelja', updatedRow);
+        try {
+          await syncTerminDodelaFromSlotForRow(
+            operativnaRow: updatedRow,
+            updatedBy: actor,
+          );
+        } catch (e) {
+          debugPrint('[V3OperativnaNedeljaService] sync assignment after update error: $e');
+        }
       } else {
         // INSERT direktno u operativna_nedelja
         final insertedRow = await _repo.insertReturning({
@@ -184,6 +253,14 @@ class V3OperativnaNedeljaService {
           if (adresaIdOverride != null) 'adresa_override_id': adresaIdOverride,
         });
         V3MasterRealtimeManager.instance.v3UpsertToCache('v3_operativna_nedelja', insertedRow);
+        try {
+          await syncTerminDodelaFromSlotForRow(
+            operativnaRow: insertedRow,
+            updatedBy: actor,
+          );
+        } catch (e) {
+          debugPrint('[V3OperativnaNedeljaService] sync assignment after insert error: $e');
+        }
       }
     } catch (e) {
       debugPrint('[V3OperativnaNedeljaService] createOrUpdateByVozac error: $e');

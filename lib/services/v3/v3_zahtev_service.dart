@@ -8,6 +8,7 @@ import '../../utils/v3_status_policy.dart';
 import '../../utils/v3_uuid_utils.dart';
 import '../realtime/v3_master_realtime_manager.dart';
 import 'repositories/v3_operativna_nedelja_repository.dart';
+import 'v3_operativna_nedelja_service.dart';
 import 'v3_vozac_service.dart';
 import 'zahtevi/v3_zahtev_domain_service.dart';
 import 'zahtevi/v3_zahtev_repository.dart';
@@ -65,6 +66,30 @@ class V3ZahtevService {
     }
   }
 
+  static Future<void> _syncOperativnaAssignmentsForContext({
+    required String putnikId,
+    required DateTime datum,
+    required String grad,
+    String? updatedBy,
+  }) async {
+    final datumIso = _datumKey(datum);
+    final targetGrad = grad.trim().toUpperCase();
+    if (putnikId.trim().isEmpty || datumIso.isEmpty || targetGrad.isEmpty) return;
+
+    final rows = await _operativnaRepository.selectByPutnikDatumGradAktivni(
+      putnikId: putnikId,
+      datumIso: datumIso,
+      grad: targetGrad,
+    );
+
+    final normalizedActor = V3UuidUtils.normalizeUuid(updatedBy);
+    final mappedRows = rows.whereType<Map<String, dynamic>>().toList(growable: false);
+    await V3OperativnaNedeljaService.syncTerminDodelaFromSlotForRows(
+      operativnaRows: mappedRows,
+      updatedBy: normalizedActor,
+    );
+  }
+
   static V3Zahtev? getZahtevById(String id) {
     final data = V3MasterRealtimeManager.instance.zahteviCache[id];
     return data != null ? V3Zahtev.fromJson(data) : null;
@@ -99,6 +124,7 @@ class V3ZahtevService {
     String? updatedBy,
   }) async {
     final aktivni = _vidljiviRedoviPoKontekstu(putnikId: putnikId, datum: datum, grad: grad);
+    final targetGrad = grad.trim().toUpperCase();
     if (aktivni.isNotEmpty) {
       final row = aktivni.first;
       final rowKey = (row['id']?.toString() ?? '').trim();
@@ -111,6 +137,12 @@ class V3ZahtevService {
           rowKey,
           novoVreme,
           koristiSekundarnu: koristiSekundarnu,
+          updatedBy: updatedBy,
+        );
+        await _syncOperativnaAssignmentsForContext(
+          putnikId: putnikId,
+          datum: datum,
+          grad: targetGrad,
           updatedBy: updatedBy,
         );
         return;
@@ -127,6 +159,12 @@ class V3ZahtevService {
       koristiSekundarnu: koristiSekundarnu,
     );
     await createZahtev(zahtev, createdBy: updatedBy);
+    await _syncOperativnaAssignmentsForContext(
+      putnikId: putnikId,
+      datum: datum,
+      grad: targetGrad,
+      updatedBy: updatedBy,
+    );
   }
 
   static Future<void> otkaziPolazakPutnikaPoKontekstu({
@@ -135,6 +173,7 @@ class V3ZahtevService {
     required String grad,
     String? otkazaoPutnikId,
   }) async {
+    final targetGrad = grad.trim().toUpperCase();
     final aktivni = _vidljiviRedoviPoKontekstu(putnikId: putnikId, datum: datum, grad: grad);
     if (aktivni.isNotEmpty) {
       final row = aktivni.first;
@@ -159,7 +198,7 @@ class V3ZahtevService {
     final updatedOperativni = await _operativnaRepository.updateByPutnikDatumGradAktivniReturningList(
       putnikId: putnikId,
       datumIso: datumIso,
-      grad: grad,
+      grad: targetGrad,
       payload: {
         if (otkazaoPutnikId != null) 'otkazano_by': otkazaoPutnikId,
         if (updBy != null) 'updated_by': updBy,
@@ -169,6 +208,13 @@ class V3ZahtevService {
     for (final row in updatedOperativni) {
       V3MasterRealtimeManager.instance.v3UpsertToCache('v3_operativna_nedelja', row);
     }
+
+    await _syncOperativnaAssignmentsForContext(
+      putnikId: putnikId,
+      datum: datum,
+      grad: targetGrad,
+      updatedBy: otkazaoPutnikId,
+    );
   }
 
   static Future<void> updateStatus(String id, String newStatus, {String? updatedBy}) async {
