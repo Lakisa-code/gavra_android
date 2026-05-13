@@ -79,6 +79,15 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
   final List<String> _optimizedPutnikIds = [];
   Map<String, int> _etaSecondsCache = {};
   Timer? _etaPollTimer;
+  bool _hasSentRouteToMap = false;
+  bool _mapResyncInFlight = false;
+  String _lastSentRouteSignature = '';
+
+  void _resetMapSyncState() {
+    _hasSentRouteToMap = false;
+    _mapResyncInFlight = false;
+    _lastSentRouteSignature = '';
+  }
 
   int _timeToMinutes(String hhmm) {
     final parts = hhmm.split(':');
@@ -289,6 +298,8 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
 
       final optimizedIds = newMap.entries.toList(growable: false)..sort((a, b) => a.value.compareTo(b.value));
 
+      var shouldSyncMap = false;
+
       if (mounted) {
         V3StateUtils.safeSetState(this, () {
           _etaSecondsCache = newMap;
@@ -299,7 +310,12 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
             _mojiPutnici = _sortPutniciForDisplay(_mojiPutnici);
             _applyOptimizedOrderToPutnici();
           }
+          shouldSyncMap = _isNavigating && _hasSentRouteToMap;
         });
+      }
+
+      if (shouldSyncMap) {
+        unawaited(_syncMapRouteIfNeeded(reason: 'eta_poll'));
       }
     } catch (e) {
       debugPrint('[V3VozacScreen] eta poll error: $e');
@@ -559,6 +575,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
       final normalizedVreme = V3TimeUtils.normalizeToHHmm(vreme);
       _selectedGrad = normalizedGrad;
       _selectedVreme = normalizedVreme;
+      _resetMapSyncState();
     });
     _rebuild();
   }
@@ -630,6 +647,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
         _selectedGrad = firstTerm['grad']?.toString().toUpperCase() ?? _selectedGrad;
         _selectedVreme = V3TimeUtils.normalizeToHHmm(firstTerm['vreme']?.toString());
       }
+      _resetMapSyncState();
     });
 
     _rebuild();
@@ -834,6 +852,35 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
     );
   }
 
+  String _routeSignatureFromWaypoints(List<V3RouteWaypoint> waypoints) {
+    return waypoints
+        .map((w) => '${w.id}|${w.coordinate.latitude.toStringAsFixed(6)}|${w.coordinate.longitude.toStringAsFixed(6)}')
+        .join('>');
+  }
+
+  Future<void> _syncMapRouteIfNeeded({required String reason}) async {
+    if (!_isNavigating || !_hasSentRouteToMap || _mapResyncInFlight) return;
+
+    final preparedRoute = await _buildHereRouteWaypoints();
+    if (preparedRoute == null) return;
+
+    final signature = _routeSignatureFromWaypoints(preparedRoute.waypointsToOpen);
+    if (signature == _lastSentRouteSignature) return;
+
+    _mapResyncInFlight = true;
+    try {
+      await V3NavigationAppLauncherService.launchHereWeGoAppOnly(
+        waypoints: preparedRoute.waypointsToOpen,
+      );
+      _lastSentRouteSignature = signature;
+      debugPrint('[V3VozacScreen] map route synced ($reason)');
+    } catch (e) {
+      debugPrint('[V3VozacScreen] map route sync error ($reason): $e');
+    } finally {
+      _mapResyncInFlight = false;
+    }
+  }
+
   Future<void> _handleOpenMap() async {
     if (!_isNavigating) {
       if (mounted) V3AppSnackBar.warning(context, 'Prvo započnite vožnju (START) da bi se ruta prosledila na mapu.');
@@ -853,6 +900,8 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
       await V3NavigationAppLauncherService.launchHereWeGoAppOnly(
         waypoints: waypointsToOpen,
       );
+      _hasSentRouteToMap = true;
+      _lastSentRouteSignature = _routeSignatureFromWaypoints(waypointsToOpen);
       if (!mounted) return;
       V3AppSnackBar.success(context, 'HERE WeGo otvoren sa trenutnim redosledom stanica.');
     } catch (e) {
@@ -881,6 +930,13 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
     final gpsReady = await _ensureGpsPermissionForStart();
     if (!gpsReady) return;
 
+    final preparedRoute = await _buildHereRouteWaypoints();
+    debugPrint('[START] prepared route result: $preparedRoute');
+    if (preparedRoute == null || !mounted) {
+      debugPrint('[START] => prepared route null or not mounted, returning');
+      return;
+    }
+
     await _startDriverLocationTracking();
 
     final vozacId = (_efektivniVozac?.id?.toString() ?? '').trim();
@@ -905,17 +961,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
       }
     }
 
-    final preparedRoute = await _buildHereRouteWaypoints();
-    debugPrint('[START] prepared route result: $preparedRoute');
-    if (preparedRoute == null || !mounted) {
-      debugPrint('[START] => prepared route null or not mounted, returning');
-      return;
-    }
-
     debugPrint(
         '[START] waypoints.length=${preparedRoute.waypointsToOpen.length} unresolvedCount=${preparedRoute.unresolvedCount}');
     V3AppSnackBar.success(context, 'Ruta pripremljena za HERE WeGo.');
     _isNavigating = true;
+    _resetMapSyncState();
     // Odmah izračunaj ETA bez čekanja na GPS pomak
     unawaited(V3VozacLocationTrackingService.instance.forceComputeEta());
 
@@ -944,6 +994,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
 
     V3VozacLocationTrackingService.instance.stop();
     _isNavigating = false;
+    _resetMapSyncState();
     if (mounted) {
       V3AppSnackBar.info(context, 'Tracking zaustavljen.');
       V3StateUtils.safeSetState(this, () {});
