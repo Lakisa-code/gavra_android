@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../globals.dart';
+import '../theme.dart';
 import '../services/realtime/v3_master_realtime_manager.dart';
 import '../services/v3/v3_app_settings_service.dart';
 import '../services/v3/v3_finansije_service.dart';
@@ -619,16 +620,19 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
               const inputBorder = Color(0x4DFFFFFF);
               const labelColor = Color(0xB3FFFFFF);
               InputDecoration fieldDeco(String label, IconData prefixIcon) => InputDecoration(
-                labelText: label,
-                labelStyle: const TextStyle(color: labelColor),
-                prefixIcon: Icon(prefixIcon, color: labelColor),
-                isDense: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: inputBorder)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: inputBorder)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white)),
-                filled: true,
-                fillColor: inputFill,
-              );
+                    labelText: label,
+                    labelStyle: const TextStyle(color: labelColor),
+                    prefixIcon: Icon(prefixIcon, color: labelColor),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: inputBorder)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: inputBorder)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white)),
+                    filled: true,
+                    fillColor: inputFill,
+                  );
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(14),
@@ -673,7 +677,8 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                       activeColor: accent,
-                      title: const Text('Force update', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+                      title: const Text('Force update',
+                          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
                       value: force,
                       onChanged: onForceChanged,
                     ),
@@ -696,7 +701,8 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                       activeColor: Colors.amber,
-                      title: const Text('Maintenance mode', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+                      title: const Text('Maintenance mode',
+                          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
                       value: maintenance,
                       onChanged: onMaintenanceChanged,
                     ),
