@@ -50,7 +50,7 @@ class V3VozacScreen extends StatefulWidget {
   State<V3VozacScreen> createState() => _V3VozacScreenState();
 }
 
-class _V3VozacScreenState extends State<V3VozacScreen> {
+class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserver {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _biometricPromptChoicePrefix = 'v3_biometric_prompt_choice_';
 
@@ -253,6 +253,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _selectedDate = V3DanHelper.defaultWorkdayDate();
     // Ako je tracking već aktivan (npr. vozač se vratio back), obnovi state
     _isNavigating = V3VozacLocationTrackingService.instance.isRunning;
@@ -264,11 +265,21 @@ class _V3VozacScreenState extends State<V3VozacScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _etaPollTimer?.cancel();
     _etaPollTimer = null;
     unawaited(_trenutnaDodelaRevisionSub?.cancel());
     _trenutnaDodelaRevisionSub = null;
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.detached) return;
+    if (!V3VozacLocationTrackingService.instance.isRunning) return;
+
+    V3VozacLocationTrackingService.instance.stop();
+    _isNavigating = false;
   }
 
   void _startEtaPolling() {
