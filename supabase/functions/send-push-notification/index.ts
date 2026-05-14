@@ -238,19 +238,37 @@ async function sendFcm(
     const projectId = cachedFcmToken?.projectId;
     if (!projectId) throw new Error('FCM project_id unavailable after auth');
 
+    // Na Androidu NE šaljemo `notification` polje — GavraFcmService sam prikazuje notifikaciju
+    // iz `data` polja. Ako bismo slali `notification`, Android bi prikazao notifikaciju automatski
+    // dok GavraFcmService šalje još jednu Flutteru → duple notifikacije.
+    // title i body dodajemo u android.data da ih GavraFcmService može pročitati.
+    const androidData: Record<string, string> = { ...data };
+    if (!dataOnly) {
+      if (title) androidData.title = title;
+      if (body) androidData.body = body;
+    }
+
     const message: Record<string, unknown> = {
       token,
+      // top-level data ide na sve platforme (type, event_id, itd.)
       data,
-      android: { priority: 'high' },
+      android: {
+        priority: 'high',
+        // android.data se merge-uje sa top-level data — dodajemo title/body samo za Android
+        data: androidData,
+      },
       apns: {
         headers: { 'apns-priority': '10' },
-        payload: { aps: dataOnly ? { 'content-available': 1 } : { sound: 'default' } },
+        payload: {
+          aps: dataOnly
+            ? { 'content-available': 1 }
+            : { alert: { title, body }, sound: 'default' },
+        },
       },
     };
 
-    if (!dataOnly) {
-      message.notification = { title, body };
-    }
+    // notification polje se NIKAD ne šalje — Android ga koristi za auto-prikaz (duplikat),
+    // a iOS dobija sadržaj kroz apns.payload.aps.alert gore.
 
     const res = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
       method: 'POST',

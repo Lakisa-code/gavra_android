@@ -430,14 +430,12 @@ Future<void> _doStartupTasks() async {
     timeout: const Duration(seconds: 6),
     retries: 1,
   );
-  if (Platform.isIOS) {
-    _startBackgroundTask(
-      label: 'iOS FCM handlers init',
-      task: _initIosFcmHandlers,
-      timeout: const Duration(seconds: 8),
-      retries: 1,
-    );
-  }
+  _startBackgroundTask(
+    label: 'FCM handlers init',
+    task: _initIosFcmHandlers,
+    timeout: const Duration(seconds: 8),
+    retries: 1,
+  );
   _startBackgroundTask(
     label: 'notification handlers init',
     task: _initNotificationHandlers,
@@ -641,11 +639,53 @@ Future<void> _syncRefreshedPushToken(String token) async {
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  DartPluginRegistrant.ensureInitialized();
   WidgetsFlutterBinding.ensureInitialized();
   await _ensureFirebaseInitialized();
 
   final type = message.data['type']?.toString() ?? '';
-  debugPrint('[FCM][iOS] background message type=$type id=${message.messageId}');
+  final title = message.notification?.title ?? message.data['title']?.toString() ?? '';
+  final body = message.notification?.body ?? message.data['body']?.toString() ?? '';
+  final data = _messageDataToStringMap(message.data);
+  debugPrint('[FCM][BG] background message type=$type id=${message.messageId}');
+
+  if (type == 'v3_alternativa') {
+    await _showAlternativaFromData(
+      data,
+      title: title,
+      body: body,
+    );
+    return;
+  }
+
+  // Kada je app killed, GavraFcmService se ne poziva — background handler
+  // mora sam da prikaže notifikaciju za sve ostale tipove.
+  if (title.isNotEmpty || body.isNotEmpty) {
+    await _ensureLocalNotificationsInitialized();
+    final androidDetails = AndroidNotificationDetails(
+      'gavra_push_v2',
+      'Gavra obaveštenja',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'Gavra',
+      ),
+    );
+    await flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title,
+      body,
+      NotificationDetails(
+        android: androidDetails,
+        iOS: const DarwinNotificationDetails(),
+      ),
+      payload: _encodeTapPayload(type, data),
+    );
+  }
 }
 
 Future<void> _initIosFcmHandlers() async {
@@ -658,6 +698,11 @@ Future<void> _initIosFcmHandlers() async {
   }
 
   final initFuture = () async {
+    if (!Platform.isIOS) {
+      debugPrint('ℹ️ [FCM][iOS] Preskačem iOS FCM handlere na ne-iOS platformi.');
+      return;
+    }
+
     final firebaseReady = await _ensureFirebaseInitialized();
     if (!firebaseReady) {
       debugPrint('⚠️ [FCM][iOS] Preskačem FCM handlers: Firebase nije spreman.');
@@ -907,25 +952,30 @@ Future<void> showAlternativaNotification({
   required String zahtevId,
   required String altPre,
   required String altPosle,
-  String title = 'Alternativa termina',
-  String body = 'Trenutno nema slobodnih mesta. Izaberite dostupni termin.',
+  String title = '🕒 Predlog alternativnog termina',
+  String body = 'Nema slobodnih mesta u traženom terminu. Izaberi dostupnu opciju.',
 }) async {
   await _ensureLocalNotificationsInitialized();
 
   final payload = '$zahtevId|$altPre|$altPosle';
+  final optionsText = [
+    if (altPre.isNotEmpty) altPre,
+    if (altPosle.isNotEmpty) altPosle,
+  ].join('  •  ');
+  final modernBody = optionsText.isNotEmpty ? '$body\nDostupno: $optionsText' : body;
 
   final actions = <AndroidNotificationAction>[
     if (altPre.isNotEmpty)
       AndroidNotificationAction(
         'accept_pre',
-        altPre,
+        'Prihvati $altPre',
         showsUserInterface: true,
         cancelNotification: true,
       ),
     if (altPosle.isNotEmpty)
       AndroidNotificationAction(
         'accept_posle',
-        altPosle,
+        'Prihvati $altPosle',
         showsUserInterface: true,
         cancelNotification: true,
       ),
@@ -946,14 +996,14 @@ Future<void> showAlternativaNotification({
     enableVibration: true,
     actions: actions,
     styleInformation: BigTextStyleInformation(
-      body,
+      modernBody,
       contentTitle: title,
-      summaryText: 'Gavra',
+      summaryText: 'Gavra • Alternativa',
     ),
   );
 
   String iosCategory = '';
-  String finalBody = body;
+  String finalBody = modernBody;
   if (altPre.isNotEmpty && altPosle.isNotEmpty) {
     iosCategory = 'alternativa_oba';
     finalBody = '$body\nOpcije: $altPre ili $altPosle';
