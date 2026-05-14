@@ -851,22 +851,15 @@ class _PutnikDialogState extends State<_PutnikDialog> {
                     ),
                     const SizedBox(height: 10),
                     // Telefoni
-                    Row(
-                      children: [
-                        Expanded(
-                          child: V3InputUtils.phoneField(
-                            controller: _tel1,
-                            label: 'Telefon 1 *',
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: V3InputUtils.phoneField(
-                            controller: _tel2,
-                            label: 'Telefon 2',
-                          ),
-                        ),
-                      ],
+                    V3InputUtils.phoneField(
+                      controller: _tel1,
+                      label: 'Telefon 1 *',
+                    ),
+                    const SizedBox(height: 10),
+                    V3InputUtils.phoneField(
+                      controller: _tel2,
+                      label: 'Telefon 2 (opciono)',
+                      isRequired: false,
                     ),
                     const SizedBox(height: 10),
                     // Cena
