@@ -689,23 +689,29 @@ class _PutnikDialogState extends State<_PutnikDialog> {
     required ValueChanged<V3Adresa?> onChanged,
   }) {
     final adrese = V3AdresaService.getAdreseZaGrad(grad);
+    const adresaInputFill = Color(0x33FFFFFF); // white 20%
+    const adresaInputBorder = Color(0x4DFFFFFF); // white 30%
+    const adresaLabelColor = Color(0xB3FFFFFF); // white 70%
     return DropdownButtonFormField<V3Adresa>(
       value: value,
       isExpanded: true,
+      dropdownColor: Colors.black.withValues(alpha: 0.75),
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: const TextStyle(color: adresaLabelColor),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.35)),
+          borderSide: const BorderSide(color: adresaInputBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+          borderSide: const BorderSide(color: Colors.white, width: 1.5),
         ),
         isDense: true,
         filled: true,
-        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+        fillColor: adresaInputFill,
         prefixIcon: Icon(
           grad == 'BC' ? Icons.location_city_outlined : Icons.location_on_outlined,
           size: 18,
@@ -713,12 +719,12 @@ class _PutnikDialogState extends State<_PutnikDialog> {
         ),
         suffixIcon: value != null
             ? IconButton(
-                icon: const Icon(Icons.clear, size: 18),
+                icon: const Icon(Icons.clear, size: 18, color: adresaLabelColor),
                 onPressed: () => onChanged(null),
               )
             : null,
       ),
-      hint: const Text('— nije odabrano —', style: TextStyle(fontSize: 13)),
+      hint: const Text('— nije odabrano —', style: TextStyle(fontSize: 13, color: adresaLabelColor)),
       items: [
         ...adrese.map((a) => DropdownMenuItem(
               value: a,
@@ -743,7 +749,7 @@ class _PutnikDialogState extends State<_PutnikDialog> {
     if (_adresaVs2 != null) _adresaVs2 = adreseVS.firstWhere((a) => a.id == _adresaVs2!.id, orElse: () => _adresaVs2!);
 
     final gradient = theme.backgroundGradient;
-    const inputFill = Color(0x1FFFFFFF); // white 12%
+    const inputFill = Color(0x33FFFFFF); // white 20%
     const inputBorder = Color(0x4DFFFFFF); // white 30%
     const labelColor = Color(0xB3FFFFFF); // white 70%
 
@@ -825,7 +831,7 @@ class _PutnikDialogState extends State<_PutnikDialog> {
                       // Tip
                       DropdownButtonFormField<String>(
                         value: _tip,
-                        dropdownColor: const Color(0xFF1E3A78),
+                        dropdownColor: Colors.black.withValues(alpha: 0.75),
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: 'Tip putnika',
@@ -919,7 +925,8 @@ class _PutnikDialogState extends State<_PutnikDialog> {
                             Icon(Icons.location_on, size: 16, color: Colors.lightBlueAccent),
                             SizedBox(width: 4),
                             Text('Adrese — Bela Crkva',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.lightBlueAccent)),
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold, color: Colors.lightBlueAccent)),
                           ],
                         ),
                       ),
@@ -952,7 +959,8 @@ class _PutnikDialogState extends State<_PutnikDialog> {
                             Icon(Icons.location_on, size: 16, color: Colors.orangeAccent),
                             SizedBox(width: 4),
                             Text('Adrese — Vršac',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
+                                style:
+                                    TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
                           ],
                         ),
                       ),
