@@ -8,6 +8,7 @@ import '../../utils/v3_status_policy.dart';
 import '../../utils/v3_uuid_utils.dart';
 import '../realtime/v3_master_realtime_manager.dart';
 import 'repositories/v3_operativna_nedelja_repository.dart';
+import 'v3_finansije_service.dart';
 import 'v3_operativna_nedelja_service.dart';
 import 'v3_vozac_service.dart';
 import 'zahtevi/v3_zahtev_domain_service.dart';
@@ -234,7 +235,7 @@ class V3ZahtevService {
   }
 
   static Future<void> otkaziZahtev(String id,
-      {String? otkazaoVozacId, String? otkazaoPutnikId, String? operativnaId}) async {
+      {String? otkazaoVozacId, String? otkazaoPutnikId, String? operativnaId, String? putnikId}) async {
     try {
       if (otkazaoVozacId != null) {
         // Vozač otkazuje — piše samo u v3_operativna_nedelja (jedini izvor istine za vozača)
@@ -270,6 +271,16 @@ class V3ZahtevService {
         } else {
           throw Exception('operativnaId je obavezan za otkazivanje');
         }
+      }
+      // Evidentiraj otkazivanje u v3_finansije (historija)
+      final safePutnikId = (putnikId ?? '').trim();
+      if (safePutnikId.isNotEmpty) {
+        await V3FinansijeService.evidentirajOtkazivanje(
+          putnikId: safePutnikId,
+          datum: DateTime.now(),
+          operativnaId: operativnaId,
+          otkazaoBy: otkazaoVozacId ?? otkazaoPutnikId,
+        );
       }
     } catch (e) {
       debugPrint('[V3ZahtevService] Otkazi error: $e');
