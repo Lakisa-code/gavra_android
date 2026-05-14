@@ -711,10 +711,12 @@ Future<void> _initIosFcmHandlers() async {
 
     final messaging = FirebaseMessaging.instance;
 
+    // alert: false — iOS NE prikazuje automatski banner u foregroundu.
+    // onMessage handler ispod sam prikazuje lokalnu notifikaciju da izbegnemo duplikat.
     await messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
+      alert: false,
       badge: true,
-      sound: true,
+      sound: false,
     );
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -1034,7 +1036,7 @@ Future<void> showAlternativaNotification({
       android: androidDetails,
       iOS: iosDetails,
     ),
-    // payload je null — tap na body ne radi ništa, koriste se akcijska dugmad
+    payload: payload,
   );
 }
 
