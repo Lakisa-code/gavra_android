@@ -742,227 +742,266 @@ class _PutnikDialogState extends State<_PutnikDialog> {
     if (_adresaVs1 != null) _adresaVs1 = adreseVS.firstWhere((a) => a.id == _adresaVs1!.id, orElse: () => _adresaVs1!);
     if (_adresaVs2 != null) _adresaVs2 = adreseVS.firstWhere((a) => a.id == _adresaVs2!.id, orElse: () => _adresaVs2!);
 
+    final gradient = theme.backgroundGradient;
+    const inputFill = Color(0x1FFFFFFF); // white 12%
+    const inputBorder = Color(0x4DFFFFFF); // white 30%
+    const labelColor = Color(0xB3FFFFFF); // white 70%
+
     return Dialog(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Header ──
-            V3ContainerUtils.gradientContainer(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              gradient: LinearGradient(
-                colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: Icon(
-                      isEdit ? Icons.edit_note_rounded : Icons.person_add_alt_1_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isEdit ? 'Uredi putnika' : 'Novi putnik',
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
-                        ),
-                        Text(
-                          isEdit ? 'Ažuriraj podatke i sačuvaj izmene' : 'Unesi podatke i dodaj putnika',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // ── Sadržaj ──
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: Container(
+          decoration: BoxDecoration(gradient: gradient),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Header ──
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.12))),
+                ),
+                child: Row(
                   children: [
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(10),
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.25)),
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(11),
                       ),
-                      child: Text(
-                        'Osnovni podaci',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: theme.colorScheme.onSurface),
+                      child: Icon(
+                        isEdit ? Icons.edit_note_rounded : Icons.person_add_alt_1_rounded,
+                        color: Colors.white,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    // Tip
-                    DropdownButtonFormField<String>(
-                      value: _tip,
-                      decoration: InputDecoration(
-                        labelText: 'Tip putnika',
-                        isDense: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.4)),
-                        ),
-                        filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
-                        prefixIcon: const Icon(Icons.category_outlined),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'vozac', child: Text('🚕 Vozač')),
-                        DropdownMenuItem(value: 'radnik', child: Text('👷 Radnik')),
-                        DropdownMenuItem(value: 'ucenik', child: Text('🎒 Učenik')),
-                        DropdownMenuItem(value: 'dnevni', child: Text('🚶 Dnevni')),
-                        DropdownMenuItem(value: 'posiljka', child: Text('📦 Pošiljka')),
-                      ],
-                      onChanged: (v) {
-                        if (v == null) return;
-                        V3StateUtils.safeSetState(this, () => _tip = v);
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    // Ime
-                    V3InputUtils.textField(
-                      controller: _ime,
-                      label: 'Ime i prezime',
-                      icon: Icons.person,
-                    ),
-                    const SizedBox(height: 10),
-                    // Telefoni
-                    V3InputUtils.phoneField(
-                      controller: _tel1,
-                      label: 'Telefon 1 *',
-                    ),
-                    const SizedBox(height: 10),
-                    V3InputUtils.phoneField(
-                      controller: _tel2,
-                      label: 'Telefon 2 (opciono)',
-                      isRequired: false,
-                    ),
-                    const SizedBox(height: 10),
-                    // Cena
-                    V3InputUtils.numberField(
-                      controller: _cenaDan,
-                      label: (_tip == 'dnevni' || _tip == 'posiljka') ? 'Cena po vožnji' : 'Cena po danu',
-                      suffixText: 'din',
-                    ),
-                    const SizedBox(height: 14),
-                    // ── Adrese BC ──
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.location_on, size: 16, color: theme.colorScheme.primary),
-                          const SizedBox(width: 4),
-                          Text('Adrese — Bela Crkva',
-                              style: TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                          Text(
+                            isEdit ? 'Uredi putnika' : 'Novi putnik',
+                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                          ),
+                          Text(
+                            isEdit ? 'Ažuriraj podatke i sačuvaj izmene' : 'Unesi podatke i dodaj putnika',
+                            style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    _adresaDropdown(
-                      label: 'BC — Adresa 1',
-                      grad: 'BC',
-                      value: _adresaBc1,
-                      onChanged: (v) => V3StateUtils.safeSetState(this, () => _adresaBc1 = v),
-                    ),
-                    const SizedBox(height: 8),
-                    _adresaDropdown(
-                      label: 'BC — Adresa 2 (opciono)',
-                      grad: 'BC',
-                      value: _adresaBc2,
-                      onChanged: (v) => V3StateUtils.safeSetState(this, () => _adresaBc2 = v),
-                    ),
-                    const SizedBox(height: 14),
-                    // ── Adrese VS ──
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.orangeAccent.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.28)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 16, color: Colors.orangeAccent),
-                          const SizedBox(width: 4),
-                          Text('Adrese — Vršac',
-                              style: TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _adresaDropdown(
-                      label: 'VS — Adresa 1',
-                      grad: 'VS',
-                      value: _adresaVs1,
-                      onChanged: (v) => V3StateUtils.safeSetState(this, () => _adresaVs1 = v),
-                    ),
-                    const SizedBox(height: 8),
-                    _adresaDropdown(
-                      label: 'VS — Adresa 2 (opciono)',
-                      grad: 'VS',
-                      value: _adresaVs2,
-                      onChanged: (v) => V3StateUtils.safeSetState(this, () => _adresaVs2 = v),
-                    ),
-                    const SizedBox(height: 8),
                   ],
                 ),
               ),
-            ),
-            // ── Actions ──
-            V3ContainerUtils.styledContainer(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              border: Border(top: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.2))),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  V3ButtonUtils.textButton(
-                    onPressed: () => Navigator.pop(context),
-                    text: 'Otkaži',
+              // ── Sadržaj ──
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Sekcija header
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        ),
+                        child: const Text(
+                          'Osnovni podaci',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Tip
+                      DropdownButtonFormField<String>(
+                        value: _tip,
+                        dropdownColor: const Color(0xFF1E3A78),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Tip putnika',
+                          labelStyle: const TextStyle(color: labelColor),
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: inputBorder),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: inputBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.white),
+                          ),
+                          filled: true,
+                          fillColor: inputFill,
+                          prefixIcon: const Icon(Icons.category_outlined, color: labelColor),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'vozac', child: Text('🚕 Vozač')),
+                          DropdownMenuItem(value: 'radnik', child: Text('👷 Radnik')),
+                          DropdownMenuItem(value: 'ucenik', child: Text('🎒 Učenik')),
+                          DropdownMenuItem(value: 'dnevni', child: Text('🚶 Dnevni')),
+                          DropdownMenuItem(value: 'posiljka', child: Text('📦 Pošiljka')),
+                        ],
+                        onChanged: (v) {
+                          if (v == null) return;
+                          V3StateUtils.safeSetState(this, () => _tip = v);
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      // Ime
+                      V3InputUtils.textField(
+                        controller: _ime,
+                        label: 'Ime i prezime',
+                        icon: Icons.person,
+                        fillColor: inputFill,
+                        borderColor: inputBorder,
+                        focusedBorderColor: Colors.white,
+                      ),
+                      const SizedBox(height: 10),
+                      // Telefoni
+                      V3InputUtils.formField(
+                        controller: _tel1,
+                        label: 'Telefon 1 *',
+                        icon: Icons.phone,
+                        keyboardType: TextInputType.phone,
+                        fillColor: inputFill,
+                        borderColor: inputBorder,
+                        focusedBorderColor: Colors.white,
+                        validator: (v) => V3InputUtils.phoneValidator(v, isRequired: true),
+                      ),
+                      const SizedBox(height: 10),
+                      V3InputUtils.formField(
+                        controller: _tel2,
+                        label: 'Telefon 2 (opciono)',
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                        fillColor: inputFill,
+                        borderColor: inputBorder,
+                        focusedBorderColor: Colors.white,
+                        validator: (v) => V3InputUtils.phoneValidator(v, isRequired: false),
+                      ),
+                      const SizedBox(height: 10),
+                      // Cena
+                      V3InputUtils.formField(
+                        controller: _cenaDan,
+                        label: (_tip == 'dnevni' || _tip == 'posiljka') ? 'Cena po vožnji' : 'Cena po danu',
+                        icon: Icons.numbers,
+                        keyboardType: TextInputType.number,
+                        suffixText: 'din',
+                        fillColor: inputFill,
+                        borderColor: inputBorder,
+                        focusedBorderColor: Colors.white,
+                      ),
+                      const SizedBox(height: 14),
+                      // ── Adrese BC ──
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.lightBlueAccent.withValues(alpha: 0.4)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.location_on, size: 16, color: Colors.lightBlueAccent),
+                            SizedBox(width: 4),
+                            Text('Adrese — Bela Crkva',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.lightBlueAccent)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _adresaDropdown(
+                        label: 'BC — Adresa 1',
+                        grad: 'BC',
+                        value: _adresaBc1,
+                        onChanged: (v) => V3StateUtils.safeSetState(this, () => _adresaBc1 = v),
+                      ),
+                      const SizedBox(height: 8),
+                      _adresaDropdown(
+                        label: 'BC — Adresa 2 (opciono)',
+                        grad: 'BC',
+                        value: _adresaBc2,
+                        onChanged: (v) => V3StateUtils.safeSetState(this, () => _adresaBc2 = v),
+                      ),
+                      const SizedBox(height: 14),
+                      // ── Adrese VS ──
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.5)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.location_on, size: 16, color: Colors.orangeAccent),
+                            SizedBox(width: 4),
+                            Text('Adrese — Vršac',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _adresaDropdown(
+                        label: 'VS — Adresa 1',
+                        grad: 'VS',
+                        value: _adresaVs1,
+                        onChanged: (v) => V3StateUtils.safeSetState(this, () => _adresaVs1 = v),
+                      ),
+                      const SizedBox(height: 8),
+                      _adresaDropdown(
+                        label: 'VS — Adresa 2 (opciono)',
+                        grad: 'VS',
+                        value: _adresaVs2,
+                        onChanged: (v) => V3StateUtils.safeSetState(this, () => _adresaVs2 = v),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  V3ButtonUtils.primaryButton(
-                    onPressed: _saving ? null : _sacuvaj,
-                    text: isEdit ? 'Sačuvaj' : 'Dodaj',
-                    icon: isEdit ? Icons.save_as_rounded : Icons.person_add_alt_1_rounded,
-                    isLoading: _saving,
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              // ── Actions ──
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.12))),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    V3ButtonUtils.textButton(
+                      onPressed: () => Navigator.pop(context),
+                      text: 'Otkaži',
+                      foregroundColor: Colors.white70,
+                    ),
+                    const SizedBox(width: 8),
+                    V3ButtonUtils.primaryButton(
+                      onPressed: _saving ? null : _sacuvaj,
+                      text: isEdit ? 'Sačuvaj' : 'Dodaj',
+                      icon: isEdit ? Icons.save_as_rounded : Icons.person_add_alt_1_rounded,
+                      isLoading: _saving,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
