@@ -154,12 +154,45 @@ Future<void> _ensureLocalNotificationsInitialized() async {
   final initFuture = () async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
+
+    final List<DarwinNotificationCategory> darwinNotificationCategories = <DarwinNotificationCategory>[
+      DarwinNotificationCategory(
+        'alternativa_oba',
+        actions: <DarwinNotificationAction>[
+          DarwinNotificationAction.plain('accept_pre', 'Prihvati prvi termin'),
+          DarwinNotificationAction.plain('accept_posle', 'Prihvati drugi termin'),
+          DarwinNotificationAction.plain('reject', 'Odbij', options: <DarwinNotificationActionOption>{
+            DarwinNotificationActionOption.destructive,
+          }),
+        ],
+      ),
+      DarwinNotificationCategory(
+        'alternativa_pre',
+        actions: <DarwinNotificationAction>[
+          DarwinNotificationAction.plain('accept_pre', 'Prihvati termin'),
+          DarwinNotificationAction.plain('reject', 'Odbij', options: <DarwinNotificationActionOption>{
+            DarwinNotificationActionOption.destructive,
+          }),
+        ],
+      ),
+      DarwinNotificationCategory(
+        'alternativa_posle',
+        actions: <DarwinNotificationAction>[
+          DarwinNotificationAction.plain('accept_posle', 'Prihvati termin'),
+          DarwinNotificationAction.plain('reject', 'Odbij', options: <DarwinNotificationActionOption>{
+            DarwinNotificationActionOption.destructive,
+          }),
+        ],
+      ),
+    ];
+
+    final DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
+      notificationCategories: darwinNotificationCategories,
     );
-    const InitializationSettings initializationSettings = InitializationSettings(
+    final InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
@@ -919,11 +952,31 @@ Future<void> showAlternativaNotification({
     ),
   );
 
+  String iosCategory = '';
+  String finalBody = body;
+  if (altPre.isNotEmpty && altPosle.isNotEmpty) {
+    iosCategory = 'alternativa_oba';
+    finalBody = '$body\nOpcije: $altPre ili $altPosle';
+  } else if (altPre.isNotEmpty) {
+    iosCategory = 'alternativa_pre';
+    finalBody = '$body\nOpcija: $altPre';
+  } else if (altPosle.isNotEmpty) {
+    iosCategory = 'alternativa_posle';
+    finalBody = '$body\nOpcija: $altPosle';
+  }
+
+  final iosDetails = DarwinNotificationDetails(
+    categoryIdentifier: iosCategory.isNotEmpty ? iosCategory : null,
+  );
+
   await flutterLocalNotificationsPlugin.show(
     DateTime.now().millisecondsSinceEpoch.remainder(100000),
     title,
-    body,
-    NotificationDetails(android: androidDetails),
+    finalBody,
+    NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    ),
     payload: payload,
   );
 }
