@@ -887,8 +887,10 @@ Future<void> _initFcmChannel() async {
 
 /// Rutira na pravi ekran kada korisnik tapne FCM notifikaciju dok je app bila killed/background.
 ///
-/// Tipovi:
-///  - `zahtev_status`   → putnik otvori V3PutnikProfilScreen, vozač — nema navigacije (već je na svom ekranu)
+/// Tipovi koji otvaraju V3PutnikProfilScreen:
+///  - `zahtev_status`, `v3_zahtev_odobren`, `v3_zahtev_odbijen`, `v3_otkazano`, `putnik_eta_start`
+/// Posebni tipovi:
+///  - `v3_alternativa` → prikazuje dijalog za izbor alternativnog termina
 Future<void> _handleFcmLaunch(String type, Map<String, String> data) async {
   // Sačekaj da navigator bude dostupan (max 5s)
   for (var i = 0; i < 50; i++) {
@@ -915,8 +917,13 @@ Future<void> _handleFcmLaunch(String type, Map<String, String> data) async {
       return;
 
     case 'zahtev_status':
-      // v3_auth_id je v3_auth.id — direktno otvori profil ekran
-      final putnikId = data['v3_auth_id'] ?? '';
+    case 'v3_zahtev_odobren':
+    case 'v3_zahtev_odbijen':
+    case 'v3_otkazano':
+    case 'putnik_eta_start':
+      // Svi ovi tipovi vode na putnik profil ekran.
+      // recipient_id ili v3_auth_id identifikuju putnika.
+      final putnikId = (data['v3_auth_id'] ?? data['recipient_id'] ?? '').trim();
       final payload = putnikId.isNotEmpty ? 'zahtev_status:$putnikId' : 'zahtev_status';
       await _openPutnikProfilFromNotification(payload);
       return;
@@ -968,20 +975,20 @@ Future<void> showAlternativaNotification({
     if (altPre.isNotEmpty)
       AndroidNotificationAction(
         'accept_pre',
-        'Prihvati $altPre',
+        '✅ $altPre',
         showsUserInterface: true,
         cancelNotification: true,
       ),
     if (altPosle.isNotEmpty)
       AndroidNotificationAction(
         'accept_posle',
-        'Prihvati $altPosle',
+        '✅ $altPosle',
         showsUserInterface: true,
         cancelNotification: true,
       ),
     const AndroidNotificationAction(
       'reject',
-      'Odbij',
+      '❌ Odbij',
       showsUserInterface: true,
       cancelNotification: true,
     ),
@@ -1027,7 +1034,7 @@ Future<void> showAlternativaNotification({
       android: androidDetails,
       iOS: iosDetails,
     ),
-    payload: payload,
+    // payload je null — tap na body ne radi ništa, koriste se akcijska dugmad
   );
 }
 

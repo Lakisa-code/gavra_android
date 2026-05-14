@@ -182,19 +182,6 @@ class GavraFcmService : FirebaseMessagingService() {
         }
         notifManager.createNotificationChannel(channel)
 
-        val openIntent = Intent(this, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            putExtra("google.message_id", "gavra_alt_${System.currentTimeMillis()}")
-            putExtra("type", "v3_alternativa")
-            data.forEach { (k, v) -> putExtra(k, v) }
-        }
-        val contentPendingIntent = PendingIntent.getActivity(
-            this,
-            (System.currentTimeMillis() and 0x7FFFFFFF).toInt(),
-            openIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
         val builder = NotificationCompat.Builder(this, ALTERNATIVA_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
@@ -202,12 +189,11 @@ class GavraFcmService : FirebaseMessagingService() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .setContentIntent(contentPendingIntent)
 
         if (altPre.isNotEmpty()) {
             builder.addAction(
                 0,
-                altPre,
+                "✅ $altPre",
                 buildAlternativaActionIntent(zahtevId, "accept_pre", 101),
             )
         }
@@ -215,14 +201,14 @@ class GavraFcmService : FirebaseMessagingService() {
         if (altPosle.isNotEmpty()) {
             builder.addAction(
                 0,
-                altPosle,
+                "✅ $altPosle",
                 buildAlternativaActionIntent(zahtevId, "accept_posle", 102),
             )
         }
 
         builder.addAction(
             0,
-            "Odbij",
+            "❌ Odbij",
             buildAlternativaActionIntent(zahtevId, "reject", 103),
         )
 
