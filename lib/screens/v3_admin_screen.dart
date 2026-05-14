@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../globals.dart';
-import '../theme.dart';
 import '../services/realtime/v3_master_realtime_manager.dart';
 import '../services/v3/v3_app_settings_service.dart';
 import '../services/v3/v3_finansije_service.dart';
 import '../services/v3/v3_vozac_service.dart';
 import '../services/v3_theme_manager.dart';
+import '../theme.dart';
 import '../utils/v3_app_snack_bar.dart';
 import '../utils/v3_container_utils.dart';
 import '../utils/v3_dialog_helper.dart';
@@ -492,7 +492,6 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
 
     final latestAndroidCtrl = TextEditingController(text: (row['latest_version_android'] ?? '').toString());
     final minAndroidCtrl = TextEditingController(text: (row['min_supported_version_android'] ?? '').toString());
-    final urlAndroidCtrl = TextEditingController(text: (row['store_url_android'] ?? '').toString());
     final maintenanceTitleAndroidCtrl =
         TextEditingController(text: (row['maintenance_title_android'] ?? '').toString());
     final maintenanceMessageAndroidCtrl =
@@ -500,7 +499,6 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
 
     final latestIosCtrl = TextEditingController(text: (row['latest_version_ios'] ?? '').toString());
     final minIosCtrl = TextEditingController(text: (row['min_supported_version_ios'] ?? '').toString());
-    final urlIosCtrl = TextEditingController(text: (row['store_url_ios'] ?? '').toString());
     final maintenanceTitleIosCtrl = TextEditingController(text: (row['maintenance_title_ios'] ?? '').toString());
     final maintenanceMessageIosCtrl = TextEditingController(text: (row['maintenance_message_ios'] ?? '').toString());
 
@@ -533,11 +531,9 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
     Future<void> save(StateSetter setModalState, BuildContext modalContext) async {
       final latestAndroid = latestAndroidCtrl.text.trim();
       final minAndroidRaw = minAndroidCtrl.text.trim();
-      final storeAndroid = urlAndroidCtrl.text.trim();
 
       final latestIosRaw = latestIosCtrl.text.trim();
       final minIosRaw = minIosCtrl.text.trim();
-      final storeIos = urlIosCtrl.text.trim();
 
       final latestIos = latestIosRaw.isEmpty ? latestAndroid : latestIosRaw;
 
@@ -550,10 +546,6 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
         error = 'Android verzija mora biti u formatu npr. 6.0.192';
       } else if (!_isValidVersion(latestIos) || !_isValidVersion(minIos)) {
         error = 'iOS verzija mora biti u formatu npr. 6.0.192';
-      } else if (storeAndroid.isNotEmpty && !_isValidUrl(storeAndroid)) {
-        error = 'Android Store URL nije validan';
-      } else if (storeIos.isNotEmpty && !_isValidUrl(storeIos)) {
-        error = 'iOS Store URL nije validan';
       }
 
       if (error != null) {
@@ -568,14 +560,12 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
           'latest_version_android': latestAndroid,
           'min_supported_version_android': minAndroid,
           'force_update_android': forceAndroid,
-          'store_url_android': storeAndroid,
           'maintenance_mode_android': maintenanceAndroid,
           'maintenance_title_android': maintenanceTitleAndroidCtrl.text.trim(),
           'maintenance_message_android': maintenanceMessageAndroidCtrl.text.trim(),
           'latest_version_ios': latestIos,
           'min_supported_version_ios': minIos,
           'force_update_ios': forceIos,
-          'store_url_ios': storeIos,
           'maintenance_mode_ios': maintenanceIos,
           'maintenance_title_ios': maintenanceTitleIosCtrl.text.trim(),
           'maintenance_message_ios': maintenanceMessageIosCtrl.text.trim(),
@@ -608,7 +598,6 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
               required Color accent,
               required TextEditingController latest,
               required TextEditingController min,
-              required TextEditingController store,
               required TextEditingController maintenanceTitle,
               required TextEditingController maintenanceMessage,
               required bool force,
@@ -665,12 +654,6 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
                       controller: min,
                       style: const TextStyle(color: Colors.white),
                       decoration: fieldDeco('Min. verzija (prazno = ista)', Icons.security_update_good_outlined),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: store,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: fieldDeco('Store URL', Icons.storefront_outlined),
                     ),
                     const SizedBox(height: 4),
                     SwitchListTile(
@@ -765,7 +748,6 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
                                     accent: Colors.lightGreenAccent,
                                     latest: latestAndroidCtrl,
                                     min: minAndroidCtrl,
-                                    store: urlAndroidCtrl,
                                     maintenanceTitle: maintenanceTitleAndroidCtrl,
                                     maintenanceMessage: maintenanceMessageAndroidCtrl,
                                     force: forceAndroid,
@@ -779,7 +761,6 @@ class _V3AdminScreenState extends State<V3AdminScreen> {
                                     accent: Colors.lightBlueAccent,
                                     latest: latestIosCtrl,
                                     min: minIosCtrl,
-                                    store: urlIosCtrl,
                                     maintenanceTitle: maintenanceTitleIosCtrl,
                                     maintenanceMessage: maintenanceMessageIosCtrl,
                                     force: forceIos,
