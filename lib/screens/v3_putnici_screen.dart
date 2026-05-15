@@ -138,9 +138,9 @@ class _V3PutniciScreenState extends State<V3PutniciScreen> {
             children: [
               // ── Search bar ──────────────────────────────────────────────
               V3ContainerUtils.styledContainer(
-                margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                margin: const EdgeInsets.fromLTRB(16, 4, 16, 6),
                 backgroundColor: Colors.white.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 3))
                 ],
@@ -153,6 +153,7 @@ class _V3PutniciScreenState extends State<V3PutniciScreen> {
                       hintText: 'Pretraži putnike...',
                       hintStyle: TextStyle(color: Colors.grey[600]),
                       prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      isDense: true,
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       suffixIcon: val.text.isNotEmpty
