@@ -138,7 +138,7 @@ class _V3PutniciScreenState extends State<V3PutniciScreen> {
             children: [
               // ── Search bar ──────────────────────────────────────────────
               V3ContainerUtils.styledContainer(
-                margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                 backgroundColor: Colors.white.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
