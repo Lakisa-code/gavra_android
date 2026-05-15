@@ -29,6 +29,7 @@ class V3BootstrapLoader {
       'v3_operativna_nedelja': (results[9] as List).cast<dynamic>(),
       'v3_kapacitet_slots': (results[10] as List).cast<dynamic>(),
       'v3_app_settings': (results[11] as List).cast<dynamic>(),
+      'v3_eta_results': (results[12] as List).cast<dynamic>(),
     };
   }
 
@@ -67,6 +68,9 @@ class V3BootstrapLoader {
         break;
       case 'v3_operativna_nedelja':
         response = await _client.from(table).select().gte('updated_at', iso);
+        break;
+      case 'v3_eta_results':
+        response = await _client.from(table).select().gte('computed_at', iso);
         break;
       default:
         return <Map<String, dynamic>>[];

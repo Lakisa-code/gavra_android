@@ -35,6 +35,7 @@ class V3RealtimeTableRegistry {
       name: 'v3_app_settings',
       hooks: <V3RealtimeHook>[V3RealtimeHook.applyGlobalAppSettings],
     ),
+    V3RealtimeTableConfig(name: 'v3_eta_results'),
   ];
 
   static final Map<String, V3RealtimeTableConfig> byName = <String, V3RealtimeTableConfig>{

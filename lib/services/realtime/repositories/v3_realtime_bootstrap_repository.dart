@@ -7,89 +7,67 @@ class V3RealtimeBootstrapRepository {
   static const Duration _criticalRequestTimeout = Duration(seconds: 20);
 
   Future<List<dynamic>> fetchInitialData() async {
-    final results = <dynamic>[];
-
-    results.add(
-      await _fetchTableRows(
+    return Future.wait<dynamic>([
+      _fetchTableRows(
         table: 'v3_adrese',
         query: () => supabase.from('v3_adrese').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_auth',
         query: () => supabase.from('v3_auth').select(),
         timeout: _criticalRequestTimeout,
         retries: 3,
         requiredTable: true,
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_vozila',
         query: () => supabase.from('v3_vozila').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_zahtevi',
         query: () => supabase.from('v3_zahtevi').select(
             'id, datum, grad, trazeni_polazak_at, status, polazak_at, koristi_sekundarnu, adresa_override_id, alternativa_pre_at, alternativa_posle_at, created_at, updated_at, created_by, scheduled_at'),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_gorivo',
         query: () => supabase.from('v3_gorivo').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_finansije',
         query: () => supabase.from('v3_finansije').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_racuni',
         query: () => supabase.from('v3_racuni').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_trenutna_dodela',
         query: () => supabase.from('v3_trenutna_dodela').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_trenutna_dodela_slot',
         query: () => supabase.from('v3_trenutna_dodela_slot').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_operativna_nedelja',
         query: () => supabase.from('v3_operativna_nedelja').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_kapacitet_slots',
         query: () => supabase.from('v3_kapacitet_slots').select(),
       ),
-    );
-    results.add(
-      await _fetchTableRows(
+      _fetchTableRows(
         table: 'v3_app_settings',
         query: () => supabase.from('v3_app_settings').select(),
         timeout: _criticalRequestTimeout,
         retries: 3,
         requiredTable: true,
       ),
-    );
-
-    return results;
+      _fetchTableRows(
+        table: 'v3_eta_results',
+        query: () => supabase.from('v3_eta_results').select(),
+      ),
+    ]);
   }
 
   Future<List<dynamic>> _fetchTableRows({

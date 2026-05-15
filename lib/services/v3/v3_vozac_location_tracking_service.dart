@@ -16,7 +16,6 @@ class V3VozacLocationTrackingService {
 
   static final V3VozacLocationTrackingService instance = V3VozacLocationTrackingService._();
   static const Duration _interval = Duration(seconds: 30);
-  static const double _minDistanceMeters = 20.0;
 
   Timer? _timer;
   bool _inFlight = false;
@@ -85,20 +84,6 @@ class V3VozacLocationTrackingService {
           timeLimit: Duration(seconds: 12),
         ),
       );
-
-      if (_lastSentPosition != null) {
-        final distance = Geolocator.distanceBetween(
-          _lastSentPosition!.latitude,
-          _lastSentPosition!.longitude,
-          position.latitude,
-          position.longitude,
-        );
-        if (distance < _minDistanceMeters) {
-          debugPrint(
-              '[V3VozacLocationTrackingService] skip send — pomak ${distance.toStringAsFixed(1)}m < ${_minDistanceMeters}m');
-          return;
-        }
-      }
 
       _lastSentPosition = position;
       onLocationSent?.call(position);

@@ -35,6 +35,11 @@ class V3MasterRealtimeManager {
   Future<void>? _resumeReconnectInFlight;
   DateTime? _lastResumeReconnectAt;
   static const Duration _resumeReconnectCooldown = Duration(seconds: 3);
+  Future<void>? _fullResyncInFlight;
+  DateTime? _lastFullResyncAt;
+  static const Duration _fullResyncCooldown = Duration(seconds: 20);
+  int _deltaResyncFailures = 0;
+  static const int _maxDeltaResyncFailuresBeforeFull = 3;
 
   // --- IN-MEMORY CACHE ---
   final Map<String, Map<String, dynamic>> adreseCache = {};
@@ -52,6 +57,7 @@ class V3MasterRealtimeManager {
   final Map<String, Map<String, dynamic>> kapacitetSlotsCache = {};
   final Map<String, Map<String, dynamic>> appSettingsCache = {};
   final Map<String, Map<String, dynamic>> operativnaAssignedCache = {};
+  final Map<String, Map<String, dynamic>> etaResultsCache = {};
 
   void _rebuildAssignedCacheFromOperativna() {
     operativnaAssignedCache.clear();
@@ -172,6 +178,7 @@ class V3MasterRealtimeManager {
     _cacheStore.registerTable('v3_kapacitet_slots', kapacitetSlotsCache);
     _cacheStore.registerTable('v3_app_settings', appSettingsCache);
     _cacheStore.registerTable('v3_operativna_assigned', operativnaAssignedCache);
+    _cacheStore.registerTable('v3_eta_results', etaResultsCache);
 
     _cacheStoreRegistered = true;
   }
@@ -255,6 +262,7 @@ class V3MasterRealtimeManager {
 
       _registerCacheStoreIfNeeded();
       await _loadInitialCachesWithRetry();
+      _lastFullResyncAt = DateTime.now();
 
       await _setupRealtime();
       _isInitialized = true;
@@ -321,9 +329,9 @@ class V3MasterRealtimeManager {
           if (isFirstSubscribe) {
             _hasConnectedBefore = true;
             _scheduleEmit(tables: {'*'}, immediate: true);
-            unawaited(_applyMissedDelta());
+            unawaited(_applyMissedDelta().then((_) {}));
           } else {
-            unawaited(_resyncCachesAfterReconnect());
+            unawaited(_resyncCachesAfterReconnectSmart());
           }
           break;
         case RealtimeSubscribeStatus.channelError:
@@ -340,6 +348,47 @@ class V3MasterRealtimeManager {
           break;
       }
     });
+  }
+
+  Future<void> _resyncCachesAfterReconnectSmart() async {
+    final deltaOk = await _applyMissedDelta();
+    if (deltaOk) {
+      _deltaResyncFailures = 0;
+      return;
+    }
+
+    _deltaResyncFailures += 1;
+    debugPrint('[RT] reconnect → delta sync failed ($_deltaResyncFailures/$_maxDeltaResyncFailuresBeforeFull)');
+
+    if (_deltaResyncFailures < _maxDeltaResyncFailuresBeforeFull) {
+      return;
+    }
+
+    final inFlight = _fullResyncInFlight;
+    if (inFlight != null) {
+      debugPrint('[RT] reconnect full-resync već u toku, preskačem dupli poziv');
+      return;
+    }
+
+    final now = DateTime.now();
+    final lastRun = _lastFullResyncAt;
+    final canRunFullResync = lastRun == null || now.difference(lastRun) >= _fullResyncCooldown;
+    if (!canRunFullResync) {
+      debugPrint('[RT] reconnect full-resync cooldown aktivan, preskačem fallback.');
+      return;
+    }
+
+    final operation = _resyncCachesAfterReconnect();
+    _fullResyncInFlight = operation;
+    try {
+      await operation;
+      _lastFullResyncAt = DateTime.now();
+      _deltaResyncFailures = 0;
+    } finally {
+      if (identical(_fullResyncInFlight, operation)) {
+        _fullResyncInFlight = null;
+      }
+    }
   }
 
   Future<void> _handleAppResume() async {
@@ -435,7 +484,7 @@ class V3MasterRealtimeManager {
     }
   }
 
-  Future<void> _applyMissedDelta() async {
+  Future<bool> _applyMissedDelta() async {
     debugPrint('[RT] _applyMissedDelta → pulling missed rows...');
     try {
       final watermarks = {
@@ -444,8 +493,7 @@ class V3MasterRealtimeManager {
       final deltas = await _bootstrapLoader.loadDeltaAll(watermarks);
       if (deltas.isEmpty) {
         debugPrint('[RT] _applyMissedDelta → nema izmena');
-        _scheduleEmit(tables: {'*'}, immediate: true);
-        return;
+        return true;
       }
       for (final entry in deltas.entries) {
         final config = V3RealtimeTableRegistry.defaults.firstWhere((t) => t.name == entry.key);
@@ -471,9 +519,10 @@ class V3MasterRealtimeManager {
       }
       debugPrint('[RT] _applyMissedDelta → applied ${deltas.length} tabela');
       _scheduleEmit(tables: {'*'}, immediate: true);
+      return true;
     } catch (e) {
       debugPrint('[RT] _applyMissedDelta error: $e');
-      _scheduleEmit(tables: {'*'}, immediate: true);
+      return false;
     }
   }
 
@@ -602,7 +651,25 @@ class V3MasterRealtimeManager {
 
   Map<String, dynamic> _normalizeRowForTable(String table, Map<String, dynamic> row) {
     if (row.isEmpty) return row;
-    return Map<String, dynamic>.from(row);
+    final normalized = Map<String, dynamic>.from(row);
+
+    if (table == 'v3_trenutna_dodela') {
+      final fallbackId = normalized['termin_id']?.toString();
+      final currentId = normalized['id']?.toString();
+      if ((currentId == null || currentId.isEmpty) && fallbackId != null && fallbackId.isNotEmpty) {
+        normalized['id'] = fallbackId;
+      }
+    }
+
+    if (table == 'v3_eta_results') {
+      final fallbackId = normalized['putnik_id']?.toString();
+      final currentId = normalized['id']?.toString();
+      if ((currentId == null || currentId.isEmpty) && fallbackId != null && fallbackId.isNotEmpty) {
+        normalized['id'] = fallbackId;
+      }
+    }
+
+    return normalized;
   }
 
   List<dynamic> _normalizeRowsForTable(String table, List<dynamic> rows) {
@@ -645,6 +712,8 @@ class V3MasterRealtimeManager {
         return appSettingsCache;
       case 'v3_operativna_assigned':
         return operativnaAssignedCache;
+      case 'v3_eta_results':
+        return etaResultsCache;
       default:
         return {};
     }

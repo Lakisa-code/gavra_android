@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../models/v3_putnik.dart';
@@ -61,7 +60,6 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
   bool _loadingDodela = false;
   StreamSubscription<int>? _trenutnaDodelaRevisionSub;
   final V3RouteWaypointResolverService _routeWaypointResolverService = V3RouteWaypointResolverService();
-
   int? _lastRealtimeTick;
 
   /// Efektivni vozač
@@ -77,8 +75,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
   bool _autoStopInProgress = false;
   bool _isNavigating = false;
   final List<String> _optimizedPutnikIds = [];
-  Map<String, int> _etaSecondsCache = {};
-  Timer? _etaPollTimer;
+  final Map<String, int> _etaSecondsCache = {};
   bool _hasSentRouteToMap = false;
   bool _mapResyncInFlight = false;
   String _lastSentRouteSignature = '';
@@ -250,6 +247,39 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     return sorted;
   }
 
+  void _refreshEtaCacheFromManager() {
+    final vozacId = (_efektivniVozac?.id?.toString() ?? '').trim();
+    if (vozacId.isEmpty) {
+      _etaSecondsCache.clear();
+      return;
+    }
+
+    final next = <String, int>{};
+    final etaRows = V3MasterRealtimeManager.instance.etaResultsCache.values;
+    for (final row in etaRows) {
+      final rowVozacId = (row['vozac_id']?.toString() ?? '').trim();
+      if (rowVozacId != vozacId) continue;
+
+      final putnikId = (row['putnik_id']?.toString() ?? '').trim();
+      if (putnikId.isEmpty) continue;
+
+      final etaRaw = row['eta_seconds'];
+      int? etaSeconds;
+      if (etaRaw is num) {
+        etaSeconds = etaRaw.toInt();
+      } else if (etaRaw is String) {
+        etaSeconds = int.tryParse(etaRaw);
+      }
+      if (etaSeconds == null || etaSeconds < 0) continue;
+
+      next[putnikId] = etaSeconds;
+    }
+
+    _etaSecondsCache
+      ..clear()
+      ..addAll(next);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -259,15 +289,12 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     _isNavigating = V3VozacLocationTrackingService.instance.isRunning;
     _optimizedPutnikIds.clear(); // Reset optimizacije za novi termin
     _startTrenutnaDodelaRealtime();
-    _startEtaPolling();
     _initData();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _etaPollTimer?.cancel();
-    _etaPollTimer = null;
     unawaited(_trenutnaDodelaRevisionSub?.cancel());
     _trenutnaDodelaRevisionSub = null;
     super.dispose();
@@ -280,57 +307,6 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
 
     V3VozacLocationTrackingService.instance.stop();
     _isNavigating = false;
-  }
-
-  void _startEtaPolling() {
-    _fetchEtas();
-    _etaPollTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchEtas());
-  }
-
-  Future<void> _fetchEtas() async {
-    final vozac = _efektivniVozac;
-    if (vozac == null || !(vozac.id?.toString().isNotEmpty ?? false)) return;
-    final vozacId = vozac.id.toString();
-
-    try {
-      final rows = await Supabase.instance.client
-          .from('v3_eta_results')
-          .select('putnik_id, eta_seconds')
-          .eq('vozac_id', vozacId);
-
-      final newMap = <String, int>{};
-      for (final r in rows) {
-        final pId = r['putnik_id']?.toString() ?? '';
-        final eta = int.tryParse(r['eta_seconds']?.toString() ?? '') ?? 999999;
-        if (pId.isNotEmpty) {
-          newMap[pId] = eta;
-        }
-      }
-
-      final optimizedIds = newMap.entries.toList(growable: false)..sort((a, b) => a.value.compareTo(b.value));
-
-      var shouldSyncMap = false;
-
-      if (mounted) {
-        V3StateUtils.safeSetState(this, () {
-          _etaSecondsCache = newMap;
-          _optimizedPutnikIds
-            ..clear()
-            ..addAll(optimizedIds.map((entry) => entry.key));
-          if (_mojiPutnici.isNotEmpty) {
-            _mojiPutnici = _sortPutniciForDisplay(_mojiPutnici);
-            _applyOptimizedOrderToPutnici();
-          }
-          shouldSyncMap = _isNavigating && _hasSentRouteToMap;
-        });
-      }
-
-      if (shouldSyncMap) {
-        unawaited(_syncMapRouteIfNeeded(reason: 'eta_poll'));
-      }
-    } catch (e) {
-      debugPrint('[V3VozacScreen] eta poll error: $e');
-    }
   }
 
   Future<void> _initData() async {
@@ -521,6 +497,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
       );
     }
 
+    _refreshEtaCacheFromManager();
     final putniciZaPrikaz = _sortPutniciForDisplay(putnici);
 
     V3StateUtils.safeSetState(this, () {
@@ -951,8 +928,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     V3AppSnackBar.success(context, 'Ruta pripremljena za HERE WeGo.');
     _isNavigating = true;
     _resetMapSyncState();
-    // Odmah izračunaj ETA bez čekanja na GPS pomak
-    unawaited(V3VozacLocationTrackingService.instance.forceComputeEta());
+    unawaited(_syncMapRouteIfNeeded(reason: 'start_navigation'));
 
     if (preparedRoute.unresolvedCount > 0) {
       V3AppSnackBar.warning(
@@ -1054,9 +1030,15 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
         'Operativna sedmica: ${ponedeljak.day.toString().padLeft(2, '0')}.${ponedeljak.month.toString().padLeft(2, '0')} - ${petak.day.toString().padLeft(2, '0')}.${petak.month.toString().padLeft(2, '0')}';
 
     return StreamBuilder<int>(
-      stream: rm.v3StreamFromRevisions<int>(
-        tables: const ['v3_operativna_nedelja', 'v3_auth', 'v3_adrese', 'v3_kapacitet_slots', 'v3_app_settings'],
-        build: () => DateTime.now().microsecondsSinceEpoch,
+      stream: rm.tablesRevisionStream(
+        const [
+          'v3_operativna_nedelja',
+          'v3_auth',
+          'v3_adrese',
+          'v3_kapacitet_slots',
+          'v3_app_settings',
+          'v3_eta_results'
+        ],
       ),
       builder: (context, snapshot) {
         final tick = snapshot.data;

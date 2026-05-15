@@ -146,13 +146,16 @@ class V3CacheStore {
   DateTime? _extractTimestamp(Map<String, dynamic> row) {
     final updatedAt = row['updated_at'];
     final createdAt = row['created_at'];
+    final computedAt = row['computed_at'];
 
     final updated = _parseDateTime(updatedAt);
     final created = _parseDateTime(createdAt);
+    final computed = _parseDateTime(computedAt);
 
-    if (updated == null) return created;
-    if (created == null) return updated;
-    return updated.isAfter(created) ? updated : created;
+    var result = updated;
+    result = _maxTime(result, created);
+    result = _maxTime(result, computed);
+    return result;
   }
 
   DateTime? _parseDateTime(dynamic value) => V3CacheStore.parseDateTime(value);

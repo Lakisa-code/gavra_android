@@ -206,32 +206,22 @@ class _V3PutniciScreenState extends State<V3PutniciScreen> {
                                 physics: const BouncingScrollPhysics(),
                                 itemCount: lista.length,
                                 itemBuilder: (context, i) {
-                                  return TweenAnimationBuilder<double>(
-                                    key: ValueKey(lista[i].id),
-                                    duration: const Duration(milliseconds: 280),
-                                    tween: Tween(begin: 0.0, end: 1.0),
-                                    curve: Curves.easeOutCubic,
-                                    builder: (context, v, child) => Transform.translate(
-                                      offset: Offset(0, 20 * (1 - v)),
-                                      child: Opacity(opacity: v, child: child),
-                                    ),
-                                    child: _PutnikCard(
-                                      putnik: lista[i],
-                                      redniBroj: i + 1,
-                                      onEdit: () => _showEditDialog(lista[i]),
-                                      onDelete: () => _obrisi(lista[i]),
-                                      onDetaljneStatistike: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute<void>(
-                                            builder: (_) => V3PutnikStatistikaScreen(
-                                              putnikId: lista[i].id,
-                                              imePrezime: lista[i].imePrezime,
-                                              tipPutnika: lista[i].tipPutnika,
-                                            ),
+                                  return _PutnikCard(
+                                    putnik: lista[i],
+                                    redniBroj: i + 1,
+                                    onEdit: () => _showEditDialog(lista[i]),
+                                    onDelete: () => _obrisi(lista[i]),
+                                    onDetaljneStatistike: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => V3PutnikStatistikaScreen(
+                                            putnikId: lista[i].id,
+                                            imePrezime: lista[i].imePrezime,
+                                            tipPutnika: lista[i].tipPutnika,
                                           ),
-                                        );
-                                      },
-                                    ),
+                                        ),
+                                      );
+                                    },
                                   );
                                 },
                               ),
