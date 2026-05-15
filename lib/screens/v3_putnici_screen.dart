@@ -154,7 +154,7 @@ class _V3PutniciScreenState extends State<V3PutniciScreen> {
                       hintStyle: TextStyle(color: Colors.grey[600]),
                       prefixIcon: const Icon(Icons.search, color: Colors.grey),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       suffixIcon: val.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, color: Colors.grey),
