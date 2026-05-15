@@ -320,9 +320,7 @@ class _V3PutnikCardState extends State<V3PutnikCard> {
 
       if (confirm == true) {
         await V3ZahtevService.otkaziZahtev('',
-            otkazaoVozacId: V3VozacService.currentVozac?.id,
-            operativnaId: operativnaId,
-            putnikId: widget.putnik.id);
+            otkazaoVozacId: V3VozacService.currentVozac?.id, operativnaId: operativnaId, putnikId: widget.putnik.id);
         if (mounted) {
           V3AppSnackBar.warning(context, 'Otkazano: ${widget.putnik.imePrezime}');
           widget.onChanged?.call();

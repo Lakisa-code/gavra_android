@@ -600,7 +600,7 @@ class _LastSeenRow extends StatelessWidget {
 
   String _fmt(DateTime dt) {
     final d = dt.toLocal();
-    final pad = (int n) => n.toString().padLeft(2, '0');
+    String pad(int n) => n.toString().padLeft(2, '0');
     return '${pad(d.day)}.${pad(d.month)}.${d.year}  ${pad(d.hour)}:${pad(d.minute)}';
   }
 

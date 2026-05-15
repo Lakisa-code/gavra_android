@@ -408,33 +408,31 @@ class V3PutnikStatistikaService {
       godina: godina,
     );
 
-    return poravnanje.meseci
-        .map(
-          (stavka) {
-            final summary = V3FinansijeService.getNaplataSummaryForPutnik(
-              putnikId: putnikId,
-              godina: stavka.godina,
-              mesec: stavka.mesec,
-            );
-            return V3PutnikMesecnaStatistika(
-              godina: stavka.godina,
-              mesec: stavka.mesec,
-              mesecNaziv: stavka.mesecNaziv,
-              ukupnoVoznji: stavka.brojVoznji,
-              pokupljeno: stavka.brojVoznji,
-              placeno: stavka.cena > 0 ? (stavka.uplata / stavka.cena).floor() : stavka.brojVoznji,
-              otkazano: summary.brojOtkazivanja,
-              neplaceno: stavka.cena > 0
-                  ? (stavka.brojVoznji - (stavka.uplata / stavka.cena).floor()).clamp(0, stavka.brojVoznji).toInt()
-                  : 0,
-              naplacenoIznos: stavka.uplata,
-              dugIznos: stavka.saldoKraj < 0 ? -stavka.saldoKraj : 0,
-              cena: stavka.cena,
-              ukupnaObaveza: stavka.obaveza,
-            );
-          },
-        )
-        .toList(growable: false);
+    return poravnanje.meseci.map(
+      (stavka) {
+        final summary = V3FinansijeService.getNaplataSummaryForPutnik(
+          putnikId: putnikId,
+          godina: stavka.godina,
+          mesec: stavka.mesec,
+        );
+        return V3PutnikMesecnaStatistika(
+          godina: stavka.godina,
+          mesec: stavka.mesec,
+          mesecNaziv: stavka.mesecNaziv,
+          ukupnoVoznji: stavka.brojVoznji,
+          pokupljeno: stavka.brojVoznji,
+          placeno: stavka.cena > 0 ? (stavka.uplata / stavka.cena).floor() : stavka.brojVoznji,
+          otkazano: summary.brojOtkazivanja,
+          neplaceno: stavka.cena > 0
+              ? (stavka.brojVoznji - (stavka.uplata / stavka.cena).floor()).clamp(0, stavka.brojVoznji).toInt()
+              : 0,
+          naplacenoIznos: stavka.uplata,
+          dugIznos: stavka.saldoKraj < 0 ? -stavka.saldoKraj : 0,
+          cena: stavka.cena,
+          ukupnaObaveza: stavka.obaveza,
+        );
+      },
+    ).toList(growable: false);
   }
 
   static V3PutnikMesecnaStatistika getTekuciMesec(

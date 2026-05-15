@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="sr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Račun</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .invoice-box {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #000;
+            font-size: 16px;
+            line-height: 24px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header img {
+            max-height: 80px;
+        }
+
+        .company-info h2 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        table th,
+        table td {
+            padding: 12px;
+            border: 1px solid #000;
+            text-align: left;
+        }
+
+        table th {
+            background: #fff;
+            border-bottom: 2px solid #000;
+            font-weight: bold;
+        }
+
+        .total {
+            text-align: right;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 2px solid #000;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 14px;
+            border-top: 1px solid #000;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="invoice-box">
+        <div class="header">
+            <div>
+                <img src="assets/logo_transparent.png" alt="Logo Gavra 013" style="max-width: 150px; height: auto;">
+            </div>
+            <div style="text-align: right;">
+                <strong>Br. računa:</strong> 1/2026<br>
+                <strong>Datum izdavanja:</strong> 13.05.2026.<br>
+                <strong>Mesto:</strong> Bela Crkva
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between;">
+            <div class="company-info">
+                <h2>PR Limo Servis Gavra 013</h2>
+                Mihajla Pupina 74, 26340 Bela Crkva<br>
+                Vlasnik: Bojan Gavrilović<br>
+                PIB: 102853497 | MB: 55572178<br>
+                Tekući račun: 340-11436537-92<br>
+                Tel: 064/116-2560
+            </div>
+
+            <div class="client-info">
+                <strong>Kupac:</strong><br>
+                [Ime i prezime kupca / Naziv firme]<br>
+                [Adresa kupca]<br>
+                [PIB (ako je firma)]
+            </div>
+        </div>
+
+        <table style="font-size: 12px; text-align: center;">
+            <thead>
+                <tr>
+                    <th style="text-align: left;">Naziv</th>
+                    <th>Količina</th>
+                    <th>Jedinica<br>mere</th>
+                    <th>Cena</th>
+                    <th>Iznos<br>umanjenja</th>
+                    <th>Iznos bez PDV</th>
+                    <th>PDV %</th>
+                    <th>PDV<br>kategorija</th>
+                    <th>Identifikator<br>klasifikacije<br>stavke</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="text-align: left;">Prevoz na relaciji Vrsac-Bela Crkva.</td>
+                    <td>15</td>
+                    <td>d</td>
+                    <td>700,0000</td>
+                    <td>0,00</td>
+                    <td>10.500,00</td>
+                    <td>0</td>
+                    <td>SS</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table style="width: 100%; border: none; margin-top: 30px;">
+            <tr>
+                <td style="border: none; width: 25%;"></td>
+                <td style="border: none; padding: 0;">
+                    <table style="width: 100%; border-collapse: collapse; margin: 0; font-size: 14px;">
+                        <tr>
+                            <td
+                                style="border: none; border-bottom: 1px solid #000; text-align: right; padding: 10px 5px; font-weight: normal;">
+                                Zbir stavki - posebni postupci oporezivanja</td>
+                            <td
+                                style="border: none; border-bottom: 1px solid #000; text-align: right; padding: 10px 5px; font-weight: normal;">
+                                10.500,00</td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="border: none; border-bottom: 1px solid #000; text-align: right; padding: 10px 5px; font-weight: normal;">
+                                Ukupna naknada - posebni postupci oporezivanja</td>
+                            <td
+                                style="border: none; border-bottom: 1px solid #000; text-align: right; padding: 10px 5px; font-weight: normal;">
+                                10.500,00</td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="border: none; border-bottom: 1px solid #000; text-align: right; padding: 10px 5px; font-weight: normal;">
+                                Umanjen iznos naknade za iznos naknade po avansu - posebni postupci oporezivanja</td>
+                            <td
+                                style="border: none; border-bottom: 1px solid #000; text-align: right; padding: 10px 5px; font-weight: normal;">
+                                10.500,00</td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="border: none; border-bottom: 1px solid #000; text-align: right; padding: 10px 5px; font-weight: normal;">
+                                Iznos za zaokruživanje</td>
+                            <td
+                                style="border: none; border-bottom: 1px solid #000; text-align: right; padding: 10px 5px; font-weight: normal;">
+                                0,00</td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="border: none; text-align: right; font-weight: bold; font-size: 16px; padding: 15px 5px 5px 5px;">
+                                Iznos za plaćanje</td>
+                            <td
+                                style="border: none; text-align: right; font-weight: bold; font-size: 16px; padding: 15px 5px 5px 5px;">
+                                10.500,00</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <div class="footer">
+            Poreski obveznik nije u sistemu PDV-a.<br><br>
+            <strong>Shodno čl. 9. Zakona o računovodstvu i čl. 71. Zakona o privrednim društvima:<br>Račun je punovažan
+                bez pečata i potpisa.</strong>
+        </div>
+    </div>
+</body>
+
+</html>
