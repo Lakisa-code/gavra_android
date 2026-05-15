@@ -105,8 +105,6 @@ class _V3PutniciScreenState extends State<V3PutniciScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               // ── Filter icons with badges ──────────────────────
-                              _filterBtn(
-                                  'vozac', Icons.directions_car, const Color(0xFF7A7DFF), const Color(0xFF5A5DE8)),
                               _filterBtn('radnik', Icons.engineering, const Color(0xFF5C9CE6), const Color(0xFF3B7DD8)),
                               _filterBtn('ucenik', Icons.school, const Color(0xFF4ECDC4), const Color(0xFF44A08D)),
                               _filterBtn('dnevni', Icons.today, const Color(0xFFFF6B6B), const Color(0xFFFF8E53)),
@@ -855,7 +853,6 @@ class _PutnikDialogState extends State<_PutnikDialog> {
                           prefixIcon: const Icon(Icons.category_outlined, color: labelColor),
                         ),
                         items: const [
-                          DropdownMenuItem(value: 'vozac', child: Text('🚕 Vozač')),
                           DropdownMenuItem(value: 'radnik', child: Text('👷 Radnik')),
                           DropdownMenuItem(value: 'ucenik', child: Text('🎒 Učenik')),
                           DropdownMenuItem(value: 'dnevni', child: Text('🚶 Dnevni')),
