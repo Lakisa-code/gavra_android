@@ -319,8 +319,13 @@ class _V3PutnikCardState extends State<V3PutnikCard> {
       );
 
       if (confirm == true) {
+        final currentVozac = V3VozacService.currentVozac;
+        if (currentVozac == null || currentVozac.id.isEmpty) {
+          throw 'Niste logovani u V3 sistem';
+        }
+
         await V3ZahtevService.otkaziZahtev('',
-            otkazaoVozacId: V3VozacService.currentVozac?.id, operativnaId: operativnaId, putnikId: widget.putnik.id);
+            otkazaoVozacId: currentVozac.id, operativnaId: operativnaId, putnikId: widget.putnik.id);
         if (mounted) {
           V3AppSnackBar.warning(context, 'Otkazano: ${widget.putnik.imePrezime}');
           widget.onChanged?.call();

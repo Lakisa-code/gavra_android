@@ -208,6 +208,13 @@ class V3ZahtevService {
 
     for (final row in updatedOperativni) {
       V3MasterRealtimeManager.instance.v3UpsertToCache('v3_operativna_nedelja', row);
+
+      await V3FinansijeService.evidentirajOtkazivanje(
+        putnikId: putnikId,
+        datum: DateTime.now(),
+        operativnaId: row['id']?.toString(),
+        otkazaoBy: otkazaoPutnikId,
+      );
     }
 
     await _syncOperativnaAssignmentsForContext(
@@ -237,11 +244,20 @@ class V3ZahtevService {
   static Future<void> otkaziZahtev(String id,
       {String? otkazaoVozacId, String? otkazaoPutnikId, String? operativnaId, String? putnikId}) async {
     try {
-      if (otkazaoVozacId != null) {
+      final safeVozacId = (otkazaoVozacId ?? '').trim();
+      final safePutnikOtkazaoId = (otkazaoPutnikId ?? '').trim();
+      final hasVozacActor = safeVozacId.isNotEmpty;
+      final hasPutnikActor = safePutnikOtkazaoId.isNotEmpty;
+
+      if (hasVozacActor == hasPutnikActor) {
+        throw Exception('Obavezno je navesti tačno jednog aktera otkazivanja');
+      }
+
+      if (hasVozacActor) {
         // Vozač otkazuje — piše samo u v3_operativna_nedelja (jedini izvor istine za vozača)
-        final String? updBy = V3UuidUtils.normalizeUuid(otkazaoVozacId);
+        final String? updBy = V3UuidUtils.normalizeUuid(safeVozacId);
         final payload = {
-          'otkazano_by': otkazaoVozacId,
+          'otkazano_by': safeVozacId,
           if (updBy != null) 'updated_by': updBy,
         };
         if (operativnaId != null && operativnaId.isNotEmpty) {
@@ -252,9 +268,14 @@ class V3ZahtevService {
         }
       } else {
         // Putnik otkazuje — piše u v3_zahtevi, operativna se propagira triggerom ili ovdje
-        final String? updBy = V3UuidUtils.normalizeUuid(otkazaoPutnikId);
+        final safeZahtevId = id.trim();
+        if (safeZahtevId.isEmpty) {
+          throw Exception('id zahteva je obavezan kada putnik otkazuje');
+        }
+
+        final String? updBy = V3UuidUtils.normalizeUuid(safePutnikOtkazaoId);
         final row = await _repository.updateRaw(
-          id,
+          safeZahtevId,
           {
             'status': 'otkazano',
             if (updBy != null) 'updated_by': updBy,
@@ -262,7 +283,7 @@ class V3ZahtevService {
         );
         V3MasterRealtimeManager.instance.v3UpsertToCache('v3_zahtevi', row);
         final payload2 = {
-          if (otkazaoPutnikId != null) 'otkazano_by': otkazaoPutnikId,
+          'otkazano_by': safePutnikOtkazaoId,
           if (updBy != null) 'updated_by': updBy,
         };
         if (operativnaId != null && operativnaId.isNotEmpty) {
@@ -279,7 +300,7 @@ class V3ZahtevService {
           putnikId: safePutnikId,
           datum: DateTime.now(),
           operativnaId: operativnaId,
-          otkazaoBy: otkazaoVozacId ?? otkazaoPutnikId,
+          otkazaoBy: hasVozacActor ? safeVozacId : safePutnikOtkazaoId,
         );
       }
     } catch (e) {
