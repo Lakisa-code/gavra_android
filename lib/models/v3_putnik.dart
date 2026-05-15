@@ -21,6 +21,8 @@ class V3Putnik {
   final String? pushDeviceId2;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? lastSeenAt;
+  final DateTime? lastSeenAt2;
 
   V3Putnik({
     required this.id,
@@ -40,6 +42,8 @@ class V3Putnik {
     this.pushDeviceId2,
     this.createdAt,
     this.updatedAt,
+    this.lastSeenAt,
+    this.lastSeenAt2,
   });
 
   factory V3Putnik.fromJson(Map<String, dynamic> json) {
@@ -61,6 +65,8 @@ class V3Putnik {
       pushDeviceId2: json['push_device_id_2'] as String?,
       createdAt: V3DateUtils.parseTs(json['created_at'] as String?),
       updatedAt: V3DateUtils.parseTs(json['updated_at'] as String?),
+      lastSeenAt: V3DateUtils.parseTs(json['last_seen_at'] as String?),
+      lastSeenAt2: V3DateUtils.parseTs(json['last_seen_at_2'] as String?),
     );
   }
 
