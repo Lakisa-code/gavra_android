@@ -195,7 +195,7 @@ class _V3WelcomeScreenState extends State<V3WelcomeScreen> with TickerProviderSt
   }
 
   void _openPassengerAddressCompletionFlow(String initialPhone) {
-    _safePushReplacement(
+    _safePushScreen(
       V3SmsLoginScreen(
         title: 'Prijava',
         initialPhone: initialPhone,
@@ -540,7 +540,10 @@ class _V3WelcomeScreenState extends State<V3WelcomeScreen> with TickerProviderSt
       }
       unawaited(V3AppUpdateService.refreshUpdateInfo()
           .catchError((Object e) => debugPrint('⚠️ [WelcomeScreen] refreshUpdateInfo error: $e')));
-      _safePushReplacement(V3PutnikProfilScreen(putnikData: putnik));
+      V3NavigationUtils.pushAndRemoveUntil(
+        context,
+        V3PutnikProfilScreen(putnikData: putnik),
+      );
     } catch (e) {
       debugPrint('[V3WelcomeScreen] onLoginVerified error: $e');
       _showSafeSnackBar('⚠️ Greška pri verifikaciji prijave. Pokušaj ponovo.');

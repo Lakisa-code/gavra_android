@@ -282,6 +282,7 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
         final vsId = putnik['adresa_vs_id']?.toString().trim() ?? '';
 
         setState(() {
+          _isLoading = false;
           _addressOnlyOnboarding = true;
           _requireBcAddress = missingBc;
           _requireVsAddress = missingVs;
@@ -436,6 +437,9 @@ class _V3SmsLoginScreenState extends State<V3SmsLoginScreen> {
 
       V3AppSnackBar.success(context, '✅ Profil sačuvan.');
       await _finalize();
+      if (mounted) {
+        setState(() => _statusMessage = '');
+      }
     } catch (e) {
       if (!mounted) return;
       debugPrint('[V3SmsLogin] _saveOnboarding error: $e');

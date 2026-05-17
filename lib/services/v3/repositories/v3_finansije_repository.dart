@@ -16,12 +16,13 @@ class V3FinansijeRepository {
   }) {
     return supabase
         .from('v3_finansije')
-        .select('id')
+        .select('id, iznos, broj_voznji, created_at')
         .eq('tip', 'prihod')
         .eq('kategorija', 'operativna_naplata')
         .eq('putnik_v3_auth_id', putnikId)
         .eq('mesec', mesec)
         .eq('godina', godina)
+        .order('created_at', ascending: false)
         .limit(1)
         .maybeSingle();
   }

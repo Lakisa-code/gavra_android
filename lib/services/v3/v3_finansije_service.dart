@@ -565,7 +565,15 @@ class V3FinansijeService {
     required int godina,
     int brojVoznji = 1,
   }) async {
-    final lockKey = '$putnikId:$mesec:$godina';
+    final safePutnikId = putnikId.trim();
+    if (safePutnikId.isEmpty) {
+      throw ArgumentError('putnikId je obavezan.');
+    }
+    if (iznos <= 0) {
+      throw ArgumentError('Iznos naplate mora biti veći od nule.');
+    }
+
+    final lockKey = '$safePutnikId:$mesec:$godina';
     if (_mesecnaNaplataLocks.contains(lockKey)) {
       debugPrint('[V3FinansijeService] sacuvajMesecnuNaplatu skipped (lock): $lockKey');
       return;
@@ -573,20 +581,44 @@ class V3FinansijeService {
     _mesecnaNaplataLocks.add(lockKey);
 
     try {
-      final payload = {
-        'naziv': 'Naplata prevoza',
-        'kategorija': 'operativna_naplata',
-        'tip': 'prihod',
-        'iznos': iznos,
-        'putnik_v3_auth_id': putnikId,
-        'dogadjaj_id': _uuid.v4(),
-        'naplaceno_by': naplacenoBy,
-        'broj_voznji': brojVoznji,
-        'mesec': mesec,
-        'godina': godina,
-      };
+      final existing = await _repo.findMesecnuNaplatu(
+        putnikId: safePutnikId,
+        mesec: mesec,
+        godina: godina,
+      );
 
-      final row = await _repo.insertReturning(payload);
+      Map<String, dynamic> row;
+      if (existing != null) {
+        final existingId = (existing['id']?.toString() ?? '').trim();
+        if (existingId.isEmpty) {
+          throw StateError('findMesecnuNaplatu vratio red bez id');
+        }
+
+        final currentIznos = (existing['iznos'] as num?)?.toDouble() ?? 0.0;
+        final currentBrojVoznji = (existing['broj_voznji'] as num?)?.toInt() ?? 0;
+        final mergedBrojVoznji = brojVoznji > currentBrojVoznji ? brojVoznji : currentBrojVoznji;
+
+        row = await _repo.updateByIdReturning(existingId, {
+          'iznos': currentIznos + iznos,
+          'naplaceno_by': naplacenoBy,
+          'broj_voznji': mergedBrojVoznji,
+          'dogadjaj_id': _uuid.v4(),
+        });
+      } else {
+        row = await _repo.insertReturning({
+          'naziv': 'Naplata prevoza',
+          'kategorija': 'operativna_naplata',
+          'tip': 'prihod',
+          'iznos': iznos,
+          'putnik_v3_auth_id': safePutnikId,
+          'dogadjaj_id': _uuid.v4(),
+          'naplaceno_by': naplacenoBy,
+          'broj_voznji': brojVoznji,
+          'mesec': mesec,
+          'godina': godina,
+        });
+      }
+
       V3MasterRealtimeManager.instance.v3UpsertToCache('v3_finansije', row);
     } catch (e) {
       debugPrint('[V3FinansijeService] sacuvajMesecnuNaplatu error: $e');
@@ -602,14 +634,15 @@ class V3FinansijeService {
     required double iznos,
     required DateTime datum,
   }) async {
-    if (putnikId.trim().isEmpty) {
+    final safePutnikId = putnikId.trim();
+    if (safePutnikId.isEmpty) {
       throw ArgumentError('putnikId je obavezan.');
     }
     if (iznos <= 0) {
       throw ArgumentError('Iznos naplate mora biti veći od nule.');
     }
 
-    final lockKey = 'ref:${putnikId.trim()}:${datum.month}:${datum.year}';
+    final lockKey = 'ref:$safePutnikId:${datum.month}:${datum.year}';
     if (_naplataPoReferenciLocks.contains(lockKey)) {
       debugPrint('[V3FinansijeService] sacuvajNaplatuZaMesec skipped (lock): $lockKey');
       return;
@@ -617,20 +650,43 @@ class V3FinansijeService {
     _naplataPoReferenciLocks.add(lockKey);
 
     try {
-      final payload = {
-        'naziv': 'Naplata prevoza',
-        'kategorija': 'operativna_naplata',
-        'tip': 'prihod',
-        'iznos': iznos,
-        'putnik_v3_auth_id': putnikId,
-        'dogadjaj_id': _uuid.v4(),
-        'naplaceno_by': naplacenoBy,
-        'broj_voznji': 1,
-        'mesec': datum.month,
-        'godina': datum.year,
-      };
+      final existing = await _repo.findMesecnuNaplatu(
+        putnikId: safePutnikId,
+        mesec: datum.month,
+        godina: datum.year,
+      );
 
-      final row = await _repo.insertReturning(payload);
+      Map<String, dynamic> row;
+      if (existing != null) {
+        final existingId = (existing['id']?.toString() ?? '').trim();
+        if (existingId.isEmpty) {
+          throw StateError('findMesecnuNaplatu vratio red bez id');
+        }
+
+        final currentIznos = (existing['iznos'] as num?)?.toDouble() ?? 0.0;
+        final currentBrojVoznji = (existing['broj_voznji'] as num?)?.toInt() ?? 0;
+
+        row = await _repo.updateByIdReturning(existingId, {
+          'iznos': currentIznos + iznos,
+          'naplaceno_by': naplacenoBy,
+          'broj_voznji': currentBrojVoznji + 1,
+          'dogadjaj_id': _uuid.v4(),
+        });
+      } else {
+        row = await _repo.insertReturning({
+          'naziv': 'Naplata prevoza',
+          'kategorija': 'operativna_naplata',
+          'tip': 'prihod',
+          'iznos': iznos,
+          'putnik_v3_auth_id': safePutnikId,
+          'dogadjaj_id': _uuid.v4(),
+          'naplaceno_by': naplacenoBy,
+          'broj_voznji': 1,
+          'mesec': datum.month,
+          'godina': datum.year,
+        });
+      }
+
       V3MasterRealtimeManager.instance.v3UpsertToCache('v3_finansije', row);
     } catch (e) {
       debugPrint('[V3FinansijeService] sacuvajNaplatuZaMesec error: $e');
