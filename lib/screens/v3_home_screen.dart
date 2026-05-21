@@ -1409,6 +1409,14 @@ class _RacunFirmeDialogContentState extends State<_RacunFirmeDialogContent> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _showDodajNovuFirmuDialog,
+                  icon: const Icon(Icons.add_business, size: 16, color: Colors.green),
+                  label: const Text('Nova firma?', style: TextStyle(color: Colors.green, fontSize: 12)),
+                ),
+              ),
 
               // ── FIRMA ──
               _sectionLabel('FIRMA'),
@@ -1688,6 +1696,81 @@ class _RacunFirmeDialogContentState extends State<_RacunFirmeDialogContent> {
         ),
       ],
     );
+  }
+
+  /// Dijalog za brzi unos nove firme u v3_racuni tabelu
+  void _showDodajNovuFirmuDialog() {
+    final nazivCtrl = TextEditingController();
+    final adresaCtrl = TextEditingController();
+    final pibCtrl = TextEditingController();
+    final mbCtrl = TextEditingController();
+    final ziroCtrl = TextEditingController();
+
+    V3DialogHelper.showDialogBuilder<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: bg,
+        title: const Text('Dodaj novu firmu',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _localField(nazivCtrl, 'Naziv firme'),
+              const SizedBox(height: 8),
+              _localField(adresaCtrl, 'Adresa'),
+              const SizedBox(height: 8),
+              _localField(pibCtrl, 'PIB', numeric: true),
+              const SizedBox(height: 8),
+              _localField(mbCtrl, 'Matični broj', numeric: true),
+              const SizedBox(height: 8),
+              _localField(ziroCtrl, 'Žiro račun'),
+            ],
+          ),
+        ),
+        actions: [
+          V3ButtonUtils.textButton(
+            onPressed: () => Navigator.pop(ctx),
+            text: 'Otkaži',
+            foregroundColor: Colors.red,
+          ),
+          V3ButtonUtils.successButton(
+            onPressed: () async {
+              final naziv = nazivCtrl.text.trim();
+              if (naziv.isEmpty) {
+                V3AppSnackBar.error(ctx, '⚠️ Unesite naziv firme');
+                return;
+              }
+              try {
+                await supabase.from('v3_racuni').insert({
+                  'firma_naziv': naziv,
+                  'firma_adresa': adresaCtrl.text.trim(),
+                  'firma_pib': pibCtrl.text.trim(),
+                  'firma_mb': mbCtrl.text.trim(),
+                  'firma_ziro': ziroCtrl.text.trim(),
+                });
+                if (ctx.mounted) Navigator.pop(ctx);
+              } catch (e) {
+                if (ctx.mounted) V3AppSnackBar.error(ctx, '❌ Greška pri upisu: $e');
+              }
+            },
+            text: 'Sačuvaj',
+          ),
+        ],
+      ),
+    ).then((_) {
+      nazivCtrl.dispose();
+      adresaCtrl.dispose();
+      pibCtrl.dispose();
+      mbCtrl.dispose();
+      ziroCtrl.dispose();
+    });
+  }
+
+  Widget _localField(TextEditingController ctrl, String label, {bool numeric = false}) {
+    return numeric
+        ? V3InputUtils.numberField(controller: ctrl, label: label)
+        : V3InputUtils.textField(controller: ctrl, label: label);
   }
 }
 

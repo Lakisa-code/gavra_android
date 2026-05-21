@@ -4,8 +4,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { Octokit } from "@octokit/rest";
 import "dotenv/config.js";
+import sodium from "libsodium-wrappers";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPO_OWNER = process.env.GITHUB_REPO_OWNER || "lakisa-code";
+const REPO_OWNER = process.env.GITHUB_REPO_OWNER || "bobanmoj70-sys";
 const REPO_NAME = process.env.GITHUB_REPO_NAME || "gavra_android";
 if (!GITHUB_TOKEN) {
     console.error("❌ Missing required environment variable: GITHUB_TOKEN");
@@ -81,7 +82,6 @@ async function setSecret(secretName, secretValue) {
         const publicKey = publicKeyResponse.data.key;
         const keyId = publicKeyResponse.data.key_id;
         // Encrypt the secret value using libsodium
-        const sodium = require("libsodium-wrappers");
         await sodium.ready;
         const encryptedSecret = Buffer.from(sodium.crypto_box_seal(secretValue, Buffer.from(publicKey, "base64"))).toString("base64");
         // Create or update the secret

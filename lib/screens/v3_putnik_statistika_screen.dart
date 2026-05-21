@@ -31,10 +31,6 @@ class _V3PutnikStatistikaScreenState extends State<V3PutnikStatistikaScreen> {
       builder: (context, _) {
         final godina = DateTime.now().year;
         final meseci = V3PutnikStatistikaService.getZaGodinu(widget.putnikId, godina: godina);
-        final ukupnoVoznji = meseci.fold<int>(0, (sum, mesec) => sum + mesec.ukupnoVoznji);
-        final ukupnaObaveza = meseci.fold<double>(0.0, (sum, mesec) => sum + mesec.ukupnaObaveza);
-        final ukupnoPlaceno = meseci.fold<double>(0.0, (sum, mesec) => sum + mesec.naplacenoIznos);
-        final ukupanDug = meseci.fold<double>(0.0, (sum, mesec) => sum + mesec.dugIznos);
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -121,13 +117,8 @@ class _MesecCard extends StatelessWidget {
             style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _MiniKpi(label: 'Realiz.', value: '${stats.pokupljeno}', color: Colors.lightBlueAccent),
-              _MiniKpi(label: 'Vožnji', value: '${stats.ukupnoVoznji}', color: Colors.greenAccent),
-              _MiniKpi(label: 'Otkazano', value: '${stats.otkazano}', color: Colors.redAccent),
-            ],
+          Center(
+            child: _MiniKpi(label: 'Vožnji', value: '${stats.ukupnoVoznji}', color: Colors.greenAccent),
           ),
           const SizedBox(height: 10),
           if (stats.cena > 0) ...[

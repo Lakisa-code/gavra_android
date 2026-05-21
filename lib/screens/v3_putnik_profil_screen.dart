@@ -1065,13 +1065,8 @@ class _V3PutnikProfilScreenState extends State<V3PutnikProfilScreen> with Widget
             style: TextStyle(color: V3StyleHelper.whiteAlpha65, fontSize: 12, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _kpiTile('Realiz.', '${stats.pokupljeno}', Colors.lightBlueAccent),
-              _kpiTile('Vožnji', '${stats.ukupnoVoznji}', Colors.greenAccent),
-              _kpiTile('Otkazano', '${stats.otkazano}', Colors.redAccent),
-            ],
+          Center(
+            child: _kpiTile('Vožnji', '${stats.ukupnoVoznji}', Colors.greenAccent),
           ),
           const SizedBox(height: 12),
           Divider(color: V3StyleHelper.whiteAlpha15),
@@ -1115,7 +1110,7 @@ class _V3PutnikProfilScreenState extends State<V3PutnikProfilScreen> with Widget
 
   Widget _kpiTile(String label, String value, Color color) {
     return V3ContainerUtils.styledContainer(
-      width: 76,
+      width: 90,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       backgroundColor: Colors.white.withValues(alpha: 0.06),
       borderRadius: BorderRadius.circular(10),

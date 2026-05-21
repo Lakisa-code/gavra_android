@@ -57,7 +57,6 @@ class _V3PosiljkeZahteviScreenState extends State<V3PosiljkeZahteviScreen> {
         final brObrada = zahtevi.where((z) => V3StatusPolicy.isPending(z.status)).length;
         final brOdobreno = zahtevi.where((z) => V3StatusPolicy.isApproved(z.status)).length;
         final brOdbijeno = zahtevi.where((z) => V3StatusPolicy.isRejected(z.status)).length;
-        final brOtkazano = zahtevi.where((z) => V3StatusPolicy.isCanceled(z.status)).length;
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -106,7 +105,6 @@ class _V3PosiljkeZahteviScreenState extends State<V3PosiljkeZahteviScreen> {
                         if (brObrada > 0) _badge('🟡 $brObrada obrada', Colors.amber),
                         if (brOdobreno > 0) _badge('🟢 $brOdobreno odobreno', Colors.greenAccent),
                         if (brOdbijeno > 0) _badge('🔴 $brOdbijeno odbijeno', Colors.redAccent),
-                        if (brOtkazano > 0) _badge('⛔ $brOtkazano otkazano', Colors.orange),
                       ],
                     ),
                   ),

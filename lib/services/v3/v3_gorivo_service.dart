@@ -5,6 +5,8 @@ import 'package:gavra_android/services/realtime/v3_master_realtime_manager.dart'
 import 'repositories/v3_gorivo_repository.dart';
 
 class V3GorivoService {
+  V3GorivoService._();
+
   static final V3GorivoRepository _repo = V3GorivoRepository();
 
   /// Kreira početni red u tabeli `v3_gorivo` ako tabela nema podataka
@@ -24,7 +26,7 @@ class V3GorivoService {
         'dug_iznos': 0,
       });
 
-      V3MasterRealtimeManager.instance.v3UpsertToCache('v3_gorivo', row);
+      _upsertCache(row);
       return true;
     } catch (e) {
       debugPrint('[V3GorivoService] ensureInitialData error: $e');
@@ -68,7 +70,7 @@ class V3GorivoService {
         'trenutno_stanje_litri': novoStanje,
         'brojac_pistolj_litri': noviBrojac,
       });
-      V3MasterRealtimeManager.instance.v3UpsertToCache('v3_gorivo', row);
+      _upsertCache(row);
       return true;
     } catch (e) {
       debugPrint('[V3GorivoService] updateStanje error: $e');
@@ -82,10 +84,10 @@ class V3GorivoService {
       final row = await _repo.updateByIdReturning(id, {
         'trenutno_stanje_litri': novoLitara,
       });
-      V3MasterRealtimeManager.instance.v3UpsertToCache('v3_gorivo', row);
+      _upsertCache(row);
       return true;
     } catch (e) {
-      debugPrint('[V3GorivoService] updateRezevoar error: $e');
+      debugPrint('[V3GorivoService] updateRezervoar failed for id $id: $e');
       return false;
     }
   }
@@ -107,11 +109,17 @@ class V3GorivoService {
         'cena_po_litru': cenaPoLitru,
         'dug_iznos': dugIznos,
       });
-      V3MasterRealtimeManager.instance.v3UpsertToCache('v3_gorivo', row);
+      _upsertCache(row);
       return true;
     } catch (e) {
       debugPrint('[V3GorivoService] updateAllFields error: $e');
       return false;
     }
+  }
+
+  /// Pomoćna metoda za sigurno ažuriranje lokalnog cache-a
+  static void _upsertCache(Map<String, dynamic> row) {
+    if (row.isEmpty) return;
+    V3MasterRealtimeManager.instance.v3UpsertToCache('v3_gorivo', row);
   }
 }

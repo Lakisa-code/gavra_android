@@ -61,13 +61,7 @@ class _V3ZahteviDnevniScreenState extends State<V3ZahteviDnevniScreen> {
           if (!V3DanHelper.isInSchedulingWeek(datum)) return false;
 
           final status = (r['status']?.toString() ?? '').trim().toLowerCase();
-          if (V3StatusPolicy.isCanceled(status)) {
-            final updatedBy = (r['updated_by']?.toString() ?? '').trim();
-            if (updatedBy.isEmpty) return false;
-            if (updatedBy != putnikId && !_isSistemAkter(updatedBy, rm.authCache)) {
-              return false;
-            }
-          }
+          if (V3StatusPolicy.isCanceled(status)) return false;
 
           return true;
         })
@@ -155,7 +149,6 @@ class _V3ZahteviDnevniScreenState extends State<V3ZahteviDnevniScreen> {
             zahtevi.where((z) => V3StatusPolicy.isPending(z.status) || V3StatusPolicy.isOfferLike(z.status)).toList();
         final odobreno = zahtevi.where((z) => V3StatusPolicy.isApproved(z.status)).toList();
         final odbijeno = zahtevi.where((z) => V3StatusPolicy.isRejected(z.status)).toList();
-        final otkazano = zahtevi.where((z) => V3StatusPolicy.isCanceled(z.status)).toList();
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -185,7 +178,6 @@ class _V3ZahteviDnevniScreenState extends State<V3ZahteviDnevniScreen> {
                         if (obrada.isNotEmpty) _StatusBadge('🟡 ${obrada.length} obrada', Colors.amber),
                         if (odobreno.isNotEmpty) _StatusBadge('🟢 ${odobreno.length} odobreno', Colors.greenAccent),
                         if (odbijeno.isNotEmpty) _StatusBadge('🔴 ${odbijeno.length} odbijeno', Colors.redAccent),
-                        if (otkazano.isNotEmpty) _StatusBadge('⛔ ${otkazano.length} otkazano', Colors.orange),
                         if (zahtevi.isEmpty)
                           Text(
                             'Nema zahteva',

@@ -410,11 +410,6 @@ class V3PutnikStatistikaService {
 
     return poravnanje.meseci.map(
       (stavka) {
-        final summary = V3FinansijeService.getNaplataSummaryForPutnik(
-          putnikId: putnikId,
-          godina: stavka.godina,
-          mesec: stavka.mesec,
-        );
         return V3PutnikMesecnaStatistika(
           godina: stavka.godina,
           mesec: stavka.mesec,
@@ -422,7 +417,7 @@ class V3PutnikStatistikaService {
           ukupnoVoznji: stavka.brojVoznji,
           pokupljeno: stavka.brojVoznji,
           placeno: stavka.cena > 0 ? (stavka.uplata / stavka.cena).floor() : stavka.brojVoznji,
-          otkazano: summary.brojOtkazivanja,
+          otkazano: 0,
           neplaceno: stavka.cena > 0
               ? (stavka.brojVoznji - (stavka.uplata / stavka.cena).floor()).clamp(0, stavka.brojVoznji).toInt()
               : 0,
@@ -496,12 +491,6 @@ class V3PutnikStatistikaService {
 
     final neplaceno = (obracun.brojVoznji - placeno).clamp(0, obracun.brojVoznji);
 
-    final summary = V3FinansijeService.getNaplataSummaryForPutnik(
-      putnikId: putnikId,
-      godina: godina,
-      mesec: mesec,
-    );
-
     return V3PutnikMesecnaStatistika(
       godina: godina,
       mesec: mesec,
@@ -509,7 +498,7 @@ class V3PutnikStatistikaService {
       ukupnoVoznji: obracun.brojVoznji,
       pokupljeno: obracun.brojVoznji,
       placeno: placeno,
-      otkazano: summary.brojOtkazivanja,
+      otkazano: 0,
       neplaceno: neplaceno,
       naplacenoIznos: obracun.uplaceno,
       dugIznos: obracun.dug,

@@ -88,12 +88,20 @@ class V3RacunService {
   }) async {
     try {
       await _ensureAssets();
+
+      // Generišemo mesec i godinu iz datuma prometa
+      final mesecStr = DateFormat('MMMM yyyy.', 'sr').format(datumPrometa);
+      final puniOpis = '$opisUsluge za $mesecStr';
+
       final pdfBytes = await _kreirajUnifiedRacun(
         brojRacuna: brojRacuna,
         kupacNaziv: imePrezimeKupca,
         kupacAdresa: adresaKupca,
         kupacPib: '', // Fizičko lice nema PIB
-        opisUsluge: opisUsluge,
+        kupacMb: '',
+        kupacZiro: '',
+        putnikIme: imePrezimeKupca,
+        opisUsluge: puniOpis,
         cena: cena,
         kolicina: kolicina,
         jedinicaMere: jedinicaMere,
@@ -158,7 +166,8 @@ class V3RacunService {
         final firmaMb = r['firma_mb']?.toString();
         final firmaZiro = r['firma_ziro']?.toString();
 
-        final opis = 'Prevoz putnika na relaciji $imePutnika';
+        final mesecStr = DateFormat('MMMM yyyy.', 'sr').format(datumPrometa);
+        final opis = 'Usluga prevoza putnika za $mesecStr';
 
         pdf.addPage(
           _buildEFakturaStranica(
@@ -169,6 +178,9 @@ class V3RacunService {
             kupacNaziv: firmaNaziv,
             kupacAdresa: firmaAdresa,
             kupacPib: firmaPib,
+            kupacMb: firmaMb ?? '',
+            kupacZiro: firmaZiro ?? '',
+            putnikIme: imePutnika,
             opisUsluge: opis,
             kolicina: brojVoznji,
             jedMere: 'dan',
@@ -213,6 +225,9 @@ class V3RacunService {
     required String kupacNaziv,
     required String kupacAdresa,
     required String kupacPib,
+    required String kupacMb,
+    required String kupacZiro,
+    required String putnikIme,
     required String opisUsluge,
     required double cena,
     required double kolicina,
@@ -236,6 +251,9 @@ class V3RacunService {
         kupacNaziv: kupacNaziv,
         kupacAdresa: kupacAdresa,
         kupacPib: kupacPib,
+        kupacMb: kupacMb,
+        kupacZiro: kupacZiro,
+        putnikIme: putnikIme,
         opisUsluge: opisUsluge,
         kolicina: kolicina,
         jedMere: jedinicaMere,
@@ -253,6 +271,9 @@ class V3RacunService {
     required String kupacNaziv,
     required String kupacAdresa,
     required String kupacPib,
+    required String kupacMb,
+    required String kupacZiro,
+    required String putnikIme,
     required String opisUsluge,
     required double kolicina,
     required String jedMere,
@@ -329,8 +350,14 @@ class V3RacunService {
                   pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
                     pw.Text('Kupac:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                     pw.Text(kupacNaziv),
+                    if (putnikIme.isNotEmpty && putnikIme != kupacNaziv) pw.Text('Zaposleni/putnik: $putnikIme'),
                     pw.Text(kupacAdresa),
-                    if (kupacPib.isNotEmpty) pw.Text('PIB: $kupacPib'),
+                    if (kupacPib.isNotEmpty || kupacMb.isNotEmpty)
+                      pw.Text([
+                        if (kupacPib.isNotEmpty) 'PIB: $kupacPib',
+                        if (kupacMb.isNotEmpty) 'MB: $kupacMb',
+                      ].join(' | ')),
+                    if (kupacZiro.isNotEmpty) pw.Text('Tekući račun: $kupacZiro'),
                   ])
                 ]),
             pw.SizedBox(height: 30),
