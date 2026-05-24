@@ -11,6 +11,8 @@ class V3Dug {
   final double uplaceno;
   final String vozacId;
   final String vozacIme;
+  final String pokupioVozacId;
+  final String pokupioVozacIme;
   final DateTime datum;
   final DateTime? pokupljenAt;
   final double iznos;
@@ -36,6 +38,8 @@ class V3Dug {
     required this.uplaceno,
     required this.vozacId,
     this.vozacIme = '',
+    this.pokupioVozacId = '',
+    this.pokupioVozacIme = '',
     required this.datum,
     this.pokupljenAt,
     required this.iznos,

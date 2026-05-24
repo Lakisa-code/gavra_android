@@ -278,6 +278,10 @@ class _DugCard extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text('Uplaćeno: $uplataStr', style: const TextStyle(color: Colors.white60, fontSize: 11)),
                   const SizedBox(height: 1),
+                  if (dug.pokupioVozacIme.isNotEmpty) ...[
+                    Text('Pokupio: ${dug.pokupioVozacIme}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                    const SizedBox(height: 1),
+                  ],
                   if (naplatioStr != null) ...[
                     Text('Naplatio: $naplatioStr', style: const TextStyle(color: Colors.white60, fontSize: 11)),
                     const SizedBox(height: 1),

@@ -402,6 +402,24 @@ class V3FinansijeService {
         final vozacData = naplatioById != null ? rm.vozaciCache[naplatioById] : null;
         final vozacIme = vozacData?['ime_prezime']?.toString() ?? '';
 
+        // Nađi vozača koji je pokupio putnika u ovom mesecu
+        String pokupioVozacId = '';
+        String pokupioVozacIme = '';
+        for (final operRow in rm.operativnaNedeljaCache.values) {
+          final rPutnikId = (operRow['created_by']?.toString() ?? '').trim().toLowerCase();
+          if (rPutnikId != putnikId.toLowerCase()) continue;
+          final pokupljenBy = operRow['pokupljen_by']?.toString().trim();
+          if (pokupljenBy == null || pokupljenBy.isEmpty) continue;
+          final datum = V3DateUtils.parseTs(operRow['datum']?.toString());
+          if (datum == null) continue;
+          if (datum.year == godina && datum.month == mesec) {
+            pokupioVozacId = pokupljenBy;
+            final pokupioVozacData = rm.vozaciCache[pokupljenBy];
+            pokupioVozacIme = pokupioVozacData?['ime_prezime']?.toString() ?? '';
+            break;
+          }
+        }
+
         final ukupnaObaveza = brojVoznji * cena;
         final uplaceno = summary.ukupanIznos;
         final dugIznos = ukupnaObaveza - uplaceno;
@@ -421,6 +439,8 @@ class V3FinansijeService {
             uplaceno: uplaceno,
             vozacId: naplatioById ?? '',
             vozacIme: vozacIme,
+            pokupioVozacId: pokupioVozacId,
+            pokupioVozacIme: pokupioVozacIme,
             datum: DateTime(godina, mesec, 1),
             pokupljenAt: null,
             iznos: dugIznos,
