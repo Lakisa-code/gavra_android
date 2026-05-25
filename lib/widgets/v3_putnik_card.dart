@@ -472,7 +472,7 @@ class _V3PutnikCardState extends State<V3PutnikCard> {
     final String? naplataById = naplataInfo?.paidBy;
     final DateTime? naplataAt = naplataInfo?.paidAt;
     final double ukupanIznos = naplataInfo?.ukupanIznos ?? 0;
-    final double poslednjiIznos = naplataInfo?.poslednjiIznos ?? 0;
+    final double poslednjaDopuna = naplataInfo?.poslednjaDopuna ?? 0;
     final bool hasTel = _firstValidTelefon() != null;
     final String? adresaNaziv = _getAdresaNaziv();
     final bool hasAdresa = adresaNaziv != null && adresaNaziv.isNotEmpty;
@@ -720,7 +720,7 @@ class _V3PutnikCardState extends State<V3PutnikCard> {
                             () {
                               final vpl = naplataAt;
                               final ukupnoStr = ukupanIznos > 0 ? 'Ukupno: ${ukupanIznos.toStringAsFixed(0)} RSD' : '';
-                              final poslednjeStr = poslednjiIznos > 0 ? 'Poslednje: ${poslednjiIznos.toStringAsFixed(0)} RSD' : '';
+                              final poslednjeStr = poslednjaDopuna > 0 ? 'Poslednje: ${poslednjaDopuna.toStringAsFixed(0)} RSD' : '';
                               final dtStr = _fmt(vpl);
                               return [
                                 if (ukupnoStr.isNotEmpty) ukupnoStr,
@@ -770,7 +770,7 @@ class _V3PutnikCardState extends State<V3PutnikCard> {
                             () {
                               final vpl = naplataAt;
                               final ukupnoStr = ukupanIznos > 0 ? 'Ukupno: ${ukupanIznos.toStringAsFixed(0)} RSD' : '';
-                              final poslednjeStr = poslednjiIznos > 0 ? 'Poslednje: ${poslednjiIznos.toStringAsFixed(0)} RSD' : '';
+                              final poslednjeStr = poslednjaDopuna > 0 ? 'Poslednje: ${poslednjaDopuna.toStringAsFixed(0)} RSD' : '';
                               final dtStr = _fmt(vpl);
                               return [
                                 if (ukupnoStr.isNotEmpty) ukupnoStr,

@@ -10,7 +10,7 @@ import 'repositories/v3_finansije_repository.dart';
 class V3NaplataInfo {
   final bool isPaid;
   final double ukupanIznos;
-  final double poslednjiIznos;
+  final double poslednjaDopuna;
   final DateTime? paidAt;
   final String? paidBy;
   final DateTime? updatedAt;
@@ -19,7 +19,7 @@ class V3NaplataInfo {
   const V3NaplataInfo({
     required this.isPaid,
     required this.ukupanIznos,
-    required this.poslednjiIznos,
+    required this.poslednjaDopuna,
     this.paidAt,
     this.paidBy,
     this.updatedAt,
@@ -151,14 +151,17 @@ class V3FinansijeService {
 
     _sortByCreatedAtDesc(candidates);
     final latest = candidates.first;
-
-    final ukupanIznos = candidates.fold<double>(0, (sum, row) => sum + ((row['iznos'] as num?)?.toDouble() ?? 0));
-    final poslednjiIznos = (latest['iznos'] as num?)?.toDouble() ?? 0;
+    
+    // Ukupan iznos je ukupna suma uplaćena
+    final ukupanIznos = (latest['iznos'] as num?)?.toDouble() ?? 0;
+    
+    // Poslednja dopuna se čuva u posebnoj koloni
+    final poslednjaDopuna = (latest['poslednja_dopuna'] as num?)?.toDouble() ?? 0;
     
     return V3NaplataInfo(
       isPaid: ukupanIznos > 0,
       ukupanIznos: ukupanIznos,
-      poslednjiIznos: poslednjiIznos,
+      poslednjaDopuna: poslednjaDopuna,
       paidAt: _naplacenoAt(latest),
       paidBy: latest['naplaceno_by']?.toString(),
       updatedAt: V3DateUtils.parseTs(latest['updated_at']?.toString()),
@@ -181,11 +184,13 @@ class V3FinansijeService {
     _sortByCreatedAtDesc(candidates);
     final latest = candidates.first;
 
-    final poslednjiIznos = (latest['iznos'] as num?)?.toDouble() ?? 0;
+    final ukupanIznos = (latest['iznos'] as num?)?.toDouble() ?? 0;
+    final poslednjaDopuna = (latest['poslednja_dopuna'] as num?)?.toDouble() ?? 0;
+    
     return V3NaplataInfo(
-      isPaid: poslednjiIznos > 0,
-      ukupanIznos: poslednjiIznos,
-      poslednjiIznos: poslednjiIznos,
+      isPaid: ukupanIznos > 0,
+      ukupanIznos: ukupanIznos,
+      poslednjaDopuna: poslednjaDopuna,
       paidAt: _naplacenoAt(latest),
       paidBy: latest['naplaceno_by']?.toString(),
       updatedAt: V3DateUtils.parseTs(latest['updated_at']?.toString()),
@@ -526,6 +531,7 @@ class V3FinansijeService {
 
         row = await _repo.updateByIdReturning(existingId, {
           'iznos': currentIznos + iznos,
+          'poslednja_dopuna': iznos, // Čuvamo iznos poslednje dopune
           'naplaceno_by': naplacenoBy,
           'broj_voznji': mergedBrojVoznji,
           'updated_at': DateTime.now().toIso8601String(),
@@ -537,6 +543,7 @@ class V3FinansijeService {
           'kategorija': _masterKategorija(),
           'tip': 'prihod',
           'iznos': iznos,
+          'poslednja_dopuna': iznos, // Prva uplata je ujedno i poslednja dopuna
           'putnik_v3_auth_id': safePutnikId,
           'dogadjaj_id': _uuid.v4(),
           'naplaceno_by': naplacenoBy,
