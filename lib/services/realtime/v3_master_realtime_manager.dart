@@ -228,6 +228,8 @@ class V3MasterRealtimeManager {
                 'push_token_2': row['push_token_2'],
                 'created_at': row['created_at'],
                 'updated_at': row['updated_at'],
+                'last_seen_at': row['last_seen_at'],
+                'last_seen_at_2': row['last_seen_at_2'],
               }
         }..removeWhere((key, value) => key.isEmpty),
       );
