@@ -19,6 +19,8 @@ import '../services/v3/v3_racun_service.dart';
 import '../services/v3/v3_trenutna_dodela_service.dart';
 import '../services/v3/v3_trenutna_dodela_slot_service.dart';
 import '../services/v3/v3_vozac_service.dart';
+import '../services/v3/v3_vozac_location_tracking_service.dart';
+import '../services/v3/v3_blocking_screen_service.dart';
 import '../services/v3_theme_manager.dart';
 import '../theme.dart';
 import '../utils/v3_app_snack_bar.dart';
@@ -39,6 +41,7 @@ import '../widgets/v3_live_clock_text.dart';
 import '../widgets/v3_neradni_dani_banner.dart';
 import '../widgets/v3_putnik_card.dart';
 import '../widgets/v3_update_banner.dart';
+import '../widgets/v3_blocking_screen_widget.dart';
 import 'v3_admin_screen.dart';
 import 'v3_vozac_screen.dart';
 import 'v3_welcome_screen.dart';
@@ -63,6 +66,11 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
   Map<String, String> _activeVozacByTerminId = const {};
   Map<String, String> _activeVozacBySlotKey = const {};
   StreamSubscription<int>? _trenutnaDodelaRevisionSub;
+  
+  // Blocking screen state
+  String? _blockingGrad;
+  String? _blockingVreme;
+  bool _showBlockingScreen = false;
 
   void _handleActiveWeekChanged() {
     if (!mounted) return;
@@ -200,6 +208,7 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
     appSettingsActiveWeekEndNotifier.addListener(_handleActiveWeekChanged);
     _startTrenutnaDodelaRealtime();
     _initData();
+    _initBlockingScreen();
   }
 
   @override
@@ -208,6 +217,7 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
     appSettingsActiveWeekEndNotifier.removeListener(_handleActiveWeekChanged);
     unawaited(_trenutnaDodelaRevisionSub?.cancel());
     _trenutnaDodelaRevisionSub = null;
+    V3BlockingScreenService.instance.dispose();
     super.dispose();
   }
 
@@ -226,6 +236,50 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
       _syncSelectedSlotForDatum(_selectedDatumIso);
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _initBlockingScreen() async {
+    final vozac = V3VozacService.currentVozac;
+    if (vozac == null) return;
+
+    final vozacId = vozac.id?.toString() ?? '';
+    if (vozacId.isEmpty) return;
+
+    // Initialize blocking screen service
+    await V3VozacLocationTrackingService.instance.initializeBlockingScreen();
+
+    // Set callback to show blocking screen
+    V3BlockingScreenService.instance.onShowBlockingScreen = (String grad, String vreme) {
+      if (!mounted) return;
+      
+      // Only show blocking screen if this driver has this termin
+      final hasTermin = _activeVozacBySlotKey.values.any((v) => v == vozacId);
+      if (!hasTermin) return;
+
+      setState(() {
+        _blockingGrad = grad;
+        _blockingVreme = vreme;
+        _showBlockingScreen = true;
+      });
+    };
+  }
+
+  void _handleBlockingScreenStart() async {
+    final vozac = V3VozacService.currentVozac;
+    if (vozac == null) return;
+
+    final vozacId = vozac.id?.toString() ?? '';
+    if (vozacId.isEmpty) return;
+
+    // Start tracking
+    await V3VozacLocationTrackingService.instance.start(vozacId: vozacId);
+
+    // Dismiss blocking screen
+    setState(() {
+      _showBlockingScreen = false;
+      _blockingGrad = null;
+      _blockingVreme = null;
+    });
   }
 
   bool get _isAdmin {
@@ -792,37 +846,39 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: StreamBuilder<List<V3OperativnaNedeljaEntry>>(
-        stream: _operativnaStream,
-        builder: (context, snapshot) {
-          final sviZapisi = snapshot.data ?? [];
+      child: Stack(
+        children: [
+          StreamBuilder<List<V3OperativnaNedeljaEntry>>(
+            stream: _operativnaStream,
+            builder: (context, snapshot) {
+              final sviZapisi = snapshot.data ?? [];
 
-          String slotVreme(V3OperativnaNedeljaEntry z) => z.polazakAt ?? '';
+              String slotVreme(V3OperativnaNedeljaEntry z) => z.polazakAt ?? '';
 
-          final rm = V3MasterRealtimeManager.instance;
+              final rm = V3MasterRealtimeManager.instance;
 
-          V3Putnik? _resolvePutnik(V3OperativnaNedeljaEntry z) {
-            final fromPutnici = V3PutnikService.getPutnikById(z.putnikId);
-            if (fromPutnici != null) return fromPutnici;
+              V3Putnik? _resolvePutnik(V3OperativnaNedeljaEntry z) {
+                final fromPutnici = V3PutnikService.getPutnikById(z.putnikId);
+                if (fromPutnici != null) return fromPutnici;
 
-            final putnikCacheRow = rm.putniciCache[z.putnikId];
-            if (putnikCacheRow != null) return V3Putnik.fromJson(putnikCacheRow);
+                final putnikCacheRow = rm.putniciCache[z.putnikId];
+                if (putnikCacheRow != null) return V3Putnik.fromJson(putnikCacheRow);
 
-            return null;
-          }
+                return null;
+              }
 
-          // Lista: datum dolazi iz stream-a; prikazujemo redove samo za izabrani grad + slot vreme
-          final currentVozacId = V3VozacService.currentVozac?.id;
-          final prikazaniZapisi = sviZapisi.where((z) {
-            return V3StatusPolicy.matchesSelectedSlot(
-              entryGrad: z.grad,
-              entryVreme: z.polazakAt,
-              grad: _selectedGrad,
-              vreme: _selectedVreme,
-            );
-          }).toList()
-            ..sort((a, b) {
-              return V3StatusPolicy.compareEntriesForDisplay<V3OperativnaNedeljaEntry>(
+              // Lista: datum dolazi iz stream-a; prikazujemo redove samo za izabrani grad + slot vreme
+              final currentVozacId = V3VozacService.currentVozac?.id;
+              final prikazaniZapisi = sviZapisi.where((z) {
+                return V3StatusPolicy.matchesSelectedSlot(
+                  entryGrad: z.grad,
+                  entryVreme: z.polazakAt,
+                  grad: _selectedGrad,
+                  vreme: _selectedVreme,
+                );
+              }).toList()
+                ..sort((a, b) {
+                  return V3StatusPolicy.compareEntriesForDisplay<V3OperativnaNedeljaEntry>(
                 a: a,
                 b: b,
                 currentVozacId: currentVozacId,
@@ -1324,6 +1380,15 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
           vsVremena: _vsVremena,
         );
       },
+    ),
+    if (_showBlockingScreen && _blockingGrad != null && _blockingVreme != null)
+      V3BlockingScreenWidget(
+        grad: _blockingGrad!,
+        vreme: _blockingVreme!,
+        onStartTracking: _handleBlockingScreenStart,
+      ),
+        ],
+      ),
     );
   }
 }
