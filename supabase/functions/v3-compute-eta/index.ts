@@ -56,32 +56,7 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // 1. Pronađi aktivan slot za ovog vozača
-    const { data: slotRows, error: slotError } = await client
-      .from("v3_trenutna_dodela_slot")
-      .select("datum, grad, vreme")
-      .eq("vozac_v3_auth_id", vozacId)
-      .eq("status", "aktivan")
-      .order("datum", { ascending: false })
-      .order("vreme", { ascending: false })
-      .limit(1);
-
-    if (slotError) {
-      return json(200, { ok: false, reason: "slot_lookup_error", warning: slotError.message });
-    }
-
-    const slotRow = Array.isArray(slotRows) && slotRows.length > 0 ? slotRows[0] : null;
-
-    if (!slotRow) {
-      await client.from("v3_eta_results").delete().eq("vozac_id", vozacId);
-      return json(200, { ok: true, reason: "no_active_slot", updated: 0 });
-    }
-
-    const slotGrad = String(slotRow.grad ?? "").trim().toUpperCase();
-    const slotDatum = normalizeDate(slotRow.datum);
-    const slotVreme = normalizeTime(slotRow.vreme);
-
-    // 2. Pronađi aktivne dodele (putnik_id + termin_id)
+    // 1. Pronađi aktivne dodele (putnik_id + termin_id) - koristimo termin-level dodele
     const { data: dodelaRows, error: dodelaError } = await client
       .from("v3_trenutna_dodela")
       .select("putnik_v3_auth_id, termin_id")
@@ -99,7 +74,7 @@ Deno.serve(async (req) => {
 
     const allTerminIds = dodelaRows.map((r) => String(r.termin_id ?? "").trim()).filter(Boolean);
 
-    // 3. Dohvati termin podatke direktno po termin_id (tačan red, bez mešanja termina)
+    // 2. Dohvati termin podatke direktno po termin_id (tačan red, bez mešanja termina)
     const { data: operativnaRows, error: operativnaError } = await client
       .from("v3_operativna_nedelja")
       .select("id, created_by, datum, grad, polazak_at, pokupljen_at, otkazano_at, adresa_override_id, koristi_sekundarnu")
@@ -116,16 +91,13 @@ Deno.serve(async (req) => {
       otkazanoAt: string | null;
       adresaOverrideId: string | null;
       koristiSekundarnu: boolean;
-      matchesSlot: boolean;
+      grad: string;
     }> = {};
     for (const row of (operativnaRows ?? [])) {
       const terminId = String(row.id ?? "").trim();
       if (!terminId) continue;
 
       const rowGrad = String(row.grad ?? "").trim().toUpperCase();
-      const rowDatum = normalizeDate(row.datum);
-      const rowVreme = normalizeTime(row.polazak_at);
-      const matchesSlot = rowGrad === slotGrad && rowDatum === slotDatum && rowVreme === slotVreme;
 
       terminMap[terminId] = {
         putnikId: String(row.created_by ?? "").trim(),
@@ -133,19 +105,18 @@ Deno.serve(async (req) => {
         otkazanoAt: row.otkazano_at ?? null,
         adresaOverrideId: row.adresa_override_id ? String(row.adresa_override_id) : null,
         koristiSekundarnu: row.koristi_sekundarnu === true,
-        matchesSlot,
+        grad: rowGrad,
       };
     }
 
     const adresaOverrideMap: Record<string, string> = {};   // putnikId → adresa_override_id
     const koristiSekundarnaMap: Record<string, boolean> = {}; // putnikId → koristi_sekundarnu
 
-    // 4. Preostali putnici — nisu pokupljeni NI otkazani i pripadaju aktivnom slotu
+    // 3. Preostali putnici — nisu pokupljeni NI otkazani
     const remainingDodele = dodelaRows.filter((r) => {
       const terminId = String(r.termin_id ?? "").trim();
       const termin = terminMap[terminId];
       if (!termin) return false;
-      if (!termin.matchesSlot) return false;
       return !termin.pokupljenAt && !termin.otkazanoAt;
     });
 
@@ -163,14 +134,19 @@ Deno.serve(async (req) => {
     if (remainingDodele.length === 0) {
       // Svi su pokupljeni ili otkazani — obriši ETA zapise
       await client.from("v3_eta_results").delete().eq("vozac_id", vozacId);
-      return json(200, { ok: true, reason: "no_remaining_in_active_slot", updated: 0 });
+      return json(200, { ok: true, reason: "no_remaining_dodele", updated: 0 });
     }
+
+    // Odredi grad iz prvog preostalog termina
+    const firstTerminId = String(remainingDodele[0]?.termin_id ?? "").trim();
+    const firstTermin = terminMap[firstTerminId];
+    const gradNorm = firstTermin?.grad ?? "BC"; // Fallback to BC if not found
 
     const remainingPutnikIds = remainingDodele
       .map((r) => terminMap[String(r.termin_id ?? "").trim()]?.putnikId ?? String(r.putnik_v3_auth_id ?? "").trim())
       .filter(Boolean);
 
-    // 5. Dohvati profile putnika (adresa_bc_id, adresa_vs_id itd.)
+    // 4. Dohvati profile putnika (adresa_bc_id, adresa_vs_id itd.)
     const { data: authRows, error: authError } = await client
       .from("v3_auth")
       .select("id, adresa_primary_bc_id, adresa_primary_vs_id, adresa_secondary_bc_id, adresa_secondary_vs_id")
@@ -185,8 +161,7 @@ Deno.serve(async (req) => {
       authMap[String(row.id)] = row;
     }
 
-    // 6. Odredi adresa_id za svakog preostalog putnika na osnovu grado + koristi_sekundarnu + override
-    const gradNorm = slotGrad;
+    // 5. Odredi adresa_id za svakog preostalog putnika na osnovu grad + koristi_sekundarnu + override
     const adresaIds = new Set<string>();
     const putnikAdresaIdMap: Record<string, string> = {}; // putnikId → adresaId
 
