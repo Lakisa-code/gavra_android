@@ -324,18 +324,25 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, reason: "no_eta_rows", updated: 0 });
     }
 
-    // 12. UPSERT u v3_eta_results
+    // 12. Ukloni duplikate pre upsert da se izbegne "cannot affect row a second time" error
+    const uniqueRows = upsertRows.filter((row, index, self) =>
+      index === self.findIndex((r) => 
+        r.putnik_id === row.putnik_id && r.vozac_id === row.vozac_id
+      )
+    );
+
+    // 13. UPSERT u v3_eta_results
     const { error: upsertError } = await client
       .from("v3_eta_results")
-      .upsert(upsertRows, { onConflict: "putnik_id,vozac_id" });
+      .upsert(uniqueRows, { onConflict: "putnik_id,vozac_id" });
 
     if (upsertError) {
       return json(200, { ok: false, reason: "upsert_error", warning: upsertError.message });
     }
 
-    console.log(`[v3-compute-eta] ✅ vozac=${vozacId.substring(0, 8)} updated=${upsertRows.length} putnika`);
+    console.log(`[v3-compute-eta] ✅ vozac=${vozacId.substring(0, 8)} updated=${uniqueRows.length} putnika`);
 
-    return json(200, { ok: true, updated: upsertRows.length });
+    return json(200, { ok: true, updated: uniqueRows.length });
   } catch (error) {
     return json(200, {
       ok: false,
