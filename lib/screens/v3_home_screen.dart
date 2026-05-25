@@ -1380,13 +1380,13 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
           vsVremena: _vsVremena,
         );
       },
-    ),
-    if (_showBlockingScreen && _blockingGrad != null && _blockingVreme != null)
-      V3BlockingScreenWidget(
-        grad: _blockingGrad!,
-        vreme: _blockingVreme!,
-        onStartTracking: _handleBlockingScreenStart,
-      ),
+          ),
+          if (_showBlockingScreen && _blockingGrad != null && _blockingVreme != null)
+            V3BlockingScreenWidget(
+              grad: _blockingGrad!,
+              vreme: _blockingVreme!,
+              onStartTracking: _handleBlockingScreenStart,
+            ),
         ],
       ),
     );
