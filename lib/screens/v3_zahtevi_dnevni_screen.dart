@@ -48,12 +48,12 @@ class _V3ZahteviDnevniScreenState extends State<V3ZahteviDnevniScreen> {
 
     return rm.zahteviCache.values
         .where((r) {
-          final putnikId = (r['created_by']?.toString() ?? '').trim();
-          if (putnikId.isEmpty) return false;
-          if (!putniciIds.contains(putnikId)) return false;
-
           final createdBy = (r['created_by']?.toString() ?? '').trim();
-          if (createdBy != putnikId) return false;
+          if (createdBy.isEmpty) return false;
+          // Prikazujemo zahteve kreirane od strane dnevni putnika ili sistema (kron), ne vozaca
+          final isDnevni = putniciIds.contains(createdBy);
+          final isSistem = _isSistemAkter(createdBy, rm.authCache);
+          if (!isDnevni && !isSistem) return false;
 
           final datumRaw = r['datum']?.toString();
           final datum = datumRaw != null ? DateTime.tryParse(datumRaw) : null;
@@ -82,6 +82,12 @@ class _V3ZahteviDnevniScreenState extends State<V3ZahteviDnevniScreen> {
     final today = DateTime.now();
     final todayOnly = V3DanHelper.dateOnlyFrom(today.year, today.month, today.day);
     final windowEnd = todayOnly.add(const Duration(days: 14));
+
+    final dnevniIds = rm.putniciCache.values
+        .where((p) => (p['tip_putnika'] as String? ?? '').toLowerCase() == 'dnevni')
+        .map((p) => p['id'] as String)
+        .toSet();
+
     return rm.zahteviCache.values.map((v) => V3Zahtev.fromJson(v)).where((z) {
       // Ako tražimo 'obrada', prikaži i one koji su u statusu 'alternativa' (jer ih dispečer i dalje vidi kao nešto na čemu radi)
       if (V3StatusPolicy.isPending(status)) {
@@ -92,12 +98,13 @@ class _V3ZahteviDnevniScreenState extends State<V3ZahteviDnevniScreen> {
 
       final d = V3DanHelper.dateOnlyFrom(z.datum.year, z.datum.month, z.datum.day);
       if (d.isBefore(todayOnly) || d.isAfter(windowEnd)) return false;
-      final p = rm.putniciCache[z.putnikId];
-      final tip = (p?['tip_putnika'] as String? ?? '').toLowerCase();
-      if (tip != 'dnevni') return false;
-      // Samo zahtevi koje je putnik sam poslao
+
+      // Prikazujemo zahteve kreirane od strane dnevni putnika ili sistema (kron), ne vozaca
       final createdBy = (z.createdBy ?? '').trim();
-      if (createdBy != z.putnikId) return false;
+      final isDnevni = dnevniIds.contains(createdBy);
+      final isSistem = _isSistemAkter(createdBy, rm.authCache);
+      if (!isDnevni && !isSistem) return false;
+
       return true;
     }).toList()
       ..sort((a, b) {

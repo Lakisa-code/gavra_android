@@ -1,11 +1,7 @@
 {
   "name": "supabase-official-mcp",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "description": "Supabase MCP Server dependencies",
   "type": "commonjs",
   "dependencies": {
     "@supabase/mcp-server-supabase": "^0.7.0"

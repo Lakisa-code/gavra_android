@@ -18,6 +18,16 @@ class V3PosiljkeZahteviScreen extends StatefulWidget {
 }
 
 class _V3PosiljkeZahteviScreenState extends State<V3PosiljkeZahteviScreen> {
+  static const String _sistemAkterId = '4feffa3a-8b4d-4e28-9b8b-c0af3c48ea4e';
+
+  bool _isSistemAkter(String? akterId, Map<String, Map<String, dynamic>> authCache) {
+    final id = (akterId ?? '').trim();
+    if (id.isEmpty) return false;
+    if (id == _sistemAkterId) return true;
+    final tip = (authCache[id]?['tip']?.toString() ?? '').trim().toLowerCase();
+    return tip == 'sistem';
+  }
+
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
   /// Svi zahtevi čiji putnik ima tip == 'posiljka' i koje je sam poslao
@@ -30,12 +40,12 @@ class _V3PosiljkeZahteviScreenState extends State<V3PosiljkeZahteviScreen> {
 
     final zahtevi = rm.zahteviCache.values
         .where((r) {
-          final putnikId = (r['created_by']?.toString() ?? '').trim();
-          if (putnikId.isEmpty) return false;
-          if (!posiljkaPutnici.contains(putnikId)) return false;
-          // Samo zahtevi koje je pošiljatelj sam poslao
           final createdBy = (r['created_by']?.toString() ?? '').trim();
-          return createdBy == putnikId;
+          if (createdBy.isEmpty) return false;
+          // Prikazujemo zahteve kreirane od strane pošiljka putnika ili sistema (kron), ne vozaca
+          final isPosiljka = posiljkaPutnici.contains(createdBy);
+          final isSistem = _isSistemAkter(createdBy, rm.authCache);
+          return isPosiljka || isSistem;
         })
         .map((r) => V3Zahtev.fromJson(r))
         .toList()

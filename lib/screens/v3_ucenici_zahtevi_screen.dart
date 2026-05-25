@@ -43,12 +43,12 @@ class _V3UceniciZahteviScreenState extends State<V3UceniciZahteviScreen> {
 
     return rm.zahteviCache.values
         .where((r) {
-          final putnikId = (r['created_by']?.toString() ?? '').trim();
-          if (putnikId.isEmpty) return false;
-          if (!putniciIds.contains(putnikId)) return false;
-
           final createdBy = (r['created_by']?.toString() ?? '').trim();
-          if (createdBy != putnikId) return false;
+          if (createdBy.isEmpty) return false;
+          // Prikazujemo zahteve kreirane od strane učenika ili sistema (kron), ne vozaca
+          final isUcenik = putniciIds.contains(createdBy);
+          final isSistem = _isSistemAkter(createdBy, rm.authCache);
+          if (!isUcenik && !isSistem) return false;
 
           final datumRaw = r['datum']?.toString();
           final datum = datumRaw != null ? DateTime.tryParse(datumRaw) : null;
@@ -59,7 +59,7 @@ class _V3UceniciZahteviScreenState extends State<V3UceniciZahteviScreen> {
           if (V3StatusPolicy.isCanceled(status)) {
             final updatedBy = (r['updated_by']?.toString() ?? '').trim();
             if (updatedBy.isEmpty) return false;
-            if (updatedBy != putnikId && !_isSistemAkter(updatedBy, rm.authCache)) {
+            if (updatedBy != createdBy && !_isSistemAkter(updatedBy, rm.authCache)) {
               return false;
             }
           }
@@ -88,12 +88,12 @@ class _V3UceniciZahteviScreenState extends State<V3UceniciZahteviScreen> {
 
     return rm.zahteviCache.values
         .where((r) {
-          final putnikId = (r['created_by']?.toString() ?? '').trim();
-          if (putnikId.isEmpty) return false;
-          if (!uceniciIds.contains(putnikId)) return false;
-          // Samo zahtevi koje je učenik sam poslao
           final createdBy = (r['created_by']?.toString() ?? '').trim();
-          return createdBy == putnikId;
+          if (createdBy.isEmpty) return false;
+          // Prikazujemo zahteve kreirane od strane učenika ili sistema (kron), ne vozaca
+          final isUcenik = uceniciIds.contains(createdBy);
+          final isSistem = _isSistemAkter(createdBy, rm.authCache);
+          return isUcenik || isSistem;
         })
         .map((r) => V3Zahtev.fromJson(r))
         .toList()

@@ -88,12 +88,12 @@ class _V3RadniciZahteviScreenState extends State<V3RadniciZahteviScreen> {
         .toSet();
 
     return rm.zahteviCache.values.where((r) {
-      final putnikId = (r['created_by']?.toString() ?? '').trim();
-      if (putnikId.isEmpty) return false;
-      if (!putniciIds.contains(putnikId)) return false;
-
       final createdBy = (r['created_by']?.toString() ?? '').trim();
-      if (createdBy != putnikId) return false;
+      if (createdBy.isEmpty) return false;
+      // Prikazujemo zahteve kreirane od strane radnika ili sistema (kron), ne vozaca
+      final isRadnik = putniciIds.contains(createdBy);
+      final isSistem = _isSistemAkter(createdBy, rm.authCache);
+      if (!isRadnik && !isSistem) return false;
 
       final datumRaw = r['datum']?.toString();
       final datum = datumRaw != null ? DateTime.tryParse(datumRaw) : null;
@@ -104,7 +104,7 @@ class _V3RadniciZahteviScreenState extends State<V3RadniciZahteviScreen> {
       if (V3StatusPolicy.isCanceled(status)) {
         final updatedBy = (r['updated_by']?.toString() ?? '').trim();
         if (updatedBy.isEmpty) return false;
-        if (updatedBy != putnikId && !_isSistemAkter(updatedBy, rm.authCache)) {
+        if (updatedBy != createdBy && !_isSistemAkter(updatedBy, rm.authCache)) {
           return false;
         }
       }
