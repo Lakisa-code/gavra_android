@@ -251,10 +251,21 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
     // Set callback to show blocking screen
     V3BlockingScreenService.instance.onShowBlockingScreen = (String grad, String vreme) {
       if (!mounted) return;
-      
-      // Only show blocking screen if this driver has this termin
-      final hasTermin = _activeVozacBySlotKey.values.any((v) => v == vozacId);
-      if (!hasTermin) return;
+
+      // Check if driver has slot assignment for this termin
+      final today = V3DanHelper.toIsoDate(DateTime.now());
+      final slotKey = V3TrenutnaDodelaSlotService.slotKey(
+        datumIso: today,
+        grad: grad,
+        vreme: vreme,
+      );
+      final hasSlot = _activeVozacBySlotKey[slotKey] == vozacId;
+
+      // Check if driver has individual passenger assignments for this termin
+      final hasIndividualAssignments = _activeVozacByTerminId.values.any((v) => v == vozacId);
+
+      // Show blocking screen if driver has either slot or individual assignments
+      if (!hasSlot && !hasIndividualAssignments) return;
 
       setState(() {
         _blockingGrad = grad;
@@ -1331,6 +1342,14 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
           );
         },
       ),
+          if (_showBlockingScreen && _blockingGrad != null && _blockingVreme != null)
+            V3BlockingScreenWidget(
+              grad: _blockingGrad!,
+              vreme: _blockingVreme!,
+              onStartTracking: _handleBlockingScreenStart,
+            ),
+        ],
+      ),
     );
   }
 
@@ -1380,17 +1399,8 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
           vsVremena: _vsVremena,
         );
       },
-          ),
-          if (_showBlockingScreen && _blockingGrad != null && _blockingVreme != null)
-            V3BlockingScreenWidget(
-              grad: _blockingGrad!,
-              vreme: _blockingVreme!,
-              onStartTracking: _handleBlockingScreenStart,
-            ),
-        ],
-      ),
-    );
-  }
+  );
+}
 }
 
 // ─── Dijalog: Račun za firmu — sadržaj ────────────────────────────────────────
