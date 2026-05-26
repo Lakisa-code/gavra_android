@@ -47,7 +47,10 @@ class V3VozacLocationTrackingService {
 
     if (_activeVozacId == normalizedVozacId && _timer != null) return;
 
-    stop();
+    // SAMO ako je drugi vozač, onda stop
+    if (_activeVozacId != normalizedVozacId) {
+      stop();
+    }
     _activeVozacId = normalizedVozacId;
 
     await _sendCurrentLocation();
@@ -65,10 +68,10 @@ class V3VozacLocationTrackingService {
 
     final blockingService = V3BlockingScreenService.instance;
 
-    // Postavi callback za zaustavljanje tracking-a
-    blockingService.onStopTracking = () async {
-      stop();
-    };
+    // Callback za zaustavljanje tracking-a uklonjen - blokirajući ekran ne može da zaustavi tracking
+    // blockingService.onStopTracking = () async {
+    //   stop();
+    // };
 
     // Postavi callback za proveru aktivnih putnika
     blockingService.hasActivePassengers = () async {

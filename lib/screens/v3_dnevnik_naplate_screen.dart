@@ -9,9 +9,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../models/v3_dnevna_predaja.dart';
+import '../models/v3_vozac_akcije.dart';
 import '../services/realtime/v3_master_realtime_manager.dart';
 import '../services/v3/v3_dnevna_predaja_service.dart';
-import '../services/v3/v3_finansije_service.dart';
+import '../services/v3/v3_vozac_akcije_service.dart';
 import '../services/v3/v3_vozac_service.dart';
 import '../theme.dart';
 import '../utils/v3_app_snack_bar.dart';
@@ -39,7 +40,8 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
   String? _selectedVozacIme;
   DateTime _selectedDate = DateTime.now();
 
-  List<_NaplataRow> _naplate = [];
+  List<V3VozacAkcija> _naplate = [];
+  List<V3VozacAkcija> _pokupio = [];
   double _ukupnoIznos = 0;
   double? _predaoIznos; // za PDF/clipboard — ažurira ga footer
 
@@ -52,7 +54,7 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
 
     V3StreamUtils.subscribe<int>(
       key: 'dnevnik_naplate_cache',
-      stream: V3MasterRealtimeManager.instance.tablesRevisionStream(const ['v3_finansije', 'v3_auth']),
+      stream: V3MasterRealtimeManager.instance.tablesRevisionStream(const ['v3_vozac_akcije', 'v3_auth']),
       onData: (_) {
         if (!mounted) return;
         _ucitajVozace();
@@ -88,37 +90,31 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
     if (_selectedVozacId == null) return;
 
     final vozacId = _selectedVozacId!;
-    final naplateRows = V3FinansijeService.getNaplataRowsZaVozacaDan(
+    
+    // Koristimo novi service za vozačeve akcije
+    final izvestaj = V3VozacAkcijeService.getIzvestajZaVozacaDan(
       vozacId: vozacId,
       dan: _selectedDate,
     );
-    final putniciCache = V3MasterRealtimeManager.instance.putniciCache;
-
-    final rows = <_NaplataRow>[];
-    for (final row in naplateRows) {
-      final dt = V3DateUtils.parseTs(row['created_at']?.toString());
-      if (dt == null) continue;
-
-      final putnikId = row['putnik_v3_auth_id']?.toString() ?? '';
-      final putnikData = putniciCache[putnikId];
-      final ime = (putnikData?['ime_prezime'] as String?) ??
-          row['ime_prezime'] as String? ??
-          row['putnik_ime'] as String? ??
-          '?';
-      final iznos = (row['iznos'] as num?)?.toDouble() ?? 0.0;
-      final vreme = V3DanHelper.formatVreme(dt.hour, dt.minute);
-      rows.add(_NaplataRow(
-        id: row['id']?.toString() ?? '',
-        ime: ime,
-        iznos: iznos,
-        vremeNaplate: vreme,
-        sortAt: dt,
-      ));
+    
+    // Debug: print info
+    debugPrint('=== DNEVNIK NAPLATE DEBUG ===');
+    debugPrint('Vozač ID: $vozacId');
+    debugPrint('Datum: ${_formatDatum(_selectedDate)}');
+    debugPrint('Nađeno naplata: ${izvestaj.naplate.length}');
+    debugPrint('Nađeno pokupljenih: ${izvestaj.pokupio.length}');
+    debugPrint('Ukupan iznos: ${izvestaj.ukupanIznos}');
+    for (final naplata in izvestaj.naplate) {
+      debugPrint('  - ${naplata.putnikIme} - ${naplata.iznos} - ${naplata.datum}');
+    }
+    for (final pokupio in izvestaj.pokupio) {
+      debugPrint('  POKUPIO: ${pokupio.putnikIme} - ${pokupio.datum}');
     }
 
     setState(() {
-      _naplate = rows;
-      _ukupnoIznos = rows.fold(0.0, (sum, r) => sum + r.iznos);
+      _naplate = izvestaj.naplate;
+      _pokupio = izvestaj.pokupio;
+      _ukupnoIznos = izvestaj.ukupanIznos;
       _predaoIznos = null;
     });
   }
@@ -149,9 +145,24 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
     buf.writeln('DNEVNIK NAPLATE — $_selectedVozacIme');
     buf.writeln('Datum: ${_formatDatum(_selectedDate)}');
     buf.writeln('─────────────────────────');
+    
+    // Prikaz pokupljenih putnika
+    if (_pokupio.isNotEmpty) {
+      buf.writeln('POKUPLJENI PUTNICI (${_pokupio.length}):');
+      for (int i = 0; i < _pokupio.length; i++) {
+        final p = _pokupio[i];
+        final vreme = V3DanHelper.formatVreme(p.datum.hour, p.datum.minute);
+        buf.writeln('  ${i + 1}. ${p.putnikIme} — $vreme');
+      }
+      buf.writeln('─────────────────────────');
+    }
+    
+    // Prikaz naplata
+    buf.writeln('NAPLATE (${_naplate.length}):');
     for (int i = 0; i < _naplate.length; i++) {
       final n = _naplate[i];
-      buf.writeln('${i + 1}. ${n.ime} — ${n.iznos.toStringAsFixed(0)} din — ${n.vremeNaplate}');
+      final vreme = V3DanHelper.formatVreme(n.datum.hour, n.datum.minute);
+      buf.writeln('  ${i + 1}. ${n.putnikIme} — ${n.iznos.toStringAsFixed(0)} din — $vreme');
     }
     buf.writeln('─────────────────────────');
     buf.writeln('UKUPNO: ${_naplate.length} uplata — ${_ukupnoIznos.toStringAsFixed(0)} din');
@@ -200,7 +211,47 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
           pw.Divider(),
           pw.SizedBox(height: 8),
 
-          // Tabela
+          // Pokupljeni putnici
+          if (_pokupio.isNotEmpty) ...[
+            pw.Text('POKUPLJENI PUTNICI (${_pokupio.length})', style: headerStyle),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+              columnWidths: const {
+                0: pw.FixedColumnWidth(24),
+                1: pw.FlexColumnWidth(4),
+                2: pw.FixedColumnWidth(40),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  children: [
+                    _pdfCell('#', style: boldStyle),
+                    _pdfCell('Ime', style: boldStyle),
+                    _pdfCell('Vreme', style: boldStyle),
+                  ],
+                ),
+                for (int i = 0; i < _pokupio.length; i++)
+                  pw.TableRow(
+                    decoration: pw.BoxDecoration(
+                      color: i.isEven ? PdfColors.white : PdfColors.grey50,
+                    ),
+                    children: [
+                      _pdfCell('${i + 1}.', style: baseStyle),
+                      _pdfCell(_pokupio[i].putnikIme, style: baseStyle),
+                      _pdfCell(V3DanHelper.formatVreme(_pokupio[i].datum.hour, _pokupio[i].datum.minute), style: baseStyle),
+                    ],
+                  ),
+              ],
+            ),
+            pw.SizedBox(height: 14),
+            pw.Divider(),
+            pw.SizedBox(height: 8),
+          ],
+
+          // Naplate
+          pw.Text('NAPLATE (${_naplate.length})', style: headerStyle),
+          pw.SizedBox(height: 6),
           pw.Table(
             border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
             columnWidths: const {
@@ -226,9 +277,9 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
                   ),
                   children: [
                     _pdfCell('${i + 1}.', style: baseStyle),
-                    _pdfCell(_naplate[i].ime, style: baseStyle),
+                    _pdfCell(_naplate[i].putnikIme, style: baseStyle),
                     _pdfCell('${_naplate[i].iznos.toStringAsFixed(0)} din', style: baseStyle),
-                    _pdfCell(_naplate[i].vremeNaplate, style: baseStyle),
+                    _pdfCell(V3DanHelper.formatVreme(_naplate[i].datum.hour, _naplate[i].datum.minute), style: baseStyle),
                   ],
                 ),
             ],
@@ -394,17 +445,24 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
                     : Column(
                         children: [
                           Expanded(
-                            child: _naplate.isEmpty
+                            child: (_naplate.isEmpty && _pokupio.isEmpty)
                                 ? Center(
                                     child: Text(
-                                      'Nema naplata za ${_formatDatum(_selectedDate)}',
+                                      'Nema akcija za ${_formatDatum(_selectedDate)}',
                                       style: const TextStyle(color: Colors.white54, fontSize: 16),
                                     ),
                                   )
                                 : ListView.builder(
                                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    itemCount: _naplate.length,
-                                    itemBuilder: (_, i) => _NaplataCard(n: _naplate[i], index: i),
+                                    itemCount: _pokupio.length + _naplate.length,
+                                    itemBuilder: (_, i) {
+                                      if (i < _pokupio.length) {
+                                        return _PokupioCard(p: _pokupio[i], index: i);
+                                      } else {
+                                        final naplataIndex = i - _pokupio.length;
+                                        return _NaplataCard(n: _naplate[naplataIndex], index: naplataIndex);
+                                      }
+                                    },
                                   ),
                           ),
                           // Footer: Ukupno + Predao
@@ -462,13 +520,49 @@ class _NaplataRow {
 
 // ─── Widgets ──────────────────────────────────────────────────────────────────
 
-class _NaplataCard extends StatelessWidget {
-  const _NaplataCard({required this.n, required this.index});
-  final _NaplataRow n;
+class _PokupioCard extends StatelessWidget {
+  const _PokupioCard({required this.p, required this.index});
+  final V3VozacAkcija p;
   final int index;
 
   @override
   Widget build(BuildContext context) {
+    final vreme = V3DanHelper.formatVreme(p.datum.hour, p.datum.minute);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28,
+            child: Text('🚐', style: const TextStyle(color: Colors.white70, fontSize: 16)),
+          ),
+          Expanded(
+            child: Text(p.putnikIme, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          ),
+          Text('POKUPIO',
+              style: const TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 10),
+          Text(vreme, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+class _NaplataCard extends StatelessWidget {
+  const _NaplataCard({required this.n, required this.index});
+  final V3VozacAkcija n;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final vreme = V3DanHelper.formatVreme(n.datum.hour, n.datum.minute);
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -484,12 +578,12 @@ class _NaplataCard extends StatelessWidget {
             child: Text('${index + 1}.', style: const TextStyle(color: Colors.white38, fontSize: 13)),
           ),
           Expanded(
-            child: Text(n.ime, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text(n.putnikIme, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
           ),
           Text('${n.iznos.toStringAsFixed(0)} din',
               style: const TextStyle(color: Colors.greenAccent, fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(width: 10),
-          Text(n.vremeNaplate, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+          Text(vreme, style: const TextStyle(color: Colors.white38, fontSize: 12)),
         ],
       ),
     );
@@ -508,7 +602,7 @@ class _PredajaFooter extends StatefulWidget {
     this.onPredaoChanged,
   });
 
-  final List<_NaplataRow> naplate;
+  final List<V3VozacAkcija> naplate;
   final double ukupnoIznos;
   final String vozacId;
   final String vozacIme;

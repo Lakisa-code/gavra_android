@@ -59,6 +59,7 @@ class V3MasterRealtimeManager {
   final Map<String, Map<String, dynamic>> appSettingsCache = {};
   final Map<String, Map<String, dynamic>> operativnaAssignedCache = {};
   final Map<String, Map<String, dynamic>> etaResultsCache = {};
+  final Map<String, Map<String, dynamic>> vozacAkcijeCache = {};
 
   void _rebuildAssignedCacheFromOperativna() {
     operativnaAssignedCache.clear();
@@ -174,6 +175,7 @@ class V3MasterRealtimeManager {
     _cacheStore.registerTable('v3_finansije', finansijeCache);
     _cacheStore.registerTable('v3_racuni', racuniCache);
     _cacheStore.registerTable('v3_trenutna_dodela', trenutnaDodelaCache);
+    _cacheStore.registerTable('v3_vozac_akcije', vozacAkcijeCache);
     _cacheStore.registerTable('v3_trenutna_dodela_slot', trenutnaDodelaSlotCache);
     _cacheStore.registerTable('v3_operativna_nedelja', operativnaNedeljaCache);
     _cacheStore.registerTable('v3_kapacitet_slots', kapacitetSlotsCache);
@@ -724,6 +726,8 @@ class V3MasterRealtimeManager {
         return finansijeCache;
       case 'v3_racuni':
         return racuniCache;
+      case 'v3_vozac_akcije':
+        return vozacAkcijeCache;
       case 'v3_trenutna_dodela':
         return trenutnaDodelaCache;
       case 'v3_trenutna_dodela_slot':

@@ -943,29 +943,8 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     }
   }
 
-  Future<void> _handleStopNavigation() async {
-    final vozacId = (_efektivniVozac?.id?.toString() ?? '').trim();
-    if (vozacId.isNotEmpty && _selectedGrad.trim().isNotEmpty && _selectedVreme.trim().isNotEmpty) {
-      try {
-        await V3TrenutnaDodelaSlotService.deactivateSlot(
-          datumIso: _selectedDatumIso,
-          grad: _selectedGrad,
-          vreme: _selectedVreme,
-          updatedBy: vozacId,
-        );
-      } catch (e) {
-        debugPrint('[STOP] deactivate slot failed: $e');
-      }
-    }
-
-    V3VozacLocationTrackingService.instance.stop();
-    _isNavigating = false;
-    _resetMapSyncState();
-    if (mounted) {
-      V3AppSnackBar.info(context, 'Tracking zaustavljen.');
-      V3StateUtils.safeSetState(this, () {});
-    }
-  }
+  // Manual stop funkcija uklonjena - tracking se zaustavlja SAMO automatski
+// kada su svi putnici pokupljeni/otkazani ili kad je app ubijena
 
   void _handleStartTap() {
     // SAMO START - manualni STOP je uklonjen

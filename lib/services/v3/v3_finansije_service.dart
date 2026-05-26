@@ -6,6 +6,7 @@ import '../../models/v3_finansije.dart';
 import '../../utils/v3_date_utils.dart';
 import '../realtime/v3_master_realtime_manager.dart';
 import 'repositories/v3_finansije_repository.dart';
+import 'v3_vozac_akcije_service.dart';
 
 class V3NaplataInfo {
   final bool isPaid;
@@ -100,9 +101,8 @@ class V3FinansijeService {
 
   static Iterable<Map<String, dynamic>> _naplataRowsForDan(DateTime day) {
     return _naplataRows().where((row) {
-      // Proveravamo updated_at jer unifikovan red nosi datum prve vožnje,
-      // a nas zanima kada je pazar (uplata) zapravo ušao u sistem.
-      final ts = row['updated_at'] ?? row['created_at'];
+      // Koristimo created_at jer nas zanima datum kada je naplata stvarno izvršena
+      final ts = row['created_at'];
       final dt = V3DateUtils.parseTs(ts?.toString());
       if (dt == null) return false;
       return dt.year == day.year && dt.month == day.month && dt.day == day.day;
@@ -307,6 +307,28 @@ class V3FinansijeService {
         'godina': datum.year,
       });
       V3MasterRealtimeManager.instance.v3UpsertToCache('v3_finansije', row);
+      
+      // Dodaj evidenciju u v3_vozac_akcije tabelu
+      if (evidentiraoBy != null && evidentiraoBy.isNotEmpty) {
+        try {
+          final rm = V3MasterRealtimeManager.instance;
+          final vozacData = rm.vozaciCache[evidentiraoBy];
+          final vozacIme = vozacData?['ime_prezime']?.toString() ?? 'Nepoznat vozač';
+          final putnikData = rm.putniciCache[safePutnikId];
+          final putnikIme = putnikData?['ime_prezime']?.toString() ?? 'Nepoznat putnik';
+          
+          await V3VozacAkcijeService.evidentirajPokupio(
+            vozacId: evidentiraoBy,
+            vozacIme: vozacIme,
+            putnikId: safePutnikId,
+            putnikIme: putnikIme,
+            datum: datum,
+            evidentiraoBy: evidentiraoBy,
+          );
+        } catch (e) {
+          debugPrint('[V3FinansijeService] Greška pri evidentiranju pokupio u v3_vozac_akcije: $e');
+        }
+      }
     } finally {
       _mesecnaNaplataLocks.remove(lockKey);
     }
@@ -554,6 +576,27 @@ class V3FinansijeService {
       }
 
       V3MasterRealtimeManager.instance.v3UpsertToCache('v3_finansije', row);
+      
+      // Dodaj evidenciju u v3_vozac_akcije tabelu
+      try {
+        final rm = V3MasterRealtimeManager.instance;
+        final vozacData = rm.vozaciCache[naplacenoBy];
+        final vozacIme = vozacData?['ime_prezime']?.toString() ?? 'Nepoznat vozač';
+        final putnikData = rm.putniciCache[safePutnikId];
+        final putnikIme = putnikData?['ime_prezime']?.toString() ?? 'Nepoznat putnik';
+        
+        await V3VozacAkcijeService.evidentirajNaplata(
+          vozacId: naplacenoBy,
+          vozacIme: vozacIme,
+          putnikId: safePutnikId,
+          putnikIme: putnikIme,
+          iznos: iznos,
+          datum: DateTime.now(), // Datum naplate
+          evidentiraoBy: naplacenoBy,
+        );
+      } catch (e) {
+        debugPrint('[V3FinansijeService] Greška pri evidentiranju naplata u v3_vozac_akcije: $e');
+      }
     } catch (e) {
       debugPrint('[V3FinansijeService] sacuvajMesecnuNaplatu error: $e');
       rethrow;
