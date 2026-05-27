@@ -613,13 +613,33 @@ class V3FinansijeService {
     required double iznos,
     required DateTime datum,
   }) async {
+    // Za dnevne/posiljke čitamo trenutni broj vožnji ako postoji red,
+    // da ne bismo prepisali broj vožnji evidentiran pri pokupljanju
+    final safePutnikId = putnikId.trim();
+    final cache = V3MasterRealtimeManager.instance.getCache('v3_finansije').values;
+    final existing = cache.where((row) {
+      final rPutnikId = (row['putnik_v3_auth_id']?.toString() ?? '').trim().toLowerCase();
+      if (rPutnikId != safePutnikId.toLowerCase()) return false;
+      final rG = _parseInternalInt(row['godina']);
+      final rM = _parseInternalInt(row['mesec']);
+      if (rG != datum.year || rM != datum.month) return false;
+      return (row['tip']?.toString().toLowerCase() ?? '') == 'prihod';
+    }).toList();
+
+    int brojVoznji = 0;
+    if (existing.isNotEmpty) {
+      _sortByCreatedAtDesc(existing);
+      final latest = existing.first;
+      brojVoznji = (latest['broj_voznji'] as num?)?.toInt() ?? 0;
+    }
+
     return sacuvajMesecnuNaplatu(
       putnikId: putnikId,
       naplacenoBy: naplacenoBy,
       iznos: iznos,
       mesec: datum.month,
       godina: datum.year,
-      brojVoznji: 0,
+      brojVoznji: brojVoznji,
     );
   }
 }
