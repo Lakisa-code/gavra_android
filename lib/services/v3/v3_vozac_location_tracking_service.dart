@@ -19,6 +19,8 @@ class V3VozacLocationTrackingService {
   static final V3VozacLocationTrackingService instance = V3VozacLocationTrackingService._();
 
   String _activeVozacId = '';
+  String _activeGrad = '';
+  String _activeVreme = '';
   Position? _lastSentPosition;
   bool _blockingScreenInitialized = false;
   bool _inFlight = false;
@@ -30,7 +32,14 @@ class V3VozacLocationTrackingService {
   bool get isRunning => _isRunning;
 
   String? get activeVozacId => _activeVozacId.isNotEmpty ? _activeVozacId : null;
+  String get activeGrad => _activeGrad;
+  String get activeVreme => _activeVreme;
   Position? get lastKnownPosition => _lastSentPosition;
+
+  void setActiveTermin({required String grad, required String vreme}) {
+    _activeGrad = grad.trim().toUpperCase();
+    _activeVreme = vreme.trim();
+  }
 
   Future<void> clearEtaForVozac({required String vozacId}) async {
     final normalized = vozacId.trim();
@@ -123,6 +132,8 @@ class V3VozacLocationTrackingService {
           vozacId: _activeVozacId,
           lat: position.latitude,
           lng: position.longitude,
+          grad: _activeGrad,
+          vreme: _activeVreme,
         ).catchError((Object e) => debugPrint('[V3VozacLocationTrackingService] computeEta error: $e')),
       );
     } catch (e) {
@@ -141,6 +152,8 @@ class V3VozacLocationTrackingService {
         vozacId: _activeVozacId,
         lat: pos.latitude,
         lng: pos.longitude,
+        grad: _activeGrad,
+        vreme: _activeVreme,
       ).catchError((Object e) => debugPrint('[V3VozacLocationTrackingService] forceComputeEta error: $e')),
     );
   }
@@ -169,6 +182,8 @@ class V3VozacLocationTrackingService {
     required String vozacId,
     required double lat,
     required double lng,
+    required String grad,
+    required String vreme,
   }) async {
     final supabase = Supabase.instance.client;
     final response = await supabase.functions.invoke(
@@ -177,6 +192,8 @@ class V3VozacLocationTrackingService {
         'vozac_id': vozacId,
         'lat': lat,
         'lng': lng,
+        'grad': grad,
+        'vreme': vreme,
       },
     );
     debugPrint('[V3VozacLocationTrackingService] computeEta response: ${response.data}');

@@ -15,9 +15,9 @@ class V3VremeDolaskaWidget extends StatelessWidget {
   static const String _colEtaSeconds = 'eta_seconds';
   static const String _colComputedAt = 'computed_at';
 
-  // ETA se smatra zastarelom ako nema svežeg update-a duže vreme.
+  // ETA se smatra zastarelom ako nema svežeg update-a duže od 90 sekundi.
   // Ovo sprečava da ETA widget ostane "zalepljen" kada lokacije prestanu da stižu.
-  static const Duration _staleThreshold = Duration(minutes: 15);
+  static const Duration _staleThreshold = Duration(seconds: 90);
 
   ({int? etaSeconds, bool isStale, String? vozacId}) _readEtaState(Map<String, dynamic>? row) {
     if (row == null) {
@@ -36,6 +36,18 @@ class V3VremeDolaskaWidget extends StatelessWidget {
     final vozacId = row[_colVozacId]?.toString();
 
     return (etaSeconds: eta, isStale: stale, vozacId: vozacId);
+  }
+
+  /// Proverava da li putnik ima barem jedan aktivni termin (nije pokupljen ni otkazan).
+  bool _putnikHasActiveTermin() {
+    for (final row in V3MasterRealtimeManager.instance.operativnaNedeljaCache.values) {
+      final createdBy = row['created_by']?.toString();
+      if (createdBy != putnikId) continue;
+      if (row['pokupljen_at'] != null) continue;
+      if (row['otkazano_at'] != null) continue;
+      return true;
+    }
+    return false;
   }
 
   int _buildEtaMinutes(int etaSeconds) {
@@ -167,7 +179,8 @@ class V3VremeDolaskaWidget extends StatelessWidget {
         final isStale = etaState.isStale;
         final vozacId = etaState.vozacId;
 
-        final hasFreshEta = eta != null && !isStale;
+        final hasActiveTermin = _putnikHasActiveTermin();
+        final hasFreshEta = eta != null && !isStale && hasActiveTermin;
         final minutes = hasFreshEta ? _buildEtaMinutes(eta) : null;
         final nextRide = hasFreshEta ? null : _findNextPutnikRide();
         final nextRideLabel =

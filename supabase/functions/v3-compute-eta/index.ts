@@ -7,6 +7,8 @@ type ComputeEtaPayload = {
   vozac_id?: string;
   lat?: number;
   lng?: number;
+  grad?: string;
+  vreme?: string;
 };
 
 function json(status: number, body: Record<string, unknown>): Response {
@@ -47,9 +49,14 @@ Deno.serve(async (req) => {
     const vozacId = String(payload.vozac_id ?? "").trim();
     const driverLat = Number(payload.lat);
     const driverLng = Number(payload.lng);
+    const activeGrad = String(payload.grad ?? "").trim().toUpperCase();
+    const activeVreme = normalizeTime(payload.vreme);
 
     if (!vozacId || !Number.isFinite(driverLat) || !Number.isFinite(driverLng)) {
       return json(200, { ok: false, reason: "invalid_payload" });
+    }
+    if (!activeGrad || !activeVreme) {
+      return json(200, { ok: false, reason: "missing_grad_vreme" });
     }
 
     const client = createClient(supabaseUrl, serviceRoleKey, {
@@ -84,7 +91,7 @@ Deno.serve(async (req) => {
       console.warn(`[v3-compute-eta] operativna lookup error: ${operativnaError.message}`);
     }
 
-    // Mapa termin_id → operativna red
+    // Mapa termin_id → operativna red (samo za aktivni grad+vreme)
     const terminMap: Record<string, {
       putnikId: string;
       pokupljenAt: string | null;
@@ -92,12 +99,17 @@ Deno.serve(async (req) => {
       adresaOverrideId: string | null;
       koristiSekundarnu: boolean;
       grad: string;
+      vreme: string;
     }> = {};
     for (const row of (operativnaRows ?? [])) {
       const terminId = String(row.id ?? "").trim();
       if (!terminId) continue;
 
       const rowGrad = String(row.grad ?? "").trim().toUpperCase();
+      const rowVreme = normalizeTime(row.polazak_at);
+
+      // Filtriraj samo aktivni termin
+      if (rowGrad !== activeGrad || rowVreme !== activeVreme) continue;
 
       terminMap[terminId] = {
         putnikId: String(row.created_by ?? "").trim(),
@@ -106,6 +118,7 @@ Deno.serve(async (req) => {
         adresaOverrideId: row.adresa_override_id ? String(row.adresa_override_id) : null,
         koristiSekundarnu: row.koristi_sekundarnu === true,
         grad: rowGrad,
+        vreme: rowVreme,
       };
     }
 
@@ -132,8 +145,6 @@ Deno.serve(async (req) => {
     }
 
     if (remainingDodele.length === 0) {
-      // Svi su pokupljeni ili otkazani — obriši ETA zapise
-      await client.from("v3_eta_results").delete().eq("vozac_id", vozacId);
       return json(200, { ok: true, reason: "no_remaining_dodele", updated: 0 });
     }
 
@@ -145,6 +156,21 @@ Deno.serve(async (req) => {
     const remainingPutnikIds = remainingDodele
       .map((r) => terminMap[String(r.termin_id ?? "").trim()]?.putnikId ?? String(r.putnik_v3_auth_id ?? "").trim())
       .filter(Boolean);
+
+    // Obriši ETA za putnike koji nisu u aktivnom terminu (druga smena)
+    const activePutnikIds = new Set<string>(remainingPutnikIds);
+    const { data: existingEtaRows } = await client
+      .from("v3_eta_results")
+      .select("putnik_id")
+      .eq("vozac_id", vozacId);
+    const putniciZaBrisanje = (existingEtaRows ?? [])
+      .map((r: any) => String(r.putnik_id ?? "").trim())
+      .filter((pid: string) => pid && !activePutnikIds.has(pid));
+    if (putniciZaBrisanje.length > 0) {
+      await client.from("v3_eta_results").delete()
+        .eq("vozac_id", vozacId)
+        .in("putnik_id", putniciZaBrisanje);
+    }
 
     // 4. Dohvati profile putnika (adresa_bc_id, adresa_vs_id itd.)
     const { data: authRows, error: authError } = await client
