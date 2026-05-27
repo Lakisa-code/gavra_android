@@ -508,7 +508,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
 
     V3StateUtils.safeSetState(this, () {
       _mojiPutnici = putniciZaPrikaz;
-      _applyOptimizedOrderToPutnici(); // Zadrzi optimizovan redosled cak i kad stignu realtime podaci
+      // Ako nemamo live ETA (još uvek nije stigao prvi odgovor),
+      // koristimo OSRM optimizovani redosled. Inače pratimo trenutni ETA.
+      if (_etaSecondsCache.isEmpty) {
+        _applyOptimizedOrderToPutnici();
+      }
     });
 
     _maybeAutoStopTrackingForCompletedTermin(putniciZaPrikaz);

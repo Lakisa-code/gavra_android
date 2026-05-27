@@ -12,6 +12,11 @@ const String _kVozacId = 'vozac_id';
 const String _kActionStop = 'stop';
 const Duration _kInterval = Duration(seconds: 30);
 
+/// Globalni mutable state za background isolate — Dart dozvoljava top-level promenljive u entry-point fajlu.
+String? _bgVozacId;
+Timer? _bgTimer;
+bool _bgInFlight = false;
+
 /// Top-level callback za flutter_background_service.
 /// Pokreće se u posebnom isolate-u i šalje GPS lokaciju svakih 30 sekundi.
 @pragma('vm:entry-point')
@@ -30,83 +35,78 @@ Future<void> onBackgroundServiceStart(ServiceInstance service) async {
     debugPrint('[BG] Supabase init error: $e');
   }
 
-  String? activeVozacId;
-  Timer? timer;
-  bool inFlight = false;
-
   service.on(_kActionStop).listen((event) {
-    timer?.cancel();
-    timer = null;
-    activeVozacId = null;
+    _bgTimer?.cancel();
+    _bgTimer = null;
+    _bgVozacId = null;
     service.stopSelf();
   });
 
-  // Očekujemo da glavni isolate pošalje vozac_id preko invoke
+  // Glavni isolate šalje vozac_id preko invoke
   service.on('set_vozac_id').listen((event) {
     final id = (event?[_kVozacId] as String?)?.trim();
     if (id != null && id.isNotEmpty) {
-      activeVozacId = id;
-      _startTimer();
+      _bgVozacId = id;
+      _bgStartTimer();
     }
   });
+}
 
-  void _startTimer() {
-    timer?.cancel();
-    timer = Timer.periodic(_kInterval, (_) {
-      unawaited(_sendLocation());
-    });
-    // Prvo slanje odmah
-    unawaited(_sendLocation());
+void _bgStartTimer() {
+  _bgTimer?.cancel();
+  _bgTimer = Timer.periodic(_kInterval, (_) {
+    unawaited(_bgSendLocation());
+  });
+  // Prvo slanje odmah
+  unawaited(_bgSendLocation());
+}
+
+Future<void> _bgSendLocation() async {
+  final vozacId = _bgVozacId;
+  if (vozacId == null || vozacId.isEmpty || _bgInFlight) return;
+
+  final client = Supabase.instance.client;
+  if (client.auth.currentSession == null && client.auth.currentUser == null) {
+    return;
   }
 
-  Future<void> _sendLocation() async {
-    final vozacId = activeVozacId;
-    if (vozacId == null || vozacId.isEmpty || inFlight) return;
-
-    final client = Supabase.instance.client;
-    if (client.auth.currentSession == null && client.auth.currentUser == null) {
-      // Supabase nije inicijalizovan ili nema korisnika — ne možemo slati
+  _bgInFlight = true;
+  try {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      debugPrint('[BG] GPS isključen');
       return;
     }
 
-    inFlight = true;
-    try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrint('[BG] GPS isključen');
-        return;
-      }
-
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        debugPrint('[BG] Dozvola za lokaciju odbijena');
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 12),
-        ),
-      );
-
-      await client.functions.invoke(
-        'v3-compute-eta',
-        body: <String, dynamic>{
-          'vozac_id': vozacId,
-          'lat': position.latitude,
-          'lng': position.longitude,
-        },
-      );
-      debugPrint('[BG] Lokacija poslata: ${position.latitude}, ${position.longitude}');
-    } catch (e) {
-      debugPrint('[BG] Greška pri slanju lokacije: $e');
-    } finally {
-      inFlight = false;
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
     }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      debugPrint('[BG] Dozvola za lokaciju odbijena');
+      return;
+    }
+
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 12),
+      ),
+    );
+
+    await client.functions.invoke(
+      'v3-compute-eta',
+      body: <String, dynamic>{
+        'vozac_id': vozacId,
+        'lat': position.latitude,
+        'lng': position.longitude,
+      },
+    );
+    debugPrint('[BG] Lokacija poslata: ${position.latitude}, ${position.longitude}');
+  } catch (e) {
+    debugPrint('[BG] Greška pri slanju lokacije: $e');
+  } finally {
+    _bgInFlight = false;
   }
 }
