@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class V3BlockingScreenWidget extends StatelessWidget {
+class V3BlockingScreenWidget extends StatefulWidget {
   final String grad;
   final String vreme;
-  final VoidCallback onStartTracking;
+  final Future<void> Function() onStartTracking;
 
   const V3BlockingScreenWidget({
     super.key,
@@ -14,9 +14,27 @@ class V3BlockingScreenWidget extends StatelessWidget {
   });
 
   @override
+  State<V3BlockingScreenWidget> createState() => _V3BlockingScreenWidgetState();
+}
+
+class _V3BlockingScreenWidgetState extends State<V3BlockingScreenWidget> {
+  bool _isStarting = false;
+
+  Future<void> _handleStart() async {
+    if (_isStarting) return;
+    setState(() => _isStarting = true);
+    HapticFeedback.heavyImpact();
+    try {
+      await widget.onStartTracking();
+    } finally {
+      if (mounted) setState(() => _isStarting = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false, // Prevent back button
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Center(
@@ -41,7 +59,7 @@ class V3BlockingScreenWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Vaš slot $grad $vreme počinje za 15 minuta',
+                  'Vaš slot ${widget.grad} ${widget.vreme} počinje za 15 minuta',
                   style: const TextStyle(
                     fontSize: 18,
                     color: Colors.white70,
@@ -50,28 +68,42 @@ class V3BlockingScreenWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 48),
                 ElevatedButton(
-                  onPressed: () {
-                    HapticFeedback.heavyImpact();
-                    onStartTracking();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 48,
-                      vertical: 20,
+                  onPressed: _isStarting ? null : _handleStart,
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.disabled)
+                          ? Colors.green.withValues(alpha: 0.5)
+                          : Colors.green,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    foregroundColor: WidgetStateProperty.all(Colors.white),
+                    padding: WidgetStateProperty.all(
+                      const EdgeInsets.symmetric(
+                        horizontal: 48,
+                        vertical: 20,
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    '🚀 POKRENI TRACKING',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
+                  child: _isStarting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'POKRENI TRACKING',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 24),
                 const Text(

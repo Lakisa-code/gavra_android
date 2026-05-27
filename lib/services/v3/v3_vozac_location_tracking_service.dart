@@ -67,51 +67,6 @@ class V3VozacLocationTrackingService {
     if (_blockingScreenInitialized) return;
 
     final blockingService = V3BlockingScreenService.instance;
-
-    // Callback za zaustavljanje tracking-a uklonjen - blokirajući ekran ne može da zaustavi tracking
-    // blockingService.onStopTracking = () async {
-    //   stop();
-    // };
-
-    // Postavi callback za proveru aktivnih putnika
-    blockingService.hasActivePassengers = () async {
-      // Proveri da li ima aktivnih putnika za ovog vozača
-      if (_activeVozacId.isEmpty) return false;
-
-      try {
-        final response = await Supabase.instance.client
-            .from('v3_trenutna_dodela')
-            .select('termin_id')
-            .eq('vozac_v3_auth_id', _activeVozacId)
-            .eq('status', 'aktivan');
-
-        if (response.isEmpty) return false;
-
-        final terminIds = response.map((r) => r['termin_id'] as String).toList();
-
-        final terminResponse = await Supabase.instance.client
-            .from('v3_operativna_nedelja')
-            .select('pokupljen_at, otkazano_at')
-            .inFilter('id', terminIds);
-
-        // Proveri da li bar jedan termin nije pokupljen/otkazan
-        for (final termin in terminResponse) {
-          final pokupljenAt = termin['pokupljen_at'];
-          final otkazanoAt = termin['otkazano_at'];
-
-          if (pokupljenAt == null && otkazanoAt == null) {
-            return true; // Ima aktivnih putnika
-          }
-        }
-
-        return false; // Nema aktivnih putnika
-      } catch (e) {
-        debugPrint('[V3VozacLocationTrackingService] hasActivePassengers error: $e');
-        return false;
-      }
-    };
-
-    // Inicijalizuj blocking screen servis
     await blockingService.initialize();
 
     _blockingScreenInitialized = true;

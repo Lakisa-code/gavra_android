@@ -17,14 +17,9 @@ class V3BlockingScreenService {
   /// Callback za prikazivanje blokirajućeg ekrana
   void Function(String grad, String vreme)? onShowBlockingScreen;
 
-  /// Callback za gašenje tracking-a
-  Future<void> Function()? onStopTracking;
-
-  /// Callback za proveru aktivnih putnika
-  Future<bool> Function()? hasActivePassengers;
-
   /// Inicijalizuje servis i učitava raspored
   Future<void> initialize() async {
+    dispose(); // očisti prethodne timere pre nego što zakazujemo nove
     try {
       final response = await Supabase.instance.client
           .from('v3_app_settings')
@@ -38,6 +33,7 @@ class V3BlockingScreenService {
     } catch (e) {
       debugPrint('[V3BlockingScreenService] initialization error: $e');
     }
+    _scheduleDailyRefresh();
   }
 
   /// Planira blokirajuće ekrane na osnovu rasporeda
@@ -80,9 +76,13 @@ class V3BlockingScreenService {
     );
 
     final blockingTime = terminDateTime.subtract(const Duration(minutes: 15));
+    final windowEnd = terminDateTime.add(const Duration(minutes: 15));
 
-    // Ako je vreme prošlo, preskoči
+    // Ako je blocking vreme već prošlo, prikaži odmah ako smo još u aktivnom prozoru
     if (blockingTime.isBefore(now)) {
+      if (now.isBefore(windowEnd)) {
+        _onBlockingTimeReached(grad, timeStr);
+      }
       return;
     }
 
@@ -99,26 +99,9 @@ class V3BlockingScreenService {
   }
 
   /// Kada stigne vreme za blokirajući ekran
-  Future<void> _onBlockingTimeReached(String grad, String vreme) async {
+  void _onBlockingTimeReached(String grad, String vreme) {
     debugPrint('[V3BlockingScreenService] Blocking time reached for $grad $vreme');
-
-    // Prvo proveri da li treba da zaustavi tracking
-    await _smartStopTracking();
-
-    // Zatim prikaži blokirajući ekran
     _showBlockingScreen(grad, vreme);
-  }
-
-  /// Pametno gašenje tracking-a (vremenski + statusni uslov)
-  Future<void> _smartStopTracking() async {
-    // Vremenski uslov: uvek zaustavi kada stigne novo vreme
-    if (onStopTracking != null) {
-      await onStopTracking!();
-    }
-
-    // Statusni uslov: proveri da li ima aktivnih putnika
-    // Ako nema, tracking je već zaustavljen gore
-    // Ako ima, tracking će biti zaustavljen ali vozač može da ga ponovo pokrene
   }
 
   /// Prikazuje blokirajući ekran
@@ -147,7 +130,7 @@ class V3BlockingScreenService {
     return TimeOfDay(hour: hour, minute: minute);
   }
 
-  /// Vraća ime dana na engleskom
+  /// Vraća ime dana na srpskom (usklađeno sa V3DanHelper)
   String _getDayName(int weekday) {
     switch (weekday) {
       case 1:
@@ -169,9 +152,22 @@ class V3BlockingScreenService {
     }
   }
 
+  /// Zakazuje osvežavanje rasporeda u ponoć
+  void _scheduleDailyRefresh() {
+    _scheduleTimer?.cancel();
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final delay = tomorrow.difference(now);
+    _scheduleTimer = Timer(delay, () {
+      unawaited(initialize());
+    });
+    debugPrint('[V3BlockingScreenService] Daily refresh scheduled in ${delay.inMinutes}m');
+  }
+
   /// Čisti sve timere
   void dispose() {
     _scheduleTimer?.cancel();
+    _scheduleTimer = null;
     _terminTimers?.forEach((_, timer) => timer.cancel());
     _terminTimers?.clear();
   }

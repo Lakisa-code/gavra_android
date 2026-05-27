@@ -246,11 +246,18 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
     final vozacId = vozac.id?.toString() ?? '';
     if (vozacId.isEmpty) return;
 
-    // Initialize blocking screen service
-    await V3VozacLocationTrackingService.instance.initializeBlockingScreen();
+    // Set callback FIRST — initializeBlockingScreen may fire it immediately
+    // if blocking time is already past but still within active window
+    V3BlockingScreenService.instance.onShowBlockingScreen = (String grad, String vreme) async {
+      if (!mounted) return;
 
-    // Set callback to show blocking screen
-    V3BlockingScreenService.instance.onShowBlockingScreen = (String grad, String vreme) {
+      // Ako je tracking već aktivan, nema potrebe da blokiramo ekran
+      if (V3VozacLocationTrackingService.instance.isRunning) return;
+
+      // Osiguraj da su mape učitane (race condition sa _initData)
+      if (_activeVozacBySlotKey.isEmpty && _activeVozacByTerminId.isEmpty) {
+        await _reloadTrenutnaDodelaMap();
+      }
       if (!mounted) return;
 
       // Check if driver has slot assignment for this termin
@@ -262,8 +269,17 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
       );
       final hasSlot = _activeVozacBySlotKey[slotKey] == vozacId;
 
-      // Check if driver has individual passenger assignments for this termin
-      final hasIndividualAssignments = _activeVozacByTerminId.values.any((v) => v == vozacId);
+      // Check if driver has individual passenger assignments for this SPECIFIC termin
+      final gradUp = grad.trim().toUpperCase();
+      final vremeNorm = V3TimeUtils.normalizeToHHmm(vreme);
+      final hasIndividualAssignments = _activeVozacByTerminId.entries.any((entry) {
+        if (entry.value != vozacId) return false;
+        final terminData = V3MasterRealtimeManager.instance.operativnaNedeljaCache[entry.key];
+        if (terminData == null) return false;
+        final terminGrad = (terminData['grad'] as String? ?? '').trim().toUpperCase();
+        final terminVreme = V3TimeUtils.normalizeToHHmm(terminData['polazak_at'] as String?);
+        return terminGrad == gradUp && terminVreme == vremeNorm;
+      });
 
       // Show blocking screen if driver has either slot or individual assignments
       if (!hasSlot && !hasIndividualAssignments) return;
@@ -274,9 +290,12 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
         _showBlockingScreen = true;
       });
     };
+
+    // Initialize blocking screen service (may trigger immediate callback)
+    await V3VozacLocationTrackingService.instance.initializeBlockingScreen();
   }
 
-  void _handleBlockingScreenStart() async {
+  Future<void> _handleBlockingScreenStart() async {
     final vozac = V3VozacService.currentVozac;
     if (vozac == null) return;
 
