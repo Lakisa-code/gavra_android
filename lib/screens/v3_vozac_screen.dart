@@ -392,7 +392,8 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     _autoStopInProgress = true;
     unawaited(() async {
       try {
-        await _handleStopNavigation();
+        V3VozacLocationTrackingService.instance.stop();
+        _isNavigating = false;
       } finally {
         _autoStopInProgress = false;
       }

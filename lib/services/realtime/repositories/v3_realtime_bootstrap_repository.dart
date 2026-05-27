@@ -70,10 +70,6 @@ class V3RealtimeBootstrapRepository {
         table: 'v3_eta_results',
         query: () => supabase.from('v3_eta_results').select(),
       ),
-      _fetchTableRows(
-        table: 'v3_vozac_akcije',
-        query: () => supabase.from('v3_vozac_akcije').select(),
-      ),
     ]);
   }
 

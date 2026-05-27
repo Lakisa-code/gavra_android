@@ -50,10 +50,9 @@ class _V3ZahteviDnevniScreenState extends State<V3ZahteviDnevniScreen> {
         .where((r) {
           final createdBy = (r['created_by']?.toString() ?? '').trim();
           if (createdBy.isEmpty) return false;
-          // Prikazujemo zahteve kreirane od strane dnevni putnika ili sistema (kron), ne vozaca
+          // Prikazujemo zahteve kreirane od strane dnevni putnika (kron ih samo obrađuje, ne kreira)
           final isDnevni = putniciIds.contains(createdBy);
-          final isSistem = _isSistemAkter(createdBy, rm.authCache);
-          if (!isDnevni && !isSistem) return false;
+          if (!isDnevni) return false;
 
           final datumRaw = r['datum']?.toString();
           final datum = datumRaw != null ? DateTime.tryParse(datumRaw) : null;
@@ -99,11 +98,10 @@ class _V3ZahteviDnevniScreenState extends State<V3ZahteviDnevniScreen> {
       final d = V3DanHelper.dateOnlyFrom(z.datum.year, z.datum.month, z.datum.day);
       if (d.isBefore(todayOnly) || d.isAfter(windowEnd)) return false;
 
-      // Prikazujemo zahteve kreirane od strane dnevni putnika ili sistema (kron), ne vozaca
+      // Prikazujemo zahteve kreirane od strane dnevni putnika (kron ih samo obrađuje, ne kreira)
       final createdBy = (z.createdBy ?? '').trim();
       final isDnevni = dnevniIds.contains(createdBy);
-      final isSistem = _isSistemAkter(createdBy, rm.authCache);
-      if (!isDnevni && !isSistem) return false;
+      if (!isDnevni) return false;
 
       return true;
     }).toList()
@@ -302,7 +300,7 @@ class _MonitoringCardDaily extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${zahtev.grad} · ${V3StringUtils.trimTimeToHhMm(zahtev.trazeniPolazakAt)} · ${zahtev.datum.day}.${zahtev.datum.month}.${zahtev.datum.year}.',
+                    '${zahtev.grad} · ${V3StringUtils.trimTimeToHhMm(zahtev.trazeniPolazakAt)} · ${V3DanHelper.label(zahtev.datum)} · ${zahtev.datum.day}.${zahtev.datum.month}.${zahtev.datum.year}.',
                     style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   V3ZahtevTimelapseWidget(zahtev: zahtev),

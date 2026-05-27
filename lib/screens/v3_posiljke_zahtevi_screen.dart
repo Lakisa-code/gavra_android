@@ -5,6 +5,7 @@ import '../services/realtime/v3_master_realtime_manager.dart';
 import '../services/v3/v3_putnik_service.dart';
 import '../theme.dart';
 import '../utils/v3_container_utils.dart';
+import '../utils/v3_dan_helper.dart';
 import '../utils/v3_status_policy.dart';
 import '../widgets/v3_zahtev_timelapse_widget.dart';
 
@@ -42,10 +43,9 @@ class _V3PosiljkeZahteviScreenState extends State<V3PosiljkeZahteviScreen> {
         .where((r) {
           final createdBy = (r['created_by']?.toString() ?? '').trim();
           if (createdBy.isEmpty) return false;
-          // Prikazujemo zahteve kreirane od strane pošiljka putnika ili sistema (kron), ne vozaca
+          // Prikazujemo zahteve kreirane od strane pošiljka putnika (kron ih samo obrađuje, ne kreira)
           final isPosiljka = posiljkaPutnici.contains(createdBy);
-          final isSistem = _isSistemAkter(createdBy, rm.authCache);
-          return isPosiljka || isSistem;
+          return isPosiljka;
         })
         .map((r) => V3Zahtev.fromJson(r))
         .toList()
@@ -228,7 +228,7 @@ class _ZahtevKartica extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${zahtev.grad} · ${zahtev.trazeniPolazakAt} · '
-                    '${zahtev.datum.day}.${zahtev.datum.month}.${zahtev.datum.year}.',
+                    '${V3DanHelper.label(zahtev.datum)} · ${zahtev.datum.day}.${zahtev.datum.month}.${zahtev.datum.year}.',
                     style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   V3ZahtevTimelapseWidget(zahtev: zahtev),

@@ -45,10 +45,9 @@ class _V3UceniciZahteviScreenState extends State<V3UceniciZahteviScreen> {
         .where((r) {
           final createdBy = (r['created_by']?.toString() ?? '').trim();
           if (createdBy.isEmpty) return false;
-          // Prikazujemo zahteve kreirane od strane učenika ili sistema (kron), ne vozaca
+          // Prikazujemo zahteve kreirane od strane učenika (kron ih samo obrađuje, ne kreira)
           final isUcenik = putniciIds.contains(createdBy);
-          final isSistem = _isSistemAkter(createdBy, rm.authCache);
-          if (!isUcenik && !isSistem) return false;
+          if (!isUcenik) return false;
 
           final datumRaw = r['datum']?.toString();
           final datum = datumRaw != null ? DateTime.tryParse(datumRaw) : null;
@@ -90,10 +89,9 @@ class _V3UceniciZahteviScreenState extends State<V3UceniciZahteviScreen> {
         .where((r) {
           final createdBy = (r['created_by']?.toString() ?? '').trim();
           if (createdBy.isEmpty) return false;
-          // Prikazujemo zahteve kreirane od strane učenika ili sistema (kron), ne vozaca
+          // Prikazujemo zahteve kreirane od strane učenika (kron ih samo obrađuje, ne kreira)
           final isUcenik = uceniciIds.contains(createdBy);
-          final isSistem = _isSistemAkter(createdBy, rm.authCache);
-          return isUcenik || isSistem;
+          return isUcenik;
         })
         .map((r) => V3Zahtev.fromJson(r))
         .toList()
@@ -228,7 +226,7 @@ class _MonitoringCardUcenik extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${zahtev.grad} · ${V3StringUtils.trimTimeToHhMm(zahtev.trazeniPolazakAt)} · ${zahtev.datum.day}.${zahtev.datum.month}.${zahtev.datum.year}.',
+                    '${zahtev.grad} · ${V3StringUtils.trimTimeToHhMm(zahtev.trazeniPolazakAt)} · ${V3DanHelper.label(zahtev.datum)} · ${zahtev.datum.day}.${zahtev.datum.month}.${zahtev.datum.year}.',
                     style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   V3ZahtevTimelapseWidget(zahtev: zahtev),

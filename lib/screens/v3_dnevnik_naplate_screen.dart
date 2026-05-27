@@ -9,10 +9,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../models/v3_dnevna_predaja.dart';
-import '../models/v3_vozac_akcije.dart';
 import '../services/realtime/v3_master_realtime_manager.dart';
 import '../services/v3/v3_dnevna_predaja_service.dart';
-import '../services/v3/v3_vozac_akcije_service.dart';
+import '../services/v3/v3_finansije_service.dart';
 import '../services/v3/v3_vozac_service.dart';
 import '../theme.dart';
 import '../utils/v3_app_snack_bar.dart';
@@ -40,8 +39,8 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
   String? _selectedVozacIme;
   DateTime _selectedDate = DateTime.now();
 
-  List<V3VozacAkcija> _naplate = [];
-  List<V3VozacAkcija> _pokupio = [];
+  List<Map<String, dynamic>> _naplate = [];
+  List<Map<String, dynamic>> _pokupio = [];
   double _ukupnoIznos = 0;
   double? _predaoIznos; // za PDF/clipboard — ažurira ga footer
 
@@ -54,7 +53,7 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
 
     V3StreamUtils.subscribe<int>(
       key: 'dnevnik_naplate_cache',
-      stream: V3MasterRealtimeManager.instance.tablesRevisionStream(const ['v3_vozac_akcije', 'v3_auth']),
+      stream: V3MasterRealtimeManager.instance.tablesRevisionStream(const ['v3_auth']),
       onData: (_) {
         if (!mounted) return;
         _ucitajVozace();
@@ -91,30 +90,18 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
 
     final vozacId = _selectedVozacId!;
     
-    // Koristimo novi service za vozačeve akcije
-    final izvestaj = V3VozacAkcijeService.getIzvestajZaVozacaDan(
+    final naplateRows = V3FinansijeService.getNaplataRowsZaVozacaDan(
       vozacId: vozacId,
       dan: _selectedDate,
     );
     
-    // Debug: print info
-    debugPrint('=== DNEVNIK NAPLATE DEBUG ===');
-    debugPrint('Vozač ID: $vozacId');
-    debugPrint('Datum: ${_formatDatum(_selectedDate)}');
-    debugPrint('Nađeno naplata: ${izvestaj.naplate.length}');
-    debugPrint('Nađeno pokupljenih: ${izvestaj.pokupio.length}');
-    debugPrint('Ukupan iznos: ${izvestaj.ukupanIznos}');
-    for (final naplata in izvestaj.naplate) {
-      debugPrint('  - ${naplata.putnikIme} - ${naplata.iznos} - ${naplata.datum}');
-    }
-    for (final pokupio in izvestaj.pokupio) {
-      debugPrint('  POKUPIO: ${pokupio.putnikIme} - ${pokupio.datum}');
-    }
-
+    // TODO: Implementirati prikaz pokupljenih putnika iz v3_operativna_nedelja
     setState(() {
-      _naplate = izvestaj.naplate;
-      _pokupio = izvestaj.pokupio;
-      _ukupnoIznos = izvestaj.ukupanIznos;
+      _naplate = naplateRows;
+      _pokupio = [];
+      _ukupnoIznos = naplateRows.fold<double>(
+        0, (sum, row) => sum + ((row['iznos'] as num?)?.toDouble() ?? 0),
+      );
       _predaoIznos = null;
     });
   }
@@ -146,13 +133,19 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
     buf.writeln('Datum: ${_formatDatum(_selectedDate)}');
     buf.writeln('─────────────────────────');
     
+    final rm = V3MasterRealtimeManager.instance;
+    
     // Prikaz pokupljenih putnika
     if (_pokupio.isNotEmpty) {
       buf.writeln('POKUPLJENI PUTNICI (${_pokupio.length}):');
       for (int i = 0; i < _pokupio.length; i++) {
         final p = _pokupio[i];
-        final vreme = V3DanHelper.formatVreme(p.datum.hour, p.datum.minute);
-        buf.writeln('  ${i + 1}. ${p.putnikIme} — $vreme');
+        final datum = V3DateUtils.parseTs(p['datum']?.toString()) ?? DateTime.now();
+        final vreme = V3DanHelper.formatVreme(datum.hour, datum.minute);
+        final putnikId = p['created_by']?.toString() ?? '';
+        final putnik = rm.putniciCache[putnikId];
+        final putnikIme = putnik?['ime_prezime']?.toString() ?? 'Nepoznato';
+        buf.writeln('  ${i + 1}. $putnikIme — $vreme');
       }
       buf.writeln('─────────────────────────');
     }
@@ -161,8 +154,13 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
     buf.writeln('NAPLATE (${_naplate.length}):');
     for (int i = 0; i < _naplate.length; i++) {
       final n = _naplate[i];
-      final vreme = V3DanHelper.formatVreme(n.datum.hour, n.datum.minute);
-      buf.writeln('  ${i + 1}. ${n.putnikIme} — ${n.iznos.toStringAsFixed(0)} din — $vreme');
+      final datum = V3DateUtils.parseTs(n['created_at']?.toString()) ?? DateTime.now();
+      final vreme = V3DanHelper.formatVreme(datum.hour, datum.minute);
+      final putnikId = n['putnik_v3_auth_id']?.toString() ?? '';
+      final putnik = rm.putniciCache[putnikId];
+      final putnikIme = putnik?['ime_prezime']?.toString() ?? n['naziv']?.toString() ?? 'Nepoznato';
+      final iznos = (n['iznos'] as num?)?.toDouble() ?? 0;
+      buf.writeln('  ${i + 1}. $putnikIme — ${iznos.toStringAsFixed(0)} din — $vreme');
     }
     buf.writeln('─────────────────────────');
     buf.writeln('UKUPNO: ${_naplate.length} uplata — ${_ukupnoIznos.toStringAsFixed(0)} din');
@@ -196,6 +194,7 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
 
     final predaoVal = _predaoIznos;
     final razlika = predaoVal != null ? predaoVal - _ukupnoIznos : null;
+    final rm = V3MasterRealtimeManager.instance;
 
     final doc = pw.Document();
     doc.addPage(
@@ -238,8 +237,14 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
                     ),
                     children: [
                       _pdfCell('${i + 1}.', style: baseStyle),
-                      _pdfCell(_pokupio[i].putnikIme, style: baseStyle),
-                      _pdfCell(V3DanHelper.formatVreme(_pokupio[i].datum.hour, _pokupio[i].datum.minute), style: baseStyle),
+                      _pdfCell(
+                        (rm.putniciCache[_pokupio[i]['created_by']?.toString() ?? '']?['ime_prezime']?.toString() ?? 'Nepoznato'),
+                        style: baseStyle
+                      ),
+                      _pdfCell(V3DanHelper.formatVreme(
+                        (V3DateUtils.parseTs(_pokupio[i]['datum']?.toString()) ?? DateTime.now()).hour,
+                        (V3DateUtils.parseTs(_pokupio[i]['datum']?.toString()) ?? DateTime.now()).minute
+                      ), style: baseStyle),
                     ],
                   ),
               ],
@@ -277,9 +282,16 @@ class _V3DnevnikNaplateScreenState extends State<V3DnevnikNaplateScreen> {
                   ),
                   children: [
                     _pdfCell('${i + 1}.', style: baseStyle),
-                    _pdfCell(_naplate[i].putnikIme, style: baseStyle),
-                    _pdfCell('${_naplate[i].iznos.toStringAsFixed(0)} din', style: baseStyle),
-                    _pdfCell(V3DanHelper.formatVreme(_naplate[i].datum.hour, _naplate[i].datum.minute), style: baseStyle),
+                    _pdfCell(
+                      (rm.putniciCache[_naplate[i]['putnik_v3_auth_id']?.toString() ?? '']?['ime_prezime']?.toString() ?? 
+                       _naplate[i]['naziv']?.toString() ?? 'Nepoznato'),
+                      style: baseStyle
+                    ),
+                    _pdfCell('${((_naplate[i]['iznos'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)} din', style: baseStyle),
+                    _pdfCell(V3DanHelper.formatVreme(
+                      (V3DateUtils.parseTs(_naplate[i]['created_at']?.toString()) ?? DateTime.now()).hour,
+                      (V3DateUtils.parseTs(_naplate[i]['created_at']?.toString()) ?? DateTime.now()).minute
+                    ), style: baseStyle),
                   ],
                 ),
             ],
@@ -503,31 +515,21 @@ class _VozacItem {
   const _VozacItem({required this.id, required this.ime});
 }
 
-class _NaplataRow {
-  final String id;
-  final String ime;
-  final double iznos;
-  final String vremeNaplate;
-  final DateTime sortAt;
-  const _NaplataRow({
-    required this.id,
-    required this.ime,
-    required this.iznos,
-    required this.vremeNaplate,
-    required this.sortAt,
-  });
-}
-
 // ─── Widgets ──────────────────────────────────────────────────────────────────
 
 class _PokupioCard extends StatelessWidget {
   const _PokupioCard({required this.p, required this.index});
-  final V3VozacAkcija p;
+  final Map<String, dynamic> p;
   final int index;
 
   @override
   Widget build(BuildContext context) {
-    final vreme = V3DanHelper.formatVreme(p.datum.hour, p.datum.minute);
+    final datum = V3DateUtils.parseTs(p['datum']?.toString()) ?? DateTime.now();
+    final vreme = V3DanHelper.formatVreme(datum.hour, datum.minute);
+    final putnikId = p['created_by']?.toString() ?? '';
+    final rm = V3MasterRealtimeManager.instance;
+    final putnik = rm.putniciCache[putnikId];
+    final putnikIme = putnik?['ime_prezime']?.toString() ?? 'Nepoznato';
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -543,7 +545,7 @@ class _PokupioCard extends StatelessWidget {
             child: Text('🚐', style: const TextStyle(color: Colors.white70, fontSize: 16)),
           ),
           Expanded(
-            child: Text(p.putnikIme, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text(putnikIme, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
           ),
           Text('POKUPIO',
               style: const TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.bold)),
@@ -557,12 +559,18 @@ class _PokupioCard extends StatelessWidget {
 
 class _NaplataCard extends StatelessWidget {
   const _NaplataCard({required this.n, required this.index});
-  final V3VozacAkcija n;
+  final Map<String, dynamic> n;
   final int index;
 
   @override
   Widget build(BuildContext context) {
-    final vreme = V3DanHelper.formatVreme(n.datum.hour, n.datum.minute);
+    final datum = V3DateUtils.parseTs(n['created_at']?.toString()) ?? DateTime.now();
+    final vreme = V3DanHelper.formatVreme(datum.hour, datum.minute);
+    final putnikId = n['putnik_v3_auth_id']?.toString() ?? '';
+    final rm = V3MasterRealtimeManager.instance;
+    final putnik = rm.putniciCache[putnikId];
+    final putnikIme = putnik?['ime_prezime']?.toString() ?? n['naziv']?.toString() ?? 'Nepoznato';
+    final iznos = (n['iznos'] as num?)?.toDouble() ?? 0;
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -578,9 +586,9 @@ class _NaplataCard extends StatelessWidget {
             child: Text('${index + 1}.', style: const TextStyle(color: Colors.white38, fontSize: 13)),
           ),
           Expanded(
-            child: Text(n.putnikIme, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text(putnikIme, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
           ),
-          Text('${n.iznos.toStringAsFixed(0)} din',
+          Text('${iznos.toStringAsFixed(0)} din',
               style: const TextStyle(color: Colors.greenAccent, fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(width: 10),
           Text(vreme, style: const TextStyle(color: Colors.white38, fontSize: 12)),
@@ -602,7 +610,7 @@ class _PredajaFooter extends StatefulWidget {
     this.onPredaoChanged,
   });
 
-  final List<V3VozacAkcija> naplate;
+  final List<Map<String, dynamic>> naplate;
   final double ukupnoIznos;
   final String vozacId;
   final String vozacIme;
