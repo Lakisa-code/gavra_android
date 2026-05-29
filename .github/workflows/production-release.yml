@@ -90,14 +90,13 @@ jobs:
           with open(file_path, "r", encoding="utf-8") as file:
               content = file.read()
 
-          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", content, re.MULTILINE)
+          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\s*$", content, re.MULTILINE)
           if not match:
-              raise SystemExit("pubspec.yaml version format must be x.y.z+n")
+              raise SystemExit("pubspec.yaml version format must be x.y.z")
 
-          major, minor, patch, build = map(int, match.groups())
-          new_patch = patch
-          new_build = build + run_number
-          new_version = f"{major}.{minor}.{new_patch}+{new_build}"
+          major, minor, patch = map(int, match.groups())
+          new_patch = patch + run_number
+          new_version = f"{major}.{minor}.{new_patch}"
 
           content = re.sub(r"^version:\s*.*$", f"version: {new_version}", content, count=1, flags=re.MULTILINE)
           with open(file_path, "w", encoding="utf-8") as file:
@@ -253,14 +252,13 @@ jobs:
           with open(file_path, "r", encoding="utf-8") as file:
               content = file.read()
 
-          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$", content, re.MULTILINE)
+          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\s*$", content, re.MULTILINE)
           if not match:
-              raise SystemExit("pubspec.yaml version format must be x.y.z+n")
+              raise SystemExit("pubspec.yaml version format must be x.y.z")
 
-          major, minor, patch, build = map(int, match.groups())
-          new_patch = patch
-          new_build = build + run_number
-          new_version = f"{major}.{minor}.{new_patch}+{new_build}"
+          major, minor, patch = map(int, match.groups())
+          new_patch = patch + run_number
+          new_version = f"{major}.{minor}.{new_patch}"
 
           content = re.sub(r"^version:\s*.*$", f"version: {new_version}", content, count=1, flags=re.MULTILINE)
           with open(file_path, "w", encoding="utf-8") as file:
