@@ -365,7 +365,11 @@ Deno.serve(async (req) => {
 
     console.log(`[v3-compute-eta] ✅ vozac=${vozacId.substring(0, 8)} updated=${upsertRows.length} putnika`);
 
-    return json(200, { ok: true, updated: upsertRows.length });
+    return json(200, {
+      ok: true,
+      updated: upsertRows.length,
+      eta_results: upsertRows.map((r) => ({ putnik_id: r.putnik_id, eta_seconds: r.eta_seconds })),
+    });
   } catch (error) {
     return json(200, {
       ok: false,

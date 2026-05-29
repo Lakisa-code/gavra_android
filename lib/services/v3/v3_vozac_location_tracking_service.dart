@@ -132,7 +132,7 @@ class V3VozacLocationTrackingService {
       onLocationSent?.call(position);
 
       unawaited(
-        _invokeComputeEta(
+        computeEta(
           vozacId: _activeVozacId,
           lat: position.latitude,
           lng: position.longitude,
@@ -152,7 +152,7 @@ class V3VozacLocationTrackingService {
     final pos = _lastSentPosition;
     if (pos == null || _activeVozacId.isEmpty) return;
     unawaited(
-      _invokeComputeEta(
+      computeEta(
         vozacId: _activeVozacId,
         lat: pos.latitude,
         lng: pos.longitude,
@@ -182,7 +182,7 @@ class V3VozacLocationTrackingService {
     return V3LocationPrereqStatus.ok;
   }
 
-  Future<void> _invokeComputeEta({
+  Future<Map<String, int>> computeEta({
     required String vozacId,
     required double lat,
     required double lng,
@@ -201,5 +201,23 @@ class V3VozacLocationTrackingService {
       },
     );
     debugPrint('[V3VozacLocationTrackingService] computeEta response: ${response.data}');
+
+    final result = <String, int>{};
+    final data = response.data;
+    if (data is Map && data['ok'] == true) {
+      final etaList = data['eta_results'];
+      if (etaList is List) {
+        for (final item in etaList) {
+          if (item is Map) {
+            final pid = item['putnik_id']?.toString();
+            final sec = (item['eta_seconds'] as num?)?.toInt();
+            if (pid != null && pid.isNotEmpty && sec != null) {
+              result[pid] = sec;
+            }
+          }
+        }
+      }
+    }
+    return result;
   }
 }

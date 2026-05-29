@@ -285,6 +285,16 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
       ..addAll(next);
   }
 
+  void _refreshPutniciOrderFromEtaCache() {
+    if (_etaSecondsCache.isEmpty || _mojiPutnici.isEmpty) return;
+    final sorted = _sortPutniciForDisplay(List<_PutnikEntry>.from(_mojiPutnici));
+    if (mounted) {
+      setState(() {
+        _mojiPutnici = sorted;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -967,6 +977,31 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
       vreme: _selectedVreme,
     );
     await _startDriverLocationTracking();
+
+    // Odmah dohvati prvi ETA da sortiramo kartice — ne čekamo realtime sync
+    final pos = V3VozacLocationTrackingService.instance.lastKnownPosition;
+    final vid = (_efektivniVozac?.id?.toString() ?? '').trim();
+    if (pos != null && vid.isNotEmpty) {
+      try {
+        final etaMap = await V3VozacLocationTrackingService.instance.computeEta(
+          vozacId: vid,
+          lat: pos.latitude,
+          lng: pos.longitude,
+          grad: _selectedGrad,
+          vreme: _selectedVreme,
+        );
+        if (mounted && etaMap.isNotEmpty) {
+          setState(() {
+            _etaSecondsCache
+              ..clear()
+              ..addAll(etaMap);
+          });
+          _refreshPutniciOrderFromEtaCache();
+        }
+      } catch (e) {
+        debugPrint('[START] immediate ETA fetch error: $e');
+      }
+    }
 
     final vozacId = (_efektivniVozac?.id?.toString() ?? '').trim();
     if (vozacId.isNotEmpty && _selectedGrad.trim().isNotEmpty && _selectedVreme.trim().isNotEmpty) {
