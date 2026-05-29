@@ -63,6 +63,10 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // 0. Obriši globalno sve zastarele ETA redove (starije od 90 sekundi)
+    const staleThreshold = new Date(Date.now() - 90_000).toISOString();
+    await client.from("v3_eta_results").delete().lt("computed_at", staleThreshold);
+
     // 1. Pronađi aktivne dodele (putnik_id + termin_id) - koristimo termin-level dodele
     const { data: dodelaRows, error: dodelaError } = await client
       .from("v3_trenutna_dodela")
@@ -287,8 +291,9 @@ Deno.serve(async (req) => {
     }
 
     // 10. Parsiraj optimizovani redosled iz waypoints[].waypoint_index
-    // OSRM /trip vraća waypoints sa waypoint_index koji označava poziciju u optimalnom obilasku
-    // Indeks 0 je vozač (source=first), ignorišemo ga
+    // OSRM /trip vraća waypoints u trip-redosledu (optimizovanom).
+    // Svaki waypoint ima waypoint_index = originalni redni broj u zahtevu.
+    // Indeks 0 je vozač (source=first), poslednji je destinacioni grad.
     const rawWaypoints = osrmData.waypoints;
     const rawTrips = osrmData.trips;
 
@@ -304,18 +309,11 @@ Deno.serve(async (req) => {
       return json(200, { ok: false, reason: "osrm_no_legs" });
     }
 
-    // Sortiraj putničke waypoints (indeks 1..N) po waypoint_index → dobijamo optimalan redosled
-    // Izbacujemo i zadnji element jer je on destinacioni suprotni grad
-    const putnikWpIndexed = rawWaypoints
-      .slice(1, -1) // preskoči vozača (index 0) i destinaciju (poslednji element)
-      .map((wp: any, i: number) => ({
-        originalIndex: i, // indeks u remainingWaypoints
-        optimizedPos: Number(wp.waypoint_index ?? i + 1),
-      }))
-      .sort((a: any, b: any) => a.optimizedPos - b.optimizedPos);
+    // Putnički waypoints su već u optimalnom trip-redosledu nakon slice(1, -1)
+    const passengerWaypoints = rawWaypoints.slice(1, -1);
 
     // 11. Izračunaj kumulativni ETA u optimalnom redosledu
-    // legs[0] = vozač → prvi putnik, legs[1] = prvi → drugi, itd.
+    // legs[0] = vozač → prvi putnik u trip-u, legs[1] = prvi → drugi, itd.
     const now = new Date().toISOString();
     const upsertRows: Array<{
       putnik_id: string;
@@ -325,17 +323,17 @@ Deno.serve(async (req) => {
     }> = [];
 
     let cumulative = 0;
-    for (let rank = 0; rank < putnikWpIndexed.length; rank++) {
-      const leg = legs[rank];
+    for (let tripRank = 0; tripRank < passengerWaypoints.length; tripRank++) {
+      const leg = legs[tripRank];
       const duration = Number(leg?.duration ?? -1);
       if (!Number.isFinite(duration) || duration < 0) {
-        console.warn(`[v3-compute-eta] leg[${rank}] duration invalid: ${duration}`);
+        console.warn(`[v3-compute-eta] leg[${tripRank}] duration invalid: ${duration}`);
         continue;
       }
       cumulative += Math.round(duration);
 
-      const origIdx = putnikWpIndexed[rank].originalIndex;
-      const putnikId = remainingWaypoints[origIdx]?.putnikId;
+      const originalIdx = Number(passengerWaypoints[tripRank].waypoint_index ?? tripRank + 1) - 1; // -1 jer je vozač index 0
+      const putnikId = remainingWaypoints[originalIdx]?.putnikId;
       if (!putnikId) continue;
 
       upsertRows.push({
@@ -350,25 +348,18 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, reason: "no_eta_rows", updated: 0 });
     }
 
-    // 12. Ukloni duplikate pre upsert da se izbegne "cannot affect row a second time" error
-    const uniqueRows = upsertRows.filter((row, index, self) =>
-      index === self.findIndex((r) => 
-        r.putnik_id === row.putnik_id && r.vozac_id === row.vozac_id
-      )
-    );
-
-    // 13. UPSERT u v3_eta_results
+    // 12. UPSERT u v3_eta_results
     const { error: upsertError } = await client
       .from("v3_eta_results")
-      .upsert(uniqueRows, { onConflict: "putnik_id,vozac_id" });
+      .upsert(upsertRows, { onConflict: "putnik_id,vozac_id" });
 
     if (upsertError) {
       return json(200, { ok: false, reason: "upsert_error", warning: upsertError.message });
     }
 
-    console.log(`[v3-compute-eta] ✅ vozac=${vozacId.substring(0, 8)} updated=${uniqueRows.length} putnika`);
+    console.log(`[v3-compute-eta] ✅ vozac=${vozacId.substring(0, 8)} updated=${upsertRows.length} putnika`);
 
-    return json(200, { ok: true, updated: uniqueRows.length });
+    return json(200, { ok: true, updated: upsertRows.length });
   } catch (error) {
     return json(200, {
       ok: false,
