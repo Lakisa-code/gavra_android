@@ -39,6 +39,10 @@ class V3VozacLocationTrackingService {
   void setActiveTermin({required String grad, required String vreme}) {
     _activeGrad = grad.trim().toUpperCase();
     _activeVreme = vreme.trim();
+
+    // Prosledi background servisu da i on šalje pravilne vrednosti
+    final service = FlutterBackgroundService();
+    service.invoke('set_termin', {'grad': _activeGrad, 'vreme': _activeVreme});
   }
 
   Future<void> clearEtaForVozac({required String vozacId}) async {

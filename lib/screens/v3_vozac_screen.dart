@@ -314,7 +314,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     if (state == AppLifecycleState.detached) {
       // SAMO kad je app stvarno ubijena
       V3VozacLocationTrackingService.instance.stop();
-      _isNavigating = false;
+      if (mounted) {
+        setState(() {
+          _isNavigating = false;
+        });
+      }
     }
     // Za sve druge stateove (paused, inactive, resumed) - NE RADITI NIŠTA
   }
@@ -398,7 +402,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     unawaited(() async {
       try {
         V3VozacLocationTrackingService.instance.stop();
-        _isNavigating = false;
+        if (mounted) {
+          setState(() {
+            _isNavigating = false;
+          });
+        }
       } finally {
         _autoStopInProgress = false;
       }
@@ -952,11 +960,13 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
       return;
     }
 
-    await _startDriverLocationTracking();
+    // Prvo postavi termin (grad+vreme) pa onda pokreni tracking —
+    // _sendCurrentLocation() unutar start() koristi ove vrednosti.
     V3VozacLocationTrackingService.instance.setActiveTermin(
       grad: _selectedGrad,
       vreme: _selectedVreme,
     );
+    await _startDriverLocationTracking();
 
     final vozacId = (_efektivniVozac?.id?.toString() ?? '').trim();
     if (vozacId.isNotEmpty && _selectedGrad.trim().isNotEmpty && _selectedVreme.trim().isNotEmpty) {
@@ -983,7 +993,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     debugPrint(
         '[START] waypoints.length=${preparedRoute.waypointsToOpen.length} unresolvedCount=${preparedRoute.unresolvedCount}');
     V3AppSnackBar.success(context, 'Ruta pripremljena za HERE WeGo.');
-    _isNavigating = true;
+    if (mounted) {
+      setState(() {
+        _isNavigating = true;
+      });
+    }
     _resetMapSyncState();
     unawaited(_syncMapRouteIfNeeded(reason: 'start_navigation'));
 

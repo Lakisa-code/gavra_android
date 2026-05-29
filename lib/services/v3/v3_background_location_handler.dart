@@ -14,6 +14,8 @@ const Duration _kInterval = Duration(seconds: 30);
 
 /// Globalni mutable state za background isolate — Dart dozvoljava top-level promenljive u entry-point fajlu.
 String? _bgVozacId;
+String _bgGrad = '';
+String _bgVreme = '';
 Timer? _bgTimer;
 bool _bgInFlight = false;
 
@@ -49,6 +51,13 @@ Future<void> onBackgroundServiceStart(ServiceInstance service) async {
       _bgVozacId = id;
       _bgStartTimer();
     }
+  });
+
+  // Glavni isolate šalje aktivni termin (grad+vreme)
+  service.on('set_termin').listen((event) {
+    _bgGrad = (event?['grad'] ?? '').toString().trim().toUpperCase();
+    _bgVreme = (event?['vreme'] ?? '').toString().trim();
+    debugPrint('[BG] Termin ažuriran: grad=$_bgGrad vreme=$_bgVreme');
   });
 }
 
@@ -101,6 +110,8 @@ Future<void> _bgSendLocation() async {
         'vozac_id': vozacId,
         'lat': position.latitude,
         'lng': position.longitude,
+        'grad': _bgGrad,
+        'vreme': _bgVreme,
       },
     );
     debugPrint('[BG] Lokacija poslata: ${position.latitude}, ${position.longitude}');

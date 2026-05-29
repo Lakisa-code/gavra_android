@@ -27,7 +27,13 @@ function normalizeTime(value: unknown): string {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
   const timePart = raw.includes("T") ? raw.split("T")[1] : raw;
-  return timePart.slice(0, 8);
+  const parts = timePart.split(":");
+  if (parts.length >= 2) {
+    const hour = parts[0].padStart(2, "0");
+    const minute = parts[1].padStart(2, "0");
+    return `${hour}:${minute}`;
+  }
+  return timePart.slice(0, 5);
 }
 
 Deno.serve(async (req) => {
