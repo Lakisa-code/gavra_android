@@ -12,58 +12,12 @@ import '../utils/v3_status_policy.dart';
 import '../utils/v3_string_utils.dart';
 import '../widgets/v3_zahtev_timelapse_widget.dart';
 
-/// V3 ekran — Monitoring Radnika
-/// Izvor istine: v3_operativna_nedelja.polazak_at (finalno postavljeno od crona).
+/// V3 ekran — Monitoring zahteva radnika.
 class V3RadniciZahteviScreen extends StatefulWidget {
   const V3RadniciZahteviScreen({super.key});
 
   @override
   State<V3RadniciZahteviScreen> createState() => _V3RadniciZahteviScreenState();
-}
-
-// ─── Model ────────────────────────────────────────────────────────────────────
-enum _OpStatus { aktivno, pokupljeno, otkazano }
-
-class _OpRed {
-  _OpRed({
-    required this.putnikId,
-    required this.datum,
-    required this.grad,
-    required this.polazakAt,
-    required this.status,
-    required this.updatedAt,
-  });
-
-  final String putnikId;
-  final DateTime datum;
-  final String grad;
-  final String polazakAt;
-  final _OpStatus status;
-  final DateTime updatedAt;
-
-  factory _OpRed.fromJson(Map<String, dynamic> r) {
-    final otkazano = r['otkazano_at'] != null;
-    final pokupljeno = !otkazano && r['pokupljen_at'] != null;
-    final status = otkazano
-        ? _OpStatus.otkazano
-        : pokupljeno
-            ? _OpStatus.pokupljeno
-            : _OpStatus.aktivno;
-
-    final datum = DateTime.tryParse(r['datum']?.toString() ?? '') ?? DateTime(2000);
-    final updatedAt = DateTime.tryParse(r['updated_at']?.toString() ?? '') ??
-        DateTime.tryParse(r['created_at']?.toString() ?? '') ??
-        DateTime(2000);
-
-    return _OpRed(
-      putnikId: r['created_by']?.toString() ?? '',
-      datum: datum,
-      grad: (r['grad']?.toString() ?? '').toUpperCase(),
-      polazakAt: r['polazak_at']?.toString() ?? '',
-      status: status,
-      updatedAt: updatedAt,
-    );
-  }
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -118,27 +72,6 @@ class _V3RadniciZahteviScreenState extends State<V3RadniciZahteviScreen> {
         final aDatum = DateTime.tryParse((a['datum']?.toString() ?? '')) ?? DateTime(2000);
         final bDatum = DateTime.tryParse((b['datum']?.toString() ?? '')) ?? DateTime(2000);
         return bDatum.compareTo(aDatum);
-      });
-  }
-
-  List<_OpRed> _getRedovi() {
-    final rm = V3MasterRealtimeManager.instance;
-    final radniciIds = rm.putniciCache.values
-        .where((p) => (p['tip_putnika'] as String? ?? '').toLowerCase() == 'radnik')
-        .map((p) => p['id'] as String)
-        .toSet();
-
-    return rm.operativnaNedeljaCache.values
-        .where((r) {
-          final putnikId = (r['created_by']?.toString() ?? '').trim();
-          return putnikId.isNotEmpty && radniciIds.contains(putnikId);
-        })
-        .map(_OpRed.fromJson)
-        .toList()
-      ..sort((a, b) {
-        final datumCmp = b.datum.compareTo(a.datum);
-        if (datumCmp != 0) return datumCmp;
-        return b.updatedAt.compareTo(a.updatedAt);
       });
   }
 
@@ -288,67 +221,3 @@ class _MonitoringCardRadnik extends StatelessWidget {
   }
 }
 
-// ─── Kartica ─────────────────────────────────────────────────────────────────
-class _OpKartica extends StatelessWidget {
-  const _OpKartica({required this.red});
-  final _OpRed red;
-
-  @override
-  Widget build(BuildContext context) {
-    final (borderColor, statusLabel, icon) = switch (red.status) {
-      _OpStatus.aktivno => (Colors.greenAccent, 'aktivno', Icons.schedule),
-      _OpStatus.pokupljeno => (Colors.lightBlueAccent, 'pokupljeno', Icons.directions_car),
-      _OpStatus.otkazano => (Colors.orange, 'otkazano', Icons.cancel_outlined),
-    };
-
-    return V3ContainerUtils.iconContainer(
-      margin: const EdgeInsets.only(bottom: 8),
-      backgroundColor: borderColor.withValues(alpha: 0.06),
-      borderRadiusGeometry: BorderRadius.circular(14),
-      border: Border.all(color: borderColor.withValues(alpha: 0.45), width: 1.5),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            V3ContainerUtils.iconContainer(
-              backgroundColor: borderColor.withValues(alpha: 0.15),
-              borderRadius: 10,
-              icon: Icon(icon, color: borderColor, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          V3PutnikService.getPutnikById(red.putnikId)?.imePrezime ?? 'Radnik',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                      Text(statusLabel, style: TextStyle(color: borderColor, fontSize: 12)),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${red.grad} · ${red.polazakAt} · '
-                    '${red.datum.day}.${red.datum.month}.${red.datum.year}.',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 6),
-          ],
-        ),
-      ),
-    );
-  }
-}
