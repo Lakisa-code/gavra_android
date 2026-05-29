@@ -112,7 +112,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add pubspec.yaml
           git commit -m "Bump version to $(grep '^version:' pubspec.yaml | awk '{print $2}') [skip ci]"
-          git push
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
       - name: Restore Android credentials from secrets
         shell: bash
@@ -283,7 +283,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add pubspec.yaml
           git commit -m "Bump version to $(grep '^version:' pubspec.yaml | awk '{print $2}') [skip ci]"
-          git push
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
       - name: Restore App Store Connect key
         shell: bash
