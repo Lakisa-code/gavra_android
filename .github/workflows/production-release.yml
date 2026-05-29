@@ -78,45 +78,6 @@ jobs:
             exit 1
           fi
 
-      - name: Autobump app version and build
-        shell: bash
-        env:
-          RUN_NUMBER: ${{ github.run_number }}
-        run: |
-          python3 - <<'PY'
-          import os
-          import re
-
-          run_number = int(os.environ.get("RUN_NUMBER", "0"))
-          file_path = "pubspec.yaml"
-
-          with open(file_path, "r", encoding="utf-8") as file:
-              content = file.read()
-
-          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\s*$", content, re.MULTILINE)
-          if not match:
-              raise SystemExit("pubspec.yaml version format must be x.y.z")
-
-          major, minor, patch = map(int, match.groups())
-          new_patch = patch + run_number
-          new_version = f"{major}.{minor}.{new_patch}"
-
-          content = re.sub(r"^version:\s*.*$", f"version: {new_version}", content, count=1, flags=re.MULTILINE)
-          with open(file_path, "w", encoding="utf-8") as file:
-              file.write(content)
-
-          print(f"Version bumped to {new_version}")
-          PY
-
-      - name: Commit and push version bump
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pubspec.yaml
-          git commit -m "Bump version to $(grep '^version:' pubspec.yaml | awk '{print $2}') [skip ci]"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
       - name: Restore Android credentials from secrets
         shell: bash
         run: |
@@ -157,6 +118,45 @@ jobs:
 
       - name: Build release AAB
         run: flutter build appbundle --release
+
+      - name: Autobump app version and build
+        shell: bash
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+
+          run_number = int(os.environ.get("RUN_NUMBER", "0"))
+          file_path = "pubspec.yaml"
+
+          with open(file_path, "r", encoding="utf-8") as file:
+              content = file.read()
+
+          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\s*$", content, re.MULTILINE)
+          if not match:
+              raise SystemExit("pubspec.yaml version format must be x.y.z")
+
+          major, minor, patch = map(int, match.groups())
+          new_patch = patch + run_number
+          new_version = f"{major}.{minor}.{new_patch}"
+
+          content = re.sub(r"^version:\s*.*$", f"version: {new_version}", content, count=1, flags=re.MULTILINE)
+          with open(file_path, "w", encoding="utf-8") as file:
+              file.write(content)
+
+          print(f"Version bumped to {new_version}")
+          PY
+
+      - name: Commit and push version bump
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pubspec.yaml
+          git commit -m "Bump version to $(grep '^version:' pubspec.yaml | awk '{print $2}') [skip ci]"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
       - name: Restore Google Play service account
         shell: bash
@@ -249,45 +249,6 @@ jobs:
             exit 1
           fi
 
-      - name: Autobump app version and build
-        shell: bash
-        env:
-          RUN_NUMBER: ${{ github.run_number }}
-        run: |
-          python3 - <<'PY'
-          import os
-          import re
-
-          run_number = int(os.environ.get("RUN_NUMBER", "0"))
-          file_path = "pubspec.yaml"
-
-          with open(file_path, "r", encoding="utf-8") as file:
-              content = file.read()
-
-          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\s*$", content, re.MULTILINE)
-          if not match:
-              raise SystemExit("pubspec.yaml version format must be x.y.z")
-
-          major, minor, patch = map(int, match.groups())
-          new_patch = patch + run_number
-          new_version = f"{major}.{minor}.{new_patch}"
-
-          content = re.sub(r"^version:\s*.*$", f"version: {new_version}", content, count=1, flags=re.MULTILINE)
-          with open(file_path, "w", encoding="utf-8") as file:
-              file.write(content)
-
-          print(f"Version bumped to {new_version}")
-          PY
-
-      - name: Commit and push version bump
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pubspec.yaml
-          git commit -m "Bump version to $(grep '^version:' pubspec.yaml | awk '{print $2}') [skip ci]"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
       - name: Restore App Store Connect key
         shell: bash
         run: |
@@ -376,6 +337,45 @@ jobs:
       - name: Build iOS IPA
         run: |
           flutter build ipa --release --export-options-plist=$HOME/export_options.plist
+
+      - name: Autobump app version and build
+        shell: bash
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+
+          run_number = int(os.environ.get("RUN_NUMBER", "0"))
+          file_path = "pubspec.yaml"
+
+          with open(file_path, "r", encoding="utf-8") as file:
+              content = file.read()
+
+          match = re.search(r"^version:\s*(\d+)\.(\d+)\.(\d+)\s*$", content, re.MULTILINE)
+          if not match:
+              raise SystemExit("pubspec.yaml version format must be x.y.z")
+
+          major, minor, patch = map(int, match.groups())
+          new_patch = patch + run_number
+          new_version = f"{major}.{minor}.{new_patch}"
+
+          content = re.sub(r"^version:\s*.*$", f"version: {new_version}", content, count=1, flags=re.MULTILINE)
+          with open(file_path, "w", encoding="utf-8") as file:
+              file.write(content)
+
+          print(f"Version bumped to {new_version}")
+          PY
+
+      - name: Commit and push version bump
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pubspec.yaml
+          git commit -m "Bump version to $(grep '^version:' pubspec.yaml | awk '{print $2}') [skip ci]"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
       - name: Install Fastlane dependencies
         run: |
