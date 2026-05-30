@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../globals.dart';
 import '../services/realtime/v3_master_realtime_manager.dart';
 import '../utils/v3_container_utils.dart';
 
@@ -15,10 +16,6 @@ class V3VremeDolaskaWidget extends StatelessWidget {
   static const String _colEtaSeconds = 'eta_seconds';
   static const String _colComputedAt = 'computed_at';
 
-  // ETA se smatra zastarelom ako nema svežeg update-a duže od 90 sekundi.
-  // Ovo sprečava da ETA widget ostane "zalepljen" kada lokacije prestanu da stižu.
-  static const Duration _staleThreshold = Duration(seconds: 90);
-
   ({int? etaSeconds, bool isStale, String? vozacId}) _readEtaState(Map<String, dynamic>? row) {
     if (row == null) {
       return (etaSeconds: null, isStale: false, vozacId: null);
@@ -32,7 +29,7 @@ class V3VremeDolaskaWidget extends StatelessWidget {
     } else if (computedAtRaw is String) {
       computedAt = DateTime.tryParse(computedAtRaw);
     }
-    final stale = computedAt == null || DateTime.now().difference(computedAt) > _staleThreshold;
+    final stale = computedAt == null || DateTime.now().difference(computedAt) > etaStaleThreshold;
     final vozacId = row[_colVozacId]?.toString();
 
     return (etaSeconds: eta, isStale: stale, vozacId: vozacId);

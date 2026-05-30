@@ -232,3 +232,9 @@ ValueNotifier<DateTime?> get appSettingsActiveWeekStartNotifier => V3AppSettings
 /// APP SETTINGS ACTIVE WEEK END NOTIFIER - runtime izvor istine iz `v3_app_settings`.
 /// Sadrži kraj operativne sedmice isključivo iz baze.
 ValueNotifier<DateTime?> get appSettingsActiveWeekEndNotifier => V3AppSettingsState.instance.activeWeekEnd;
+
+/// ETA STALE THRESHOLD - nakon koliko sekundi se ETA smatra zastarelom
+/// Koristi se u:
+/// - V3VremeDolaskaWidget - za prikaz "sledeća vožnja" umesto zastarelog ETA
+/// - v3-compute-eta edge funkciji - za brisanje zastarelih redova
+const Duration etaStaleThreshold = Duration(seconds: 90);

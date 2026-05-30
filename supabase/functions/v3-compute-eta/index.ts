@@ -3,6 +3,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8" };
 
+/// ETA STALE THRESHOLD - nakon koliko sekundi se ETA smatra zastarelom
+/// Mora biti sinhronizovano sa etaStaleThreshold u lib/globals.dart
+const ETA_STALE_THRESHOLD_SECONDS = 90;
+
+/// OSRM retry konfiguracija
+const OSRM_MAX_RETRIES = 3;
+const OSRM_BASE_DELAY_MS = 1000;
+const OSRM_REQUEST_TIMEOUT_MS = 12000;
+
 type ComputeEtaPayload = {
   vozac_id?: string;
   lat?: number;
@@ -34,6 +43,31 @@ function normalizeTime(value: unknown): string {
     return `${hour}:${minute}`;
   }
   return timePart.slice(0, 5);
+}
+
+/// Fetch sa eksponencijalnim backoff retry-om
+async function fetchWithRetry(url: string, maxRetries: number = OSRM_MAX_RETRIES): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(OSRM_REQUEST_TIMEOUT_MS) });
+      if (response.ok) {
+        return response;
+      }
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
+
+    // Ako nije poslednji pokušaj, čekaj sa eksponencijalnim backoff-om
+    if (attempt < maxRetries) {
+      const delay = OSRM_BASE_DELAY_MS * Math.pow(2, attempt);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError || new Error("Max retries exceeded");
 }
 
 Deno.serve(async (req) => {
@@ -69,8 +103,8 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // 0. Obriši globalno sve zastarele ETA redove (starije od 90 sekundi)
-    const staleThreshold = new Date(Date.now() - 90_000).toISOString();
+    // 0. Obriši globalno sve zastarele ETA redove (starije od ETA_STALE_THRESHOLD_SECONDS)
+    const staleThreshold = new Date(Date.now() - ETA_STALE_THRESHOLD_SECONDS * 1000).toISOString();
     await client.from("v3_eta_results").delete().lt("computed_at", staleThreshold);
 
     // 1. Pronađi aktivne dodele (putnik_id + termin_id) - koristimo termin-level dodele
@@ -281,10 +315,9 @@ Deno.serve(async (req) => {
 
     let osrmResponse: Response;
     try {
-      osrmResponse = await fetch(osrmUrl, { signal: AbortSignal.timeout(12000) });
+      osrmResponse = await fetchWithRetry(osrmUrl);
     } catch (e) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      osrmResponse = await fetch(osrmUrl, { signal: AbortSignal.timeout(12000) });
+      return json(200, { ok: false, reason: "osrm_fetch_error", warning: e instanceof Error ? e.message : "Unknown error" });
     }
 
     if (!osrmResponse.ok) {
@@ -338,7 +371,7 @@ Deno.serve(async (req) => {
       }
       cumulative += Math.round(duration);
 
-      const originalIdx = Number(passengerWaypoints[tripRank].waypoint_index ?? tripRank + 1) - 1; // -1 jer je vozač index 0
+      const originalIdx = Number(passengerWaypoints[tripRank].waypoint_index) - 1; // -1 jer je vozač index 0
       const putnikId = remainingWaypoints[originalIdx]?.putnikId;
       if (!putnikId) continue;
 
