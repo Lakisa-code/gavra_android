@@ -197,9 +197,11 @@ Deno.serve(async (req) => {
     const firstTermin = terminMap[firstTerminId];
     const gradNorm = firstTermin?.grad ?? "BC"; // Fallback to BC if not found
 
-    const remainingPutnikIds = remainingDodele
-      .map((r) => terminMap[String(r.termin_id ?? "").trim()]?.putnikId ?? String(r.putnik_v3_auth_id ?? "").trim())
-      .filter(Boolean);
+    const remainingPutnikIds = Array.from(new Set(
+      remainingDodele
+        .map((r) => terminMap[String(r.termin_id ?? "").trim()]?.putnikId ?? String(r.putnik_v3_auth_id ?? "").trim())
+        .filter(Boolean),
+    ));
 
     // Obriši ETA za putnike koji nisu u aktivnom terminu (druga smena)
     const activePutnikIds = new Set<string>(remainingPutnikIds);

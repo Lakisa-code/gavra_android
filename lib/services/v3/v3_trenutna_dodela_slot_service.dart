@@ -168,6 +168,39 @@ class V3TrenutnaDodelaSlotService {
         .eq(colStatus, statusAktivan);
   }
 
+  static Future<void> updateCurrentLocation({
+    required String datumIso,
+    required String grad,
+    required String vreme,
+    required String vozacId,
+    required double lat,
+    required double lng,
+  }) async {
+    final datum = _normalizeDatumIso(datumIso);
+    final gradNorm = _normalizeGrad(grad);
+    final vremeNorm = _normalizeVreme(vreme);
+    final vozacIdNorm = vozacId.trim();
+    if (datum.isEmpty || gradNorm.isEmpty || vremeNorm.isEmpty || vozacIdNorm.isEmpty) return;
+
+    // Samo čuvaj trenutnu lokaciju, ne istoriju
+    final currentLocation = <Map<String, dynamic>>[
+      {
+        'lat': lat,
+        'lng': lng,
+        'timestamp': DateTime.now().toIso8601String(),
+      }
+    ];
+
+    await supabase
+        .from(tableName)
+        .update({colWaypointsJson: currentLocation})
+        .eq(colDatum, datum)
+        .eq(colGrad, gradNorm)
+        .eq(colVreme, vremeNorm)
+        .eq(colVozacId, vozacIdNorm)
+        .eq(colStatus, statusAktivan);
+  }
+
   static Future<void> deleteBySlot({
     required String datumIso,
     required String grad,
