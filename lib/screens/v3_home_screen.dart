@@ -317,6 +317,17 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
     final vozacId = vozac.id?.toString() ?? '';
     if (vozacId.isEmpty) return;
 
+    // Postavi aktivni termin pre pokretanja tracking-a
+    if (_blockingGrad != null && _blockingVreme != null) {
+      final today = DateTime.now();
+      final datumIso = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      V3VozacLocationTrackingService.instance.setActiveTermin(
+        datumIso: datumIso,
+        grad: _blockingGrad!,
+        vreme: _blockingVreme!,
+      );
+    }
+
     // Start tracking
     await V3VozacLocationTrackingService.instance.start(vozacId: vozacId);
 
