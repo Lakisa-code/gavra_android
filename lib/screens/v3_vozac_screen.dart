@@ -308,7 +308,9 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
 
   void _refreshPutniciOrderFromEtaCache() {
     final sharedEtaCache = V3VozacLocationTrackingService.instance.etaSecondsCache;
-    if (sharedEtaCache.isEmpty || _mojiPutnici.isEmpty) return;
+    final sharedOptimizedIds = V3VozacLocationTrackingService.instance.optimizedPutnikIds;
+    if (sharedEtaCache.isEmpty && sharedOptimizedIds.isEmpty) return;
+    if (_mojiPutnici.isEmpty) return;
     final sorted = _sortPutniciForDisplay(List<_PutnikEntry>.from(_mojiPutnici));
     if (mounted) {
       setState(() {
