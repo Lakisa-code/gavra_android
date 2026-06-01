@@ -29,6 +29,11 @@ class V3VozacLocationTrackingService {
   bool _inFlight = false;
   bool _isRunning = false;
 
+  /// Optimizovani redosled putnika (deljen između ekrana)
+  final List<String> _optimizedPutnikIds = [];
+  /// ETA vrednosti (deljene između ekrana)
+  final Map<String, int> _etaSecondsCache = {};
+
   /// Poziva se nakon svakog uspješnog slanja GPS pozicije (foreground).
   void Function(Position position)? onLocationSent;
 
@@ -39,6 +44,8 @@ class V3VozacLocationTrackingService {
   String get activeGrad => _activeGrad;
   String get activeVreme => _activeVreme;
   Position? get lastKnownPosition => _lastSentPosition;
+  List<String> get optimizedPutnikIds => List.unmodifiable(_optimizedPutnikIds);
+  Map<String, int> get etaSecondsCache => Map.unmodifiable(_etaSecondsCache);
 
   String _normalizeDateIso(String raw) {
     final value = raw.trim();
@@ -296,6 +303,14 @@ class V3VozacLocationTrackingService {
           }
         }
       }
+
+      // Čuvaj u zajednički cache za sve ekrane
+      _optimizedPutnikIds
+        ..clear()
+        ..addAll(order);
+      _etaSecondsCache
+        ..clear()
+        ..addAll(etaMap);
     }
     return (etaMap: etaMap, order: order);
   }
