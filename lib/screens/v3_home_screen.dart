@@ -319,10 +319,8 @@ class _V3HomeScreenState extends State<V3HomeScreen> with TickerProviderStateMix
 
     // Postavi aktivni termin pre pokretanja tracking-a
     if (_blockingGrad != null && _blockingVreme != null) {
-      final today = DateTime.now();
-      final datumIso = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
       V3VozacLocationTrackingService.instance.setActiveTermin(
-        datumIso: datumIso,
+        datumIso: _selectedDatumIso,
         grad: _blockingGrad!,
         vreme: _blockingVreme!,
       );
