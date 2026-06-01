@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../globals.dart';
 import 'v3_blocking_screen_service.dart';
+import 'v3_trenutna_dodela_slot_service.dart';
 
 enum V3LocationPrereqStatus {
   ok,
@@ -19,6 +21,7 @@ class V3VozacLocationTrackingService {
   static final V3VozacLocationTrackingService instance = V3VozacLocationTrackingService._();
 
   String _activeVozacId = '';
+  String _activeDatumIso = '';
   String _activeGrad = '';
   String _activeVreme = '';
   Position? _lastSentPosition;
@@ -32,17 +35,57 @@ class V3VozacLocationTrackingService {
   bool get isRunning => _isRunning;
 
   String? get activeVozacId => _activeVozacId.isNotEmpty ? _activeVozacId : null;
+  String get activeDatumIso => _activeDatumIso;
   String get activeGrad => _activeGrad;
   String get activeVreme => _activeVreme;
   Position? get lastKnownPosition => _lastSentPosition;
 
-  void setActiveTermin({required String grad, required String vreme}) {
+  String _normalizeDateIso(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return '';
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) {
+      final y = parsed.year.toString().padLeft(4, '0');
+      final m = parsed.month.toString().padLeft(2, '0');
+      final d = parsed.day.toString().padLeft(2, '0');
+      return '$y-$m-$d';
+    }
+    return value.split('T').first;
+  }
+
+  void _syncBackgroundTermin(FlutterBackgroundService service) {
+    if (_activeDatumIso.isEmpty || _activeGrad.isEmpty || _activeVreme.isEmpty) {
+      debugPrint('[V3VozacLocationTrackingService] Active termin not set, skipping background termin sync');
+      return;
+    }
+    service.invoke('set_termin', {'datum_iso': _activeDatumIso, 'grad': _activeGrad, 'vreme': _activeVreme});
+  }
+
+  Future<void> _syncBackgroundSupabaseConfig(FlutterBackgroundService service) async {
+    try {
+      if (!configService.isInitialized) {
+        await configService.initializeBasic();
+      }
+      final url = configService.getSupabaseUrl().trim();
+      final anonKey = configService.getSupabaseAnonKey().trim();
+      if (url.isEmpty || anonKey.isEmpty) {
+        debugPrint('[V3VozacLocationTrackingService] Supabase config empty, cannot sync to background');
+        return;
+      }
+      service.invoke('set_supabase_config', {'url': url, 'anon_key': anonKey});
+    } catch (e) {
+      debugPrint('[V3VozacLocationTrackingService] Failed to sync Supabase config to background: $e');
+    }
+  }
+
+  void setActiveTermin({required String datumIso, required String grad, required String vreme}) {
+    _activeDatumIso = _normalizeDateIso(datumIso);
     _activeGrad = grad.trim().toUpperCase();
     _activeVreme = vreme.trim();
 
     // Prosledi background servisu da i on šalje pravilne vrednosti
     final service = FlutterBackgroundService();
-    service.invoke('set_termin', {'grad': _activeGrad, 'vreme': _activeVreme});
+    service.invoke('set_termin', {'datum_iso': _activeDatumIso, 'grad': _activeGrad, 'vreme': _activeVreme});
   }
 
   Future<void> clearEtaForVozac({required String vozacId}) async {
@@ -56,7 +99,7 @@ class V3VozacLocationTrackingService {
     }
   }
 
-  Future<void> start({required String vozacId}) async {
+  Future<void> start({required String vozacId, bool sendImmediateLocation = true}) async {
     final normalizedVozacId = vozacId.trim();
     if (normalizedVozacId.isEmpty) return;
 
@@ -74,11 +117,22 @@ class V3VozacLocationTrackingService {
     if (!isServiceRunning) {
       await service.startService();
     }
-    // Prosledi vozac_id background servisu
-    service.invoke('set_vozac_id', {'vozac_id': normalizedVozacId});
+
+    await _syncBackgroundSupabaseConfig(service);
+    _syncBackgroundTermin(service);
+
+    // Prosledi vozac_id background servisu (+ fallback aktivni termin)
+    service.invoke('set_vozac_id', {
+      'vozac_id': normalizedVozacId,
+      'datum_iso': _activeDatumIso,
+      'grad': _activeGrad,
+      'vreme': _activeVreme,
+    });
 
     // Odmah pošalji i iz foreground-a (za brzu povratnu informaciju)
-    unawaited(_sendCurrentLocation());
+    if (sendImmediateLocation) {
+      unawaited(_sendCurrentLocation());
+    }
 
     // Deblokiraj ekran ako je bio blokiran
     V3BlockingScreenService.instance.onBlockingScreenDismissed();
@@ -98,6 +152,7 @@ class V3VozacLocationTrackingService {
   Future<void> stop() async {
     final vozacIdToClean = _activeVozacId;
     _activeVozacId = '';
+    _activeDatumIso = '';
     _lastSentPosition = null;
     _isRunning = false;
     onLocationSent = null;
@@ -130,6 +185,20 @@ class V3VozacLocationTrackingService {
 
       _lastSentPosition = position;
       onLocationSent?.call(position);
+
+      // Čuvaj trenutnu lokaciju u waypoints_json
+      if (_activeDatumIso.isNotEmpty && _activeGrad.isNotEmpty && _activeVreme.isNotEmpty) {
+        unawaited(
+          V3TrenutnaDodelaSlotService.updateCurrentLocation(
+            datumIso: _activeDatumIso,
+            grad: _activeGrad,
+            vreme: _activeVreme,
+            vozacId: _activeVozacId,
+            lat: position.latitude,
+            lng: position.longitude,
+          ).catchError((Object e) => debugPrint('[V3VozacLocationTrackingService] updateCurrentLocation error: $e')),
+        );
+      }
 
       unawaited(
         computeEta(
@@ -182,7 +251,7 @@ class V3VozacLocationTrackingService {
     return V3LocationPrereqStatus.ok;
   }
 
-  Future<Map<String, int>> computeEta({
+  Future<({Map<String, int> etaMap, List<String> order})> computeEta({
     required String vozacId,
     required double lat,
     required double lng,
@@ -202,7 +271,8 @@ class V3VozacLocationTrackingService {
     );
     debugPrint('[V3VozacLocationTrackingService] computeEta response: ${response.data}');
 
-    final result = <String, int>{};
+    final etaMap = <String, int>{};
+    final order = <String>[];
     final data = response.data;
     if (data is Map && data['ok'] == true) {
       final etaList = data['eta_results'];
@@ -212,12 +282,21 @@ class V3VozacLocationTrackingService {
             final pid = item['putnik_id']?.toString();
             final sec = (item['eta_seconds'] as num?)?.toInt();
             if (pid != null && pid.isNotEmpty && sec != null) {
-              result[pid] = sec;
+              etaMap[pid] = sec;
             }
           }
         }
       }
+      // Koristi eksplicitni optimizovani redosled iz OSRM
+      final optimizedOrder = data['optimized_order'];
+      if (optimizedOrder is List) {
+        for (final pid in optimizedOrder) {
+          if (pid is String && pid.isNotEmpty) {
+            order.add(pid);
+          }
+        }
+      }
     }
-    return result;
+    return (etaMap: etaMap, order: order);
   }
 }

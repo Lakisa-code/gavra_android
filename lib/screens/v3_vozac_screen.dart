@@ -78,6 +78,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
   bool _isNavigating = false;
   final List<String> _optimizedPutnikIds = [];
   final Map<String, int> _etaSecondsCache = {};
+  final Map<String, int> _orderIndexCache = {};
   bool _hasSentRouteToMap = false;
   bool _mapResyncInFlight = false;
   String _lastSentRouteSignature = '';
@@ -146,6 +147,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     _trenutnaDodelaRevisionSub = V3MasterRealtimeManager.instance.tablesRevisionStream(const [
       V3TrenutnaDodelaService.tableName,
       V3TrenutnaDodelaSlotService.tableName,
+      'v3_eta_results',
     ]).listen((_) {
       unawaited(_refreshDodelaFromRealtime());
     });
@@ -234,19 +236,25 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
   List<_PutnikEntry> _sortPutniciForDisplay(
     List<_PutnikEntry> putnici,
   ) {
-    if (_etaSecondsCache.isEmpty) {
-      debugPrint('[SORT] ETA cache empty, keeping original order');
-      return List<_PutnikEntry>.from(putnici);
-    }
     final sorted = List<_PutnikEntry>.from(putnici);
     sorted.sort((a, b) {
-      // Završeni (pokupljeni/otkazani) ostaju prepoznati - ali neka prvo ide sveže vreme
+      // Završeni (pokupljeni/otkazani) idu na kraj
       final isCompletedA = _isPutnikEntryCompleted(a);
       final isCompletedB = _isPutnikEntryCompleted(b);
       if (isCompletedA != isCompletedB) {
         return isCompletedA ? 1 : -1;
       }
 
+      // Koristi OSRM optimizovani redosled ako je dostupan
+      if (_optimizedPutnikIds.isNotEmpty) {
+        int indexA = _optimizedPutnikIds.indexOf(a.putnik.id);
+        int indexB = _optimizedPutnikIds.indexOf(b.putnik.id);
+        if (indexA == -1) indexA = 999;
+        if (indexB == -1) indexB = 999;
+        return indexA.compareTo(indexB);
+      }
+
+      // Fallback: sortira po ETA ako optimizovani redosled nije dostupan
       final etaA = _etaSecondsCache[a.putnik.id] ?? 999999;
       final etaB = _etaSecondsCache[b.putnik.id] ?? 999999;
       return etaA.compareTo(etaB);
@@ -256,7 +264,8 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     final buf = StringBuffer('[SORT] order:');
     for (final p in sorted) {
       final eta = _etaSecondsCache[p.putnik.id] ?? -1;
-      buf.write(' ${p.putnik.imePrezime}=${eta}s');
+      final optIdx = _optimizedPutnikIds.isNotEmpty ? _optimizedPutnikIds.indexOf(p.putnik.id) : -1;
+      buf.write(' ${p.putnik.imePrezime}(ETA=${eta}s,OptIdx=${optIdx})');
     }
     debugPrint(buf.toString());
 
@@ -267,10 +276,12 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     final vozacId = (_efektivniVozac?.id?.toString() ?? '').trim();
     if (vozacId.isEmpty) {
       _etaSecondsCache.clear();
+      _orderIndexCache.clear();
       return;
     }
 
-    final next = <String, int>{};
+    final nextEta = <String, int>{};
+    final nextOrder = <String, int>{};
     final etaRows = V3MasterRealtimeManager.instance.etaResultsCache.values;
     for (final row in etaRows) {
       final rowVozacId = (row['vozac_id']?.toString() ?? '').trim();
@@ -286,14 +297,49 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
       } else if (etaRaw is String) {
         etaSeconds = int.tryParse(etaRaw);
       }
-      if (etaSeconds == null || etaSeconds < 0) continue;
+      if (etaSeconds != null && etaSeconds >= 0) {
+        nextEta[putnikId] = etaSeconds;
+      }
 
-      next[putnikId] = etaSeconds;
+      final orderRaw = row['order_index'];
+      int? orderIndex;
+      if (orderRaw is num) {
+        orderIndex = orderRaw.toInt();
+      } else if (orderRaw is String) {
+        orderIndex = int.tryParse(orderRaw);
+      }
+      if (orderIndex != null && orderIndex >= 0) {
+        nextOrder[putnikId] = orderIndex;
+      }
+    }
+
+    // Zaštita: ako je navigacija aktivna i lokalni cache ima više podataka,
+    // novi cache je verovatno zastareo (npr. server je obrisao stare redove
+    // a realtime za nove insertove još nije stigao).
+    if (_isNavigating && _etaSecondsCache.isNotEmpty && nextEta.length < _etaSecondsCache.length) {
+      debugPrint('[ETA] Skip cache refresh: local=${_etaSecondsCache.length} new=${nextEta.length} (navigating)');
+      return;
+    }
+    if (_isNavigating && _orderIndexCache.isNotEmpty && nextOrder.length < _orderIndexCache.length) {
+      debugPrint('[ORDER] Skip cache refresh: local=${_orderIndexCache.length} new=${nextOrder.length} (navigating)');
+      return;
     }
 
     _etaSecondsCache
       ..clear()
-      ..addAll(next);
+      ..addAll(nextEta);
+    _orderIndexCache
+      ..clear()
+      ..addAll(nextOrder);
+
+    // Ažuriraj _optimizedPutnikIds na osnovu order_index
+    if (nextOrder.isNotEmpty) {
+      final sortedByOrder = nextOrder.entries.toList()
+        ..sort((a, b) => a.value.compareTo(b.value));
+      _optimizedPutnikIds
+        ..clear()
+        ..addAll(sortedByOrder.map((e) => e.key));
+    }
   }
 
   void _refreshPutniciOrderFromEtaCache() {
@@ -303,6 +349,52 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
       setState(() {
         _mojiPutnici = sorted;
       });
+    }
+  }
+
+  /// Ponovo izračunaj ETA-e kada se app vrati sa aktivnom navigacijom
+  /// (npr. vozač je ubio app a background servis je i dalje trajao).
+  Future<void> _restoreEtaFromLastKnownPosition() async {
+    if (!_isNavigating) return;
+    final vid = (_efektivniVozac?.id?.toString() ?? '').trim();
+    if (vid.isEmpty) return;
+
+    final pos = V3VozacLocationTrackingService.instance.lastKnownPosition;
+    if (pos == null) return;
+
+    try {
+      final etaResult = await V3VozacLocationTrackingService.instance.computeEta(
+        vozacId: vid,
+        lat: pos.latitude,
+        lng: pos.longitude,
+        grad: _selectedGrad,
+        vreme: _selectedVreme,
+      );
+      debugPrint('[RESTORE] ETA map: ${etaResult.etaMap}');
+      debugPrint('[RESTORE] optimized order: ${etaResult.order}');
+
+      if (!mounted) return;
+      if (etaResult.order.isNotEmpty) {
+        _optimizedPutnikIds
+          ..clear()
+          ..addAll(etaResult.order);
+      }
+      if (etaResult.etaMap.isNotEmpty) {
+        setState(() {
+          _etaSecondsCache
+            ..clear()
+            ..addAll(etaResult.etaMap);
+        });
+        _refreshPutniciOrderFromEtaCache();
+        debugPrint('[RESTORE] cards re-sorted by ETA');
+      } else if (_optimizedPutnikIds.isNotEmpty) {
+        setState(() {
+          _applyOptimizedOrderToPutnici();
+        });
+        debugPrint('[RESTORE] no ETA values, applied optimized order');
+      }
+    } catch (e) {
+      debugPrint('[RESTORE] ETA restore error: $e');
     }
   }
 
@@ -368,6 +460,11 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _rebuild();
+        // Ako je navigacija aktivna (app ubijena pa ponovo otvorena),
+        // ponovo izračunaj ETA-e sa poslednjom poznatom lokacijom
+        if (_isNavigating) {
+          unawaited(_restoreEtaFromLastKnownPosition());
+        }
       });
     }
   }
@@ -398,7 +495,18 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
   Future<void> _startDriverLocationTracking() async {
     final vozacId = (V3VozacService.currentVozac?.id ?? '').toString().trim();
     if (vozacId.isEmpty) return;
-    await V3VozacLocationTrackingService.instance.start(vozacId: vozacId);
+    
+    // Postavi aktivni termin pre pokretanja tracking-a
+    V3VozacLocationTrackingService.instance.setActiveTermin(
+      datumIso: _selectedDatumIso,
+      grad: _selectedGrad,
+      vreme: _selectedVreme,
+    );
+    
+    await V3VozacLocationTrackingService.instance.start(
+      vozacId: vozacId,
+      sendImmediateLocation: false,
+    );
   }
 
   bool _isPutnikEntryCompleted(_PutnikEntry item) {
@@ -580,6 +688,13 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
       }
     });
 
+    // Sigurnosna mreža: ako imamo ETA podatke, uvek ponovo primeni redosled.
+    // Sprečava race condition gde realtime event pregazi ispravan redosled
+    // dok je computeEta() poziv još uvek u toku.
+    if (_isNavigating && _etaSecondsCache.isNotEmpty) {
+      _refreshPutniciOrderFromEtaCache();
+    }
+
     _maybeAutoStopTrackingForCompletedTermin(putniciZaPrikaz);
   }
 
@@ -617,6 +732,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     // Ako je tracking aktivan, ažuriraj aktivni termin
     if (V3VozacLocationTrackingService.instance.isRunning) {
       V3VozacLocationTrackingService.instance.setActiveTermin(
+        datumIso: _selectedDatumIso,
         grad: normalizedGrad,
         vreme: normalizedVreme,
       );
@@ -984,9 +1100,26 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
     // Prvo postavi termin (grad+vreme) pa onda pokreni tracking —
     // _sendCurrentLocation() unutar start() koristi ove vrednosti.
     V3VozacLocationTrackingService.instance.setActiveTermin(
+      datumIso: _selectedDatumIso,
       grad: _selectedGrad,
       vreme: _selectedVreme,
     );
+
+    final vozacId = (_efektivniVozac?.id?.toString() ?? '').trim();
+    if (vozacId.isNotEmpty && _selectedGrad.trim().isNotEmpty && _selectedVreme.trim().isNotEmpty) {
+      try {
+        await V3TrenutnaDodelaSlotService.upsertActiveSlotDodela(
+          datumIso: _selectedDatumIso,
+          grad: _selectedGrad,
+          vreme: _selectedVreme,
+          vozacId: vozacId,
+          updatedBy: vozacId,
+        );
+      } catch (e) {
+        debugPrint('[START] upsert slot before tracking error: $e');
+      }
+    }
+
     await _startDriverLocationTracking();
 
     // Odmah dohvati prvi ETA da sortiramo kartice — ne čekamo realtime sync
@@ -1003,42 +1136,46 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
         );
         debugPrint('[START] direct GPS: ${position.latitude}, ${position.longitude}');
 
-        final etaMap = await V3VozacLocationTrackingService.instance.computeEta(
+        final etaResult = await V3VozacLocationTrackingService.instance.computeEta(
           vozacId: vid,
           lat: position.latitude,
           lng: position.longitude,
           grad: _selectedGrad,
           vreme: _selectedVreme,
         );
-        debugPrint('[START] ETA map: $etaMap');
+        debugPrint('[START] ETA map: ${etaResult.etaMap}');
+        debugPrint('[START] optimized order: ${etaResult.order}');
 
-        if (mounted && etaMap.isNotEmpty) {
-          setState(() {
-            _etaSecondsCache
+        if (mounted) {
+          if (etaResult.order.isNotEmpty) {
+            _optimizedPutnikIds
               ..clear()
-              ..addAll(etaMap);
-          });
-          _refreshPutniciOrderFromEtaCache();
-          debugPrint('[START] cards re-sorted by ETA');
-        } else {
-          debugPrint('[START] ETA map empty, cards not re-sorted');
+              ..addAll(etaResult.order);
+          }
+          if (etaResult.etaMap.isNotEmpty) {
+            setState(() {
+              _etaSecondsCache
+                ..clear()
+                ..addAll(etaResult.etaMap);
+            });
+            _refreshPutniciOrderFromEtaCache();
+            debugPrint('[START] cards re-sorted by ETA');
+          } else if (_optimizedPutnikIds.isNotEmpty) {
+            setState(() {
+              _applyOptimizedOrderToPutnici();
+            });
+            debugPrint('[START] no ETA values, applied optimized order');
+          } else {
+            debugPrint('[START] ETA map empty, no optimized order, cards not re-sorted');
+          }
         }
       } catch (e) {
         debugPrint('[START] immediate ETA fetch error: $e');
       }
     }
 
-    final vozacId = (_efektivniVozac?.id?.toString() ?? '').trim();
     if (vozacId.isNotEmpty && _selectedGrad.trim().isNotEmpty && _selectedVreme.trim().isNotEmpty) {
       try {
-        await V3TrenutnaDodelaSlotService.upsertActiveSlotDodela(
-          datumIso: _selectedDatumIso,
-          grad: _selectedGrad,
-          vreme: _selectedVreme,
-          vozacId: vozacId,
-          updatedBy: vozacId,
-        );
-
         await V3DriverPushNotificationService.notifyPassengersDriverStarted(
           vozacId: vozacId,
           datumIso: _selectedDatumIso,
@@ -1046,7 +1183,7 @@ class _V3VozacScreenState extends State<V3VozacScreen> with WidgetsBindingObserv
           vreme: _selectedVreme,
         );
       } catch (e) {
-        debugPrint('[START] notify passengers / upsert slot error: $e');
+        debugPrint('[START] notify passengers error: $e');
       }
     }
 

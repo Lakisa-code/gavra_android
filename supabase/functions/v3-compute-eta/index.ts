@@ -311,29 +311,36 @@ Deno.serve(async (req) => {
       coordStr(destLat, destLng)
     ].join(";");
 
+    console.log(`[v3-compute-eta] remainingWaypoints:`, JSON.stringify(remainingWaypoints, null, 2));
+    console.log(`[v3-compute-eta] tripCoords:`, tripCoords);
+
     const osrmUrl =
       `${osrmBaseUrl}/trip/v1/driving/${tripCoords}` +
       `?source=first&destination=last&roundtrip=false&steps=false&overview=false`;
+
+    console.log(`[v3-compute-eta] OSRM URL:`, osrmUrl);
 
     let osrmResponse: Response;
     try {
       osrmResponse = await fetchWithRetry(osrmUrl);
     } catch (e) {
-      return json(200, { ok: false, reason: "osrm_fetch_error", warning: e instanceof Error ? e.message : "Unknown error" });
+      return json(200, { ok: false, reason: "osrm_fetch_error", warning: e instanceof Error ? e.message : "Unknown error", debug: { remainingWaypoints, tripCoords, osrmUrl } });
     }
 
     if (!osrmResponse.ok) {
-      return json(200, { ok: false, reason: "osrm_http_error", status: osrmResponse.status });
+      return json(200, { ok: false, reason: "osrm_http_error", status: osrmResponse.status, debug: { remainingWaypoints, tripCoords, osrmUrl } });
     }
 
     const osrmData = await osrmResponse.json();
+    console.log(`[v3-compute-eta] OSRM response:`, JSON.stringify(osrmData, null, 2));
+
     if (osrmData.code !== "Ok") {
-      return json(200, { ok: false, reason: "osrm_code_error", code: osrmData.code });
+      return json(200, { ok: false, reason: "osrm_code_error", code: osrmData.code, debug: { remainingWaypoints, tripCoords, osrmUrl, osrmData } });
     }
 
     // 10. Parsiraj optimizovani redosled iz waypoints[].waypoint_index
-    // OSRM /trip vraća waypoints u trip-redosledu (optimizovanom).
-    // Svaki waypoint ima waypoint_index = originalni redni broj u zahtevu.
+    // OSRM /trip vraća waypoints u ulaznom redosledu koordinata.
+    // waypoint_index označava poziciju waypointa u optimizovanom trip redosledu.
     // Indeks 0 je vozač (source=first), poslednji je destinacioni grad.
     const rawWaypoints = osrmData.waypoints;
     const rawTrips = osrmData.trips;
@@ -350,8 +357,19 @@ Deno.serve(async (req) => {
       return json(200, { ok: false, reason: "osrm_no_legs" });
     }
 
-    // Putnički waypoints su već u optimalnom trip-redosledu nakon slice(1, -1)
-    const passengerWaypoints = rawWaypoints.slice(1, -1);
+    // Putničke waypointe sortiramo po trip-rangu (waypoint_index) da se poravnaju sa legs[] redosledom.
+    // Čuvamo i originalni ulazni indeks (u tripCoords) da bismo ispravno mapirali na putnikId.
+    const passengerWaypoints = rawWaypoints
+      .map((waypoint: any, inputIndex: number) => ({ waypoint, inputIndex }))
+      .slice(1, -1)
+      .sort((a: any, b: any) => Number(a?.waypoint?.waypoint_index ?? 0) - Number(b?.waypoint?.waypoint_index ?? 0));
+
+    const passengerWaypointsDebug = passengerWaypoints.map((entry: any) => ({
+      waypoint_index: entry.waypoint.waypoint_index,
+      input_index: entry.inputIndex,
+      location: entry.waypoint.location
+    }));
+    const legsDurationsDebug = legs.map((l: any) => Math.round(l.duration));
 
     // 11. Izračunaj kumulativni ETA u optimalnom redosledu
     // legs[0] = vozač → prvi putnik u trip-u, legs[1] = prvi → drugi, itd.
@@ -363,6 +381,14 @@ Deno.serve(async (req) => {
       computed_at: string;
     }> = [];
 
+    // Kreiraj mapu: originalni_index (u tripCoords) → putnikId
+    // tripCoords = [vozač, putnik0, putnik1, putnik2, putnik3, putnik4, destinacija]
+    // indeksi:       0       1       2       3       4       5       6
+    const originalIndexToPutnikId: Record<number, string> = {};
+    for (let i = 0; i < remainingWaypoints.length; i++) {
+      originalIndexToPutnikId[i + 1] = remainingWaypoints[i].putnikId; // +1 jer je vozač index 0
+    }
+
     let cumulative = 0;
     for (let tripRank = 0; tripRank < passengerWaypoints.length; tripRank++) {
       const leg = legs[tripRank];
@@ -373,14 +399,18 @@ Deno.serve(async (req) => {
       }
       cumulative += Math.round(duration);
 
-      const originalIdx = Number(passengerWaypoints[tripRank].waypoint_index) - 1; // -1 jer je vozač index 0
-      const putnikId = remainingWaypoints[originalIdx]?.putnikId;
-      if (!putnikId) continue;
+      const originalIdx = Number(passengerWaypoints[tripRank].inputIndex);
+      const putnikId = originalIndexToPutnikId[originalIdx];
+      if (!putnikId) {
+        console.warn(`[v3-compute-eta] input index ${originalIdx} not found in map`);
+        continue;
+      }
 
       upsertRows.push({
         putnik_id: putnikId,
         vozac_id: vozacId,
         eta_seconds: cumulative,
+        order_index: tripRank, // OSRM optimizovani redosled (0 = prvi putnik za pokupiti)
         computed_at: now,
       });
     }
@@ -400,10 +430,15 @@ Deno.serve(async (req) => {
 
     console.log(`[v3-compute-eta] ✅ vozac=${vozacId.substring(0, 8)} updated=${upsertRows.length} putnika`);
 
+    // Ekstraktuj optimizovani redosled putnika (OSRM trip redosled)
+    const optimizedOrder = upsertRows.map((r) => r.putnik_id);
+
     return json(200, {
       ok: true,
       updated: upsertRows.length,
       eta_results: upsertRows.map((r) => ({ putnik_id: r.putnik_id, eta_seconds: r.eta_seconds })),
+      optimized_order: optimizedOrder,
+      debug: { remainingWaypoints, tripCoords, osrmUrl, osrmWaypoints: rawWaypoints, passengerWaypointsDebug, legsDurationsDebug }
     });
   } catch (error) {
     return json(200, {
