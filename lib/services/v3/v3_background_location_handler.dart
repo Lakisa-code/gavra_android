@@ -1,46 +1,61 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Konstante za background servis
 const String _kVozacId = 'vozac_id';
+const String _kSetSupabaseConfig = 'set_supabase_config';
 const String _kActionStop = 'stop';
 const Duration _kInterval = Duration(seconds: 30);
 
 /// Globalni mutable state za background isolate — Dart dozvoljava top-level promenljive u entry-point fajlu.
 String? _bgVozacId;
+String _bgDatumIso = '';
 String _bgGrad = '';
 String _bgVreme = '';
 Timer? _bgTimer;
 bool _bgInFlight = false;
+SupabaseClient? _bgSupabaseClient;
+String _bgSupabaseUrl = '';
+String _bgSupabaseAnonKey = '';
+
+void _bgTryInitSupabaseClient() {
+  if (_bgSupabaseClient != null) return;
+  if (_bgSupabaseUrl.isEmpty || _bgSupabaseAnonKey.isEmpty) return;
+
+  _bgSupabaseClient = SupabaseClient(
+    _bgSupabaseUrl,
+    _bgSupabaseAnonKey,
+    authOptions: const AuthClientOptions(
+      autoRefreshToken: false,
+    ),
+  );
+  debugPrint('[BG] Supabase client inicijalizovan iz main isolate konfiguracije');
+}
 
 /// Top-level callback za flutter_background_service.
 /// Pokreće se u posebnom isolate-u i šalje GPS lokaciju svakih 30 sekundi.
 @pragma('vm:entry-point')
 Future<void> onBackgroundServiceStart(ServiceInstance service) async {
-  DartPluginRegistrant.ensureInitialized();
-
-  // Učitaj .env i inicijalizuj Supabase u ovom isolate-u
-  try {
-    await dotenv.load(fileName: '.env');
-    final url = dotenv.maybeGet('SUPABASE_URL')?.trim() ?? '';
-    final anonKey = dotenv.maybeGet('SUPABASE_ANON_KEY')?.trim() ?? '';
-    if (url.isNotEmpty && anonKey.isNotEmpty) {
-      await Supabase.initialize(url: url, anonKey: anonKey);
-    }
-  } catch (e) {
-    debugPrint('[BG] Supabase init error: $e');
-  }
+  // Supabase konfiguraciju očekujemo iz main isolate-a preko service.invoke.
+  service.on(_kSetSupabaseConfig).listen((event) {
+    _bgSupabaseUrl = (event?['url'] ?? '').toString().trim();
+    _bgSupabaseAnonKey = (event?['anon_key'] ?? '').toString().trim();
+    _bgSupabaseClient = null;
+    _bgTryInitSupabaseClient();
+  });
 
   service.on(_kActionStop).listen((event) {
     _bgTimer?.cancel();
     _bgTimer = null;
     _bgVozacId = null;
+    _bgDatumIso = '';
+    _bgSupabaseUrl = '';
+    _bgSupabaseAnonKey = '';
+    _bgSupabaseClient = null;
     service.stopSelf();
   });
 
@@ -49,15 +64,22 @@ Future<void> onBackgroundServiceStart(ServiceInstance service) async {
     final id = (event?[_kVozacId] as String?)?.trim();
     if (id != null && id.isNotEmpty) {
       _bgVozacId = id;
+      final datumIso = (event?['datum_iso'] ?? '').toString().trim();
+      final grad = (event?['grad'] ?? '').toString().trim().toUpperCase();
+      final vreme = (event?['vreme'] ?? '').toString().trim();
+      if (datumIso.isNotEmpty) _bgDatumIso = datumIso;
+      if (grad.isNotEmpty) _bgGrad = grad;
+      if (vreme.isNotEmpty) _bgVreme = vreme;
       _bgStartTimer();
     }
   });
 
   // Glavni isolate šalje aktivni termin (grad+vreme)
   service.on('set_termin').listen((event) {
+    _bgDatumIso = (event?['datum_iso'] ?? '').toString().trim();
     _bgGrad = (event?['grad'] ?? '').toString().trim().toUpperCase();
     _bgVreme = (event?['vreme'] ?? '').toString().trim();
-    debugPrint('[BG] Termin ažuriran: grad=$_bgGrad vreme=$_bgVreme');
+    debugPrint('[BG] Termin ažuriran: datum=$_bgDatumIso grad=$_bgGrad vreme=$_bgVreme');
   });
 }
 
@@ -74,8 +96,14 @@ Future<void> _bgSendLocation() async {
   final vozacId = _bgVozacId;
   if (vozacId == null || vozacId.isEmpty || _bgInFlight) return;
 
-  final client = Supabase.instance.client;
-  if (client.auth.currentSession == null && client.auth.currentUser == null) {
+  final client = _bgSupabaseClient;
+  if (client == null) {
+    _bgTryInitSupabaseClient();
+  }
+
+  final activeClient = _bgSupabaseClient;
+  if (activeClient == null) {
+    debugPrint('[BG] Supabase client nije inicijalizovan u background isolate-u');
     return;
   }
 
@@ -87,13 +115,10 @@ Future<void> _bgSendLocation() async {
       return;
     }
 
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
+    final permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
-      debugPrint('[BG] Dozvola za lokaciju odbijena');
+      debugPrint('[BG] Dozvola za lokaciju nije odobrena (background ne traži permission)');
       return;
     }
 
@@ -104,7 +129,42 @@ Future<void> _bgSendLocation() async {
       ),
     );
 
-    await client.functions.invoke(
+    if (_bgDatumIso.isEmpty || _bgGrad.isEmpty || _bgVreme.isEmpty) {
+      debugPrint('[BG] Preskačem upis lokacije: termin nije postavljen (datum=$_bgDatumIso grad=$_bgGrad vreme=$_bgVreme)');
+    }
+
+    // Čuvaj trenutnu lokaciju u waypoints_json
+    if (_bgDatumIso.isNotEmpty && _bgGrad.isNotEmpty && _bgVreme.isNotEmpty) {
+      try {
+        final currentLocation = <Map<String, dynamic>>[
+          {
+            'lat': position.latitude,
+            'lng': position.longitude,
+            'timestamp': DateTime.now().toIso8601String(),
+          }
+        ];
+
+        final updatedRows = await activeClient
+            .from('v3_trenutna_dodela_slot')
+            .update({'waypoints_json': currentLocation})
+            .eq('datum', _bgDatumIso)
+            .eq('grad', _bgGrad)
+            .eq('vreme', _bgVreme)
+            .eq('vozac_v3_auth_id', vozacId)
+            .eq('status', 'aktivan')
+            .select('datum');
+
+        if (updatedRows is List && updatedRows.isEmpty) {
+          debugPrint('[BG] updateCurrentLocation: 0 rows updated for slot=$_bgDatumIso|$_bgGrad|$_bgVreme vozac=$vozacId');
+        }
+
+        debugPrint('[BG] Trenutna lokacija sačuvana');
+      } catch (e) {
+        debugPrint('[BG] Greška pri čuvanju trenutne lokacije: $e');
+      }
+    }
+
+    await activeClient.functions.invoke(
       'v3-compute-eta',
       body: <String, dynamic>{
         'vozac_id': vozacId,

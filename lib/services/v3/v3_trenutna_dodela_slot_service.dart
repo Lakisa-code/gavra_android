@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../globals.dart';
 import '../../utils/v3_status_policy.dart';
 import '../../utils/v3_time_utils.dart';
@@ -158,14 +160,19 @@ class V3TrenutnaDodelaSlotService {
     final vozacIdNorm = vozacId.trim();
     if (datum.isEmpty || gradNorm.isEmpty || vremeNorm.isEmpty || vozacIdNorm.isEmpty || waypoints.isEmpty) return;
 
-    await supabase
+    final updatedRows = await supabase
         .from(tableName)
         .update({colWaypointsJson: waypoints})
         .eq(colDatum, datum)
         .eq(colGrad, gradNorm)
         .eq(colVreme, vremeNorm)
         .eq(colVozacId, vozacIdNorm)
-        .eq(colStatus, statusAktivan);
+        .eq(colStatus, statusAktivan)
+        .select('datum');
+
+    if (updatedRows is List && updatedRows.isEmpty) {
+      debugPrint('[V3TrenutnaDodelaSlotService] updateWaypointsJson: 0 rows updated for slot=$datum|$gradNorm|$vremeNorm vozac=$vozacIdNorm');
+    }
   }
 
   static Future<void> updateCurrentLocation({
@@ -191,14 +198,19 @@ class V3TrenutnaDodelaSlotService {
       }
     ];
 
-    await supabase
+    final updatedRows = await supabase
         .from(tableName)
         .update({colWaypointsJson: currentLocation})
         .eq(colDatum, datum)
         .eq(colGrad, gradNorm)
         .eq(colVreme, vremeNorm)
         .eq(colVozacId, vozacIdNorm)
-        .eq(colStatus, statusAktivan);
+        .eq(colStatus, statusAktivan)
+        .select('datum');
+
+    if (updatedRows is List && updatedRows.isEmpty) {
+      debugPrint('[V3TrenutnaDodelaSlotService] updateCurrentLocation: 0 rows updated for slot=$datum|$gradNorm|$vremeNorm vozac=$vozacIdNorm');
+    }
   }
 
   static Future<void> deleteBySlot({
