@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "node",
+      "args": [
+        "c:\\Users\\Bojan\\gavra_android\\supabase-official-mcp\\index.js"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "your_supabase_personal_access_token",
+        "SUPABASE_PROJECT_REF": "optional_project_ref"
+      }
+    }
+  }
+}

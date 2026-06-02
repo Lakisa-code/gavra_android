@@ -1,9 +1,20 @@
 {
   "name": "supabase-official-mcp",
   "version": "1.0.0",
-  "description": "Supabase MCP Server dependencies",
-  "type": "commonjs",
+  "description": "Official Supabase MCP Server",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "supabase-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
-    "@supabase/mcp-server-supabase": "^0.7.0"
+    "@supabase/mcp-server-supabase": "^0.7.0",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
