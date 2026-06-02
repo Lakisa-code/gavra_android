@@ -5,6 +5,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../globals.dart';
+import '../../utils/v3_time_utils.dart';
 import 'v3_blocking_screen_service.dart';
 import 'v3_trenutna_dodela_slot_service.dart';
 
@@ -106,7 +107,7 @@ class V3VozacLocationTrackingService {
   void setActiveTermin({required String datumIso, required String grad, required String vreme}) {
     _activeDatumIso = _normalizeDateIso(datumIso);
     _activeGrad = grad.trim().toUpperCase();
-    _activeVreme = vreme.trim();
+    _activeVreme = V3TimeUtils.normalizeToHHmm(vreme);
 
     // Prosledi background servisu da i on šalje pravilne vrednosti
     final service = FlutterBackgroundService();

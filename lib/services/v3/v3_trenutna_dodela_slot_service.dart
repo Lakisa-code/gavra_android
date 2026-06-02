@@ -18,6 +18,39 @@ class V3TrenutnaDodelaSlotService {
   static const String colUpdatedBy = 'updated_by';
   static const String colWaypointsJson = 'waypoints_json';
 
+  static Future<void> _deactivateOtherActiveSlotsForVozacOnDate({
+    required String datum,
+    required String vozac,
+    required String activeGrad,
+    required String activeVreme,
+    String? updatedBy,
+  }) async {
+    final rows = await supabase
+        .from(tableName)
+        .select('id, $colGrad, $colVreme')
+        .eq(colDatum, datum)
+        .eq(colVozacId, vozac)
+        .eq(colStatus, statusAktivan);
+
+    for (final row in (rows as List<dynamic>)) {
+      final mapped = row as Map<String, dynamic>;
+      final rowId = mapped['id']?.toString().trim() ?? '';
+      if (rowId.isEmpty) continue;
+
+      final rowGrad = _normalizeGrad(mapped[colGrad]?.toString());
+      final rowVreme = _normalizeVreme(mapped[colVreme]?.toString());
+      final isSelectedSlot = rowGrad == activeGrad && rowVreme == activeVreme;
+      if (isSelectedSlot) continue;
+
+      final payload = <String, dynamic>{
+        colStatus: statusNeaktivan,
+        if ((updatedBy ?? '').trim().isNotEmpty) colUpdatedBy: updatedBy!.trim(),
+      };
+
+      await supabase.from(tableName).update(payload).eq('id', rowId);
+    }
+  }
+
   static String _normalizeDatumIso(String? raw) {
     final value = (raw ?? '').trim();
     if (value.isEmpty) return '';
@@ -145,6 +178,13 @@ class V3TrenutnaDodelaSlotService {
     };
 
     await supabase.from(tableName).upsert(payload, onConflict: '$colDatum,$colGrad,$colVreme');
+    await _deactivateOtherActiveSlotsForVozacOnDate(
+      datum: datum,
+      vozac: vozac,
+      activeGrad: gradNorm,
+      activeVreme: vremeNorm,
+      updatedBy: updatedBy,
+    );
   }
 
   static Future<void> updateWaypointsJson({
@@ -170,7 +210,7 @@ class V3TrenutnaDodelaSlotService {
         .eq(colStatus, statusAktivan)
         .select('datum');
 
-    if (updatedRows is List && updatedRows.isEmpty) {
+    if (updatedRows.isEmpty) {
       debugPrint('[V3TrenutnaDodelaSlotService] updateWaypointsJson: 0 rows updated for slot=$datum|$gradNorm|$vremeNorm vozac=$vozacIdNorm');
     }
   }
@@ -208,7 +248,7 @@ class V3TrenutnaDodelaSlotService {
         .eq(colStatus, statusAktivan)
         .select('datum');
 
-    if (updatedRows is List && updatedRows.isEmpty) {
+    if (updatedRows.isEmpty) {
       debugPrint('[V3TrenutnaDodelaSlotService] updateCurrentLocation: 0 rows updated for slot=$datum|$gradNorm|$vremeNorm vozac=$vozacIdNorm');
     }
   }
