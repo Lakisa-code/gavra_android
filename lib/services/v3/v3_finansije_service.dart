@@ -272,12 +272,24 @@ class V3FinansijeService {
         if (isPoDanu) {
           final danIso = V3DateUtils.parseIsoDatePart(datum.toIso8601String());
           final opCache = V3MasterRealtimeManager.instance.getCache('v3_operativna_nedelja');
-          final vecVozioDanas = opCache.values.any((r) =>
-              (r['created_by']?.toString() ?? '') == safePutnikId &&
-              V3DateUtils.parseIsoDatePart(r['datum']?.toString() ?? '') ==
-                  danIso && // Proveravamo da li je putnik već pokupljen danas
-              // Uklonjena provera za operativnaId jer se više ne prosleđuje
-              r['pokupljen_at'] != null);
+          final vecVozioDanas = opCache.values.any((r) {
+            final rPutnikId = (r['created_by']?.toString() ?? '').trim().toLowerCase();
+            if (rPutnikId != safePutnikId.toLowerCase()) return false;
+
+            final rDanIso = V3DateUtils.parseIsoDatePart(r['datum']?.toString() ?? '');
+            if (rDanIso != danIso) return false;
+
+            if (r['pokupljen_at'] == null) return false;
+
+            // Trenutni događaj (operativnaId) ne tretiramo kao "već vozio danas",
+            // inače bi prvo pokupljanje dana bilo preskočeno.
+            if (safeDogadjajId.isNotEmpty) {
+              final rOperativnaId = (r['id']?.toString() ?? '').trim();
+              if (rOperativnaId == safeDogadjajId) return false;
+            }
+
+            return true;
+          });
           if (vecVozioDanas) return;
         }
 
