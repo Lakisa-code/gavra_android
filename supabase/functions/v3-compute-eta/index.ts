@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     const staleThreshold = new Date(Date.now() - ETA_STALE_THRESHOLD_SECONDS * 1000).toISOString();
     await client.from("v3_eta_results").delete().lt("computed_at", staleThreshold);
 
-    // 1. Pronađi aktivne dodele (putnik_id + termin_id) - koristimo termin-level dodele
+    // 1. Pronađi aktivne individualne dodele (putnik_id + termin_id)
     const { data: dodelaRows, error: dodelaError } = await client
       .from("v3_trenutna_dodela")
       .select("putnik_v3_auth_id, termin_id")
@@ -118,12 +118,101 @@ Deno.serve(async (req) => {
       return json(200, { ok: false, reason: "dodela_lookup_error", warning: dodelaError.message });
     }
 
-    if (!dodelaRows || dodelaRows.length === 0) {
+    // 1b. Pronađi aktivne slot dodele za isti grad/vreme
+    const { data: slotRows, error: slotError } = await client
+      .from("v3_trenutna_dodela_slot")
+      .select("datum, grad, vreme")
+      .eq("vozac_v3_auth_id", vozacId)
+      .eq("status", "aktivan")
+      .eq("grad", activeGrad);
+
+    if (slotError) {
+      console.warn(`[v3-compute-eta] slot lookup error: ${slotError.message}`);
+    }
+
+    const activeSlotDatumi = Array.from(new Set(
+      (slotRows ?? [])
+        .filter((s) => normalizeTime(s.vreme) === activeVreme)
+        .map((s) => normalizeDate(s.datum))
+        .filter(Boolean)
+    ));
+
+    // 1c. Slot putnici (termini iz operativne) za aktivan slot
+    const slotTerminRows: Array<{ id: string; created_by: string | null }> = [];
+    if (activeSlotDatumi.length > 0) {
+      const { data: slotOperativnaRows, error: slotOperativnaError } = await client
+        .from("v3_operativna_nedelja")
+        .select("id, created_by, datum, grad, polazak_at")
+        .in("datum", activeSlotDatumi)
+        .eq("grad", activeGrad)
+        .is("otkazano_at", null)
+        .is("pokupljen_at", null);
+
+      if (slotOperativnaError) {
+        console.warn(`[v3-compute-eta] slot operativna lookup error: ${slotOperativnaError.message}`);
+      } else {
+        for (const row of (slotOperativnaRows ?? [])) {
+          const vremeNorm = normalizeTime(row.polazak_at);
+          if (vremeNorm !== activeVreme) continue;
+          const terminId = String(row.id ?? "").trim();
+          if (!terminId) continue;
+          const createdBy = row.created_by ? String(row.created_by).trim() : null;
+          if (!createdBy) continue;
+          slotTerminRows.push({ id: terminId, created_by: createdBy });
+        }
+      }
+    }
+
+    // 1d. Iz slot kandidata izbaci one koji su aktivno dodeljeni drugom vozaču
+    const slotTerminIds = slotTerminRows.map((r) => r.id);
+    const aktivnaDodelaByTermin = new Map<string, string>();
+    if (slotTerminIds.length > 0) {
+      const { data: activeAssignments, error: activeAssignmentsError } = await client
+        .from("v3_trenutna_dodela")
+        .select("termin_id, vozac_v3_auth_id")
+        .in("termin_id", slotTerminIds)
+        .eq("status", "aktivan");
+
+      if (activeAssignmentsError) {
+        console.warn(`[v3-compute-eta] slot assignment filter error: ${activeAssignmentsError.message}`);
+      } else {
+        for (const row of (activeAssignments ?? [])) {
+          const terminId = String(row.termin_id ?? "").trim();
+          const assignedVozacId = String(row.vozac_v3_auth_id ?? "").trim();
+          if (!terminId || !assignedVozacId) continue;
+          aktivnaDodelaByTermin.set(terminId, assignedVozacId);
+        }
+      }
+    }
+
+    const effectiveDodele: Array<{ termin_id: string; putnik_v3_auth_id: string }> = [];
+
+    for (const row of (dodelaRows ?? [])) {
+      const terminId = String(row.termin_id ?? "").trim();
+      if (!terminId) continue;
+      effectiveDodele.push({
+        termin_id: terminId,
+        putnik_v3_auth_id: String(row.putnik_v3_auth_id ?? "").trim(),
+      });
+    }
+
+    for (const row of slotTerminRows) {
+      const assignedVozacId = aktivnaDodelaByTermin.get(row.id);
+      if (assignedVozacId && assignedVozacId !== vozacId) continue;
+      const alreadyIncluded = effectiveDodele.some((d) => d.termin_id === row.id);
+      if (alreadyIncluded) continue;
+      effectiveDodele.push({
+        termin_id: row.id,
+        putnik_v3_auth_id: row.created_by ?? "",
+      });
+    }
+
+    if (effectiveDodele.length === 0) {
       await client.from("v3_eta_results").delete().eq("vozac_id", vozacId);
       return json(200, { ok: true, reason: "no_active_dodele", updated: 0 });
     }
 
-    const allTerminIds = dodelaRows.map((r) => String(r.termin_id ?? "").trim()).filter(Boolean);
+    const allTerminIds = effectiveDodele.map((r) => String(r.termin_id ?? "").trim()).filter(Boolean);
 
     // 2. Dohvati termin podatke direktno po termin_id (tačan red, bez mešanja termina)
     const { data: operativnaRows, error: operativnaError } = await client
@@ -170,7 +259,7 @@ Deno.serve(async (req) => {
     const koristiSekundarnaMap: Record<string, boolean> = {}; // putnikId → koristi_sekundarnu
 
     // 3. Preostali putnici — nisu pokupljeni NI otkazani
-    const remainingDodele = dodelaRows.filter((r) => {
+    const remainingDodele = effectiveDodele.filter((r) => {
       const terminId = String(r.termin_id ?? "").trim();
       const termin = terminMap[terminId];
       if (!termin) return false;
@@ -189,6 +278,7 @@ Deno.serve(async (req) => {
     }
 
     if (remainingDodele.length === 0) {
+      await client.from("v3_eta_results").delete().eq("vozac_id", vozacId);
       return json(200, { ok: true, reason: "no_remaining_dodele", updated: 0 });
     }
 
@@ -297,6 +387,7 @@ Deno.serve(async (req) => {
     }
 
     if (remainingWaypoints.length === 0) {
+      await client.from("v3_eta_results").delete().eq("vozac_id", vozacId);
       return json(200, { ok: true, reason: "no_coords_for_remaining", updated: 0 });
     }
 

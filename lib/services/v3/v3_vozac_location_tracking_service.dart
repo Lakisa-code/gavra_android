@@ -117,13 +117,28 @@ class V3VozacLocationTrackingService {
       await stop();
     }
     _activeVozacId = normalizedVozacId;
-    _isRunning = true;
 
     final service = FlutterBackgroundService();
-    final isServiceRunning = await service.isRunning();
+    var isServiceRunning = await service.isRunning();
     if (!isServiceRunning) {
-      await service.startService();
+      try {
+        await service.startService();
+      } catch (e) {
+        _activeVozacId = '';
+        _isRunning = false;
+        debugPrint('[V3VozacLocationTrackingService] Failed to start background service: $e');
+        return;
+      }
+      isServiceRunning = await service.isRunning();
+      if (!isServiceRunning) {
+        _activeVozacId = '';
+        _isRunning = false;
+        debugPrint('[V3VozacLocationTrackingService] Background service did not start.');
+        return;
+      }
     }
+
+    _isRunning = true;
 
     await _syncBackgroundSupabaseConfig(service);
     _syncBackgroundTermin(service);
@@ -160,6 +175,8 @@ class V3VozacLocationTrackingService {
     final vozacIdToClean = _activeVozacId;
     _activeVozacId = '';
     _activeDatumIso = '';
+    _activeGrad = '';
+    _activeVreme = '';
     _lastSentPosition = null;
     _isRunning = false;
     onLocationSent = null;
